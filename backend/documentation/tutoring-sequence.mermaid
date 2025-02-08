@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant Client
+    participant WS as WebSocket Handler
+    participant SM as Session Manager
+    participant TS as Tutoring Session
+    participant Tutor as Tutoring Service
+    participant GS as Gemini Service
+    participant AS as Audio Service
+
+    Client->>WS: Connect()
+    WS->>Client: Connection Accepted
+
+    Client->>WS: InitSession(subject, skill)
+    WS->>SM: Create Session
+    SM->>TS: Initialize
+    TS->>Tutor: Initialize Session
+    Tutor->>GS: Setup Gemini(unified_prompt)
+    GS-->>Tutor: Ready
+    Tutor-->>TS: Session Ready
+    TS-->>SM: Initialized
+    SM-->>WS: Session Created
+    WS-->>Client: session_started
+
+    loop Audio Interaction
+        Client->>WS: Send Audio Chunk
+        WS->>TS: Process Audio
+        TS->>Tutor: Process Audio Input
+        Tutor->>GS: Stream Audio
+        GS->>AS: Generate Response
+        AS->>AS: Process Audio
+        AS-->>GS: Processed Audio
+        GS-->>Tutor: Audio Response
+        Tutor-->>TS: Audio Stream
+        TS-->>WS: Audio Chunks
+        WS-->>Client: Binary Audio + Status
+    end
+
+    Client->>WS: Close Connection
+    WS->>SM: Cleanup Session
+    SM->>TS: Cleanup
+    TS->>Tutor: Cleanup
+    Tutor->>GS: Reset Session
+    WS-->>Client: Connection Closed

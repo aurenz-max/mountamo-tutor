@@ -1,0 +1,36 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-A,Recognize and pronounce letter A,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-B,Recognize and pronounce letter B,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-C,Recognize and pronounce letter C,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-D,Recognize and pronounce letter D,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-E,Recognize and pronounce letter E,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-F,Recognize and pronounce letter F,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-G,Recognize and pronounce letter G,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-H,Recognize and pronounce letter H,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-I,Recognize and pronounce letter I,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-J,Recognize and pronounce letter J,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-K,Recognize and pronounce letter K,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-L,Recognize and pronounce letter L,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-M,Recognize and pronounce letter M,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-N,Recognize and pronounce letter N,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-O,Recognize and pronounce letter O,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-P,Recognize and pronounce letter P,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-Q,Recognize and pronounce letter Q,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-R,Recognize and pronounce letter R,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-S,Recognize and pronounce letter S,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-T,Recognize and pronounce letter T,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-U,Recognize and pronounce letter U,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-V,Recognize and pronounce letter V,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-W,Recognize and pronounce letter W,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-X,Recognize and pronounce letter X,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-Y,Recognize and pronounce letter Y,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-Z,Recognize and pronounce letter Z,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-A,Recognize and pronounce number 1,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-B,Recognize and pronounce number 2,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-C,Recognize and pronounce number 3,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-D,Recognize and pronounce number 4,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-E,Recognize and pronounce number 5,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-F,Recognize and pronounce number 6,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-G,Recognize and pronounce number 7,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-H,Recognize and pronounce number 8,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-I,Recognize and pronounce number 9,1,5,3

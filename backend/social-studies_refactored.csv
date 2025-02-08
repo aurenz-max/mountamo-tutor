@@ -1,0 +1,160 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-A,"Follow basic 3-step classroom routines independently (entering, storing belongings, starting assigned task)",1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-B,Identify and demonstrate proper care of shared classroom materials and spaces,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-C,"Sort safe and unsafe behaviors using picture scenarios in different settings (home, school, community)",2,5,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-D,"Explain the purpose of 3-4 essential rules in different settings (home, school, playground)",2,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-E,Identify personal responsibilities and their importance at home and school through visual representations,3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-F,"Demonstrate respectful communication skills using ""I-messages"" and appropriate group entry strategies",3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-G,Recognize authority figures' roles and responsibilities in maintaining community safety and order,3,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-H,Apply basic conflict resolution strategies through guided role-play and puppet scenarios,4,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-I,Connect actions to consequences through real-world scenarios and collaborative discussion,4,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-J,Participate in creating and following simple class agreements through group consensus,4,8,6
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-A,"Demonstrate basic classroom citizenship behaviors (sharing materials, following routines, listening quietly)",1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-B,"Identify and explain the roles of common community helpers (police, firefighters, teachers, etc.)",2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-C,"Recognize and explain the meaning of basic American symbols (flag, Statue of Liberty, state symbols)",3,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-D,"Demonstrate appropriate participation in patriotic activities (Pledge of Allegiance, songs, ceremonies)",2,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-E,Practice classroom democracy through voting and job responsibilities,3,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-F,"Apply conflict resolution strategies using ""I"" statements and active listening",4,7,6
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-G,"Demonstrate environmental and community stewardship (recycling, conservation, helping others)",3,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-H,Create and interpret simple maps of classroom and school community,4,7,6
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-I,Identify and respond appropriately to safety signs and emergency procedures,2,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-A,Identify the American flag and demonstrate appropriate behavior during the Pledge of Allegiance,1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-B,"Identify and locate basic government buildings in their community (city hall, post office, library)",2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-C,Match community helpers with their government roles and explain their basic duties,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-D,Distinguish between classroom rules and community laws using real-world examples,2,5,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-E,Participate in classroom voting activities and explain why voting is important,3,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-F,"Identify the three main community leaders (mayor, governor, president) and their basic roles",3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-G,Explain how governments help meet community needs through services and buildings,3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-H,"Demonstrate ways families can participate in community government (voting, meetings, events)",4,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-I,Create a simple visual representation showing how taxes help pay for community services,4,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-A,"Identify common public places in the community (library, park, school)",1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-B,Match community helpers to their workplace locations,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-C,Explain how public spaces help people in the community,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-D,"Sort community services into basic categories (safety, education, recreation)",3,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-E,Create simple maps showing locations of local public services,3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-F,Build and describe a model of a public space using blocks,4,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-G,Participate in group discussions about community improvements,4,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-H,Role-play a simple town meeting with assigned community roles,5,7,6
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-A,"Identify common community problems in familiar settings (classroom, playground, neighborhood)",1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-B,"Match community helpers to the problems they help solve (e.g., firefighter-fire, doctor-illness)",1,4,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-C,Sort and categorize tools used by different community helpers,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-D,"Identify basic conflict resolution vocabulary (share, take turns, apologize, listen)",2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-E,"Use ""I feel"" statements to express needs in conflict situations",2,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-F,Practice active listening skills during peer conversations,3,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-G,Participate in simple peer mediation scenarios with teacher guidance,3,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-H,"Create simple solutions for classroom problems (making rules, sharing schedules)",4,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-I,"Design basic visual aids (drawings, posters) to promote positive classroom behavior",3,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-J,Collaborate with peers to implement a simple classroom improvement project,4,7,6
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-A,"Sort basic items into categories of ""needs"" (survival) versus ""wants"" (nice to have) using picture cards",1,3,2
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-B,"Identify and compare seasonal needs versus wants in daily life (clothing, activities, supplies)",2,4,3
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-C,"Match community helpers and jobs to the basic needs they help fulfill (food, shelter, health)",2,4,3
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-D,Create a simple picture-based spending plan dividing resources between needs and wants,2,5,4
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-E,"Demonstrate resource conservation by identifying and illustrating ways to save water, food, and energy",3,5,4
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-F,Role-play shopping scenarios making choices with limited resources,3,6,5
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-G,Compare needs and wants across different families and cultures using visual aids,4,6,5
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-H,"Plan and prioritize needs versus wants for a specific event (party, trip, emergency kit) within given constraints",4,7,6
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-I,Demonstrate understanding of how sharing and trading helps communities meet everyone's needs,5,7,6
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-A,"Identify basic goods (toys, food, clothes) from pictures",1,3,2
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-B,"Identify common service providers (teacher, doctor, firefighter) from pictures",1,3,2
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-C,Sort items into 'goods' and 'services' categories using picture cards,2,4,3
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-D,Match community helpers to their tools and workplaces,2,4,3
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-E,Connect specific services to the goods they help create or provide,3,5,4
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-F,Role-play simple service provider scenarios using props and costumes,3,5,4
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-G,"Use play money to ""purchase"" goods in a classroom store setting",4,6,5
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-H,Create and operate a basic classroom marketplace with both goods and services,5,7,6
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-A,"Use basic directional words (left, right, up, down) to describe locations of objects in familiar spaces",1,3,2
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-B,Create simple maps of the classroom and playground using basic symbols and a legend,2,4,3
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-C,Identify common buildings in the community and explain their basic purposes,2,4,3
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-D,Recognize and describe basic landforms and natural features in the local environment,2,5,4
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-E,"Compare characteristics of different living environments (urban, suburban, rural) and the types of homes found in each",3,6,4
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-F,"Connect weather conditions to appropriate clothing, activities, and transportation methods",3,5,4
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-G,"Observe and describe how seasonal changes affect people, plants, and animals in the local environment",3,6,5
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-H,Identify ways people use and protect natural resources in their environment,4,7,5
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-I,Compare how people adapt to different environments using various tools and technologies,4,7,6
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-A,"Identify basic natural features in pictures (trees, mountains, rivers)",1,3,2
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-B,"Identify basic human-made features in pictures (houses, roads, bridges)",1,3,2
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-C,Sort pictures into natural and human-made categories using a simple T-chart,2,4,3
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-D,"Match natural resources to their human-made products (trees→paper, rocks→bricks)",2,4,3
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-E,Create a simple map showing both natural and human-made features in the classroom,3,5,4
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-F,"Explain how human-made structures help people use natural features (bridges cross rivers, tunnels go through mountains)",3,5,4
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-G,Create a collage comparing natural and human-made features in their neighborhood,4,6,5
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-H,"Design and explain a simple solution to interact with a natural feature (shade structure for playground, bridge for stream)",4,7,5
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-A,"Identify basic time markers in a day (morning, afternoon, evening) and sequence daily activities",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-B,"Compare physical changes using personal photographs from different ages (baby, toddler, current)",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-C,Match family members' roles with their responsibilities in the household,2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-D,Create a personal timeline using 3-4 major life events with pictures and dates,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-E,Draw and label a basic family tree showing three generations,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-F,"Identify and describe personal growth through measurable changes (height, abilities, independence)",3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-G,Explore and describe family traditions and how they have changed or stayed the same,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-H,Compare aspects of their own life with those of their parents' childhood,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-I,Create and present a memory collection that represents significant personal moments,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-J,Analyze and describe how their immediate environment has changed over time,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-A,"Sort common objects and pictures into ""past"" and ""present"" categories with 80% accuracy",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-B,"Identify 3 basic American symbols (flag, Liberty Bell, bald eagle) and explain their importance",2,5,3
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-C,"Sequence 3-4 personal or familiar events using a simple timeline (e.g., morning routine, seasons)",2,5,4
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-D,"Compare basic life aspects (clothing, toys, transportation) between past and present using visual aids",3,6,4
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-E,"Recognize and explain the significance of 3 major national holidays (Thanksgiving, Independence Day, MLK Jr. Day)",3,6,5
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-F,Create a simple three-generation family tree and discuss how family life has changed over time,3,7,5
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-G,"Match 4 historical figures (Washington, Lincoln, MLK Jr., Parks) to their main achievements using pictures and stories",4,7,5
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-H,Compare schools and education between past and present using 3 specific examples,4,7,6
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-I,Demonstrate understanding of a historical figure's life through simple role-play and storytelling,4,8,6
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-J,"Identify how 2 basic technologies or tools (communication, transportation) have evolved from past to present",4,8,6
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-A,"Identify ""before"" and ""after"" in daily classroom activities",1,3,2
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-B,Sequence 3 events from a familiar story using picture cards,2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-C,"Order daily activities using a picture schedule (morning, afternoon, evening)",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-D,"Place yesterday, today, and tomorrow events on a 3-day timeline",3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-E,Sort seasonal events into a four-seasons timeline,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-F,Create a personal timeline showing 5 key life events,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-G,Construct a class timeline of monthly school events using photos,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-H,Compare events on personal timeline with a family member's timeline,5,7,6
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-A,Identify whether common objects are from the past or present when shown pictures,1,3,2
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-B,"Match pairs of related objects from past and present (e.g., candle/lightbulb)",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-C,"Sort everyday items into ""past"" and ""present"" categories using picture cards",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-D,Explain basic differences between past and present versions of common tools,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-E,"Demonstrate simple daily tasks as done in past vs. present (e.g., washing clothes)",3,6,4
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-F,Compare transportation methods from past to present using pictures and discussion,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-G,Create before/after timeline cards showing how specific objects have changed over time,4,7,5
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-H,Build simple models comparing past and present homes using basic materials,5,8,6
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-A,Identify personal family traditions through simple drawings,1,3,2
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-B,Match cultural symbols to their meanings using picture cards,2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-C,Share a family photograph and describe one cultural element,2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-D,Create basic cultural symbols representing family heritage,2,5,3
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-E,Compare traditional foods from two different cultures,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-F,Demonstrate a simple cultural practice or tradition,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-G,Explain how family celebrations connect to cultural heritage,3,6,4
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-H,Create and present a family traditions collage,4,6,5
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-A,Recognize that people have different cultures through stories and pictures,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-B,Demonstrate basic cultural greetings and gestures from 3 different cultures,2,5,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-C,"Sort and categorize cultural items (food, clothing, toys) from different cultures",3,5,4
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-D,"Identify and describe traditional homes, foods, and clothing from 3 cultures",3,6,4
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-E,"Participate in cultural activities (games, crafts, songs) from 2 different cultures",3,6,4
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-F,Compare family celebrations and traditions between 2 cultures,4,6,5
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-G,Identify similarities and differences in daily life across cultures,4,7,5
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-H,Demonstrate respect for cultural differences through stories and role-play,4,7,5
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-I,Create and explain simple cultural artifacts representing different celebrations,4,8,6
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-A,Locate their continent on a simplified world map and recognize that the world contains many different countries,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-B,Demonstrate basic cultural greetings through gestures and simple phrases from three different cultures,1,3,2
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-C,Match climate types to appropriate clothing and housing styles from different regions of the world,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-D,Identify and compare common transportation methods used in different parts of the world,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-E,Connect traditional foods and clothing to their countries of origin using picture matching,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-F,"Participate in cultural expression through songs, games, and simple art projects from different cultures",2,5,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-G,Compare daily routines and school activities between their own culture and another culture,3,6,4
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-H,"Recognize and explain how people around the world have both similarities and differences in their celebrations, languages, and ways of life",4,7,5
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-A,"Role-play making a product (e.g., paper bracelets) and trading with peers",2,4,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-B,"Sort pictures of producers (farmers, bakers) and consumers (shoppers, families)",1,3,2  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-C,"Create a classroom 'business' to sell handmade goods using play money",4,6,5  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-D,"Discuss why producers need consumers and vice versa using simple scenarios",3,5,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-A,"Use a pretend lemonade stand to explore scarcity (e.g., 'What if lemons run out?')",3,5,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-B,"Sort items into 'high demand' (toys) and 'low demand' (broken pencils) categories",2,4,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-C,"Simulate a market where prices change based on availability (e.g., rainy day vs. sunny day)",4,7,5  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-D,"Draw a picture showing what happens when everyone wants the same toy",2,5,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-E,"Collaborate to create a class business plan (e.g., product name, roles)",4,7,5  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-F,"Use play money to 'pay' peers for helping with a classroom task",2,4,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-G,"Identify and draw three ways people use money in the community",2,5,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-H,"Sort items into 'goods we make' (crafts) and 'goods we grow' (plants)",1,3,2  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-I,"Role-play a farmer selling crops at a market and a buyer negotiating prices",3,6,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-E,"Predict what happens when a popular toy is scarce using a voting activity",3,5,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-F,"Use a pictograph to show how weather affects demand for items (umbrellas on rainy days)",2,4,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-G,"Design a poster advertising a 'limited edition' classroom item to increase demand",4,6,5  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-H,"Compare prices of the same item in different pretend stores (e.g., toy vs. grocery shop)",3,5,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-I,"Simulate a 'sale day' where discounts are applied to less popular items",4,7,5  

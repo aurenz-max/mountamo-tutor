@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant FE as Frontend
+    participant BE as Backend
+    participant Gemini as Gemini STT
+    participant Claude as Claude
+    participant TTS as TTS Service
+
+    Note over FE,BE: User starts speaking
+    FE->>BE: Open WS connection
+    BE->>Gemini: Start STT session
+    activate Gemini
+    
+    loop Audio Streaming
+        FE->>BE: Stream audio chunks
+        BE->>Gemini: Forward chunks
+    end
+    
+    Gemini-->>BE: Final transcription
+    deactivate Gemini
+    
+    BE->>Claude: Send text for processing
+    Claude-->>BE: Get response
+    
+    BE->>TTS: Generate audio (one-shot)
+    TTS-->>BE: Audio response
+    BE-->>FE: Send audio response
+
+    Note over FE,BE: Ready for next interaction

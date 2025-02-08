@@ -1,0 +1,70 @@
+,Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+0,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-A,Count from 1 to 10,1,20,10
+1,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-B,Count from 11 to 20,15,35,25
+2,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-C,Count from 21 to 50,30,50,40
+3,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-D,Count from 51 to 100,45,65,55
+4,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-E,Count to 100 by tens,40,60,50
+5,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-F,Count forward from any given number up to 100,50,70,60
+6,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-G,Write numbers from 0 to 10,20,40,30
+7,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-H,Write numbers from 11 to 20,35,55,45
+8,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-I,Recognize and write numbers up to 50,50,70,60
+9,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-A,Count up to 5 objects,1,20,10
+10,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-B,Count up to 10 objects,15,35,25
+11,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-C,Count up to 20 objects arranged in a line,30,50,40
+12,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-D,"Count up to 20 objects arranged in a rectangular array, or circle",40,60,50
+13,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-E,Count out a requested number of objects up to 20,50,70,60
+14,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-A,Identify whether the number of objects in one group is greater than or less than another group (up to 5 objects),20,40,30
+15,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-B,Identify whether the number of objects in one group is greater than or less than another group (6 to 10 objects),35,55,45
+16,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-C,Compare two numbers between 1 and 5 presented as written numerals,30,50,40
+17,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-D,Compare two numbers between 1 and 10 presented as written numerals,40,60,50
+18,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,COUNT001-04-A,Identify and use ordinal numbers (first through fifth),30,50,40
+19,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,COUNT001-04-B,Identify and use ordinal numbers (first through tenth),40,60,50
+52,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-E,Identify missing numbers in a sequence from 1-10 when shown a number line with gaps,2,4,3
+53,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-F,Match spoken number words to their written numerals from 1-20,3,5,4
+54,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-G,Count backward from 10 to 1,3,5,4
+55,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-H,Count backward from 20 to 1,4,6,5
+56,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-I,"Identify numbers that come ""just before"" and ""just after"" any given number up to 20",4,6,5
+57,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-J,Order scrambled numbers from 1-10 in correct sequence,3,5,4
+58,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-K,Order scrambled numbers from 11-20 in correct sequence,4,6,5
+59,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-L,Count by fives up to 50 using a number chart,5,7,6
+60,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-M,Count by twos up to 20 using concrete objects,4,6,5
+61,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-N,Write number words (one through ten) matching their numerals,5,7,6
+62,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-O,Identify and correct errors in a written number sequence up to 20,5,7,6
+63,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,skill_id-P,Count orally while matching one-to-one correspondence up to 20 objects,3,5,4
+64,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-E,Count up to 10 objects when presented in scattered/random arrangement,2,4,3
+65,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-F,Count objects while correctly touching each one exactly once (one-to-one correspondence),2,4,3
+66,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-G,Count a set of objects starting from any position (not just left-to-right),3,5,4
+67,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-H,Count objects of different sizes and recognize the total remains the same (conservation),3,5,4
+68,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-I,Count objects in two different groups and compare which has more/less,4,6,5
+69,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-J,Count backwards from 10 to 1 using concrete objects,4,6,5
+70,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-K,Count objects in groups of 2 up to 20 (early skip counting),5,7,6
+71,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-L,Count the same set of objects multiple ways and recognize the total stays the same,5,7,6
+72,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-M,Count objects hidden from view after seeing them briefly (up to 10),6,8,7
+73,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-N,Count combined sets of objects when some are visible and others are hidden,7,9,8
+74,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,skill_id-O,Count and track running totals as objects are added or removed (up to 10),7,9,8
+75,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-E,"Use the terms ""equal to"" correctly when comparing two groups of identical objects (up to 5 objects)",1,2,1
+76,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-F,Arrange two groups of objects (up to 5) in one-to-one correspondence to determine which has more/less,2,3,2
+77,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-G,"Compare three numbers between 1 and 5 using ""greater than,"" ""less than,"" and ""equal to""",3,4,3
+78,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-H,Use number lines (1-10) to determine which of two numbers is greater or less,3,5,4
+79,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-I,Compare quantities up to 10 using visual dot patterns without counting,4,6,5
+80,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-J,Order three groups of objects (up to 10) from least to greatest,5,7,6
+81,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-K,Compare two numbers (1-10) using drawings or pictures to justify the comparison,5,7,6
+82,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-L,"Use inequality symbols (<, >) correctly when comparing two numbers up to 10",6,8,7
+83,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-M,Order five numbers between 1 and 10 from greatest to least,7,8,7
+84,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-N,Compare two teen numbers (11-19) using visual representations,7,9,8
+85,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-O,"Identify numbers that are ""one more than"" or ""one less than"" a given number up to 20",8,9,8
+86,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,skill_id-P,Compare two two-digit numbers up to 20 using place value understanding,8,10,9
+87,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-E,Match ordinal number words (first-fifth) to their corresponding numerical symbols (1st-5th),2,4,3
+88,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-F,Order objects in a line and label their positions using ordinal numbers (first through fifth),3,5,4
+89,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-G,"Use ordinal numbers to describe the sequence of daily routines (e.g., ""First we eat breakfast, second we brush teeth"")",3,5,4
+90,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-H,"Complete simple sequences by filling in missing ordinal positions (e.g., ""first, ___, third, fourth"")",4,6,5
+91,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-I,"Compare positions using ordinal numbers (e.g., ""Is third before or after fourth?"")",4,6,5
+92,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-J,Match ordinal number words (sixth-tenth) to their corresponding numerical symbols (6th-10th),4,6,5
+93,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-K,Identify the position of specific items in a story sequence using ordinal numbers,5,7,6
+94,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-L,"Use ordinal numbers to describe positions in competitive scenarios (e.g., race results, contest rankings)",5,7,6
+95,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-M,Create and solve simple word problems involving ordinal numbers (first through tenth),6,8,7
+96,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,skill_id-N,"Arrange and describe objects based on multiple attributes using ordinal numbers (e.g., ""The second tallest blue block"")",7,9,8
+251,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-A,Compose numbers 11–15 into ten ones and some further ones,15,35,25
+252,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-B,Compose numbers 16–19 into ten ones and some further ones,20,40,30
+253,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-C,Decompose numbers 11–15 into ten ones and some further ones,20,40,30
+254,Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-D,Decompose numbers 16–19 into ten ones and some further ones,25,45,35

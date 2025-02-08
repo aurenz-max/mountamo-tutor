@@ -1,0 +1,135 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,ART001-01-A,Explore a variety of art materials and tools,1,5,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,ART001-01-B,Create art that represents natural and constructed environments,2,6,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,ART001-01-C,Use basic shapes and lines to represent ideas,3,7,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,ART001-02-A,Select art objects for personal portfolio and display,2,6,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,ART001-02-B,Explain the process of making art,3,7,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,ART001-02-C,Identify places where art may be displayed or saved,3,7,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,ART001-03-A,Identify uses of art within one's personal environment,2,6,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,ART001-03-B,Describe what an image represents,3,7,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,ART001-03-C,Explain reasons for selecting a preferred artwork,4,8,6
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,ART002-01-A,Explore and experience a variety of music concepts,2,6,4
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,ART002-01-B,Create simple rhythmic patterns,3,7,5
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,ART002-01-C,Improvise simple musical ideas,4,8,6
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,ART002-02-A,Sing a variety of simple songs,2,6,4
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,ART002-02-B,Play simple rhythmic instruments,3,7,5
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,ART002-02-C,Perform appropriate musical works with expression,4,8,6
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,ART002-03-A,"Identify simple musical contrasts (fast/slow, loud/soft)",2,6,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,ART002-03-B,Demonstrate awareness of steady beat,3,7,5
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,ART002-03-C,Express preferences for varied musical selections,4,8,6
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,ART003-01-A,Use imagination to transform objects and experiences into dramatic play,2,6,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,ART003-01-B,Create roles and situations for dramatic play and guided drama experiences,3,7,5
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,ART003-01-C,Collaborate with peers to create plots in guided drama experiences,4,8,6
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,ART003-02-A,Engage in dramatic play or a guided drama experience,2,6,4
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,ART003-02-B,Use body and voice to communicate character traits and emotions,3,7,5
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,ART003-02-C,Demonstrate the ability to follow simple performance directions,4,8,6
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,ART003-03-A,Express preferences for parts of a drama/theatre work,2,6,4
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,ART003-03-B,Identify characters and settings in a guided drama experience,3,7,5
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,ART003-03-C,Explain how personal preferences connect to emotions evoked by a drama/theatre work,4,8,6
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-E,Mix two primary colors to create a secondary color and use it in an artwork,2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-F,Create a simple pattern using two alternating shapes or colors,1,2,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-G,Build a 3D structure using clay or playdough that can stand on its own,2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-H,Cut and paste paper shapes to form a recognizable object or animal,2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-I,Draw a self-portrait including at least three facial features,3,4,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-J,"Create texture in artwork using simple tools (combs, sponges, etc.)",2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-K,"Combine two different art materials in one artwork (e.g., crayon and watercolor)",3,4,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-L,Paint within defined lines or boundaries with 80% accuracy,2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-M,Create a simple collage using torn paper pieces,2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-N,Draw and color a scene that shows foreground and background,3,5,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-O,Use stamps or found objects to create prints in a deliberate arrangement,2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-P,Create an artwork that expresses a specific emotion through color choice,3,4,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-E,Take turns sharing artwork with a partner using complete sentences,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-F,"Follow 3-step process to prepare artwork for display (clean hands, flat surface, careful handling)",2,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-G,"Use basic art vocabulary (color, shape, line) when describing artwork to others",3,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-H,Respond to 2-3 questions about their artwork from peers or teachers,3,4,6
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-I,Practice appropriate audience behavior during art presentations,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-J,Sort artwork into 2 categories (complete/incomplete) for display readiness,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-K,Write or dictate a simple title for their artwork,3,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-L,"Choose and apply a method to sign their artwork (initials, name, or symbol)",2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-M,Position artwork at eye level when displaying on vertical surfaces,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-N,Compare two display locations and choose the better option for showing artwork,3,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-O,"Use basic tools (tape, clips, pins) to help display artwork with assistance",3,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-P,Identify at least one thing they like about a classmate's displayed artwork,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-E,"Compare and contrast two artworks using basic art vocabulary (colors, shapes, lines)",2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-F,Express personal feelings about an artwork using emotion words and simple gestures,1,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-G,"Match similar artistic elements (colors, patterns, shapes) between two different artworks",2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-H,Name three different materials used to create an artwork,1,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-I,"Sort artworks into basic categories (paintings, sculptures, drawings)",2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-J,Identify the main subject or focal point in an artwork,2,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-K,"Use simple hand signals to show understanding of art elements (tall/short, smooth/rough)",1,2,1
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-L,Connect an artwork to a personal experience or memory,2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-M,"Identify basic mood or feeling conveyed in an artwork (happy, sad, excited)",2,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-N,Locate and point to specific elements requested by the teacher in an artwork,1,2,1
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-O,Show appropriate museum behavior when viewing artworks,1,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-P,"Recognize and name common symbols in artwork (heart, star, rainbow)",2,3,2
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-E,"Design a simple musical pattern using body percussion (clapping, patting, stomping)",1,3,2
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-F,Combine two different sounds to create a repeating musical sequence,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-G,Create sound effects to match characters in a familiar story,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-H,Use classroom instruments to represent different weather sounds,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-I,Make up simple lyrics to a familiar melody,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-J,Create a musical response to another student's musical phrase,4,6,5
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-K,Design a simple musical pattern using pictures or symbols,4,6,5
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-L,"Create movements to express different musical moods (happy, sad, excited)",3,5,4
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-M,Compose a short musical phrase using three different classroom instruments,5,7,6
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-N,Create and perform a musical introduction for a familiar song,5,7,6
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-O,"Use voice to create different sound effects (high/low, loud/soft, fast/slow)",2,4,3
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-P,Design a simple musical pattern using alternating silence and sound,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-E,Echo short melodic patterns sung by the teacher using correct pitch,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-F,"Maintain a steady beat while walking, marching, or dancing to music",1,3,2
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-G,"Follow basic conductor hand signals for start, stop, and dynamics",2,4,3
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-H,Demonstrate proper posture while singing in a group,1,2,1
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-I,Clap or tap simple four-beat rhythm patterns accurately,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-J,"Move creatively to express different musical moods (happy, sad, excited)",1,3,2
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-K,Take turns performing solo parts within a group musical activity,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-L,"Use appropriate voice levels (whisper, speaking, singing) when performing",2,3,2
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-M,Mirror simple movement patterns demonstrated by the teacher,1,3,2
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-N,Play simple call-and-response patterns using body percussion,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-O,Perform simple songs using sign language or hand motions,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-P,Demonstrate proper care and handling of classroom instruments,1,2,1
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-E,"Move body parts to match different musical dynamics (e.g., big movements for loud, small movements for soft)",1,2,2
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-F,"Match simple emotions (happy, sad, scared) to corresponding musical examples using picture cards",2,3,3
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-G,"Echo short rhythmic patterns using body percussion (clap, pat, snap)",2,4,3
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-H,Identify when melodies move upward or downward using hand gestures,3,4,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-I,"Sort instruments into groups based on how they sound (shake, strike, scrape)",3,4,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-J,Follow simple musical cues to start and stop movement,1,2,2
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-K,Distinguish between singing voice and speaking voice in recorded examples,2,3,3
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-L,Use visual icons to track changes in musical tempo,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-M,Identify which instrument is playing from a choice of two familiar instruments,2,3,3
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-N,Show recognition of repeated musical phrases through movement patterns,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-O,"Use simple words to describe musical textures (smooth, bumpy, choppy)",3,4,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-P,Demonstrate appropriate audience behavior during short musical performances,1,2,2
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-E,Design and construct simple props using classroom materials to enhance dramatic play scenarios,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-F,Generate original sound effects using voice and body percussion to accompany dramatic scenes,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-G,"Develop simple movement patterns to represent different characters (animals, people, objects)",3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-H,Compose basic dialogue exchanges between two characters in guided storytelling,3,6,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-I,Design simple story settings using available classroom space and furniture,3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-J,Create emotional expressions through facial features and body language for different characters,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-K,Invent simple solutions to basic dramatic conflicts within guided storylines,4,6,5
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-L,Develop basic costume pieces using available materials and accessories,3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-M,Generate alternative endings to familiar stories through dramatic play,4,7,5
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-N,Create simple puppet characters using basic craft materials,3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-O,Compose basic scene transitions using physical movement and verbal cues,4,6,5
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-P,Design simple stage areas using tape or markers to define performance spaces,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-E,Mirror simple movement sequences demonstrated by the teacher with 80% accuracy,1,2,3
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-F,Maintain a steady beat while performing simple rhythmic patterns using body percussion,2,3,4
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-G,"Create and perform three distinct facial expressions to show basic emotions (happy, sad, angry)",2,3,4
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-H,Demonstrate appropriate audience behavior during a 5-minute performance,2,3,5
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-I,Use props appropriately in a guided performance for 2-3 minutes,3,4,5
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-J,Perform a memorized 4-line nursery rhyme with clear pronunciation,3,4,6
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-K,Transition between two different characters in a guided story using voice and movement,4,5,6
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-L,Collaborate with a partner to perform a simple dialogue of 4-6 lines,4,5,7
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-M,"Execute three basic stage directions (center stage, stage right, stage left) accurately",4,6,7
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-N,Maintain character focus during a 2-minute guided performance without breaking role,5,6,8
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-O,Perform a simple movement sequence in sync with background music,5,7,8
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-E,"Use basic theatre vocabulary (stage, audience, actor) when discussing a drama experience",1,2,2
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-F,Demonstrate appropriate audience behavior during a live performance,1,3,2
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-G,Identify basic emotions portrayed by actors in a drama scene,2,3,3
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-H,Draw a picture showing their favorite moment from a drama experience,2,3,3
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-I,Describe the costumes worn by characters in a drama/theatre work,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-J,Compare two different characters' actions in a guided drama experience,3,4,4
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-K,Identify props used during a drama/theatre work and explain their purpose,3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-L,"Recognize and describe different voice types used by actors (loud/soft, high/low)",4,5,5
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-M,Explain how music or sound effects contribute to a drama scene,4,6,5
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-N,"Identify the beginning, middle, and end of a dramatic story",5,6,6
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-O,Compare facial expressions with the emotions they represent in drama,5,7,6
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-P,Describe how movement and gestures help tell the story in drama,6,8,7

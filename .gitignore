@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+*.log
+.env
+.env.*       # If you use multiple environment files
+credentials/
+secrets/
+private-config/
+archive/
+
+# Ignore Python bytecode
+__pycache__/
+*.py[cod]
+.vscode/
+.history/
+*.code-workspace

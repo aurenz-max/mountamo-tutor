@@ -1,0 +1,89 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-A,"Identify and demonstrate basic movements (push, pull, roll, slide) of everyday objects",1,3,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-B,"Sort objects based on how they move in response to forces (wind, water, pushing)",2,4,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-C,Explore how strength and direction of pushes and pulls affect object motion,2,5,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-D,Investigate how different surfaces affect object motion through simple friction experiments,3,5,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-E,"Compare object behavior in different environments (air vs. water, ramps, barriers)",3,6,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-F,"Demonstrate how objects can be moved without direct contact (magnets, air, water)",3,6,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-G,"Experiment with weight distribution and balance using simple tools (seesaws, scales)",4,6,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-H,"Create and explain simple force transfer systems (dominos, pulleys, chain reactions)",4,7,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-A,"Sort and classify objects by basic observable properties (color, shape, size, texture)",1,3,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-B,"Identify and match common materials (wood, metal, plastic, fabric) in everyday objects",1,4,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-C,"Investigate basic material properties (magnetic attraction, floating/sinking, light reflection)",2,4,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-D,"Test and compare material characteristics (flexibility, strength, water absorption)",2,5,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-E,"Explore light interaction with materials (transparent, translucent, opaque)",2,5,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-F,"Recognize and describe the three states of matter (solid, liquid, gas) through observation",3,6,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-G,"Demonstrate how materials change with temperature (melting, freezing, softening)",3,6,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-H,Explore simple combinations of materials and their resulting properties,4,7,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-A,"Identify objects that need energy to work versus those that don't (e.g., flashlight vs. pencil)",1,3,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-B,"Demonstrate how our bodies use energy for movement through pushing, pulling, walking, and running",1,4,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-C,"Recognize and name basic forms of energy (light, heat, sound) in everyday situations",2,4,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-D,"Match common energy sources (sun, batteries, electricity) to devices and explore simple examples of energy transfer",2,5,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-E,Investigate light energy through shadow creation and material transparency experiments,3,5,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-F,Explore sound energy through simple instruments and sound-blocking materials,3,6,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-G,Conduct basic heat energy experiments using sunlight and different colored surfaces,4,6,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-H,"Create simple energy-based devices (pinwheels, circuits with batteries) to demonstrate energy conversion",4,7,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-A,"Identify and name basic plant parts (roots, stem, leaves, flower, seeds) through observation of real specimens",2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-B,"Recognize basic needs of plants and animals (food, water, light, air) and how they obtain them",2,5,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-C,"Classify animals by physical characteristics (fur, feathers, scales) and movement patterns (walk, fly, swim)",3,5,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-D,"Match animal body parts to their functions and survival purposes (wings/flying, fins/swimming, claws/hunting)",3,6,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-E,"Observe and document growth changes in plants and animals, including parent-offspring relationships",3,6,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-F,"Explain how plants and animals adapt to their environments (seasonal changes, camouflage, migration)",4,7,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-G,"Sort living things by their habitats and eating habits (herbivore, carnivore, omnivore)",4,7,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-H,"Create simple food chains showing relationships between producers, consumers, and decomposers",5,8,6
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-A,Differentiate between living and non-living things in various environments with 80% accuracy,1,3,2
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-B,"Identify the three basic needs (food, water, shelter) of plants and animals through sorting activities",2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-C,"Match five common animals to their appropriate habitats (desert, ocean, forest, etc.)",2,5,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-D,Demonstrate how plants and animals use their body parts and senses to meet basic needs,3,6,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-E,Explain how seasonal and weather changes affect plant and animal behavior using examples,4,7,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-F,Create simple food chains showing how animals depend on other plants and animals for food,5,8,6
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-G,Investigate ways plants and animals adapt to survive in their environments,6,8,7
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-H,Design a model habitat showing the relationship between living things and their environment,7,9,8
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-A,Identify and name major external body parts and their basic functions,1,3,2
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-B,Explore and demonstrate the five senses through guided sensory activities,2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-C,"Practice fundamental body movements and identify corresponding joints (bending, stretching, rotating)",2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-D,"Demonstrate basic health and hygiene practices (handwashing, dental care, daily routines)",2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-E,"Identify internal body basics (heart, lungs, stomach) and their primary functions",3,5,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-F,"Connect physical activities to body responses (increased heart rate, breathing, sweating)",3,5,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-G,"Apply basic body care and safety practices (healthy food choices, exercise, protective equipment)",3,5,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-H,"Recognize and respond to basic body needs (hunger, thirst, rest, movement)",3,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-A,"Use sensory observations and basic vocabulary to describe current weather conditions (sight, sound, feel)",1,3,2
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-B,Match and use common weather symbols to record daily weather conditions on a simple chart,2,4,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-C,Identify appropriate clothing and activities for different weather conditions,2,4,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-D,Recognize and describe characteristics of the four seasons using evidence from weather patterns,3,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-E,"Measure and record basic weather conditions using simple tools (thermometer, rain gauge, wind sock)",3,6,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-F,Identify major cloud types and their relationship to weather conditions,4,6,5
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-G,Compare weather patterns between different locations and times using simple graphs and charts,4,7,5
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-H,Demonstrate understanding of weather safety procedures and make basic weather predictions,4,7,6
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-A,"Sort and classify rocks and soil using observable properties (color, size, texture)",1,3,2
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-B,Identify basic weather conditions using symbols and create simple weather journals,2,4,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-C,Recognize the four seasons and their impact on local environment and activities,2,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-D,Identify and describe common landforms and bodies of water in the local environment,3,6,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-E,"Explore how water exists in different forms (solid, liquid, gas) through guided experiments",4,7,5
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-F,"Investigate relationships between soil, water, and living things through simple experiments",4,7,6
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-G,Demonstrate how wind and water can change land shapes using models and observations,5,8,6
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-H,Connect natural resources to their everyday uses and environmental impact,5,9,7
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-A,"Sort and classify objects as ""space objects"" (sun, moon, stars) or ""Earth objects"" with 90% accuracy",1,3,2
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-B,"Identify and describe basic features of the day sky (sun, clouds) and night sky (moon, stars)",2,4,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-C,Track and record the sun's position and shadows throughout a day using simple tools and drawings,2,5,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-D,"Identify and draw the three main moon phases (full, half, crescent) using provided templates",3,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-E,"Create a daily schedule based on sun position, connecting activities to different times of day",3,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-F,"Compare size relationships between Earth, sun, and moon using manipulatives and simple models",3,6,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-G,Demonstrate how Earth's rotation creates day and night using a globe and light source,4,6,5
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-H,Collect and analyze data about daylight length and weather patterns over multiple weeks,4,7,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-A,"Ask questions and identify simple design problems in familiar situations (e.g., toy organization, classroom setup)",1,3,2
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-B,"Explore and sort building materials based on physical properties (hard/soft, rough/smooth) through hands-on investigation",1,3,2
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-C,Follow and complete pictorial instruction guides to build basic structures in 2-3 steps,2,4,3
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-D,Create simple drawings and models to communicate design ideas for solving a problem,2,5,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-E,"Measure and compare design elements using non-standard units (blocks, paperclips) to inform planning",3,5,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-F,"Make predictions and test simple design solutions, recording observations through pictures and basic words",3,6,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-G,Evaluate design outcomes by comparing two solutions and explaining which works better using evidence,4,6,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-H,"Improve designs based on test results and feedback, suggesting and implementing specific modifications",4,7,6
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-A,"Identify common classroom tools and their basic purposes (e.g., scissors for cutting, rulers for measuring)",2,4,3
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-B,Demonstrate proper safety practices and handling of basic classroom tools under supervision,2,4,3
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-C,"Sort and categorize tools based on their primary functions (measuring, cutting, building, digital)",3,5,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-D,Use basic tools independently to complete simple classroom tasks and projects,3,5,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-E,"Demonstrate fundamental digital device skills (mouse control, keyboard basics, educational programs)",3,6,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-F,"Compare traditional and modern versions of common tools, explaining key differences",4,6,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-G,Connect specific tools to community jobs and explain their importance in daily work,4,6,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-H,"Identify how tools and technology help solve everyday problems in different situations (weather, tasks, needs)",4,7,5

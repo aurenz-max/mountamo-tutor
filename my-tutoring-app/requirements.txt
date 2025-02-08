@@ -1,0 +1,9 @@
+npx shadcn-ui@0.8.0 init
+npx shadcn-ui@0.8.0 add card button textarea progress scroll-area
+npx shadcn-ui@0.8.0 add dialog select
+npx shadcn-ui@0.8.0  add collapsible
+npx shadcn@latest add sidebar-01
+npx shadcn-ui@0.8.0 add alert tabs
+npx shadcn-ui@0.8.0 add slider switch
+
+npx shadcn-ui@0.8.0 add input
