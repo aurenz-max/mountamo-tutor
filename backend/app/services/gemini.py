@@ -20,7 +20,6 @@ from .audio_service import AudioService
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-logging.getLogger('websockets.client').setLevel(logging.INFO)
 
 class GeminiService:
     def __init__(self, audio_service: AudioService) -> None:
@@ -43,6 +42,8 @@ class GeminiService:
                 yield audio
                 # Acknowledge processing of the queue item
                 self.input_queue.task_done()
+                #logger.debug(f"[Frontend Stream being sent to Gemini: {audio}]") 
+                
             except asyncio.CancelledError:
                 logger.debug("Stream cancelled")
                 break
@@ -137,6 +138,7 @@ class GeminiService:
 
         except Exception as e:
             logger.error(f"[Session {session_id}] Failed to connect to Gemini: {e}")
+            logger.exception(e)  # This will print the full stack trace
             raise
         finally:
             self._current_session_id = None
@@ -147,10 +149,11 @@ class GeminiService:
         try:
             if self.quit.is_set():
                 return
-                
+               
             _, array = frame
             array = array.squeeze()
             audio_message = array.tobytes()
+            #logger.debug(f"[Frontend Audio Message being sent to Gemini: {audio_message}]") 
             
             # Use put_nowait to avoid blocking if queue is full
             try:

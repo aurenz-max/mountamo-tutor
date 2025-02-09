@@ -66,16 +66,16 @@ async def tutoring_websocket(websocket: WebSocket):
             try:
                 while not session.quit_event.is_set():
                     message = await websocket.receive_json()
-
+                    #logger.debug(f"[Received {message}.")
+                    
                     # Check message type
+                    # In tutoring.py websocket handler
                     if message.get("type") == "realtime_input":
-                        #media_chunks = message.get("media_chunks", [])
-                        #if len(media_chunks) > 0:
-                            # We have audio data in media_chunks
-                            #logger.debug(f"[Session {session.id}] Received {len(media_chunks)} media_chunks.")
-                            # Example: decode base64, process, etc.
-                        #else:
-                        #logger.debug(f"[Session {session.id}] Received realtime input with no media_chunks.")
+                        media_chunks = message.get("media_chunks", [])
+                        if len(media_chunks) > 0:
+                            logger.debug(f"[Session {session.id}] Received {len(media_chunks)} media_chunks.")
+                        else:
+                            logger.debug(f"[Session {session.id}] Received realtime input with no media_chunks.")
 
                         # Process the message in the session
                         await session.process_message(message)
@@ -96,8 +96,11 @@ async def tutoring_websocket(websocket: WebSocket):
             """Handle both text responses and processed audio"""
             try:
                 # Set up concurrent tasks for text and audio
+                logger.debug(f"[Session {session.id}] Starting response handlers")
                 text_task = asyncio.create_task(handle_text_responses())
+                logger.debug(f"[Session {session.id}] Text handler started")
                 audio_task = asyncio.create_task(handle_audio_responses())
+                logger.debug(f"[Session {session.id}] Audio handler started")
                 
                 await asyncio.gather(text_task, audio_task)
                 
@@ -127,6 +130,7 @@ async def tutoring_websocket(websocket: WebSocket):
                 })
         try:
             # Run all handlers concurrently
+            logger.debug(f"[Session {session.id}] Client Messenger & Response handler started")
             await asyncio.gather(
                 handle_client_messages(),
                 handle_responses()

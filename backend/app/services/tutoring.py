@@ -80,10 +80,6 @@ Remember:
 
         logger.debug(f"[Session {session_id}] Initializing tutoring session")
 
-        if session_id in self._sessions:
-            logger.warning(f"Session {session_id} already exists, cleaning up old session")
-            await self.cleanup_session(session_id)
-
         tutoring_prompt = self._create_tutoring_prompt(
             subject, skill_description, subskill_description, competency_score
         )
@@ -91,24 +87,20 @@ Remember:
         self._sessions[session_id] = {
             "id": session_id,
             "is_active": True,
-            "quit_event": asyncio.Event()
+            "quit_event": asyncio.Event(),
+            "gemini_task": None  # Add this to store the task
         }
 
-        try:
-            # Start Gemini connection with proper error handling
-            gemini_task = asyncio.create_task(
-                self.gemini.connect(
-                    session_id=session_id,
-                    unified_prompt=tutoring_prompt
-                )
+        # Create and store the task
+        gemini_task = asyncio.create_task(
+            self.gemini.connect(
+                session_id=session_id,
+                unified_prompt=tutoring_prompt
             )
-            await asyncio.wait_for(asyncio.shield(gemini_task), timeout=5.0)
-            logger.info(f"Started tutoring session {session_id}")
-            return session_id
-        except Exception as e:
-            logger.error(f"Failed to start Gemini connection for session {session_id}: {e}")
-            await self.cleanup_session(session_id)
-            raise
+        )
+        
+        logger.info(f"Started tutoring session {session_id}")
+        return session_id
 
     async def process_message(self, session_id: str, message: Dict) -> None:
         """Handle inbound audio from the client"""
@@ -134,6 +126,7 @@ Remember:
 
         except Exception as e:
             logger.error(f"Error processing message for session {session_id}: {e}")
+            logger.exception(e)  # This will print the full stack trace
             raise
 
     async def cleanup_session(self, session_id: str) -> None:
@@ -143,7 +136,9 @@ Remember:
             try:
                 session["is_active"] = False
                 session["quit_event"].set()
-                await self.gemini.cleanup()
+                # Replace cleanup() with the proper shutdown sequence
+                self.gemini.shutdown()  # This sets quit event
+                await self.gemini.reset_session()  # This closes the current session
                 self._sessions.pop(session_id, None)
                 logger.info(f"Session {session_id} cleaned up successfully")
             except Exception as e:
