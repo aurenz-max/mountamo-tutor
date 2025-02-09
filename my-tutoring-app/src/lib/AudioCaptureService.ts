@@ -51,6 +51,7 @@ class AudioCaptureService {
 
     private async setupAudioContext(): Promise<void> {
         try {
+            console.log('Setting up audio context...');
             // Get media stream
             this.mediaStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
@@ -60,73 +61,95 @@ class AudioCaptureService {
                     autoGainControl: true
                 }
             });
-
+            console.log('Media stream obtained successfully');
+    
             // Create audio context
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            console.log(`Source sample rate: ${this.audioContext.sampleRate}Hz`);
-
+            console.log(`Audio context created. Source sample rate: ${this.audioContext.sampleRate}Hz`);
+    
             // Create source node
             this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
-
+            console.log('Source node created');
+    
             // Create processor node
             this.processorNode = this.audioContext.createScriptProcessor(
                 this.BUFFER_SIZE,
                 this.CHANNEL_COUNT,
                 this.CHANNEL_COUNT
             );
-
+            console.log(`Processor node created with buffer size: ${this.BUFFER_SIZE}`);
+    
             // Set up audio processing handler
             this.processorNode.onaudioprocess = this.handleAudioProcess.bind(this);
-
+    
             // Connect nodes
             this.sourceNode.connect(this.processorNode);
             this.processorNode.connect(this.audioContext.destination);
-
-        } catch (error) {
-            this.handleError('Failed to setup audio context', error);
-            throw error;
+            console.log('Audio nodes connected successfully');
+    
+        } catch (err) {
+            console.error('Setup audio context failed:', err);
+            this.handleError('Failed to setup audio context', err);
+            throw err;
         }
     }
 
     private handleAudioProcess(event: AudioProcessingEvent): void {
-        if (!this.isCapturing || this.ws?.readyState !== WebSocket.OPEN) {
+        if (!this.isCapturing || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            console.log('Early return - not capturing or ws not open');
             return;
         }
-
+    
         try {
             // Get input data
             const inputData = event.inputBuffer.getChannelData(0);
+            console.log('Input buffer size:', inputData.length);
+            
             const sourceSampleRate = this.audioContext!.sampleRate;
-
+            console.log('Source sample rate:', sourceSampleRate);
+    
             // Downsample to target rate (16kHz)
             const downsampledData = this.downsampleAudio(
                 inputData,
                 sourceSampleRate,
                 this.TARGET_SAMPLE_RATE
             );
-
+            console.log('Downsampled size:', downsampledData.length);
+    
             // Convert to 16-bit PCM
             const pcmData = this.convertToPCM(downsampledData);
-
+            console.log('PCM data size:', pcmData.length);
+    
             // Convert to base64
             const base64Data = this.convertToBase64(pcmData);
-
-            // Send to WebSocket with updated message structure
-            // Matching API spec format
+            console.log('Base64 data length:', base64Data.length);
+    
+            // Send to WebSocket with the correct message structure
             const message = {
                 type: "realtime_input",
                 media_chunks: [{
+                    mime_type: 'audio/pcm;rate=16000',
                     data: base64Data
                 }]
             };
-            
-            this.ws!.send(JSON.stringify(message));
-
+    
+            console.log('Message structure:', JSON.stringify({
+                type: message.type,
+                media_chunks: message.media_chunks ? 
+                    message.media_chunks.map(chunk => ({
+                        mime_type: chunk.mime_type,
+                        data_length: chunk.data.length
+                    })) : 'no chunks'
+            }));
+    
+            this.ws.send(JSON.stringify(message));
+    
         } catch (error) {
+            console.error('Error in handleAudioProcess:', error);
             this.handleError('Error processing audio', error);
         }
     }
-
+    
     private downsampleAudio(audioData: Float32Array, fromRate: number, toRate: number): Float32Array {
         if (fromRate === toRate) return audioData;
 
@@ -193,7 +216,7 @@ class AudioCaptureService {
 
     async startCapture(): Promise<void> {
         if (this.isCapturing) return;
-
+    
         try {
             await this.setupAudioContext();
             this.isCapturing = true;
@@ -201,9 +224,9 @@ class AudioCaptureService {
             if (this.onStateChange) {
                 this.onStateChange({ isCapturing: true });
             }
-        } catch (error) {
-            this.handleError('Failed to start capture', error);
-            throw error;
+        } catch (err) {  // Changed from 'error' to 'err'
+            this.handleError('Failed to start capture', err);
+            throw err;
         }
     }
 
