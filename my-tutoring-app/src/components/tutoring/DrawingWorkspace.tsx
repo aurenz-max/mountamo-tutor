@@ -1,4 +1,3 @@
-'use client';
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,12 @@ const DrawingWorkspace = forwardRef(({ onSubmit, loading = false }, ref) => {
 
   // Expose clearCanvas method to parent component
   useImperativeHandle(ref, () => ({
-    clearCanvas
+    clearCanvas,
+    // Add getCanvasData method for the parent to access
+    getCanvasData: () => {
+      const canvas = canvasRef.current;
+      return canvas.toDataURL('image/png').split(',')[1];
+    }
   }));
 
   useEffect(() => {
@@ -123,18 +127,6 @@ const DrawingWorkspace = forwardRef(({ onSubmit, loading = false }, ref) => {
           onMouseOut={stopDrawing}
         />
       </div>
-
-      <Button 
-        onClick={() => {
-          const canvas = canvasRef.current;
-          const imageData = canvas.toDataURL('image/png').split(',')[1];
-          onSubmit(imageData);
-        }}
-        disabled={loading}
-        className="w-full"
-      >
-        Submit Answer
-      </Button>
     </Card>
   );
 });

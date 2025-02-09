@@ -3,6 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mic, MicOff, Volume2, VolumeX, Loader2 } from 'lucide-react'; // Added Loader2
 import AudioCaptureService from '@/lib/AudioCaptureService';
+import { Card } from '@/components/ui/card';
+
+const InteractiveWorkspace = React.lazy(() => import('./InteractiveWorkspace'));
 
 const TutoringInterface = ({ studentId, currentTopic }) => {
     const [status, setStatus] = useState('disconnected'); // Combined status
@@ -11,6 +14,7 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
     const wsRef = useRef(null);
     const audioCaptureRef = useRef(null);
     const audioContextRef = useRef(null);
+
 
     // Status values: disconnected, connecting, connected, recording, processing, playing, error
     const [processing, setProcessing] = useState(false); // New state for "thinking"
@@ -243,9 +247,10 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
     }
 
 
-   return (
-        <div className="space-y-6">
-           <div className="p-4 bg-gray-100 rounded-lg text-center">
+    return (
+        <div className="flex flex-col space-y-6">
+            {/* Status Bar */}
+            <div className="p-4 bg-gray-100 rounded-lg text-center">
                 {status === 'error' ? (
                     <Alert variant="destructive">
                         <AlertDescription>{statusMessage}</AlertDescription>
@@ -255,32 +260,53 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
                 )}
             </div>
 
-
-             <div className="flex flex-col items-center space-y-6">
-
-
-                 {processing && (
-                <div className="flex items-center justify-center space-x-2">
-                    <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
-                       <div className="w-10 h-1 bg-gray-300 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-blue-500"
-                            style={{ width: `${progress}%` }}
-                        ></div>
+            {/* Interactive Workspace */}
+            <React.Suspense fallback={
+                <Card className="p-4">
+                    <div className="animate-pulse flex space-x-4">
+                        <div className="flex-1 space-y-4 py-1">
+                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div className="space-y-2">
+                                <div className="h-4 bg-gray-200 rounded"></div>
+                                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                            </div>
+                        </div>
                     </div>
-                    <span className='text-gray-600 text-sm'>Waiting for Response...</span>
-                </div>
-            )}
+                </Card>
+            }>
+                <InteractiveWorkspace
+                    currentTopic={currentTopic}
+                    studentId={studentId}
+                    onSubmit={(response) => {
+                        // Handle workspace submission - maybe send to tutor?
+                        console.log('Workspace submission:', response);
+                    }}
+                />
+            </React.Suspense>
 
+            {/* Audio Controls */}
+            <div className="flex flex-col items-center space-y-6">
+                {processing && (
+                    <div className="flex items-center justify-center space-x-2">
+                        <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+                        <div className="w-10 h-1 bg-gray-300 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-blue-500"
+                                style={{ width: `${progress}%` }}
+                            ></div>
+                        </div>
+                        <span className='text-gray-600 text-sm'>Waiting for Response...</span>
+                    </div>
+                )}
 
-                 <div className="flex items-center space-x-4">
-                      <Button
+                <div className="flex items-center space-x-4">
+                    <Button
                         onClick={() => {
-                          if (status === 'recording') {
-                            stopRecording();
-                          } else {
-                            startRecording();
-                          }
+                            if (status === 'recording') {
+                                stopRecording();
+                            } else {
+                                startRecording();
+                            }
                         }}
                         variant={status === 'recording' ? 'destructive' : 'default'}
                         size="lg"
@@ -289,27 +315,23 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
                     >
                         {status === 'recording' ? (
                             <MicOff className="w-6 h-6 animate-pulse" />
-
                         ) : (
                             <Mic className="w-6 h-6" />
                         )}
                     </Button>
 
-
-                     <div className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full">
-                       {isPlaying ? (
+                    <div className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full">
+                        {isPlaying ? (
                             <Volume2 className="w-4 h-4 text-green-500" />
                         ) : (
                             <VolumeX className="w-4 h-4 text-gray-500" />
                         )}
-
                         <span className="text-sm">
-                            {isPlaying? 'Tutor Speaking' : 'Waiting for Input'}
+                            {isPlaying ? 'Tutor Speaking' : 'Waiting for Input'}
                         </span>
                     </div>
                 </div>
             </div>
-
         </div>
     );
 };

@@ -131,15 +131,27 @@ class ProblemService:
     - Clear instructions
     - Concrete examples
 
-    Format response as:
-    Problem Type: [Selected from the list above]
-    Problem: [2-3 concise sentences]
-    Answer: [Clear solution]
-    Success Criteria:
-    1. [Observable behavior showing understanding]
-    2. [Observable behavior showing application]
-    3. [Observable behavior showing mastery]
-    Teaching Note: [Brief tip about common misconceptions or support strategies]"""
+    
+Please provide your response in EXACTLY this format with no additional sections:
+
+
+<problemData>
+    <problemType>[One of: Direct Application, Real World Context, Comparison/Analysis, Error Detection, Sequencing/Ordering, Sorting/Categorizing, Prediction/Extension, Transformation, Assessment/Verification]</problemType>
+    
+    <problem>[Write a clear, concise problem using age-appropriate language. Include all necessary information. Use engaging elements like character names and familiar situations.]</problem>
+    
+    <answer>[Provide the complete, specific answer]</answer>
+    
+    <successCriteria>
+        <criterion>First observable behavior showing understanding</criterion>
+        <criterion>Second observable behavior showing application</criterion>
+        <criterion>Third observable behavior showing mastery</criterion>
+    </successCriteria>
+    
+    <teachingNote>[Brief tip about common misconceptions or support strategies]</teachingNote>
+</problemData>
+    
+    DO NOT add any additional sections beyond the five specified above (Problem Type, Problem, Answer, Success Criteria, Teaching Note)"""
 
                 print(f"[DEBUG] Using prompt: {prompt}")
                 
@@ -158,55 +170,54 @@ class ProblemService:
                 return None
 
     def _parse_problem(self, raw_problem: str) -> Dict[str, Any]:
-        """Parse the AI response into a structured problem object."""
-        lines = raw_problem.split('\n')
+        """Parse the AI response using XML tags into a structured problem object."""
+        import re
+        
+        def extract_tag_content(content: str, tag: str) -> str:
+            """Helper function to extract content from XML tags"""
+            pattern = f"<{tag}>(.*?)</{tag}>"
+            match = re.search(pattern, content, re.DOTALL)
+            if match:
+                return match.group(1).strip()
+            return ""
+        
+        def extract_criteria(content: str) -> List[str]:
+            """Helper function to extract success criteria"""
+            pattern = "<criterion>(.*?)</criterion>"
+            return [match.group(1).strip() for match in re.finditer(pattern, content, re.DOTALL)]
+        
+        # First verify we have a valid problemData block
+        problem_data_match = re.search(r'<problemData>(.*?)</problemData>', raw_problem, re.DOTALL)
+        if not problem_data_match:
+            print("[ERROR] No valid problemData block found")
+            return None
+            
+        problem_content = problem_data_match.group(1)
+        
+        # Extract each section
         problem_data = {
-            'problem_type': '',
-            'problem': '',
-            'answer': '',
-            'success_criteria': [],
-            'teaching_note': ''
+            'problem_type': extract_tag_content(problem_content, 'problemType'),
+            'problem': extract_tag_content(problem_content, 'problem'),
+            'answer': extract_tag_content(problem_content, 'answer'),
+            'success_criteria': extract_criteria(problem_content),
+            'teaching_note': extract_tag_content(problem_content, 'teachingNote')
         }
         
-        current_section = None
+        # Validate that all required fields are present and non-empty
+        required_fields = ['problem_type', 'problem', 'answer', 'teaching_note']
+        missing_fields = [field for field in required_fields if not problem_data[field]]
         
-        for i, line in enumerate(lines):
-            line = line.strip()
-            if not line:
-                continue
-                
-            if line.startswith('Problem Type:'):
-                problem_data['problem_type'] = line.split('Problem Type:', 1)[1].strip()
-                
-            elif line.startswith('Problem:'):
-                problem_text = []
-                j = i + 1
-                while j < len(lines) and not lines[j].strip().startswith(('Answer:', 'Success Criteria:', 'Teaching Note:')):
-                    if lines[j].strip():
-                        problem_text.append(lines[j].strip())
-                    j += 1
-                problem_data['problem'] = ' '.join(problem_text)
-                
-            elif line.startswith('Answer:'):
-                answer_text = []
-                j = i + 1
-                while j < len(lines) and not lines[j].strip().startswith(('Success Criteria:', 'Teaching Note:')):
-                    if lines[j].strip():
-                        answer_text.append(lines[j].strip())
-                    j += 1
-                problem_data['answer'] = ' '.join(answer_text)
-                
-            elif line.startswith('Success Criteria:'):
-                current_section = 'success_criteria'
-                
-            elif line.startswith('Teaching Note:'):
-                problem_data['teaching_note'] = line.split('Teaching Note:', 1)[1].strip()
-                current_section = None
-                
-            elif current_section == 'success_criteria' and line[0].isdigit():
-                criterion = line.split('.', 1)[1].strip()
-                problem_data['success_criteria'].append(criterion)
-        print(problem_data)
+        if missing_fields:
+            print(f"[ERROR] Missing required fields: {missing_fields}")
+            return None
+            
+        if not problem_data['success_criteria']:
+            print("[ERROR] No success criteria found")
+            return None
+            
+        # Add debug logging
+        print(f"[DEBUG] Successfully parsed problem data: {problem_data}")
+        
         return problem_data
 
     async def get_student_history(self, student_id: int) -> List[Dict[str, Any]]:
