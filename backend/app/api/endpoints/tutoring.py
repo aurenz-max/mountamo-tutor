@@ -43,7 +43,9 @@ async def tutoring_websocket(websocket: WebSocket):
                 skill_description=session_data.get("skill_description", ""),
                 subskill_description=session_data.get("subskill_description", ""),
                 student_id=session_data.get("student_id", 0),
-                competency_score=session_data.get("competency_score", 5.0)
+                competency_score=session_data.get("competency_score", 5.0),
+                skill_id=session_data.get("skill_id"),
+                subskill_id=session_data.get("subskill_id")
             )
 
             await websocket.send_json({

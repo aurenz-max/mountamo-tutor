@@ -67,13 +67,16 @@ Remember:
 - Never reference ending the session or switching topics"""
 
     async def initialize_session(
-        self,
+       self,
         subject: str,
         skill_description: str,
         subskill_description: str,
         student_id: int,
         competency_score: float,
-        session_id: str = None,
+        session_id: str,
+        skill_id: Optional[str] = None,
+        subskill_id: Optional[str] = None,
+        difficulty_range: Optional[Dict[str, float]] = None,
     ) -> str:
         if not session_id:
             session_id = f"{student_id}_{len(self._sessions) + 1}"
@@ -90,12 +93,24 @@ Remember:
             "quit_event": asyncio.Event(),
             "gemini_task": None  # Add this to store the task
         }
+        
+        session_metadata = {
+                "subject": subject,
+                "skill_id": skill_id,
+                "subskill_id": subskill_id,
+                "skill_description": skill_description,
+                "subskill_description": subskill_description,
+                "student_id": student_id,
+                "competency_score": competency_score,
+                "difficulty_range": difficulty_range
+            }
 
         # Create and store the task
         gemini_task = asyncio.create_task(
             self.gemini.connect(
                 session_id=session_id,
-                unified_prompt=tutoring_prompt
+                unified_prompt=tutoring_prompt,
+                session_metadata=session_metadata,
             )
         )
         

@@ -7,72 +7,140 @@ import { Card } from '@/components/ui/card';
 
 const InteractiveWorkspace = React.lazy(() => import('./InteractiveWorkspace'));
 
+// ~100ms chunk size
+const PRE_ROLL_SECONDS = 0.1; 
+const SAMPLE_RATE = 24000;      // Adjust to match your audio sample rate
+const FRAMES_PER_CHUNK = Math.floor(PRE_ROLL_SECONDS * SAMPLE_RATE);
+
 const TutoringInterface = ({ studentId, currentTopic }) => {
-    const [status, setStatus] = useState('disconnected'); // Combined status
-    const [sessionId, setSessionId] = useState(null);
-    const [progress, setProgress] = useState(0); // Progress for the loading animation
-    const wsRef = useRef(null);
-    const audioCaptureRef = useRef(null);
+  //======================
+  // State and References
+  //======================
+  const [status, setStatus] = useState('disconnected');
+  const [sessionId, setSessionId] = useState(null);
+  const [processing, setProcessing] = useState(false); // "thinking"
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const wsRef = useRef(null);
+  const audioCaptureRef = useRef(null);
+
+    // Audio playback
     const audioContextRef = useRef(null);
+    // Keep track of when the last scheduled chunk is supposed to finish.
+    const endTimeRef = useRef(0);
 
+   //========================
+  // Effects & Initialization
+  //========================
+  useEffect(() => {
+    // Initialize the AudioContext if it doesn't exist
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
 
-    // Status values: disconnected, connecting, connected, recording, processing, playing, error
-    const [processing, setProcessing] = useState(false); // New state for "thinking"
-    const [isPlaying, setIsPlaying] = useState(false);
-
-
-      const handleAudioData = async (audioData) => {
-        try {
-            if (!audioContextRef.current) {
-                audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-            }
-
-            let pcmData;
-            if (audioData instanceof Blob) {
-                const arrayBuffer = await audioData.arrayBuffer();
-                pcmData = new Int16Array(arrayBuffer);
-            } else {
-                const binaryString = atob(audioData);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                pcmData = new Int16Array(bytes.buffer);
-            }
-           const floatData = new Float32Array(pcmData.length);
-            for (let i = 0; i < pcmData.length; i++) {
-                floatData[i] = pcmData[i] / 32768.0; // Convert from Int16 to Float32, as before
-            }
-
-             const audioBuffer = audioContextRef.current.createBuffer(
-                1, // mono
-                floatData.length,
-                24000 // Gemini's output rate
-            );
-
-            audioBuffer.copyToChannel(floatData, 0);
-            const source = audioContextRef.current.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(audioContextRef.current.destination);
-            source.start(0);
-
-            source.onended = () => {
-              setIsPlaying(false);
-            };
-
-
-        } catch (error) {
-            console.error('Error processing audio:', error);
-            setStatus('error'); // Set status to error
-        } finally {
-             setIsPlaying(false);
-            setProcessing(false); // Ensure processing stops even on error
-        }
+    // Cleanup on unmount
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (audioCaptureRef.current) {
+        audioCaptureRef.current.destroy();
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
     };
+  }, []);
+
+  //==============================
+  // handleAudioData: Important!
+  //==============================
+  /**
+   * handleAudioData:
+   *  - Converts incoming data (Blob or Base64) to Float32
+   *  - Creates an AudioBuffer for the chunk
+   *  - Schedules it to start right after the last chunk ends (endTimeRef)
+   */
+  const handleAudioData = async (audioData) => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      // 1) Convert incoming data -> Int16
+      let pcmData;
+      if (audioData instanceof Blob) {
+        // If it's a Blob, convert to ArrayBuffer -> Int16
+        const arrayBuffer = await audioData.arrayBuffer();
+        pcmData = new Int16Array(arrayBuffer);
+      } else {
+        // Otherwise assume base64
+        const binaryString = atob(audioData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        pcmData = new Int16Array(bytes.buffer);
+      }
+
+      // 2) Convert Int16 -> Float32
+      const floatData = new Float32Array(pcmData.length);
+      for (let i = 0; i < pcmData.length; i++) {
+        floatData[i] = pcmData[i] / 32768.0;
+      }
+
+      // 3) Create AudioBuffer from the entire chunk
+      const audioBuffer = audioContextRef.current.createBuffer(
+        1, // mono
+        floatData.length,
+        SAMPLE_RATE
+      );
+      audioBuffer.copyToChannel(floatData, 0);
+
+      // 4) Create a BufferSource
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContextRef.current.destination);
+
+      // 5) Schedule the chunk to start right after the previous chunk ends
+      // or now if we have no backlog
+      const now = audioContextRef.current.currentTime;
+      // We add a tiny offset (0.01) to avoid a glitch if endTimeRef is very close to now
+      const startTime = Math.max(now, endTimeRef.current) + 0.01;
+      source.start(startTime);
+
+      // 6) Update the endTimeRef to reflect when this chunk will finish
+      const chunkDuration = floatData.length / SAMPLE_RATE;
+      endTimeRef.current = startTime + chunkDuration;
+
+      // 7) Mark playing as soon as we schedule a chunk
+      setIsPlaying(true);
+
+      // 8) Once chunk ends, if no new chunk extends endTimeRef,
+      //    that means playback is done
+      source.onended = () => {
+        const currentT = audioContextRef.current?.currentTime;
+        // If there's no new chunk scheduled and we've passed endTimeRef,
+        // then playback is truly finished
+        if (currentT && currentT >= endTimeRef.current) {
+          setIsPlaying(false);
+        }
+      };
+    } catch (error) {
+      console.error('Error processing audio:', error);
+      setStatus('error');
+    } finally {
+      // Don't forcibly set isPlaying(false) here.
+      setProcessing(false);
+    }
+  };
 
 
     const handleWebSocketMessage = async (event) => {
     if (event.data instanceof Blob) {
+        // If data is a blob, pass it directly.
         await handleAudioData(event.data);
         return;
     }
@@ -108,51 +176,53 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
 
 
     const initializeSession = async () => {
-     return new Promise((resolve, reject) => {
-        try {
-            setStatus('connecting');
-            const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/tutoring/session');
-            ws.binaryType = 'blob';
-            wsRef.current = ws;
-
-            ws.onopen = () => {
-                console.log('WebSocket connection established');
-                ws.send(JSON.stringify({
-                    text: "InitSession",
-                    data: {
-                        subject: currentTopic.subject,
-                        skill_description: currentTopic.skill.description,
-                        subskill_description: currentTopic.subskill.description,
-                        student_id: studentId,
-                        competency_score: 7.0
-                    }
-                }));
-                resolve();  //Resolve when session starts
-            };
-
-            ws.onmessage = handleWebSocketMessage;
-
-             ws.onclose = () => {
-                setStatus('disconnected'); // Set status to disconnected
-                setSessionId(null);
-                setIsPlaying(false);  //Ensure playing status is up to date
-
-            };
-
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                setStatus('error'); // Set status to error
-                reject(error); // Reject on error
-            };
-
-            // Resolve once connection is established (moved to onopen)
-        } catch (error) {
-            console.error('Failed to initialize session:', error);
-            setStatus('error'); // Set status to error
-            reject(error);
-        }
-        });
-    };
+        return new Promise((resolve, reject) => {
+           try {
+               setStatus('connecting');
+               const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/tutoring/session');
+               ws.binaryType = 'blob';
+               wsRef.current = ws;
+   
+               ws.onopen = () => {
+                   console.log('WebSocket connection established');
+                   ws.send(JSON.stringify({
+                       text: "InitSession",
+                       data: {
+                           subject: currentTopic.subject,
+                           skill_description: currentTopic.skill.description,
+                           subskill_description: currentTopic.subskill.description,
+                           student_id: studentId,
+                           competency_score: 7.0,
+                           // Add skill tracking metadata
+                           skill_id: currentTopic.skill.id,
+                           subskill_id: currentTopic.subskill.id,
+                           // Also include difficulty range if available
+                           difficulty_range: currentTopic.difficulty_range
+                       }
+                   }));
+                   resolve();
+               };
+   
+               ws.onmessage = handleWebSocketMessage;
+   
+               ws.onclose = () => {
+                   setStatus('disconnected');
+                   setSessionId(null);
+                   setIsPlaying(false);
+               };
+   
+               ws.onerror = (error) => {
+                   console.error('WebSocket error:', error);
+                   setStatus('error');
+                   reject(error);
+               };
+           } catch (error) {
+               console.error('Failed to initialize session:', error);
+               setStatus('error');
+               reject(error);
+           }
+       });
+   };
 
   const startRecording = async () => {
     try {

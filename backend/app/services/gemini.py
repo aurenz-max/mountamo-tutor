@@ -20,6 +20,37 @@ from .audio_service import AudioService
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+def create_problem(self):
+    """
+    Creates a practice problem based on the session context.
+    Uses session_metadata to generate a relevant problem.
+    
+    Returns:
+        dict: Contains the problem and expected answer
+    """
+    if not self.session_metadata:
+        return {
+            "problem": "No session context available",
+            "answer": "Please start a new session"
+        }
+        
+    # Extract context from session metadata
+    subject = self.session_metadata.get("subject")
+    skill_desc = self.session_metadata.get("skill_description")
+    subskill_desc = self.session_metadata.get("subskill_description")
+    skill_id = self.session_metadata.get("skill_id")
+    competency = self.session_metadata.get("competency_score", 5.0)
+    
+    logger.debug(f"Creating problem for: {subject} - {skill_id}\nSkill: {skill_desc}\nSubskill: {subskill_desc}")
+    
+    # Generate an appropriate problem based on the metadata
+    # This is a simple example - you'll replace this with your actual problem generator
+    return {
+        "problem": f"Here's a practice problem for {subject} - {skill_desc}:\n" + 
+                  f"Working on: {subskill_desc}",
+        "answer": f"Sample answer for skill {skill_id} at competency level {competency}"
+    }
+
 
 class GeminiService:
     def __init__(self, audio_service: AudioService) -> None:
@@ -30,6 +61,7 @@ class GeminiService:
         self._current_session_id: Optional[str] = None
         self._stream_task: Optional[asyncio.Task] = None
         self.current_session = None
+        self.session_metadata: Optional[Dict[str, Any]] = None
         logger.debug("GeminiService initialized with provided AudioService")
 
     async def stream(self) -> AsyncGenerator[bytes, None]:
@@ -75,17 +107,17 @@ class GeminiService:
         self,
         session_id: str,
         unified_prompt: str,
+        session_metadata: Dict[str, Any],
         voice_name: str = "Puck",
     ) -> None:
         """Connect to Gemini and start streaming"""
         try:
-            # Reset any existing session first
             await self.reset_session()
             
             self._current_session_id = session_id
-            logger.debug(f"[Session {session_id}] Connecting to Gemini service")
+            self.session_metadata = session_metadata
+            logger.debug(f"[Session {session_id}] Connecting to Gemini service with metadata: {session_metadata}")
             
-            # Verify AudioService session exists
             if session_id not in self.audio_service.sessions:
                 raise RuntimeError(f"No AudioService session found for {session_id}")
             
@@ -103,7 +135,8 @@ class GeminiService:
                         )
                     )
                 ),
-                system_instruction=Content(parts=[{"text": unified_prompt}])
+                system_instruction=Content(parts=[{"text": unified_prompt}]),
+                tools=[TOOL_CREATE_PROBLEM]
             )
 
             async with client.aio.live.connect(
@@ -119,9 +152,38 @@ class GeminiService:
                         if self.quit.is_set() or self.session_reset_event.is_set():
                             break
                             
+                        # Handle tool calls
+                        if response.server_content is None and response.tool_call is not None:
+                            logger.debug(f"Tool call received: {response.tool_call}")
+                            
+                            function_calls = response.tool_call.function_calls
+                            function_responses = []
+                            
+                            for function_call in function_calls:
+                                name = function_call.name
+                                call_id = function_call.id
+                                
+                                if name == "create_problem":
+                                    try:
+                                        # Create problem using session context
+                                        result = create_problem()
+                                        function_responses.append({
+                                            "name": name,
+                                            "response": {"result": result},
+                                            "id": call_id
+                                        })
+                                        logger.debug(f"Problem created successfully: {result}")
+                                    except Exception as e:
+                                        logger.error(f"Error creating problem: {e}")
+                                        continue
+                            
+                            if function_responses:
+                            #    await session.send(function_responses)
+                                continue
+                            
+                        # Handle regular audio responses
                         if response.data and self.audio_service:
                             try:
-                                # Verify session still exists before queueing
                                 if session_id in self.audio_service.sessions:
                                     self.audio_service.add_to_queue(session_id, response.data)
                                 else:
@@ -130,6 +192,7 @@ class GeminiService:
                             except Exception as e:
                                 logger.error(f"[Session {session_id}] Error routing audio to audio service: {e}")
                                 continue
+                                
                 except asyncio.CancelledError:
                     logger.info(f"[Session {session_id}] Gemini stream cancelled")
                 except Exception as e:
@@ -138,11 +201,12 @@ class GeminiService:
 
         except Exception as e:
             logger.error(f"[Session {session_id}] Failed to connect to Gemini: {e}")
-            logger.exception(e)  # This will print the full stack trace
+            logger.exception(e)
             raise
         finally:
             self._current_session_id = None
             self.current_session = None
+            self.session_metadata = None
 
     async def receive(self, frame: tuple[int, np.ndarray]) -> None:
         """Receive audio from the user and put it in the input stream."""

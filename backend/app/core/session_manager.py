@@ -21,6 +21,8 @@ class TutoringSession:
         subskill_description: str,
         student_id: int,
         competency_score: float,
+        skill_id: Optional[str] = None,
+        subskill_id: Optional[str] = None
     ):
         self.id = str(uuid.uuid4())
         self.tutoring_service = tutoring_service
@@ -30,6 +32,11 @@ class TutoringSession:
         self.subskill_description = subskill_description
         self.student_id = student_id
         self.competency_score = competency_score
+
+        # New fields
+        self.skill_id = skill_id
+        self.subskill_id = subskill_id
+
         self._active = False
         self.quit_event = asyncio.Event()
         self.text_queue = asyncio.Queue()
@@ -162,6 +169,8 @@ class SessionManager:
         subskill_description: str,
         student_id: int,
         competency_score: float,
+        skill_id: Optional[str] = None,
+        subskill_id: Optional[str] = None,
     ) -> TutoringSession:
         """Create and initialize a new tutoring session"""
         session = TutoringSession(
@@ -172,13 +181,15 @@ class SessionManager:
             subskill_description=subskill_description,
             student_id=student_id,
             competency_score=competency_score,
+            skill_id=skill_id,
+            subskill_id=subskill_id
         )
 
         try:
             # Initialize the session
             await session.initialize()
             self.sessions[session.id] = session
-            logger.info(f"Created new session {session.id}")
+            logger.info(f"Created new session {session.id} for {subject} - {skill_id}")
             return session
             
         except Exception as e:
