@@ -7,7 +7,7 @@ import base64
 import numpy as np
 
 logger = logging.getLogger()  # root logger
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 class TutoringService:
     def __init__(self, audio_service: AudioService):
@@ -77,6 +77,9 @@ Remember:
         skill_id: Optional[str] = None,
         subskill_id: Optional[str] = None,
         difficulty_range: Optional[Dict[str, float]] = None,
+        # Add new parameters for pre-loaded data
+        recommendation_data: Optional[Dict] = None,
+        objectives_data: Optional[Dict] = None,
     ) -> str:
         if not session_id:
             session_id = f"{student_id}_{len(self._sessions) + 1}"
@@ -91,19 +94,25 @@ Remember:
             "id": session_id,
             "is_active": True,
             "quit_event": asyncio.Event(),
-            "gemini_task": None  # Add this to store the task
+            "gemini_task": None,  # Add this to store the task
+            # Store pre-loaded data in session
+            "recommendation_data": recommendation_data,
+            "objectives_data": objectives_data
         }
         
         session_metadata = {
-                "subject": subject,
-                "skill_id": skill_id,
-                "subskill_id": subskill_id,
-                "skill_description": skill_description,
-                "subskill_description": subskill_description,
-                "student_id": student_id,
-                "competency_score": competency_score,
-                "difficulty_range": difficulty_range
-            }
+            "subject": subject,
+            "skill_id": skill_id,
+            "subskill_id": subskill_id,
+            "skill_description": skill_description,
+            "subskill_description": subskill_description,
+            "student_id": student_id,
+            "competency_score": competency_score,
+            "difficulty_range": difficulty_range,
+            # Add pre-loaded data to metadata
+            "recommendation_data": recommendation_data,
+            "objectives_data": objectives_data
+        }
 
         # Create and store the task
         gemini_task = asyncio.create_task(

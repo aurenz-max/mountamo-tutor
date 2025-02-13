@@ -3,13 +3,13 @@
 import asyncio
 import logging
 import uuid
-from typing import AsyncGenerator, Dict, Optional, Union
+from typing import AsyncGenerator, Dict, Optional, Union, Any
 
 from ..services.tutoring import TutoringService
 from ..services.audio_service import AudioService
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class TutoringSession:
     def __init__(
@@ -33,6 +33,8 @@ class TutoringSession:
         self.student_id = student_id
         self.competency_score = competency_score
 
+        self.problem_queue = asyncio.Queue()  # Add new queue for problems
+
         # New fields
         self.skill_id = skill_id
         self.subskill_id = subskill_id
@@ -53,7 +55,9 @@ class TutoringSession:
             logger.error(f"Error handling text in session {self.id}: {e}")
             raise
 
-    async def initialize(self) -> None:
+    async def initialize(self, 
+                        recommendation_data: Optional[Dict] = None,
+                        objectives_data: Optional[Dict] = None) -> None:
             """Initialize the tutoring session"""
             try:
                 #logger.debug(f"Starting initialization of session {self.id}")
@@ -74,6 +78,10 @@ class TutoringSession:
                     student_id=self.student_id,
                     competency_score=self.competency_score,
                     session_id=self.id,
+                    skill_id=self.skill_id,
+                    subskill_id=self.subskill_id,
+                    recommendation_data=recommendation_data,
+                    objectives_data=objectives_data
                 )
 
                 self._active = True
@@ -139,6 +147,38 @@ class TutoringSession:
             except asyncio.CancelledError:
                 break
 
+    async def get_problems(self) -> AsyncGenerator[Dict[str, Any], None]:
+        """Get problem responses from the session"""
+        if not self._active:
+            raise ValueError("Session is not active")
+
+        try:
+            while not self.quit_event.is_set():
+                try:
+                    problem = await self.problem_queue.get()
+                    yield problem
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    logger.error(f"Error getting problem response: {e}")
+                    continue
+
+        except asyncio.CancelledError:
+            logger.info(f"Problem response generator cancelled for session {self.id}")
+        except Exception as e:
+            logger.error(f"Error getting problem responses for session {self.id}: {e}")
+            raise
+            
+    async def send_problem(self, problem: Dict[str, Any]) -> None:
+        """Queue a problem to be sent to the frontend"""
+        try:
+            if not self._active:
+                return
+            await self.problem_queue.put(problem)
+        except Exception as e:
+            logger.error(f"Error handling problem in session {self.id}: {e}")
+            raise
+
     async def cleanup(self) -> None:
         """Clean up session resources"""
         try:
@@ -172,7 +212,7 @@ class SessionManager:
         skill_id: Optional[str] = None,
         subskill_id: Optional[str] = None,
     ) -> TutoringSession:
-        """Create and initialize a new tutoring session"""
+        """Create and initialize a new tutoring session with pre-loaded data"""
         session = TutoringSession(
             tutoring_service=self.tutoring_service,
             audio_service=self.audio_service,
@@ -186,8 +226,28 @@ class SessionManager:
         )
 
         try:
-            # Initialize the session
-            await session.initialize()
+            # Pre-load data before initialization
+            recommendation_data = await self.tutoring_service.gemini.problem_integration.problem_service.recommender.get_recommendation(
+                student_id=student_id,
+                subject=subject,
+                unit_filter=None,
+                skill_filter=skill_id,
+                subskill_filter=subskill_id
+            )
+            
+            objectives_data = None
+            if recommendation_data:
+                objectives_data = await self.tutoring_service.gemini.problem_integration.problem_service.competency_service.get_detailed_objectives(
+                    subject=subject,
+                    subskill_id=recommendation_data['subskill']['id']
+                )
+
+            # Initialize with pre-loaded data
+            await session.initialize(
+                recommendation_data=recommendation_data,
+                objectives_data=objectives_data
+            )
+            
             self.sessions[session.id] = session
             logger.info(f"Created new session {session.id} for {subject} - {skill_id}")
             return session

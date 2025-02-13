@@ -139,40 +139,43 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
 
 
     const handleWebSocketMessage = async (event) => {
-    if (event.data instanceof Blob) {
-        // If data is a blob, pass it directly.
-        await handleAudioData(event.data);
-        return;
-    }
-        // Handle JSON messages
-        try {
-            const response = JSON.parse(event.data);
-            switch (response.type) {
-                case 'session_started':
-                    setSessionId(response.session_id);
-                    setStatus('connected');
-                    break;
-                case 'audio_status':
-                     setIsPlaying(response.status === 'speaking');
-                    break;
-                case 'audio':
-                    await handleAudioData(response.data);
-                    break;
-                  case 'text':
-                    console.log('Received text response:', response.content);
-                       setProcessing(false); // Stop processing when text is received
-
-                    break;
-                case 'error':
-                    setStatus('error'); // Set status to error
-                    break;
-                default:
-                    console.warn('Unknown message type:', response.type);
-            }
-        } catch (err) {
-            console.error('Error parsing websocket message:', err);
-        }
-    };
+      if (event.data instanceof Blob) {
+          // If data is a blob, pass it directly.
+          await handleAudioData(event.data);
+          return;
+      }
+      // Handle JSON messages
+      try {
+          const response = JSON.parse(event.data);
+          switch (response.type) {
+              case 'session_started':
+                  setSessionId(response.session_id);
+                  setStatus('connected');
+                  break;
+              case 'audio_status':
+                  setIsPlaying(response.status === 'speaking');
+                  break;
+              case 'audio':
+                  await handleAudioData(response.data);
+                  break;
+              case 'text':
+                  console.log('Received text response:', response.content);
+                  setProcessing(false);
+                  break;
+              case 'problem':
+                  console.log('Received problem:', response.content);
+                  // Will handle routing to workspace components later
+                  break;
+              case 'error':
+                  setStatus('error');
+                  break;
+              default:
+                  console.warn('Unknown message type:', response.type);
+          }
+      } catch (err) {
+          console.error('Error parsing websocket message:', err);
+      }
+  };
 
 
     const initializeSession = async () => {

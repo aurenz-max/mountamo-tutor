@@ -19,11 +19,13 @@ class AnthropicService:
             
             # Create messages list in correct format for the API
             response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1024,
-                messages=prompt if isinstance(prompt, list) else [{"role": "user", "content": prompt}],
-                system=system_instructions if system_instructions else "You are a friendly and encouraging kindergarten tutor."
-            )
+            model=self.model,
+            max_tokens=1024,
+            messages=prompt if isinstance(prompt, list) else [{"role": "user", "content": prompt}],
+            system=system_instructions if system_instructions else "You are a friendly and encouraging kindergarten tutor.",
+            # Add this line to fix the temperature setting:
+            temperature=0.9
+        )
             return response.content[0].text.strip()
         except Exception as e:
             print(f"Error in generate_response: {str(e)}")
@@ -71,7 +73,9 @@ class AnthropicService:
         try:
             response = await self.generate_response(
                 prompt,
-                system_instructions="You are an encouraging teacher evaluating a kindergarten student's answer."
+                system_instructions="You are an encouraging teacher evaluating a kindergarten student's answer.",
+                
+                
             )
             
             # Parse response to extract score and feedback

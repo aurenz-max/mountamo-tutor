@@ -5,11 +5,11 @@ from .competency import CompetencyService
 from .recommender import ProblemRecommender
 
 class ProblemService:
-    def __init__(self, competency_service: CompetencyService,recommender: ProblemRecommender,):
+    def __init__(self):
         self.anthropic = AnthropicService()
+        self.competency_service = CompetencyService()
+        self.recommender = ProblemRecommender(self.competency_service)
         self._problem_history = {}  # In-memory storage for now
-        self.competency_service = competency_service
-        self.recommender = recommender
 
     async def get_problem(
         self,
@@ -36,7 +36,7 @@ class ProblemService:
                 return None
 
             # Get detailed objectives for the recommended subskill - now passing subject
-            objectives = self.competency_service.get_detailed_objectives(
+            objectives = await self.competency_service.get_detailed_objectives(
                 subject=subject,
                 subskill_id=recommendation['subskill']['id']
             )
@@ -56,7 +56,8 @@ class ProblemService:
                 print("[ERROR] Failed to generate raw problem")
                 return None
             
-            problem_data = self._parse_problem(raw_problem)
+            # Now awaiting the async parse method
+            problem_data = await self._parse_problem(raw_problem)
             if not problem_data:
                 print("[ERROR] Failed to parse problem")
                 return None
@@ -75,6 +76,53 @@ class ProblemService:
                 
         except Exception as e:
             print(f"[ERROR] Error in get_problem: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+    async def get_problem_with_session_data(
+        self,
+        student_id: int,
+        subject: str,
+        session_recommendation: Dict[str, Any],
+        session_objectives: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Optimized get_problem that uses pre-loaded session data"""
+        try:
+            print(f"[DEBUG] Using pre-loaded session data for problem generation")
+            
+            # Generate the problem using pre-loaded data
+            raw_problem = await self.generate_problem(
+                subject=subject,
+                recommendation={
+                    **session_recommendation,
+                    'detailed_objectives': session_objectives
+                }
+            )
+            
+            if not raw_problem:
+                print("[ERROR] Failed to generate raw problem")
+                return None
+            
+            problem_data = await self._parse_problem(raw_problem)
+            if not problem_data:
+                print("[ERROR] Failed to parse problem")
+                return None
+            
+            # Add metadata using pre-loaded data
+            problem_data['metadata'] = {
+                'unit': session_recommendation['unit'],
+                'skill': session_recommendation['skill'],
+                'subskill': session_recommendation['subskill'],
+                'difficulty': session_recommendation['difficulty'],
+                'objectives': session_objectives
+            }
+            
+            print(f"[DEBUG] Final problem data: {problem_data}")
+            return problem_data
+                
+        except Exception as e:
+            print(f"[ERROR] Error in get_problem_with_session_data: {str(e)}")
             import traceback
             traceback.print_exc()
             return None
@@ -169,56 +217,62 @@ Please provide your response in EXACTLY this format with no additional sections:
                 traceback.print_exc()
                 return None
 
-    def _parse_problem(self, raw_problem: str) -> Dict[str, Any]:
+
+    async def _parse_problem(self, raw_problem: str) -> Dict[str, Any]:
         """Parse the AI response using XML tags into a structured problem object."""
-        import re
-        
-        def extract_tag_content(content: str, tag: str) -> str:
-            """Helper function to extract content from XML tags"""
-            pattern = f"<{tag}>(.*?)</{tag}>"
-            match = re.search(pattern, content, re.DOTALL)
-            if match:
-                return match.group(1).strip()
-            return ""
-        
-        def extract_criteria(content: str) -> List[str]:
-            """Helper function to extract success criteria"""
-            pattern = "<criterion>(.*?)</criterion>"
-            return [match.group(1).strip() for match in re.finditer(pattern, content, re.DOTALL)]
-        
-        # First verify we have a valid problemData block
-        problem_data_match = re.search(r'<problemData>(.*?)</problemData>', raw_problem, re.DOTALL)
-        if not problem_data_match:
-            print("[ERROR] No valid problemData block found")
-            return None
+        try:
+            import re
+            from asyncio import to_thread  # For CPU-intensive operations
             
-        problem_content = problem_data_match.group(1)
-        
-        # Extract each section
-        problem_data = {
-            'problem_type': extract_tag_content(problem_content, 'problemType'),
-            'problem': extract_tag_content(problem_content, 'problem'),
-            'answer': extract_tag_content(problem_content, 'answer'),
-            'success_criteria': extract_criteria(problem_content),
-            'teaching_note': extract_tag_content(problem_content, 'teachingNote')
-        }
-        
-        # Validate that all required fields are present and non-empty
-        required_fields = ['problem_type', 'problem', 'answer', 'teaching_note']
-        missing_fields = [field for field in required_fields if not problem_data[field]]
-        
-        if missing_fields:
-            print(f"[ERROR] Missing required fields: {missing_fields}")
-            return None
+            def extract_tag_content(content: str, tag: str) -> str:
+                """Helper function to extract content from XML tags"""
+                pattern = f"<{tag}>(.*?)</{tag}>"
+                match = re.search(pattern, content, re.DOTALL)
+                if match:
+                    return match.group(1).strip()
+                return ""
             
-        if not problem_data['success_criteria']:
-            print("[ERROR] No success criteria found")
-            return None
+            def extract_criteria(content: str) -> List[str]:
+                """Helper function to extract success criteria"""
+                pattern = "<criterion>(.*?)</criterion>"
+                return [match.group(1).strip() for match in re.finditer(pattern, content, re.DOTALL)]
             
-        # Add debug logging
-        print(f"[DEBUG] Successfully parsed problem data: {problem_data}")
-        
-        return problem_data
+            # First verify we have a valid problemData block
+            problem_data_match = re.search(r'<problemData>(.*?)</problemData>', raw_problem, re.DOTALL)
+            if not problem_data_match:
+                print("[ERROR] No valid problemData block found")
+                return None
+                
+            problem_content = problem_data_match.group(1)
+            
+            # Move the intensive regex operations to a thread pool
+            problem_data = await to_thread(lambda: {
+                'problem_type': extract_tag_content(problem_content, 'problemType'),
+                'problem': extract_tag_content(problem_content, 'problem'),
+                'answer': extract_tag_content(problem_content, 'answer'),
+                'success_criteria': extract_criteria(problem_content),
+                'teaching_note': extract_tag_content(problem_content, 'teachingNote')
+            })
+            
+            # Validate that all required fields are present and non-empty
+            required_fields = ['problem_type', 'problem', 'answer', 'teaching_note']
+            missing_fields = [field for field in required_fields if not problem_data[field]]
+            
+            if missing_fields:
+                print(f"[ERROR] Missing required fields: {missing_fields}")
+                return None
+                
+            if not problem_data['success_criteria']:
+                print("[ERROR] No success criteria found")
+                return None
+                
+            print(f"[DEBUG] Successfully parsed problem data: {problem_data}")
+            
+            return problem_data
+
+        except Exception as e:
+            print(f"[ERROR] Error in _parse_problem: {str(e)}")
+            return None
 
     async def get_student_history(self, student_id: int) -> List[Dict[str, Any]]:
         """Get history of problems attempted by a student"""

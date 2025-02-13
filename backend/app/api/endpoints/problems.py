@@ -19,7 +19,7 @@ print(f"[DEBUG] Data directory contents: {list(DATA_DIR.glob('*.csv'))}")
 # Create service instances
 competency_service = CompetencyService(data_dir=str(DATA_DIR))
 recommender = ProblemRecommender(competency_service)
-problem_service = ProblemService(competency_service, recommender)
+problem_service = ProblemService()
 
 class ProblemRequest(BaseModel):
     student_id: int

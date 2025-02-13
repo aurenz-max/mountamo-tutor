@@ -111,15 +111,16 @@ class CompetencyService:
                 import traceback
                 traceback.print_exc()   
 
-    def get_detailed_objectives(self, subject: str, subskill_id: str) -> dict:
+    async def get_detailed_objectives(self, subject: str, subskill_id: str) -> dict:
         """Get detailed objectives for a subskill - returns a randomly selected objective"""
         try:
+            from asyncio import to_thread
+            
             objectives = self.detailed_objectives.get(subject, {}).get(subskill_id, [])
             if objectives:
-                # Randomly select one objective
-                return random.choice(objectives)
+                # Move random selection to thread since it's CPU-bound
+                return await to_thread(lambda: random.choice(objectives))
             
-            # Return default if no matching objectives found
             return {
                 'ConceptGroup': 'General',
                 'DetailedObjective': 'Develop core skills'
@@ -131,8 +132,9 @@ class CompetencyService:
                 'DetailedObjective': 'Develop core skills'
             }
     
-    def get_all_objectives(self, subject: str, subskill_id: str) -> list:
+    async def get_all_objectives(self, subject: str, subskill_id: str) -> list:
         """Get ALL detailed objectives for a subskill"""
+        # This could potentially be async if objectives were stored in the database
         return self.detailed_objectives.get(subject, {}).get(subskill_id, [])
 
     def _structure_syllabus(self, df: pd.DataFrame) -> List[Dict]:
@@ -182,9 +184,15 @@ class CompetencyService:
             for subskill in skill["subskills"]
         ]
 
-    def get_curriculum(self, subject: str) -> List[Dict]:
+    async def get_curriculum(self, subject: str) -> List[Dict]:
         """Get full curriculum structure for a subject"""
-        return self.syllabus_cache.get(subject, [])
+        try:
+            from asyncio import to_thread
+            # Move dictionary access to thread since it might be CPU-intensive for large curricula
+            return await to_thread(lambda: self.syllabus_cache.get(subject, []))
+        except Exception as e:
+            print(f"Error getting curriculum: {str(e)}")
+            return []
 
     async def update_competency_from_problem(
         self,
@@ -217,11 +225,16 @@ class CompetencyService:
                 subskill_id=subskill_id
             )
             
-            # Calculate new score and credibility
-            average_score = sum(attempt["score"] for attempt in attempts) / len(attempts)
-            credibility = min(1.0, math.sqrt(len(attempts) / self.full_credibility_standard))
-            blended_score = (average_score * credibility) + (self.default_score * (1 - credibility))
+            # Move calculations to a thread since they're CPU bound
+            from asyncio import to_thread
+            def calculate_scores():
+                average_score = sum(attempt["score"] for attempt in attempts) / len(attempts)
+                credibility = min(1.0, math.sqrt(len(attempts) / self.full_credibility_standard))
+                blended_score = (average_score * credibility) + (self.default_score * (1 - credibility))
+                return blended_score, credibility
             
+            blended_score, credibility = await to_thread(calculate_scores)
+
             # Update competency
             return await self.cosmos_db.update_competency(
                 student_id=student_id,
@@ -244,31 +257,71 @@ class CompetencyService:
         skill_id: str,
         subskill_id: str
     ) -> Dict[str, Any]:
-        return await self.cosmos_db.get_competency(
-            student_id=student_id,
-            subject=subject,
-            skill_id=skill_id,
-            subskill_id=subskill_id
-        )
+        try:
+            result = await self.cosmos_db.get_competency(
+                student_id=student_id,
+                subject=subject,
+                skill_id=skill_id,
+                subskill_id=subskill_id
+            )
+            
+            if not result:
+                return {
+                    "current_score": self.default_score,
+                    "credibility": 0.0,
+                    "total_attempts": 0
+                }
+            
+            return result
+        except Exception as e:
+            print(f"Error getting competency: {str(e)}")
+            return {
+                "current_score": self.default_score,
+                "credibility": 0.0,
+                "total_attempts": 0
+            }
 
     async def get_subject_competency(
         self,
         student_id: int,
         subject: str
     ) -> Dict[str, Any]:
-        """
-        Calculate overall competency for a subject
-        """
-        subject_scores = []
-        total_attempts = 0
-        
-        # Collect all competencies for this subject
-        for key, comp in self._competencies.items():
-            if key.startswith(f"{student_id}_{subject}_"):
-                subject_scores.append(comp["current_score"])
-                total_attempts += len(comp["attempts"])
-        
-        if not subject_scores:
+        try:
+            from asyncio import to_thread
+            
+            competencies = await self.cosmos_db.get_subject_competencies(
+                student_id=student_id,
+                subject=subject
+            )
+            
+            if not competencies:
+                return {
+                    "student_id": student_id,
+                    "subject": subject,
+                    "current_score": self.default_score,
+                    "credibility": 0,
+                    "total_attempts": 0
+                }
+            
+            def calculate_subject_scores():
+                total_attempts = sum(comp.get("total_attempts", 0) for comp in competencies)
+                average_score = sum(comp.get("current_score", 0) for comp in competencies) / len(competencies)
+                credibility = min(1.0, math.sqrt(total_attempts / self.full_credibility_standard_subject))
+                blended_score = (average_score * credibility) + (self.default_score * (1 - credibility))
+                return blended_score, credibility, total_attempts
+                
+            blended_score, credibility, total_attempts = await to_thread(calculate_subject_scores)
+            
+            return {
+                "student_id": student_id,
+                "subject": subject,
+                "current_score": blended_score,
+                "credibility": credibility,
+                "total_attempts": total_attempts
+            }
+            
+        except Exception as e:
+            print(f"Error calculating subject competency: {str(e)}")
             return {
                 "student_id": student_id,
                 "subject": subject,
@@ -276,23 +329,6 @@ class CompetencyService:
                 "credibility": 0,
                 "total_attempts": 0
             }
-        
-        # Calculate average score
-        average_score = sum(subject_scores) / len(subject_scores)
-        
-        # Calculate subject-level credibility
-        credibility = min(1.0, math.sqrt(total_attempts / self.full_credibility_standard_subject))
-        
-        # Calculate blended score
-        blended_score = (average_score * credibility) + (self.default_score * (1 - credibility))
-        
-        return {
-            "student_id": student_id,
-            "subject": subject,
-            "current_score": blended_score,
-            "credibility": credibility,
-            "total_attempts": total_attempts
-        }
 
     async def get_student_overview(
         self,
@@ -336,11 +372,12 @@ class CompetencyService:
             
         return overview
     
-    def get_subskill_types(self, subject: str) -> List[str]:
+    async def get_subskill_types(self, subject: str) -> List[str]:
         """Get list of all problem types (subskills) available"""
+        curriculum = await self.get_curriculum(subject)
         return [
             subskill["id"]
-            for unit in self.get_curriculum(subject)
+            for unit in curriculum
             for skill in unit["skills"]
             for subskill in skill["subskills"]
         ]

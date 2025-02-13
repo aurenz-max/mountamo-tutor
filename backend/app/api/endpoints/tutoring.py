@@ -8,7 +8,19 @@ from ...services.tutoring import TutoringService
 from ...services.audio_service import AudioService
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
+
+# Silence urllib3 logs
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+
+# Silence azure logs
+logging.getLogger('azure').setLevel(logging.WARNING)
+logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
+logging.getLogger('websockets').setLevel(logging.WARNING)
+
+# Keep your application logs at DEBUG level
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 # Create a single shared AudioService instance
 audio_service = AudioService()
@@ -94,17 +106,20 @@ async def tutoring_websocket(websocket: WebSocket):
                 logger.error(f"[Session {session.id}] Error handling client messages: {e}")
                 session.quit_event.set()
 
+
         async def handle_responses():
-            """Handle both text responses and processed audio"""
+            """Handle text responses, audio, and problems"""
             try:
-                # Set up concurrent tasks for text and audio
+                # Set up concurrent tasks for all response types
                 logger.debug(f"[Session {session.id}] Starting response handlers")
                 text_task = asyncio.create_task(handle_text_responses())
                 logger.debug(f"[Session {session.id}] Text handler started")
                 audio_task = asyncio.create_task(handle_audio_responses())
                 logger.debug(f"[Session {session.id}] Audio handler started")
+                problem_task = asyncio.create_task(handle_problem_responses())
+                logger.debug(f"[Session {session.id}] Problem handler started")
                 
-                await asyncio.gather(text_task, audio_task)
+                await asyncio.gather(text_task, audio_task, problem_task)
                 
             except asyncio.CancelledError:
                 raise
@@ -120,6 +135,11 @@ async def tutoring_websocket(websocket: WebSocket):
                     "type": "text",
                     "content": text
                 })
+
+        async def handle_problem_responses():
+            """Handle problem responses from the session"""
+            async for problem in session.get_problems():
+                await websocket.send_json(problem)  # Problem is already formatted correctly
 
         async def handle_audio_responses():
             """Handle processed audio from the audio service"""

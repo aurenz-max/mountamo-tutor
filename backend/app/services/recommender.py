@@ -4,7 +4,7 @@ from .competency import CompetencyService
 from typing import Optional, Dict, List
 import random
 from datetime import datetime
-
+import asyncio
 
 class ProblemRecommender:
     def __init__(self, competency_service: CompetencyService):
@@ -20,81 +20,52 @@ class ProblemRecommender:
     ) -> Optional[Dict]:
         """Get recommendation using competency-weighted selection"""
         try:
-            matched_subject = next(
+            from asyncio import to_thread
+
+            # Move subject matching to thread since it's CPU-intensive
+            matched_subject = await to_thread(lambda: next(
                 (s for s in self.competency_service.syllabus_cache.keys() 
                  if s.lower() == subject.lower()), 
                 None
-            )
+            ))
             
             if not matched_subject:
                 print(f"[ERROR] No subject found matching: {subject}")
                 return None
                 
-            curriculum = self.competency_service.get_curriculum(matched_subject)
+            curriculum = await self.competency_service.get_curriculum(matched_subject)
             if not curriculum:
                 print(f"[ERROR] No curriculum found for subject: {matched_subject}")
                 return None
 
-            # Filter curriculum based on provided filters
-            filtered_items = []
-            for unit in curriculum:
-                # Skip if unit filter provided and doesn't match
-                if unit_filter and unit["id"] != unit_filter:
-                    continue
-                    
-                for skill in unit["skills"]:
-                    # Skip if skill filter provided and doesn't match
-                    if skill_filter and skill["id"] != skill_filter:
-                        continue
-                        
-                    for subskill in skill["subskills"]:
-                        # Skip if subskill filter provided and doesn't match
-                        if subskill_filter and subskill["id"] != subskill_filter:
-                            continue
-
-                        # Get competency data for this item
-                        competency = await self.competency_service.get_competency(
-                            student_id,
-                            matched_subject,
-                            skill["id"],
-                            subskill["id"]
-                        )
-
-                        filtered_items.append({
-                            "unit_id": unit["id"],
-                            "unit_title": unit["title"],
-                            "skill_id": skill["id"],
-                            "skill_description": skill["description"],
-                            "subskill_id": subskill["id"],
-                            "subskill_description": subskill["description"],
-                            "difficulty_range": subskill["difficulty_range"],
-                            "competency": competency
-                        })
+            # Get filtered items with async processing
+            filtered_items = await self._filter_curriculum_async(
+                curriculum, student_id, matched_subject, unit_filter, skill_filter, subskill_filter
+            )
 
             if not filtered_items:
                 print("[ERROR] No items match the filter criteria")
                 return None
 
-            # Use weighted selection to choose skill
             selected_skill = await self._select_skill(student_id, filtered_items)
             if not selected_skill:
                 print("[ERROR] Failed to select skill")
                 return None
 
-            # Use weighted selection to choose subskill
             selected_subskill = await self._select_subskill(student_id, selected_skill)
             if not selected_subskill:
                 print("[ERROR] Failed to select subskill")
                 return None
 
-            # Find the unit data for the selected skill
-            unit_id = selected_subskill["unit_id"]
-            unit = next(u for u in curriculum if u["id"] == unit_id)
+            # Move unit finding to thread
+            unit = await to_thread(lambda: next(u for u in curriculum if u["id"] == selected_subskill["unit_id"]))
 
-            # Determine adaptive difficulty
-            difficulty = await self._determine_difficulty(student_id, selected_subskill)
+            difficulty = await self._determine_difficulty(
+                student_id=student_id,
+                subject=matched_subject,
+                subskill=selected_subskill
+            )
 
-            # Create recommendation
             recommendation = {
                 "unit": {
                     "id": unit["id"],
@@ -120,10 +91,11 @@ class ProblemRecommender:
             traceback.print_exc()
             return None
 
-    def _select_objective(self, subskill_id: str) -> dict:
+    async def _select_objective(self, subskill_id: str) -> dict:
         """Select an objective for the subskill"""
         try:
-            objectives = self.competency_service.get_detailed_objectives(subskill_id)
+            objectives = await self.competency_service.get_detailed_objectives(subskill_id)
+            
             if not objectives:
                 return {
                     'ConceptGroup': 'General',
@@ -138,92 +110,131 @@ class ProblemRecommender:
                 'DetailedObjective': 'Develop core skills'
             }
 
-    def _filter_curriculum(self, curriculum, student_id, subject, unit_filter, skill_filter, subskill_filter):
-        filtered = []
-        for unit in curriculum:
-            if unit_filter and unit["id"] != unit_filter:
-                continue
-                
-            for skill in unit["skills"]:
-                if skill_filter and skill["id"] != skill_filter:
+    async def _filter_curriculum_async(
+        self, 
+        curriculum: List[Dict],
+        student_id: int,
+        subject: str,
+        unit_filter: Optional[str],
+        skill_filter: Optional[str],
+        subskill_filter: Optional[str]
+    ) -> List[Dict]:
+        """Async curriculum filtering with parallel competency fetching"""
+        try:
+            filtered = []
+            tasks = []
+
+            # Create tasks for all potential items
+            for unit in curriculum:
+                if unit_filter and unit["id"] != unit_filter:
                     continue
-                
-                for subskill in skill["subskills"]:
-                    if subskill_filter and subskill["id"] != subskill_filter:
+                    
+                for skill in unit["skills"]:
+                    if skill_filter and skill["id"] != skill_filter:
                         continue
+                    
+                    for subskill in skill["subskills"]:
+                        if subskill_filter and subskill["id"] != subskill_filter:
+                            continue
 
-                    selected_objective = self._select_objective(subskill["id"])
+                        # Create task for getting competency and objectives
+                        tasks.append({
+                            "unit": unit,
+                            "skill": skill,
+                            "subskill": subskill,
+                            "competency_task": self.competency_service.get_competency(
+                                student_id=student_id,
+                                subject=subject,
+                                skill_id=skill["id"],
+                                subskill_id=subskill["id"]
+                            ),
+                            "objective_task": self.competency_service.get_detailed_objectives(
+                                subject=subject,
+                                subskill_id=subskill["id"]
+                            )
+                        })
 
-                    # Get detailed objectives from competency service
-                    details = self.competency_service.get_detailed_objectives(subskill["id"])
-                        
-                    filtered.append({
-                        "unit_id": unit["id"],
-                        "unit_title": unit["title"],
-                        "skill_id": skill["id"],
-                        "skill_description": skill["description"],
-                        "subskill_id": subskill["id"],
-                        "subskill_description": subskill["description"],
-                        "difficulty_range": subskill["difficulty_range"],
-                        "concept_group": selected_objective['ConceptGroup'],
-                        "detailed_objective": selected_objective['DetailedObjective'],
-                        "competency": self.competency_service.get_competency(
-                            student_id, subject, skill["id"], subskill["id"]
-                        )
-                    })
-        return filtered
+            # Process all tasks in parallel
+            for task in tasks:
+                competency = await task["competency_task"]
+                objective = await task["objective_task"]
+                
+                filtered.append({
+                    "unit_id": task["unit"]["id"],
+                    "unit_title": task["unit"]["title"],
+                    "skill_id": task["skill"]["id"],
+                    "skill_description": task["skill"]["description"],
+                    "subskill_id": task["subskill"]["id"],
+                    "subskill_description": task["subskill"]["description"],
+                    "difficulty_range": task["subskill"]["difficulty_range"],
+                    "concept_group": objective["ConceptGroup"],
+                    "detailed_objective": objective["DetailedObjective"],
+                    "competency": competency
+                })
+
+            return filtered
+
+        except Exception as e:
+            print(f"[ERROR] Error in _filter_curriculum_async: {str(e)}")
+            return []
 
 
     async def _select_skill(self, student_id: int, filtered: List[Dict]) -> Optional[Dict]:
         """Weighted random skill selection based on competency"""
+        from asyncio import to_thread
+        
         if not filtered:
             return None
 
-        # Group by skills and calculate weights
-        skills = {}
-        for item in filtered:
-            key = (item["unit_id"], item["skill_id"])
-            if key not in skills:
-                skills[key] = {
-                    "items": [],
-                    "total_difficulty": item["difficulty_range"]["target"],
-                    "competency": item["competency"]["current_score"]
-                }
-            skills[key]["items"].append(item)
+        def process_selection():
+            skills = {}
+            for item in filtered:
+                key = (item["unit_id"], item["skill_id"])
+                if key not in skills:
+                    skills[key] = {
+                        "items": [],
+                        "total_difficulty": item["difficulty_range"]["target"],
+                        "competency": item["competency"]["current_score"]
+                    }
+                skills[key]["items"].append(item)
 
-        # Calculate weights using original formula
-        weights = []
-        skill_list = []
-        for skill in skills.values():
-            weight = max(0.1, skill["total_difficulty"] - skill["competency"])
-            weights.append(weight)
-            skill_list.append(skill)
+            weights = []
+            skill_list = []
+            for skill in skills.values():
+                weight = max(0.1, skill["total_difficulty"] - skill["competency"])
+                weights.append(weight)
+                skill_list.append(skill)
 
-        if sum(weights) == 0:
-            return random.choice(skill_list) if skill_list else None
-            
-        return random.choices(skill_list, weights=weights, k=1)[0]
+            if sum(weights) == 0:
+                return random.choice(skill_list) if skill_list else None
+                
+            return random.choices(skill_list, weights=weights, k=1)[0]
+
+        return await to_thread(process_selection)
 
 
     async def _select_subskill(self, student_id: int, skill: Dict) -> Optional[Dict]:
         """Weighted subskill selection with new student detection"""
-        subskills = skill["items"]
-        is_new = all(s["competency"]["total_attempts"] == 0 for s in subskills)
+        from asyncio import to_thread
+        
+        def process_selection():
+            subskills = skill["items"]
+            is_new = all(s["competency"]["total_attempts"] == 0 for s in subskills)
 
-        weights = []
-        for subskill in subskills:
-            if is_new:
-                # Inverse weighting for new students
-                weight = 1 / (subskill["difficulty_range"]["target"] + 0.1)
-            else:
-                # Competency-based weighting for others
-                weight = max(0.1, 1 - subskill["competency"]["current_score"] / 100)
-            weights.append(weight)
+            weights = []
+            for subskill in subskills:
+                if is_new:
+                    weight = 1 / (subskill["difficulty_range"]["target"] + 0.1)
+                else:
+                    weight = max(0.1, 1 - subskill["competency"]["current_score"] / 100)
+                weights.append(weight)
 
-        if sum(weights) == 0:
-            return random.choice(subskills) if subskills else None
-            
-        return random.choices(subskills, weights=weights, k=1)[0]
+            if sum(weights) == 0:
+                return random.choice(subskills) if subskills else None
+                
+            return random.choices(subskills, weights=weights, k=1)[0]
+
+        return await to_thread(process_selection)
 
     async def update_difficulty_override(
         self,
@@ -260,9 +271,16 @@ class ProblemRecommender:
             print(f"[ERROR] Failed to update difficulty override: {str(e)}")
             raise
 
-    async def _determine_difficulty(self, student_id: int, subskill: Dict) -> float:
+    async def _determine_difficulty(
+        self,
+        student_id: int,
+        subject: str,
+        subskill: Dict
+    ) -> float:
         """Calculate adaptive difficulty based on both skill baseline and student competency."""
         try:
+            from asyncio import to_thread
+            
             print(f"[DEBUG] Determining difficulty for subskill: {subskill}")
             
             # Get base difficulty range for this skill
@@ -270,37 +288,32 @@ class ProblemRecommender:
             base_difficulty = diff_range.get("target", 5.0)
             print(f"[DEBUG] Base difficulty for skill: {base_difficulty}")
             
-            # Get student's competency
+            # Get student's competency with proper parameters
             competency = await self.competency_service.get_competency(
                 student_id=student_id,
-                subject=subskill.get('subject'),
-                skill_id=subskill.get('skill_id'),
-                subskill_id=subskill.get('subskill_id')
+                subject=subject,
+                skill_id=subskill["skill_id"],
+                subskill_id=subskill["subskill_id"]
             )
             
             competency_score = competency.get("current_score", 5.0)
             credibility = competency.get("credibility", 0.0)
             print(f"[DEBUG] Student competency: {competency_score}, Credibility: {credibility}")
 
-            # Adjust difficulty based on competency
-            # If student is doing well (competency > 7), increase difficulty
-            # If student is struggling (competency < 4), decrease difficulty
-            competency_adjustment = (competency_score - 5.0) / 5.0  # Range: -1.0 to 1.0
-            
-            # Weight the adjustment based on credibility of the competency score
-            weighted_adjustment = competency_adjustment * credibility * 2.0  # Max ±2 difficulty points
-            
-            # Calculate final difficulty
-            final_difficulty = base_difficulty + weighted_adjustment
-            
-            # Keep within the skill's defined range
-            min_difficulty = diff_range.get("start", 1.0)
-            max_difficulty = diff_range.get("end", 10.0)
-            final_difficulty = max(min_difficulty, min(max_difficulty, final_difficulty))
+            def calculate_adjustment():
+                competency_adjustment = (competency_score - 5.0) / 5.0
+                weighted_adjustment = competency_adjustment * credibility * 2.0
+                
+                final_difficulty = base_difficulty + weighted_adjustment
+                min_difficulty = diff_range.get("start", 1.0)
+                max_difficulty = diff_range.get("end", 10.0)
+                
+                return max(min_difficulty, min(max_difficulty, final_difficulty))
+
+            final_difficulty = await to_thread(calculate_adjustment)
             
             print(f"[DEBUG] Final difficulty calculation:")
             print(f"  Base difficulty: {base_difficulty}")
-            print(f"  Competency adjustment: {weighted_adjustment}")
             print(f"  Final difficulty: {final_difficulty}")
             
             return round(final_difficulty, 1)

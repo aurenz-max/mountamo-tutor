@@ -110,15 +110,15 @@ async def websocket_endpoint(websocket: WebSocket):
                 quit_event.set()
 
         logger.info("Starting message handling and processing tasks")
-        await asyncio.gather(
-            handle_incoming_messages(),
-            gemini_service.process_conversation(
-                audio_stream(),
-                text_queue,
-                on_text_callback,
-                on_audio_callback
-            )
-        )
+        #await asyncio.gather(
+        #     handle_incoming_messages(),
+        #     gemini_service.process_conversation(
+        #         audio_stream(),
+        #         text_queue,
+        #         on_text_callback,
+        #         on_audio_callback
+        #     )
+        # )
 
     except WebSocketDisconnect:
         logger.info("Client disconnected normally")

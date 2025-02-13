@@ -170,7 +170,7 @@ async def get_available_subjects():
 @router.get("/curriculum/{subject}")
 async def get_subject_curriculum(subject: str) -> Dict[str, Any]:
     """Get complete curriculum structure for a subject"""
-    curriculum = competency_service.get_curriculum(subject)
+    curriculum = await competency_service.get_curriculum(subject)
     if not curriculum:
         raise HTTPException(status_code=404, detail="Subject not found")
     return {"subject": subject, "curriculum": curriculum}
@@ -182,7 +182,7 @@ async def get_detailed_objectives(
 ) -> Dict[str, Any]:
     """Get detailed learning objectives for a subskill"""
     try:
-        objectives = competency_service.get_detailed_objectives(subject, subskill_id)
+        objectives = await competency_service.get_detailed_objectives(subject, subskill_id)
         return {
             "subject": subject,
             "subskill_id": subskill_id,
@@ -194,7 +194,7 @@ async def get_detailed_objectives(
 @router.get("/problem-types/{subject}")
 async def get_subskill_types(subject: str) -> Dict[str, Any]:
     """Get all available problem types (subskills) for a subject"""
-    types = competency_service.get_subskill_types(subject)
+    types = await competency_service.get_subskill_types(subject)
     if not types:
         raise HTTPException(status_code=404, detail="Subject not found or no subskills available")
     return {"subject": subject, "problem_types": types}
