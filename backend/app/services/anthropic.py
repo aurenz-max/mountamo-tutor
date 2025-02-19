@@ -1,13 +1,14 @@
 # backend/app/services/anthropic.py
 
-from anthropic import Anthropic
+from anthropic import Anthropic, AsyncAnthropic
 from ..core.config import settings
 from typing import List, Dict, Any, Optional, Union
 
 class AnthropicService:
     def __init__(self):
-        self.client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self.model = "claude-3-5-haiku-20241022"
+        self.client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        #self.model = "claude-3-5-haiku-20241022"
+        self.model = "claude-3-5-sonnet-20241022"
 
     async def generate_response(
         self, 
@@ -18,13 +19,13 @@ class AnthropicService:
             print("Generating response with:", prompt)  # Debug log
             
             # Create messages list in correct format for the API
-            response = self.client.messages.create(
+            response = await self.client.messages.create(
             model=self.model,
             max_tokens=1024,
             messages=prompt if isinstance(prompt, list) else [{"role": "user", "content": prompt}],
             system=system_instructions if system_instructions else "You are a friendly and encouraging kindergarten tutor.",
             # Add this line to fix the temperature setting:
-            temperature=0.9
+            temperature=0.6
         )
             return response.content[0].text.strip()
         except Exception as e:

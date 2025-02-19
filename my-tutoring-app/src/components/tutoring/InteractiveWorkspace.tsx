@@ -132,12 +132,45 @@ const InteractiveWorkspace = ({ currentTopic, studentId, onSubmit }) => {
                   <div className="flex-1 space-y-4">
                     <p className="text-gray-700">{currentProblem.problem}</p>
                     
-                    {feedback && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                        <h3 className="font-medium mb-2">Feedback:</h3>
-                        <p className="text-sm">{feedback.review?.feedback}</p>
-                        {feedback.review?.evaluation && (
-                          <p className="text-sm mt-2">Score: {feedback.review.evaluation}/10</p>
+                    {feedback && feedback.review && (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                        <h3 className="font-medium">Feedback:</h3>
+                        
+                        {/* Praise */}
+                        {feedback.review.feedback.praise && (
+                          <div className="text-sm">
+                            <p className="text-green-600">{feedback.review.feedback.praise}</p>
+                          </div>
+                        )}
+                        
+                        {/* Guidance */}
+                        {feedback.review.feedback.guidance && (
+                          <div className="text-sm">
+                            <p className="text-blue-600">{feedback.review.feedback.guidance}</p>
+                          </div>
+                        )}
+                        
+                        {/* Encouragement */}
+                        {feedback.review.feedback.encouragement && (
+                          <div className="text-sm">
+                            <p className="text-purple-600">{feedback.review.feedback.encouragement}</p>
+                          </div>
+                        )}
+                        
+                        {/* Next Steps */}
+                        {feedback.review.feedback.next_steps && (
+                          <div className="text-sm mt-2">
+                            <p className="text-gray-600">{feedback.review.feedback.next_steps}</p>
+                          </div>
+                        )}
+                        
+                        {/* Score */}
+                        {feedback.review.evaluation && (
+                          <div className="mt-2 pt-2 border-t">
+                            <p className="text-sm font-medium">
+                              Score: {feedback.review.evaluation}/10
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}

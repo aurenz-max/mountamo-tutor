@@ -1,6 +1,8 @@
 from typing import AsyncGenerator, Dict, Any, Optional, Union, Callable, Awaitable
 from .gemini import GeminiService
 from .audio_service import AudioService
+from ..services.azure_tts import AzureSpeechService
+
 import asyncio
 import logging
 import base64
@@ -97,8 +99,7 @@ Remember:
             "gemini_task": None,  # Add this to store the task
             # Store pre-loaded data in session
             "recommendation_data": recommendation_data,
-            "objectives_data": objectives_data
-        }
+            "objectives_data": objectives_data}
         
         session_metadata = {
             "subject": subject,
@@ -111,8 +112,10 @@ Remember:
             "difficulty_range": difficulty_range,
             # Add pre-loaded data to metadata
             "recommendation_data": recommendation_data,
-            "objectives_data": objectives_data
+            "objectives_data": objectives_data,
         }
+
+
 
         # Create and store the task
         gemini_task = asyncio.create_task(
@@ -140,6 +143,7 @@ Remember:
                     raw_audio = base64.b64decode(b64_data)
                     # Convert to numpy array for Gemini
                     array = np.frombuffer(raw_audio, dtype=np.int16)
+
                     await self.gemini.receive((16000, array))
 
             # Handle legacy audio_data field
@@ -153,18 +157,38 @@ Remember:
             logger.exception(e)  # This will print the full stack trace
             raise
 
+    async def get_transcripts(self, session_id: str) -> AsyncGenerator[Dict[str, Any], None]:
+        """Get transcripts for the session"""
+        session = self._sessions.get(session_id)
+        if not session or not session.get("is_active"):
+            raise ValueError(f"Session not found or inactive: {session_id}")
+            
+        while not session["quit_event"].is_set():
+            try:
+                transcript = await session["transcript_queue"].get()
+                yield transcript
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error getting transcript: {e}")
+                continue
+
     async def cleanup_session(self, session_id: str) -> None:
-        """Clean up a tutoring session"""
+        """Clean up a tutoring session and all associated services"""
         logger.info(f"Cleaning up tutoring session {session_id}")
         if session := self._sessions.get(session_id):
             try:
                 session["is_active"] = False
                 session["quit_event"].set()
-                # Replace cleanup() with the proper shutdown sequence
-                self.gemini.shutdown()  # This sets quit event
-                await self.gemini.reset_session()  # This closes the current session
+                
+                # Cleanup Gemini first
+                self.gemini.shutdown()
+                await self.gemini.reset_session()
+                
+                # Remove session data
                 self._sessions.pop(session_id, None)
                 logger.info(f"Session {session_id} cleaned up successfully")
+                
             except Exception as e:
                 logger.error(f"Error during cleanup of session {session_id}: {e}")
                 raise

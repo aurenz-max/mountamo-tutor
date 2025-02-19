@@ -6,6 +6,8 @@ import base64
 from ...core.session_manager import SessionManager
 from ...services.tutoring import TutoringService
 from ...services.audio_service import AudioService
+from ...services.azure_tts import AzureSpeechService
+from ...db.cosmos_db import CosmosDBService
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -22,11 +24,16 @@ logging.getLogger('websockets').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-# Create a single shared AudioService instance
+# Create all services
 audio_service = AudioService()
+cosmos_db = CosmosDBService()
+speech_service = AzureSpeechService()
+speech_service.cosmos_db = cosmos_db
 
 router = APIRouter()
-tutoring_service = TutoringService(audio_service)
+tutoring_service = TutoringService(
+    audio_service=audio_service
+)
 session_manager = SessionManager(tutoring_service, audio_service)
 
 @router.websocket("/session")
@@ -113,13 +120,11 @@ async def tutoring_websocket(websocket: WebSocket):
                 # Set up concurrent tasks for all response types
                 logger.debug(f"[Session {session.id}] Starting response handlers")
                 text_task = asyncio.create_task(handle_text_responses())
-                logger.debug(f"[Session {session.id}] Text handler started")
                 audio_task = asyncio.create_task(handle_audio_responses())
-                logger.debug(f"[Session {session.id}] Audio handler started")
                 problem_task = asyncio.create_task(handle_problem_responses())
-                logger.debug(f"[Session {session.id}] Problem handler started")
+                transcript_task = asyncio.create_task(handle_transcript_responses())
                 
-                await asyncio.gather(text_task, audio_task, problem_task)
+                await asyncio.gather(text_task, audio_task, problem_task, transcript_task)
                 
             except asyncio.CancelledError:
                 raise
@@ -140,6 +145,14 @@ async def tutoring_websocket(websocket: WebSocket):
             """Handle problem responses from the session"""
             async for problem in session.get_problems():
                 await websocket.send_json(problem)  # Problem is already formatted correctly
+
+        async def handle_transcript_responses():
+            """Handle transcribed speech from both user and Gemini"""
+            async for transcript in session.get_transcripts():
+                await websocket.send_json({
+                    "type": "transcript",
+                    "content": transcript
+                })
 
         async def handle_audio_responses():
             """Handle processed audio from the audio service"""

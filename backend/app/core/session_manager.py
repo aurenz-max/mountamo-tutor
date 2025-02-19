@@ -5,8 +5,11 @@ import logging
 import uuid
 from typing import AsyncGenerator, Dict, Optional, Union, Any
 
+
 from ..services.tutoring import TutoringService
 from ..services.audio_service import AudioService
+from ..services.azure_tts import AzureSpeechService
+from ..db.cosmos_db import CosmosDBService
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -16,6 +19,8 @@ class TutoringSession:
         self,
         tutoring_service: TutoringService,
         audio_service: AudioService,
+        speech_service: AzureSpeechService,
+        cosmos_db: CosmosDBService,
         subject: str,
         skill_description: str,
         subskill_description: str,
@@ -27,6 +32,8 @@ class TutoringSession:
         self.id = str(uuid.uuid4())
         self.tutoring_service = tutoring_service
         self.audio_service = audio_service
+        self.speech_service = speech_service
+        self.cosmos_db = cosmos_db
         self.subject = subject
         self.skill_description = skill_description
         self.subskill_description = subskill_description
@@ -34,6 +41,9 @@ class TutoringSession:
         self.competency_score = competency_score
 
         self.problem_queue = asyncio.Queue()  # Add new queue for problems
+        self.text_queue = asyncio.Queue()
+        self.transcript_queue = asyncio.Queue()  # For speech transcripts
+
 
         # New fields
         self.skill_id = skill_id
@@ -41,7 +51,6 @@ class TutoringSession:
 
         self._active = False
         self.quit_event = asyncio.Event()
-        self.text_queue = asyncio.Queue()
         self._initialization_event = asyncio.Event()  # Add this line
 
     async def handle_text(self, text: str) -> None:
@@ -179,6 +188,25 @@ class TutoringSession:
             logger.error(f"Error handling problem in session {self.id}: {e}")
             raise
 
+    async def get_transcripts(self) -> AsyncGenerator[Dict[str, Any], None]:
+        """Get speech transcripts from the session"""
+        if not self._active:
+            raise ValueError("Session is not active")
+
+        try:
+            while not self.quit_event.is_set():
+                try:
+                    transcript = await self.transcript_queue.get()
+                    logger.info(f"Transcript log for session {self.id}  {transcript}")
+                    yield transcript
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    logger.error(f"Error getting transcript: {e}")
+                    continue
+        except asyncio.CancelledError:
+            logger.info(f"Transcript generator cancelled for session {self.id}")
+
     async def cleanup(self) -> None:
         """Clean up session resources"""
         try:
@@ -202,6 +230,13 @@ class SessionManager:
         self.sessions: Dict[str, TutoringSession] = {}
         logger.info("Session manager initialized with provided AudioService")
 
+        # Initialize core services
+        self.cosmos_db = CosmosDBService()
+        logger.info("Session manager initialized with CosmosDBService")
+        self.speech_service = AzureSpeechService()
+        logger.info("Session manager initialized with AzureSpeechService")
+        self.speech_service.cosmos_db = self.cosmos_db
+
     async def create_session(
         self,
         subject: str,
@@ -216,6 +251,8 @@ class SessionManager:
         session = TutoringSession(
             tutoring_service=self.tutoring_service,
             audio_service=self.audio_service,
+            speech_service=self.speech_service,  # Pass speech service
+            cosmos_db=self.cosmos_db,  # Pass cosmos db
             subject=subject,
             skill_description=skill_description,
             subskill_description=subskill_description,
@@ -261,15 +298,22 @@ class SessionManager:
         """Clean up and remove a session"""
         if session := self.sessions.pop(session_id, None):
             try:
-                # First cleanup the session (tutoring service)
+                # 1. Clean up Gemini session first
+                if hasattr(session.tutoring_service, 'gemini'):
+                    try:
+                        await session.tutoring_service.gemini.reset_session()
+                    except Exception as e:
+                        logger.error(f"Error cleaning up Gemini for session {session_id}: {e}")
+                
+                # 2. Clean up the session itself (tutoring service)
                 await session.cleanup()
                 
-                # Then cleanup the audio service
+                # 3. Clean up audio service
                 try:
                     self.audio_service.remove_session(session_id)
                 except Exception as e:
                     logger.error(f"Error cleaning up audio service for session {session_id}: {e}")
-                    
+                
                 logger.info(f"Removed session {session_id}")
             except Exception as e:
                 logger.error(f"Error during session cleanup {session_id}: {e}")
@@ -290,3 +334,17 @@ class SessionManager:
         if errors:
             error_msg = "\n".join([f"Session {sid}: {err}" for sid, err in errors])
             raise RuntimeError(f"Errors during cleanup:\n{error_msg}")
+        
+    async def shutdown(self) -> None:
+        """Shutdown all services and clean up sessions"""
+        logger.info("Shutting down session manager and all services")
+        try:
+            # Clean up all active sessions first
+            await self.cleanup_all_sessions()
+            
+            # Additional cleanup for core services if needed
+            # Add any specific cleanup needed for cosmos_db or speech_service
+            
+        except Exception as e:
+            logger.error(f"Error during session manager shutdown: {e}")
+            raise

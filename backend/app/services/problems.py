@@ -183,21 +183,18 @@ class ProblemService:
 Please provide your response in EXACTLY this format with no additional sections:
 
 
-<problemData>
-    <problemType>[One of: Direct Application, Real World Context, Comparison/Analysis, Error Detection, Sequencing/Ordering, Sorting/Categorizing, Prediction/Extension, Transformation, Assessment/Verification]</problemType>
-    
-    <problem>[Write a clear, concise problem using age-appropriate language. Include all necessary information. Use engaging elements like character names and familiar situations.]</problem>
-    
-    <answer>[Provide the complete, specific answer]</answer>
-    
-    <successCriteria>
-        <criterion>First observable behavior showing understanding</criterion>
-        <criterion>Second observable behavior showing application</criterion>
-        <criterion>Third observable behavior showing mastery</criterion>
-    </successCriteria>
-    
-    <teachingNote>[Brief tip about common misconceptions or support strategies]</teachingNote>
-</problemData>
+Return your response EXACTLY in this JSON format:
+{{
+    "problem_type": "one of the problem types listed above",
+    "problem": "Write a clear, concise problem using age-appropriate language. Include all necessary information. Use engaging elements like character names and familiar situations.",
+    "answer": "Provide the complete, specific answer",
+    "success_criteria": [
+        "First observable behavior showing understanding",
+        "Second observable behavior showing application",
+        "Third observable behavior showing mastery"
+    ],
+    "teaching_note": "Brief tip about common misconceptions or support strategies"
+}}
     
     DO NOT add any additional sections beyond the five specified above (Problem Type, Problem, Answer, Success Criteria, Teaching Note)"""
 
@@ -217,53 +214,29 @@ Please provide your response in EXACTLY this format with no additional sections:
                 traceback.print_exc()
                 return None
 
-
     async def _parse_problem(self, raw_problem: str) -> Dict[str, Any]:
-        """Parse the AI response using XML tags into a structured problem object."""
+        """Parse the AI response from JSON into a structured problem object."""
         try:
-            import re
+            import json
             from asyncio import to_thread  # For CPU-intensive operations
             
-            def extract_tag_content(content: str, tag: str) -> str:
-                """Helper function to extract content from XML tags"""
-                pattern = f"<{tag}>(.*?)</{tag}>"
-                match = re.search(pattern, content, re.DOTALL)
-                if match:
-                    return match.group(1).strip()
-                return ""
-            
-            def extract_criteria(content: str) -> List[str]:
-                """Helper function to extract success criteria"""
-                pattern = "<criterion>(.*?)</criterion>"
-                return [match.group(1).strip() for match in re.finditer(pattern, content, re.DOTALL)]
-            
-            # First verify we have a valid problemData block
-            problem_data_match = re.search(r'<problemData>(.*?)</problemData>', raw_problem, re.DOTALL)
-            if not problem_data_match:
-                print("[ERROR] No valid problemData block found")
+            # Move the intensive parsing operations to a thread pool
+            try:
+                problem_data = json.loads(raw_problem)
+            except json.JSONDecodeError as e:
+                print(f"[ERROR] Failed to parse JSON: {str(e)}")
                 return None
-                
-            problem_content = problem_data_match.group(1)
-            
-            # Move the intensive regex operations to a thread pool
-            problem_data = await to_thread(lambda: {
-                'problem_type': extract_tag_content(problem_content, 'problemType'),
-                'problem': extract_tag_content(problem_content, 'problem'),
-                'answer': extract_tag_content(problem_content, 'answer'),
-                'success_criteria': extract_criteria(problem_content),
-                'teaching_note': extract_tag_content(problem_content, 'teachingNote')
-            })
             
             # Validate that all required fields are present and non-empty
-            required_fields = ['problem_type', 'problem', 'answer', 'teaching_note']
-            missing_fields = [field for field in required_fields if not problem_data[field]]
+            required_fields = ['problem_type', 'problem', 'answer', 'success_criteria', 'teaching_note']
+            missing_fields = [field for field in required_fields if not problem_data.get(field)]
             
             if missing_fields:
                 print(f"[ERROR] Missing required fields: {missing_fields}")
                 return None
                 
-            if not problem_data['success_criteria']:
-                print("[ERROR] No success criteria found")
+            if not isinstance(problem_data['success_criteria'], list):
+                print("[ERROR] Success criteria must be a list")
                 return None
                 
             print(f"[DEBUG] Successfully parsed problem data: {problem_data}")
@@ -321,24 +294,46 @@ Please provide your response in EXACTLY this format with no additional sections:
     Problem: {problem}
 
 Please follow these steps:
-1. In <observation> tags:
+1. For observation:
    - If there's a canvas solution, describe what you see in the image.
    - If there's a multiple-choice answer, state the selected option.
-2. In <analysis> tags:
+2. For analysis:
    - Compare the student's answer (canvas work and/or multiple-choice selection) to the provided correct answer.
    - Consider if the student's answer, while different from the provided correct answer, demonstrates a valid conceptual understanding or an alternative correct solution.
    - If both canvas and multiple-choice are used, analyze if they are consistent with each other.
-3. In <evaluation> tags:
+3. For evaluation:
    - Provide a numerical evaluation from 1 to 10, where 1 is completely incorrect and 10 is perfectly correct.
    - Consider conceptual understanding and creativity in problem-solving, not just matching the provided answer.
-4. In <feedback> tags:
+4. For feedback:
    - Provide feedback appropriate for a 5-6 year old student.
    - Address their answer and any work shown on the canvas.
    - If their answer differs from the provided correct answer but demonstrates valid understanding, acknowledge and praise this.
    - If the answer is incorrect, explain why gently and guide them towards understanding.
    - Offer encouragement and positive reinforcement for their effort, creativity, and any correct aspects of their answer.
       
-   Begin your response with "I've carefully examined the student's answer and work. Here's my review:"""
+   Return your review in this EXACT JSON format:
+{{
+    "observation": {{
+        "canvas_description": "If there's a canvas solution, describe in detail what you see in the image",
+        "selected_answer": "If there's a multiple-choice answer, state the selected option",
+        "work_shown": "Describe any additional work or steps shown by the student"
+    }},
+    "analysis": {{
+        "understanding": "Analyze the student's conceptual understanding",
+        "approach": "Describe the problem-solving approach used",
+        "accuracy": "Compare against the expected answer",
+        "creativity": "Note any creative or alternative valid solutions"
+    }},
+    "evaluation": {{
+        "score": "Numerical score 1-10",
+        "justification": "Brief explanation of the score"
+    }},
+    "feedback": {{
+        "praise": "Specific praise for what was done well",
+        "guidance": "Age-appropriate suggestions for improvement",
+        "encouragement": "Positive reinforcement message",
+        "next_steps": "Simple, actionable next steps"
+    }}"""
                         }
                     ]
                 }]
@@ -351,33 +346,45 @@ Please follow these steps:
                 
                 print("Received response from Claude")
                 
-                # Extract parts from response using regex
-                import re
-                observation = re.search(r'<observation>(.*?)</observation>', response, re.DOTALL)
-                analysis = re.search(r'<analysis>(.*?)</analysis>', response, re.DOTALL)
-                evaluation = re.search(r'<evaluation>(.*?)</evaluation>', response, re.DOTALL)
-                feedback = re.search(r'<feedback>(.*?)</feedback>', response, re.DOTALL)
+                try:
+                    # Parse JSON response
+                    import json
+                    structured_review = json.loads(response)
+                    print(f"[DEBUG] Parsed JSON structure: {json.dumps(structured_review, indent=2)}")
 
-                structured_review = {
-                    "observation": observation.group(1).strip() if observation else "No observation available",
-                    "analysis": analysis.group(1).strip() if analysis else "No analysis available",
-                    "evaluation": 0,
-                    "feedback": feedback.group(1).strip() if feedback else "No feedback available",
-                    "skill_id": skill_id,
-                    "subject": subject
-                }
+                    # Ensure evaluation is a number
+                    if isinstance(structured_review.get('evaluation'), dict):
+                        print("[DEBUG] Found evaluation as dictionary, converting to number")
+                        evaluation_score = float(structured_review['evaluation'].get('score', 0))
+                        evaluation_justification = structured_review['evaluation'].get('justification', '')
+                        structured_review['evaluation'] = evaluation_score
+                        structured_review['justification'] = evaluation_justification
+                    elif not isinstance(structured_review.get('evaluation'), (int, float)):
+                        print(f"[DEBUG] Invalid evaluation type: {type(structured_review.get('evaluation'))}")
+                        structured_review['evaluation'] = 0
+                        structured_review['justification'] = "Could not determine score"
+                    
+                    print(f"[DEBUG] Final evaluation score: {structured_review['evaluation']}")
+                    
+                    # Add required fields if they don't exist
+                    structured_review.update({
+                        "skill_id": skill_id,
+                        "subject": subject
+                    })
+                    
+                    return structured_review
 
-                # Parse evaluation score
-                if evaluation:
-                    try:
-                        eval_text = evaluation.group(1).strip()
-                        eval_number = re.search(r'\d+', eval_text)
-                        if eval_number:
-                            structured_review["evaluation"] = int(eval_number.group())
-                    except ValueError:
-                        print("Warning: Could not parse evaluation score")
-
-                return structured_review
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing JSON response: {str(e)}")
+                    return {
+                        "error": "Error parsing review response",
+                        "observation": "Error occurred during review",
+                        "analysis": "Error occurred during review",
+                        "evaluation": {"score": 0, "justification": "Error occurred"},
+                        "feedback": "I'm sorry, I had trouble reviewing your work. Let's try again!",
+                        "skill_id": skill_id,
+                        "subject": subject
+                    }
 
             except Exception as e:
                 print(f"Error in review_problem: {str(e)}")
@@ -385,7 +392,7 @@ Please follow these steps:
                     "error": f"Error reviewing problem: {str(e)}",
                     "observation": "Error occurred during review",
                     "analysis": "Error occurred during review",
-                    "evaluation": 0,
+                    "evaluation": {"score": 0, "justification": "Error occurred"},
                     "feedback": "I'm sorry, I had trouble reviewing your work. Let's try again!",
                     "skill_id": skill_id,
                     "subject": subject

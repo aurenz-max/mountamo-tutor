@@ -17,6 +17,8 @@ from google.genai.types import (
 from ..core.config import settings
 from .audio_service import AudioService
 from .gemini_problem import GeminiProblemIntegration
+from ..services.azure_tts import AzureSpeechService
+from ..db.cosmos_db import CosmosDBService
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -65,24 +67,6 @@ class GeminiService:
                 continue
         logger.debug("Audio stream ended")
         return
-
-    async def reset_session(self):
-        """Reset the current session state"""
-        logger.info("Resetting Gemini session state")
-        self.session_reset_event.set()  # Signal for session reset
-        
-        # Wait for current session to close if it exists
-        if self.current_session:
-            try:
-                await self.current_session.close()
-            except Exception as e:
-                logger.error(f"Error closing session: {e}")
-            finally:
-                self.current_session = None
-        
-        # Reset the event for next use
-        self.session_reset_event.clear()
-        return True
 
     async def create_problem(
         self,
@@ -249,6 +233,22 @@ class GeminiService:
                 
         except Exception as e:
             logger.error(f"Error processing received audio frame: {e}")
+
+    async def reset_session(self) -> bool:
+        """Reset the current session state"""
+        logger.info("Resetting Gemini session state")
+        self.session_reset_event.set()
+        
+        if self.current_session:
+            try:
+                await self.current_session.close()
+            except Exception as e:
+                logger.error(f"Error closing session: {e}")
+            finally:
+                self.current_session = None
+        
+        self.session_reset_event.clear()
+        return True
 
     def shutdown(self) -> None:
         """Stop the stream method on shutdown"""

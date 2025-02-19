@@ -27,6 +27,35 @@ class CosmosDBService:
             partition_key=PartitionKey(path="/student_id")
         )
 
+        self.conversations = self.database.create_container_if_not_exists(
+            id="conversations",
+            partition_key=PartitionKey(path="/student_id"),
+            unique_key_policy={
+                'uniqueKeys': [
+                    {'paths': ['/student_id', '/session_id']}
+                ]
+            }
+        )
+
+    async def save_conversation_message(
+        self,
+        session_id: str,
+        student_id: int,
+        speaker: str,  # 'self' or 'gemini'
+        message: str,
+        timestamp: str
+    ) -> Dict[str, Any]:
+        message_data = {
+            "id": f"{student_id}_{session_id}_{timestamp}",  # Updated id format
+            "session_id": session_id,
+            "student_id": student_id,
+            "speaker": speaker,
+            "message": message,
+            "timestamp": timestamp
+        }
+        
+        return self.conversations.create_item(body=message_data)
+
     async def get_competency(
         self,
         student_id: int,
@@ -146,3 +175,86 @@ class CosmosDBService:
             parameters=params,
             enable_cross_partition_query=True
         ))
+    
+    async def get_session_conversation(
+        self,
+        session_id: str,
+        student_id: int  # Added student_id parameter
+    ) -> List[Dict[str, Any]]:
+        query = """
+        SELECT * FROM c 
+        WHERE c.session_id = @session_id 
+        ORDER BY c.timestamp
+        """
+        
+        params = [
+            {"name": "@session_id", "value": session_id}
+        ]
+        
+        # Now we can query within the student's partition
+        return list(self.conversations.query_items(
+            query=query,
+            parameters=params,
+            partition_key=student_id  # More efficient query using partition key
+        ))
+    
+    async def get_student_recent_conversations(
+        self,
+        student_id: int,
+        session_limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        """Get recent conversations for a student across sessions"""
+        query = """
+        SELECT DISTINCT c.session_id,
+                c.timestamp,
+                ARRAY_AGG(c) AS messages
+        FROM c
+        WHERE c.student_id = @student_id
+        GROUP BY c.session_id, c.timestamp
+        ORDER BY c.timestamp DESC
+        OFFSET 0 LIMIT @limit
+        """
+        
+        params = [
+            {"name": "@student_id", "value": student_id},
+            {"name": "@limit", "value": session_limit}
+        ]
+        
+        return list(self.conversations.query_items(
+            query=query,
+            parameters=params,
+            partition_key=student_id
+        ))
+    
+    async def get_student_conversation_summary(
+        self,
+        student_id: int,
+        start_date: str = None,
+        end_date: str = None
+    ) -> Dict[str, Any]:
+        """Get summary statistics for student conversations"""
+        query = """
+        SELECT 
+            COUNT(1) as total_messages,
+            COUNT(DISTINCT c.session_id) as total_sessions,
+            AVG(LENGTH(c.message)) as avg_message_length
+        FROM c
+        WHERE c.student_id = @student_id
+        """
+        
+        params = [{"name": "@student_id", "value": student_id}]
+        
+        if start_date:
+            query += " AND c.timestamp >= @start_date"
+            params.append({"name": "@start_date", "value": start_date})
+        if end_date:
+            query += " AND c.timestamp <= @end_date"
+            params.append({"name": "@end_date", "value": end_date})
+            
+        results = list(self.conversations.query_items(
+            query=query,
+            parameters=params,
+            partition_key=student_id
+        ))
+        
+        return results[0] if results else None
