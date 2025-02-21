@@ -18,10 +18,10 @@ from ..core.config import settings
 from .audio_service import AudioService
 from .gemini_problem import GeminiProblemIntegration
 from ..services.azure_tts import AzureSpeechService
-from ..db.cosmos_db import CosmosDBService
+
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 
 TOOL_CREATE_PROBLEM = {
@@ -35,7 +35,7 @@ TOOL_CREATE_PROBLEM = {
 }
 
 class GeminiService:
-    def __init__(self, audio_service: AudioService) -> None:
+    def __init__(self, audio_service: AudioService, azure_speech_service: Optional[AzureSpeechService] = None) -> None:
         self.input_queue: asyncio.Queue = asyncio.Queue()
         self.quit: asyncio.Event = asyncio.Event()
         self.session_reset_event: asyncio.Event = asyncio.Event()
@@ -46,6 +46,8 @@ class GeminiService:
         self.current_session = None
         self.session_metadata: Optional[Dict[str, Any]] = None
         logger.debug("GeminiService initialized with provided AudioService")
+        self.azure_speech_service = azure_speech_service
+        logger.info(f"GeminiService using provided AzureSpeechService: {self.azure_speech_service is not None}")
 
     async def stream(self) -> AsyncGenerator[bytes, None]:
         """Helper method to stream input audio to Gemini"""
@@ -113,6 +115,13 @@ class GeminiService:
             self._current_session_id = session_id
             self.session_metadata = session_metadata
             logger.debug(f"[Session {session_id}] Connecting to Gemini service with metadata: {session_metadata}")
+
+                # Add logging for Azure speech service state
+            logger.info(f"[Session {session_id}] Azure speech service initialized: {self.azure_speech_service is not None}")
+            if self.azure_speech_service:
+                logger.info(f"[Session {session_id}] Azure push_stream initialized: {self.azure_speech_service.push_stream is not None}")
+                logger.info(f"[Session {session_id}] Azure speech_recognizer initialized: {self.azure_speech_service.speech_recognizer is not None}")
+
             
             if session_id not in self.audio_service.sessions:
                 raise RuntimeError(f"No AudioService session found for {session_id}")
@@ -187,11 +196,16 @@ class GeminiService:
                                 await session.send(input=function_responses, end_of_turn=True)
                             #     continue
                             
-                        # Handle regular audio responses
+                        # Handle regular audio responses (Gemini output)
                         if response.data and self.audio_service:
                             try:
                                 if session_id in self.audio_service.sessions:
                                     self.audio_service.add_to_queue(session_id, response.data)
+                                    # If you'd like to transcribe Gemini's audio too, do:
+                                    if self.azure_speech_service and self.azure_speech_service.push_stream:
+                                    #     # Use speaker_type="gemini" if we want to distinguish from user.
+                                        await self.azure_speech_service.write_audio(response.data, speaker="gemini")
+                                        logger.debug(f"[Session {session_id}] Gemini audio sent to Azure transcription")
                                 else:
                                     logger.warning(f"[Session {session_id}] Audio service session no longer exists")
                                     break
@@ -215,21 +229,23 @@ class GeminiService:
             self.session_metadata = None
 
     async def receive(self, frame: tuple[int, np.ndarray]) -> None:
-        """Receive audio from the user and put it in the input stream."""
         try:
             if self.quit.is_set():
                 return
-               
+        
             _, array = frame
             array = array.squeeze()
             audio_message = array.tobytes()
-            #logger.debug(f"[Frontend Audio Message being sent to Gemini: {audio_message}]") 
-            
-            # Use put_nowait to avoid blocking if queue is full
+            # Forward the audio to Gemini’s input queue.
             try:
                 self.input_queue.put_nowait(audio_message)
             except asyncio.QueueFull:
                 logger.warning("Input queue full, dropping audio frame")
+            
+            # Also forward the audio to Azure for transcription.
+            if self.azure_speech_service and self.azure_speech_service.push_stream:
+                await self.azure_speech_service.write_audio(audio_message, speaker="user")
+                logger.debug(f"[Session {self._current_session_id}] Audio sent to Azure transcription (speaker: user)")
                 
         except Exception as e:
             logger.error(f"Error processing received audio frame: {e}")

@@ -97,6 +97,18 @@ class TutoringSession:
                 self._initialization_event.set()
                 #logger.info(f"Successfully initialized tutoring session {self.id}")
 
+                # Define a callback that enqueues transcripts into the session's transcript_queue.
+                def transcription_callback(transcript: Dict[str, Any]):
+                    # Enqueue transcript so that your websocket handler can send it.
+                    asyncio.create_task(self.transcript_queue.put(transcript))
+
+                # Start continuous transcription.
+                await self.speech_service.start_continuous_transcription(
+                                            self.id, 
+                                            self.student_id,
+                                            lambda transcript: asyncio.create_task(transcription_callback(transcript))
+                                        )               
+
             except Exception as e:
                 logger.error(f"Failed to initialize session {self.id}: {str(e)}")
                 self._active = False
@@ -236,6 +248,9 @@ class SessionManager:
         self.speech_service = AzureSpeechService()
         logger.info("Session manager initialized with AzureSpeechService")
         self.speech_service.cosmos_db = self.cosmos_db
+
+        self.tutoring_service.azure_speech_service = self.speech_service
+        self.tutoring_service.gemini.azure_speech_service = self.speech_service
 
     async def create_session(
         self,
