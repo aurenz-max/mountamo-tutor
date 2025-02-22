@@ -5,9 +5,26 @@ from typing import List, Dict, Any
 from pydantic import BaseModel
 from ...services.tutoring import TutoringService
 from ...services.audio_service import AudioService
+from ...services.azure_tts import AzureSpeechService
+from ...services.gemini import GeminiService
+from ...core.config import settings
 
 router = APIRouter()
-tutoring_service = TutoringService(AudioService)
+
+# Create service instances
+audio_service = AudioService()
+speech_service = AzureSpeechService(
+    subscription_key=settings.TTS_KEY,
+    region=settings.TTS_REGION
+)
+gemini_service = GeminiService(
+    audio_service=audio_service,
+    azure_speech_service=speech_service
+)
+tutoring_service = TutoringService(
+    audio_service=audio_service,
+    gemini_service=gemini_service
+)
 
 @router.get("/sessions/{student_id}")
 async def get_student_sessions(student_id: int) -> List[Dict[str, Any]]:

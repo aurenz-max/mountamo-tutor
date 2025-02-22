@@ -9,7 +9,10 @@ from typing import AsyncGenerator, Dict, Optional, Union, Any
 from ..services.tutoring import TutoringService
 from ..services.audio_service import AudioService
 from ..services.azure_tts import AzureSpeechService
+from ..services.gemini import GeminiService
 from ..db.cosmos_db import CosmosDBService
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,7 +22,6 @@ class TutoringSession:
         self,
         tutoring_service: TutoringService,
         audio_service: AudioService,
-        speech_service: AzureSpeechService,
         cosmos_db: CosmosDBService,
         subject: str,
         skill_description: str,
@@ -30,10 +32,21 @@ class TutoringSession:
         subskill_id: Optional[str] = None
     ):
         self.id = str(uuid.uuid4())
-        self.tutoring_service = tutoring_service
         self.audio_service = audio_service
-        self.speech_service = speech_service
+        self.speech_service = AzureSpeechService(subscription_key=settings.TTS_KEY, region=settings.TTS_REGION)  # Initialize here
         self.cosmos_db = cosmos_db
+
+        # Create GeminiService with the speech_service
+        gemini_service = GeminiService(
+            audio_service=self.audio_service,
+            azure_speech_service=self.speech_service
+        )
+
+        # Update TutoringService with the new GeminiService
+        self.tutoring_service = tutoring_service
+        self.tutoring_service.gemini = gemini_service
+        self.tutoring_service.azure_speech_service = self.speech_service  # Optional, for consistency
+
         self.subject = subject
         self.skill_description = skill_description
         self.subskill_description = subskill_description
@@ -52,6 +65,13 @@ class TutoringSession:
         self._active = False
         self.quit_event = asyncio.Event()
         self._initialization_event = asyncio.Event()  # Add this line
+
+        self.tutoring_service.azure_speech_service = self.speech_service
+        self.tutoring_service.gemini = GeminiService(
+            audio_service=self.audio_service,
+            azure_speech_service=self.speech_service
+        )
+        logger.debug(f"TutoringSession {self.id} initialized with AzureSpeechService")
 
     async def handle_text(self, text: str) -> None:
         """Handle text response from Gemini service"""
@@ -237,20 +257,11 @@ class TutoringSession:
 
 class SessionManager:
     def __init__(self, tutoring_service: TutoringService, audio_service: AudioService):
-        self.tutoring_service = tutoring_service
-        self.audio_service = audio_service
-        self.sessions: Dict[str, TutoringSession] = {}
-        logger.info("Session manager initialized with provided AudioService")
-
-        # Initialize core services
-        self.cosmos_db = CosmosDBService()
-        logger.info("Session manager initialized with CosmosDBService")
-        self.speech_service = AzureSpeechService()
-        logger.info("Session manager initialized with AzureSpeechService")
-        self.speech_service.cosmos_db = self.cosmos_db
-
-        self.tutoring_service.azure_speech_service = self.speech_service
-        self.tutoring_service.gemini.azure_speech_service = self.speech_service
+            self.tutoring_service = tutoring_service
+            self.audio_service = audio_service
+            self.sessions: Dict[str, TutoringSession] = {}
+            logger.info("Session manager initialized with provided AudioService")
+            self.cosmos_db = CosmosDBService()
 
     async def create_session(
         self,
@@ -266,7 +277,6 @@ class SessionManager:
         session = TutoringSession(
             tutoring_service=self.tutoring_service,
             audio_service=self.audio_service,
-            speech_service=self.speech_service,  # Pass speech service
             cosmos_db=self.cosmos_db,  # Pass cosmos db
             subject=subject,
             skill_description=skill_description,

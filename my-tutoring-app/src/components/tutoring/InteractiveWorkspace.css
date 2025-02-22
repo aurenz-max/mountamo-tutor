@@ -1,0 +1,109 @@
+.floating-text {
+  position: absolute;
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  font-weight: bold;
+  color: #000000;
+  text-shadow: 0 0 4px #ffffff, 0 0 8px #ffffff; /* White outline */
+  max-width: 300px;
+  word-wrap: break-word;
+  padding: 4px 8px;
+  border-radius: 8px;
+  z-index: 10;
+  transition: opacity 0.5s ease;
+  will-change: transform, opacity; /* Performance hint for browser */
+}
+
+/* Fixed subtitle area for current speech */
+.subtitle-area {
+  position: absolute;
+  bottom: 10%;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.subtitle-container {
+  position: relative;
+  padding: 8px 16px;
+  margin: 4px 0;
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
+  max-width: 80%;
+  text-align: center;
+  transform: translateX(0); /* For performance */
+}
+
+.subtitle-left {
+  align-self: flex-start;
+  margin-left: 8%;
+}
+
+.subtitle-right {
+  align-self: flex-end;
+  margin-right: 8%;
+}
+
+/* Active subtitle text */
+.subtitle-text {
+  font-size: 22px;
+  font-weight: bold;
+  color: #000000;
+  margin: 0;
+  padding: 0;
+}
+
+/* Speaker indicator */
+.speaker-indicator {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+  margin-bottom: 2px;
+}
+
+/* Animation for completed utterances */
+.floating-text.final {
+  animation: floatUp 5s ease-out forwards;
+}
+
+.left-side {
+  left: 15%;
+  transform: translateX(-50%);
+}
+
+.right-side {
+  right: 15%;
+  transform: translateX(50%);
+}
+
+@keyframes floatUp {
+  0% {
+    bottom: 10%;
+    opacity: 1;
+  }
+  100% {
+    bottom: 70%;
+    opacity: 0;
+  }
+}
+
+/* Optimize for performance */
+@media (prefers-reduced-motion: reduce) {
+  .floating-text {
+    transition: opacity 0.5s linear;
+  }
+  
+  .floating-text.final {
+    animation: simpleFade 4s linear forwards;
+  }
+  
+  @keyframes simpleFade {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+}

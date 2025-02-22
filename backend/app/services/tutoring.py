@@ -12,15 +12,13 @@ logger = logging.getLogger()  # root logger
 logger.setLevel(logging.WARNING)
 
 class TutoringService:
-    def __init__(self, audio_service: AudioService, azure_speech_service: Optional[AzureSpeechService] = None):
+    def __init__(self, audio_service: AudioService, gemini_service: GeminiService):
         """Initialize TutoringService with a shared AudioService instance"""
         logger.info("Initializing TutoringService with provided AudioService")
         self.audio_service = audio_service
-        self.azure_speech_service = azure_speech_service
-        # Pass the same AudioService instance to GeminiService
-        self.gemini = GeminiService(audio_service=self.audio_service,
-                                    azure_speech_service=self.azure_speech_service
-                                    )
+        self.gemini = gemini_service  # Use the provided instance
+        self.azure_speech_service = self.gemini.azure_speech_service  # Derive from GeminiService
+
         self._sessions: Dict[str, Dict[str, Any]] = {}
         
     def _create_tutoring_prompt(

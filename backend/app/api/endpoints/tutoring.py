@@ -8,6 +8,9 @@ from ...services.tutoring import TutoringService
 from ...services.audio_service import AudioService
 from ...services.azure_tts import AzureSpeechService
 from ...db.cosmos_db import CosmosDBService
+from ...services.gemini import GeminiService  # Import GeminiService
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -24,17 +27,28 @@ logging.getLogger('websockets').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-# Create all services
+# Create core services
 audio_service = AudioService()
 cosmos_db = CosmosDBService()
-speech_service = AzureSpeechService()
+speech_service = AzureSpeechService(subscription_key=settings.TTS_KEY, region=settings.TTS_REGION)
 speech_service.cosmos_db = cosmos_db
 
-router = APIRouter()
-tutoring_service = TutoringService(
-    audio_service=audio_service
+# Create GeminiService with AzureSpeechService
+gemini_service = GeminiService(
+    audio_service=audio_service,
+    azure_speech_service=speech_service
 )
+
+# Create TutoringService with GeminiService
+tutoring_service = TutoringService(
+    audio_service=audio_service,
+    gemini_service=gemini_service
+)
+
+# Initialize SessionManager
 session_manager = SessionManager(tutoring_service, audio_service)
+
+router = APIRouter()
 
 @router.websocket("/session")
 async def tutoring_websocket(websocket: WebSocket):
