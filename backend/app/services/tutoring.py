@@ -12,13 +12,18 @@ logger = logging.getLogger()  # root logger
 logger.setLevel(logging.WARNING)
 
 class TutoringService:
-    def __init__(self, audio_service: AudioService, gemini_service: GeminiService):
-        """Initialize TutoringService with a shared AudioService instance"""
-        logger.info("Initializing TutoringService with provided AudioService")
+    def __init__(
+        self, 
+        audio_service: AudioService,
+        gemini_service: GeminiService,
+        azure_speech_service: Optional[AzureSpeechService] = None
+    ):
+        """Initialize TutoringService for a specific session"""
         self.audio_service = audio_service
-        self.gemini = gemini_service  # Use the provided instance
-        self.azure_speech_service = self.gemini.azure_speech_service  # Derive from GeminiService
+        self.gemini = gemini_service
+        self.azure_speech_service = azure_speech_service or gemini_service.azure_speech_service
 
+        # Store session-specific data
         self._sessions: Dict[str, Dict[str, Any]] = {}
         
     def _create_tutoring_prompt(
@@ -70,7 +75,7 @@ Remember:
 - Never reference ending the session or switching topics"""
 
     async def initialize_session(
-       self,
+        self,
         subject: str,
         skill_description: str,
         subskill_description: str,
@@ -84,6 +89,7 @@ Remember:
         recommendation_data: Optional[Dict] = None,
         objectives_data: Optional[Dict] = None,
     ) -> str:
+        """Initialize a tutoring session with the given parameters"""
         if not session_id:
             session_id = f"{student_id}_{len(self._sessions) + 1}"
 
@@ -93,15 +99,17 @@ Remember:
             subject, skill_description, subskill_description, competency_score
         )
 
+        # Store session data
         self._sessions[session_id] = {
             "id": session_id,
             "is_active": True,
             "quit_event": asyncio.Event(),
-            "gemini_task": None,  # Add this to store the task
-            # Store pre-loaded data in session
+            "gemini_task": None,  # This will store the Gemini task
             "recommendation_data": recommendation_data,
-            "objectives_data": objectives_data}
+            "objectives_data": objectives_data
+        }
         
+        # Create session metadata for Gemini
         session_metadata = {
             "subject": subject,
             "skill_id": skill_id,
@@ -111,14 +119,11 @@ Remember:
             "student_id": student_id,
             "competency_score": competency_score,
             "difficulty_range": difficulty_range,
-            # Add pre-loaded data to metadata
             "recommendation_data": recommendation_data,
             "objectives_data": objectives_data,
         }
 
-
-
-        # Create and store the task
+        # Create and store the Gemini connection task
         gemini_task = asyncio.create_task(
             self.gemini.connect(
                 session_id=session_id,
@@ -127,11 +132,14 @@ Remember:
             )
         )
         
+        # Store the task for later cleanup
+        self._sessions[session_id]["gemini_task"] = gemini_task
+        
         logger.info(f"Started tutoring session {session_id}")
         return session_id
 
     async def process_message(self, session_id: str, message: Dict) -> None:
-        """Handle inbound audio from the client"""
+        """Handle inbound audio from the client for a specific session"""
         session = self._sessions.get(session_id)
         if not session or not session.get("is_active"):
             raise ValueError(f"Session not found or inactive: {session_id}")
@@ -155,11 +163,11 @@ Remember:
 
         except Exception as e:
             logger.error(f"Error processing message for session {session_id}: {e}")
-            logger.exception(e)  # This will print the full stack trace
+            logger.exception(e)
             raise
 
     async def get_transcripts(self, session_id: str) -> AsyncGenerator[Dict[str, Any], None]:
-        """Get transcripts for the session"""
+        """Get transcripts for the specific session"""
         session = self._sessions.get(session_id)
         if not session or not session.get("is_active"):
             raise ValueError(f"Session not found or inactive: {session_id}")
@@ -175,16 +183,29 @@ Remember:
                 continue
 
     async def cleanup_session(self, session_id: str) -> None:
-        """Clean up a tutoring session and all associated services"""
+        """Clean up a tutoring session and all associated resources"""
         logger.info(f"Cleaning up tutoring session {session_id}")
         if session := self._sessions.get(session_id):
             try:
+                # Mark session as inactive
                 session["is_active"] = False
                 session["quit_event"].set()
                 
-                # Cleanup Gemini first
-                self.gemini.shutdown()
-                await self.gemini.reset_session()
+                # Cancel Gemini task if it exists
+                if gemini_task := session.get("gemini_task"):
+                    if not gemini_task.done():
+                        gemini_task.cancel()
+                        try:
+                            await gemini_task
+                        except asyncio.CancelledError:
+                            pass
+                
+                # Cleanup Gemini service
+                try:
+                    self.gemini.shutdown()
+                    await self.gemini.reset_session()
+                except Exception as e:
+                    logger.error(f"Error cleaning up Gemini service for session {session_id}: {e}")
                 
                 # Remove session data
                 self._sessions.pop(session_id, None)
