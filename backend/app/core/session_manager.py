@@ -15,7 +15,7 @@ from ..db.cosmos_db import CosmosDBService
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 class TutoringSession:
     def __init__(
@@ -124,8 +124,8 @@ class TutoringSession:
             await self.speech_service.start_continuous_transcription(
                 self.id, 
                 self.student_id,
-                lambda transcript: asyncio.create_task(transcription_callback(transcript))
-            )               
+                transcription_callback  # Pass the function reference
+            )             
 
         except Exception as e:
             logger.error(f"Failed to initialize session {self.id}: {str(e)}")
@@ -269,11 +269,11 @@ class TutoringSession:
             raise
 
 class SessionManager:
-    def __init__(self, tutoring_service: TutoringService, audio_service: AudioService):
-            self.tutoring_service = tutoring_service
-            self.audio_service = audio_service
-            self.sessions: Dict[str, TutoringSession] = {}
-            logger.info("Session manager initialized with provided AudioService")
+    def __init__(self, audio_service: AudioService, cosmos_db: CosmosDBService):
+        self.audio_service = audio_service
+        self.cosmos_db = cosmos_db  # Add this line to store cosmos_db
+        self.sessions: Dict[str, TutoringSession] = {}
+        logger.info("Session manager initialized with AudioService and CosmosDBService")
 
     async def create_session(
         self,
@@ -287,9 +287,8 @@ class SessionManager:
     ) -> TutoringSession:
         """Create and initialize a new tutoring session with pre-loaded data"""
         session = TutoringSession(
-            tutoring_service=self.tutoring_service,
             audio_service=self.audio_service,
-            cosmos_db=self.cosmos_db,  # Pass cosmos db
+            cosmos_db=self.cosmos_db,  # This is now properly accessible
             subject=subject,
             skill_description=skill_description,
             subskill_description=subskill_description,
@@ -301,7 +300,7 @@ class SessionManager:
 
         try:
             # Pre-load data before initialization
-            recommendation_data = await self.tutoring_service.gemini.problem_integration.problem_service.recommender.get_recommendation(
+            recommendation_data = await session.gemini_service.problem_integration.problem_service.recommender.get_recommendation(
                 student_id=student_id,
                 subject=subject,
                 unit_filter=None,
@@ -311,7 +310,7 @@ class SessionManager:
             
             objectives_data = None
             if recommendation_data:
-                objectives_data = await self.tutoring_service.gemini.problem_integration.problem_service.competency_service.get_detailed_objectives(
+                objectives_data = await session.gemini_service.problem_integration.problem_service.competency_service.get_detailed_objectives(
                     subject=subject,
                     subskill_id=recommendation_data['subskill']['id']
                 )

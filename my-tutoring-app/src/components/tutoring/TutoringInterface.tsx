@@ -1,51 +1,50 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mic, MicOff, Volume2, VolumeX, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import AudioCaptureService from '@/lib/AudioCaptureService';
 import { Card } from '@/components/ui/card';
+import GeminiControlPanel from './GeminiControlPanel';
+import TranscriptionManager from './TranscriptionManager';
 
 const InteractiveWorkspace = React.lazy(() => import('./InteractiveWorkspace'));
 
-// ~100ms chunk size
-const PRE_ROLL_SECONDS = 0.1; 
+const PRE_ROLL_SECONDS = 0.1;
 const SAMPLE_RATE = 24000;
 const FRAMES_PER_CHUNK = Math.floor(PRE_ROLL_SECONDS * SAMPLE_RATE);
 
+interface Transcript {
+  id: string | number;
+  text: string;
+  speaker: string;
+  timestamp: string;
+  isPartial: boolean;
+}
+
 const TutoringInterface = ({ studentId, currentTopic }) => {
-  //======================
-  // State and References
-  //======================
   const [status, setStatus] = useState('disconnected');
   const [sessionId, setSessionId] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [transcripts, setTranscripts] = useState([]);
-  const [partialTranscripts, setPartialTranscripts] = useState({});
+  const [isListening, setIsListening] = useState(false);
+  const [isMicOn, setIsMicOn] = useState(false);
+
+  // Transcription state managed here with useState
+  const [transcriptionEnabled, setTranscriptionEnabled] = useState(true);
+  const [transcripts, setTranscripts] = useState<Transcript[]>([]);
+  const [partialTranscripts, setPartialTranscripts] = useState<Record<string, Transcript>>({});
 
   const wsRef = useRef(null);
   const audioCaptureRef = useRef(null);
   const audioContextRef = useRef(null);
   const endTimeRef = useRef(0);
 
-  //========================
-  // Effects & Initialization
-  //========================
   useEffect(() => {
-    // Initialize the AudioContext if it doesn't exist
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
     }
-
-    // Cleanup on unmount
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (audioCaptureRef.current) {
-        audioCaptureRef.current.destroy();
-      }
+      if (wsRef.current) wsRef.current.close();
+      if (audioCaptureRef.current) audioCaptureRef.current.destroy();
       if (audioContextRef.current) {
         audioContextRef.current.close();
         audioContextRef.current = null;
@@ -53,23 +52,91 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
     };
   }, []);
 
-  //==============================
-  // handleAudioData
-  //==============================
+  const processTranscript = useCallback((transcriptData: any) => {
+    if (!transcriptionEnabled) return;
+    
+    console.log('Current state before update:', {
+      partialTranscriptsCount: Object.keys(partialTranscripts).length,
+      transcriptsCount: transcripts.length
+    });
+
+    try {
+      if (!transcriptData || !transcriptData.data) {
+        console.error('Invalid transcript data format:', transcriptData);
+        return;
+      }
+      
+      const isPartial = transcriptData.data.is_partial;
+      const transcriptId = transcriptData.data.id || Date.now().toString();
+      const newText = transcriptData.data.text || '';
+
+      if (isPartial) {
+        console.log('Handling partial transcript:', {
+          id: transcriptId,
+          existingText: partialTranscripts[transcriptId]?.text,
+          newText: newText,
+          timestamp: transcriptData.timestamp
+        });
+        setPartialTranscripts(prev => {
+          const existingTranscript = prev[transcriptId];
+          return {
+            ...prev,
+            [transcriptId]: {
+              id: transcriptId,
+              // If there's existing text and the new text starts with it, use the new text
+              // Otherwise append the new text to existing text
+              text: existingTranscript?.text && newText.startsWith(existingTranscript.text) 
+                ? newText 
+                : (existingTranscript?.text || '') + newText,
+              speaker: transcriptData.speaker || 'unknown',
+              timestamp: transcriptData.timestamp || new Date().toISOString(),
+              isPartial: true
+            }
+          };
+        });
+      } else {
+        setPartialTranscripts(prev => {
+          const updated = { ...prev };
+          delete updated[transcriptId];
+          return updated;
+        });
+        setTranscripts(prev => {
+          const newTranscript = {
+            id: transcriptId,
+            text: newText,
+            speaker: transcriptData.speaker || 'unknown',
+            timestamp: transcriptData.timestamp || new Date().toISOString(),
+            isPartial: false
+          };
+          const existingIndex = prev.findIndex(t => t.id === newTranscript.id);
+          if (existingIndex >= 0) {
+            const newTranscripts = [...prev];
+            newTranscripts[existingIndex] = newTranscript;
+            return newTranscripts;
+          }
+          return [...prev, newTranscript];
+        });
+      }
+    } catch (error) {
+      console.error('Error processing transcript:', error);
+    }
+  }, [transcriptionEnabled]);
+
+  const clearTranscripts = useCallback(() => {
+    setTranscripts([]);
+    setPartialTranscripts({});
+  }, []);
+
   const handleAudioData = async (audioData) => {
     try {
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
-
-      // 1) Convert incoming data -> Int16
       let pcmData;
       if (audioData instanceof Blob) {
-        // If it's a Blob, convert to ArrayBuffer -> Int16
         const arrayBuffer = await audioData.arrayBuffer();
         pcmData = new Int16Array(arrayBuffer);
       } else {
-        // Otherwise assume base64
         const binaryString = atob(audioData);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
@@ -77,66 +144,38 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
         }
         pcmData = new Int16Array(bytes.buffer);
       }
-
-      // 2) Convert Int16 -> Float32
       const floatData = new Float32Array(pcmData.length);
       for (let i = 0; i < pcmData.length; i++) {
         floatData[i] = pcmData[i] / 32768.0;
       }
-
-      // 3) Create AudioBuffer from the entire chunk
-      const audioBuffer = audioContextRef.current.createBuffer(
-        1, // mono
-        floatData.length,
-        SAMPLE_RATE
-      );
+      const audioBuffer = audioContextRef.current.createBuffer(1, floatData.length, SAMPLE_RATE);
       audioBuffer.copyToChannel(floatData, 0);
-
-      // 4) Create a BufferSource
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioContextRef.current.destination);
-
-      // 5) Schedule the chunk to start right after the previous chunk ends
-      // or now if we have no backlog
       const now = audioContextRef.current.currentTime;
-      // We add a tiny offset (0.01) to avoid a glitch if endTimeRef is very close to now
       const startTime = Math.max(now, endTimeRef.current) + 0.01;
       source.start(startTime);
-
-      // 6) Update the endTimeRef to reflect when this chunk will finish
       const chunkDuration = floatData.length / SAMPLE_RATE;
       endTimeRef.current = startTime + chunkDuration;
-
-      // 7) Mark playing as soon as we schedule a chunk
       setIsPlaying(true);
-
-      // 8) Once chunk ends, if no new chunk extends endTimeRef,
-      //    that means playback is done
       source.onended = () => {
         const currentT = audioContextRef.current?.currentTime;
-        // If there's no new chunk scheduled and we've passed endTimeRef,
-        // then playback is truly finished
-        if (currentT && currentT >= endTimeRef.current) {
-          setIsPlaying(false);
-        }
+        if (currentT && currentT >= endTimeRef.current) setIsPlaying(false);
       };
     } catch (error) {
       console.error('Error processing audio:', error);
       setStatus('error');
     } finally {
-      // Don't forcibly set isPlaying(false) here.
       setProcessing(false);
     }
   };
 
   const handleWebSocketMessage = async (event) => {
     if (event.data instanceof Blob) {
-      // If data is a blob, pass it directly.
       await handleAudioData(event.data);
       return;
     }
-    // Handle JSON messages
     try {
       const response = JSON.parse(event.data);
       switch (response.type) {
@@ -154,54 +193,8 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
           console.log('Received text response:', response.content);
           setProcessing(false);
           break;
-        case 'problem':
-          console.log('Received problem:', response.content);
-          break;
         case 'transcript':
-          const transcriptData = response.content;
-          const isPartial = transcriptData.data.is_partial;
-          const transcriptId = transcriptData.data.id;
-          
-          if (isPartial) {
-            // Handle partial transcript (streaming)
-            setPartialTranscripts(prev => ({
-              ...prev,
-              [transcriptId]: {
-                id: transcriptId,
-                text: transcriptData.data.text,
-                speaker: transcriptData.speaker,
-                timestamp: transcriptData.timestamp
-              }
-            }));
-          } else {
-            // Handle final transcript
-            // First remove any partial transcript with this ID
-            setPartialTranscripts(prev => {
-              const updated = { ...prev };
-              delete updated[transcriptId];
-              return updated;
-            });
-            
-            // Then add the final transcript to the main list
-            setTranscripts(prev => {
-              const newTranscript = {
-                id: transcriptId || Date.now(),
-                text: transcriptData.data.text,
-                speaker: transcriptData.speaker,
-                timestamp: transcriptData.timestamp
-              };
-              
-              // Replace existing transcript with the same ID if exists, otherwise add new
-              const existingIndex = prev.findIndex(t => t.id === newTranscript.id);
-              if (existingIndex >= 0) {
-                const newTranscripts = [...prev];
-                newTranscripts[existingIndex] = newTranscript;
-                return newTranscripts;
-              } else {
-                return [...prev, newTranscript];
-              }
-            });
-          }
+          processTranscript(response.content);
           break;
         case 'error':
           setStatus('error');
@@ -221,7 +214,6 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
         const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/tutoring/session');
         ws.binaryType = 'blob';
         wsRef.current = ws;
-
         ws.onopen = () => {
           console.log('WebSocket connection established');
           ws.send(JSON.stringify({
@@ -239,16 +231,15 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
           }));
           resolve();
         };
-
         ws.onmessage = handleWebSocketMessage;
-
         ws.onclose = () => {
           setStatus('disconnected');
           setSessionId(null);
           setIsPlaying(false);
-          setPartialTranscripts({});
+          setIsMicOn(false);
+          setIsListening(false);
+          clearTranscripts();
         };
-
         ws.onerror = (error) => {
           console.error('WebSocket error:', error);
           setStatus('error');
@@ -262,112 +253,97 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
     });
   };
 
-  const startRecording = async () => {
-    try {
-      // Initialize session if not already connected
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+  const handleSessionChange = useCallback(async (newStatus) => {
+    if (newStatus === 'connecting') {
+      try {
         await initializeSession();
+      } catch (error) {
+        console.error('Failed to initialize session:', error);
       }
-
-      setStatus('recording');
-
-      // Initialize audio capture if not already done
-      if (!audioCaptureRef.current) {
-        audioCaptureRef.current = new AudioCaptureService({
-          targetSampleRate: 16000,
-          channelCount: 1,
-          bufferSize: 4096,
-        });
-
-        audioCaptureRef.current.setWebSocket(wsRef.current);
-        audioCaptureRef.current.setCallbacks({
-          onStateChange: ({ isCapturing }) => {
-            // Update status based on capturing state, but don't override error
-            if (status !== 'error') {
-              setStatus(isCapturing ? 'recording' : 'connected');
-            }
-          },
-          onError: (error) => {
-            console.error('Audio capture error:', error);
-            setStatus('error');
-          },
-        });
-      }
-      await audioCaptureRef.current.startCapture();
-      setProcessing(true);
-    } catch (err) {
-      console.error('Error starting recording:', err);
-      setStatus('error');
-    }
-  };
-
-  const stopRecording = () => {
-    if (audioCaptureRef.current) {
-      audioCaptureRef.current.stopCapture();
-      setStatus('connected');
-    }
-  };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
+    } else if (newStatus === 'disconnected') {
+      if (wsRef.current) wsRef.current.close();
       if (audioCaptureRef.current) {
         audioCaptureRef.current.destroy();
+        audioCaptureRef.current = null;
       }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      setStatus('disconnected');
+      setSessionId(null);
+      clearTranscripts();
+    } else {
+      setStatus(newStatus);
+    }
+  }, [clearTranscripts]);
+
+  const handleMicToggle = useCallback(async (isActive) => {
+    setIsMicOn(isActive);
+    if (isActive) {
+      try {
+        if (!audioCaptureRef.current) {
+          audioCaptureRef.current = new AudioCaptureService({
+            targetSampleRate: 16000,
+            channelCount: 1,
+            bufferSize: 4096,
+          });
+          audioCaptureRef.current.setWebSocket(wsRef.current);
+          audioCaptureRef.current.setCallbacks({
+            onStateChange: ({ isCapturing }) => setIsMicOn(isCapturing),
+            onError: (error) => {
+              console.error('Audio capture error:', error);
+              setStatus('error');
+            },
+          });
+        }
+      } catch (err) {
+        console.error('Error initializing microphone:', err);
+        setStatus('error');
       }
-    };
+    } else if (isListening) {
+      setIsListening(false);
+      if (audioCaptureRef.current) audioCaptureRef.current.stopCapture();
+    }
+  }, [isListening]);
+
+  const handleListeningStateChange = useCallback(async (isActiveListening) => {
+    setIsListening(isActiveListening);
+    if (isActiveListening && isMicOn) {
+      try {
+        if (audioCaptureRef.current) {
+          await audioCaptureRef.current.startCapture();
+          setProcessing(true);
+        }
+      } catch (err) {
+        console.error('Error starting audio capture:', err);
+        setStatus('error');
+      }
+    } else if (audioCaptureRef.current) {
+      audioCaptureRef.current.stopCapture();
+      setProcessing(false);
+    }
+  }, [isMicOn]);
+
+  const handleTranscriptionToggle = useCallback((isEnabled: boolean) => {
+    setTranscriptionEnabled(isEnabled);
+    if (!isEnabled) setPartialTranscripts({}); // Clear partials when disabled
   }, []);
 
-  // Merge final and partial transcripts for display
-  const allTranscripts = [
-    ...transcripts,
-    ...Object.values(partialTranscripts)
-  ];
-
-  // Determine the message to display based on the status
-  let statusMessage;
-  switch (status) {
-    case 'disconnected':
-      statusMessage = 'Not connected';
-      break;
-    case 'connecting':
-      statusMessage = 'Connecting to tutor...';
-      break;
-    case 'connected':
-      statusMessage = sessionId ? `Connected - Session ${sessionId}` : 'Connected';
-      break;
-    case 'recording':
-      statusMessage = 'Recording...';
-      break;
-    case 'processing':
-      statusMessage = 'Thinking...';
-      break;
-    case 'error':
-      statusMessage = 'An error occurred. Please try again.';
-      break;
-    default:
-      statusMessage = 'Unknown status';
-  }
-
   return (
-    <div className="flex flex-col space-y-6">
-      {/* Status Bar */}
-      <div className="p-4 bg-gray-100 rounded-lg text-center">
-        {status === 'error' ? (
-          <Alert variant="destructive">
-            <AlertDescription>{statusMessage}</AlertDescription>
-          </Alert>
-        ) : (
-          <p className="text-sm text-gray-700">{statusMessage}</p>
-        )}
-      </div>
-
-      {/* Interactive Workspace */}
+    <div className="flex flex-col space-y-4">
+      <GeminiControlPanel
+        onSessionChange={handleSessionChange}
+        onMicToggle={handleMicToggle}
+        onListeningStateChange={handleListeningStateChange}
+        onTranscriptionToggle={handleTranscriptionToggle}
+        isSpeaking={isPlaying}
+        isProcessing={processing}
+        transcriptionEnabled={transcriptionEnabled}
+      />
+      {status === 'error' && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            An error occurred. Please try refreshing the page or check your connection.
+          </AlertDescription>
+        </Alert>
+      )}
       <React.Suspense fallback={
         <Card className="p-4">
           <div className="animate-pulse flex space-x-4">
@@ -385,58 +361,16 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
           currentTopic={currentTopic}
           studentId={studentId}
           onSubmit={(response) => console.log('Workspace submission:', response)}
-          transcripts={allTranscripts}
         />
       </React.Suspense>
-
-      {/* Audio Controls */}
-      <div className="flex flex-col items-center space-y-6">
-        {processing && (
-          <div className="flex items-center justify-center space-x-2">
-            <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
-            <div className="w-10 h-1 bg-gray-300 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-blue-500"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <span className='text-gray-600 text-sm'>Waiting for Response...</span>
-          </div>
-        )}
-
-        <div className="flex items-center space-x-4">
-          <Button
-            onClick={() => {
-              if (status === 'recording') {
-                stopRecording();
-              } else {
-                startRecording();
-              }
-            }}
-            variant={status === 'recording' ? 'destructive' : 'default'}
-            size="lg"
-            className="rounded-full"
-            disabled={status === 'connecting' || status === 'processing'}
-          >
-            {status === 'recording' ? (
-              <MicOff className="w-6 h-6 animate-pulse" />
-            ) : (
-              <Mic className="w-6 h-6" />
-            )}
-          </Button>
-
-          <div className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full">
-            {isPlaying ? (
-              <Volume2 className="w-4 h-4 text-green-500" />
-            ) : (
-              <VolumeX className="w-4 h-4 text-gray-500" />
-            )}
-            <span className="text-sm">
-              {isPlaying ? 'Tutor Speaking' : 'Waiting for Input'}
-            </span>
-          </div>
-        </div>
-      </div>
+      {transcriptionEnabled && (
+        <TranscriptionManager
+          enabled={transcriptionEnabled}
+          transcripts={transcripts}
+          partialTranscripts={partialTranscripts}
+          className="absolute inset-0 pointer-events-none"
+        />
+      )}
     </div>
   );
 };

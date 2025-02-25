@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
 import DrawingWorkspace from './DrawingWorkspace';
-import './InteractiveWorkspace.css'; // CSS for floating text animations
+import './InteractiveWorkspace.css'; // Keep CSS for styling
 
-const InteractiveWorkspace = ({ currentTopic, studentId, onSubmit, transcripts }) => {
+const InteractiveWorkspace = ({ currentTopic, studentId, onSubmit }) => {
   // Problem state
   const [currentProblem, setCurrentProblem] = useState(null);
   const [isProblemOpen, setIsProblemOpen] = useState(false);
@@ -14,59 +14,7 @@ const InteractiveWorkspace = ({ currentTopic, studentId, onSubmit, transcripts }
   const [error, setError] = useState(null);
   const [feedback, setFeedback] = useState(null);
   
-  // Transcript state - separate active subtitles from completed ones
-  const [completedUtterances, setCompletedUtterances] = useState([]);
   const drawingRef = useRef();
-
-  // Extract active subtitles from transcripts (current partial transcripts)
-  // Use useMemo to avoid unnecessary recalculations
-  const activeSubtitles = useMemo(() => {
-    // Group by speaker and find the most recent partial transcript for each
-    const activeBySpeaker = {};
-    
-    if (transcripts) {
-      transcripts.forEach(transcript => {
-        if (transcript?.isPartial) {
-          const speaker = transcript.speaker || 'unknown';
-          
-          // Only store the most recent one per speaker
-          if (!activeBySpeaker[speaker] || 
-              new Date(transcript.timestamp) > new Date(activeBySpeaker[speaker].timestamp)) {
-            activeBySpeaker[speaker] = transcript;
-          }
-        }
-      });
-    }
-    
-    return Object.values(activeBySpeaker);
-  }, [transcripts]);
-
-  // Process transcripts - identify completed utterances for animation
-  useEffect(() => {
-    if (!transcripts || transcripts.length === 0) return;
-    
-    // Find completed (non-partial) transcripts
-    const newCompleted = transcripts.filter(t => 
-      !t.isPartial && 
-      !completedUtterances.some(existing => existing.id === t.id)
-    );
-    
-    if (newCompleted.length > 0) {
-      setCompletedUtterances(prev => [...prev, ...newCompleted]);
-    }
-  }, [transcripts]);
-
-  // Cleanup old completed utterances after 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      setCompletedUtterances(prev => 
-        prev.filter(t => now - new Date(t.timestamp).getTime() < 5000)
-      );
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   const generateNewProblem = async () => {
     setLoading(true);
@@ -211,33 +159,6 @@ const InteractiveWorkspace = ({ currentTopic, studentId, onSubmit, transcripts }
             </div>
           </div>
         )}
-
-        {/* Fixed subtitle area for current speech */}
-        <div className="subtitle-area">
-          {activeSubtitles.map(subtitle => (
-            <div 
-              key={`subtitle-${subtitle.id}`}
-              className={`subtitle-container ${subtitle.speaker.includes('1') ? 'subtitle-left' : 'subtitle-right'}`}
-            >
-              <div className="speaker-indicator">
-                {subtitle.speaker.includes('1') ? 'You' : 'Tutor'}
-              </div>
-              <p className="subtitle-text">{subtitle.text}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Floating completed utterances */}
-        <div className="absolute inset-0 pointer-events-none">
-          {completedUtterances.map(utterance => (
-            <div
-              key={`final-${utterance.id}`}
-              className={`floating-text final ${utterance.speaker.includes('1') ? 'left-side' : 'right-side'}`}
-            >
-              {utterance.text}
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

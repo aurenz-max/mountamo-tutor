@@ -138,35 +138,3 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.close()
         except:
             pass
-
-@router.post("/transcribe")
-async def transcribe_endpoint(request: Request):
-    """Handle transcription requests with the same audio processing as chat"""
-    try:
-        # Read the raw request body
-        body = await request.json()
-        
-        if not body.get("realtime_input") or not body["realtime_input"].get("media_chunks"):
-            raise HTTPException(status_code=400, detail="Invalid request format")
-
-        # Process the first audio chunk (assuming one chunk for transcription)
-        chunks = body["realtime_input"]["media_chunks"]
-        for chunk in chunks:
-            mime_type = chunk["mime_type"]
-            chunk_data = chunk["data"]
-            
-            if mime_type.startswith("audio/pcm"):
-                audio_data = base64.b64decode(chunk_data)
-                logger.debug(f"Processing audio chunk for transcription: {len(audio_data)} bytes")
-                transcription = await gemini_service.transcribe_audio(audio_data)
-                return {"transcription": transcription, "status": "success"}
-            else:
-                logger.warning(f"Unhandled mime type in transcription: {mime_type}")
-                
-        raise HTTPException(status_code=400, detail="No valid audio data found")
-        
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
-    except Exception as e:
-        logger.error(f"Transcription error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Transcription failed")

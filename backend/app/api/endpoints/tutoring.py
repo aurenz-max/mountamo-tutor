@@ -10,7 +10,7 @@ from ...db.cosmos_db import CosmosDBService
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 # Silence urllib3 logs
 logging.getLogger('urllib3').setLevel(logging.WARNING)
@@ -22,7 +22,7 @@ logging.getLogger('websockets').setLevel(logging.WARNING)
 
 # Keep your application logs at DEBUG level
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.DEBUG)
 
 # Create only the services that can be shared safely
 audio_service = AudioService()
@@ -113,53 +113,99 @@ async def tutoring_websocket(websocket: WebSocket):
 
         async def handle_responses():
             """Handle text responses, audio, and problems"""
+            tasks = []
             try:
                 # Set up concurrent tasks for all response types
                 logger.debug(f"[Session {session.id}] Starting response handlers")
-                text_task = asyncio.create_task(handle_text_responses())
-                audio_task = asyncio.create_task(handle_audio_responses())
-                problem_task = asyncio.create_task(handle_problem_responses())
-                transcript_task = asyncio.create_task(handle_transcript_responses())
+                tasks = [
+                    asyncio.create_task(handle_text_responses()),
+                    asyncio.create_task(handle_audio_responses()),
+                    asyncio.create_task(handle_problem_responses()),
+                    asyncio.create_task(handle_transcript_responses())
+                ]
                 
-                await asyncio.gather(text_task, audio_task, problem_task, transcript_task)
+                await asyncio.gather(*tasks)
                 
             except asyncio.CancelledError:
+                logger.info(f"[Session {session.id}] Cancelling response handlers")
+                # Cancel all tasks
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                # Wait for tasks to complete cancellation
+                await asyncio.gather(*tasks, return_exceptions=True)
                 raise
             except Exception as e:
                 logger.error(f"Error in response handler: {e}")
                 session.quit_event.set()
                 raise
+            finally:
+                # Ensure all tasks are cancelled in case of any other exit
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+
 
         async def handle_text_responses():
             """Handle text responses from the session"""
-            async for text in session.get_responses():
-                await websocket.send_json({
-                    "type": "text",
-                    "content": text
-                })
+            try:
+                async for text in session.get_responses():
+                    if session.quit_event.is_set():
+                        break
+                    await websocket.send_json({
+                        "type": "text",
+                        "content": text
+                    })
+            except asyncio.CancelledError:
+                logger.debug(f"[Session {session.id}] Text response handler cancelled")
+                raise
 
         async def handle_problem_responses():
             """Handle problem responses from the session"""
-            async for problem in session.get_problems():
-                await websocket.send_json(problem)  # Problem is already formatted correctly
+            try:
+                async for problem in session.get_problems():
+                    if session.quit_event.is_set():
+                        break
+                    await websocket.send_json(problem)
+            except asyncio.CancelledError:
+                logger.debug(f"[Session {session.id}] Problem response handler cancelled")
+                raise
 
         async def handle_transcript_responses():
             """Handle transcribed speech from both user and Gemini"""
-            async for transcript in session.get_transcripts():
-                await websocket.send_json({
-                    "type": "transcript",
-                    "content": transcript
-                })
+            try:
+                async for transcript in session.get_transcripts():
+                    if session.quit_event.is_set():
+                        break
+                    logger.debug(f"[Session {session.id}] Processing transcript: {transcript.get('session_id')} - " + 
+                            f"Speaker: {transcript.get('speaker')} - " +
+                            f"Partial: {transcript.get('data', {}).get('is_partial')} - " +
+                            f"ID: {transcript.get('data', {}).get('id')} - " +
+                            f"Text: {transcript.get('data', {}).get('text')[:50]}..."
+                    )
+                    await websocket.send_json({
+                        "type": "transcript",
+                        "content": transcript
+                    })
+            except asyncio.CancelledError:
+                logger.debug(f"[Session {session.id}] Transcript response handler cancelled")
+                raise
 
         async def handle_audio_responses():
             """Handle processed audio from the audio service"""
-            async for audio_chunk in session.get_audio():
-                audio_b64 = base64.b64encode(audio_chunk).decode()
-                await websocket.send_json({
-                    "type": "audio",
-                    "data": audio_b64,
-                    "mime_type": "audio/pcm;rate=24000"  # Match AudioService config
-                })
+            try:
+                async for audio_chunk in session.get_audio():
+                    if session.quit_event.is_set():
+                        break
+                    audio_b64 = base64.b64encode(audio_chunk).decode()
+                    await websocket.send_json({
+                        "type": "audio",
+                        "data": audio_b64,
+                        "mime_type": "audio/pcm;rate=24000"
+                    })
+            except asyncio.CancelledError:
+                logger.debug(f"[Session {session.id}] Audio response handler cancelled")
+                raise
         try:
             # Run all handlers concurrently
             logger.debug(f"[Session {session.id}] Client Messenger & Response handler started")
