@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eraser, Pencil } from 'lucide-react';
 
-const DrawingWorkspace = forwardRef(({ onSubmit, loading = false }, ref) => {
+const DrawingWorkspace = forwardRef(({ onSubmit, loading = false, captureImagesCallback }, ref) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState(null);
@@ -17,14 +17,37 @@ const DrawingWorkspace = forwardRef(({ onSubmit, loading = false }, ref) => {
     }
   };
 
-  // Expose clearCanvas method to parent component
+  // Capture both canvas and images
+  const captureCanvasWithImages = () => {
+    // First, create a canvas that's the same size as our current canvas
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    
+    // Create a new canvas for the combined image
+    const combinedCanvas = document.createElement('canvas');
+    const combinedCtx = combinedCanvas.getContext('2d');
+    
+    // Set dimensions to match the original canvas
+    combinedCanvas.width = canvas.width;
+    combinedCanvas.height = canvas.height;
+    
+    // First, draw the original canvas content
+    combinedCtx.drawImage(canvas, 0, 0);
+    
+    // Check if we have an image capture callback and use it
+    if (typeof captureImagesCallback === 'function') {
+      captureImagesCallback(combinedCanvas, combinedCtx);
+    }
+    
+    // Return the data URL of the combined canvas
+    return combinedCanvas.toDataURL('image/png').split(',')[1];
+  };
+
+  // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     clearCanvas,
-    // Add getCanvasData method for the parent to access
-    getCanvasData: () => {
-      const canvas = canvasRef.current;
-      return canvas.toDataURL('image/png').split(',')[1];
-    }
+    // Updated getCanvasData to include images
+    getCanvasData: captureCanvasWithImages
   }));
 
   useEffect(() => {

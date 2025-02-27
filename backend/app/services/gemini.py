@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import AsyncGenerator, Callable, Optional, Dict, Any, List
+from typing import AsyncGenerator, Callable, Optional, Dict, Any, List, Awaitable
 import base64
 import numpy as np
 from ..core.config import settings
@@ -18,7 +18,7 @@ from ..core.config import settings
 from .audio_service import AudioService
 from .gemini_problem import GeminiProblemIntegration
 from ..services.azure_tts import AzureSpeechService
-
+from .gemini_image import GeminiImageIntegration
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -31,11 +31,24 @@ TOOL_CREATE_PROBLEM = {
             "description": "Generate a practice problem for the current skill being taught.",
         }
     ],
-    
 }
 
+
 class GeminiService:
-    def __init__(self, audio_service: AudioService, azure_speech_service: Optional[AzureSpeechService] = None) -> None:
+    def __init__(
+        self, 
+        audio_service: AudioService, 
+        azure_speech_service: Optional[AzureSpeechService] = None,
+        visual_integration: Optional[GeminiImageIntegration] = None
+    ) -> None:
+        """
+        Initialize GeminiService with the necessary services.
+        
+        Args:
+            audio_service: Service for handling audio output
+            azure_speech_service: Optional service for speech recognition
+            visual_integration: Optional GeminiImageIntegration for handling visual content
+        """
         # Session-specific resources
         self.input_queue: asyncio.Queue = asyncio.Queue()
         self.quit: asyncio.Event = asyncio.Event()
@@ -48,6 +61,14 @@ class GeminiService:
         # Problem integration is session-specific
         self.problem_integration = GeminiProblemIntegration()
         
+        # Visual integration is provided directly, not created here
+        self.visual_integration = visual_integration
+        
+        # Scene callback for notifying about new scenes
+        self._scene_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
+
+        self._problem_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
+        
         # Session state
         self._current_session_id: Optional[str] = None
         self._stream_task: Optional[asyncio.Task] = None
@@ -56,6 +77,38 @@ class GeminiService:
         
         logger.debug("GeminiService initialized with provided AudioService")
         logger.info(f"GeminiService using provided AzureSpeechService: {self.azure_speech_service is not None}")
+        logger.info(f"GeminiService using provided GeminiImageIntegration: {self.visual_integration is not None}")
+
+    def register_scene_callback(
+        self, 
+        callback: Callable[[Dict[str, Any]], Awaitable[None]]
+    ) -> None:
+        """
+        Register a callback for handling visual scenes.
+        
+        Args:
+            callback: Async function that takes scene_data
+        """
+        self._scene_callback = callback
+        
+        # If we have a visual integration, ensure it can notify us about scenes
+        if self.visual_integration:
+            # Set up the visual integration to call our callback when scenes are created
+            self.visual_integration.set_callback(self._scene_callback)
+            logger.debug(f"Registered scene callback with GeminiImageIntegration")
+
+    def register_problem_callback(
+        self, 
+        callback: Callable[[Dict[str, Any]], Awaitable[None]]
+    ) -> None:
+        """
+        Register a callback for handling problem data.
+        
+        Args:
+            callback: Async function that takes problem_data
+        """
+        self._problem_callback = callback
+        logger.info(f"Problem callback registered in GeminiService: {self._problem_callback is not None}")
 
     async def stream(self) -> AsyncGenerator[bytes, None]:
         """Helper method to stream input audio to Gemini"""
@@ -89,12 +142,16 @@ class GeminiService:
         """
         Initiates problem creation through handle_problem_creation.
         """
+        logger.info(f"[Session {self._current_session_id}] create_problem called with data available: recommendation={recommendation_data is not None}, objectives={objectives_data is not None}")
+        logger.info(f"[Session {self._current_session_id}] Problem callback registered: {hasattr(self, '_problem_callback') and self._problem_callback is not None}")
+      
         if not self.session_metadata or not self._current_session_id:
-            logger.error("No session context available for problem creation")
+            logger.error("[Session UNKNOWN] No session context available for problem creation")
             return {"status": "error", "message": "No session context"}
         
         try:
             # Call handle_problem_creation with full session metadata and pre-loaded data
+            logger.debug(f"[Session {self._current_session_id}] Calling problem_integration.handle_problem_creation")
             result = await self.problem_integration.handle_problem_creation(
                 session_metadata=self.session_metadata,
                 session_id=self._current_session_id,
@@ -102,15 +159,30 @@ class GeminiService:
                 session_objectives=objectives_data
             )
             
-            if result:
-                logger.debug(f"Problem creation successful for session {self._current_session_id}")
+            logger.debug(f"[Session {self._current_session_id}] Problem creation result: {result['status'] if isinstance(result, dict) and 'status' in result else 'None'}")
+
+            if result and isinstance(result, dict) and 'data' in result:
+                logger.debug(f"[Session {self._current_session_id}] Problem data received, callback registered: {hasattr(self, '_problem_callback') and self._problem_callback is not None}")
+                
+                if hasattr(self, '_problem_callback') and self._problem_callback is not None:
+                    try:
+                        logger.debug(f"[Session {self._current_session_id}] Executing problem callback with data keys: {list(result['data'].keys())}")
+                        await self._problem_callback(result['data'])
+                        logger.info(f"[Session {self._current_session_id}] Problem callback executed successfully")
+                    except Exception as cb_error:
+                        logger.error(f"[Session {self._current_session_id}] Error in problem callback: {cb_error}", exc_info=True)
+                        # Continue with execution even if callback fails
+                else:
+                    logger.warning(f"[Session {self._current_session_id}] No problem callback registered")
+
+                logger.info(f"[Session {self._current_session_id}] Problem creation completed successfully")
                 return {"status": "success", "data": result}
             else:
-                logger.error(f"Problem creation failed for session {self._current_session_id}")
-                return {"status": "error", "message": "Failed to create problem"}
+                logger.error(f"[Session {self._current_session_id}] Problem creation returned invalid result structure: {result}")
+                return {"status": "error", "message": "Failed to create problem - invalid result structure"}
         except Exception as e:
-            logger.error(f"Error in create_problem for session {self._current_session_id}: {str(e)}")
-            return {"status": "error", "message": "Error during problem creation"}
+            logger.error(f"[Session {self._current_session_id}] Error in create_problem: {str(e)}", exc_info=True)
+            return {"status": "error", "message": f"Error during problem creation: {str(e)}"}
 
     async def initialize_session(
         self, 
@@ -133,6 +205,11 @@ class GeminiService:
         self.quit.clear()
         
         logger.debug(f"[Session {session_id}] GeminiService initialized with metadata: {session_metadata}")
+
+        # If we have a visual integration, make sure it's properly configured for this session
+        if self.visual_integration and hasattr(self.visual_integration, 'set_session_id'):
+            await self.visual_integration.set_session_id(session_id)
+            logger.debug(f"[Session {session_id}] Updated session ID in visual integration")
 
     async def connect(
         self,
@@ -176,6 +253,13 @@ class GeminiService:
                 tools=[TOOL_CREATE_PROBLEM]
             )
 
+            # Add visual tools if visual integration is available
+            if self.visual_integration:
+                visual_tools = self.visual_integration.get_tool_declarations()
+                if visual_tools and "function_declarations" in visual_tools:
+                    config.tools.append(visual_tools)
+                    logger.info(f"[Session {session_id}] Added visual tools to Gemini configuration")
+
             # Connect to Gemini and handle the session
             async with client.aio.live.connect(
                 model="gemini-2.0-flash-exp", config=config
@@ -205,25 +289,88 @@ class GeminiService:
                                 
                                 if name == "create_problem":
                                     try:
+                                        logger.info(f"[Session {session_id}] Tool call received for create_problem")
                                         # Create problem using session context
                                         result = await self.create_problem(
                                             recommendation_data=self.session_metadata.get('recommendation_data'),
                                             objectives_data=self.session_metadata.get('objectives_data')
                                         )
+                                        
+                                        logger.debug(f"[Session {session_id}] create_problem result: {result}")
 
-                                        # Extract just problem and answer
-                                        simplified_result = {
-                                            "content": f"Problem: {result['data']['problem']}\nAnswer: {result['data']['answer']}"
-                                        }
+                                        # Properly handle the result structure
+                                        if result and isinstance(result, dict) and 'status' in result and result['status'] == 'success':
+                                            # Extract problem from the correct location in the structure
+                                            if 'data' in result and 'data' in result['data']:
+                                                problem_data = result['data']['data']
+                                                
+                                                # Extract problem and answer safely
+                                                problem_text = problem_data.get('problem', 'No problem text available')
+                                                answer_text = problem_data.get('answer', 'No answer available')
+                                                
+                                                simplified_result = {
+                                                    "content": f"Problem: {problem_text}\nAnswer: {answer_text}"
+                                                }
+                                            else:
+                                                # Fallback if structure is different
+                                                logger.warning(f"[Session {session_id}] Unexpected result structure, trying alternate access paths")
+                                                problem_text = result.get('data', {}).get('problem', 'No problem text available')
+                                                answer_text = result.get('data', {}).get('answer', 'No problem text available')
+                                                
+                                                simplified_result = {
+                                                    "content": f"Problem: {problem_text}\nAnswer: {answer_text}"
+                                                }
 
+                                            function_responses.append({
+                                                "name": name,
+                                                "response": {"result": simplified_result},
+                                                "id": call_id
+                                            })
+                                            logger.info(f"[Session {session_id}] Problem tool call completed successfully")
+                                        else:
+                                            logger.error(f"[Session {session_id}] Problem creation failed: {result}")
+                                            # Provide error feedback to Gemini
+                                            function_responses.append({
+                                                "name": name, 
+                                                "response": {"error": "Failed to create problem"},
+                                                "id": call_id
+                                            })
+                                    except Exception as e:
+                                        logger.error(f"[Session {session_id}] Error handling create_problem tool call: {e}", exc_info=True)
                                         function_responses.append({
                                             "name": name,
-                                            "response": {"result": simplified_result},
+                                            "response": {"error": f"Exception: {str(e)}"},
                                             "id": call_id
                                         })
-                                        logger.debug(f"Problem created successfully: {result}")
+                                
+                                # Handle visual tool calls if we have a visual integration
+                                elif self.visual_integration and name in [
+                                    "get_categories", "get_objects", "find_images", "create_scene"
+                                ]:
+                                    try:
+                                        # Forward the function call to visual integration
+                                        if not hasattr(self.visual_integration, name):
+                                            logger.error(f"Visual integration doesn't have method {name}")
+                                            continue
+                                            
+                                        # Get arguments from function call
+                                        args = {}
+                                        if hasattr(function_call, 'args') and function_call.args:
+                                            args = function_call.args
+                                            
+                                        # Call the method on visual integration
+                                        method = getattr(self.visual_integration, name)
+                                        result = await method(**args)
+                                        
+                                        # Add to function responses
+                                        function_responses.append({
+                                            "name": name,
+                                            "response": {"result": result},
+                                            "id": call_id
+                                        })
+                                        logger.debug(f"Visual tool {name} executed successfully")
                                     except Exception as e:
-                                        logger.error(f"Error creating problem: {e}")
+                                        logger.error(f"Error executing visual tool {name}: {e}")
                                         continue
                             
                             if function_responses:

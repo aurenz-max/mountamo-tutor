@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     GEMINI_TUTOR_PROMPT: str
 
     GEMINI_STT_API_KEY: str
+
+    IMAGE_LIBRARY_PATH: str
     
     class Config:
         env_file = ".env"

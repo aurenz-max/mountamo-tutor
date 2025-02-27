@@ -1,7 +1,5 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Sparkles } from "lucide-react";
+import { ChevronRight, ChevronDown, Sparkles, Bookmark, BookOpen, GraduationCap, Brain } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -11,6 +9,15 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { api } from '@/lib/api';
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Animation variants for tree items
+const itemVariants = {
+  hidden: { opacity: 0, y: -5 },
+  visible: { opacity: 1, y: 0 }
+};
 
 const TreeItem = ({ 
   label, 
@@ -20,15 +27,29 @@ const TreeItem = ({
   onClick, 
   hasChildren = false,
   level = 0,
-  isRecommended = false
+  isRecommended = false,
+  icon = null
 }) => {
+  // Change the default state to false (collapsed)
   const [isOpen, setIsOpen] = useState(false);
   
+  useEffect(() => {
+    // Only auto-expand if this item is specifically selected
+    // Do NOT auto-expand for recommendations initially
+    if (isSelected) {
+      setIsOpen(true);
+    }
+  }, [isSelected]);
+
   return (
     <div className="select-none">
-      <div 
-        className={`flex items-center gap-1 p-1 rounded hover:bg-gray-100 cursor-pointer
-          ${isSelected ? 'bg-blue-100 hover:bg-blue-100' : ''}
+      <motion.div 
+        initial="hidden"
+        animate="visible"
+        variants={itemVariants}
+        transition={{ duration: 0.2, delay: level * 0.05 }}
+        className={`flex items-center gap-2 p-2 rounded-md transition-all duration-150
+          ${isSelected ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}
           ${level > 0 ? 'ml-4' : ''}`}
         onClick={(e) => {
           e.stopPropagation();
@@ -38,18 +59,44 @@ const TreeItem = ({
           onClick?.();
         }}
       >
-        {hasChildren && (
-          <span className="w-4 h-4">
-            {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          </span>
+        {hasChildren ? (
+          <button className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+            {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+        ) : (
+          <span className="w-5" />
         )}
-        {!hasChildren && <span className="w-4" />}
+        
+        {icon && <span className="text-gray-500">{icon}</span>}
+        
         <span className="text-sm flex-grow">{label}</span>
+        
         {isRecommended && (
-          <Sparkles className="h-4 w-4 text-yellow-500" />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Sparkles className="h-4 w-4 text-amber-400" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Recommended next topic</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
-      </div>
-      {isOpen && children}
+      </motion.div>
+      
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {children}
+        </motion.div>
+      )}
     </div>
   );
 };
@@ -140,21 +187,33 @@ const SyllabusSelector = ({ onSelect }) => {
   }, [selection.skill, selection.subskill]);
 
   const handleStartSession = () => {
-    if (!selection.subject) return;
+    if (!selection.subject || !selection.unit) return;
   
-    const selectedData = {
+    // Log what's being passed to make sure data is correct
+    console.log("Starting session with:", {selection, currentTopic: {
       subject: selection.subject,
       selection: {
         unit: selection.unit,
         skill: selection.skill,
         subskill: selection.subskill
       }
+    }});
+    
+    const selectedData = {
+      selectedSubject: selection.subject,
+      subject: selection.subject,
+      selection: {
+        subject: selection.subject,
+        unit: selection.unit,
+        skill: selection.skill,
+        subskill: selection.subskill
+      }
     };
-
+  
     if (syllabus?.curriculum) {
       const unit = selection.unit ? 
         syllabus.curriculum.find(u => u.id === selection.unit) : null;
-
+  
       if (unit) {
         selectedData.unit = unit;
         
@@ -175,13 +234,13 @@ const SyllabusSelector = ({ onSelect }) => {
       }
     }
   
+    // Pass the complete data object to the parent component
     onSelect(selectedData);
   };
 
   const isSessionEnabled = selection.subject && selection.unit;
 
-
-  const isRecommended = (id: string) => {
+  const isRecommended = (id) => {
     if (!recommendations?.recommended_skills) return false;
     
     // Check if this ID or any child ID is in the recommendations
@@ -214,12 +273,45 @@ const SyllabusSelector = ({ onSelect }) => {
     return isDirectlyRecommended;
   };
 
+  // Get the next recommended item text for better UX
+  const getNextRecommendedText = () => {
+    if (!recommendations?.recommended_skills?.length) return null;
+
+    // Find the first recommended skill or subskill
+    const recId = recommendations.recommended_skills[0];
+    
+    let recItem = null;
+    
+    // Search through curriculum for the item
+    if (syllabus?.curriculum) {
+      // Check if it's a unit
+      recItem = syllabus.curriculum.find(u => u.id === recId);
+      if (recItem) return recItem.title;
+      
+      // Check if it's a skill
+      for (const unit of syllabus.curriculum) {
+        const skill = unit.skills.find(s => s.id === recId);
+        if (skill) return skill.description;
+        
+        // Check if it's a subskill
+        for (const skill of unit.skills) {
+          const subskill = skill.subskills.find(ss => ss.id === recId);
+          if (subskill) return subskill.description;
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  const nextRecommendedText = getNextRecommendedText();
+
   if (loading && !syllabus) {
     return (
-      <div className="p-4 border rounded-lg bg-gray-50">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-          <span>Loading curriculum...</span>
+      <div className="p-6 border rounded-lg bg-gray-50 dark:bg-gray-900 dark:border-gray-800">
+        <div className="flex items-center space-x-3">
+          <div className="animate-spin h-5 w-5 border-2 border-primary rounded-full border-t-transparent"></div>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Loading curriculum...</span>
         </div>
       </div>
     );
@@ -227,11 +319,12 @@ const SyllabusSelector = ({ onSelect }) => {
 
   if (error) {
     return (
-      <div className="p-4 border rounded-lg bg-red-50 text-red-700">
-        <p>{error}</p>
+      <div className="p-6 border rounded-lg bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/50">
+        <p className="text-sm">{error}</p>
         <Button 
           variant="outline" 
-          className="mt-2"
+          size="sm"
+          className="mt-3"
           onClick={() => {
             setError(null);
             setSelectedSubject('');
@@ -245,9 +338,20 @@ const SyllabusSelector = ({ onSelect }) => {
     );
   }
 
+  // Get icons for different learning levels
+  const getLevelIcon = (level) => {
+    switch (level) {
+      case 0: return <BookOpen size={16} />;
+      case 1: return <GraduationCap size={16} />;
+      case 2: return <Brain size={16} />;
+      default: return null;
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="w-full">
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium">Select Curriculum</h3>
         <Select
           value={selectedSubject}
           onValueChange={setSelectedSubject}
@@ -265,72 +369,102 @@ const SyllabusSelector = ({ onSelect }) => {
         </Select>
       </div>
 
+      {nextRecommendedText && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 dark:bg-amber-900/20 dark:border-amber-800/30">
+          <div className="flex items-start gap-2">
+            <Sparkles className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Recommended next:</p>
+              <p className="text-xs text-amber-700 dark:text-amber-300">{nextRecommendedText}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {syllabus?.curriculum && (
-        <div className="border rounded-lg p-4 bg-white max-h-[60vh] overflow-y-auto">
-          {syllabus.curriculum.map((unit) => (
-            <TreeItem
-              key={unit.id}
-              id={unit.id}
-              label={unit.title}
-              hasChildren={!!unit.skills?.length}
-              isSelected={selection.unit === unit.id}
-              isRecommended={isRecommended(unit.id)}
-              onClick={() => setSelection(prev => ({
-                ...prev,
-                unit: unit.id,
-                skill: null,
-                subskill: null
-              }))}
-            >
-              {unit.skills.map((skill) => (
-                <TreeItem
-                  key={skill.id}
-                  id={skill.id}
-                  label={skill.description}
-                  level={1}
-                  hasChildren={!!skill.subskills?.length}
-                  isSelected={selection.skill === skill.id}
-                  isRecommended={isRecommended(skill.id)}
-                  onClick={() => setSelection(prev => ({
-                    ...prev,
-                    skill: skill.id,
-                    subskill: null
-                  }))}
-                >
-                  {skill.subskills.map((subskill) => (
-                    <TreeItem
-                      key={subskill.id}
-                      id={subskill.id}
-                      label={subskill.description}
-                      level={2}
-                      isSelected={selection.subskill === subskill.id}
-                      isRecommended={isRecommended(subskill.id)}
-                      onClick={() => setSelection(prev => ({
-                        ...prev,
-                        subskill: subskill.id
-                      }))}
-                    />
-                  ))}
-                </TreeItem>
-              ))}
-            </TreeItem>
-          ))}
+        <div className="border rounded-lg bg-white dark:bg-gray-950 dark:border-gray-800 overflow-hidden">
+          <div className="p-3 bg-gray-50 border-b dark:bg-gray-900 dark:border-gray-800 flex justify-between items-center">
+            <h4 className="font-medium text-sm">Learning Path</h4>
+            {recommendations?.recommended_skills?.length > 0 && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/30">
+                <Sparkles className="h-3 w-3 mr-1" /> 
+                <span className="text-xs">{recommendations.recommended_skills.length} Recommendations</span>
+              </Badge>
+            )}
+          </div>
+          
+          <div className="max-h-[50vh] overflow-y-auto p-3 space-y-1 scrollbar-hide">
+            {syllabus.curriculum.map((unit) => (
+              <TreeItem
+                key={unit.id}
+                id={unit.id}
+                label={unit.title}
+                hasChildren={!!unit.skills?.length}
+                isSelected={selection.unit === unit.id}
+                isRecommended={isRecommended(unit.id)}
+                icon={getLevelIcon(0)}
+                onClick={() => setSelection(prev => ({
+                  ...prev,
+                  unit: unit.id,
+                  skill: null,
+                  subskill: null
+                }))}
+              >
+                {unit.skills.map((skill) => (
+                  <TreeItem
+                    key={skill.id}
+                    id={skill.id}
+                    label={skill.description}
+                    level={1}
+                    hasChildren={!!skill.subskills?.length}
+                    isSelected={selection.skill === skill.id}
+                    isRecommended={isRecommended(skill.id)}
+                    icon={getLevelIcon(1)}
+                    onClick={() => setSelection(prev => ({
+                      ...prev,
+                      skill: skill.id,
+                      subskill: null
+                    }))}
+                  >
+                    {skill.subskills.map((subskill) => (
+                      <TreeItem
+                        key={subskill.id}
+                        id={subskill.id}
+                        label={subskill.description}
+                        level={2}
+                        isSelected={selection.subskill === subskill.id}
+                        isRecommended={isRecommended(subskill.id)}
+                        icon={getLevelIcon(2)}
+                        onClick={() => setSelection(prev => ({
+                          ...prev,
+                          subskill: subskill.id
+                        }))}
+                      />
+                    ))}
+                  </TreeItem>
+                ))}
+              </TreeItem>
+            ))}
+          </div>
         </div>
       )}
 
       <Button 
-        className="w-full" 
+        className="w-full"
+        size="lg"
         onClick={handleStartSession}
         disabled={!isSessionEnabled}
+        variant={isSessionEnabled ? "default" : "outline"}
       >
-        Start Tutoring Session
+        {isSessionEnabled ? (
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" />
+            <span>Start Tutoring Session</span>
+          </div>
+        ) : (
+          <span>Select a topic to begin</span>
+        )}
       </Button>
-
-      {process.env.NODE_ENV === 'development' && (
-        <pre className="text-xs text-gray-500 mt-4">
-          {JSON.stringify({ selectedSubject, selection, recommendations }, null, 2)}
-        </pre>
-      )}
     </div>
   );
 };

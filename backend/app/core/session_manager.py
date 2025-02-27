@@ -11,8 +11,13 @@ from ..services.audio_service import AudioService
 from ..services.azure_tts import AzureSpeechService
 from ..services.gemini import GeminiService
 from ..db.cosmos_db import CosmosDBService
+from ..services.visual_content_manager import VisualContentManager
+from ..services.visual_content_service import VisualContentService
+from ..services.gemini_image import GeminiImageIntegration
 
 from app.core.config import settings
+
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -22,6 +27,7 @@ class TutoringSession:
         self,
         audio_service: AudioService,
         cosmos_db: CosmosDBService,
+        visual_content_manager: VisualContentManager,
         subject: str,
         skill_description: str,
         subskill_description: str,
@@ -33,6 +39,7 @@ class TutoringSession:
         self.id = str(uuid.uuid4())
         self.audio_service = audio_service
         self.cosmos_db = cosmos_db
+        self.visual_content_manager = visual_content_manager
         
         # Initialize session-specific services
         self.speech_service = AzureSpeechService(
@@ -41,10 +48,12 @@ class TutoringSession:
         )
         self.speech_service.cosmos_db = cosmos_db
         
-        # Initialize GeminiService with the speech_service for this session only
+        # Initialize GeminiService without visual content initially
+        # We'll set this up after visual integration is created
         self.gemini_service = GeminiService(
             audio_service=self.audio_service,
-            azure_speech_service=self.speech_service
+            azure_speech_service=self.speech_service,
+            visual_integration=None  # Will be set after initialization
         )
         
         # Initialize TutoringService for this session only
@@ -67,6 +76,7 @@ class TutoringSession:
         self.problem_queue = asyncio.Queue()
         self.text_queue = asyncio.Queue()
         self.transcript_queue = asyncio.Queue()
+        self.scene_queue = asyncio.Queue()  # Queue for visual scenes
         
         self._active = False
         self.quit_event = asyncio.Event()
@@ -84,6 +94,16 @@ class TutoringSession:
             logger.error(f"Error handling text in session {self.id}: {e}")
             raise
 
+    async def handle_scene(self, scene_data: Dict[str, Any]) -> None:
+        """Handle visual scene data from Gemini service"""
+        try:
+            if not self._active:
+                return
+            await self.scene_queue.put(scene_data)
+        except Exception as e:
+            logger.error(f"Error handling scene in session {self.id}: {e}")
+            raise
+
     async def initialize(self, 
                         recommendation_data: Optional[Dict] = None,
                         objectives_data: Optional[Dict] = None) -> None:
@@ -97,6 +117,43 @@ class TutoringSession:
             except Exception as e:
                 logger.error(f"Failed to initialize audio service for session {self.id}: {e}")
                 raise
+
+            # Initialize visual content manager for this session
+            try:
+                await self.visual_content_manager.initialize_session(self.id)
+                
+                # Create a GeminiImageIntegration for this session
+                visual_integration = await self.visual_content_manager.create_image_integration(self.id)
+                
+                # Set the visual integration in GeminiService
+                self.gemini_service.visual_integration = visual_integration
+                
+                # Set up callback from GeminiImageIntegration to handle scenes
+                async def handle_scene(scene_data: Dict[str, Any]) -> None:
+                    await self.handle_scene(scene_data)
+                    
+                # Register scene callback in GeminiService
+                if hasattr(self.gemini_service, 'register_scene_callback'):
+                    self.gemini_service.register_scene_callback(handle_scene)
+                    logger.info(f"Scene callback registered for session {self.id}")
+                    
+                logger.info(f"Visual integration set up for session {self.id}")
+            except Exception as e:
+                logger.error(f"Failed to initialize visual integration for session {self.id}: {e}")
+                # Non-fatal, continue with initialization
+
+            # Register problem callback using the simple pattern like transcription
+            async def problem_callback(problem_data: Dict[str, Any]) -> None:
+                try:
+                    logger.info(f"[Session {self.id}] Problem callback received")
+                    await self.problem_queue.put(problem_data)
+                    logger.info(f"[Session {self.id}] Problem added to queue")
+                except Exception as e:
+                    logger.error(f"[Session {self.id}] Error in problem callback: {str(e)}", exc_info=True)
+            
+            # Register the problem callback BEFORE initializing tutoring service
+            self.gemini_service.register_problem_callback(problem_callback)
+            logger.info(f"Problem callback registered for session {self.id}")
 
             # Initialize tutoring service
             await self.tutoring_service.initialize_session(
@@ -125,7 +182,7 @@ class TutoringSession:
                 self.id, 
                 self.student_id,
                 transcription_callback  # Pass the function reference
-            )             
+            )
 
         except Exception as e:
             logger.error(f"Failed to initialize session {self.id}: {str(e)}")
@@ -155,6 +212,28 @@ class TutoringSession:
             logger.error(f"Error getting responses for session {self.id}: {e}")
             raise
 
+    async def get_scenes(self) -> AsyncGenerator[Dict[str, Any], None]:
+        """Get visual scene updates from the session"""
+        if not self._active:
+            raise ValueError("Session is not active")
+
+        try:
+            while not self.quit_event.is_set():
+                try:
+                    scene = await self.scene_queue.get()
+                    yield scene
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    logger.error(f"Error getting scene: {e}")
+                    continue
+
+        except asyncio.CancelledError:
+            logger.info(f"Scene generator cancelled for session {self.id}")
+        except Exception as e:
+            logger.error(f"Error getting scenes for session {self.id}: {e}")
+            raise
+
     async def process_message(self, message: Dict) -> None:
         """Process incoming messages"""
         if not self._active:
@@ -167,7 +246,17 @@ class TutoringSession:
             raise ValueError("Session initialization incomplete")
 
         try:
+            # Process scene-related messages
+            if message.get("type") == "scene_action":
+                action = message.get("action")
+                if action == "clear_scene":
+                    scene_id = message.get("scene_id")
+                    if scene_id:
+                        await self.visual_content_manager.clear_scene(self.id, scene_id)
+                        
+            # Process through tutoring service (pass all messages here for consistency)
             await self.tutoring_service.process_message(self.id, message)
+            
         except Exception as e:
             logger.error(f"Error processing message in session {self.id}: {e}")
             raise
@@ -189,33 +278,60 @@ class TutoringSession:
     async def get_problems(self) -> AsyncGenerator[Dict[str, Any], None]:
         """Get problem responses from the session"""
         if not self._active:
+            logger.error(f"[Session {self.id}] get_problems called when session not active")
             raise ValueError("Session is not active")
 
+        logger.info(f"[Session {self.id}] Starting problem generator")
+        problem_count = 0
+        
         try:
             while not self.quit_event.is_set():
                 try:
-                    problem = await self.problem_queue.get()
+                    # Add timeout to periodically check if session is still active
+                    problem = await asyncio.wait_for(self.problem_queue.get(), timeout=1.0)
+                    problem_count += 1
+                    logger.info(f"[Session {self.id}] Problem #{problem_count} dequeued and being sent to frontend")
                     yield problem
+                except asyncio.TimeoutError:
+                    # Just a check - continue waiting
+                    continue
                 except asyncio.CancelledError:
+                    logger.info(f"[Session {self.id}] Problem generator cancelled after sending {problem_count} problems")
                     break
                 except Exception as e:
-                    logger.error(f"Error getting problem response: {e}")
+                    logger.error(f"[Session {self.id}] Error getting problem from queue: {e}", exc_info=True)
                     continue
 
         except asyncio.CancelledError:
-            logger.info(f"Problem response generator cancelled for session {self.id}")
+            logger.info(f"[Session {self.id}] Problem generator cancelled after sending {problem_count} problems")
         except Exception as e:
-            logger.error(f"Error getting problem responses for session {self.id}: {e}")
+            logger.error(f"[Session {self.id}] Error in problem generator: {e}", exc_info=True)
             raise
             
     async def send_problem(self, problem: Dict[str, Any]) -> None:
         """Queue a problem to be sent to the frontend"""
         try:
             if not self._active:
+                logger.warning(f"[Session {self.id}] Cannot send problem - session not active")
                 return
-            await self.problem_queue.put(problem)
+            
+            logger.debug(f"[Session {self.id}] Queueing problem with keys: {list(problem.keys())}")
+            
+            # Add timestamp and session info
+            problem_with_meta = {
+                **problem,
+                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "session_id": self.id
+            }
+            
+            # Ensure queue is working
+            queue_size_before = self.problem_queue.qsize()
+            await self.problem_queue.put(problem_with_meta)
+            queue_size_after = self.problem_queue.qsize()
+            
+            logger.info(f"[Session {self.id}] Problem queued successfully (queue size: {queue_size_before} → {queue_size_after})")
         except Exception as e:
-            logger.error(f"Error handling problem in session {self.id}: {e}")
+            logger.error(f"[Session {self.id}] Error in send_problem: {str(e)}", exc_info=True)
             raise
 
     async def get_transcripts(self) -> AsyncGenerator[Dict[str, Any], None]:
@@ -269,11 +385,28 @@ class TutoringSession:
             raise
 
 class SessionManager:
-    def __init__(self, audio_service: AudioService, cosmos_db: CosmosDBService):
+    def __init__(
+        self, 
+        audio_service: AudioService, 
+        cosmos_db: CosmosDBService,
+        visual_content_service: Optional[VisualContentService] = None
+    ):
         self.audio_service = audio_service
-        self.cosmos_db = cosmos_db  # Add this line to store cosmos_db
+        self.cosmos_db = cosmos_db
+        
+        # Initialize the visual content service if not provided
+        if visual_content_service is None:
+            self.visual_content_service = VisualContentService(
+                image_library_path=settings.IMAGE_LIBRARY_PATH
+            )
+        else:
+            self.visual_content_service = visual_content_service
+            
+        # Create the visual content manager
+        self.visual_content_manager = VisualContentManager(self.visual_content_service)
+        
         self.sessions: Dict[str, TutoringSession] = {}
-        logger.info("Session manager initialized with AudioService and CosmosDBService")
+        logger.info("Session manager initialized with services")
 
     async def create_session(
         self,
@@ -286,9 +419,11 @@ class SessionManager:
         subskill_id: Optional[str] = None,
     ) -> TutoringSession:
         """Create and initialize a new tutoring session with pre-loaded data"""
+        # Create session with all dependencies
         session = TutoringSession(
             audio_service=self.audio_service,
-            cosmos_db=self.cosmos_db,  # This is now properly accessible
+            cosmos_db=self.cosmos_db,
+            visual_content_manager=self.visual_content_manager,
             subject=subject,
             skill_description=skill_description,
             subskill_description=subskill_description,
@@ -315,7 +450,7 @@ class SessionManager:
                     subskill_id=recommendation_data['subskill']['id']
                 )
 
-            # Initialize with pre-loaded data
+            # Initialize session with pre-loaded data
             await session.initialize(
                 recommendation_data=recommendation_data,
                 objectives_data=objectives_data
@@ -342,6 +477,12 @@ class SessionManager:
                     self.audio_service.remove_session(session_id)
                 except Exception as e:
                     logger.error(f"Error cleaning up audio service for session {session_id}: {e}")
+                
+                # Clean up visual content session
+                try:
+                    await self.visual_content_manager.cleanup_session(session_id)
+                except Exception as e:
+                    logger.error(f"Error cleaning up visual content for session {session_id}: {e}")
                 
                 logger.info(f"Removed session {session_id}")
             except Exception as e:

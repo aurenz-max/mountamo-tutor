@@ -1,14 +1,14 @@
-from typing import AsyncGenerator, Dict, Any, Optional, Union, Callable, Awaitable
+import asyncio
+import logging
+from typing import Dict, Any, Optional, AsyncGenerator, Callable, Awaitable
+import base64
+import numpy as np
+
 from .gemini import GeminiService
 from .audio_service import AudioService
 from ..services.azure_tts import AzureSpeechService
 
-import asyncio
-import logging
-import base64
-import numpy as np
-
-logger = logging.getLogger()  # root logger
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 class TutoringService:
@@ -26,6 +26,21 @@ class TutoringService:
         # Store session-specific data
         self._sessions: Dict[str, Dict[str, Any]] = {}
         
+        # Callback for scene handling
+        self._scene_callback: Optional[Callable[[str, Dict[str, Any]], Awaitable[None]]] = None
+        
+    def register_scene_callback(
+        self, 
+        callback: Callable[[str, Dict[str, Any]], Awaitable[None]]
+    ) -> None:
+        """
+        Register a callback for handling visual scenes.
+        
+        Args:
+            callback: Async function that takes (session_id, scene_data)
+        """
+        self._scene_callback = callback
+        
     def _create_tutoring_prompt(
         self,
         subject: str,
@@ -33,7 +48,7 @@ class TutoringService:
         subskill_description: str,
         competency_score: float
     ) -> str:
-        return f"""You are conducting a live kindergarten tutoring session using voice interaction.
+        base_prompt = f"""You are conducting a live kindergarten tutoring session using voice interaction.
 
 Role and Communication Style:
 - You are a friendly, encouraging kindergarten tutor speaking with a 5-6 year old
@@ -64,15 +79,25 @@ Audio Interaction Guidelines:
 2. Keep your responses conversational and engaging
 3. Use appropriate pauses to allow for student response
 4. Maintain consistent energy and enthusiasm in your voice
-5. Speak clearly and at an appropriate pace for a young child
+5. Speak clearly and at an appropriate pace for a young child"""
 
-Remember:
-- This is a live voice conversation - respond naturally to audio input
-- Keep the student engaged and interested
-- Make learning fun and interactive
-- Build confidence through positive reinforcement
-- Stay focused on the current skill/subskill
-- Never reference ending the session or switching topics"""
+        # Add visual capabilities to the prompt
+        visual_prompt = """
+Visual Teaching Tools:
+You can create visual counting scenes to assist with teaching. For example:
+1. First call get_categories() to discover available image categories
+2. Then call get_objects(category) to see what objects are in that category 
+3. Finally call create_scene() with specific objects and counts
+
+When using visuals:
+- Use images that relate to the current teaching topic
+- Create counting exercises with various objects
+- Ask the student to count the objects you show
+- Keep visuals simple and focused on the learning objective
+- Be specific about what the student should look at or count
+"""
+
+        return f"{base_prompt}\n\n{visual_prompt}\n\nRemember:\n- This is a live voice conversation - respond naturally to audio input\n- Keep the student engaged and interested\n- Make learning fun and interactive\n- Build confidence through positive reinforcement\n- Stay focused on the current skill/subskill\n- Never reference ending the session or switching topics"
 
     async def initialize_session(
         self,
@@ -123,6 +148,17 @@ Remember:
             "objectives_data": objectives_data,
         }
 
+        # Set up scene callback for Gemini if visual integration is available
+        if self._scene_callback:
+            # Create a wrapper function to include session_id in callback
+            async def handle_scene_callback(scene_data: Dict[str, Any]) -> None:
+                await self._scene_callback(session_id, scene_data)
+                
+            # Register with GeminiService if it supports scene callbacks
+            if hasattr(self.gemini, 'register_scene_callback'):
+                self.gemini.register_scene_callback(handle_scene_callback)
+                logger.debug(f"[Session {session_id}] Registered scene callback with GeminiService")
+
         # Create and store the Gemini connection task
         gemini_task = asyncio.create_task(
             self.gemini.connect(
@@ -145,21 +181,26 @@ Remember:
             raise ValueError(f"Session not found or inactive: {session_id}")
 
         try:
-            # Process media chunks
-            media_chunks = message.get("media_chunks", [])
-            for chunk in media_chunks:
-                if b64_data := chunk.get("data"):
-                    raw_audio = base64.b64decode(b64_data)
-                    # Convert to numpy array for Gemini
+            # Handle scene-related messages specifically
+            if message.get("type") == "scene_action":
+                # These are handled by the TutoringSession class directly
+                pass
+            # Process audio media chunks
+            elif message.get("type") == "realtime_input" or message.get("media_chunks") or message.get("audio_data"):
+                # Process media chunks
+                media_chunks = message.get("media_chunks", [])
+                for chunk in media_chunks:
+                    if b64_data := chunk.get("data"):
+                        raw_audio = base64.b64decode(b64_data)
+                        # Convert to numpy array for Gemini
+                        array = np.frombuffer(raw_audio, dtype=np.int16)
+                        await self.gemini.receive((16000, array))
+
+                # Handle legacy audio_data field
+                if audio_data_b64 := message.get("audio_data"):
+                    raw_audio = base64.b64decode(audio_data_b64)
                     array = np.frombuffer(raw_audio, dtype=np.int16)
-
                     await self.gemini.receive((16000, array))
-
-            # Handle legacy audio_data field
-            if audio_data_b64 := message.get("audio_data"):
-                raw_audio = base64.b64decode(audio_data_b64)
-                array = np.frombuffer(raw_audio, dtype=np.int16)
-                await self.gemini.receive((16000, array))
 
         except Exception as e:
             logger.error(f"Error processing message for session {session_id}: {e}")

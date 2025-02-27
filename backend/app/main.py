@@ -2,7 +2,7 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocket
-from .api.endpoints import tutoring, competency, reviews, curriculum, problems, learning_paths, gemini
+from .api.endpoints import tutoring, competency, reviews, curriculum, problems, learning_paths, gemini, visual
 from .core.config import settings
 
 app = FastAPI(
@@ -28,6 +28,7 @@ app.include_router(reviews.router, prefix="/api/reviews", tags=["reviews"])
 app.include_router(problems.router, prefix="/api/problems", tags=["problems"])
 app.include_router(learning_paths.router, prefix="/api", tags=["learning-paths"])
 app.include_router(gemini.router, prefix="/api/gemini", tags=["gemini"])
+app.include_router(visual.router, prefix="/api/visual", tags=["visual"])
 
 #app.include_router(curriculum.router, prefix="/api/curriculum", tags=["curriculum"])
 

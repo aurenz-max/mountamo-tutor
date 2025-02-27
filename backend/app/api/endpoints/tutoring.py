@@ -22,7 +22,7 @@ logging.getLogger('websockets').setLevel(logging.WARNING)
 
 # Keep your application logs at DEBUG level
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 # Create only the services that can be shared safely
 audio_service = AudioService()
@@ -121,7 +121,8 @@ async def tutoring_websocket(websocket: WebSocket):
                     asyncio.create_task(handle_text_responses()),
                     asyncio.create_task(handle_audio_responses()),
                     asyncio.create_task(handle_problem_responses()),
-                    asyncio.create_task(handle_transcript_responses())
+                    asyncio.create_task(handle_transcript_responses()),
+                    asyncio.create_task(handle_scene_responses())  # Add this line
                 ]
                 
                 await asyncio.gather(*tasks)
@@ -160,15 +161,26 @@ async def tutoring_websocket(websocket: WebSocket):
                 logger.debug(f"[Session {session.id}] Text response handler cancelled")
                 raise
 
+
         async def handle_problem_responses():
             """Handle problem responses from the session"""
             try:
                 async for problem in session.get_problems():
                     if session.quit_event.is_set():
                         break
-                    await websocket.send_json(problem)
+                    
+                    # Send problem data directly to frontend - keep it simple
+                    await websocket.send_json({
+                        "type": "problem", 
+                        "content": problem
+                    })
+                    
+                    logger.info(f"[Session {session.id}] Sent problem to client")
             except asyncio.CancelledError:
                 logger.debug(f"[Session {session.id}] Problem response handler cancelled")
+                raise
+            except Exception as e:
+                logger.error(f"[Session {session.id}] Error in problem response handler: {e}")
                 raise
 
         async def handle_transcript_responses():
@@ -205,6 +217,24 @@ async def tutoring_websocket(websocket: WebSocket):
                     })
             except asyncio.CancelledError:
                 logger.debug(f"[Session {session.id}] Audio response handler cancelled")
+                raise
+
+        async def handle_scene_responses():
+            """Handle visual scene updates from the session"""
+            try:
+                async for scene in session.get_scenes():
+                    if session.quit_event.is_set():
+                        break
+                    await websocket.send_json({
+                        "type": "scene",
+                        "content": scene
+                    })
+                    logger.debug(f"[Session {session.id}] Sent scene: {scene.get('scene_id')}")
+            except asyncio.CancelledError:
+                logger.debug(f"[Session {session.id}] Scene response handler cancelled")
+                raise
+            except Exception as e:
+                logger.error(f"[Session {session.id}] Error handling scene responses: {e}")
                 raise
         try:
             # Run all handlers concurrently

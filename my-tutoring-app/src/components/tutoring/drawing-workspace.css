@@ -1,0 +1,121 @@
+/* Drawing Workspace Styles */
+
+/* Main drawing workspace container */
+.drawing-workspace {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    transition: width 0.3s ease;
+  }
+  
+  /* Canvas styles */
+  .drawing-canvas {
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+  
+  /* Drawing tools panel */
+  .drawing-tools {
+    display: flex;
+    padding: 8px;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    gap: 4px;
+  }
+  
+  .tool-button {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .tool-button:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .tool-button.active {
+    background-color: #3b82f6;
+    border-color: #2563eb;
+    color: white;
+  }
+  
+  .tool-divider {
+    width: 1px;
+    height: 24px;
+    background-color: #e5e7eb;
+    margin: 0 4px;
+  }
+  
+  /* Tool options */
+  .tool-options {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+  }
+  
+  .color-picker {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  
+  .stroke-width {
+    width: 60px;
+  }
+  
+  /* Clear button */
+  .clear-canvas-button {
+    margin-left: auto;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+  }
+  
+  .clear-canvas-button:hover {
+    background-color: #e5e7eb;
+  }
+  
+  /* Loading overlay */
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+  }
+  
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spinner 1s linear infinite;
+  }
+  
+  @keyframes spinner {
+    to {
+      transform: rotate(360deg);
+    }
+  }

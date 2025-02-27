@@ -393,6 +393,8 @@ async getSubjectCurriculum(subject: string) {
   return response.json();
 },
 
+
+
 async getSkillCompetency(data: { // New function for skill-level competency
   student_id: number;
   subject: string;
@@ -454,6 +456,8 @@ async getSubskillCompetency(data: { // New function for subskill-level competenc
       throw error;
     }
   },
+
+
   
 // WebSocket connection helper for STT
 connectSTT(): WebSocket {

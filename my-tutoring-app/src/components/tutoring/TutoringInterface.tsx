@@ -33,10 +33,14 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [partialTranscripts, setPartialTranscripts] = useState<Record<string, Transcript>>({});
 
+  // Add state for problem data
+  const [currentProblem, setCurrentProblem] = useState(null);
+
   const wsRef = useRef(null);
   const audioCaptureRef = useRef(null);
   const audioContextRef = useRef(null);
   const endTimeRef = useRef(0);
+  const workspaceRef = useRef(null);
 
   useEffect(() => {
     if (!audioContextRef.current) {
@@ -195,6 +199,45 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
           break;
         case 'transcript':
           processTranscript(response.content);
+          break;
+        case 'scene':
+          console.log('Received scene data:', response.content);
+          break;
+        case 'problem':
+          // Handle problem data more specifically based on your exact structure
+          console.log('Received problem data from WebSocket:', response);
+          
+          // Extract the problem data - check the structure in your logs to make sure this matches
+          let problemData = null;
+          
+          // Check various possible structures based on your logs
+          if (response.content && response.content.data) {
+            problemData = response.content.data;
+          } else if (response.content) {
+            problemData = response.content;
+          } else if (response.data) {
+            problemData = response.data;
+          } else if (response.problem) {
+            problemData = response;
+          }
+          
+          console.log("Extracted problem data:", problemData);
+          
+          if (problemData) {
+            // Make sure the data has the expected structure for a problem
+            if (problemData.problem || problemData.problem_type) {
+              setCurrentProblem(problemData);
+              console.log("Setting current problem:", problemData);
+              
+              // Force the problem panel to be open
+              if (workspaceRef.current && typeof workspaceRef.current.setProblemOpen === 'function') {
+                workspaceRef.current.setProblemOpen(true);
+                console.log("Attempting to open problem panel");
+              } else {
+                console.warn("Cannot access setProblemOpen method on workspace ref");
+              }
+            }
+          }
           break;
         case 'error':
           setStatus('error');
@@ -358,8 +401,11 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
         </Card>
       }>
         <InteractiveWorkspace
+          ref={workspaceRef}
           currentTopic={currentTopic}
           studentId={studentId}
+          sessionId={sessionId}
+          currentProblem={currentProblem}
           onSubmit={(response) => console.log('Workspace submission:', response)}
         />
       </React.Suspense>
@@ -371,6 +417,10 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
           className="absolute inset-0 pointer-events-none"
         />
       )}
+
+
+
+
     </div>
   );
 };

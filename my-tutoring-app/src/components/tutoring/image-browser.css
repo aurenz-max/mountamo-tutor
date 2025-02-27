@@ -1,0 +1,304 @@
+/* Standalone Image Browser & Draggable Images CSS */
+
+/* Image browser sidebar */
+.image-browser-sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 56px; /* Narrow width for circular thumbnails */
+    background-color: white;
+    border-left: 1px solid #e5e7eb;
+    overflow: hidden;
+    z-index: 20;
+    box-shadow: -1px 0 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .image-browser-sidebar.with-problem-panel {
+    right: 33.333%; /* Positioned next to problem panel when it's open */
+  }
+  
+  /* Main container for the image browser */
+  .circle-image-browser {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    overflow: hidden;
+  }
+  
+  /* Error message styling */
+  .browser-error {
+    font-size: 10px;
+    color: #ef4444;
+    padding: 4px;
+    margin: 4px;
+    background-color: #fee2e2;
+    border-radius: 3px;
+    text-align: center;
+  }
+  
+  /* Infinite scroll container */
+  .infinite-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 0;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f3f4f6;
+  }
+  
+  .infinite-scroll-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .infinite-scroll-container::-webkit-scrollbar-track {
+    background: #f3f4f6;
+  }
+  
+  .infinite-scroll-container::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 3px;
+  }
+  
+  /* Category section */
+  .category-section {
+    margin-bottom: 10px;
+  }
+  
+  /* Category divider with label */
+  .category-divider {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    margin: 8px 0 5px 0;
+  }
+  
+  .category-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding-right: 6px;
+  }
+  
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background-color: #e5e7eb;
+  }
+  
+  /* Category images container */
+  .category-images {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+  }
+  
+  /* Individual circular thumbnail */
+  .circle-thumbnail {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+    cursor: grab;
+    transition: all 0.2s ease;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  
+  .circle-thumbnail:hover {
+    transform: scale(1.08);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    z-index: 5;
+  }
+  
+  .circle-thumbnail:active {
+    transform: scale(0.95);
+  }
+  
+  /* Circle content for SVGs */
+  .circle-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Image inside circular thumbnail */
+  .circle-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  /* Loading indicators */
+  .loading-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    font-size: 10px;
+  }
+  
+  .loading-state,
+  .loading-section {
+    padding: 8px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 10px;
+  }
+  
+  /* Toggle button for image browser */
+  .toggle-image-browser {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #4f46e5;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 15;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+  
+  .toggle-image-browser:hover {
+    background-color: #4338ca;
+    transform: scale(1.05);
+  }
+  
+  /* Draggable images container */
+  .draggable-images-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+  
+  /* Individual draggable image */
+  .draggable-workspace-image {
+    position: absolute;
+    pointer-events: auto;
+    user-select: none;
+    z-index: 10;
+    transform-origin: center center;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    max-width: 80px; /* Smaller default size */
+    max-height: 80px;
+    overflow: hidden;
+  }
+  
+  .draggable-workspace-image:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  }
+  
+  .draggable-workspace-image.dragging {
+    opacity: 0.8;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 20;
+  }
+  
+  /* Image container within draggable */
+  .draggable-workspace-image .image-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    padding: 2px;
+    overflow: hidden;
+  }
+  
+  .draggable-workspace-image .image-container img,
+  .draggable-workspace-image .image-container svg {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  
+  /* SVG container */
+  .svg-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Remove button for images */
+  .draggable-workspace-image .remove-button {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #ef4444;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border: 1px solid white;
+    z-index: 2;
+  }
+  
+  .draggable-workspace-image:hover .remove-button {
+    opacity: 1;
+  }
+  
+  /* Clear images button */
+  .clear-images-button {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #ef4444;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+  }
+  
+  .clear-images-button:hover {
+    background-color: #fef2f2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
