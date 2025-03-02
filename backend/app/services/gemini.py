@@ -32,7 +32,89 @@ TOOL_CREATE_PROBLEM = {
         }
     ],
 }
+# Replace the TOOL_PROBLEM_VISUAL constant in gemini.py with this improved version:
 
+TOOL_PROBLEM_VISUAL = {
+    "function_declarations": [
+        # Problem creation function
+        {
+            "name": "create_problem",
+            "description": "Generate a practice problem for the current skill being taught."
+        },
+        # Visual functions with improved descriptions
+        {
+            "name": "get_categories",
+            "description": "Get all available image categories. Always call this first before trying to create scenes to ensure you're using valid categories."
+        },
+        {
+            "name": "get_objects",
+            "description": "Get objects available within a specific category. Always call this after get_categories to ensure you're using valid objects for your scene.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "Category name to get objects from. Use exact category names from get_categories."
+                    }
+                },
+                "required": ["category"]
+            }
+        },
+        {
+            "name": "find_images",
+            "description": "Find images matching a category and/or object type. This is primarily for information - use create_scene to actually create visual content.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "Category to filter by (optional). Use exact category names from get_categories."
+                    },
+                    "object_type": {
+                        "type": "string",
+                        "description": "Object type to filter by (optional). Use object names from get_objects."
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "create_scene",
+            "description": "Create a visual scene with specific objects. Always call get_categories and get_objects first to ensure you're using valid inputs.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "Category of objects to use. Use exact category names from get_categories."
+                    },
+                    "object_type": {
+                        "type": "string",
+                        "description": "Type of object to add to the scene (e.g. 'circle', 'triangle'). Use object names from get_objects."
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of objects to include (between 1-10)"
+                    },
+                    "layout": {
+                        "type": "string",
+                        "enum": ["grid", "random", "circle"],
+                        "description": "How to arrange objects in the scene",
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Optional title for the scene"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Optional description of the scene purpose"
+                    }
+                },
+                "required": ["category", "object_type", "count"]
+            }
+        }
+    ],
+}
 
 class GeminiService:
     def __init__(
@@ -79,7 +161,10 @@ class GeminiService:
         logger.info(f"GeminiService using provided AzureSpeechService: {self.azure_speech_service is not None}")
         logger.info(f"GeminiService using provided GeminiImageIntegration: {self.visual_integration is not None}")
 
+
+
     def register_scene_callback(
+        
         self, 
         callback: Callable[[Dict[str, Any]], Awaitable[None]]
     ) -> None:
@@ -184,6 +269,221 @@ class GeminiService:
             logger.error(f"[Session {self._current_session_id}] Error in create_problem: {str(e)}", exc_info=True)
             return {"status": "error", "message": f"Error during problem creation: {str(e)}"}
 
+    async def get_categories(self) -> Dict[str, Any]:
+        """
+        Get available image categories for Gemini.
+        This function is called by Gemini via tool invocation.
+        
+        Returns:
+            Dict with status and category information
+        """
+        if not self.visual_integration:
+            logger.warning("Visual integration not available for get_categories")
+            return {
+                "status": "error",
+                "message": "Visual integration not available"
+            }
+        
+        try:
+            # Get categories from the visual integration
+            categories = await self.visual_integration.get_categories()
+            
+            # Return with additional helpful information
+            return {
+                "status": "success",
+                "message": f"Found {len(categories)} available categories",
+                "categories": categories,
+                "instructions": "Use these exact category names when creating scenes"
+            }
+        except Exception as e:
+            logger.error(f"Error getting categories: {e}")
+            return {
+                "status": "error",
+                "message": f"Error getting categories: {str(e)}"
+            }
+
+    async def get_objects(self, category: str) -> Dict[str, Any]:
+        """
+        Get objects available in a specific category.
+        This function is called by Gemini via tool invocation.
+        
+        Args:
+            category: Category to get objects from
+        
+        Returns:
+            Dict with status and object information
+        """
+        if not self.visual_integration:
+            logger.warning("Visual integration not available for get_objects")
+            return {
+                "status": "error",
+                "message": "Visual integration not available"
+            }
+        
+        try:
+            # First check if this category exists
+            available_categories = await self.visual_integration.get_categories()
+            
+            # Normalize category for case-insensitive comparison
+            category_lower = category.lower().strip()
+            exact_match = False
+            
+            # Try to find an exact match first
+            for avail_category in available_categories:
+                if avail_category.lower() == category_lower:
+                    category = avail_category  # Use the correctly cased version
+                    exact_match = True
+                    break
+            
+            # If no exact match, try fuzzy matching
+            if not exact_match:
+                similar_categories = [cat for cat in available_categories 
+                                    if category_lower in cat.lower() or cat.lower() in category_lower]
+                
+                if similar_categories:
+                    suggested_category = similar_categories[0]
+                    logger.info(f"Category '{category}' not found, suggesting '{suggested_category}'")
+                    return {
+                        "status": "success",
+                        "message": f"Category '{category}' not found, but found similar category '{suggested_category}'",
+                        "suggested_category": suggested_category,
+                        "available_categories": available_categories
+                    }
+                else:
+                    # No similar categories found
+                    return {
+                        "status": "error",
+                        "message": f"Category '{category}' not found. Available categories: {', '.join(available_categories)}",
+                        "available_categories": available_categories
+                    }
+            
+            # Get objects for the category
+            objects = await self.visual_integration.get_objects(category)
+            
+            # Return with additional helpful information
+            return {
+                "status": "success",
+                "message": f"Found {len(objects)} objects in category '{category}'",
+                "category": category,
+                "objects": objects,
+                "instructions": "Use these object types when creating scenes with this category"
+            }
+        except Exception as e:
+            logger.error(f"Error getting objects: {e}")
+            return {
+                "status": "error",
+                "message": f"Error getting objects: {str(e)}"
+            }
+
+    async def create_scene(
+        self,
+        category: str,
+        object_type: str,
+        count: int,
+        layout: str = "grid",
+        title: Optional[str] = None,
+        description: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Create a scene with specific object type and count.
+        This function is called by Gemini via tool invocation.
+        
+        Args:
+            category: Category of objects to use
+            object_type: Type of object to add to the scene
+            count: Number of objects to include
+            layout: Layout style
+            title: Optional title
+            description: Optional description
+            
+        Returns:
+            Dict with scene creation result
+        """
+        if not self.visual_integration:
+            logger.warning("Visual integration not available for create_scene")
+            return {
+                "status": "error",
+                "message": "Visual integration not available"
+            }
+        
+        try:
+            # First check if the category and object type are valid
+            available_categories = await self.visual_integration.get_categories()
+            
+            # Normalize for case-insensitive comparison
+            category_lower = category.lower().strip()
+            matched_category = None
+            
+            # Try to find an exact category match
+            for avail_category in available_categories:
+                if avail_category.lower() == category_lower:
+                    matched_category = avail_category
+                    break
+            
+            # If no exact match, suggest similar categories
+            if not matched_category:
+                similar_categories = [cat for cat in available_categories 
+                                    if category_lower in cat.lower() or cat.lower() in category_lower]
+                
+                if similar_categories:
+                    suggested_category = similar_categories[0]
+                    logger.info(f"Suggesting alternative category: {suggested_category}")
+                    matched_category = suggested_category
+                else:
+                    # Default to a common category if available
+                    default_categories = ["shapes", "objects", "basic"]
+                    for default_cat in default_categories:
+                        if default_cat in available_categories:
+                            matched_category = default_cat
+                            logger.info(f"Using default category: {matched_category}")
+                            break
+                    
+                    if not matched_category:
+                        # No match and no default found, just use the first available
+                        if available_categories:
+                            matched_category = available_categories[0]
+                            logger.info(f"Using first available category: {matched_category}")
+            
+            # Now use the matched category and create the scene
+            if matched_category:
+                # Get available objects for validation
+                available_objects = await self.visual_integration.get_objects(matched_category)
+                
+                # Create the scene with validation
+                scene_result = await self.visual_integration.create_scene(
+                    category=matched_category,
+                    object_type=object_type,
+                    count=count,
+                    layout=layout,
+                    title=title,
+                    description=description
+                )
+                
+                # Enhance the response with helpful information
+                if scene_result.get("status") == "success":
+                    scene_result["message"] = (f"Created a scene with {count} {object_type} using {layout} layout "
+                                            f"from category '{matched_category}'.")
+                    scene_result["note"] = "Scene created successfully."
+                else:
+                    scene_result["available_categories"] = available_categories
+                    if matched_category:
+                        scene_result["available_objects"] = available_objects
+                
+                return scene_result
+            else:
+                # No suitable category found
+                return {
+                    "status": "error",
+                    "message": f"Could not find a suitable category. Available categories: {', '.join(available_categories)}",
+                    "available_categories": available_categories
+                }
+        except Exception as e:
+            logger.error(f"Error creating scene: {e}")
+            return {
+                "status": "error",
+                "message": f"Error creating scene: {str(e)}"
+            }
+
     async def initialize_session(
         self, 
         session_id: str, 
@@ -238,7 +538,8 @@ class GeminiService:
                 api_key=settings.GEMINI_API_KEY,
                 http_options={"api_version": "v1alpha"},
             )
-            
+     
+
             # Configure the session
             config = LiveConnectConfig(
                 response_modalities=["AUDIO"],
@@ -250,15 +551,8 @@ class GeminiService:
                     )
                 ),
                 system_instruction=Content(parts=[{"text": unified_prompt}]),
-                tools=[TOOL_CREATE_PROBLEM]
+                tools=[TOOL_PROBLEM_VISUAL]
             )
-
-            # Add visual tools if visual integration is available
-            if self.visual_integration:
-                visual_tools = self.visual_integration.get_tool_declarations()
-                if visual_tools and "function_declarations" in visual_tools:
-                    config.tools.append(visual_tools)
-                    logger.info(f"[Session {session_id}] Added visual tools to Gemini configuration")
 
             # Connect to Gemini and handle the session
             async with client.aio.live.connect(
@@ -344,22 +638,21 @@ class GeminiService:
                                         })
                                 
                                 # Handle visual tool calls if we have a visual integration
-                                elif self.visual_integration and name in [
-                                    "get_categories", "get_objects", "find_images", "create_scene"
-                                ]:
-                                    try:
-                                        # Forward the function call to visual integration
-                                        if not hasattr(self.visual_integration, name):
-                                            logger.error(f"Visual integration doesn't have method {name}")
-                                            continue
-                                            
+                                elif self.visual_integration and name in ["get_categories", "get_objects", "find_images", "create_scene"]:                                    
+                                    try:                                        
                                         # Get arguments from function call
                                         args = {}
                                         if hasattr(function_call, 'args') and function_call.args:
                                             args = function_call.args
-                                            
+
+                                        logger.info(f"[Session {session_id}] Visual tool '{name}' called with args: {args}")
+
+                                        # Validate the function exists on self
+                                        if not hasattr(self, name):
+                                            raise AttributeError(f"Function {name} does not exist on GeminiService")   
+                                         
                                         # Call the method on visual integration
-                                        method = getattr(self.visual_integration, name)
+                                        method = getattr(self, name)
                                         result = await method(**args)
                                         
                                         # Add to function responses

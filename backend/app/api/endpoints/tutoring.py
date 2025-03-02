@@ -79,6 +79,8 @@ async def tutoring_websocket(websocket: WebSocket):
             })
             return
 
+
+
         # Handle incoming messages from the client
         async def handle_client_messages():
             try:
@@ -222,19 +224,24 @@ async def tutoring_websocket(websocket: WebSocket):
         async def handle_scene_responses():
             """Handle visual scene updates from the session"""
             try:
+                scene_count = 0
+                logger.warning(f"[Session {session.id}] Starting scene response handler")
                 async for scene in session.get_scenes():
                     if session.quit_event.is_set():
+                        logger.warning(f"[Session {session.id}] Quit event set, breaking scene loop")
                         break
+                    scene_count += 1
+                    logger.warning(f"[Session {session.id}] Got scene #{scene_count} from queue: {scene}")
                     await websocket.send_json({
                         "type": "scene",
                         "content": scene
                     })
-                    logger.debug(f"[Session {session.id}] Sent scene: {scene.get('scene_id')}")
+                    logger.warning(f"[Session {session.id}] Sent scene #{scene_count} to websocket: {scene.get('scene_id')}")
             except asyncio.CancelledError:
-                logger.debug(f"[Session {session.id}] Scene response handler cancelled")
+                logger.warning(f"[Session {session.id}] Scene response handler cancelled after {scene_count} scenes")
                 raise
             except Exception as e:
-                logger.error(f"[Session {session.id}] Error handling scene responses: {e}")
+                logger.error(f"[Session {session.id}] Error handling scene responses: {e}", exc_info=True)
                 raise
         try:
             # Run all handlers concurrently

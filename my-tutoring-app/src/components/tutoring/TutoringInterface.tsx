@@ -36,6 +36,8 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
   // Add state for problem data
   const [currentProblem, setCurrentProblem] = useState(null);
 
+  const [currentScene, setCurrentScene] = useState(null);
+
   const wsRef = useRef(null);
   const audioCaptureRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -175,80 +177,80 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
     }
   };
 
-  const handleWebSocketMessage = async (event) => {
-    if (event.data instanceof Blob) {
-      await handleAudioData(event.data);
-      return;
-    }
-    try {
-      const response = JSON.parse(event.data);
-      switch (response.type) {
-        case 'session_started':
-          setSessionId(response.session_id);
-          setStatus('connected');
-          break;
-        case 'audio_status':
-          setIsPlaying(response.status === 'speaking');
-          break;
-        case 'audio':
-          await handleAudioData(response.data);
-          break;
-        case 'text':
-          console.log('Received text response:', response.content);
-          setProcessing(false);
-          break;
-        case 'transcript':
-          processTranscript(response.content);
-          break;
-        case 'scene':
-          console.log('Received scene data:', response.content);
-          break;
-        case 'problem':
-          // Handle problem data more specifically based on your exact structure
-          console.log('Received problem data from WebSocket:', response);
-          
-          // Extract the problem data - check the structure in your logs to make sure this matches
-          let problemData = null;
-          
-          // Check various possible structures based on your logs
-          if (response.content && response.content.data) {
-            problemData = response.content.data;
-          } else if (response.content) {
-            problemData = response.content;
-          } else if (response.data) {
-            problemData = response.data;
-          } else if (response.problem) {
-            problemData = response;
-          }
-          
-          console.log("Extracted problem data:", problemData);
-          
-          if (problemData) {
-            // Make sure the data has the expected structure for a problem
-            if (problemData.problem || problemData.problem_type) {
-              setCurrentProblem(problemData);
-              console.log("Setting current problem:", problemData);
-              
-              // Force the problem panel to be open
-              if (workspaceRef.current && typeof workspaceRef.current.setProblemOpen === 'function') {
-                workspaceRef.current.setProblemOpen(true);
-                console.log("Attempting to open problem panel");
-              } else {
-                console.warn("Cannot access setProblemOpen method on workspace ref");
-              }
+// Then update your handleWebSocketMessage function to handle scene data
+const handleWebSocketMessage = async (event) => {
+  if (event.data instanceof Blob) {
+    await handleAudioData(event.data);
+    return;
+  }
+  try {
+    const response = JSON.parse(event.data);
+    switch (response.type) {
+      case 'session_started':
+        setSessionId(response.session_id);
+        setStatus('connected');
+        break;
+      case 'audio_status':
+        setIsPlaying(response.status === 'speaking');
+        break;
+      case 'audio':
+        await handleAudioData(response.data);
+        break;
+      case 'text':
+        console.log('Received text response:', response.content);
+        setProcessing(false);
+        break;
+      case 'transcript':
+        processTranscript(response.content);
+        break;
+      case 'scene':
+        console.log('Received scene data:', response.content);
+        // Update the state with the scene data
+        setCurrentScene(response.content);
+        break;
+      case 'problem':
+        // Existing problem handling code...
+        console.log('Received problem data from WebSocket:', response);
+        
+        // Extract the problem data
+        let problemData = null;
+        
+        if (response.content && response.content.data) {
+          problemData = response.content.data;
+        } else if (response.content) {
+          problemData = response.content;
+        } else if (response.data) {
+          problemData = response.data;
+        } else if (response.problem) {
+          problemData = response;
+        }
+        
+        console.log("Extracted problem data:", problemData);
+        
+        if (problemData) {
+          if (problemData.problem || problemData.problem_type) {
+            setCurrentProblem(problemData);
+            console.log("Setting current problem:", problemData);
+            
+            if (workspaceRef.current && typeof workspaceRef.current.setProblemOpen === 'function') {
+              workspaceRef.current.setProblemOpen(true);
+              console.log("Attempting to open problem panel");
+            } else {
+              console.warn("Cannot access setProblemOpen method on workspace ref");
             }
           }
-          break;
-        case 'error':
-          setStatus('error');
-          break;
-        default:
-          console.warn('Unknown message type:', response.type);
-      }
-    } catch (err) {
-      console.error('Error parsing websocket message:', err);
+        }
+        break;
+      case 'error':
+        setStatus('error');
+        break;
+      default:
+        console.warn('Unknown message type:', response.type);
     }
-  };
+  } catch (err) {
+    console.error('Error parsing websocket message:', err);
+  }
+};
 
   const initializeSession = async () => {
     return new Promise((resolve, reject) => {
@@ -400,14 +402,15 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
           </div>
         </Card>
       }>
-        <InteractiveWorkspace
-          ref={workspaceRef}
-          currentTopic={currentTopic}
-          studentId={studentId}
-          sessionId={sessionId}
-          currentProblem={currentProblem}
-          onSubmit={(response) => console.log('Workspace submission:', response)}
-        />
+      <InteractiveWorkspace
+        ref={workspaceRef}
+        currentTopic={currentTopic}
+        studentId={studentId}
+        sessionId={sessionId}
+        currentProblem={currentProblem}
+        currentScene={currentScene} // Pass the scene data to workspace
+        onSubmit={(response) => console.log('Workspace submission:', response)}
+      />
       </React.Suspense>
       {transcriptionEnabled && (
         <TranscriptionManager

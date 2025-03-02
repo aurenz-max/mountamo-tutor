@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 import logging
-
+from datetime import datetime
 from ...core.session_manager import SessionManager
 from ...services.visual_content_service import VisualContentService
 
@@ -171,3 +171,61 @@ async def delete_scene(
         "status": "success",
         "message": f"Scene {scene_id} deleted successfully"
     }
+
+@router.get("/debug/image-catalog-direct/{session_id}")
+async def debug_image_catalog_direct(
+    session_id: str,
+    visual_service: VisualContentService = Depends(get_visual_service)
+):
+    """
+    Debug endpoint to directly get information about the available images and categories.
+    Does not require session manager access.
+    """
+    try:
+        logger.info(f"Running direct image catalog debug for images related to session {session_id}")
+        
+        # Get all available images
+        all_images = await visual_service.get_available_images(force_refresh=True)
+        
+        # Extract categories
+        categories = set()
+        for image_info in all_images.values():
+            category = image_info.get("category", "")
+            if category:
+                categories.add(category)
+        
+        # Count images per category
+        category_counts = {}
+        for category in categories:
+            category_images = {k: v for k, v in all_images.items() if v.get("category", "").lower() == category.lower()}
+            category_counts[category] = len(category_images)
+        
+        # Get sample objects per category
+        object_samples = {}
+        for category in categories:
+            category_images = {k: v for k, v in all_images.items() if v.get("category", "").lower() == category.lower()}
+            if category_images:
+                # Get sample names for this category (first 5)
+                samples = [v.get("name", "") for v in list(category_images.values())[:5]]
+                object_samples[category] = samples
+        
+        # Build debug info
+        debug_info = {
+            "session_id": session_id,
+            "total_images": len(all_images),
+            "total_categories": len(categories),
+            "categories": sorted(list(categories)),
+            "counts_per_category": category_counts,
+            "object_samples": object_samples,
+            "timestamp": str(datetime.datetime.utcnow().isoformat())
+        }
+        
+        logger.info(f"Direct image catalog debug completed successfully")
+        return {
+            "status": "success",
+            "message": "Image catalog debug information retrieved directly",
+            "data": debug_info
+        }
+    except Exception as e:
+        logger.error(f"Error directly debugging image catalog: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error debugging image catalog: {str(e)}")

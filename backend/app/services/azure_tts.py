@@ -7,7 +7,7 @@ import json
 import uuid
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Set to DEBUG for more verbose logging
+logger.setLevel(logging.WARNING)  # Set to DEBUG for more verbose logging
 
 class AzureSpeechService:
     def __init__(self, subscription_key: str, region: str):
@@ -58,12 +58,12 @@ class AzureSpeechService:
             current = self.current_utterances[speaker]
             # If the new text starts with or is similar to the current text, it's likely the same utterance
             if text.startswith(current['text']) or current['text'].startswith(text):
-                logger.debug(f"Using existing utterance ID for speaker {speaker}")
+                #logger.debug(f"Using existing utterance ID for speaker {speaker}")
                 return current['id']
         
         # Otherwise, create a new utterance ID
         new_id = str(uuid.uuid4())
-        logger.debug(f"Created new utterance ID for speaker {speaker}: {new_id}")
+        #logger.debug(f"Created new utterance ID for speaker {speaker}: {new_id}")
         return new_id
 
     def _send_transcript(self, text: str, speaker: str, is_partial: bool, utterance_id: str):

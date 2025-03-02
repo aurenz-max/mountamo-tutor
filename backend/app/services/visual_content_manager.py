@@ -29,12 +29,6 @@ class VisualContentManager:
         logger.info("VisualContentManager initialized")
         
     async def initialize_session(self, session_id: str) -> None:
-        """
-        Initialize a new visual content session.
-        
-        Args:
-            session_id: Unique session identifier
-        """
         if session_id in self.sessions:
             logger.debug(f"Visual content session {session_id} already exists")
             return
@@ -43,7 +37,7 @@ class VisualContentManager:
         await self.visual_service.initialize_session(session_id)
         
         # Create a GeminiImageIntegration for this session
-        integration = GeminiImageIntegration(self.visual_service)
+        integration = GeminiImageIntegration(self, session_id)  # Pass self, not self.visual_service
         
         # Store session info
         self.sessions[session_id] = {
@@ -89,6 +83,7 @@ class VisualContentManager:
             return self.integration_by_session[session_id]
             
         # Create a new integration for this session
+        # Pass 'self' as the visual_content_manager, not self.visual_service
         integration = GeminiImageIntegration(self, session_id)
         
         # Store the integration
@@ -157,7 +152,41 @@ class VisualContentManager:
             except Exception as e:
                 logger.error(f"Error getting scene update: {e}")
                 continue
-                
+
+    async def debug_image_catalog(self, session_id: str) -> Dict[str, Any]:
+        """Debug method to directly inspect image catalog state"""
+        logger.info(f"Running direct debug for session {session_id}")
+        
+        if session_id not in self.integration_by_session:
+            return {"status": "error", "message": "No integration found for session"}
+        
+        integration = self.integration_by_session[session_id]
+        
+        try:
+            # Force refresh the catalog to ensure latest data
+            catalog = await integration.build_image_catalog(force_refresh=True)
+            
+            # Count images by category
+            category_counts = {cat: len(items) for cat, items in catalog.items()}
+            
+            # Sample a few objects from each category
+            samples = {}
+            for cat, items in catalog.items():
+                object_samples = list(set(item["object"] for item in items[:5]))
+                samples[cat] = object_samples
+            
+            return {
+                "status": "success",
+                "session_id": session_id,
+                "total_categories": len(catalog),
+                "categories": list(catalog.keys()),
+                "counts_by_category": category_counts,
+                "samples": samples
+            }
+        except Exception as e:
+            logger.error(f"Error debugging image catalog: {str(e)}")
+            return {"status": "error", "message": f"Debug error: {str(e)}"}
+
     async def clear_scene(self, session_id: str, scene_id: str) -> bool:
         """
         Clear a specific scene from the session.

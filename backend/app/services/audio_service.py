@@ -120,7 +120,7 @@ class AudioService:
                 logger.error(f"No session found for {session_id} in playback loop")
                 return
                 
-            logger.debug(f"Starting playback loop for session {session_id}")
+            #logger.debug(f"Starting playback loop for session {session_id}")
             
             while not session['should_stop'].is_set():
                 try:
@@ -196,7 +196,7 @@ class AudioService:
                 return
                 
             session['queue'].put(audio_data)
-            logger.debug(f"Queued {len(audio_data)} bytes for session {session_id}")
+            #logger.debug(f"Queued {len(audio_data)} bytes for session {session_id}")
             
         except Exception as e:
             logger.error(f"Error queuing audio for session {session_id}: {e}")

@@ -6,6 +6,7 @@ import { visualContentApi, ImageInfo } from '@/lib/visualContentApi';
 import DrawingWorkspace from './DrawingWorkspace';
 import ImageBrowser from './ImageBrowser';
 import DraggableImage from './DraggableImage';
+import VisualSceneManager from './VisualSceneManager';
 import './InteractiveWorkspace.css';
 
 // Define the interface for workspace images
@@ -20,15 +21,18 @@ interface InteractiveWorkspaceProps {
   studentId: number;
   onSubmit: (canvasData: string) => void;
   sessionId?: string | null;
-  currentProblem?: any; // Add this prop to receive problem data from parent
+  currentProblem?: any; // Keep this optional with ?
+  currentScene?: any; // Make sure it's optional with ?
 }
+
 
 const InteractiveWorkspace = forwardRef(({ 
   currentTopic, 
   studentId, 
   onSubmit, 
   sessionId = null,
-  currentProblem: externalProblem = null
+  currentProblem: externalProblem = null,
+  currentScene: externalScene = null 
 }, ref) => {
   // Problem state
   const [currentProblem, setCurrentProblem] = useState<any>(externalProblem);
@@ -59,6 +63,12 @@ const InteractiveWorkspace = forwardRef(({
       setIsProblemOpen(true); // Automatically open problem panel when a problem is received
     }
   }, [externalProblem]);
+
+  useEffect(() => {
+    if (externalScene) {
+      console.log('InteractiveWorkspace received scene:', externalScene);
+    }
+  }, [externalScene]);
 
   // Generate a session ID if not provided
   useEffect(() => {
@@ -128,6 +138,14 @@ const InteractiveWorkspace = forwardRef(({
     
     // Return a promise that resolves when all images are drawn
     return Promise.all(imageLoadPromises);
+  };
+
+  // Add a handler for when the VisualSceneManager creates images
+  const handleSceneImagesCreated = (newImages: WorkspaceImage[]) => {
+    console.log('Scene manager created images:', newImages);
+    
+    // Add the new images to the workspace
+    setWorkspaceImages(prev => [...prev, ...newImages]);
   };
 
   const generateNewProblem = async () => {
@@ -375,6 +393,13 @@ const InteractiveWorkspace = forwardRef(({
 
   return (
     <div className="relative flex flex-col h-full">
+      {/* Add the VisualSceneManager component */}
+      <VisualSceneManager
+        scene={externalScene}
+        workspaceRef={workspaceRef}
+        onImagesCreated={handleSceneImagesCreated}
+      />
+      
       {/* Top Bar */}
       <div className="bg-gray-100 p-2 flex justify-end items-center">
         <Button

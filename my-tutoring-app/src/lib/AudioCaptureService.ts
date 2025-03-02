@@ -103,10 +103,10 @@ class AudioCaptureService {
         try {
             // Get input data
             const inputData = event.inputBuffer.getChannelData(0);
-            console.log('Input buffer size:', inputData.length);
+            //console.log('Input buffer size:', inputData.length);
             
             const sourceSampleRate = this.audioContext!.sampleRate;
-            console.log('Source sample rate:', sourceSampleRate);
+            //console.log('Source sample rate:', sourceSampleRate);
     
             // Downsample to target rate (16kHz)
             const downsampledData = this.downsampleAudio(
@@ -114,15 +114,15 @@ class AudioCaptureService {
                 sourceSampleRate,
                 this.TARGET_SAMPLE_RATE
             );
-            console.log('Downsampled size:', downsampledData.length);
+            //console.log('Downsampled size:', downsampledData.length);
     
             // Convert to 16-bit PCM
             const pcmData = this.convertToPCM(downsampledData);
-            console.log('PCM data size:', pcmData.length);
+            //console.log('PCM data size:', pcmData.length);
     
             // Convert to base64
             const base64Data = this.convertToBase64(pcmData);
-            console.log('Base64 data length:', base64Data.length);
+            //console.log('Base64 data length:', base64Data.length);
     
             // Send to WebSocket with the correct message structure
             const message = {
@@ -133,14 +133,14 @@ class AudioCaptureService {
                 }]
             };
     
-            console.log('Message structure:', JSON.stringify({
-                type: message.type,
-                media_chunks: message.media_chunks ? 
-                    message.media_chunks.map(chunk => ({
-                        mime_type: chunk.mime_type,
-                        data_length: chunk.data.length
-                    })) : 'no chunks'
-            }));
+            // console.log('Message structure:', JSON.stringify({
+            //     type: message.type,
+            //     media_chunks: message.media_chunks ? 
+            //         message.media_chunks.map(chunk => ({
+            //             mime_type: chunk.mime_type,
+            //             data_length: chunk.data.length
+            //         })) : 'no chunks'
+            // }));
     
             this.ws.send(JSON.stringify(message));
     

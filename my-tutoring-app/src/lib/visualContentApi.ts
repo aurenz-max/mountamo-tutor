@@ -1,4 +1,3 @@
-// Create a separate file for visual content API
 // src/lib/visualContentApi.ts
 
 const VISUAL_API_BASE_URL = 'http://localhost:8000/api/visual';
@@ -14,6 +13,7 @@ export interface ImageInfo {
   type: string;
   data_uri?: string;
   thumbnail_url?: string;
+  _previewSize?: { width: number; height: number };
 }
 
 export interface VisualContentApiResponse<T> {
@@ -102,6 +102,66 @@ export const visualContentApi = {
     } catch (error) {
       console.error('Error creating scene:', error);
       return { status: 'error', message: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  },
+
+  /**
+   * Get visual content by category - alias for getVisualImages
+   * This method is added to match the expected API in VisualSceneManager
+   */
+  getVisualByCategory: async (category: string): Promise<VisualContentApiResponse<ImageInfo[]>> => {
+    console.log(`Getting visual content for category: ${category}`);
+    try {
+      // First try to get from the regular API
+      const result = await visualContentApi.getVisualImages(category);
+      
+      if (result.status === 'success' && result.images && result.images.length > 0) {
+        return result;
+      }
+      
+      // If no results or error, try to provide fallbacks for common categories
+      if (category === 'shapes') {
+        console.log('No images found, using fallback shapes');
+        // Provide fallback SVG shapes
+        return {
+          status: 'success',
+          images: [
+            {
+              id: 'circle_fallback',
+              name: 'circle',
+              category: 'shapes',
+              type: 'svg',
+              data_uri: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="40" stroke="black" stroke-width="2" fill="blue" />
+              </svg>`
+            },
+            {
+              id: 'triangle_fallback',
+              name: 'triangle',
+              category: 'shapes',
+              type: 'svg',
+              data_uri: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="50,10 90,90 10,90" stroke="black" stroke-width="2" fill="green" />
+              </svg>`
+            },
+            {
+              id: 'square_fallback',
+              name: 'square',
+              category: 'shapes',
+              type: 'svg',
+              data_uri: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <rect x="10" y="10" width="80" height="80" stroke="black" stroke-width="2" fill="red" />
+              </svg>`
+            }
+          ]
+        };
+      }
+      
+      // Return the original result if no fallbacks apply
+      return result;
+    } catch (error) {
+      console.error(`Error in getVisualByCategory for ${category}:`, error);
+      return { status: 'error', images: [] };
     }
   }
 };

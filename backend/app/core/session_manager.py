@@ -97,11 +97,15 @@ class TutoringSession:
     async def handle_scene(self, scene_data: Dict[str, Any]) -> None:
         """Handle visual scene data from Gemini service"""
         try:
+            logger.warning(f"[Session {self.id}] handle_scene called with data: {scene_data}")
             if not self._active:
+                logger.warning(f"[Session {self.id}] Session not active, ignoring scene")
                 return
+            logger.warning(f"[Session {self.id}] Adding scene to queue, queue size before: {self.scene_queue.qsize()}")
             await self.scene_queue.put(scene_data)
+            logger.warning(f"[Session {self.id}] Scene added to queue, new size: {self.scene_queue.qsize()}")
         except Exception as e:
-            logger.error(f"Error handling scene in session {self.id}: {e}")
+            logger.error(f"Error handling scene in session {self.id}: {e}", exc_info=True)
             raise
 
     async def initialize(self, 
@@ -129,13 +133,18 @@ class TutoringSession:
                 self.gemini_service.visual_integration = visual_integration
                 
                 # Set up callback from GeminiImageIntegration to handle scenes
-                async def handle_scene(scene_data: Dict[str, Any]) -> None:
-                    await self.handle_scene(scene_data)
+                async def scene_callback(scene_data: Dict[str, Any]) -> None:
+                    logger.warning(f"[Session {self.id}] Scene callback triggered with data: {scene_data}")
+                    try:
+                        # Using handle_scene method from the class
+                        await self.handle_scene(scene_data)  
+                    except Exception as e:
+                        logger.error(f"[Session {self.id}] Error in scene callback: {e}", exc_info=True)
                     
-                # Register scene callback in GeminiService
+                # Register scene callback with a different name
                 if hasattr(self.gemini_service, 'register_scene_callback'):
-                    self.gemini_service.register_scene_callback(handle_scene)
-                    logger.info(f"Scene callback registered for session {self.id}")
+                    self.gemini_service.register_scene_callback(scene_callback)
+                    logger.warning(f"[Session {self.id}] Scene callback registered with GeminiService")
                     
                 logger.info(f"Visual integration set up for session {self.id}")
             except Exception as e:
@@ -307,7 +316,7 @@ class TutoringSession:
         except Exception as e:
             logger.error(f"[Session {self.id}] Error in problem generator: {e}", exc_info=True)
             raise
-            
+
     async def send_problem(self, problem: Dict[str, Any]) -> None:
         """Queue a problem to be sent to the frontend"""
         try:

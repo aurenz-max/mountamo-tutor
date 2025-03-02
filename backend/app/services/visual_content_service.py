@@ -17,14 +17,8 @@ class VisualContentService:
     Integrates with GeminiService to handle image-based tool requests.
     Uses async operations and thread pools for non-blocking image processing.
     """
+
     def __init__(self, image_library_path: Optional[str] = None, max_cache_size: int = 100):
-        """
-        Initialize the Visual Content Service.
-        
-        Args:
-            image_library_path: Path to the directory containing image assets
-            max_cache_size: Maximum number of images to keep in memory cache
-        """
         # Session storage for active visual content
         self.sessions: Dict[str, Dict[str, Any]] = {}
         
@@ -32,23 +26,15 @@ class VisualContentService:
         if image_library_path:
             self.image_library_path = Path(image_library_path)
         else:
-            # Get path to the backend root directory (parent of app directory)
-            backend_root = Path(__file__).parent.parent.parent
+            # Get the backend root directory (exactly 3 levels up from this file)
+            backend_root = Path(__file__).resolve().parent.parent.parent
             # Set path to assets/images
             self.image_library_path = backend_root / "assets" / "images"
         
-        # Log the resolved path for debugging
-        logger.info(f"VisualContentService initialized with image library at: {self.image_library_path}")
-        
-        # Ensure the directory exists - run in separate thread
-        async def setup_directory():
-            loop = asyncio.get_event_loop()
-            # Convert Path to string when passing to os.makedirs
-            await loop.run_in_executor(None, lambda: os.makedirs(str(self.image_library_path), exist_ok=True))
-        
-        # Schedule directory creation asynchronously
-        asyncio.create_task(setup_directory())
-        
+        # Ensure we always have an absolute path
+        if not self.image_library_path.is_absolute():
+            self.image_library_path = self.image_library_path.resolve()
+                                
         # Cache of available images
         self._image_cache = None
         # Cache for image content
@@ -59,7 +45,7 @@ class VisualContentService:
         # Thread pool for file operations
         self._thread_pool = None  # Will be initialized on first use
         
-        logger.info(f"VisualContentService initialized with image library at: {self.image_library_path}")
+        #logger.info(f"VisualContentService initialized with image library at: {self.image_library_path}")
         
     @property
     def thread_pool(self):
