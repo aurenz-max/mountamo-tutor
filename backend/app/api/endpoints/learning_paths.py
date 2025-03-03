@@ -11,11 +11,10 @@ from ...services.competency import CompetencyService
 router = APIRouter()
 
 # Initialize services
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
 competency_service = CompetencyService()
 learning_paths_service = LearningPathsService(data_dir=str(DATA_DIR), competency_service=competency_service)
 
-# No longer need PathNode and PathEdge models
 
 class DecisionTreeData(BaseModel): # New model for decision tree
     learning_path_decision_tree: Dict[str, List[str]]
@@ -25,9 +24,6 @@ class NextRecommendationRequest(BaseModel):
     subject: str
     current_skill_id: Optional[str] = None
     current_subskill_id: Optional[str] = None
-
-
-
 
 @router.get("/learning-paths", response_model=DecisionTreeData)
 async def get_learning_paths():

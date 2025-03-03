@@ -1,14 +1,15 @@
-# recommender.py (updated)
-
-from .competency import CompetencyService
 from typing import Optional, Dict, List
 import random
 from datetime import datetime
 import asyncio
 
+# The recommender takes CompetencyService as a dependency
 class ProblemRecommender:
-    def __init__(self, competency_service: CompetencyService):
+    def __init__(self, competency_service):
+        """Initialize with injected CompetencyService."""
         self.competency_service = competency_service
+        # Make sure difficulty overrides exist
+        self._difficulty_overrides = {}
 
     async def get_recommendation(
         self,
@@ -20,6 +21,11 @@ class ProblemRecommender:
     ) -> Optional[Dict]:
         """Get recommendation using competency-weighted selection"""
         try:
+            # Verify that competency_service is available
+            if not self.competency_service:
+                print("[ERROR] CompetencyService not initialized")
+                return None
+                
             from asyncio import to_thread
 
             # Move subject matching to thread since it's CPU-intensive
@@ -91,10 +97,21 @@ class ProblemRecommender:
             traceback.print_exc()
             return None
 
-    async def _select_objective(self, subskill_id: str) -> dict:
+    async def _select_objective(self, subject: str, subskill_id: str) -> dict:
         """Select an objective for the subskill"""
         try:
-            objectives = await self.competency_service.get_detailed_objectives(subskill_id)
+            # Verify that competency_service is available
+            if not self.competency_service:
+                print("[ERROR] CompetencyService not initialized")
+                return {
+                    'ConceptGroup': 'General',
+                    'DetailedObjective': 'Develop core skills'
+                }
+                
+            objectives = await self.competency_service.get_detailed_objectives(
+                subject=subject,
+                subskill_id=subskill_id
+            )
             
             if not objectives:
                 return {
@@ -121,6 +138,11 @@ class ProblemRecommender:
     ) -> List[Dict]:
         """Async curriculum filtering with parallel competency fetching"""
         try:
+            # Verify that competency_service is available
+            if not self.competency_service:
+                print("[ERROR] CompetencyService not initialized")
+                return []
+                
             filtered = []
             tasks = []
 
@@ -255,11 +277,7 @@ class ProblemRecommender:
                 override_key += f"_{skill_id}"
             if subskill_id:
                 override_key += f"_{subskill_id}"
-                
-            # Store the override (you might want to use a database instead of memory)
-            if not hasattr(self, '_difficulty_overrides'):
-                self._difficulty_overrides = {}
-                
+            
             self._difficulty_overrides[override_key] = {
                 'difficulty': difficulty_override,
                 'timestamp': datetime.utcnow().isoformat()
@@ -279,6 +297,11 @@ class ProblemRecommender:
     ) -> float:
         """Calculate adaptive difficulty based on both skill baseline and student competency."""
         try:
+            # Verify that competency_service is available
+            if not self.competency_service:
+                print("[ERROR] CompetencyService not initialized")
+                return 5.0  # Default difficulty
+                
             from asyncio import to_thread
             
             print(f"[DEBUG] Determining difficulty for subskill: {subskill}")
@@ -287,6 +310,14 @@ class ProblemRecommender:
             diff_range = subskill.get("difficulty_range", {})
             base_difficulty = diff_range.get("target", 5.0)
             print(f"[DEBUG] Base difficulty for skill: {base_difficulty}")
+            
+            # Check for difficulty override
+            override_key = f"{student_id}_{subject}_{subskill['unit_id']}_{subskill['skill_id']}_{subskill['subskill_id']}"
+            if override_key in self._difficulty_overrides:
+                override = self._difficulty_overrides[override_key]['difficulty']
+                if override is not None:
+                    print(f"[DEBUG] Using difficulty override: {override}")
+                    return override
             
             # Get student's competency with proper parameters
             competency = await self.competency_service.get_competency(
@@ -329,4 +360,3 @@ class ProblemRecommender:
             f"competency score {subskill['competency']['current_score']}/100 "
             f"with {subskill['competency']['total_attempts']} attempts"
         )
-    

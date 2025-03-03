@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 router = APIRouter()
-gemini_service = GeminiService(AudioService)
+#gemini_service = GeminiService(AudioService)
 
 @router.websocket("/chat")
 async def websocket_endpoint(websocket: WebSocket):
@@ -45,7 +45,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
         async def on_audio_callback(audio_data: bytes):
             logger.debug(f"Received audio chunk of size: {len(audio_data)}")
-            gemini_service.audio_service.add_to_queue(audio_data)
+            #gemini_service.audio_service.add_to_queue(audio_data)
             await websocket.send_json({
                 "audio_status": "playing"
             })
@@ -66,7 +66,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     if message.get("text") == "ResetSession":
                         logger.info("Received reset session request")
-                        await gemini_service.reset_session()
+                        #await gemini_service.reset_session()
                         await websocket.send_json({
                             "status": "session_reset"
                         })

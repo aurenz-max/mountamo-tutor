@@ -10,7 +10,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)  # Set to DEBUG for more verbose logging
 
 class AzureSpeechService:
-    def __init__(self, subscription_key: str, region: str):
+    def __init__(
+        self,
+        subscription_key: str,
+        region: str,
+        transcript_service,  # We'll expect your TranscriptService instance.
+    ):
         # Initialize SpeechConfig
         self.speech_config = speechsdk.SpeechConfig(subscription=subscription_key, region=region)
         
@@ -33,6 +38,9 @@ class AzureSpeechService:
         # Transcript tracking
         self.current_utterances = {}  # Track active utterances by speaker
         self.utterance_ids = {}  # Map utterance keys to stable UUIDs
+
+        # We'll rely on transcript_service to store final transcripts
+        self.transcript_service = transcript_service
         
         # Get the current event loop or create a new one
         try:
@@ -96,6 +104,23 @@ class AzureSpeechService:
         except Exception as e:
             logger.error(f"Error sending transcript: {e}", exc_info=True)
 
+    def _handle_transcribed_final(self, text: str, speaker: str):
+        """
+        This is final recognized speech. We'll pass it to transcript_service.
+        We do not store final transcripts ourselves; we delegate to TranscriptService.
+        """
+        logger.info(f"[Session {self.session_id}] Final transcript: {speaker}: {text}")
+
+        if self.transcript_service:
+            # Pass final transcript to transcript_service
+            self.loop.call_soon_threadsafe(
+                self.transcript_service.handle_final_transcript,
+                self.session_id,
+                self.student_id,
+                speaker,
+                text
+            )
+
     def transcribing_handler(self, evt: speechsdk.SpeechRecognitionEventArgs):
         """Handle partial transcription results."""
         try:
@@ -123,32 +148,33 @@ class AzureSpeechService:
             logger.error(f"Error in transcribing_handler: {e}", exc_info=True)
 
     def transcribed_handler(self, evt: speechsdk.SpeechRecognitionEventArgs):
-        """Handle final transcription results."""
+        """Called when Azure says speech is final."""
         if evt.result.reason == speechsdk.ResultReason.RecognizedSpeech:
             try:
                 text = evt.result.text
                 if not text:
                     return
-
-                # Get speaker info
-                speaker = getattr(evt.result, 'speaker_id', "unknown")
+                speaker = getattr(evt.result, 'speaker_id', 'unknown')
+                # parse diarization
                 try:
-                    result_json = json.loads(evt.result.json)
-                    if not speaker or speaker == "unknown":
-                        speaker = result_json.get("SpeakerId", "unknown")
-                except Exception as e:
-                    logger.error(f"Error parsing diarization info: {e}")
+                    j = json.loads(evt.result.json)
+                    if speaker == 'unknown' and j.get('SpeakerId'):
+                        speaker = j['SpeakerId']
+                except:
+                    pass
 
                 # Get the stable ID used for partial transcripts
                 utterance_id = self._get_utterance_id(speaker, text)
                 
-                # Send final transcript
+                # Send final transcript to frontend
                 self._send_transcript(text, speaker, False, utterance_id)
-                
-                # Cleanup
+
+                # Also handle final transcript for storage in transcript_service
+                self._handle_transcribed_final(text, speaker)
+
+                # remove partial from current_utterances
                 if speaker in self.current_utterances:
                     del self.current_utterances[speaker]
-                
             except Exception as e:
                 logger.error(f"Error in transcribed_handler: {e}", exc_info=True)
 
@@ -171,13 +197,14 @@ class AzureSpeechService:
         self,
         session_id: str,
         student_id: int,
-        transcript_callback: Callable[[Dict[str, Any]], None]
+        transcript_callback: Optional[Callable[[Dict[str, Any]], None]] = None
     ) -> None:
         """Start continuous transcription with the given session parameters."""
         try:
             self.session_id = session_id
             self.student_id = student_id
             self.transcript_callback = transcript_callback
+            self.current_utterances.clear()
             
             # Clear state
             self.current_utterances = {}

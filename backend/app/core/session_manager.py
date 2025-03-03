@@ -4,23 +4,20 @@ import asyncio
 import logging
 import uuid
 from typing import AsyncGenerator, Dict, Optional, Union, Any
-
-
-from ..services.tutoring import TutoringService
-from ..services.audio_service import AudioService
-from ..services.azure_tts import AzureSpeechService
-from ..services.gemini import GeminiService
-from ..db.cosmos_db import CosmosDBService
-from ..services.visual_content_manager import VisualContentManager
-from ..services.visual_content_service import VisualContentService
-from ..services.gemini_image import GeminiImageIntegration
-
-from app.core.config import settings
-
 from datetime import datetime
+
+from ..db.cosmos_db import CosmosDBService
+from ..services.audio_service import AudioService
+from app.services.gemini import GeminiService
+from app.services.tutoring import TutoringService
+from app.services.azure_tts import AzureSpeechService
+from ..services.visual_content_service import VisualContentService
+from ..services.visual_content_manager import VisualContentManager
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
+
 
 class TutoringSession:
     def __init__(
@@ -33,35 +30,24 @@ class TutoringSession:
         subskill_description: str,
         student_id: int,
         competency_score: float,
+        gemini_service: GeminiService,      # pass in already constructed service
+        tutoring_service: TutoringService,  # pass in already constructed service
+        speech_service: AzureSpeechService,  # NEW
         skill_id: Optional[str] = None,
         subskill_id: Optional[str] = None
     ):
+       
         self.id = str(uuid.uuid4())
         self.audio_service = audio_service
         self.cosmos_db = cosmos_db
         self.visual_content_manager = visual_content_manager
         
-        # Initialize session-specific services
-        self.speech_service = AzureSpeechService(
-            subscription_key=settings.TTS_KEY, 
-            region=settings.TTS_REGION
-        )
-        self.speech_service.cosmos_db = cosmos_db
-        
-        # Initialize GeminiService without visual content initially
-        # We'll set this up after visual integration is created
-        self.gemini_service = GeminiService(
-            audio_service=self.audio_service,
-            azure_speech_service=self.speech_service,
-            visual_integration=None  # Will be set after initialization
-        )
-        
-        # Initialize TutoringService for this session only
-        self.tutoring_service = TutoringService(
-            audio_service=self.audio_service,
-            gemini_service=self.gemini_service,
-            azure_speech_service=self.speech_service
-        )
+        # Get speech service from dependencies
+        self.speech_service = speech_service
+        self.speech_service.cosmos_db = cosmos_db     
+        self.gemini_service = gemini_service
+        self.tutoring_service = tutoring_service
+
 
         # Session metadata
         self.subject = subject
@@ -329,7 +315,7 @@ class TutoringSession:
             # Add timestamp and session info
             problem_with_meta = {
                 **problem,
-                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "timestamp": datetime.utcnow().isoformat(),
                 "session_id": self.id
             }
             
@@ -393,26 +379,21 @@ class TutoringSession:
             logger.error(f"Error cleaning up session {self.id}: {str(e)}")
             raise
 
+
 class SessionManager:
     def __init__(
         self, 
-        audio_service: AudioService, 
+        audio_service: AudioService,
         cosmos_db: CosmosDBService,
-        visual_content_service: Optional[VisualContentService] = None
+        visual_content_service: VisualContentService
     ):
         self.audio_service = audio_service
         self.cosmos_db = cosmos_db
+        self.visual_content_service = visual_content_service
         
-        # Initialize the visual content service if not provided
-        if visual_content_service is None:
-            self.visual_content_service = VisualContentService(
-                image_library_path=settings.IMAGE_LIBRARY_PATH
-            )
-        else:
-            self.visual_content_service = visual_content_service
-            
-        # Create the visual content manager
-        self.visual_content_manager = VisualContentManager(self.visual_content_service)
+        # Get the visual content manager from dependencies
+        from ..dependencies import get_visual_content_manager
+        self.visual_content_manager = get_visual_content_manager(self.visual_content_service)
         
         self.sessions: Dict[str, TutoringSession] = {}
         logger.info("Session manager initialized with services")
@@ -424,11 +405,14 @@ class SessionManager:
         subskill_description: str,
         student_id: int,
         competency_score: float,
+        gemini_service: GeminiService,    # you want to pass this in
+        tutoring_service: TutoringService,# you want to pass this in
+        speech_service: AzureSpeechService,# you want to pass this in
         skill_id: Optional[str] = None,
         subskill_id: Optional[str] = None,
     ) -> TutoringSession:
-        """Create and initialize a new tutoring session with pre-loaded data"""
-        # Create session with all dependencies
+        """Create and initialize a new tutoring session with pre-loaded data."""
+        # 1. Create the session with all dependencies
         session = TutoringSession(
             audio_service=self.audio_service,
             cosmos_db=self.cosmos_db,
@@ -438,12 +422,15 @@ class SessionManager:
             subskill_description=subskill_description,
             student_id=student_id,
             competency_score=competency_score,
+            gemini_service=gemini_service,
+            tutoring_service=tutoring_service,
+            speech_service=speech_service,  # <--
             skill_id=skill_id,
             subskill_id=subskill_id
         )
 
         try:
-            # Pre-load data before initialization
+            # 2. Pre-load data BEFORE initialization
             recommendation_data = await session.gemini_service.problem_integration.problem_service.recommender.get_recommendation(
                 student_id=student_id,
                 subject=subject,
@@ -459,12 +446,13 @@ class SessionManager:
                     subskill_id=recommendation_data['subskill']['id']
                 )
 
-            # Initialize session with pre-loaded data
+            # 3. Now initialize the session with the pre-loaded data
             await session.initialize(
                 recommendation_data=recommendation_data,
                 objectives_data=objectives_data
             )
             
+            # 4. Store the session
             self.sessions[session.id] = session
             logger.info(f"Created new session {session.id} for {subject} - {skill_id}")
             return session
@@ -473,6 +461,7 @@ class SessionManager:
             logger.error(f"Failed to create session: {e}")
             await self.cleanup_session(session.id)
             raise
+
 
     async def cleanup_session(self, session_id: str) -> None:
         """Clean up and remove a session"""

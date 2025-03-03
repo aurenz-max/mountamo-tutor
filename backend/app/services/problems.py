@@ -1,14 +1,17 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from .anthropic import AnthropicService
-from .competency import CompetencyService
-from .recommender import ProblemRecommender
+
+# Don't import directly anymore, they will be injected
+# from .anthropic import AnthropicService
+# from .competency import CompetencyService
+# from .recommender import ProblemRecommender
 
 class ProblemService:
     def __init__(self):
-        self.anthropic = AnthropicService()
-        self.competency_service = CompetencyService()
-        self.recommender = ProblemRecommender(self.competency_service)
+        # Dependencies will be injected - don't initialize here
+        self.anthropic = None  # Will be set by dependency injection
+        self.competency_service = None  # Will be set by dependency injection
+        self.recommender = None  # Will be set by dependency injection
         self._problem_history = {}  # In-memory storage for now
 
     async def get_problem(
@@ -20,6 +23,21 @@ class ProblemService:
         """Get problem with context awareness and detailed learning objectives"""
         try:
             print(f"[DEBUG] Getting problem with context: {context}")
+            
+            # Ensure anthropic service is available
+            if not self.anthropic:
+                print("[ERROR] AnthropicService not initialized")
+                return None
+                
+            # Ensure recommender is available
+            if not self.recommender:
+                print("[ERROR] ProblemRecommender not initialized")
+                return None
+                
+            # Ensure competency_service is available
+            if not self.competency_service:
+                print("[ERROR] CompetencyService not initialized")
+                return None
             
             recommendation = await self.recommender.get_recommendation(
                 student_id=student_id,
@@ -80,6 +98,9 @@ class ProblemService:
             traceback.print_exc()
             return None
 
+    # The rest of the methods remain largely the same
+    # Only adding dependency checks at the beginning of any method that uses the dependencies
+
     async def get_problem_with_session_data(
         self,
         student_id: int,
@@ -89,6 +110,11 @@ class ProblemService:
     ) -> Optional[Dict[str, Any]]:
         """Optimized get_problem that uses pre-loaded session data"""
         try:
+            # Ensure anthropic service is available
+            if not self.anthropic:
+                print("[ERROR] AnthropicService not initialized")
+                return None
+                
             print(f"[DEBUG] Using pre-loaded session data for problem generation")
             
             # Generate the problem using pre-loaded data
@@ -134,6 +160,11 @@ class ProblemService:
         ) -> Optional[str]:
             """Generate problem text using AI model"""
             try:
+                # Ensure anthropic service is available
+                if not self.anthropic:
+                    print("[ERROR] AnthropicService not initialized")
+                    return None
+                    
                 print(f"[DEBUG] Generating problem with recommendation: {recommendation}")
                 
                 # Build the enhanced prompt
@@ -264,6 +295,11 @@ Return your response EXACTLY in this JSON format:
         ) -> Dict[str, Any]:
             """Review a student's problem solution"""
             try:
+                # Ensure anthropic service is available
+                if not self.anthropic:
+                    print("[ERROR] AnthropicService not initialized")
+                    return {"error": "AnthropicService not initialized"}
+                    
                 print(f"Review problem called with image data length: {len(solution_image_base64)}")
                 
                 system_instructions = """You are an expert kindergarten teacher skilled at reviewing student work.

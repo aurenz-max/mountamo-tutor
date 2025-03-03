@@ -1,25 +1,17 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
+
+# Import dependencies
+from ...dependencies import get_problem_service, get_competency_service, get_problem_recommender
 from ...services.problems import ProblemService
 from ...services.competency import CompetencyService
-from ...services.recommender import ProblemRecommender  # Add recommender import
+from ...services.recommender import ProblemRecommender
 import re
 from pathlib import Path
 
 
 router = APIRouter()
-
-# Initialize services with proper dependencies
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-print(f"[DEBUG] Using data directory: {DATA_DIR}")
-print(f"[DEBUG] Data directory exists: {DATA_DIR.exists()}")
-print(f"[DEBUG] Data directory contents: {list(DATA_DIR.glob('*.csv'))}")
-
-# Create service instances
-competency_service = CompetencyService(data_dir=str(DATA_DIR))
-recommender = ProblemRecommender(competency_service)
-problem_service = ProblemService()
 
 class ProblemRequest(BaseModel):
     student_id: int
@@ -48,7 +40,10 @@ class ProblemSubmission(BaseModel):
     student_id: Optional[int] = 1
 
 @router.post("/generate")
-async def generate_problem(request: ProblemRequest) -> ProblemResponse:
+async def generate_problem(
+    request: ProblemRequest,
+    problem_service: ProblemService = Depends(get_problem_service)
+) -> ProblemResponse:
     """Generate a new problem based on curriculum parameters"""
     try:
         print(f"Received problem generation request: {request}")
@@ -94,7 +89,10 @@ async def generate_problem(request: ProblemRequest) -> ProblemResponse:
         )
 
 @router.get("/history/{student_id}")
-async def get_problem_history(student_id: int) -> List[Dict[str, Any]]:
+async def get_problem_history(
+    student_id: int,
+    problem_service: ProblemService = Depends(get_problem_service)
+) -> List[Dict[str, Any]]:
     """Get history of problems attempted by a student"""
     try:
         history = await problem_service.get_student_history(student_id)
@@ -102,10 +100,12 @@ async def get_problem_history(student_id: int) -> List[Dict[str, Any]]:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-
-
 @router.post("/submit")
-async def submit_problem(submission: ProblemSubmission) -> Dict[str, Any]:
+async def submit_problem(
+    submission: ProblemSubmission,
+    problem_service: ProblemService = Depends(get_problem_service),
+    competency_service: CompetencyService = Depends(get_competency_service)
+) -> Dict[str, Any]:
     """Submit a problem solution for review and update competency"""
     try:
         # Ensure we have valid base64 data
@@ -153,10 +153,10 @@ async def submit_problem(submission: ProblemSubmission) -> Dict[str, Any]:
         print(f"Error in submit_problem: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
-
 @router.post("/difficulty")
 async def update_problem_difficulty(
-    request: ProblemRequest
+    request: ProblemRequest,
+    recommender: ProblemRecommender = Depends(get_problem_recommender)
 ) -> Dict[str, Any]:
     """Update difficulty settings for problem generation"""
     try:

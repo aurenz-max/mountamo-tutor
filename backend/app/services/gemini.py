@@ -112,7 +112,7 @@ TOOL_PROBLEM_VISUAL = {
                 },
                 "required": ["category", "object_type", "count"]
             }
-        }
+        },
     ],
 }
 
@@ -131,6 +131,9 @@ class GeminiService:
             azure_speech_service: Optional service for speech recognition
             visual_integration: Optional GeminiImageIntegration for handling visual content
         """
+        # Get GeminiProblemIntegration from dependencies
+        from ..dependencies import get_gemini_problem_integration
+
         # Session-specific resources
         self.input_queue: asyncio.Queue = asyncio.Queue()
         self.quit: asyncio.Event = asyncio.Event()
@@ -141,7 +144,7 @@ class GeminiService:
         self.azure_speech_service = azure_speech_service
         
         # Problem integration is session-specific
-        self.problem_integration = GeminiProblemIntegration()
+        self.problem_integration = get_gemini_problem_integration()
         
         # Visual integration is provided directly, not created here
         self.visual_integration = visual_integration
@@ -654,13 +657,34 @@ class GeminiService:
                                         # Call the method on visual integration
                                         method = getattr(self, name)
                                         result = await method(**args)
-                                        
-                                        # Add to function responses
-                                        function_responses.append({
-                                            "name": name,
-                                            "response": {"result": result},
-                                            "id": call_id
-                                        })
+
+                                        # NEW CODE: Simplify the result for create_scene before sending to Gemini
+                                        if name == "create_scene" and result and isinstance(result, dict) and result.get("status") == "success":
+                                            # Create simplified version for Gemini
+                                            # Extract the key details that Gemini needs
+                                            object_type = args.get("object_type", "objects")
+                                            count = args.get("count", 0)
+                                            
+                                            simplified_result = {
+                                                "status": "success",
+                                                "message": f"Scene created with {count} {object_type}. Wait for the student to complete this activity before creating another scene."
+                                            }
+                                            
+                                            # Log that we're sending a simplified result
+                                            logger.info(f"[Session {session_id}] Sending simplified create_scene result to Gemini")
+                                            
+                                            function_responses.append({
+                                                "name": name,
+                                                "response": {"result": simplified_result},
+                                                "id": call_id
+                                            })
+                                        else:
+                                            # Add to function responses
+                                            function_responses.append({
+                                                "name": name,
+                                                "response": {"result": result},
+                                                "id": call_id
+                                            })
                                         logger.debug(f"Visual tool {name} executed successfully")
                                     except Exception as e:
                                         logger.error(f"Error executing visual tool {name}: {e}")

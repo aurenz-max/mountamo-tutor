@@ -7,7 +7,7 @@ logger.setLevel(logging.DEBUG)
 
 class GeminiProblemIntegration:
     def __init__(self):
-        self.problem_service = ProblemService()
+        self.problem_service = None
 
     async def handle_problem_creation(
         self, 
@@ -18,6 +18,11 @@ class GeminiProblemIntegration:
     ) -> Optional[Dict[str, Any]]:
         """Handles problem creation using pre-loaded session data when available"""
         try:
+            # Verify problem_service is initialized
+            if not self.problem_service:
+                logger.error(f"[Session {session_id}] ProblemService not initialized")
+                return {"status": "error", "message": "ProblemService not initialized"}
+                
             logger.debug(f"[Session {session_id}] handle_problem_creation called with metadata keys: {list(session_metadata.keys())}")
             subject = session_metadata.get("subject")
             student_id = session_metadata.get("student_id")
@@ -59,5 +64,8 @@ class GeminiProblemIntegration:
                 return {"status": "error", "message": "Problem creation failed"}
 
         except Exception as e:
+            logger.error(f"[Session {session_id}] Error in handle_problem_creation: {str(e)}", exc_info=True)
+            return {"status": "error", "message": f"Exception in problem creation: {str(e)}"}
+
             logger.error(f"[Session {session_id}] Error in handle_problem_creation: {str(e)}", exc_info=True)
             return {"status": "error", "message": f"Exception in problem creation: {str(e)}"}

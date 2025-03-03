@@ -20,13 +20,13 @@ class AnthropicService:
             
             # Create messages list in correct format for the API
             response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=1024,
-            messages=prompt if isinstance(prompt, list) else [{"role": "user", "content": prompt}],
-            system=system_instructions if system_instructions else "You are a friendly and encouraging kindergarten tutor.",
-            # Add this line to fix the temperature setting:
-            temperature=0.6
-        )
+                model=self.model,
+                max_tokens=1024,
+                messages=prompt if isinstance(prompt, list) else [{"role": "user", "content": prompt}],
+                system=system_instructions if system_instructions else "You are a friendly and encouraging kindergarten tutor.",
+                # Add this line to fix the temperature setting:
+                temperature=0.6
+            )
             return response.content[0].text.strip()
         except Exception as e:
             print(f"Error in generate_response: {str(e)}")
@@ -90,4 +90,44 @@ class AnthropicService:
             }
         except Exception as e:
             print(f"Error evaluating answer: {str(e)}")
+            raise
+
+    async def summarize_session(self, conversation_text: str) -> str:
+        """
+        Dedicated method for summarizing tutoring sessions using haiku model.
+        
+        Args:
+            conversation_text: The full conversation text with speaker labels and timestamps
+                
+        Returns:
+            A string containing the session summary
+        """
+        try:
+            # Always use haiku for summaries for performance
+            session_model = "claude-3-5-haiku-20241022"
+            
+            system_instructions = (
+                "You are an assistant that summarizes a tutoring session. "
+                "Please provide the main concepts, student's understanding, and next steps. "
+                "Ignore timestamps in the conversation and focus on the educational content. "
+                "Format your response with clear sections."
+            )
+            
+            user_prompt = f"Summarize this tutoring session:\n\n{conversation_text}"
+            
+            # Create message in the format expected by the API
+            messages = [{"role": "user", "content": user_prompt}]
+            
+            # Call the Anthropic API directly for this specific use case
+            response = await self.client.messages.create(
+                model=session_model,
+                max_tokens=600,  # Shorter summary
+                messages=messages,
+                system=system_instructions,
+                temperature=0.3  # Lower temperature for more consistent summaries
+            )
+            
+            return response.content[0].text.strip()
+        except Exception as e:
+            print(f"Error in summarize_session: {str(e)}")
             raise

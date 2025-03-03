@@ -1,13 +1,20 @@
 import asyncio
 import logging
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import base64
 
-from ...core.session_manager import SessionManager
-from ...services.audio_service import AudioService
-from ...db.cosmos_db import CosmosDBService
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from app.core.session_manager import SessionManager
+from app.services.gemini import GeminiService
+from app.services.tutoring import TutoringService
+from app.services.azure_tts import AzureSpeechService
+from app.dependencies import (
+    get_session_manager,
+    get_gemini_service,
+    get_tutoring_service,
+    get_azure_speech_service
+)
 
-from app.core.config import settings
+router = APIRouter()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -24,24 +31,22 @@ logging.getLogger('websockets').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-# Create only the services that can be shared safely
-audio_service = AudioService()
-cosmos_db = CosmosDBService()
-
-# Initialize SessionManager with only the services that can be shared
-session_manager = SessionManager(audio_service, cosmos_db)
-
-router = APIRouter()
-
 @router.websocket("/session")
-async def tutoring_websocket(websocket: WebSocket):
+async def tutoring_websocket(
+    websocket: WebSocket,
+    # Let FastAPI inject these:
+    session_manager: SessionManager = Depends(get_session_manager),
+    gemini_service: GeminiService = Depends(get_gemini_service),
+    tutoring_service: TutoringService = Depends(get_tutoring_service),
+    azure_speech_service: AzureSpeechService = Depends(get_azure_speech_service),  # NEW
+):
     logger.info("New WebSocket connection request")
+    await websocket.accept()
+    logger.info("WebSocket connection accepted")
+
     session = None
 
     try:
-        await websocket.accept()
-        logger.info("WebSocket connection accepted")
-
         # Wait for session initialization
         init_message = await websocket.receive_json()
         if init_message.get("text") != "InitSession":
@@ -49,11 +54,10 @@ async def tutoring_websocket(websocket: WebSocket):
             await websocket.close(code=1003)
             return
 
-        # Extract session data
+        # Extract session data from the message
         session_data = init_message.get("data", {})
-        
-        # Create session through session manager
         try:
+            # Create session through session manager, passing the pre-injected services
             session = await session_manager.create_session(
                 subject=session_data.get("subject", ""),
                 skill_description=session_data.get("skill_description", ""),
@@ -61,16 +65,17 @@ async def tutoring_websocket(websocket: WebSocket):
                 student_id=session_data.get("student_id", 0),
                 competency_score=session_data.get("competency_score", 5.0),
                 skill_id=session_data.get("skill_id"),
-                subskill_id=session_data.get("subskill_id")
+                subskill_id=session_data.get("subskill_id"),
+                gemini_service=gemini_service,
+                tutoring_service=tutoring_service,
+                speech_service=azure_speech_service,  # NEW
             )
 
             await websocket.send_json({
                 "type": "session_started",
                 "session_id": session.id
             })
-            
             logger.info(f"Started session {session.id}")
-
         except Exception as e:
             logger.error(f"Failed to create session: {e}")
             await websocket.send_json({
@@ -79,17 +84,14 @@ async def tutoring_websocket(websocket: WebSocket):
             })
             return
 
-
-
-        # Handle incoming messages from the client
+        # Now set up your concurrent tasks to handle incoming and outgoing data
         async def handle_client_messages():
+            """Receive messages from the client and process them."""
             try:
                 while not session.quit_event.is_set():
                     message = await websocket.receive_json()
-                    #logger.debug(f"[Received {message}.")
-                    
+
                     # Check message type
-                    # In tutoring.py websocket handler
                     if message.get("type") == "realtime_input":
                         media_chunks = message.get("media_chunks", [])
                         if len(media_chunks) > 0:
@@ -97,14 +99,10 @@ async def tutoring_websocket(websocket: WebSocket):
                         else:
                             logger.debug(f"[Session {session.id}] Received realtime input with no media_chunks.")
 
-                        # Process the message in the session
+                        # Pass message to session
                         await session.process_message(message)
-
                     else:
-                        logger.warning(
-                            f"[Session {session.id}] Unknown message type received: "
-                            f"{message.get('type')}"
-                        )
+                        logger.warning(f"[Session {session.id}] Unknown message type: {message.get('type')}")
 
             except WebSocketDisconnect:
                 logger.info(f"[Session {session.id}] Client disconnected")
@@ -112,45 +110,8 @@ async def tutoring_websocket(websocket: WebSocket):
                 logger.error(f"[Session {session.id}] Error handling client messages: {e}")
                 session.quit_event.set()
 
-
-        async def handle_responses():
-            """Handle text responses, audio, and problems"""
-            tasks = []
-            try:
-                # Set up concurrent tasks for all response types
-                logger.debug(f"[Session {session.id}] Starting response handlers")
-                tasks = [
-                    asyncio.create_task(handle_text_responses()),
-                    asyncio.create_task(handle_audio_responses()),
-                    asyncio.create_task(handle_problem_responses()),
-                    asyncio.create_task(handle_transcript_responses()),
-                    asyncio.create_task(handle_scene_responses())  # Add this line
-                ]
-                
-                await asyncio.gather(*tasks)
-                
-            except asyncio.CancelledError:
-                logger.info(f"[Session {session.id}] Cancelling response handlers")
-                # Cancel all tasks
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
-                # Wait for tasks to complete cancellation
-                await asyncio.gather(*tasks, return_exceptions=True)
-                raise
-            except Exception as e:
-                logger.error(f"Error in response handler: {e}")
-                session.quit_event.set()
-                raise
-            finally:
-                # Ensure all tasks are cancelled in case of any other exit
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
-
-
         async def handle_text_responses():
-            """Handle text responses from the session"""
+            """Handle text responses from the session."""
             try:
                 async for text in session.get_responses():
                     if session.quit_event.is_set():
@@ -163,20 +124,17 @@ async def tutoring_websocket(websocket: WebSocket):
                 logger.debug(f"[Session {session.id}] Text response handler cancelled")
                 raise
 
-
         async def handle_problem_responses():
-            """Handle problem responses from the session"""
+            """Handle problem responses from the session."""
             try:
                 async for problem in session.get_problems():
                     if session.quit_event.is_set():
                         break
-                    
-                    # Send problem data directly to frontend - keep it simple
+
                     await websocket.send_json({
-                        "type": "problem", 
+                        "type": "problem",
                         "content": problem
                     })
-                    
                     logger.info(f"[Session {session.id}] Sent problem to client")
             except asyncio.CancelledError:
                 logger.debug(f"[Session {session.id}] Problem response handler cancelled")
@@ -186,27 +144,26 @@ async def tutoring_websocket(websocket: WebSocket):
                 raise
 
         async def handle_transcript_responses():
-            """Handle transcribed speech from both user and Gemini"""
+            """Handle transcribed speech from both user and Gemini."""
             try:
                 async for transcript in session.get_transcripts():
                     if session.quit_event.is_set():
                         break
-                    logger.debug(f"[Session {session.id}] Processing transcript: {transcript.get('session_id')} - " + 
-                            f"Speaker: {transcript.get('speaker')} - " +
-                            f"Partial: {transcript.get('data', {}).get('is_partial')} - " +
-                            f"ID: {transcript.get('data', {}).get('id')} - " +
-                            f"Text: {transcript.get('data', {}).get('text')[:50]}..."
+                    logger.debug(
+                        f"[Session {session.id}] Transcript: "
+                        f"Speaker={transcript.get('speaker')} "
+                        f"Partial={transcript.get('data', {}).get('is_partial')} "
                     )
                     await websocket.send_json({
                         "type": "transcript",
                         "content": transcript
                     })
             except asyncio.CancelledError:
-                logger.debug(f"[Session {session.id}] Transcript response handler cancelled")
+                logger.debug(f"[Session {session.id}] Transcript handler cancelled")
                 raise
 
         async def handle_audio_responses():
-            """Handle processed audio from the audio service"""
+            """Handle processed audio from the audio service."""
             try:
                 async for audio_chunk in session.get_audio():
                     if session.quit_event.is_set():
@@ -218,11 +175,11 @@ async def tutoring_websocket(websocket: WebSocket):
                         "mime_type": "audio/pcm;rate=24000"
                     })
             except asyncio.CancelledError:
-                logger.debug(f"[Session {session.id}] Audio response handler cancelled")
+                logger.debug(f"[Session {session.id}] Audio handler cancelled")
                 raise
 
         async def handle_scene_responses():
-            """Handle visual scene updates from the session"""
+            """Handle visual scene updates from the session."""
             try:
                 scene_count = 0
                 logger.warning(f"[Session {session.id}] Starting scene response handler")
@@ -231,30 +188,48 @@ async def tutoring_websocket(websocket: WebSocket):
                         logger.warning(f"[Session {session.id}] Quit event set, breaking scene loop")
                         break
                     scene_count += 1
-                    logger.warning(f"[Session {session.id}] Got scene #{scene_count} from queue: {scene}")
+                    logger.warning(f"[Session {session.id}] Got scene #{scene_count}: {scene}")
                     await websocket.send_json({
                         "type": "scene",
                         "content": scene
                     })
-                    logger.warning(f"[Session {session.id}] Sent scene #{scene_count} to websocket: {scene.get('scene_id')}")
+                    logger.warning(f"[Session {session.id}] Sent scene #{scene_count} to client")
             except asyncio.CancelledError:
-                logger.warning(f"[Session {session.id}] Scene response handler cancelled after {scene_count} scenes")
+                logger.warning(f"[Session {session.id}] Scene handler cancelled after {scene_count} scenes")
                 raise
             except Exception as e:
-                logger.error(f"[Session {session.id}] Error handling scene responses: {e}", exc_info=True)
+                logger.error(f"[Session {session.id}] Error handling scenes: {e}", exc_info=True)
                 raise
-        try:
-            # Run all handlers concurrently
-            logger.debug(f"[Session {session.id}] Client Messenger & Response handler started")
-            await asyncio.gather(
-                handle_client_messages(),
-                handle_responses()
-            )
-        except Exception as e:
-            logger.error(f"[Session {session.id}] Error in WebSocket handlers: {e}")
-        finally:
-            if session:
-                await session_manager.cleanup_session(session.id)
+
+        # Combine the sub-handlers
+        async def handle_responses():
+            tasks = []
+            try:
+                tasks = [
+                    asyncio.create_task(handle_text_responses()),
+                    asyncio.create_task(handle_problem_responses()),
+                    asyncio.create_task(handle_transcript_responses()),
+                    asyncio.create_task(handle_audio_responses()),
+                    asyncio.create_task(handle_scene_responses()),
+                ]
+                await asyncio.gather(*tasks)
+            except asyncio.CancelledError:
+                logger.info(f"[Session {session.id}] Cancelling response handlers")
+                for t in tasks:
+                    if not t.done():
+                        t.cancel()
+                await asyncio.gather(*tasks, return_exceptions=True)
+                raise
+            except Exception as e:
+                logger.error(f"[Session {session.id}] Error in handle_responses: {e}")
+                session.quit_event.set()
+                raise
+
+        # Run everything concurrently
+        await asyncio.gather(
+            handle_client_messages(),
+            handle_responses()
+        )
 
     except WebSocketDisconnect:
         logger.info("Client disconnected during initialization")

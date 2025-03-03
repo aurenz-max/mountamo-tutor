@@ -4,112 +4,129 @@ import math
 from pathlib import Path
 import pandas as pd
 import random
-from ..db.cosmos_db import CosmosDBService
 
 class CompetencyService:
     def __init__(self, data_dir: str = "data"):
+        """Initialize CompetencyService.
+        
+        Args:
+            data_dir: Path to data directory containing syllabus and objectives files
+        """
         self._competencies = {}  # In-memory storage for now
-        self.cosmos_db = CosmosDBService()
+        self.cosmos_db = None  # Will be set by dependency injection
         self.full_credibility_standard = 15  # Full credibility for specific subskill
         self.full_credibility_standard_subject = 150  # Full credibility for subject
         self.default_score = 5.0  # Default score when no data exists
         self.syllabus_cache: Dict[str, List[Dict]] = {}
         self.data_dir = Path(data_dir)
         self.detailed_objectives = {}
+        
+        # Load data at initialization
         self._load_all_data(data_dir)
 
     def _load_all_data(self, data_dir):
         """Load syllabus data from CSVs with subject column"""
         self.syllabus_cache = {}
         
-        # Load all syllabus files with the new format
-        for syllabus_file in Path(data_dir).glob("*syllabus*.csv"):  # New filename pattern
-            try:
-                df = pd.read_csv(syllabus_file)
-                
-                # Validate required columns
-                required_columns = [
-                    'Subject', 'UnitID', 'UnitTitle', 'SkillID', 
-                    'SkillDescription', 'SubskillID', 'SubskillDescription',
-                    'DifficultyStart', 'DifficultyEnd', 'TargetDifficulty'
-                ]
-                
-                if not set(required_columns).issubset(df.columns):
-                    print(f"Skipping {syllabus_file} - missing required columns")
-                    continue
+        try:
+            # Load all syllabus files with the new format
+            for syllabus_file in Path(data_dir).glob("*syllabus*.csv"):  # New filename pattern
+                try:
+                    print(f"[DEBUG] Loading syllabus file: {syllabus_file}")
+                    df = pd.read_csv(syllabus_file)
+                    
+                    # Validate required columns
+                    required_columns = [
+                        'Subject', 'UnitID', 'UnitTitle', 'SkillID', 
+                        'SkillDescription', 'SubskillID', 'SubskillDescription',
+                        'DifficultyStart', 'DifficultyEnd', 'TargetDifficulty'
+                    ]
+                    
+                    if not set(required_columns).issubset(df.columns):
+                        print(f"Skipping {syllabus_file} - missing required columns")
+                        continue
 
-                # Group by subject and structure syllabus
-                for subject, group in df.groupby('Subject'):
-                    if subject not in self.syllabus_cache:
-                        self.syllabus_cache[subject] = []
-                    
-                    # Structure the syllabus data
-                    structured = []
-                    current_unit = None
-                    current_skill = None
-                    
-                    for _, row in group.sort_values(["UnitID", "SkillID", "SubskillID"]).iterrows():
-                        # Add unit
-                        if not current_unit or current_unit["id"] != row["UnitID"]:
-                            current_unit = {
-                                "id": row["UnitID"],
-                                "title": row["UnitTitle"],
-                                "skills": []
-                            }
-                            structured.append(current_unit)
+                    # Group by subject and structure syllabus
+                    for subject, group in df.groupby('Subject'):
+                        if subject not in self.syllabus_cache:
+                            self.syllabus_cache[subject] = []
                         
-                        # Add skill
-                        if not current_skill or current_skill["id"] != row["SkillID"]:
-                            current_skill = {
-                                "id": row["SkillID"],
-                                "description": row["SkillDescription"],
-                                "subskills": []
-                            }
-                            current_unit["skills"].append(current_skill)
+                        # Structure the syllabus data
+                        structured = []
+                        current_unit = None
+                        current_skill = None
                         
-                        # Add subskill
-                        current_skill["subskills"].append({
-                            "id": row["SubskillID"],
-                            "description": row["SubskillDescription"],
-                            "difficulty_range": {
-                                "start": row["DifficultyStart"],
-                                "end": row["DifficultyEnd"],
-                                "target": row["TargetDifficulty"]
-                            }
-                        })
-                    
-                    # Merge with existing data for this subject
-                    self.syllabus_cache[subject].extend(structured)
-                    
-            except Exception as e:
-                print(f"Error loading {syllabus_file}: {str(e)}")
-
-        # Load detailed objectives from all matching files
-        self.detailed_objectives = {}
-        for obj_file in Path(data_dir).glob("detailed_objectives_*.csv"):
-            try:
-                # Read CSV with proper escaping
-                df = pd.read_csv(obj_file, quoting=1)  # QUOTE_ALL mode
-                
-                # Group by Subject and SubskillID
-                for (subject, subskill_id), group in df.groupby(['Subject', 'SubskillID']):
-                    if subject not in self.detailed_objectives:
-                        self.detailed_objectives[subject] = {}
-                    
-                    # Store all objectives for this subskill as a list
-                    self.detailed_objectives[subject][subskill_id] = []
-                    
-                    for _, row in group.iterrows():
-                        self.detailed_objectives[subject][subskill_id].append({
-                            'ConceptGroup': row['ConceptGroup'],
-                            'DetailedObjective': row['DetailedObjective'],
-                            'SubskillDescription': row['SubskillDescription']
-                        })
+                        for _, row in group.sort_values(["UnitID", "SkillID", "SubskillID"]).iterrows():
+                            # Add unit
+                            if not current_unit or current_unit["id"] != row["UnitID"]:
+                                current_unit = {
+                                    "id": row["UnitID"],
+                                    "title": row["UnitTitle"],
+                                    "skills": []
+                                }
+                                structured.append(current_unit)
                             
-            except Exception as e:
-                print(f"Error loading {obj_file}: {str(e)}")
-                import traceback
-                traceback.print_exc()   
+                            # Add skill
+                            if not current_skill or current_skill["id"] != row["SkillID"]:
+                                current_skill = {
+                                    "id": row["SkillID"],
+                                    "description": row["SkillDescription"],
+                                    "subskills": []
+                                }
+                                current_unit["skills"].append(current_skill)
+                            
+                            # Add subskill
+                            current_skill["subskills"].append({
+                                "id": row["SubskillID"],
+                                "description": row["SubskillDescription"],
+                                "difficulty_range": {
+                                    "start": row["DifficultyStart"],
+                                    "end": row["DifficultyEnd"],
+                                    "target": row["TargetDifficulty"]
+                                }
+                            })
+                        
+                        # Merge with existing data for this subject
+                        self.syllabus_cache[subject].extend(structured)
+                    
+                    print(f"[DEBUG] Loaded data for subjects: {list(self.syllabus_cache.keys())}")
+                        
+                except Exception as e:
+                    print(f"Error loading {syllabus_file}: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+
+            # Load detailed objectives from all matching files
+            self.detailed_objectives = {}
+            for obj_file in Path(data_dir).glob("detailed_objectives_*.csv"):
+                try:
+                    print(f"[DEBUG] Loading objectives file: {obj_file}")
+                    # Read CSV with proper escaping
+                    df = pd.read_csv(obj_file, quoting=1)  # QUOTE_ALL mode
+                    
+                    # Group by Subject and SubskillID
+                    for (subject, subskill_id), group in df.groupby(['Subject', 'SubskillID']):
+                        if subject not in self.detailed_objectives:
+                            self.detailed_objectives[subject] = {}
+                        
+                        # Store all objectives for this subskill as a list
+                        self.detailed_objectives[subject][subskill_id] = []
+                        
+                        for _, row in group.iterrows():
+                            self.detailed_objectives[subject][subskill_id].append({
+                                'ConceptGroup': row['ConceptGroup'],
+                                'DetailedObjective': row['DetailedObjective'],
+                                'SubskillDescription': row['SubskillDescription']
+                            })
+                                
+                except Exception as e:
+                    print(f"Error loading {obj_file}: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+        except Exception as e:
+            print(f"Critical error loading data: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
     async def get_detailed_objectives(self, subject: str, subskill_id: str) -> dict:
         """Get detailed objectives for a subskill - returns a randomly selected objective"""
@@ -134,7 +151,6 @@ class CompetencyService:
     
     async def get_all_objectives(self, subject: str, subskill_id: str) -> list:
         """Get ALL detailed objectives for a subskill"""
-        # This could potentially be async if objectives were stored in the database
         return self.detailed_objectives.get(subject, {}).get(subskill_id, [])
 
     def _structure_syllabus(self, df: pd.DataFrame) -> List[Dict]:
@@ -175,15 +191,6 @@ class CompetencyService:
         
         return structured
 
-    def get_subskill_types(self, subject: str) -> List[str]:
-        """Get list of all problem types (subskills) available"""
-        return [
-            subskill["id"]
-            for unit in self.get_curriculum(subject)
-            for skill in unit["skills"]
-            for subskill in skill["subskills"]
-        ]
-
     async def get_curriculum(self, subject: str) -> List[Dict]:
         """Get full curriculum structure for a subject"""
         try:
@@ -202,7 +209,19 @@ class CompetencyService:
         subskill_id: str,
         evaluation: Dict[str, Any]
     ) -> Dict[str, Any]:
+        """Update competency based on problem evaluation"""
         try:
+            # Check if cosmos_db is available
+            if not self.cosmos_db:
+                print("[ERROR] CosmosDB service not initialized")
+                return {
+                    "error": "Database service not available",
+                    "student_id": student_id,
+                    "subject": subject,
+                    "skill_id": skill_id,
+                    "subskill_id": subskill_id
+                }
+                
             # Extract score from evaluation
             score = float(evaluation.get('evaluation', 0))
             
@@ -248,7 +267,15 @@ class CompetencyService:
             
         except Exception as e:
             print(f"Error updating competency: {str(e)}")
-            raise
+            import traceback
+            traceback.print_exc()
+            return {
+                "error": str(e),
+                "student_id": student_id,
+                "subject": subject,
+                "skill_id": skill_id,
+                "subskill_id": subskill_id
+            }
 
     async def get_competency(
         self,
@@ -257,7 +284,17 @@ class CompetencyService:
         skill_id: str,
         subskill_id: str
     ) -> Dict[str, Any]:
+        """Get competency for a specific skill/subskill"""
         try:
+            # Check if cosmos_db is available
+            if not self.cosmos_db:
+                print("[ERROR] CosmosDB service not initialized")
+                return {
+                    "current_score": self.default_score,
+                    "credibility": 0.0,
+                    "total_attempts": 0
+                }
+                
             result = await self.cosmos_db.get_competency(
                 student_id=student_id,
                 subject=subject,
@@ -286,7 +323,19 @@ class CompetencyService:
         student_id: int,
         subject: str
     ) -> Dict[str, Any]:
+        """Get aggregated competency for entire subject"""
         try:
+            # Check if cosmos_db is available
+            if not self.cosmos_db:
+                print("[ERROR] CosmosDB service not initialized")
+                return {
+                    "student_id": student_id,
+                    "subject": subject,
+                    "current_score": self.default_score,
+                    "credibility": 0,
+                    "total_attempts": 0
+                }
+                
             from asyncio import to_thread
             
             competencies = await self.cosmos_db.get_subject_competencies(
@@ -334,9 +383,16 @@ class CompetencyService:
         self,
         student_id: int
     ) -> Dict[str, Any]:
-        """
-        Get overview of all competencies for a student
-        """
+        """Get overview of all competencies for a student"""
+        # Check if cosmos_db is available
+        if not self.cosmos_db:
+            print("[ERROR] CosmosDB service not initialized")
+            return {
+                "student_id": student_id,
+                "subjects": {}
+            }
+            
+        # Use in-memory storage for overview until migrated to cosmos_db
         subjects = {}
         
         # Group competencies by subject
@@ -385,9 +441,15 @@ class CompetencyService:
 class AnalyticsExtension:
     def __init__(self, competency_service):
         self.competency_service = competency_service
-        self.cosmos_db = CosmosDBService()
+        self.cosmos_db = None  # Will be set by dependency injection
         
     async def get_daily_progress(self, student_id: int, days: int = 7) -> List[Dict[str, Any]]:
+        """Get daily progress statistics for a student"""
+        # Check if cosmos_db is available
+        if not self.cosmos_db:
+            print("[ERROR] CosmosDB service not initialized")
+            return []
+            
         now = datetime.utcnow()
         start_date = (now - timedelta(days=days)).isoformat()
         
@@ -432,6 +494,12 @@ class AnalyticsExtension:
         return daily_stats
     
     async def get_skill_competencies(self, student_id: int, subject: str) -> List[Dict[str, Any]]:
+        """Get competencies for all skills in a subject"""
+        # Check if cosmos_db is available
+        if not self.cosmos_db:
+            print("[ERROR] CosmosDB service not initialized")
+            return []
+            
         query = """
         SELECT c.skill_id, c.current_score, c.credibility
         FROM c
@@ -454,6 +522,20 @@ class AnalyticsExtension:
         } for comp in competencies]
     
     async def get_detailed_analytics(self, student_id: int, subject: str) -> Dict[str, Any]:
+        """Get detailed analytics for a student in a subject"""
+        # Check if cosmos_db is available
+        if not self.cosmos_db:
+            print("[ERROR] CosmosDB service not initialized")
+            return {
+                "currentStats": {
+                    "totalProblems": 0,
+                    "averageScore": 0,
+                    "credibility": 0,
+                    "subSkills": {}
+                },
+                "progressionData": []
+            }
+            
         # Get all competencies for this subject
         query = """
         SELECT c.subskill_id, c.current_score
@@ -515,6 +597,11 @@ class AnalyticsExtension:
     
     async def _calculate_overall_competency(self, student_id: int, daily_attempts: List[Dict[str, Any]]) -> float:
         """Calculate overall competency percentage including today's attempts"""
+        # Check if competency_service is available
+        if not self.competency_service:
+            print("[ERROR] CompetencyService not initialized")
+            return 0.0
+            
         if not daily_attempts:
             return 0.0
             
@@ -524,6 +611,7 @@ class AnalyticsExtension:
         return (avg_score * 10 * credibility)  # Convert to percentage
     
     def _generate_progression_data(self, total_problems: int, current_score: float) -> List[Dict[str, Any]]:
+        """Generate progression data for visualization"""
         data = []
         max_problems = max(150, total_problems)  # Using subject-level standard
         

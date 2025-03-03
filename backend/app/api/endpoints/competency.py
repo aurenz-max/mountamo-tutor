@@ -1,13 +1,14 @@
 # backend/app/api/endpoints/competency.py
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any, List
 from pydantic import BaseModel
+
+# Import dependencies
+from ...dependencies import get_competency_service, get_analytics_extension
 from ...services.competency import CompetencyService, AnalyticsExtension
 
 router = APIRouter()
-competency_service = CompetencyService()
-analytics_service = AnalyticsExtension(competency_service)
 
 class CompetencyUpdate(BaseModel):
     student_id: int
@@ -23,7 +24,10 @@ class CompetencyQuery(BaseModel):
     subskill: str
 
 @router.post("/update")
-async def update_competency(request: CompetencyUpdate) -> Dict[str, Any]:
+async def update_competency(
+    request: CompetencyUpdate,
+    competency_service: CompetencyService = Depends(get_competency_service)
+) -> Dict[str, Any]:
     """Update a student's competency based on session performance"""
     try:
         result = await competency_service.update_competency(
@@ -38,7 +42,10 @@ async def update_competency(request: CompetencyUpdate) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/student/{student_id}")
-async def get_student_overview(student_id: int) -> Dict[str, Any]:
+async def get_student_overview(
+    student_id: int,
+    competency_service: CompetencyService = Depends(get_competency_service)
+) -> Dict[str, Any]:
     """Get overview of all competencies for a student"""
     try:
         overview = await competency_service.get_student_overview(student_id)
@@ -52,7 +59,8 @@ async def get_competency(
     student_id: int,
     subject: str,
     skill_id: str,
-    subskill_id: str
+    subskill_id: str,
+    competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get specific competency level for a student at the subskill level (RESTful URL)"""
     try:
@@ -81,6 +89,7 @@ async def get_skill_competency_endpoint(
     student_id: int,
     subject: str,
     skill_id: str,
+    competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get competency level for a student at the skill level"""
     try:
@@ -99,7 +108,8 @@ async def get_subskill_competency_endpoint( # Renamed to be more specific
     student_id: int,
     subject: str,
     skill_id: str,
-    subskill_id: str
+    subskill_id: str,
+    competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get specific competency level for a student at the subskill level"""
     try:
@@ -117,7 +127,8 @@ async def get_subskill_competency_endpoint( # Renamed to be more specific
 async def get_student_progress(
     student_id: int,
     days: int = 7,
-    subject: str = "Mathematics"
+    subject: str = "Mathematics",
+    analytics_service: AnalyticsExtension = Depends(get_analytics_extension)
 ) -> Dict[str, Any]:
     """Get comprehensive progress data for student analytics dashboard"""
     try:
@@ -139,7 +150,11 @@ async def get_student_progress(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/student/{student_id}/daily")
-async def get_daily_progress(student_id: int, days: int = 7) -> List[Dict[str, Any]]:
+async def get_daily_progress(
+    student_id: int, 
+    days: int = 7,
+    analytics_service: AnalyticsExtension = Depends(get_analytics_extension)
+) -> List[Dict[str, Any]]:
     """Get daily progress metrics for specified time range"""
     try:
         return await analytics_service.get_daily_progress(student_id, days)
@@ -147,7 +162,11 @@ async def get_daily_progress(student_id: int, days: int = 7) -> List[Dict[str, A
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/student/{student_id}/skills/{subject}")
-async def get_skill_analysis(student_id: int, subject: str) -> List[Dict[str, Any]]:
+async def get_skill_analysis(
+    student_id: int, 
+    subject: str,
+    analytics_service: AnalyticsExtension = Depends(get_analytics_extension)
+) -> List[Dict[str, Any]]:
     """Get skill competency analysis for a subject"""
     try:
         return await analytics_service.get_skill_competencies(student_id, subject)
@@ -155,7 +174,11 @@ async def get_skill_analysis(student_id: int, subject: str) -> List[Dict[str, An
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/student/{student_id}/detailed/{subject}")
-async def get_detailed_analytics(student_id: int, subject: str) -> Dict[str, Any]:
+async def get_detailed_analytics(
+    student_id: int, 
+    subject: str,
+    analytics_service: AnalyticsExtension = Depends(get_analytics_extension)
+) -> Dict[str, Any]:
     """Get detailed analytics for a subject"""
     try:
         return await analytics_service.get_detailed_analytics(student_id, subject)
@@ -163,12 +186,17 @@ async def get_detailed_analytics(student_id: int, subject: str) -> Dict[str, Any
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/subjects")
-async def get_available_subjects():
+async def get_available_subjects(
+    competency_service: CompetencyService = Depends(get_competency_service)
+):
     """List all available subjects with loaded curriculum"""
     return list(competency_service.syllabus_cache.keys())
 
 @router.get("/curriculum/{subject}")
-async def get_subject_curriculum(subject: str) -> Dict[str, Any]:
+async def get_subject_curriculum(
+    subject: str,
+    competency_service: CompetencyService = Depends(get_competency_service)
+) -> Dict[str, Any]:
     """Get complete curriculum structure for a subject"""
     curriculum = await competency_service.get_curriculum(subject)
     if not curriculum:
@@ -178,7 +206,8 @@ async def get_subject_curriculum(subject: str) -> Dict[str, Any]:
 @router.get("/objectives/{subject}/{subskill_id}")
 async def get_detailed_objectives(
     subject: str, 
-    subskill_id: str
+    subskill_id: str,
+    competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get detailed learning objectives for a subskill"""
     try:
@@ -192,7 +221,10 @@ async def get_detailed_objectives(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/problem-types/{subject}")
-async def get_subskill_types(subject: str) -> Dict[str, Any]:
+async def get_subskill_types(
+    subject: str,
+    competency_service: CompetencyService = Depends(get_competency_service)
+) -> Dict[str, Any]:
     """Get all available problem types (subskills) for a subject"""
     types = await competency_service.get_subskill_types(subject)
     if not types:

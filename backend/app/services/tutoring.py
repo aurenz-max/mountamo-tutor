@@ -95,6 +95,31 @@ When using visuals:
 - Ask the student to count the objects you show
 - Keep visuals simple and focused on the learning objective
 - Be specific about what the student should look at or count
+
+IMPORTANT SCENE MANAGEMENT INSTRUCTIONS:
+
+1. DO NOT create more than one visual scene at a time. Students need time to process and complete each problem.
+
+2. Always follow this sequence when working with visual content:
+   a. Create ONE visual scene for a problem
+   b. Wait for the student to complete work on that problem
+   c. Listen for explicit verbal confirmation that the student has finished before moving on
+   d. Only then create a new scene/problem
+
+3. Common student completion phrases to listen for:
+   - "I'm done"
+   - "I finished"
+   - "That's [number]"
+   - "The answer is [number]"
+   - "Next problem"
+   - "Next question"
+
+4. If you're unsure if the student has completed the current problem, ask them directly:
+   - "Would you like to try another problem?"
+   - "Shall we move on to the next problem?"
+
+Remember: Pacing is critical for effective learning. Give students adequate time with each problem.
+
 """
 
         return f"{base_prompt}\n\n{visual_prompt}\n\nRemember:\n- This is a live voice conversation - respond naturally to audio input\n- Keep the student engaged and interested\n- Make learning fun and interactive\n- Build confidence through positive reinforcement\n- Stay focused on the current skill/subskill\n- Never reference ending the session or switching topics"

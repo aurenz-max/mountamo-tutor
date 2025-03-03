@@ -1,25 +1,27 @@
-from fastapi import APIRouter, HTTPException
-import pandas as pd
-from pathlib import Path
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, List, Any
+
+# Import dependencies
+from ...dependencies import get_competency_service
 from ...services.competency import CompetencyService
 
 router = APIRouter()
-competency_service = CompetencyService()
-
-
 
 @router.get("/subjects")
-async def get_available_subjects():
+async def get_available_subjects(
+    competency_service: CompetencyService = Depends(get_competency_service)
+):
     """List all available subjects"""
     return list(competency_service.syllabus_cache.keys())
     
-
 @router.get("/curriculum/{subject}")
-async def get_subject_curriculum(subject: str) -> Dict[str, Any]:
+async def get_subject_curriculum(
+    subject: str,
+    competency_service: CompetencyService = Depends(get_competency_service)
+) -> Dict[str, Any]:
     """Get complete curriculum structure for a subject"""
     try:
-        curriculum = competency_service.get_curriculum(subject)
+        curriculum = await competency_service.get_curriculum(subject)
         if not curriculum:
             raise HTTPException(status_code=404, detail="Subject not found")
             
@@ -31,43 +33,38 @@ async def get_subject_curriculum(subject: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/problem-types/{subject}")
-async def get_problem_types(subject: str):
+async def get_problem_types(
+    subject: str,
+    competency_service: CompetencyService = Depends(get_competency_service)
+):
     """Get all available problem types (subskills)"""
-    types = competency_service.get_subskill_types(subject)
+    types = await competency_service.get_subskill_types(subject)
     if not types:
         raise HTTPException(status_code=404, detail="Subject not found")
     return {"subject": subject, "problem_types": types}
 
-# @router.get("/objectives/{subject}/{subskill_id}")
-# async def get_detailed_objectives(subject: str, subskill_id: str):
-#     """Get detailed objectives for a specific subskill in a subject"""
-#     try:
-#         if subject not in OBJECTIVES_FILES:
-#             raise HTTPException(
-#                 status_code=404, 
-#                 detail=f"Detailed objectives not available for {subject}"
-#             )
-            
-#         objectives_path = DATA_DIR / OBJECTIVES_FILES[subject]
-#         if not objectives_path.exists():
-#             raise HTTPException(
-#                 status_code=404, 
-#                 detail=f"Objectives file for {subject} not found"
-#             )
-            
-#         df = pd.read_csv(objectives_path)
-#         objectives = df[df["SubskillID"] == subskill_id].to_dict(orient="records")
+@router.get("/objectives/{subject}/{subskill_id}")
+async def get_detailed_objectives(
+    subject: str, 
+    subskill_id: str,
+    competency_service: CompetencyService = Depends(get_competency_service)
+) -> Dict[str, Any]:
+    """Get detailed learning objectives for a subskill"""
+    try:
+        objectives = await competency_service.get_detailed_objectives(subject, subskill_id)
+        if not objectives:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"No objectives found for subskill {subskill_id}"
+            )
         
-#         if not objectives:
-#             raise HTTPException(
-#                 status_code=404, 
-#                 detail=f"No objectives found for subskill {subskill_id}"
-#             )
-            
-#         return objectives
-        
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500, 
-#             detail=f"Error loading objectives: {str(e)}"
-#         )
+        return {
+            "subject": subject,
+            "subskill_id": subskill_id,
+            "objectives": objectives
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error loading objectives: {str(e)}"
+        )
