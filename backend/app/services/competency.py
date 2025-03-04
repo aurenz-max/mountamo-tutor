@@ -221,9 +221,53 @@ class CompetencyService:
                     "skill_id": skill_id,
                     "subskill_id": subskill_id
                 }
+                    
+            # Extract score from evaluation, handling both dictionary and scalar formats
+            score = 0.0
+            if isinstance(evaluation.get('evaluation'), dict):
+                # New structured format (dictionary with score and justification)
+                score_value = evaluation['evaluation'].get('score')
+                if isinstance(score_value, str):
+                    score = float(score_value)
+                else:
+                    score = float(score_value or 0)
+            else:
+                # Old format (directly as number or string)
+                score = float(evaluation.get('evaluation', 0))
                 
-            # Extract score from evaluation
-            score = float(evaluation.get('evaluation', 0))
+            # Extract feedback for the attempt record
+            feedback = ""
+            if isinstance(evaluation.get('feedback'), dict):
+                # New structured format
+                feedback_parts = []
+                if evaluation['feedback'].get('praise'):
+                    feedback_parts.append(evaluation['feedback']['praise'])
+                if evaluation['feedback'].get('guidance'):
+                    feedback_parts.append(evaluation['feedback']['guidance'])
+                if evaluation['feedback'].get('encouragement'):
+                    feedback_parts.append(evaluation['feedback']['encouragement'])
+                if evaluation['feedback'].get('next_steps'):
+                    feedback_parts.append(evaluation['feedback']['next_steps'])
+                feedback = " ".join(feedback_parts)
+            else:
+                # Old format
+                feedback = str(evaluation.get('feedback', ''))
+                
+            # Extract analysis for the attempt record
+            analysis = ""
+            if isinstance(evaluation.get('analysis'), dict):
+                # New structured format
+                analysis_parts = []
+                if evaluation['analysis'].get('understanding'):
+                    analysis_parts.append(evaluation['analysis']['understanding'])
+                if evaluation['analysis'].get('approach'):
+                    analysis_parts.append(evaluation['analysis']['approach'])
+                if evaluation['analysis'].get('accuracy'):
+                    analysis_parts.append(evaluation['analysis']['accuracy'])
+                analysis = " ".join(analysis_parts)
+            else:
+                # Old format
+                analysis = str(evaluation.get('analysis', ''))
             
             # Save the attempt
             await self.cosmos_db.save_attempt(
@@ -232,8 +276,8 @@ class CompetencyService:
                 skill_id=skill_id,
                 subskill_id=subskill_id,
                 score=score,
-                analysis=evaluation.get('analysis', ''),
-                feedback=evaluation.get('feedback', '')
+                analysis=analysis,
+                feedback=feedback
             )
             
             # Get all attempts for this skill
@@ -264,7 +308,7 @@ class CompetencyService:
                 credibility=credibility,
                 total_attempts=len(attempts)
             )
-            
+                
         except Exception as e:
             print(f"Error updating competency: {str(e)}")
             import traceback

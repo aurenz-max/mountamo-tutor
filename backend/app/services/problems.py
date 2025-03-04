@@ -12,6 +12,7 @@ class ProblemService:
         self.anthropic = None  # Will be set by dependency injection
         self.competency_service = None  # Will be set by dependency injection
         self.recommender = None  # Will be set by dependency injection
+        self.cosmos_db = None  # Will be set by dependency injection
         self._problem_history = {}  # In-memory storage for now
 
     async def get_problem(
@@ -285,155 +286,209 @@ Return your response EXACTLY in this JSON format:
         return self._problem_history[student_id]
 
     async def review_problem(
-            self,
-            subject: str,
-            problem: str,
-            solution_image_base64: str,
-            skill_id: str,
-            student_answer: str = "",
-            canvas_used: bool = True
-        ) -> Dict[str, Any]:
-            """Review a student's problem solution"""
-            try:
-                # Ensure anthropic service is available
-                if not self.anthropic:
-                    print("[ERROR] AnthropicService not initialized")
-                    return {"error": "AnthropicService not initialized"}
-                    
-                print(f"Review problem called with image data length: {len(solution_image_base64)}")
+        self,
+        student_id: int,
+        subject: str,
+        problem: Dict[str, Any],  # Accept full problem object from frontend
+        solution_image_base64: str,
+        skill_id: str,
+        subskill_id: str = None,
+        student_answer: str = "",
+        canvas_used: bool = True
+    ) -> Dict[str, Any]:
+        """Review a student's problem solution"""
+        try:
+            # Ensure anthropic service is available
+            if not self.anthropic:
+                print("[ERROR] AnthropicService not initialized")
+                return {"error": "AnthropicService not initialized"}
                 
-                system_instructions = """You are an expert kindergarten teacher skilled at reviewing student work.
-                Focus on:
-                1. Clear, simple language
-                2. Positive reinforcement
-                3. Age-appropriate feedback
-                4. Encouraging growth mindset
-                5. Specific, actionable guidance
-                """
-
-                # Create the prompt in the correct format
-                prompt = [{
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/png",
-                                "data": solution_image_base64
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": f"""Review this {subject} problem and the student's solution:
-
-    Problem: {problem}
-
-Please follow these steps:
-1. For observation:
-   - If there's a canvas solution, describe what you see in the image.
-   - If there's a multiple-choice answer, state the selected option.
-2. For analysis:
-   - Compare the student's answer (canvas work and/or multiple-choice selection) to the provided correct answer.
-   - Consider if the student's answer, while different from the provided correct answer, demonstrates a valid conceptual understanding or an alternative correct solution.
-   - If both canvas and multiple-choice are used, analyze if they are consistent with each other.
-3. For evaluation:
-   - Provide a numerical evaluation from 1 to 10, where 1 is completely incorrect and 10 is perfectly correct.
-   - Consider conceptual understanding and creativity in problem-solving, not just matching the provided answer.
-4. For feedback:
-   - Provide feedback appropriate for a 5-6 year old student.
-   - Address their answer and any work shown on the canvas.
-   - If their answer differs from the provided correct answer but demonstrates valid understanding, acknowledge and praise this.
-   - If the answer is incorrect, explain why gently and guide them towards understanding.
-   - Offer encouragement and positive reinforcement for their effort, creativity, and any correct aspects of their answer.
-      
-   Return your review in this EXACT JSON format:
-{{
-    "observation": {{
-        "canvas_description": "If there's a canvas solution, describe in detail what you see in the image",
-        "selected_answer": "If there's a multiple-choice answer, state the selected option",
-        "work_shown": "Describe any additional work or steps shown by the student"
-    }},
-    "analysis": {{
-        "understanding": "Analyze the student's conceptual understanding",
-        "approach": "Describe the problem-solving approach used",
-        "accuracy": "Compare against the expected answer",
-        "creativity": "Note any creative or alternative valid solutions"
-    }},
-    "evaluation": {{
-        "score": "Numerical score 1-10",
-        "justification": "Brief explanation of the score"
-    }},
-    "feedback": {{
-        "praise": "Specific praise for what was done well",
-        "guidance": "Age-appropriate suggestions for improvement",
-        "encouragement": "Positive reinforcement message",
-        "next_steps": "Simple, actionable next steps"
-    }}"""
-                        }
-                    ]
-                }]
-
-                print("Sending review request to Claude...")
-                response = await self.anthropic.generate_response(
-                    prompt=prompt,  # Pass as prompt parameter
-                    system_instructions=system_instructions
-                )
+            # Ensure cosmos_db service is available
+            if not self.cosmos_db:
+                print("[WARNING] CosmosDB service not initialized, review will not be saved")
                 
-                print("Received response from Claude")
-                
-                try:
-                    # Parse JSON response
-                    import json
-                    structured_review = json.loads(response)
-                    print(f"[DEBUG] Parsed JSON structure: {json.dumps(structured_review, indent=2)}")
-
-                    # Ensure evaluation is a number
-                    if isinstance(structured_review.get('evaluation'), dict):
-                        print("[DEBUG] Found evaluation as dictionary, converting to number")
-                        evaluation_score = float(structured_review['evaluation'].get('score', 0))
-                        evaluation_justification = structured_review['evaluation'].get('justification', '')
-                        structured_review['evaluation'] = evaluation_score
-                        structured_review['justification'] = evaluation_justification
-                    elif not isinstance(structured_review.get('evaluation'), (int, float)):
-                        print(f"[DEBUG] Invalid evaluation type: {type(structured_review.get('evaluation'))}")
-                        structured_review['evaluation'] = 0
-                        structured_review['justification'] = "Could not determine score"
-                    
-                    print(f"[DEBUG] Final evaluation score: {structured_review['evaluation']}")
-                    
-                    # Add required fields if they don't exist
-                    structured_review.update({
-                        "skill_id": skill_id,
-                        "subject": subject
-                    })
-                    
-                    return structured_review
-
-                except json.JSONDecodeError as e:
-                    print(f"Error parsing JSON response: {str(e)}")
-                    return {
-                        "error": "Error parsing review response",
-                        "observation": "Error occurred during review",
-                        "analysis": "Error occurred during review",
-                        "evaluation": {"score": 0, "justification": "Error occurred"},
-                        "feedback": "I'm sorry, I had trouble reviewing your work. Let's try again!",
-                        "skill_id": skill_id,
-                        "subject": subject
-                    }
-
-            except Exception as e:
-                print(f"Error in review_problem: {str(e)}")
-                return {
-                    "error": f"Error reviewing problem: {str(e)}",
-                    "observation": "Error occurred during review",
-                    "analysis": "Error occurred during review",
-                    "evaluation": {"score": 0, "justification": "Error occurred"},
-                    "feedback": "I'm sorry, I had trouble reviewing your work. Let's try again!",
-                    "skill_id": skill_id,
-                    "subject": subject
-                }
+            print(f"Review problem called with image data length: {len(solution_image_base64)}")
             
+            system_instructions = """You are an expert kindergarten teacher skilled at reviewing student work.
+            Focus on:
+            1. Clear, simple language
+            2. Positive reinforcement
+            3. Age-appropriate feedback
+            4. Encouraging growth mindset
+            5. Specific, actionable guidance
+            """
+
+            # Extract problem text from problem object
+            problem_text = problem.get('problem', '')
+            
+            # Create the prompt in the correct format
+            # Use triple double quotes to avoid having to escape curly braces
+            json_format_template = """
+    {
+        "observation": {
+            "canvas_description": "If there's a canvas solution, describe in detail what you see in the image",
+            "selected_answer": "If there's a multiple-choice answer, state the selected option",
+            "work_shown": "Describe any additional work or steps shown by the student"
+        },
+        "analysis": {
+            "understanding": "Analyze the student's conceptual understanding",
+            "approach": "Describe the problem-solving approach used",
+            "accuracy": "Compare against the expected answer",
+            "creativity": "Note any creative or alternative valid solutions"
+        },
+        "evaluation": {
+            "score": "Numerical score 1-10",
+            "justification": "Brief explanation of the score"
+        },
+        "feedback": {
+            "praise": "Specific praise for what was done well",
+            "guidance": "Age-appropriate suggestions for improvement",
+            "encouragement": "Positive reinforcement message",
+            "next_steps": "Simple, actionable next steps"
+        }
+    }"""
+            
+            prompt_text = f"""Review this {subject} problem and the student's solution:
+
+    Problem: {problem_text}
+
+    Please follow these steps:
+    1. For observation:
+    - If there's a canvas solution, describe what you see in the image.
+    - If there's a multiple-choice answer, state the selected option.
+    2. For analysis:
+    - Compare the student's answer (canvas work and/or multiple-choice selection) to the provided correct answer.
+    - Consider if the student's answer, while different from the provided correct answer, demonstrates a valid conceptual understanding or an alternative correct solution.
+    - If both canvas and multiple-choice are used, analyze if they are consistent with each other.
+    3. For evaluation:
+    - Provide a numerical evaluation from 1 to 10, where 1 is completely incorrect and 10 is perfectly correct.
+    - Consider conceptual understanding and creativity in problem-solving, not just matching the provided answer.
+    4. For feedback:
+    - Provide feedback appropriate for a 5-6 year old student.
+    - Address their answer and any work shown on the canvas.
+    - If their answer differs from the provided correct answer but demonstrates valid understanding, acknowledge and praise this.
+    - If the answer is incorrect, explain why gently and guide them towards understanding.
+    - Offer encouragement and positive reinforcement for their effort, creativity, and any correct aspects of their answer.
+        
+    Return your review in this EXACT JSON format:
+    {json_format_template}"""
+            
+            prompt = [{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/png",
+                            "data": solution_image_base64
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": prompt_text
+                    }
+                ]
+            }]
+
+            print("Sending review request to Claude...")
+            response = await self.anthropic.generate_response(
+                prompt=prompt,
+                system_instructions=system_instructions
+            )
+            
+            print("Received response from Claude")
+            
+            try:
+                # Parse JSON response
+                import json
+                structured_review = json.loads(response)
+                print(f"[DEBUG] Parsed JSON structure: {json.dumps(structured_review, indent=2)}")
+
+                # Extract evaluation score and justification
+                evaluation_score = 0
+                evaluation_justification = ""
+                
+                if isinstance(structured_review.get('evaluation'), dict):
+                    print("[DEBUG] Found evaluation as dictionary")
+                    evaluation_score = float(structured_review['evaluation'].get('score', 0))
+                    evaluation_justification = structured_review['evaluation'].get('justification', '')
+                elif isinstance(structured_review.get('evaluation'), (int, float)):
+                    print("[DEBUG] Found evaluation as number")
+                    evaluation_score = float(structured_review.get('evaluation', 0))
+                    
+                # Add required fields for frontend compatibility
+                structured_review.update({
+                    "skill_id": skill_id,
+                    "subject": subject,
+                    "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", "")
+                })
+                
+                # Save to CosmosDB if available
+                if self.cosmos_db:
+                    # Use problem ID if available, otherwise create one
+                    problem_id = problem.get("id", f"{subject}_{skill_id}_{datetime.utcnow().isoformat()}")
+                    
+                    try:
+                        # Save the full structured review
+                        await self.cosmos_db.save_problem_review(
+                            student_id=student_id,
+                            subject=subject,
+                            skill_id=skill_id,
+                            subskill_id=subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", ""),
+                            problem_id=problem_id,
+                            review_data=structured_review
+                        )
+                        print(f"[DEBUG] Successfully saved review to CosmosDB for problem {problem_id}")
+                    except Exception as e:
+                        print(f"[ERROR] Failed to save review to CosmosDB: {str(e)}")
+                
+                return structured_review
+
+            except json.JSONDecodeError as e:
+                print(f"Error parsing JSON response: {str(e)}")
+                error_response = {
+                    "error": "Error parsing review response",
+                    "observation": {
+                        "canvas_description": "Error occurred during review",
+                        "selected_answer": "",
+                        "work_shown": ""
+                    },
+                    "analysis": {
+                        "understanding": "Error occurred during review",
+                        "approach": "",
+                        "accuracy": "",
+                        "creativity": ""
+                    },
+                    "evaluation": {
+                        "score": 0,
+                        "justification": "Error occurred"
+                    },
+                    "feedback": {
+                        "praise": "",
+                        "guidance": "",
+                        "encouragement": "I'm sorry, I had trouble reviewing your work. Let's try again!",
+                        "next_steps": ""
+                    },
+                    "skill_id": skill_id,
+                    "subject": subject,
+                    "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", "")
+                }
+                return error_response
+
+        except Exception as e:
+            print(f"Error in review_problem: {str(e)}")
+            return {
+                "error": f"Error reviewing problem: {str(e)}",
+                "observation": {"canvas_description": "Error occurred during review", "selected_answer": "", "work_shown": ""},
+                "analysis": {"understanding": "Error occurred during review", "approach": "", "accuracy": "", "creativity": ""},
+                "evaluation": {"score": 0, "justification": "Error occurred"},
+                "feedback": {"praise": "", "guidance": "", "encouragement": "I'm sorry, I had trouble reviewing your work. Let's try again!", "next_steps": ""},
+                "skill_id": skill_id,
+                "subject": subject,
+                "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", "")
+            }
+                
     async def save_problem_attempt(
         self, 
         student_id: int, 
@@ -442,6 +497,29 @@ Please follow these steps:
         is_correct: bool
     ) -> None:
         """Save a student's problem attempt"""
+        # Save to CosmosDB if available
+        if self.cosmos_db:
+            try:
+                # Format the attempt data
+                attempt_data = {
+                    "student_id": student_id,
+                    "subject": problem.get("metadata", {}).get("subject", "unknown"),
+                    "skill_id": problem.get("metadata", {}).get("skill", {}).get("id", "unknown"),
+                    "subskill_id": problem.get("metadata", {}).get("subskill", {}).get("id", "unknown"),
+                    "score": 10.0 if is_correct else 0.0,  # Simple binary scoring
+                    "analysis": "Automatic assessment",
+                    "feedback": "Automatically scored attempt"
+                }
+                
+                # Save to CosmosDB
+                await self.cosmos_db.save_attempt(**attempt_data)
+                print(f"[DEBUG] Saved attempt to CosmosDB for student {student_id}")
+                
+            except Exception as e:
+                print(f"[ERROR] Failed to save attempt to CosmosDB: {str(e)}")
+                # Fall back to in-memory storage
+        
+        # Always save to in-memory storage as well
         if student_id not in self._problem_history:
             self._problem_history[student_id] = []
             

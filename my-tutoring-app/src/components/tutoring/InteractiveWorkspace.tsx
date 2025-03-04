@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
@@ -7,6 +8,7 @@ import DrawingWorkspace from './DrawingWorkspace';
 import ImageBrowser from './ImageBrowser';
 import DraggableImage from './DraggableImage';
 import VisualSceneManager from './VisualSceneManager';
+import ProblemDisplay from './ProblemDisplay'; // Import the new ProblemDisplay component
 import './InteractiveWorkspace.css';
 
 // Define the interface for workspace images
@@ -48,6 +50,8 @@ const InteractiveWorkspace = forwardRef(({
   
   const drawingRef = useRef<any>();
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -79,27 +83,25 @@ const InteractiveWorkspace = forwardRef(({
 
   // Function to capture and render images onto the canvas for submission
   const captureImagesForCanvas = (combinedCanvas, combinedCtx) => {
-    // Only proceed if we have images to capture
-    if (workspaceImages.length === 0) return;
+    // If no images, return immediately
+    if (workspaceImages.length === 0) return Promise.resolve();
     
-    // Get the canvas scale factor (device pixel ratio)
-    const dpr = window.devicePixelRatio || 1;
+    console.log(`Adding ${workspaceImages.length} images to canvas...`);
     
-    // Create an array to track when all images are loaded
-    const imageLoadPromises = workspaceImages.map(item => {
+    // Create promises for each image load
+    const imagePromises = workspaceImages.map(item => {
       return new Promise((resolve) => {
-        // Skip if no data_uri
         if (!item.image.data_uri) {
           resolve(null);
           return;
         }
         
-        // Create an Image object for the draggable image
         const img = new Image();
         
-        // Set up the onload handler before setting the src
         img.onload = () => {
-          // Calculate the position with device pixel ratio adjustment
+          const dpr = window.devicePixelRatio || 1;
+          
+          // Position with device pixel ratio adjustment
           const x = item.position.x * dpr;
           const y = item.position.y * dpr;
           
@@ -113,33 +115,92 @@ const InteractiveWorkspace = forwardRef(({
             width = 60 * dpr;
             height = 60 * dpr;
           } else {
-            // Use image's natural dimensions with scaling
             const maxSize = 80 * dpr;
             const ratio = Math.min(maxSize / img.width, maxSize / img.height);
             width = img.width * ratio;
             height = img.height * ratio;
           }
           
-          // Draw the image on the canvas
+          // Draw to combined canvas
           combinedCtx.drawImage(img, x, y, width, height);
           resolve(true);
         };
         
-        // Handle load errors
         img.onerror = () => {
           console.error(`Failed to load image: ${item.id}`);
           resolve(null);
         };
         
-        // Set the source to the image's data URI
         img.src = item.image.data_uri;
       });
     });
     
     // Return a promise that resolves when all images are drawn
-    return Promise.all(imageLoadPromises);
+    return Promise.all(imagePromises);
   };
 
+  // Toggle fullscreen function
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      // If not in fullscreen mode, enter fullscreen
+      if (workspaceRef.current.requestFullscreen) {
+        workspaceRef.current.requestFullscreen();
+        setIsFullScreen(true);
+      } else if (workspaceRef.current.webkitRequestFullscreen) { /* Safari */
+        workspaceRef.current.webkitRequestFullscreen();
+        setIsFullScreen(true);
+      } else if (workspaceRef.current.msRequestFullscreen) { /* IE11 */
+        workspaceRef.current.msRequestFullscreen();
+        setIsFullScreen(true);
+      }
+    } else {
+      // If already in fullscreen mode, exit fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullScreen(false);
+      } else if (document.webkitExitFullscreen) { /* Safari */
+        document.webkitExitFullscreen();
+        setIsFullScreen(false);
+      } else if (document.msExitFullscreen) { /* IE11 */
+        document.msExitFullscreen();
+        setIsFullScreen(false);
+      }
+    }
+  };
+
+  // Toggle theater mode function
+  const toggleTheaterMode = () => {
+    const newMode = !isTheaterMode;
+    setIsTheaterMode(newMode);
+    
+    // Add a longer delay to ensure all DOM updates have happened
+    setTimeout(() => {
+      if (drawingRef.current && drawingRef.current.forceCanvasResize) {
+        console.log("Forcing canvas resize after theater mode toggle");
+        drawingRef.current.forceCanvasResize();
+      }
+    }, 300); // Increased delay to ensure DOM updates complete
+  };
+
+  // Handle fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+  
   // Add a handler for when the VisualSceneManager creates images
   const handleSceneImagesCreated = (newImages: WorkspaceImage[]) => {
     console.log('Scene manager created images:', newImages);
@@ -177,101 +238,16 @@ const InteractiveWorkspace = forwardRef(({
     setError(null);
     
     try {
-      // Get the canvas data first (this uses the existing getCanvasData method)
-      const canvasData = drawingRef.current.getCanvasData();
+      // Use the async getCanvasData method which will handle drawing + images
+      const canvasData = await drawingRef.current.getCanvasData();
       
-      // Create a temporary canvas to draw both the original drawing and the images
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
+      console.log(`Submitting canvas data of length: ${canvasData?.length || 0}`);
       
-      // Find the size of the original canvas by finding its container
-      const workspaceElement = workspaceRef.current;
-      if (!workspaceElement) {
-        throw new Error('Workspace reference is not available');
-      }
-      
-      // Get the canvas container dimensions
-      const canvasContainer = workspaceElement.querySelector('.w-full.h-96');
-      if (!canvasContainer) {
-        throw new Error('Cannot find canvas container');
-      }
-      
-      const rect = canvasContainer.getBoundingClientRect();
-      
-      // Set up the temporary canvas with the right dimensions
-      const dpr = window.devicePixelRatio || 1;
-      tempCanvas.width = rect.width * dpr;
-      tempCanvas.height = rect.height * dpr;
-      
-      // Draw the original canvas content
-      const img = new Image();
-      img.onload = () => {
-        tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
-      };
-      img.src = 'data:image/png;base64,' + canvasData;
-      
-      // Wait for the original canvas to load
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      
-      // Now stamp all images onto this canvas
-      const imagePromises = workspaceImages.map(item => {
-        return new Promise((resolve) => {
-          if (!item.image.data_uri) {
-            resolve(null);
-            return;
-          }
-          
-          const imgEl = new Image();
-          imgEl.onload = () => {
-            // Calculate size similar to DraggableImage component
-            let width, height;
-            
-            if (item.image._previewSize) {
-              width = item.image._previewSize.width;
-              height = item.image._previewSize.height;
-            } else if (item.image.type === 'svg') {
-              width = 60;
-              height = 60;
-            } else {
-              const maxSize = 80;
-              const ratio = Math.min(maxSize / imgEl.width, maxSize / imgEl.height);
-              width = imgEl.width * ratio;
-              height = imgEl.height * ratio;
-            }
-            
-            // Account for device pixel ratio
-            const x = item.position.x * dpr;
-            const y = item.position.y * dpr;
-            width *= dpr;
-            height *= dpr;
-            
-            // Draw the image onto our temporary canvas
-            tempCtx.drawImage(imgEl, x, y, width, height);
-            resolve(true);
-          };
-          
-          imgEl.onerror = () => {
-            console.error(`Failed to load image: ${item.id}`);
-            resolve(null);
-          };
-          
-          imgEl.src = item.image.data_uri;
-        });
-      });
-      
-      // Wait for all images to be stamped
-      await Promise.all(imagePromises);
-      
-      // Get the final image data from our temporary canvas
-      const finalCanvasData = tempCanvas.toDataURL('image/png').split(',')[1];
-      
-      // Create and send the submission
+      // Create the submission with the combined data
       const submission = {
         subject: currentTopic.subject,
-        problem: currentProblem.problem,
-        solution_image: finalCanvasData,
+        problem: currentProblem,
+        solution_image: canvasData,
         skill_id: currentTopic.skill?.id || '',
         subskill_id: currentTopic.subskill?.id || '',
         student_answer: '',
@@ -281,7 +257,7 @@ const InteractiveWorkspace = forwardRef(({
       
       const response = await api.submitProblem(submission);
       setFeedback(response);
-      if (onSubmit) onSubmit(finalCanvasData);
+      if (onSubmit) onSubmit(canvasData);
     } catch (error) {
       console.error('Error submitting problem:', error);
       setError(error instanceof Error ? error.message : 'Failed to submit answer. Please try again.');
@@ -392,15 +368,15 @@ const InteractiveWorkspace = forwardRef(({
   };
 
   return (
-    <div className="relative flex flex-col h-full">
-      {/* Add the VisualSceneManager component */}
+    <div className={`relative flex flex-col h-full ${isTheaterMode ? 'theater-mode' : ''}`}>
+      {/* VisualSceneManager component */}
       <VisualSceneManager
         scene={externalScene}
         workspaceRef={workspaceRef}
         onImagesCreated={handleSceneImagesCreated}
       />
       
-      {/* Top Bar */}
+      {/* Top Bar - always visible even in theater mode */}
       <div className="bg-gray-100 p-2 flex justify-end items-center">
         <Button
           onClick={() => setIsProblemOpen(!isProblemOpen)}
@@ -411,13 +387,13 @@ const InteractiveWorkspace = forwardRef(({
           {isProblemOpen ? '← Hide Problem' : 'Show Problem'}
         </Button>
       </div>
-
+  
       {/* Main Content */}
       <div className="flex flex-1 relative">
         {/* Drawing Area with Draggable Images */}
         <div 
           ref={workspaceRef}
-          className={`transition-all duration-300 relative drawing-workspace ${isProblemOpen ? 'w-2/3' : 'w-full'}`}
+          className={`transition-all duration-300 relative drawing-workspace ${isProblemOpen && !isTheaterMode ? 'w-2/3' : 'w-full'}`}
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleWorkspaceDrop}
         >
@@ -426,6 +402,7 @@ const InteractiveWorkspace = forwardRef(({
               ref={drawingRef} 
               loading={loading} 
               captureImagesCallback={captureImagesForCanvas}
+              isTheaterMode={isTheaterMode}
             />
             
             {/* Draggable images layer */}
@@ -459,84 +436,38 @@ const InteractiveWorkspace = forwardRef(({
             >
               {isVisualToolsOpen ? "×" : "+"}
             </button>
+            
+            {/* Theater mode toggle button */}
+            <button
+              className="theater-mode-button"
+              onClick={toggleTheaterMode}
+              aria-label={isTheaterMode ? "Exit theater mode" : "Enter theater mode"}
+            >
+              {isTheaterMode ? <Minimize size={20} /> : <Maximize size={20} />}
+            </button>
           </div>
         </div>
         
-        {/* Image Browser Panel - only shown when toggle is on */}
+        {/* Image Browser Panel - Handle positioning for theater mode */}
         {isVisualToolsOpen && (
           <div className={`image-browser-sidebar ${isProblemOpen ? 'with-problem-panel' : ''}`}>
             <ImageBrowser onImageSelected={handleImageSelected} />
           </div>
         )}
-
-        {/* Problem Panel */}
+  
+        {/* Problem Panel - Now using the ProblemDisplay component */}
         {isProblemOpen && (
-          <div className="w-1/3 bg-white border-l">
-            <div className="p-4 flex flex-col h-full">
-              <h2 className="text-xl font-semibold text-center mb-6">Current Problem</h2>
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              {!currentProblem ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <Button
-                    onClick={generateNewProblem}
-                    disabled={loading}
-                    className="bg-blue-500 hover:bg-blue-600 text-white"
-                  >
-                    Generate Problem
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex-1 space-y-4">
-                    <p className="text-gray-700">{currentProblem.problem}</p>
-                    {feedback && feedback.review && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
-                        <h3 className="font-medium">Feedback:</h3>
-                        {feedback.review.feedback.praise && (
-                          <div className="text-sm">
-                            <p className="text-green-600">{feedback.review.feedback.praise}</p>
-                          </div>
-                        )}
-                        {feedback.review.feedback.guidance && (
-                          <div className="text-sm">
-                            <p className="text-blue-600">{feedback.review.feedback.guidance}</p>
-                          </div>
-                        )}
-                        {feedback.review.feedback.encouragement && (
-                          <div className="text-sm">
-                            <p className="text-purple-600">{feedback.review.feedback.encouragement}</p>
-                          </div>
-                        )}
-                        {feedback.review.feedback.next_steps && (
-                          <div className="text-sm mt-2">
-                            <p className="text-gray-600">{feedback.review.feedback.next_steps}</p>
-                          </div>
-                        )}
-                        {feedback.review.evaluation && (
-                          <div className="mt-2 pt-2 border-t">
-                            <p className="text-sm font-medium">
-                              Score: {feedback.review.evaluation}/10
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    onClick={handleSubmit}
-                    className="w-full mt-4"
-                    variant="default"
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Submitting...' : 'Submit Answer'}
-                  </Button>
-                </>
-              )}
-            </div>
+          <div className={isTheaterMode ? "theater-mode-problem-panel" : "w-1/3 bg-white border-l"}>
+            <ProblemDisplay
+              problem={currentProblem}
+              loading={loading}
+              error={error}
+              feedback={feedback}
+              submitting={submitting}
+              isTheaterMode={isTheaterMode}
+              onGenerateProblem={generateNewProblem}
+              onSubmit={handleSubmit}
+            />
           </div>
         )}
       </div>

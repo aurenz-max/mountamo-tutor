@@ -37,6 +37,11 @@ class CosmosDBService:
             }
         )
 
+        self.reviews = self.database.create_container_if_not_exists(
+                id="reviews",
+                partition_key=PartitionKey(path="/student_id")
+            )
+
     async def save_conversation_message(
         self,
         session_id: str,
@@ -255,6 +260,113 @@ class CosmosDBService:
             query=query,
             parameters=params,
             partition_key=student_id
+        ))
+        
+        return results[0] if results else None
+    
+    async def save_problem_review(
+        self,
+        student_id: int,
+        subject: str,
+        skill_id: str,
+        subskill_id: str,
+        problem_id: str,  # Use a problem ID to identify the specific problem
+        review_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Save a structured review of a student's problem solution."""
+        timestamp = datetime.utcnow().isoformat()
+        
+        # Preserve the original structure but normalize for storage
+        review_item = {
+            "id": f"{student_id}_{problem_id}_{timestamp}",
+            "student_id": student_id,
+            "subject": subject,
+            "skill_id": skill_id,
+            "subskill_id": subskill_id,
+            "problem_id": problem_id,
+            "timestamp": timestamp,
+            # Store all the raw data directly
+            "full_review": review_data,
+            # For easier querying, extract key fields
+            "observation": review_data.get("observation", {}),
+            "analysis": review_data.get("analysis", {}),
+            "evaluation": review_data.get("evaluation", {}),
+            "feedback": review_data.get("feedback", {}),
+            # Extract the score for easier querying
+            "score": float(review_data.get("evaluation", {}).get("score", 0)) 
+                if isinstance(review_data.get("evaluation"), dict) 
+                else float(review_data.get("evaluation", 0))
+        }
+        
+        return self.reviews.create_item(body=review_item)
+
+    async def get_problem_reviews(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        skill_id: Optional[str] = None, 
+        subskill_id: Optional[str] = None,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Get problem reviews for a student with optional filters."""
+        query = "SELECT * FROM c WHERE c.student_id = @student_id"
+        params = [{"name": "@student_id", "value": student_id}]
+        
+        if subject:
+            query += " AND c.subject = @subject"
+            params.append({"name": "@subject", "value": subject})
+        if skill_id:
+            query += " AND c.skill_id = @skill_id"
+            params.append({"name": "@skill_id", "value": skill_id})
+        if subskill_id:
+            query += " AND c.subskill_id = @subskill_id"
+            params.append({"name": "@subskill_id", "value": subskill_id})
+            
+        query += " ORDER BY c.timestamp DESC OFFSET 0 LIMIT @limit"
+        params.append({"name": "@limit", "value": limit})
+        
+        return list(self.reviews.query_items(
+            query=query,
+            parameters=params,
+            enable_cross_partition_query=True
+        ))
+
+    async def get_review_summary(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        days: int = 30
+    ) -> Dict[str, Any]:
+        """Get summary statistics for problem reviews."""
+        from datetime import datetime, timedelta
+        
+        start_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        
+        query = """
+        SELECT 
+            AVG(c.score) as avg_score,
+            COUNT(1) as total_reviews,
+            COUNT(IIF(c.score >= 8, 1, null)) as high_score_count,
+            COUNT(IIF(c.score >= 5 AND c.score < 8, 1, null)) as medium_score_count,
+            COUNT(IIF(c.score < 5, 1, null)) as low_score_count
+        FROM c
+        WHERE c.student_id = @student_id
+        AND c.timestamp >= @start_date
+        """
+        
+        params = [
+            {"name": "@student_id", "value": student_id},
+            {"name": "@start_date", "value": start_date}
+        ]
+        
+        if subject:
+            query += " AND c.subject = @subject"
+            params.append({"name": "@subject", "value": subject})
+            
+        results = list(self.reviews.query_items(
+            query=query,
+            parameters=params,
+            enable_cross_partition_query=True
         ))
         
         return results[0] if results else None

@@ -26,27 +26,41 @@ export interface ProblemAttempt {
 
 export interface ProblemSubmission {
   subject: string;
-  problem: string;
+  problem: any; // Full problem object, not just string
   solution_image: string;  // Base64 encoded image
   skill_id: string;
   student_answer?: string;
   canvas_used?: boolean;
-  student_id?: number;
+  student_id: number; // Required now
   subskill_id?: string;
 }
 
 
 export interface ProblemReview {
-  observation: string;
-  analysis: string;
-  evaluation: number;
-  feedback: string;
+  observation: {
+    canvas_description: string;
+    selected_answer: string;
+    work_shown: string;
+  };
+  analysis: {
+    understanding: string;
+    approach: string;
+    accuracy: string;
+    creativity: string;
+  };
+  evaluation: {
+    score: number;
+    justification: string;
+  } | number;  // Support both structured and simple numeric formats
+  feedback: {
+    praise: string;
+    guidance: string;
+    encouragement: string;
+    next_steps: string;
+  } | string;  // Support both structured and simple string formats
   skill_id: string;
-  unit_id: string;
-  skill_description: string;
-  subskill_description: string;
-  difficulty_target: number;
   subject: string;
+  subskill_id?: string;
 }
 
 export interface DailyProgress {

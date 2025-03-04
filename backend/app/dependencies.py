@@ -17,6 +17,8 @@ from .services.gemini import GeminiService
 from .services.tutoring import TutoringService
 from .services.gemini_problem import GeminiProblemIntegration
 from .services.competency import AnalyticsExtension
+from .services.learning_paths import LearningPathsService
+from .services.learning_analytics import LearningAnalyticsService, ProgressReportGenerator
 
 from .db.cosmos_db import CosmosDBService
 from .core.session_manager import SessionManager
@@ -38,6 +40,9 @@ _session_manager: Optional[SessionManager] = None
 _competency_service: Optional[CompetencyService] = None
 _problem_recommender: Optional[ProblemRecommender] = None
 _problem_service: Optional[ProblemService] = None
+_learning_paths_service: Optional[LearningPathsService] = None
+_learning_analytics_service: Optional[LearningAnalyticsService] = None
+_progress_report_generator: Optional[ProgressReportGenerator] = None
 
 # These services are created per-session but using the dependency pattern
 # No global variables needed since they're not singletons
@@ -114,7 +119,8 @@ def get_problem_recommender(
 
 def get_problem_service(
     recommender: ProblemRecommender = Depends(get_problem_recommender),
-    anthropic_service: AnthropicService = Depends(get_anthropic_service)
+    anthropic_service: AnthropicService = Depends(get_anthropic_service),
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db)  # Add CosmosDB dependency
 ) -> ProblemService:
     """Get or create ProblemService singleton."""
     global _problem_service
@@ -134,8 +140,69 @@ def get_problem_service(
     if _problem_service.anthropic is None:
         logger.info("Setting anthropic_service on ProblemService")
         _problem_service.anthropic = anthropic_service
+    
+    # Add CosmosDB service for problem review storage
+    if _problem_service.cosmos_db is None:
+        logger.info("Setting cosmos_db on ProblemService")
+        _problem_service.cosmos_db = cosmos_db
         
     return _problem_service
+
+
+def get_learning_paths_service(
+    competency_service: CompetencyService = Depends(get_competency_service)
+) -> LearningPathsService:
+    """Get or create LearningPathsService singleton."""
+    global _learning_paths_service
+    if _learning_paths_service is None:
+        from pathlib import Path
+        DATA_DIR = Path(__file__).parent.parent / "data"
+        logger.info(f"Initializing LearningPathsService with data dir: {DATA_DIR}")
+        _learning_paths_service = LearningPathsService(
+            data_dir=str(DATA_DIR),
+            competency_service=competency_service
+        )
+    return _learning_paths_service
+
+def get_analytics_extension(
+    competency_service: CompetencyService = Depends(get_competency_service),
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+) -> AnalyticsExtension:
+    """Get AnalyticsExtension instance with dependencies injected."""
+    logger.debug("Creating AnalyticsExtension")
+    analytics = AnalyticsExtension(competency_service)
+    
+    # Ensure cosmos_db is set
+    if analytics.cosmos_db is None:
+        logger.debug("Setting CosmosDB on AnalyticsExtension")
+        analytics.cosmos_db = cosmos_db
+        
+    return analytics
+
+def get_learning_analytics_service(
+    competency_service: CompetencyService = Depends(get_competency_service),
+    problem_service: ProblemService = Depends(get_problem_service),
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
+    analytics_extension: AnalyticsExtension = Depends(get_analytics_extension)
+) -> LearningAnalyticsService:
+    """Get or create LearningAnalyticsService singleton."""
+    global _learning_analytics_service
+    if _learning_analytics_service is None:
+        logger.info("Initializing LearningAnalyticsService")
+        _learning_analytics_service = LearningAnalyticsService(
+            competency_service=competency_service,
+            problem_service=problem_service,
+            learning_paths_service=learning_paths_service,
+            analytics_extension=analytics_extension
+        )
+    return _learning_analytics_service
+
+def get_progress_report_generator(
+    learning_analytics_service: LearningAnalyticsService = Depends(get_learning_analytics_service)
+) -> ProgressReportGenerator:
+    """Get ProgressReportGenerator instance."""
+    # This uses the generator from the LearningAnalyticsService
+    return learning_analytics_service.progress_report_generator
 
 def get_session_manager(
     audio_service: AudioService = Depends(get_audio_service),
@@ -183,8 +250,6 @@ def get_azure_speech_service(
 
 
 
-
-
 def get_gemini_problem_integration(
     problem_service: ProblemService = Depends(get_problem_service)
 ) -> GeminiProblemIntegration:
@@ -204,7 +269,8 @@ def get_gemini_service(
     audio_service: AudioService = Depends(get_audio_service),
     azure_speech_service: AzureSpeechService = Depends(get_azure_speech_service),
     visual_integration = None,
-    problem_integration: GeminiProblemIntegration = Depends(get_gemini_problem_integration)
+    problem_integration: GeminiProblemIntegration = Depends(get_gemini_problem_integration),
+    learning_analytics_service: LearningAnalyticsService = Depends(get_learning_analytics_service)
 ) -> GeminiService:
     """Create a new GeminiService instance.
     
@@ -220,35 +286,29 @@ def get_gemini_service(
     # Set the problem_integration
     gemini_service.problem_integration = problem_integration
     
+    # Add learning_analytics_service for personalization
+    gemini_service.learning_analytics_service = learning_analytics_service
+    
     return gemini_service
 
 def get_tutoring_service(
     audio_service: AudioService = Depends(get_audio_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
-    azure_speech_service: AzureSpeechService = Depends(get_azure_speech_service)
+    azure_speech_service: AzureSpeechService = Depends(get_azure_speech_service),
+    learning_analytics_service: LearningAnalyticsService = Depends(get_learning_analytics_service)
 ) -> TutoringService:
     """Create a new TutoringService instance.
     
     This is not a singleton because TutoringService should be per-session.
     """
     logger.debug("Creating new TutoringService")
-    return TutoringService(
+    tutoring_service = TutoringService(
         audio_service=audio_service,
         gemini_service=gemini_service,
         azure_speech_service=azure_speech_service
     )
-
-def get_analytics_extension(
-    competency_service: CompetencyService = Depends(get_competency_service),
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
-) -> AnalyticsExtension:
-    """Get AnalyticsExtension instance with dependencies injected."""
-    logger.debug("Creating AnalyticsExtension")
-    analytics = AnalyticsExtension(competency_service)
     
-    # Ensure cosmos_db is set
-    if analytics.cosmos_db is None:
-        logger.debug("Setting CosmosDB on AnalyticsExtension")
-        analytics.cosmos_db = cosmos_db
-        
-    return analytics
+    # Add learning_analytics_service for personalized tutoring
+    tutoring_service.learning_analytics_service = learning_analytics_service
+    
+    return tutoring_service

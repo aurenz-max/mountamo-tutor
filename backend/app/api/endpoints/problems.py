@@ -3,12 +3,13 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 
 # Import dependencies
-from ...dependencies import get_problem_service, get_competency_service, get_problem_recommender
+from ...dependencies import get_problem_service, get_competency_service, get_problem_recommender, get_analytics_extension
 from ...services.problems import ProblemService
-from ...services.competency import CompetencyService
+from ...services.competency import CompetencyService, AnalyticsExtension
 from ...services.recommender import ProblemRecommender
 import re
 from pathlib import Path
+from datetime import datetime, timedelta
 
 
 router = APIRouter()
@@ -31,13 +32,19 @@ class ProblemResponse(BaseModel):
 
 class ProblemSubmission(BaseModel):
     subject: str
-    problem: str
+    problem: Dict[str, Any]  # Complete problem object
     solution_image: str  # Base64 encoded image
-    skill_id: Optional[str] = None
-    subskill_id: Optional[str] = None  # Make subskill_id optional
+    skill_id: str
+    subskill_id: Optional[str] = None
     student_answer: Optional[str] = ""
     canvas_used: bool = True
-    student_id: Optional[int] = 1
+    student_id: int
+
+class ReviewAnalyticsRequest(BaseModel):
+    student_id: int
+    subject: str
+    days: Optional[int] = 30
+    skill_id: Optional[str] = None
 
 @router.post("/generate")
 async def generate_problem(
@@ -121,12 +128,14 @@ async def submit_problem(
         if not re.match(r'^[A-Za-z0-9+/=]+$', image_data):
             raise HTTPException(status_code=400, detail="Invalid image data format")
 
-        # Get problem review from AI
+        # Get problem review from AI with student_id
         review = await problem_service.review_problem(
+            student_id=submission.student_id,
             subject=submission.subject,
             problem=submission.problem,
             solution_image_base64=image_data,
             skill_id=submission.skill_id,
+            subskill_id=submission.subskill_id,
             student_answer=submission.student_answer or "",
             canvas_used=submission.canvas_used
         )
