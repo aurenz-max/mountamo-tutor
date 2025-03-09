@@ -21,44 +21,63 @@ const AvatarIntegration = () => {
   const dragStartRef = useRef({ x: 0, y: 0 });
   const containerRef = useRef(null);
   const avatarApiRef = useRef(null);
+
+  if (typeof window !== 'undefined') {
+    if (!window.avatarAPI) {
+      window.avatarAPI = {
+        avatar: null,
+        setAvatar: (avatar) => {
+          window.avatarAPI.avatar = avatar;
+          console.log('GLOBAL AVATAR API: Avatar set', !!avatar);
+          
+          // Notify any listeners
+          if (window.avatarAPI.onAvatarReady) {
+            window.avatarAPI.onAvatarReady(avatar);
+          }
+        },
+        onAvatarReady: null
+      };
+    }
+  }
+
+// Then update the handleAvatarReady function:
+const handleAvatarReady = (api) => {
+  console.log('AVATAR INTEGRATION: Avatar ready event received', api);
+  avatarApiRef.current = api;
   
-  // Handle avatar initialization
-  const handleAvatarReady = (api) => {
-    avatarApiRef.current = api;
-    
-    // Get available animations
-    if (api.getAvailableAnimations) {
-      setAvailableAnimations(api.getAvailableAnimations());
-    }
-    
-    // Get current animation
-    if (api.getCurrentAnimation) {
-      setCurrentAnimation(api.getCurrentAnimation());
-    }
-    
-    // Try to find and play an idle animation
-    if (api.playAnimation) {
-      const animations = api.getAvailableAnimations();
-      const idleAnimation = animations.find(name => 
-        name.toLowerCase().includes('idle') || 
-        name.toLowerCase().includes('static')
-      );
-      
-      if (idleAnimation) {
-        api.playAnimation(idleAnimation);
-        setCurrentAnimation(idleAnimation);
-      }
-    }
-  };
+  // Get available animations
+  if (api.getAvailableAnimations) {
+    setAvailableAnimations(api.getAvailableAnimations());
+  }
   
-  // Handle animation selection
-  const handleAnimationChange = (animationName) => {
-    setCurrentAnimation(animationName);
-    if (avatarApiRef.current && avatarApiRef.current.playAnimation) {
-      avatarApiRef.current.playAnimation(animationName);
-    }
-  };
+  // Get current animation
+  if (api.getCurrentAnimation) {
+    setCurrentAnimation(api.getCurrentAnimation());
+  }
   
+  // Try to find and play an idle animation
+  if (api.playAnimation) {
+    const animations = api.getAvailableAnimations();
+    const idleAnimation = animations.find(name => 
+      name.toLowerCase().includes('idle') || 
+      name.toLowerCase().includes('static')
+    );
+    
+    if (idleAnimation) {
+      api.playAnimation(idleAnimation);
+      setCurrentAnimation(idleAnimation);
+    }
+  }
+  
+  // Expose the avatar globally
+  if (api.avatar && typeof window !== 'undefined') {
+    console.log('AVATAR INTEGRATION: Exposing avatar to global API');
+    window.avatarAPI.setAvatar(api.avatar);
+  } else {
+    console.warn('AVATAR INTEGRATION: No avatar object in API');
+  }
+};
+    
   // Handle background color change
   const handleBackgroundChange = (color) => {
     setBackgroundColor(color);

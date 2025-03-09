@@ -113,14 +113,17 @@ class AudioService:
             logger.error(f"Error in status notification for session {session_id}: {e}")
 
     def _playback_loop(self, session_id: str) -> None:
-        """Process audio chunks and send to the output queue"""
+        """Process audio chunks and send to the output queue with precise timing information"""
         try:
             session = self.sessions.get(session_id)
             if not session:
                 logger.error(f"No session found for {session_id} in playback loop")
                 return
                 
-            #logger.debug(f"Starting playback loop for session {session_id}")
+            logger.debug(f"Starting playback loop for session {session_id}")
+            
+            # For tracking continuous audio timing
+            audio_timestamp = int(time.time() * 1000)
             
             while not session['should_stop'].is_set():
                 try:
@@ -137,10 +140,11 @@ class AudioService:
                         if float_array.ndim == 1:
                             float_array = float_array.reshape(-1, 1)
                         
-                        # Notify start of speech
+                        # Notify start of speech with timestamp
                         if not session['is_playing']:
                             session['is_playing'] = True
-                            self._notify_status(session_id, True)
+                            audio_timestamp = int(time.time() * 1000)
+                            self._notify_status(session_id, True, audio_timestamp)
                         
                         # Process in chunks and send to output queue with proper timing
                         chunk_size = self.config.buffer_size
@@ -151,23 +155,41 @@ class AudioService:
                             chunk = float_array[i:i + chunk_size]
                             # Calculate duration based on actual chunk length
                             chunk_duration = len(chunk) / self.config.sample_rate
+                            chunk_duration_ms = int(chunk_duration * 1000)
                             
+                            # Calculate precise timing for this chunk
+                            chunk_timestamp = audio_timestamp
+                            
+                            # Convert to bytes for output
                             output_bytes = (chunk * 32768.0).astype(np.int16).tobytes()
-                            session['output_queue'].put_nowait(output_bytes)
+                            
+                            # Create enhanced audio packet with timing information
+                            audio_packet = {
+                                'audio_data': output_bytes,
+                                'timestamp': chunk_timestamp,
+                                'duration': chunk_duration_ms,
+                                'sample_rate': self.config.sample_rate
+                            }
+                            
+                            # Send to output queue
+                            session['output_queue'].put_nowait(audio_packet)
+                            
+                            # Update timestamp for next chunk based on audio duration
+                            audio_timestamp += chunk_duration_ms
                             
                             # Sleep for the duration of the chunk to maintain real-time pacing
-                            time.sleep(chunk_duration * .90)
+                            time.sleep(chunk_duration * 0.90)  # Slightly faster to prevent gaps
                         
                         # If queue is empty, notify end of speech
                         if session['queue'].empty():
                             session['is_playing'] = False
-                            self._notify_status(session_id, False)
+                            self._notify_status(session_id, False, int(time.time() * 1000))
                         
                 except queue.Empty:
                     # If we've been playing and queue is empty, notify end
                     if session.get('is_playing', False):
                         session['is_playing'] = False
-                        self._notify_status(session_id, False)
+                        self._notify_status(session_id, False, int(time.time() * 1000))
                     continue
                     
                 except Exception as e:
@@ -181,7 +203,7 @@ class AudioService:
             session = self.sessions.get(session_id)
             if session and session.get('is_playing', False):
                 session['is_playing'] = False
-                self._notify_status(session_id, False)
+                self._notify_status(session_id, False, int(time.time() * 1000))
 
     def add_to_queue(self, session_id: str, audio_data: bytes) -> None:
         """Add audio data to session queue"""

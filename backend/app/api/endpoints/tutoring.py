@@ -2,6 +2,8 @@ import asyncio
 import logging
 import base64
 
+import time
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from app.core.session_manager import SessionManager
 from app.services.gemini import GeminiService
@@ -180,17 +182,39 @@ async def tutoring_websocket(
                 raise
 
         async def handle_audio_responses():
-            """Handle processed audio from the audio service."""
+            """Handle processed audio from the audio service, preserving timing information."""
             try:
-                async for audio_chunk in session.get_audio():
+                async for audio_data in session.get_audio():
                     if session.quit_event.is_set():
                         break
-                    audio_b64 = base64.b64encode(audio_chunk).decode()
-                    await websocket.send_json({
-                        "type": "audio",
-                        "data": audio_b64,
-                        "mime_type": "audio/pcm;rate=24000"
-                    })
+                        
+                    # Check if we received enhanced audio packet with timing info
+                    if isinstance(audio_data, dict) and 'audio_data' in audio_data:
+                        # Extract audio data and timing information
+                        audio_bytes = audio_data['audio_data']
+                        timestamp = audio_data.get('timestamp', int(time.time() * 1000))
+                        duration = audio_data.get('duration', 0)
+                        sample_rate = audio_data.get('sample_rate', 24000)
+                        
+                        # Convert to base64 for transmission
+                        audio_b64 = base64.b64encode(audio_bytes).decode()
+                        
+                        # Send to client with timing metadata
+                        await websocket.send_json({
+                            "type": "audio",
+                            "data": audio_b64,
+                            "mime_type": f"audio/pcm;rate={sample_rate}",
+                            "timestamp": timestamp,
+                            "duration": duration
+                        })
+                    else:
+                        # Fall back to original behavior for backward compatibility
+                        audio_b64 = base64.b64encode(audio_data).decode()
+                        await websocket.send_json({
+                            "type": "audio",
+                            "data": audio_b64,
+                            "mime_type": "audio/pcm;rate=24000"
+                        })
             except asyncio.CancelledError:
                 logger.debug(f"[Session {session.id}] Audio handler cancelled")
                 raise

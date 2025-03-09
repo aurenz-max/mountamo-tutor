@@ -43,11 +43,12 @@ const AvatarCanvas = ({
     }
   };
 
-  // Expose methods to parent via ref
+  // Replace it with this updated version that explicitly passes the avatar:
   useEffect(() => {
     if (isLoaded && avatarRef.current) {
       // Expose animation methods to parent component if needed
       if (typeof onSceneReady === 'function') {
+        console.log('AVATAR CANVAS: Avatar loaded, calling onSceneReady with avatar');
         onSceneReady({
           playAnimation,
           getAvailableAnimations: () => availableAnimations,
@@ -55,11 +56,13 @@ const AvatarCanvas = ({
           scene: sceneRef.current,
           camera: cameraRef.current,
           controls: controlsRef.current,
-          animationManager: animationManagerRef.current
+          animationManager: animationManagerRef.current,
+          // Explicitly include the avatar reference
+          avatar: avatarRef.current
         });
       }
     }
-  }, [isLoaded, availableAnimations, currentAnimation]);
+  }, [isLoaded, availableAnimations, currentAnimation, onSceneReady]);
 
   // Helper function to properly dispose of materials
   const disposeMaterial = (material) => {
@@ -202,111 +205,145 @@ const AvatarCanvas = ({
     };
     
     // Load the avatar first, then the animations
-    const loadAvatarAndAnimations = async () => {
-      const loader = new GLTFLoader();
+// Fix for the AvatarCanvas.tsx avatarResult/loadAvatarAndAnimations function 
+// Replace the current implementation with this improved version
+
+// Load the avatar first, then the animations
+  const loadAvatarAndAnimations = async () => {
+    const loader = new GLTFLoader();
+    
+    try {
+      // Load the avatar with proper error handling
+      const avatarResult = await new Promise((resolve, reject) => {
+        loader.load(
+          '/avatar_1_viseme3.glb',
+          (gltf) => {
+            // Success callback
+            console.log('Avatar loading completed successfully');
+            resolve(gltf);
+          },
+          (progress) => {
+            // Progress callback
+            console.log(`Loading avatar: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
+          },
+          (error) => {
+            // Error callback
+            console.error('Error loading avatar GLTF:', error);
+            reject(error);
+          }
+        );
+      });
       
-      try {
-        // Load the avatar
-        const avatarResult = await new Promise((resolve, reject) => {
-          loader.load(
-            '/avatar_1_viseme.glb',
-            resolve,
-            (progress) => {
-              console.log(`Loading avatar: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
-            },
-            reject
-          );
-        });
-        
-        // Add the avatar to the scene
-        const avatar = avatarResult.scene;
-        
-        // Optimize the avatar mesh
-        avatar.traverse((child) => {
-          if (child.isMesh) {
-            // Disable frustum culling if the avatar is always in view
-            child.frustumCulled = false;
-            
-            // Mark geometries as static if they don't change
-            if (child.geometry) {
-              child.geometry.setDrawRange(0, Infinity);
+      // Add the avatar to the scene
+      if (!avatarResult || !avatarResult.scene) {
+        console.error('Avatar result or scene is undefined');
+        return;
+      }
+      
+      const avatar = avatarResult.scene;
+      
+      // Optimize the avatar mesh
+      avatar.traverse((child) => {
+        if (child.isMesh) {
+          // Disable frustum culling if the avatar is always in view
+          child.frustumCulled = false;
+          
+          // Mark geometries as static if they don't change
+          if (child.geometry) {
+            child.geometry.setDrawRange(0, Infinity);
+            if (child.geometry.attributes.position) {
               child.geometry.setAttribute('position', child.geometry.getAttribute('position').clone());
             }
-            
-            // Use cheaper materials when possible
-            if (child.material) {
-              // Clone the material to avoid modifying shared materials
+          }
+          
+          // Use cheaper materials when possible
+          if (child.material) {
+            // Clone the material to avoid modifying shared materials
+            if (Array.isArray(child.material)) {
+              child.material = child.material.map(mat => mat.clone());
+            } else {
               child.material = child.material.clone();
-              
+            }
+            
+            // Apply to array of materials or single material
+            const applyToMaterial = (material) => {
               // Disable unnecessary features
-              child.material.fog = false;
-              child.material.flatShading = true;
+              material.fog = false;
+              material.flatShading = true;
               
               // Reduce precision for mobile
               if (window.navigator.userAgent.includes('Mobile')) {
-                child.material.precision = 'lowp';
+                material.precision = 'lowp';
               }
-            }
-          }
-        });
-        
-        avatarRef.current = avatar;
-        scene.add(avatar);
-        
-        // Adjust avatar properties
-        avatar.position.set(0, -0.9, 0);
-        avatar.scale.set(1, 1, 1);
-        avatar.rotation.y = 0;
-        
-        // Initialize animation manager with avatar
-        animationManagerRef.current.init(avatar);
-        
-        // Now load the animations
-        try {
-          await animationManagerRef.current.loadAnimations('/M_Talking_Variations_001.glb');
-          
-          // Get and store available animations
-          const animations = animationManagerRef.current.getAnimationNames();
-          setAvailableAnimations(animations);
-          
-          // Play an initial animation if available
-          if (animations.length > 0) {
-            // Look for an idle animation first
-            const idleAnimation = animations.find(name => 
-              name.toLowerCase().includes('idle') || 
-              name.toLowerCase().includes('static')
-            );
+            };
             
-            if (idleAnimation) {
-              animationManagerRef.current.play(idleAnimation, {
-                loop: true,
-                timeScale: 1.0
-              });
-              setCurrentAnimation(idleAnimation);
+            if (Array.isArray(child.material)) {
+              child.material.forEach(applyToMaterial);
             } else {
-              // Otherwise play the first animation
-              animationManagerRef.current.play(animations[0], {
-                loop: true,
-                timeScale: 1.0
-              });
-              setCurrentAnimation(animations[0]);
+              applyToMaterial(child.material);
             }
           }
-        } catch (error) {
-          console.error('Error loading animations:', error);
-          
-          // If animations fail to load, try to fix the T-pose at least
-          fixAvatarPose(avatar, poseType);
         }
+      });
+      
+      avatarRef.current = avatar;
+      scene.add(avatar);
+      
+      // Adjust avatar properties
+      avatar.position.set(0, -0.9, 0);
+      avatar.scale.set(1, 1, 1);
+      avatar.rotation.y = 0;
+      
+      // Initialize animation manager with avatar
+      animationManagerRef.current.init(avatar);
+      
+      // Now load the animations
+      try {
+        await animationManagerRef.current.loadAnimations('/M_Talking_Variations_001.glb');
         
-        // Set up camera and finish loading
-        setupCamera(camera, controls);
-        setIsLoaded(true);
+        // Get and store available animations
+        const animations = animationManagerRef.current.getAnimationNames();
+        setAvailableAnimations(animations);
         
+        // Play an initial animation if available
+        if (animations.length > 0) {
+          // Look for an idle animation first
+          const idleAnimation = animations.find(name => 
+            name.toLowerCase().includes('idle') || 
+            name.toLowerCase().includes('static')
+          );
+          
+          if (idleAnimation) {
+            animationManagerRef.current.play(idleAnimation, {
+              loop: true,
+              timeScale: 1.0
+            });
+            setCurrentAnimation(idleAnimation);
+          } else {
+            // Otherwise play the first animation
+            animationManagerRef.current.play(animations[0], {
+              loop: true,
+              timeScale: 1.0
+            });
+            setCurrentAnimation(animations[0]);
+          }
+        }
       } catch (error) {
-        console.error('Error loading avatar:', error);
+        console.error('Error loading animations:', error);
+        
+        // If animations fail to load, try to fix the T-pose at least
+        fixAvatarPose(avatar, poseType);
       }
-    };
+      
+      // Set up camera and finish loading
+      setupCamera(camera, controls);
+      setIsLoaded(true);
+      
+    } catch (error) {
+      console.error('Error loading avatar:', error);
+    }
+  };
+
     
     // Start loading
     loadAvatarAndAnimations();
@@ -328,15 +365,62 @@ const AvatarCanvas = ({
       // Only render when visible
       if (!isVisibleRef.current) return;
       
-      // Update animation mixer
+      // STEP 1: Process any pending visemes from LipSyncManager
+      if (window.lipSyncManager && typeof window.lipSyncManager.processPendingVisemes === 'function') {
+        window.lipSyncManager.processPendingVisemes(timestamp);
+      }
+      
+      // STEP 2: Store all viseme states before animation update
+      // Find and store all viseme morph target values
+      const visemeStates = new Map();
+      if (avatarRef.current) {
+        avatarRef.current.traverse(obj => {
+          if (obj.isMesh && obj.morphTargetInfluences && obj.morphTargetDictionary) {
+            // Find all viseme morphs
+            Object.entries(obj.morphTargetDictionary)
+              .filter(([name]) => name.startsWith('viseme_'))
+              .forEach(([name, index]) => {
+                if (typeof index === 'number') {
+                  visemeStates.set(
+                    { mesh: obj, name, index }, 
+                    obj.morphTargetInfluences[index]
+                  );
+                }
+              });
+          }
+        });
+      }
+      
+      // STEP 3: Update animation mixer (this will affect body animations)
       const delta = clockRef.current.getDelta();
       if (animationManagerRef.current && animationManagerRef.current.mixer) {
         animationManagerRef.current.update(delta);
       }
       
-      if (controls) controls.update();
-      if (renderer && scene && camera) {
-        renderer.render(scene, camera);
+      // STEP 4: Restore viseme morph values that were active
+      // This prevents body animations from overriding mouth movements
+      visemeStates.forEach((value, key) => {
+        const { mesh, index } = key;
+        // Only restore values that were significant or the silence viseme
+        if (value > 0.01 || key.name === 'viseme_sil') {
+          mesh.morphTargetInfluences[index] = value;
+        }
+      });
+      
+      // STEP 5: Apply any direct viseme updates happening this frame 
+      // This ensures most recent viseme updates are applied
+      if (window.lipSyncManager && window.lipSyncManager.applyQueuedVisemes && avatarRef.current) {
+        window.lipSyncManager.applyQueuedVisemes(avatarRef.current);
+      }
+      
+      // STEP 6: Update controls if available
+      if (controlsRef.current) {
+        controlsRef.current.update();
+      }
+      
+      // STEP 7: Render the scene with the final state
+      if (rendererRef.current && sceneRef.current && cameraRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
       }
     };
     
