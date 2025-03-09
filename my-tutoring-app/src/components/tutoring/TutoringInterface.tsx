@@ -5,6 +5,8 @@ import AudioCaptureService from '@/lib/AudioCaptureService';
 import { Card } from '@/components/ui/card';
 import GeminiControlPanel from './GeminiControlPanel';
 import TranscriptionManager from './TranscriptionManager';
+import { useAudioState } from '@/components/audio/AudioStateContext';
+import AvatarViseme from '@/components/avatar/AvatarViseme';
 
 const InteractiveWorkspace = React.lazy(() => import('./InteractiveWorkspace'));
 
@@ -28,6 +30,9 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
   const [isListening, setIsListening] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
 
+  // Get the audio state context
+  const { audioState, setAudioState } = useAudioState();
+
   // Transcription state managed here with useState
   const [transcriptionEnabled, setTranscriptionEnabled] = useState(true);
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
@@ -35,14 +40,50 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
 
   // Add state for problem data
   const [currentProblem, setCurrentProblem] = useState(null);
-
+  
+  // Add state for avatar management
+  const [avatarSceneReady, setAvatarSceneReady] = useState(false);
   const [currentScene, setCurrentScene] = useState(null);
+  const avatarRef = useRef(null);
+  const visemeHandlerRef = useRef<{
+    handleVisemeEvent: (data: any) => void;
+    currentViseme: string;
+    visemeIntensity: number;
+  } | null>(null);
 
   const wsRef = useRef(null);
   const audioCaptureRef = useRef(null);
   const audioContextRef = useRef(null);
   const endTimeRef = useRef(0);
   const workspaceRef = useRef(null);
+
+  // Update global audio state whenever isPlaying or isListening changes
+  useEffect(() => {
+    setAudioState(prev => ({
+      ...prev,
+      isGeminiSpeaking: isPlaying,
+      isUserSpeaking: isListening
+    }));
+  }, [isPlaying, isListening, setAudioState]);
+
+  // Handle avatar scene ready callback
+  const handleAvatarSceneReady = useCallback((sceneData) => {
+    setAvatarSceneReady(true);
+    avatarRef.current = sceneData?.avatar; // Make sure the avatar model is exposed
+    
+    // Initialize viseme handler reference with the avatar model
+    visemeHandlerRef.current = AvatarViseme({
+      avatar: sceneData?.avatar,
+      speakerId: 'gemini', // Adjust this to match the speaker ID from your backend
+      enabled: true,
+      onVisemeApplied: (viseme, intensity) => {
+        // Optional callback for debugging or UI updates
+        console.log(`Applied viseme ${viseme} with intensity ${intensity}`);
+      }
+    });
+    
+    console.log('Avatar scene ready for visemes');
+  }, []);
 
   useEffect(() => {
     if (!audioContextRef.current) {
@@ -126,7 +167,7 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
     } catch (error) {
       console.error('Error processing transcript:', error);
     }
-  }, [transcriptionEnabled]);
+  }, [transcriptionEnabled, partialTranscripts, transcripts]);
 
   const clearTranscripts = useCallback(() => {
     setTranscripts([]);
@@ -164,7 +205,7 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
       source.start(startTime);
       const chunkDuration = floatData.length / SAMPLE_RATE;
       endTimeRef.current = startTime + chunkDuration;
-      setIsPlaying(true);
+      setIsPlaying(true); // This will now update the global audio state via useEffect
       source.onended = () => {
         const currentT = audioContextRef.current?.currentTime;
         if (currentT && currentT >= endTimeRef.current) setIsPlaying(false);
@@ -177,80 +218,88 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
     }
   };
 
-// Then update your handleWebSocketMessage function to handle scene data
-const handleWebSocketMessage = async (event) => {
-  if (event.data instanceof Blob) {
-    await handleAudioData(event.data);
-    return;
-  }
-  try {
-    const response = JSON.parse(event.data);
-    switch (response.type) {
-      case 'session_started':
-        setSessionId(response.session_id);
-        setStatus('connected');
-        break;
-      case 'audio_status':
-        setIsPlaying(response.status === 'speaking');
-        break;
-      case 'audio':
-        await handleAudioData(response.data);
-        break;
-      case 'text':
-        console.log('Received text response:', response.content);
-        setProcessing(false);
-        break;
-      case 'transcript':
-        processTranscript(response.content);
-        break;
-      case 'scene':
-        console.log('Received scene data:', response.content);
-        // Update the state with the scene data
-        setCurrentScene(response.content);
-        break;
-      case 'problem':
-        // Existing problem handling code...
-        console.log('Received problem data from WebSocket:', response);
-        
-        // Extract the problem data
-        let problemData = null;
-        
-        if (response.content && response.content.data) {
-          problemData = response.content.data;
-        } else if (response.content) {
-          problemData = response.content;
-        } else if (response.data) {
-          problemData = response.data;
-        } else if (response.problem) {
-          problemData = response;
-        }
-        
-        console.log("Extracted problem data:", problemData);
-        
-        if (problemData) {
-          if (problemData.problem || problemData.problem_type) {
-            setCurrentProblem(problemData);
-            console.log("Setting current problem:", problemData);
-            
-            if (workspaceRef.current && typeof workspaceRef.current.setProblemOpen === 'function') {
-              workspaceRef.current.setProblemOpen(true);
-              console.log("Attempting to open problem panel");
-            } else {
-              console.warn("Cannot access setProblemOpen method on workspace ref");
+  // Handle WebSocket messages
+  const handleWebSocketMessage = async (event) => {
+    if (event.data instanceof Blob) {
+      await handleAudioData(event.data);
+      return;
+    }
+    try {
+      const response = JSON.parse(event.data);
+      switch (response.type) {
+        case 'session_started':
+          setSessionId(response.session_id);
+          setStatus('connected');
+          break;
+        case 'audio_status':
+          setIsPlaying(response.status === 'speaking');
+          break;
+        case 'audio':
+          await handleAudioData(response.data);
+          break;
+        case 'text':
+          console.log('Received text response:', response.content);
+          setProcessing(false);
+          break;
+        case 'transcript':
+          processTranscript(response.content);
+          break;
+        case 'viseme':
+          // Handle the viseme data by passing to the avatar viseme handler
+          if (visemeHandlerRef.current && avatarSceneReady) {
+            visemeHandlerRef.current.handleVisemeEvent(response);
+            console.log('Processed viseme:', response.content?.data?.viseme_id);
+          } else {
+            console.log('Viseme handler not ready, skipping viseme');
+          }
+          break;
+        case 'scene':
+          console.log('Received scene data:', response.content);
+          setCurrentScene(response.content);
+          break;
+        case 'problem':
+          // Existing problem handling code...
+          console.log('Received problem data from WebSocket:', response);
+          
+          // Extract the problem data
+          let problemData = null;
+          
+          if (response.content && response.content.data) {
+            problemData = response.content.data;
+          } else if (response.content) {
+            problemData = response.content;
+          } else if (response.data) {
+            problemData = response.data;
+          } else if (response.problem) {
+            problemData = response;
+          }
+          
+          console.log("Extracted problem data:", problemData);
+          
+          if (problemData) {
+            if (problemData.problem || problemData.problem_type) {
+              setCurrentProblem(problemData);
+              console.log("Setting current problem:", problemData);
+              
+              if (workspaceRef.current && typeof workspaceRef.current.setProblemOpen === 'function') {
+                workspaceRef.current.setProblemOpen(true);
+                console.log("Attempting to open problem panel");
+              } else {
+                console.warn("Cannot access setProblemOpen method on workspace ref");
+              }
             }
           }
-        }
-        break;
-      case 'error':
-        setStatus('error');
-        break;
-      default:
-        console.warn('Unknown message type:', response.type);
+          break;
+        case 'error':
+          setStatus('error');
+          break;
+        default:
+          console.warn('Unknown message type:', response.type);
+      }
+    } catch (err) {
+      console.error('Error parsing websocket message:', err);
     }
-  } catch (err) {
-    console.error('Error parsing websocket message:', err);
-  }
-};
+  };
 
   const initializeSession = async () => {
     return new Promise((resolve, reject) => {
@@ -408,8 +457,9 @@ const handleWebSocketMessage = async (event) => {
         studentId={studentId}
         sessionId={sessionId}
         currentProblem={currentProblem}
-        currentScene={currentScene} // Pass the scene data to workspace
+        currentScene={currentScene}
         onSubmit={(response) => console.log('Workspace submission:', response)}
+        onAvatarSceneReady={handleAvatarSceneReady}
       />
       </React.Suspense>
       {transcriptionEnabled && (
@@ -420,10 +470,25 @@ const handleWebSocketMessage = async (event) => {
           className="absolute inset-0 pointer-events-none"
         />
       )}
-
-
-
-
+      
+      {/* Viseme debug overlay - only in development */}
+      {process.env.NODE_ENV === 'development' && visemeHandlerRef.current && (
+        <div className="viseme-debug" style={{
+          position: 'fixed',
+          right: '20px',
+          bottom: '270px',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          color: 'white',
+          padding: '5px',
+          borderRadius: '5px',
+          fontSize: '12px',
+          zIndex: 100
+        }}>
+          Viseme: {visemeHandlerRef.current.currentViseme} 
+          <br />
+          Intensity: {visemeHandlerRef.current.visemeIntensity.toFixed(2)}
+        </div>
+      )}
     </div>
   );
 };

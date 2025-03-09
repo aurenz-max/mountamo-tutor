@@ -1,7 +1,8 @@
 // AnimationControls.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAudioState } from '@/components/audio/AudioStateContext';
 
 /**
  * Enhanced animation controls with additional functionality
@@ -21,9 +22,17 @@ const AnimationControls = ({
   const [loopAnimation, setLoopAnimation] = useState(true);
   const [playbackMode, setPlaybackMode] = useState('single'); // 'single', 'sequence', 'random'
   const [autoPlayDuration, setAutoPlayDuration] = useState(5); // seconds
+  
+  // Get the audio state from context
+  const { audioState } = useAudioState();
 
   // Change animation with playback settings
   const playAnimation = (animationName) => {
+    // Don't allow manual animation changes when Gemini is speaking
+    if (audioState.isGeminiSpeaking) {
+      return;
+    }
+    
     if (!animationManager) {
       onAnimationSelect(animationName);
       return;
@@ -79,14 +88,28 @@ const AnimationControls = ({
     
     return (
       <div style={{ marginBottom: '8px' }}>
-        <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>
-          {title}
+        <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', 
+                     display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{title}</span>
+          {title === 'Talking' && audioState.isGeminiSpeaking && (
+            <span style={{ 
+              fontSize: '9px', 
+              backgroundColor: '#d1fae5', 
+              color: '#065f46', 
+              padding: '1px 4px',
+              borderRadius: '9999px',
+              animation: 'pulse 2s infinite'
+            }}>
+              Auto
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
           {animationList.map((animation) => (
             <button
               key={animation}
               onClick={() => playAnimation(animation)}
+              disabled={audioState.isGeminiSpeaking && title === 'Talking'}
               style={{
                 backgroundColor: currentAnimation === animation ? '#007bff' : '#ffffff',
                 color: currentAnimation === animation ? '#ffffff' : '#333333',
@@ -94,14 +117,15 @@ const AnimationControls = ({
                 borderRadius: '4px',
                 padding: '5px 8px',
                 fontSize: '11px',
-                cursor: 'pointer',
+                cursor: audioState.isGeminiSpeaking && title === 'Talking' ? 'not-allowed' : 'pointer',
                 flex: '1 0 auto',
                 minWidth: '75px',
                 maxWidth: '120px',
                 textAlign: 'center',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                textOverflow: 'ellipsis',
+                opacity: audioState.isGeminiSpeaking && title === 'Talking' ? 0.5 : 1
               }}
               title={animation}
             >
@@ -158,6 +182,7 @@ const AnimationControls = ({
             value={playbackSpeed}
             onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
             style={{ flex: 1 }}
+            disabled={audioState.isGeminiSpeaking}
           />
           <span style={{ fontSize: '11px', marginLeft: '8px', width: '30px' }}>
             {playbackSpeed}x
@@ -172,8 +197,23 @@ const AnimationControls = ({
             type="checkbox"
             checked={loopAnimation}
             onChange={(e) => setLoopAnimation(e.target.checked)}
+            disabled={audioState.isGeminiSpeaking}
           />
         </div>
+        
+        {audioState.isGeminiSpeaking && (
+          <div style={{ 
+            marginTop: '6px',
+            padding: '4px', 
+            fontSize: '10px',
+            backgroundColor: '#fff8e1',
+            color: '#856404',
+            borderRadius: '4px',
+            textAlign: 'center'
+          }}>
+            Manual controls disabled while Gemini is speaking
+          </div>
+        )}
       </div>
       
       {/* Categorized animations */}

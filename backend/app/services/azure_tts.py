@@ -2,19 +2,19 @@ import azure.cognitiveservices.speech as speechsdk
 import asyncio
 from datetime import datetime
 import logging
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Dict, Any, Callable, Awaitable
 import json
 import uuid
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)  # Set to DEBUG for more verbose logging
+logger.setLevel(logging.DEBUG)  # Set to DEBUG for more verbose logging
 
 class AzureSpeechService:
     def __init__(
         self,
         subscription_key: str,
         region: str,
-        transcript_service,  # We'll expect your TranscriptService instance.
+        transcript_service=None,  # We'll expect your TranscriptService instance
     ):
         # Initialize SpeechConfig
         self.speech_config = speechsdk.SpeechConfig(subscription=subscription_key, region=region)
@@ -25,15 +25,23 @@ class AzureSpeechService:
             value='true'
         )
         
+        # Enable viseme generation
+        self.speech_config.set_property(
+            property_id=speechsdk.PropertyId.SpeechServiceResponse_RequestSentenceBoundary, 
+            value='true'
+        )
+        
         # Create the push stream and audio configuration
         self.push_stream = speechsdk.audio.PushAudioInputStream()
         self.audio_config = speechsdk.audio.AudioConfig(stream=self.push_stream)
         self.speech_recognizer = None
+        self.speech_synthesizer = None
         
         # Session state
         self.session_id = None
         self.student_id = None
         self.transcript_callback = None
+        self.viseme_callback = None
         
         # Transcript tracking
         self.current_utterances = {}  # Track active utterances by speaker
@@ -41,13 +49,15 @@ class AzureSpeechService:
 
         # We'll rely on transcript_service to store final transcripts
         self.transcript_service = transcript_service
-        
-        # Get the current event loop or create a new one
+        self.cosmos_db = None  # This will be set later if needed
+                
         try:
             self.loop = asyncio.get_running_loop()
+            logger.debug(f"Using existing event loop: {self.loop}")
         except RuntimeError:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
+            logger.debug(f"Created new event loop: {self.loop}")
 
     async def write_audio(self, audio_data: bytes, speaker: str):
         """Write audio data to the push stream."""
@@ -66,17 +76,19 @@ class AzureSpeechService:
             current = self.current_utterances[speaker]
             # If the new text starts with or is similar to the current text, it's likely the same utterance
             if text.startswith(current['text']) or current['text'].startswith(text):
-                #logger.debug(f"Using existing utterance ID for speaker {speaker}")
                 return current['id']
         
         # Otherwise, create a new utterance ID
         new_id = str(uuid.uuid4())
-        #logger.debug(f"Created new utterance ID for speaker {speaker}: {new_id}")
         return new_id
 
     def _send_transcript(self, text: str, speaker: str, is_partial: bool, utterance_id: str):
         """Send transcript through callback."""
         try:
+            if not self.transcript_callback:
+                logger.warning("No transcript callback set, can't send transcript")
+                return
+                    
             response = {
                 "type": "transcript",
                 "session_id": self.session_id,
@@ -98,11 +110,51 @@ class AzureSpeechService:
                 f"text={text[:50]}..."
             )
             
-            # Execute callback in thread-safe manner
-            self.loop.call_soon_threadsafe(self.transcript_callback, response)
+            # Call callback directly (no more lambda needed)
+            try:
+                self.transcript_callback(response)
+                logger.debug("Callback executed!")
+            except Exception as e:
+                logger.error(f"Error in transcript callback execution: {e}", exc_info=True)
             
         except Exception as e:
             logger.error(f"Error sending transcript: {e}", exc_info=True)
+
+    def _send_viseme(self, viseme_id: int, audio_offset: int, speaker: str, utterance_id: str):
+        """Send viseme information through callback."""
+        try:
+            if not self.viseme_callback:
+                logger.warning("No viseme callback set, can't send viseme")
+                return
+                    
+            response = {
+                "type": "viseme",
+                "session_id": self.session_id,
+                "student_id": self.student_id,
+                "speaker": speaker,
+                "timestamp": datetime.utcnow().isoformat(),
+                "success": True,
+                "data": {
+                    "viseme_id": viseme_id,
+                    "audio_offset": audio_offset,
+                    "id": utterance_id
+                }
+            }
+            
+            logger.debug(
+                f"Sending viseme: speaker={speaker}, "
+                f"viseme_id={viseme_id}, audio_offset={audio_offset}"
+            )
+            
+            # Call callback directly (no more complex handling)
+            try:
+                self.viseme_callback(response)
+                logger.debug("Viseme callback executed!")
+            except Exception as e:
+                logger.error(f"Error in viseme callback execution: {e}", exc_info=True)
+            
+        except Exception as e:
+            logger.error(f"Error sending viseme: {e}", exc_info=True)
 
     def _handle_transcribed_final(self, text: str, speaker: str):
         """
@@ -178,6 +230,26 @@ class AzureSpeechService:
             except Exception as e:
                 logger.error(f"Error in transcribed_handler: {e}", exc_info=True)
 
+    def viseme_handler(self, evt: speechsdk.SpeechSynthesisVisemeEventArgs):
+        """Handle viseme events from speech synthesis."""
+        try:
+            viseme_id = evt.viseme_id
+            audio_offset = evt.audio_offset
+            
+            # For synthesis, we need to determine which speaker this is for
+            # This might require additional context from your application
+            speaker = getattr(evt, 'speaker_id', "tutor")
+            
+            # We'll need an utterance ID - this might need adaptation for your use case
+            # If we're synthesizing for a specific utterance, you should track that
+            utterance_id = self.current_synthesis_utterance_id if hasattr(self, 'current_synthesis_utterance_id') else str(uuid.uuid4())
+            
+            # Send viseme data with animation info for avatar
+            self._send_viseme(viseme_id, audio_offset, speaker, utterance_id)
+            
+        except Exception as e:
+            logger.error(f"Error in viseme_handler: {e}", exc_info=True)
+
     def session_started_handler(self, evt: speechsdk.SessionEventArgs):
         """Handle session started event."""
         logger.info(f"Speech recognition session started for {self.session_id}")
@@ -197,14 +269,27 @@ class AzureSpeechService:
         self,
         session_id: str,
         student_id: int,
-        transcript_callback: Optional[Callable[[Dict[str, Any]], None]] = None
+        transcript_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
+        viseme_callback: Optional[Callable[[Dict[str, Any]], Any]] = None
     ) -> None:
-        """Start continuous transcription with the given session parameters."""
+        """
+        Start continuous transcription with the given session parameters and optional viseme callback.
+        Both callbacks can be either async (coroutine functions) or regular functions.
+        """
         try:
             self.session_id = session_id
             self.student_id = student_id
             self.transcript_callback = transcript_callback
-            self.current_utterances.clear()
+            self.viseme_callback = viseme_callback
+            
+            # Log callback types for debugging
+            logger.debug(f"Transcript callback is async: {asyncio.iscoroutinefunction(transcript_callback)}")
+            logger.debug(f"Viseme callback is async: {asyncio.iscoroutinefunction(viseme_callback)}")
+
+            # In the start_continuous_transcription method:
+            logger.debug(f"Is transcript_callback a coroutine function? {asyncio.iscoroutinefunction(transcript_callback)}")
+            logger.debug(f"Transcript callback type: {type(transcript_callback)}")
+            logger.debug(f"Transcript callback repr: {repr(transcript_callback)}")
             
             # Clear state
             self.current_utterances = {}
@@ -227,6 +312,12 @@ class AzureSpeechService:
             self.speech_recognizer.session_stopped.connect(self.session_stopped_handler)
             self.speech_recognizer.canceled.connect(self.canceled_handler)
 
+            # Enable direct viseme capture from recognition process
+            self.speech_config.set_property(
+                property_id=speechsdk.PropertyId.Speech_SegmentationSilenceTimeoutMs,
+                value='500'
+            )
+            
             # Start transcription
             result = await asyncio.to_thread(
                 lambda: self.speech_recognizer.start_transcribing_async().get()
@@ -247,6 +338,10 @@ class AzureSpeechService:
                 )
                 self.speech_recognizer = None
                 
+            if self.speech_synthesizer:
+                # No async method to stop the synthesizer, but we can set it to None
+                self.speech_synthesizer = None
+                
             # Clear state
             self.current_utterances = {}
             self.utterance_ids = {}
@@ -255,6 +350,11 @@ class AzureSpeechService:
         except Exception as e:
             logger.error(f"Error stopping continuous transcription: {e}", exc_info=True)
             self.speech_recognizer = None
+            self.speech_synthesizer = None
+
+    async def cleanup_transcription(self):
+        """Alias for stop_continuous_transcription for better API naming."""
+        return await self.stop_continuous_transcription()
 
     async def cleanup(self):
         """Cleanup method to ensure all resources are properly released."""

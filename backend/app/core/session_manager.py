@@ -16,7 +16,7 @@ from ..services.visual_content_manager import VisualContentManager
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.DEBUG)
 
 
 class TutoringSession:
@@ -62,11 +62,13 @@ class TutoringSession:
         self.problem_queue = asyncio.Queue()
         self.text_queue = asyncio.Queue()
         self.transcript_queue = asyncio.Queue()
+        self.viseme_queue = asyncio.Queue()  # NEW: Add viseme queue
         self.scene_queue = asyncio.Queue()  # Queue for visual scenes
         
         self._active = False
         self.quit_event = asyncio.Event()
         self._initialization_event = asyncio.Event()
+        self._event_loop = asyncio.get_event_loop()
         
         logger.debug(f"TutoringSession {self.id} initialized with isolated service instances")
 
@@ -93,13 +95,30 @@ class TutoringSession:
         except Exception as e:
             logger.error(f"Error handling scene in session {self.id}: {e}", exc_info=True)
             raise
+            
+    async def handle_viseme(self, viseme_data: Dict[str, Any]) -> None:
+        """Handle viseme data from speech service"""
+        try:
+            if not self._active:
+                logger.warning(f"[Session {self.id}] Session not active, ignoring viseme")
+                return
+            logger.debug(f"[Session {self.id}] Adding viseme to queue, queue size before: {self.viseme_queue.qsize()}")
+            await self.viseme_queue.put(viseme_data)
+            logger.debug(f"[Session {self.id}] Viseme added to queue, new size: {self.viseme_queue.qsize()}")
+        except Exception as e:
+            logger.error(f"Error handling viseme in session {self.id}: {e}", exc_info=True)
+            raise
 
     async def initialize(self, 
-                        recommendation_data: Optional[Dict] = None,
-                        objectives_data: Optional[Dict] = None) -> None:
+                            recommendation_data: Optional[Dict] = None,
+                            objectives_data: Optional[Dict] = None) -> None:
         """Initialize the tutoring session"""
         try:
             logger.debug(f"Starting initialization of session {self.id}")
+            
+            # Store the event loop that we're running in
+            self._event_loop = asyncio.get_running_loop()
+            logger.debug(f"[Session {self.id}] Stored event loop: {self._event_loop}")
             
             # Initialize audio service first
             try:
@@ -126,7 +145,7 @@ class TutoringSession:
                         await self.handle_scene(scene_data)  
                     except Exception as e:
                         logger.error(f"[Session {self.id}] Error in scene callback: {e}", exc_info=True)
-                    
+                        
                 # Register scene callback with a different name
                 if hasattr(self.gemini_service, 'register_scene_callback'):
                     self.gemini_service.register_scene_callback(scene_callback)
@@ -168,15 +187,36 @@ class TutoringSession:
             self._initialization_event.set()
             logger.info(f"Successfully initialized tutoring session {self.id}")
 
-            # Define a callback that enqueues transcripts into the session's transcript_queue
-            def transcription_callback(transcript: Dict[str, Any]):
-                asyncio.create_task(self.transcript_queue.put(transcript))
+            def transcription_callback(transcript):
+                try:
+                    logger.debug(f"[Session {self.id}] Transcript received: {transcript.get('data', {}).get('text', '')[:30]}...")
+                    # Use run_coroutine_threadsafe instead of create_task
+                    asyncio.run_coroutine_threadsafe(
+                        self.transcript_queue.put(transcript),
+                        self._event_loop
+                    )
+                    logger.debug(f"[Session {self.id}] Transcript scheduled for queue")
+                except Exception as e:
+                    logger.error(f"[Session {self.id}] Error in transcript callback: {e}", exc_info=True)
 
-            # Start continuous transcription
+            def viseme_callback(viseme):
+                try:
+                    logger.debug(f"[Session {self.id}] Viseme received: ID={viseme.get('data', {}).get('viseme_id')}")
+                    # Use run_coroutine_threadsafe instead of create_task
+                    asyncio.run_coroutine_threadsafe(
+                        self.viseme_queue.put(viseme),
+                        self._event_loop
+                    )
+                    logger.debug(f"[Session {self.id}] Viseme scheduled for queue")
+                except Exception as e:
+                    logger.error(f"[Session {self.id}] Error in viseme callback: {e}", exc_info=True)
+
+            # Start continuous transcription with async callbacks
             await self.speech_service.start_continuous_transcription(
                 self.id, 
                 self.student_id,
-                transcription_callback  # Pass the function reference
+                transcription_callback,  # Direct reference to the function
+                viseme_callback          # Direct reference to the function
             )
 
         except Exception as e:
@@ -227,6 +267,28 @@ class TutoringSession:
             logger.info(f"Scene generator cancelled for session {self.id}")
         except Exception as e:
             logger.error(f"Error getting scenes for session {self.id}: {e}")
+            raise
+            
+    async def get_visemes(self) -> AsyncGenerator[Dict[str, Any], None]:
+        """Get viseme updates from the session"""
+        if not self._active:
+            raise ValueError("Session is not active")
+
+        try:
+            while not self.quit_event.is_set():
+                try:
+                    viseme = await self.viseme_queue.get()
+                    yield viseme
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    logger.error(f"Error getting viseme: {e}")
+                    continue
+
+        except asyncio.CancelledError:
+            logger.info(f"Viseme generator cancelled for session {self.id}")
+        except Exception as e:
+            logger.error(f"Error getting visemes for session {self.id}: {e}")
             raise
 
     async def process_message(self, message: Dict) -> None:
@@ -335,18 +397,40 @@ class TutoringSession:
             raise ValueError("Session is not active")
 
         try:
+            logger.debug(f"[Session {self.id}] Starting transcript generator, queue size: {self.transcript_queue.qsize()}")
+            transcript_count = 0
+            
             while not self.quit_event.is_set():
                 try:
-                    transcript = await self.transcript_queue.get()
-                    logger.info(f"Transcript log for session {self.id}  {transcript}")
+                    # Add a timeout to periodically check the quit event
+                    transcript = await asyncio.wait_for(self.transcript_queue.get(), timeout=1.0)
+                    transcript_count += 1
+                    
+                    # Log transcript reception for debugging
+                    text_preview = transcript.get('data', {}).get('text', '')[:50]
+                    speaker = transcript.get('speaker', 'unknown')
+                    is_partial = transcript.get('data', {}).get('is_partial', False)
+                    
+                    logger.info(f"[Session {self.id}] Yielding transcript #{transcript_count}: speaker={speaker}, is_partial={is_partial}, text={text_preview}...")
+                    
+                    # Mark the task as done before yielding
+                    self.transcript_queue.task_done()
+                    
                     yield transcript
+                except asyncio.TimeoutError:
+                    # Just a timeout for checking quit condition periodically
+                    continue
                 except asyncio.CancelledError:
+                    logger.info(f"[Session {self.id}] Transcript generator cancelled after sending {transcript_count} transcripts")
                     break
                 except Exception as e:
-                    logger.error(f"Error getting transcript: {e}")
+                    logger.error(f"[Session {self.id}] Error getting transcript: {e}", exc_info=True)
                     continue
         except asyncio.CancelledError:
-            logger.info(f"Transcript generator cancelled for session {self.id}")
+            logger.info(f"[Session {self.id}] Transcript generator cancelled after sending {transcript_count} transcripts")
+        except Exception as e:
+            logger.error(f"[Session {self.id}] Error in transcript generator: {e}", exc_info=True)
+            raise
 
     async def cleanup(self) -> None:
         """Clean up session resources"""

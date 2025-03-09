@@ -29,7 +29,7 @@ logging.getLogger('websockets').setLevel(logging.WARNING)
 
 # Keep your application logs at DEBUG level
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.DEBUG)
 
 @router.websocket("/session")
 async def tutoring_websocket(
@@ -94,10 +94,10 @@ async def tutoring_websocket(
                     # Check message type
                     if message.get("type") == "realtime_input":
                         media_chunks = message.get("media_chunks", [])
-                        if len(media_chunks) > 0:
-                            logger.debug(f"[Session {session.id}] Received {len(media_chunks)} media_chunks.")
-                        else:
-                            logger.debug(f"[Session {session.id}] Received realtime input with no media_chunks.")
+                        # if len(media_chunks) > 0:
+                        #     logger.debug(f"[Session {session.id}] Received {len(media_chunks)} media_chunks.")
+                        # else:
+                        #     logger.debug(f"[Session {session.id}] Received realtime input with no media_chunks.")
 
                         # Pass message to session
                         await session.process_message(message)
@@ -147,8 +147,6 @@ async def tutoring_websocket(
             """Handle transcribed speech from both user and Gemini."""
             try:
                 async for transcript in session.get_transcripts():
-                    if session.quit_event.is_set():
-                        break
                     logger.debug(
                         f"[Session {session.id}] Transcript: "
                         f"Speaker={transcript.get('speaker')} "
@@ -160,6 +158,25 @@ async def tutoring_websocket(
                     })
             except asyncio.CancelledError:
                 logger.debug(f"[Session {session.id}] Transcript handler cancelled")
+                raise
+
+        async def handle_viseme_responses():
+            """Handle viseme data from speech recognition for avatar lip-syncing."""
+            try:
+                async for viseme in session.get_visemes():
+                    if session.quit_event.is_set():
+                        break
+                    logger.debug(
+                        f"[Session {session.id}] Viseme: "
+                        f"Speaker={viseme.get('speaker')} "
+                        f"ID={viseme.get('data', {}).get('viseme_id')} "
+                    )
+                    await websocket.send_json({
+                        "type": "viseme",
+                        "content": viseme
+                    })
+            except asyncio.CancelledError:
+                logger.debug(f"[Session {session.id}] Viseme handler cancelled")
                 raise
 
         async def handle_audio_responses():
@@ -211,6 +228,7 @@ async def tutoring_websocket(
                     asyncio.create_task(handle_transcript_responses()),
                     asyncio.create_task(handle_audio_responses()),
                     asyncio.create_task(handle_scene_responses()),
+                    asyncio.create_task(handle_viseme_responses()),  # Add viseme handler
                 ]
                 await asyncio.gather(*tasks)
             except asyncio.CancelledError:
