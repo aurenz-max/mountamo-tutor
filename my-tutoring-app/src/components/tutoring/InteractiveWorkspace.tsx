@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Maximize, Minimize } from 'lucide-react';
+import { Maximize, Minimize, X, CornerUpLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
@@ -8,7 +8,8 @@ import DrawingWorkspace from './DrawingWorkspace';
 import ImageBrowser from './ImageBrowser';
 import DraggableImage from './DraggableImage';
 import VisualSceneManager from './VisualSceneManager';
-import ProblemDisplay from './ProblemDisplay'; // Import the new ProblemDisplay component
+import ProblemDisplay from './ProblemDisplay';
+import TutorCharacter from './TutorCharacter'; // Import the TutorCharacter component
 import './InteractiveWorkspace.css';
 
 // Define the interface for workspace images
@@ -23,10 +24,10 @@ interface InteractiveWorkspaceProps {
   studentId: number;
   onSubmit: (canvasData: string) => void;
   sessionId?: string | null;
-  currentProblem?: any; // Keep this optional with ?
-  currentScene?: any; // Make sure it's optional with ?
+  currentProblem?: any;
+  currentScene?: any;
+  geminiSpeaking?: boolean; // Add this prop to know when the tutor is speaking
 }
-
 
 const InteractiveWorkspace = forwardRef(({ 
   currentTopic, 
@@ -34,7 +35,8 @@ const InteractiveWorkspace = forwardRef(({
   onSubmit, 
   sessionId = null,
   currentProblem: externalProblem = null,
-  currentScene: externalScene = null 
+  currentScene: externalScene = null,
+  geminiSpeaking = false
 }, ref) => {
   // Problem state
   const [currentProblem, setCurrentProblem] = useState<any>(externalProblem);
@@ -48,6 +50,29 @@ const InteractiveWorkspace = forwardRef(({
   const [isVisualToolsOpen, setIsVisualToolsOpen] = useState(false);
   const [workspaceImages, setWorkspaceImages] = useState<WorkspaceImage[]>([]);
   
+  // Tutor character state - with enhanced management
+  const [showTutor, setShowTutor] = useState(true);
+  const [tutorPosition, setTutorPosition] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
+  const [tutorMood, setTutorMood] = useState<'idle' | 'talking' | 'waving' | 'happy' | 'questioning'>(
+    geminiSpeaking ? 'talking' : 'idle'
+  );
+
+  // Flag to track initial connection
+  const [isInitialConnection, setIsInitialConnection] = useState(false);
+  const [hasNewProblem, setHasNewProblem] = useState(false);
+  
+  // Store previous tutor states for comparison
+  const prevProblemRef = useRef(null);
+  const prevGeminiSpeakingRef = useRef(geminiSpeaking);
+  
+  // Timer references for mood state management
+  const moodTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const moodFlagsRef = useRef({
+    inTransition: false,      // Is the character in a temporary mood transition
+    lastMoodChange: Date.now(), // When was the last mood change
+    forceOverride: false      // Should we force the next mood change
+  });
+  
   const drawingRef = useRef<any>();
   const workspaceRef = useRef<HTMLDivElement>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -60,19 +85,118 @@ const InteractiveWorkspace = forwardRef(({
     }
   }));
 
-  // Update currentProblem when externalProblem changes
+  // Safe method to set tutor mood with proper cleanup and state tracking
+  const setTutorMoodSafely = (mood: 'idle' | 'talking' | 'waving' | 'happy' | 'questioning', options?: {
+    duration?: number;
+    force?: boolean;
+  }) => {
+    const { duration, force = false } = options || {};
+    
+    // Clear any existing mood timers
+    if (moodTimerRef.current) {
+      clearTimeout(moodTimerRef.current);
+      moodTimerRef.current = null;
+    }
+    
+    // If forcing, always set the mood
+    if (force || !moodFlagsRef.current.inTransition || moodFlagsRef.current.forceOverride) {
+      console.log(`Setting tutor mood to: ${mood}${duration ? ` (for ${duration}ms)` : ''}, force: ${force}`);
+      
+      // Track state
+      moodFlagsRef.current.lastMoodChange = Date.now();
+      setTutorMood(mood);
+      
+      // Set transition flag if this is a temporary mood
+      if (duration && duration > 0) {
+        moodFlagsRef.current.inTransition = true;
+        
+        // Schedule return to default state
+        moodTimerRef.current = setTimeout(() => {
+          console.log(`Mood duration elapsed (${duration}ms), returning to ${geminiSpeaking ? 'talking' : 'idle'}`);
+          setTutorMood(geminiSpeaking ? 'talking' : 'idle');
+          moodFlagsRef.current.inTransition = false;
+          moodFlagsRef.current.forceOverride = false;
+          moodTimerRef.current = null;
+        }, duration);
+      } else {
+        // For permanent mood changes, clear transition state
+        moodFlagsRef.current.inTransition = false;
+        moodFlagsRef.current.forceOverride = false;
+      }
+    } else {
+      console.log(`Skipping mood change to ${mood} - character in transition`);
+    }
+  };
+
+  // Handle session initialization and connection animation
   useEffect(() => {
-    if (externalProblem) {
+    if (sessionId && !isInitialConnection) {
+      // Show connection animation when session starts
+      setIsInitialConnection(true);
+      console.log('Session initialized, triggering connection animation');
+      
+      // Reset the connection flag after a delay to prevent retriggering
+      setTimeout(() => {
+        setIsInitialConnection(false);
+      }, 5000);
+    }
+  }, [sessionId]);
+
+  // Handle geminiSpeaking changes
+  useEffect(() => {
+    // If speaking state changed and we're not in a special animation
+    if (geminiSpeaking !== prevGeminiSpeakingRef.current) {
+      console.log(`Speaking state changed: ${prevGeminiSpeakingRef.current} → ${geminiSpeaking}`);
+      prevGeminiSpeakingRef.current = geminiSpeaking;
+      
+      // Only change mood if we're not in a temporary transition
+      // or if it's been more than 2 seconds since the last mood change
+      const timeSinceLastChange = Date.now() - moodFlagsRef.current.lastMoodChange;
+      if (!moodFlagsRef.current.inTransition || timeSinceLastChange > 2000) {
+        setTutorMoodSafely(geminiSpeaking ? 'talking' : 'idle');
+      } else {
+        // Flag that we should force override after current transition
+        moodFlagsRef.current.forceOverride = true;
+      }
+    }
+  }, [geminiSpeaking]);
+
+  // Handle problem changes
+  useEffect(() => {
+    if (externalProblem && externalProblem !== prevProblemRef.current) {
       setCurrentProblem(externalProblem);
-      setIsProblemOpen(true); // Automatically open problem panel when a problem is received
+      setIsProblemOpen(true);
+      prevProblemRef.current = externalProblem;
+      
+      // Show the questioning mood when a new problem arrives
+      setTutorMoodSafely('questioning', { duration: 2000, force: true });
+      setHasNewProblem(true);
+      
+      // Reset new problem flag after animation completes
+      setTimeout(() => {
+        setHasNewProblem(false);
+      }, 2000);
     }
   }, [externalProblem]);
 
+  // Handle scene changes
   useEffect(() => {
     if (externalScene) {
-      console.log('InteractiveWorkspace received scene:', externalScene);
+      console.log('New scene received:', externalScene);
+      
+      // Show happy mood for a short time when a new scene is loaded
+      setTutorMoodSafely('happy', { duration: 1500, force: true });
     }
   }, [externalScene]);
+
+  // Cleanup timers when component unmounts
+  useEffect(() => {
+    return () => {
+      if (moodTimerRef.current) {
+        clearTimeout(moodTimerRef.current);
+      }
+    };
+  }, []);
 
   // Generate a session ID if not provided
   useEffect(() => {
@@ -80,6 +204,62 @@ const InteractiveWorkspace = forwardRef(({
       sessionId = `session_${Date.now()}`;
     }
   }, [sessionId]);
+
+  // Toggle fullscreen function
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      // If not in fullscreen mode, enter fullscreen
+      if (workspaceRef.current?.requestFullscreen) {
+        workspaceRef.current.requestFullscreen();
+        setIsFullScreen(true);
+      } else if (workspaceRef.current?.webkitRequestFullscreen) { /* Safari */
+        workspaceRef.current.webkitRequestFullscreen();
+        setIsFullScreen(true);
+      } else if (workspaceRef.current?.msRequestFullscreen) { /* IE11 */
+        workspaceRef.current.msRequestFullscreen();
+        setIsFullScreen(true);
+      }
+    } else {
+      // If already in fullscreen mode, exit fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullScreen(false);
+      } else if (document.webkitExitFullscreen) { /* Safari */
+        document.webkitExitFullscreen();
+        setIsFullScreen(false);
+      } else if (document.msExitFullscreen) { /* IE11 */
+        document.msExitFullscreen();
+        setIsFullScreen(false);
+      }
+    }
+  };
+
+  // Toggle theater mode function
+  const toggleTheaterMode = () => {
+    const newMode = !isTheaterMode;
+    setIsTheaterMode(newMode);
+    
+    // Add a longer delay to ensure all DOM updates have happened
+    setTimeout(() => {
+      if (drawingRef.current && drawingRef.current.forceCanvasResize) {
+        console.log("Forcing canvas resize after theater mode toggle");
+        drawingRef.current.forceCanvasResize();
+      }
+    }, 300);
+  };
+
+  // Toggle tutor visibility
+  const toggleTutor = () => {
+    setShowTutor(!showTutor);
+  };
+
+  // Rotate through tutor positions
+  const rotateTutorPosition = () => {
+    const positions: ['top-left', 'top-right', 'bottom-left', 'bottom-right'] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+    const currentIndex = positions.indexOf(tutorPosition);
+    const nextIndex = (currentIndex + 1) % positions.length;
+    setTutorPosition(positions[nextIndex]);
+  };
 
   // Function to capture and render images onto the canvas for submission
   const captureImagesForCanvas = (combinedCanvas, combinedCtx) => {
@@ -139,49 +319,6 @@ const InteractiveWorkspace = forwardRef(({
     return Promise.all(imagePromises);
   };
 
-  // Toggle fullscreen function
-  const toggleFullScreen = () => {
-    if (!document.fullscreenElement) {
-      // If not in fullscreen mode, enter fullscreen
-      if (workspaceRef.current.requestFullscreen) {
-        workspaceRef.current.requestFullscreen();
-        setIsFullScreen(true);
-      } else if (workspaceRef.current.webkitRequestFullscreen) { /* Safari */
-        workspaceRef.current.webkitRequestFullscreen();
-        setIsFullScreen(true);
-      } else if (workspaceRef.current.msRequestFullscreen) { /* IE11 */
-        workspaceRef.current.msRequestFullscreen();
-        setIsFullScreen(true);
-      }
-    } else {
-      // If already in fullscreen mode, exit fullscreen
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullScreen(false);
-      } else if (document.webkitExitFullscreen) { /* Safari */
-        document.webkitExitFullscreen();
-        setIsFullScreen(false);
-      } else if (document.msExitFullscreen) { /* IE11 */
-        document.msExitFullscreen();
-        setIsFullScreen(false);
-      }
-    }
-  };
-
-  // Toggle theater mode function
-  const toggleTheaterMode = () => {
-    const newMode = !isTheaterMode;
-    setIsTheaterMode(newMode);
-    
-    // Add a longer delay to ensure all DOM updates have happened
-    setTimeout(() => {
-      if (drawingRef.current && drawingRef.current.forceCanvasResize) {
-        console.log("Forcing canvas resize after theater mode toggle");
-        drawingRef.current.forceCanvasResize();
-      }
-    }, 300); // Increased delay to ensure DOM updates complete
-  };
-
   // Handle fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -224,6 +361,15 @@ const InteractiveWorkspace = forwardRef(({
       };
       const response = await api.generateProblem(problemRequest);
       setCurrentProblem(response);
+      
+      // Set tutor to questioning mood when generating a new problem
+      setTutorMoodSafely('questioning', { duration: 2000, force: true });
+      setHasNewProblem(true);
+      
+      // Reset the new problem flag after a delay
+      setTimeout(() => {
+        setHasNewProblem(false);
+      }, 2000);
     } catch (error) {
       console.error('Error generating problem:', error);
       setError(error instanceof Error ? error.message : 'Unknown error');
@@ -257,6 +403,10 @@ const InteractiveWorkspace = forwardRef(({
       
       const response = await api.submitProblem(submission);
       setFeedback(response);
+      
+      // Show happy mood when submission is successful
+      setTutorMoodSafely('happy', { duration: 2000, force: true });
+      
       if (onSubmit) onSubmit(canvasData);
     } catch (error) {
       console.error('Error submitting problem:', error);
@@ -377,7 +527,41 @@ const InteractiveWorkspace = forwardRef(({
       />
       
       {/* Top Bar - always visible even in theater mode */}
-      <div className="bg-gray-100 p-2 flex justify-end items-center">
+      <div className="bg-gray-100 p-2 flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          {/* Tutor controls */}
+          {showTutor ? (
+            <Button
+              onClick={toggleTutor}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              <X size={14} className="mr-1" /> Hide Tutor
+            </Button>
+          ) : (
+            <Button
+              onClick={toggleTutor}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              Show Tutor
+            </Button>
+          )}
+          
+          {showTutor && (
+            <Button
+              onClick={rotateTutorPosition}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              <CornerUpLeft size={14} className="mr-1" /> Move Tutor
+            </Button>
+          )}
+        </div>
+
         <Button
           onClick={() => setIsProblemOpen(!isProblemOpen)}
           className="ml-auto"
@@ -417,6 +601,21 @@ const InteractiveWorkspace = forwardRef(({
                 />
               ))}
             </div>
+            
+            {/* Tutor character - positioned based on user selection */}
+            {showTutor && (
+              <div className={`tutor-character-position tutor-position-${tutorPosition}`}>
+                <TutorCharacter 
+                  isSpeaking={geminiSpeaking}
+                  mood={tutorMood}
+                  size="large"
+                  isTheaterMode={isTheaterMode}
+                  position={tutorPosition}
+                  onConnect={isInitialConnection}
+                  onNewProblem={hasNewProblem}
+                />
+              </div>
+            )}
             
             {/* Image toolbar - only show when images exist */}
             {workspaceImages.length > 0 && (

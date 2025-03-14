@@ -430,3 +430,62 @@
 .theater-mode .w-full.h-96 {
   height: calc(100vh - 120px) !important;
 }
+
+/* Add these styles to your InteractiveWorkspace.css file */
+
+.tutor-character-position {
+  position: absolute;
+  z-index: 50;
+  width: 350px;
+  height: 350px;
+}
+
+/* Tutor positioning in theater mode - increase size */
+.theater-mode .tutor-character-position {
+  position: absolute;
+  z-index: 50;
+  width: 500px !important;
+  height: 500px !important;
+}
+
+/* Position-specific classes */
+.tutor-position-bottom-right {
+  bottom: 2rem;
+  right: 2rem;
+}
+
+.tutor-position-bottom-left {
+  bottom: 2rem;
+  left: 2rem;
+}
+
+.tutor-position-top-right {
+  top: 2rem;
+  right: 2rem;
+}
+
+.tutor-position-top-left {
+  top: 2rem;
+  left: 2rem;
+}
+
+/* In theater mode, adjust positions to account for the larger viewport */
+.theater-mode .tutor-position-bottom-right {
+  bottom: 3rem;
+  right: 3rem;
+}
+
+.theater-mode .tutor-position-bottom-left {
+  bottom: 3rem;
+  left: 3rem;
+}
+
+.theater-mode .tutor-position-top-right {
+  top: 3rem;
+  right: 3rem;
+}
+
+.theater-mode .tutor-position-top-left {
+  top: 3rem;
+  left: 3rem;
+}

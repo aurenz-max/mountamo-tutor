@@ -40,7 +40,7 @@ async def tutoring_websocket(
     session_manager: SessionManager = Depends(get_session_manager),
     gemini_service: GeminiService = Depends(get_gemini_service),
     tutoring_service: TutoringService = Depends(get_tutoring_service),
-    azure_speech_service: AzureSpeechService = Depends(get_azure_speech_service),  # NEW
+    azure_speech_service: AzureSpeechService = Depends(get_azure_speech_service),
 ):
     logger.info("New WebSocket connection request")
     await websocket.accept()
@@ -70,7 +70,7 @@ async def tutoring_websocket(
                 subskill_id=session_data.get("subskill_id"),
                 gemini_service=gemini_service,
                 tutoring_service=tutoring_service,
-                speech_service=azure_speech_service,  # NEW
+                speech_service=azure_speech_service,
             )
 
             await websocket.send_json({
@@ -162,25 +162,6 @@ async def tutoring_websocket(
                 logger.debug(f"[Session {session.id}] Transcript handler cancelled")
                 raise
 
-        async def handle_viseme_responses():
-            """Handle viseme data from speech recognition for avatar lip-syncing."""
-            try:
-                async for viseme in session.get_visemes():
-                    if session.quit_event.is_set():
-                        break
-                    logger.debug(
-                        f"[Session {session.id}] Viseme: "
-                        f"Speaker={viseme.get('speaker')} "
-                        f"ID={viseme.get('data', {}).get('viseme_id')} "
-                    )
-                    await websocket.send_json({
-                        "type": "viseme",
-                        "content": viseme
-                    })
-            except asyncio.CancelledError:
-                logger.debug(f"[Session {session.id}] Viseme handler cancelled")
-                raise
-
         async def handle_audio_responses():
             """Handle processed audio from the audio service, preserving timing information."""
             try:
@@ -252,7 +233,6 @@ async def tutoring_websocket(
                     asyncio.create_task(handle_transcript_responses()),
                     asyncio.create_task(handle_audio_responses()),
                     asyncio.create_task(handle_scene_responses()),
-                    asyncio.create_task(handle_viseme_responses()),  # Add viseme handler
                 ]
                 await asyncio.gather(*tasks)
             except asyncio.CancelledError:

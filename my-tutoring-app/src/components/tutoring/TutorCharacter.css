@@ -1,0 +1,154 @@
+/* TutorCharacter.css */
+.tutor-character-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: visible;
+    border-radius: 12px;
+    background-color: transparent;
+  }
+  
+  .tutor-character-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none;
+  }
+  
+  /* Responsive sizing for different viewport sizes */
+  .tutor-character-wrapper {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1000 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Size variations - applied to inner container */
+  .tutor-character-small {
+    width: 100%;
+    height: 100%;
+    max-width: 280px;
+    max-height: 280px;
+    min-width: 220px;
+    min-height: 220px;
+  }
+  
+  .tutor-character-medium {
+    width: 100%;
+    height: 100%;
+    max-width: 350px;
+    max-height: 350px;
+    min-width: 280px;
+    min-height: 280px;
+  }
+  
+  .tutor-character-large {
+    width: 100%;
+    height: 100%;
+    max-width: 450px;
+    max-height: 450px;
+    min-width: 350px;
+    min-height: 350px;
+  }
+  
+  /* Override for standard mode (non-theater) to ensure visibility */
+  :not(.theater-mode) .tutor-character-container {
+    min-width: 150px !important;
+    min-height: 150px !important;
+  }
+  
+  /* Ensure theater mode has appropriate scaling */
+  .theater-mode .tutor-character-container {
+    min-width: 200px !important;
+    min-height: 200px !important;
+  }
+  
+  .theater-mode .tutor-character-large {
+    max-width: 600px;
+    max-height: 600px;
+    min-width: 500px;
+    min-height: 500px;
+  }
+  
+  .theater-mode .tutor-character-medium {
+    max-width: 500px;
+    max-height: 500px;
+    min-width: 400px;
+    min-height: 400px;
+  }
+  
+  .theater-mode .tutor-character-small {
+    max-width: 350px;
+    max-height: 350px;
+    min-width: 300px;
+    min-height: 300px;
+  }
+  
+  /* Position classes - explicitly set via inline styles for more reliability */
+  
+  /* State-specific styles */
+  .character-state-talking canvas {
+    animation: pulse 2s infinite;
+  }
+  
+  .character-state-happy canvas {
+    animation: bounce 1s infinite;
+  }
+  
+  /* Simple animations */
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  /* Media queries for responsive sizing */
+  @media (max-width: 768px) {
+    .tutor-character-large {
+      max-width: 400px;
+      max-height: 400px;
+    }
+    
+    .tutor-character-medium {
+      max-width: 300px;
+      max-height: 300px;
+    }
+    
+    .tutor-character-small {
+      max-width: 200px;
+      max-height: 200px;
+    }
+    
+    .theater-mode .tutor-character-large {
+      max-width: 450px;
+      max-height: 450px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .tutor-character-large {
+      max-width: 300px;
+      max-height: 300px;
+    }
+    
+    .tutor-character-medium {
+      max-width: 250px;
+      max-height: 250px;
+    }
+    
+    .tutor-character-small {
+      max-width: 200px;
+      max-height: 200px;
+    }
+    
+    .theater-mode .tutor-character-large {
+      max-width: 350px;
+      max-height: 350px;
+    }
+  }

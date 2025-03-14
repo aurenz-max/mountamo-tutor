@@ -5,10 +5,6 @@ import AudioCaptureService from '@/lib/AudioCaptureService';
 import { Card } from '@/components/ui/card';
 import GeminiControlPanel from './GeminiControlPanel';
 import TranscriptionManager from './TranscriptionManager';
-import { useAudioState } from '@/components/audio/AudioStateContext';
-import { audioSyncManager } from '@/lib/AudioSyncManager';
-import { LipSyncManager } from '@/lib/LipSyncManager';
-
 
 const InteractiveWorkspace = React.lazy(() => import('./InteractiveWorkspace'));
 
@@ -22,17 +18,6 @@ interface Transcript {
   isPartial: boolean;
 }
 
-// Add this TypeScript declaration at the top of the file to avoid type errors
-declare global {
-  interface Window {
-    lipSyncManager: any;
-    avatarAPI: any;
-    debugAvatarConnection: () => void;
-    testMouth: (index: number, value?: number) => string;
-    animateMouth: (index?: number) => string;
-  }
-}
-
 const TutoringInterface = ({ studentId, currentTopic }) => {
   const [status, setStatus] = useState('disconnected');
   const [sessionId, setSessionId] = useState(null);
@@ -41,12 +26,7 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
   const [isListening, setIsListening] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
   const [geminiSpeaking, setGeminiSpeaking] = useState(false);
-  const lastVisemeTimeRef = useRef<number>(0);
   const currentUtteranceRef = useRef<string | null>(null);
-  const lipSyncRef = useRef<LipSyncManager | null>(null);
-
-  // Get the audio state context
-  const { audioState, setAudioState } = useAudioState();
 
   // Transcription state managed here with useState
   const [transcriptionEnabled, setTranscriptionEnabled] = useState(true);
@@ -56,222 +36,14 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
   // Add state for problem data
   const [currentProblem, setCurrentProblem] = useState(null);
   
-  // Add state for avatar management
-  const [avatarSceneReady, setAvatarSceneReady] = useState(false);
+  // Add state for scene management
   const [currentScene, setCurrentScene] = useState(null);
-  const avatarRef = useRef(null);
-  const visemeHandlerRef = useRef<{
-    handleVisemeEvent: (data: any) => void;
-    currentViseme: string;
-    visemeIntensity: number;
-  } | null>(null);
 
   const wsRef = useRef(null);
   const audioCaptureRef = useRef(null);
   const audioContextRef = useRef(null);
   const endTimeRef = useRef(0);
   const workspaceRef = useRef(null);
-
-  // Update global audio state whenever isPlaying or isListening changes
-  useEffect(() => {
-    setAudioState(prev => ({
-      ...prev,
-      isGeminiSpeaking: isPlaying,
-      isUserSpeaking: isListening
-    }));
-  
-    // Update viseme handler based on speaking state
-    if (visemeHandlerRef.current) {
-      if (!isPlaying && visemeHandlerRef.current.isSpeaking()) {
-        // If Gemini stops speaking but mouth is still moving, reset to silence
-        visemeHandlerRef.current.setSilence();
-      }
-    }
-  }, [isPlaying, isListening, setAudioState]);
-
-  // Initialize in useEffect
-  useEffect(() => {
-    // Create instance with desired configuration
-    lipSyncRef.current = new LipSyncManager({
-      debug: true,  // Set to false in production
-      visemeLeadTime: 50,
-      silenceVisemeIntensity: 0.1
-    });
-    
-    // Expose to the global window object for the animation loop to access
-    if (typeof window !== 'undefined') {
-      window.lipSyncManager = lipSyncRef.current;
-      console.log('LipSyncManager exposed globally for animation synchronization');
-    }
-  
-    return () => {
-      // Clean up on unmount
-      if (lipSyncRef.current) {
-        lipSyncRef.current.destroy();
-      }
-      
-      // Remove from global
-      if (typeof window !== 'undefined') {
-        window.lipSyncManager = null;
-      }
-    };
-  }, []);
-
-
-  // Add this effect to set up the global avatar API
-  useEffect(() => {
-    // Setup avatar integration when component mounts
-    if (typeof window !== 'undefined') {
-      // Create global API if it doesn't exist
-      if (!window.avatarAPI) {
-        window.avatarAPI = {
-          avatar: null,
-          setAvatar: (avatar) => {
-            window.avatarAPI.avatar = avatar;
-            console.log('GLOBAL AVATAR API: Avatar set', !!avatar);
-            
-            // Notify any listeners
-            if (window.avatarAPI.onAvatarReady) {
-              window.avatarAPI.onAvatarReady(avatar);
-            }
-          },
-          onAvatarReady: null
-        };
-      }
-      
-      // If avatar is already available, use it immediately
-      if (window.avatarAPI.avatar) {
-        console.log('TUTORING INTERFACE: Avatar already available');
-        handleAvatarSceneReady({ avatar: window.avatarAPI.avatar });
-      }
-      
-      // Otherwise, set up a listener for when it becomes available
-      window.avatarAPI.onAvatarReady = (avatar) => {
-        console.log('TUTORING INTERFACE: Avatar became available via global API');
-        handleAvatarSceneReady({ avatar });
-      };
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      if (typeof window !== 'undefined' && window.avatarAPI) {
-        window.avatarAPI.onAvatarReady = null;
-      }
-
-      if (visemeHandlerRef.current && visemeHandlerRef.current.destroy) {
-        visemeHandlerRef.current.destroy();
-      }
-    };
-  }, []);
-  
-
-// When avatar is ready
-const handleAvatarSceneReady = useCallback((sceneData) => {
-  if (sceneData?.avatar && lipSyncRef.current) {
-    // Set the avatar for lip syncing
-    const success = lipSyncRef.current.setAvatar(sceneData.avatar);
-    console.log('Avatar connected to LipSyncManager:', success);
-    
-    // Optional: Test visemes to confirm setup
-    setTimeout(() => {
-      if (lipSyncRef.current) {
-        // Test a common word sequence like "Hello"
-        // SIL → H → EH → L → OW
-        lipSyncRef.current.testVisemeSequence([0, 15, 4, 13, 7]);
-      }
-    }, 500);
-  }
-}, []);
-
-// Add this useEffect for animation performance
-useEffect(() => {
-  // Disable viseme updates while audio isn't playing to save performance
-  if (lipSyncRef.current) {
-    if (isPlaying) {
-      // Check if we need to test viseme setup first
-      if (!lipSyncRef.current.hasTestedSetup && avatarRef.current) {
-        // Quick viseme test to ensure everything is connected
-        setTimeout(() => {
-          lipSyncRef.current.testViseme(0, 100); // Test silence viseme
-        }, 100);
-        lipSyncRef.current.hasTestedSetup = true;
-      }
-    }
-  }
-}, [isPlaying]);  
-
-useEffect(() => {
-  // Create a global debug function we can call from the console
-  window.debugAvatarConnection = () => {
-    console.log("=== AVATAR CONNECTION DEBUG ===");
-    
-    // Step 1: Is the avatar available globally?
-    console.log("1. Global avatar API:", 
-      window.avatarAPI ? "exists" : "missing",
-      window.avatarAPI?.avatar ? "has avatar" : "no avatar");
-    
-    // Step 2: Can we find the head mesh with morph targets?
-    if (window.avatarAPI?.avatar) {
-      let foundMorphTargets = false;
-      window.avatarAPI.avatar.traverse(obj => {
-        if (obj.isMesh && obj.morphTargetDictionary) {
-          console.log("2. Found mesh with morph targets:", obj.name);
-          console.log("   Available morphs:", Object.keys(obj.morphTargetDictionary));
-          foundMorphTargets = true;
-          
-          // Step 3: Can we manually set a morph target?
-          const visemeNames = Object.keys(obj.morphTargetDictionary)
-            .filter(name => name.startsWith('viseme_'));
-          
-          if (visemeNames.length > 0) {
-            const testViseme = visemeNames[0];
-            const index = obj.morphTargetDictionary[testViseme];
-            
-            // Store original value
-            const originalValue = obj.morphTargetInfluences[index];
-            
-            // Set to 1.0
-            console.log(`3. Testing morph target: ${testViseme} (index: ${index})`);
-            console.log(`   Original value: ${originalValue}`);
-            obj.morphTargetInfluences[index] = 1.0;
-            
-            // Restore after 2 seconds
-            setTimeout(() => {
-              obj.morphTargetInfluences[index] = originalValue;
-              console.log(`   Restored morph target: ${testViseme}`);
-            }, 2000);
-            
-            return; // Exit after testing one morph
-          } else {
-            console.log("3. No viseme morphs found in this mesh");
-          }
-        }
-      });
-      
-      if (!foundMorphTargets) {
-        console.log("2. NO MORPH TARGETS FOUND in avatar");
-      }
-    }
-    
-    // Step 4: Check LipSyncManager state
-    console.log("4. LipSync manager state:", 
-      lipSyncRef.current ? "exists" : "missing");
-    
-    if (lipSyncRef.current) {
-      console.log("   Has avatar:", !!lipSyncRef.current.avatar);
-      console.log("   Has head mesh:", !!lipSyncRef.current.headMesh);
-      console.log("   Viseme indices:", 
-        Object.keys(lipSyncRef.current.visemeIndices || {}).length);
-    }
-  };
-  
-  // Auto-run after 3 seconds to ensure everything is loaded
-  setTimeout(() => {
-    console.log("Running automated avatar connection debug...");
-    if (window.debugAvatarConnection) window.debugAvatarConnection();
-  }, 3000);
-  
-}, []);
 
   useEffect(() => {
     if (!audioContextRef.current) {
@@ -410,77 +182,29 @@ useEffect(() => {
       const chunkDuration = floatData.length / SAMPLE_RATE;
       endTimeRef.current = startTime + chunkDuration;
       
-      // Calculate duration in milliseconds
-      const durationMs = duration || Math.floor(chunkDuration * 1000);
-      
-      // Use server timestamp if provided, otherwise use current time
-      const timestamp = serverTimestamp || Date.now();
-      
-      // CRITICAL: Dispatch event for LipSyncManager to synchronize visemes with audio
-      window.dispatchEvent(new CustomEvent('audio-playback-scheduled', {
-        detail: {
-          serverTimestamp: timestamp,
-          clientTimestamp: Date.now(),
-          scheduledPlaybackTime: startTime * 1000, // Convert to ms for consistency
-          duration: durationMs,
-          visemeLeadTime: lipSyncRef.current?.config?.visemeLeadTime || 50
-        }
-      }));
-      
-      // For backwards compatibility - also notify the audioSyncManager
-      // This can be removed once everything is migrated to LipSyncManager
-      audioSyncManager.notifyAudioScheduled(
-        timestamp,
-        startTime * 1000,
-        durationMs
-      );
-      
       // Update local component state to show we're playing audio
       setIsPlaying(true);
       
-      // Update global audio state context
-      setAudioState(prev => ({
-        ...prev,
-        isGeminiSpeaking: true
-      }));
-      
-      // Update speaking state for viseme processing
+      // Update speaking state
       setGeminiSpeaking(true);
       
-// Update the source.onended callback in handleAudioData function in TutoringInterface.tsx
-source.onended = () => {
-  const currentT = audioContextRef.current?.currentTime;
-  
-  // Check if the audio context's current time has passed our end time
-  if (currentT && currentT >= endTimeRef.current) {
-    // Update play state
-    setIsPlaying(false);
-    
-    // Update global audio state context
-    setAudioState(prev => ({
-      ...prev,
-      isGeminiSpeaking: false
-    }));
-    
-    // CRITICAL: Dispatch event to signal audio playback has ended
-    window.dispatchEvent(new CustomEvent('audio-playback-ended'));
-    
-    // For backwards compatibility
-    audioSyncManager.notifyAudioEnded();
-    
-    // Add a grace period before considering the utterance complete
-    setTimeout(() => {
-      // After grace period, update speaking state and clear utterance ID
-      setGeminiSpeaking(false);
-      currentUtteranceRef.current = null;
-      
-      // IMPORTANT: Explicitly reset lip sync to silence state to ensure mouth closes
-      if (lipSyncRef.current) {
-        lipSyncRef.current.setSilence();
-      }
-    }, 300); // 300ms grace period
-  }
-};
+      // Updated source.onended callback
+      source.onended = () => {
+        const currentT = audioContextRef.current?.currentTime;
+        
+        // Check if the audio context's current time has passed our end time
+        if (currentT && currentT >= endTimeRef.current) {
+          // Update play state
+          setIsPlaying(false);
+          
+          // Add a grace period before considering the utterance complete
+          setTimeout(() => {
+            // After grace period, update speaking state and clear utterance ID
+            setGeminiSpeaking(false);
+            currentUtteranceRef.current = null;
+          }, 300); // 300ms grace period
+        }
+      };
 
     } catch (error) {
       console.error('Error processing audio:', error);
@@ -524,12 +248,6 @@ source.onended = () => {
         case 'transcript':
           processTranscript(response.content);
           break;
-          case 'viseme':
-            // Simply forward to the lip sync manager
-            if (lipSyncRef.current) {
-              lipSyncRef.current.handleVisemeEvent(response);
-            }
-            break;
         case 'scene':
           console.log('Received scene data:', response.content);
           setCurrentScene(response.content);
@@ -728,16 +446,16 @@ source.onended = () => {
           </div>
         </Card>
       }>
-      <InteractiveWorkspace
-        ref={workspaceRef}
-        currentTopic={currentTopic}
-        studentId={studentId}
-        sessionId={sessionId}
-        currentProblem={currentProblem}
-        currentScene={currentScene}
-        onSubmit={(response) => console.log('Workspace submission:', response)}
-        onAvatarSceneReady={handleAvatarSceneReady}
-      />
+        <InteractiveWorkspace
+          ref={workspaceRef}
+          currentTopic={currentTopic}
+          studentId={studentId}
+          sessionId={sessionId}
+          currentProblem={currentProblem}
+          currentScene={currentScene}
+          geminiSpeaking={geminiSpeaking} // Pass the speaking state to the workspace
+          onSubmit={(response) => console.log('Workspace submission:', response)}
+        />
       </React.Suspense>
       {transcriptionEnabled && (
         <TranscriptionManager

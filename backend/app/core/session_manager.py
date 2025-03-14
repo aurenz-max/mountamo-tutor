@@ -62,7 +62,6 @@ class TutoringSession:
         self.problem_queue = asyncio.Queue()
         self.text_queue = asyncio.Queue()
         self.transcript_queue = asyncio.Queue()
-        self.viseme_queue = asyncio.Queue()  # NEW: Add viseme queue
         self.scene_queue = asyncio.Queue()  # Queue for visual scenes
         
         self._active = False
@@ -96,19 +95,6 @@ class TutoringSession:
             logger.error(f"Error handling scene in session {self.id}: {e}", exc_info=True)
             raise
             
-    async def handle_viseme(self, viseme_data: Dict[str, Any]) -> None:
-        """Handle viseme data from speech service"""
-        try:
-            if not self._active:
-                logger.warning(f"[Session {self.id}] Session not active, ignoring viseme")
-                return
-            logger.debug(f"[Session {self.id}] Adding viseme to queue, queue size before: {self.viseme_queue.qsize()}")
-            await self.viseme_queue.put(viseme_data)
-            logger.debug(f"[Session {self.id}] Viseme added to queue, new size: {self.viseme_queue.qsize()}")
-        except Exception as e:
-            logger.error(f"Error handling viseme in session {self.id}: {e}", exc_info=True)
-            raise
-
     async def initialize(self, 
                             recommendation_data: Optional[Dict] = None,
                             objectives_data: Optional[Dict] = None) -> None:
@@ -199,24 +185,11 @@ class TutoringSession:
                 except Exception as e:
                     logger.error(f"[Session {self.id}] Error in transcript callback: {e}", exc_info=True)
 
-            def viseme_callback(viseme):
-                try:
-                    logger.debug(f"[Session {self.id}] Viseme received: ID={viseme.get('data', {}).get('viseme_id')}")
-                    # Use run_coroutine_threadsafe instead of create_task
-                    asyncio.run_coroutine_threadsafe(
-                        self.viseme_queue.put(viseme),
-                        self._event_loop
-                    )
-                    logger.debug(f"[Session {self.id}] Viseme scheduled for queue")
-                except Exception as e:
-                    logger.error(f"[Session {self.id}] Error in viseme callback: {e}", exc_info=True)
-
             # Start continuous transcription with async callbacks
             await self.speech_service.start_continuous_transcription(
                 self.id, 
                 self.student_id,
                 transcription_callback,  # Direct reference to the function
-                viseme_callback          # Direct reference to the function
             )
 
         except Exception as e:
@@ -269,28 +242,6 @@ class TutoringSession:
             logger.error(f"Error getting scenes for session {self.id}: {e}")
             raise
             
-    async def get_visemes(self) -> AsyncGenerator[Dict[str, Any], None]:
-        """Get viseme updates from the session"""
-        if not self._active:
-            raise ValueError("Session is not active")
-
-        try:
-            while not self.quit_event.is_set():
-                try:
-                    viseme = await self.viseme_queue.get()
-                    yield viseme
-                except asyncio.CancelledError:
-                    break
-                except Exception as e:
-                    logger.error(f"Error getting viseme: {e}")
-                    continue
-
-        except asyncio.CancelledError:
-            logger.info(f"Viseme generator cancelled for session {self.id}")
-        except Exception as e:
-            logger.error(f"Error getting visemes for session {self.id}: {e}")
-            raise
-
     async def process_message(self, message: Dict) -> None:
         """Process incoming messages"""
         if not self._active:

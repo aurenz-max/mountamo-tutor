@@ -1,0 +1,107 @@
+## Animation Keyframe Generation Request
+
+I need to generate animation keyframes for my water drop character. Below is the character's default state in JSON format, followed by the specific animation I need.
+
+### Character Model Default State
+
+```json
+{
+  "characterName": "WaterDrop",
+  "defaultState": {
+    "components": {
+      "r.hand": {
+        "position": { "x": -231.41, "y": 80.5 },
+        "rotation": -25.484,
+        "scale": { "x": 0.96, "y": 0.96 }
+      },
+      "l.hand": {
+        "position": { "x": 233.09, "y": 66.5 },
+        "rotation": -156.372,
+        "scale": { "x": 0.96, "y": -0.96 }
+      },
+      "l.eyebrow": {
+        "position": { "x": 64, "y": -95 },
+        "rotation": 12.927,
+        "scale": { "x": 0.58, "y": 1.38 }
+      },
+      "r.eyebrow": {
+        "position": { "x": -72, "y": -95 },
+        "rotation": -17.931,
+        "scale": { "x": 0.58, "y": 1.38 }
+      },
+      "r.cheek": {
+        "position": { "x": -89.48, "y": 65.8 },
+        "rotation": -8.546,
+        "scale": { "x": 1.00, "y": 1.00 }
+      },
+      "l.cheek": {
+        "position": { "x": 89.52, "y": 65.3 },
+        "rotation": 8.331,
+        "scale": { "x": 1.00, "y": 1.00 }
+      },
+      "mouth": {
+        "position": { "x": 0, "y": 81.5 },
+        "rotation": 0,
+        "scale": { "x": 1.0, "y": 1.0 }
+      },
+      "l.eye": {
+        "position": { "x": 65, "y": -1 },
+        "rotation": 0,
+        "scale": { "x": 1.0, "y": -1.0 }
+      },
+      "r.eye": {
+        "position": { "x": -70, "y": -1 },
+        "rotation": 0,
+        "scale": { "x": 1.0, "y": 1.0 }
+      },
+      "body": {
+        "position": { "x": -6.5, "y": -321 },
+        "rotation": 0,
+        "scale": { "x": 1.0, "y": 1.0 }
+      }
+    }
+  }
+}
+```
+
+### Animation Request
+
+Please generate keyframes for a "[ANIMATION_TYPE]" animation with the following specifications:
+- Duration: 5 seconds
+- Number of keyframes: TBD
+- Animation should be loopable (end state should smoothly transition back to start)
+- Use linear interpolation between keyframes
+
+Specific expectations for this animation:
+Provide a gentle talking animation with subtle movements, this will be 2 of 4 in order to reduce appearance of looping.  
+
+### Requested Response Format
+
+Please return only the complete JSON structure containing all keyframes with transformed component properties. Include timestamp values for each keyframe. The response should follow this structure:
+
+```json
+{
+  "characterName": "WaterDrop",
+  "animationName": "[ANIMATION_TYPE]",
+  "durationSeconds": [DURATION],
+  "looping": true,
+  "interpolationMethod": "linear",
+  "keyframes": [
+    {
+      "timestamp": 0,
+      "components": {
+        // All component properties at this keyframe
+      }
+    },
+    // Additional keyframes...
+    {
+      "timestamp": [DURATION],
+      "components": {
+        // All component properties at final keyframe (same as first for looping)
+      }
+    }
+  ]
+}
+```
+
+Do not include explanations or additional text in your response, only return the complete JSON structure.
