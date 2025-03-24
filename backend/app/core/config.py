@@ -28,12 +28,20 @@ class Settings(BaseSettings):
     COSMOS_DATABASE: str
 
     GEMINI_API_KEY: str
+    GEMINI_GENERATE_KEY: str
     GEMINI_ASSESSMENT_PROMPT: str
     GEMINI_TUTOR_PROMPT: str
 
     GEMINI_STT_API_KEY: str
 
     IMAGE_LIBRARY_PATH: str
+
+    # # PostgreSQL settings
+    PG_HOST: str 
+    PG_DATABASE: str 
+    PG_USER: str 
+    PG_PASSWORD: str 
+    PG_PORT: str 
     
     class Config:
         env_file = ".env"

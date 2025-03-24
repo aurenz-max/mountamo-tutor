@@ -308,6 +308,23 @@ Return your response EXACTLY in this JSON format:
                 print("[WARNING] CosmosDB service not initialized, review will not be saved")
                 
             print(f"Review problem called with image data length: {len(solution_image_base64)}")
+            print(f"[DEBUG] Problem object received: {problem.keys()}")
+            print(f"[DEBUG] Problem metadata: {problem.get('metadata', {}).keys()}")
+
+            # Log problem content details
+            if 'problem' in problem:
+                print(f"[DEBUG] Problem text available: {problem['problem']} ")
+            if 'problem_type' in problem:
+                print(f"[DEBUG] Problem type: {problem['problem_type']}")
+
+                    # Log before saving to CosmosDB
+
+            problem_id = problem.get("id", f"{subject}_{skill_id}_{datetime.utcnow().isoformat()}")            
+            print(f"[DEBUG] About to save review to CosmosDB")
+            print(f"[DEBUG] Problem ID being used: {problem_id}")
+            print(f"[DEBUG] Including problem_content in save: {'yes' if problem else 'no'}")
+
+
             
             system_instructions = """You are an expert kindergarten teacher skilled at reviewing student work.
             Focus on:
@@ -425,10 +442,7 @@ Return your response EXACTLY in this JSON format:
                 })
                 
                 # Save to CosmosDB if available
-                if self.cosmos_db:
-                    # Use problem ID if available, otherwise create one
-                    problem_id = problem.get("id", f"{subject}_{skill_id}_{datetime.utcnow().isoformat()}")
-                    
+                if self.cosmos_db: 
                     try:
                         # Save the full structured review
                         await self.cosmos_db.save_problem_review(
@@ -437,9 +451,11 @@ Return your response EXACTLY in this JSON format:
                             skill_id=skill_id,
                             subskill_id=subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", ""),
                             problem_id=problem_id,
-                            review_data=structured_review
+                            review_data=structured_review,
+                            problem_content=problem  # Pass the full problem object
                         )
                         print(f"[DEBUG] Successfully saved review to CosmosDB for problem {problem_id}")
+                        print(f"[DEBUG] {problem}")
                     except Exception as e:
                         print(f"[ERROR] Failed to save review to CosmosDB: {str(e)}")
                 

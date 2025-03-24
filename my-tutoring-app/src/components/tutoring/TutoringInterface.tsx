@@ -5,6 +5,7 @@ import AudioCaptureService from '@/lib/AudioCaptureService';
 import { Card } from '@/components/ui/card';
 import GeminiControlPanel from './GeminiControlPanel';
 import TranscriptionManager from './TranscriptionManager';
+import webSocketService from '@/lib/WebSocketService';
 
 const InteractiveWorkspace = React.lazy(() => import('./InteractiveWorkspace'));
 
@@ -28,7 +29,7 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
   const [geminiSpeaking, setGeminiSpeaking] = useState(false);
   const currentUtteranceRef = useRef<string | null>(null);
 
-  // Transcription state managed here with useState
+  // TRANSCRIPTION state managed here with useState
   const [transcriptionEnabled, setTranscriptionEnabled] = useState(true);
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [partialTranscripts, setPartialTranscripts] = useState<Record<string, Transcript>>({});
@@ -39,7 +40,6 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
   // Add state for scene management
   const [currentScene, setCurrentScene] = useState(null);
 
-  const wsRef = useRef(null);
   const audioCaptureRef = useRef(null);
   const audioContextRef = useRef(null);
   const endTimeRef = useRef(0);
@@ -49,8 +49,114 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
     }
+    
+    // Set up WebSocket event listeners
+    const statusChangeHandler = (newStatus) => setStatus(newStatus);
+    const sessionStartedHandler = (newSessionId) => setSessionId(newSessionId);
+    
+    const messageHandler = (response) => {
+      // Logic to handle different message types here
+      // This might overlap with the more specific handlers below,
+      // but that's okay as we may need to respond to all messages in some way
+    };
+    
+    // Set up specific message type handlers
+    const audioStatusHandler = (response) => {
+      setIsPlaying(response.status === 'speaking');
+    };
+    
+    const audioHandler = async (response) => {
+      // Check if this message includes timestamp information
+      if (response.timestamp !== undefined) {
+        // Process with timestamp info
+        await handleAudioData(response.data, response.timestamp, response.duration);
+      } else {
+        // Fallback to original behavior
+        await handleAudioData(response.data);
+      }
+    };
+    
+    const textHandler = (response) => {
+      console.log('Received text response:', response.content);
+      setProcessing(false);
+    };
+    
+    const transcriptHandler = (response) => {
+      processTranscript(response.content);
+    };
+    
+    const sceneHandler = (response) => {
+      console.log('Received scene data:', response.content);
+      setCurrentScene(response.content);
+    };
+    
+    const problemHandler = (response) => {
+      console.log('Received problem data from WebSocket:', response);
+      
+      // Extract the problem data
+      let problemData = null;
+      
+      if (response.content && response.content.data) {
+        problemData = response.content.data;
+      } else if (response.content) {
+        problemData = response.content;
+      } else if (response.data) {
+        problemData = response.data;
+      } else if (response.problem) {
+        problemData = response;
+      }
+      
+      console.log("Extracted problem data:", problemData);
+      
+      if (problemData) {
+        if (problemData.problem || problemData.problem_type) {
+          setCurrentProblem(problemData);
+          console.log("Setting current problem:", problemData);
+          
+          if (workspaceRef.current && typeof workspaceRef.current.setProblemOpen === 'function') {
+            workspaceRef.current.setProblemOpen(true);
+            console.log("Attempting to open problem panel");
+          } else {
+            console.warn("Cannot access setProblemOpen method on workspace ref");
+          }
+        }
+      }
+    };
+    
+    const binaryDataHandler = async (data) => {
+      await handleAudioData(data);
+    };
+    
+    // Register all the handlers
+    const unregisterStatusChange = webSocketService.on('statusChange', statusChangeHandler);
+    const unregisterSessionStarted = webSocketService.on('sessionStarted', sessionStartedHandler);
+    const unregisterMessage = webSocketService.on('message', messageHandler);
+    const unregisterBinaryData = webSocketService.on('binaryData', binaryDataHandler);
+    
+    // Register specific message type handlers
+    const removeAudioStatus = webSocketService.registerHandler('audio_status', audioStatusHandler);
+    const removeAudio = webSocketService.registerHandler('audio', audioHandler);
+    const removeText = webSocketService.registerHandler('text', textHandler);
+    const removeTranscript = webSocketService.registerHandler('transcript', transcriptHandler);
+    const removeScene = webSocketService.registerHandler('scene', sceneHandler);
+    const removeProblem = webSocketService.registerHandler('problem', problemHandler);
+    
     return () => {
-      if (wsRef.current) wsRef.current.close();
+      // Clean up event listeners
+      unregisterStatusChange();
+      unregisterSessionStarted();
+      unregisterMessage();
+      unregisterBinaryData();
+      
+      // Clean up message type handlers
+      removeAudioStatus();
+      removeAudio();
+      removeText();
+      removeTranscript();
+      removeScene();
+      removeProblem();
+      
+      // Clean up resources
       if (audioCaptureRef.current) audioCaptureRef.current.destroy();
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -215,131 +321,31 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
     }
   };
 
-  // Handle WebSocket messages
-  const handleWebSocketMessage = async (event) => {
-    if (event.data instanceof Blob) {
-      await handleAudioData(event.data);
-      return;
-    }
-    try {
-      const response = JSON.parse(event.data);
-      switch (response.type) {
-        case 'session_started':
-          setSessionId(response.session_id);
-          setStatus('connected');
-          break;
-        case 'audio_status':
-          setIsPlaying(response.status === 'speaking');
-          break;
-        case 'audio':
-          // Check if this message includes timestamp information
-          if (response.timestamp !== undefined) {
-            // Process with timestamp info
-            await handleAudioData(response.data, response.timestamp, response.duration);
-          } else {
-            // Fallback to original behavior
-            await handleAudioData(response.data);
-          }
-          break;
-        case 'text':
-          console.log('Received text response:', response.content);
-          setProcessing(false);
-          break;
-        case 'transcript':
-          processTranscript(response.content);
-          break;
-        case 'scene':
-          console.log('Received scene data:', response.content);
-          setCurrentScene(response.content);
-          break;
-        case 'problem':
-          // Existing problem handling code...
-          console.log('Received problem data from WebSocket:', response);
-          
-          // Extract the problem data
-          let problemData = null;
-          
-          if (response.content && response.content.data) {
-            problemData = response.content.data;
-          } else if (response.content) {
-            problemData = response.content;
-          } else if (response.data) {
-            problemData = response.data;
-          } else if (response.problem) {
-            problemData = response;
-          }
-          
-          console.log("Extracted problem data:", problemData);
-          
-          if (problemData) {
-            if (problemData.problem || problemData.problem_type) {
-              setCurrentProblem(problemData);
-              console.log("Setting current problem:", problemData);
-              
-              if (workspaceRef.current && typeof workspaceRef.current.setProblemOpen === 'function') {
-                workspaceRef.current.setProblemOpen(true);
-                console.log("Attempting to open problem panel");
-              } else {
-                console.warn("Cannot access setProblemOpen method on workspace ref");
-              }
-            }
-          }
-          break;
-        case 'error':
-          setStatus('error');
-          break;
-        default:
-          console.warn('Unknown message type:', response.type);
-      }
-    } catch (err) {
-      console.error('Error parsing websocket message:', err);
-    }
-  };
-
   const initializeSession = async () => {
-    return new Promise((resolve, reject) => {
-      try {
-        setStatus('connecting');
-        const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/tutoring/session');
-        ws.binaryType = 'blob';
-        wsRef.current = ws;
-        ws.onopen = () => {
-          console.log('WebSocket connection established');
-          ws.send(JSON.stringify({
-            text: "InitSession",
-            data: {
-              subject: currentTopic.subject,
-              skill_description: currentTopic.skill.description,
-              subskill_description: currentTopic.subskill.description,
-              student_id: studentId,
-              competency_score: 7.0,
-              skill_id: currentTopic.skill.id,
-              subskill_id: currentTopic.subskill.id,
-              difficulty_range: currentTopic.difficulty_range
-            }
-          }));
-          resolve();
-        };
-        ws.onmessage = handleWebSocketMessage;
-        ws.onclose = () => {
-          setStatus('disconnected');
-          setSessionId(null);
-          setIsPlaying(false);
-          setIsMicOn(false);
-          setIsListening(false);
-          clearTranscripts();
-        };
-        ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          setStatus('error');
-          reject(error);
-        };
-      } catch (error) {
-        console.error('Failed to initialize session:', error);
-        setStatus('error');
-        reject(error);
-      }
-    });
+    try {
+      setStatus('connecting');
+      
+      // Extract unit information from currentTopic
+      const unitId = currentTopic.selection?.unit || null;
+      
+      // Use the shared WebSocket service
+      await webSocketService.connect({
+        subject: currentTopic.subject,
+        skill_description: currentTopic.skill.description,
+        subskill_description: currentTopic.subskill.description,
+        student_id: studentId,
+        competency_score: 7.0,
+        skill_id: currentTopic.skill.id,
+        subskill_id: currentTopic.subskill.id,
+        difficulty_range: currentTopic.difficulty_range,
+        // Include unit_id in the data sent to WebSocket
+        unit_id: unitId
+      });
+      
+    } catch (error) {
+      console.error('Failed to initialize session:', error);
+      setStatus('error');
+    }
   };
 
   const handleSessionChange = useCallback(async (newStatus) => {
@@ -350,7 +356,7 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
         console.error('Failed to initialize session:', error);
       }
     } else if (newStatus === 'disconnected') {
-      if (wsRef.current) wsRef.current.close();
+      webSocketService.disconnect();
       if (audioCaptureRef.current) {
         audioCaptureRef.current.destroy();
         audioCaptureRef.current = null;
@@ -373,7 +379,7 @@ const TutoringInterface = ({ studentId, currentTopic }) => {
             channelCount: 1,
             bufferSize: 4096,
           });
-          audioCaptureRef.current.setWebSocket(wsRef.current);
+          audioCaptureRef.current.setWebSocket(webSocketService.ws);
           audioCaptureRef.current.setCallbacks({
             onStateChange: ({ isCapturing }) => setIsMicOn(isCapturing),
             onError: (error) => {

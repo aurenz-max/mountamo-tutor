@@ -1,0 +1,121 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+Science,First Grade,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-A,"Predict and test the motion of objects when different forces (pushes, pulls) are applied",1,3,2
+Science,First Grade,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-B,"Investigate how the strength of a force affects the distance an object travels",2,4,3
+Science,First Grade,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-C,"Explore how ramps and inclines change the speed and direction of moving objects",2,5,3
+Science,First Grade,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-D,"Design and build simple machines (levers, pulleys) to move objects with less effort",3,5,4
+Science,First Grade,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-E,"Investigate how friction affects the motion of objects on different surfaces",3,6,4
+Science,First Grade,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-F,"Explore the properties of magnets and their ability to attract or repel objects",3,6,5
+Science,First Grade,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-G,"Design and conduct experiments to compare the motion of different objects",4,7,5
+Science,First Grade,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-H,"Create and explain a system where a force causes a chain reaction of movements",4,7,6
+Science,First Grade,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-A,"Classify materials based on multiple observable properties (color, texture, flexibility, magnetism)",1,3,2
+Science,First Grade,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-B,"Predict and test whether objects sink or float in water based on their properties",2,4,3
+Science,First Grade,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-C,"Investigate how materials can be changed by heating or cooling (melting, freezing, evaporating)",2,5,3
+Science,First Grade,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-D,"Explore how mixing different substances can create new materials with different properties",3,5,4
+Science,First Grade,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-E,"Describe the properties of solids, liquids, and gases and how they differ",3,6,4
+Science,First Grade,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-F,"Investigate how light interacts with different materials (reflection, refraction, absorption)",4,6,5
+Science,First Grade,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-G,"Design and conduct experiments to test the properties of different materials",4,7,5
+Science,First Grade,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-H,"Classify materials as reversible or irreversible changes when exposed to heat",5,8,6
+Science,First Grade,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-A,"Identify different sources of energy (sun, wind, water, food) and their uses",1,3,2
+Science,First Grade,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-B,"Explore how energy can be transferred from one object to another (e.g., through motion, heat, sound)",2,4,3
+Science,First Grade,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-C,"Investigate how light travels in straight lines and can be blocked to create shadows",2,5,3
+Science,First Grade,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-D,"Explore how sound is produced by vibrations and travels through different materials",3,5,4
+Science,First Grade,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-E,"Design and build simple circuits using batteries, wires, and bulbs",3,6,4
+Science,First Grade,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-F,"Investigate how different materials conduct or insulate heat",4,6,5
+Science,First Grade,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-G,"Design and conduct experiments to explore different forms of energy",4,7,5
+Science,First Grade,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-H,"Explain the importance of conserving energy and identify ways to reduce energy use",5,8,6
+Science,First Grade,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-A,"Describe the life cycle of a plant, from seed to mature plant",1,3,2
+Science,First Grade,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-B,"Investigate how plants respond to changes in their environment (light, water, temperature)",2,4,3
+Science,First Grade,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-C,"Classify animals based on their diets (herbivores, carnivores, omnivores)",2,5,3
+Science,First Grade,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-D,"Describe the life cycle of an animal, from birth to adult",3,5,4
+Science,First Grade,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-E,"Investigate how animals use their senses and body parts to survive",3,6,4
+Science,First Grade,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-F,"Explore different types of animal habitats and how animals adapt to them",4,6,5
+Science,First Grade,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-G,"Design and conduct experiments to investigate plant and animal needs",4,7,5
+Science,First Grade,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-H,"Explain the interdependence of plants and animals in an ecosystem",5,8,6
+Science,First Grade,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-A,"Identify the components of a simple ecosystem (plants, animals, soil, water, air)",1,3,2
+Science,First Grade,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-B,"Describe how plants and animals depend on each other for survival (food chains, pollination)",2,4,3
+Science,First Grade,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-C,"Investigate how changes in an ecosystem can affect the plants and animals that live there",3,5,4
+Science,First Grade,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-D,"Explore different types of ecosystems (forests, deserts, oceans) and their characteristics",3,6,4
+Science,First Grade,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-E,"Design and create a model of a simple ecosystem, showing the interactions between living and nonliving things",4,7,5
+Science,First Grade,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-F,"Explain the importance of protecting ecosystems and conserving natural resources",4,7,6
+Science,First Grade,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-G,"Design a model showing how pollution can impact plants and animals",5,8,6
+Science,First Grade,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-H,"Investigate how human activities can impact ecosystems",5,9,7
+Science,First Grade,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-A,"Identify and describe the functions of major internal organs (heart, lungs, stomach, brain)",1,3,2
+Science,First Grade,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-B,"Explore how the skeletal and muscular systems work together to allow movement",2,4,3
+Science,First Grade,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-C,"Investigate how the five senses gather information about the world around us",3,5,4
+Science,First Grade,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-D,"Describe healthy habits that promote physical and mental well-being (nutrition, exercise, sleep)",3,6,4
+Science,First Grade,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-E,"Explain the importance of hygiene and how it helps prevent the spread of germs",4,6,5
+Science,First Grade,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-F,"Explore how the body responds to changes in temperature (sweating, shivering)",4,7,5
+Science,First Grade,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-G,"Create a healthy meal plan",5,8,6
+Science,First Grade,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-H,"Discuss ways to stay safe and healthy at home, school, and in the community",5,8,6
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-A,"Observe and record daily weather conditions using appropriate tools and vocabulary",1,3,2
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-B,"Identify and describe different types of weather patterns (sunny, cloudy, rainy, snowy, windy)",2,4,3
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-C,"Explore how weather affects daily life and activities",2,5,3
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-D,"Investigate how weather changes over time (daily, weekly, seasonally)",3,5,4
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-E,"Describe the characteristics of the four seasons and how they differ",3,6,4
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-F,"Explain how weather forecasting helps people prepare for severe weather",4,6,5
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-G,"Design and conduct experiments to explore weather phenomena (e.g., making a rain gauge)",4,7,5
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-H,"Compare and contrast weather patterns in different locations",5,8,6
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-A,"Identify and describe different types of Earth materials (rocks, soil, water, air)",1,3,2
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-B,"Explore how Earth materials are used in everyday life",2,4,3
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-C,"Investigate how water moves through the water cycle (evaporation, condensation, precipitation)",3,5,4
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-D,"Describe how wind and water can shape and change the Earth's surface (erosion, weathering)",3,6,4
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-E,"Explore different types of landforms (mountains, valleys, plains, rivers, lakes, oceans)",4,6,5
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-F,"Explain the importance of conserving natural resources and protecting the environment",4,7,5
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-G,"Design and conduct experiments to explore Earth materials and processes",5,8,6
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-H,"Identify evidence of slow and rapid changes to Earth's Surface",5,9,7
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-A,"Describe the daily and yearly patterns of the Sun, Moon, and stars",1,3,2
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-B,"Explain how the Sun provides light and heat to the Earth",2,4,3
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-C,"Investigate how the Earth's rotation causes day and night",3,5,4
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-D,"Explore the different phases of the Moon and how they change over time",3,6,4
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-E,"Identify and describe some common constellations and stars",4,6,5
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-F,"Explain how the Earth's tilt and orbit around the Sun cause the seasons",4,7,5
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-G,"Design and create a model of the Earth-Sun-Moon system",5,8,6
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-H,"Research and present information about a planet in our solar system",6,9,7
+Science,First Grade,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-A,"Identify a problem and brainstorm possible solutions",1,3,2
+Science,First Grade,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-B,"Develop a plan and create a model or prototype to solve a problem",2,4,3
+Science,First Grade,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-C,"Test and evaluate a design, making improvements based on observations",3,5,4
+Science,First Grade,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-D,"Communicate the results of a design project clearly and effectively",3,6,4
+Science,First Grade,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-E,"Explore how different materials and tools can be used in the design process",4,6,5
+Science,First Grade,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-F,"Work collaboratively with others to design and build a solution",4,7,5
+Science,First Grade,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-G,"Analyze existing products and identify the design features that make them work",5,8,6
+Science,First Grade,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-H,"Refine a design based on feedback and testing, explaining the reasoning behind changes",6,9,7
+Science,First Grade,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-A,"Identify and use a variety of tools and technologies appropriately and safely",1,3,2
+Science,First Grade,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-B,"Explore how technology helps people solve problems and meet their needs",2,4,3
+Science,First Grade,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-C,"Describe how technology has changed over time",3,5,4
+Science,First Grade,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-D,"Use digital tools to create and share information (e.g., drawing programs, simple presentations)",3,6,4
+Science,First Grade,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-E,"Explain the importance of using technology responsibly and ethically",4,6,5
+Science,First Grade,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-F,"Investigate how different technologies are used in various careers",4,7,5
+Science,First Grade,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-G,"Design and build a simple machine using everyday materials",5,8,6
+Science,First Grade,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-H,"Identify and discuss the positive and negative impacts of technology",5,8,6
+Science,First Grade,SCI001,Physical Sciences,SCI001-04,Sound and Vibration,SCI001-04-A,"Identify different sources of sound (e.g., voices, instruments, objects)",1,3,2
+Science,First Grade,SCI001,Physical Sciences,SCI001-04,Sound and Vibration,SCI001-04-B,"Explore how sound is produced by vibrations",2,4,3
+Science,First Grade,SCI001,Physical Sciences,SCI001-04,Sound and Vibration,SCI001-04-C,"Investigate how different materials affect the loudness and pitch of sounds",2,5,3
+Science,First Grade,SCI001,Physical Sciences,SCI001-04,Sound and Vibration,SCI001-04-D,"Design and build a simple musical instrument",3,5,4
+Science,First Grade,SCI001,Physical Sciences,SCI001-04,Sound and Vibration,SCI001-04-E,"Explain how sound travels through different mediums (air, water, solids)",3,6,4
+Science,First Grade,SCI001,Physical Sciences,SCI001-04,Sound and Vibration,SCI001-04-F,"Investigate how sound can be used for communication (e.g., echoes, telephones)",4,6,5
+Science,First Grade,SCI001,Physical Sciences,SCI001-05,Light and Shadows,SCI001-05-A, "Investigate how light travels in straight lines", 1,3,2
+Science,First Grade,SCI001,Physical Sciences,SCI001-05,Light and Shadows,SCI001-05-B, "Explore how shadows are formed when light is blocked", 2,4,3
+Science,First Grade,SCI001,Physical Sciences,SCI001-05,Light and Shadows,SCI001-05-C, "Predict and test how the size and shape of a shadow changes with the position of the light source", 2,5,4
+Science,First Grade,SCI001,Physical Sciences,SCI001-05,Light and Shadows,SCI001-05-D, "Investigate how different materials interact with light (reflection, refraction, absorption)", 3,6,5
+Science,First Grade,SCI001,Physical Sciences,SCI001-05,Light and Shadows,SCI001-05-E, "Construct a simple device that uses light and shadows (e.g., a sundial)", 4,7,5
+Science,First Grade,SCI002,Life Sciences,SCI002-04,Structure and Function,SCI002-04-A,"Identify the external parts of plants and animals and describe their functions",1,3,2
+Science,First Grade,SCI002,Life Sciences,SCI002-04,Structure and Function,SCI002-04-B,"Explain how different structures help plants and animals survive in their environments",2,4,3
+Science,First Grade,SCI002,Life Sciences,SCI002-04,Structure and Function,SCI002-04-C,"Compare and contrast the structures and functions of different organisms",2,5,4
+Science,First Grade,SCI002,Life Sciences,SCI002-04,Structure and Function,SCI002-04-D,"Investigate how animals use their senses to gather information about their environment",3,6,5
+Science,First Grade,SCI002,Life Sciences,SCI002-04,Structure and Function,SCI002-04-E,"Design and build a model of a plant or animal structure, explaining its function",4,7,5
+Science,First Grade,SCI002,Life Sciences,SCI002-05,Inheritance and Variation of Traits,SCI002-05-A,"Observe and describe similarities and differences between parents and offspring",1,3,2
+Science,First Grade,SCI002,Life Sciences,SCI002-05,Inheritance and Variation of Traits,SCI002-05-B,"Identify traits that are inherited from parents (e.g., eye color, hair color, plant leaf shape)",2,4,3
+Science,First Grade,SCI002,Life Sciences,SCI002-05,Inheritance and Variation of Traits,SCI002-05-C,"Explain that offspring are similar to, but not exactly like, their parents",2,5,3
+Science,First Grade,SCI002,Life Sciences,SCI002-05,Inheritance and Variation of Traits,SCI002-05-D,"Investigate how environmental factors can influence traits",3,5,4
+Science,First Grade,SCI002,Life Sciences,SCI002-05,Inheritance and Variation of Traits,SCI002-05-E,"Compare and contrast the traits of different individuals within the same species",3,6,4
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-04,Earth's Resources,SCI003-04-A,"Identify different types of natural resources (e.g., water, soil, air, sunlight, plants, animals)",1,3,2
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-04,Earth's Resources,SCI003-04-B,"Explain how humans use natural resources in everyday life",2,4,3
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-04,Earth's Resources,SCI003-04-C,"Investigate the importance of conserving natural resources",2,5,3
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-04,Earth's Resources,SCI003-04-D,"Identify ways to reduce, reuse, and recycle materials",3,5,4
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-04,Earth's Resources,SCI003-04-E,"Design and implement a plan to conserve resources in the classroom or school",3,6,5
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-04,Earth's Resources,SCI003-04-F,"Explain how human activities can impact Earth's resources and environment",4,7,5
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-05,Human Impact on the Environment, SCI003-05-A, "Identify ways that humans change the environment (building homes, roads, pollution)", 1,3,2
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-05,Human Impact on the Environment, SCI003-05-B, "Distinguish between positive and negative impacts of human activities on the environment.", 2,4,3
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-05,Human Impact on the Environment, SCI003-05-C, "Investigate the effects of pollution on living things.", 3,5,4
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-05,Human Impact on the Environment, SCI003-05-D, "Propose solutions to reduce human impact on the environment.", 3,6,5
+Science,First Grade,SCI003,Earth and Space Sciences,SCI003-05,Human Impact on the Environment, SCI003-05-E, "Participate in a class or school project to improve the environment.", 4,7,5

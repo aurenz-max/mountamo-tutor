@@ -1,5 +1,6 @@
 const API_BASE_URL = 'http://localhost:8000/api';
 
+
 export interface TutoringSession {
   session_id: string;
   initial_message: string;
@@ -168,6 +169,59 @@ export interface SkillPrerequisitesResponse {
   skill_id: string;
   prerequisites: string[];
 }
+
+export interface ProblemReviewDetails {
+  id: string;
+  student_id: number;
+  subject: string;
+  skill_id: string;
+  subskill_id: string;
+  problem_id: string;
+  timestamp: string;
+  score: number;
+  problem_content?: {
+    problem_type?: string;
+    problem?: string;
+    answer?: string;
+    success_criteria?: string[];
+    teaching_note?: string;
+    metadata?: {
+      unit?: {
+        id?: string;
+        title?: string;
+      };
+      skill?: {
+        id?: string;
+        description?: string;
+      };
+      subskill?: {
+        id?: string;
+        description?: string;
+      };
+      difficulty?: number;
+      objectives?: any;
+    };
+  };
+  feedback_components: {
+    observation: any;
+    analysis: any;
+    evaluation: any;
+    feedback: any;
+  };
+}
+
+export interface ProblemReviewsResponse {
+  student_id: number;
+  total_reviews: number;
+  grouped_reviews: {
+    [subject: string]: {
+      [skill_id: string]: ProblemReviewDetails[];
+    };
+  };
+  reviews: ProblemReviewDetails[];
+}
+
+
 
 export const api = {
   // Tutoring endpoints
@@ -346,6 +400,32 @@ export const api = {
     if (!response.ok) throw new Error('Failed to fetch problem types');
     return response.json();
   },
+
+// Add this function to your api object
+async getProblemReviews(
+  studentId: number,
+  subject?: string,
+  skillId?: string,
+  subskillId?: string,
+  limit: number = 100
+): Promise<ProblemReviewsResponse> {
+  let url = `${API_BASE_URL}/competency/student/${studentId}/problem-reviews`;
+  
+  // Add optional query parameters
+  const params = new URLSearchParams();
+  if (subject) params.append('subject', subject);
+  if (skillId) params.append('skill_id', skillId);
+  if (subskillId) params.append('subskill_id', subskillId);
+  if (limit !== 100) params.append('limit', limit.toString());
+  
+  if (params.toString()) {
+    url += `?${params.toString()}`;
+  }
+  
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Failed to fetch problem reviews');
+  return response.json();
+},
 
   // Analytics endpoints
   async getStudentAnalytics(studentId: number, days: number = 7, subject: string = 'Mathematics') {

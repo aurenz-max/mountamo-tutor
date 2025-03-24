@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import base64
-
 import time
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
@@ -9,11 +8,13 @@ from app.core.session_manager import SessionManager
 from app.services.gemini import GeminiService
 from app.services.tutoring import TutoringService
 from app.services.azure_tts import AzureSpeechService
+from app.services.gemini_read_along import GeminiReadAlongIntegration  # NEW: import the read-along integration
 from app.dependencies import (
     get_session_manager,
     get_gemini_service,
     get_tutoring_service,
-    get_azure_speech_service
+    get_azure_speech_service,
+    get_read_along_integration  # NEW: import the dependency function
 )
 
 router = APIRouter()
@@ -41,6 +42,7 @@ async def tutoring_websocket(
     gemini_service: GeminiService = Depends(get_gemini_service),
     tutoring_service: TutoringService = Depends(get_tutoring_service),
     azure_speech_service: AzureSpeechService = Depends(get_azure_speech_service),
+    read_along_integration: GeminiReadAlongIntegration = Depends(get_read_along_integration),  # NEW: inject the read-along integration
 ):
     logger.info("New WebSocket connection request")
     await websocket.accept()
@@ -58,6 +60,8 @@ async def tutoring_websocket(
 
         # Extract session data from the message
         session_data = init_message.get("data", {})
+        logger.info(f"session data {session_data}")
+
         try:
             # Create session through session manager, passing the pre-injected services
             session = await session_manager.create_session(
@@ -68,9 +72,12 @@ async def tutoring_websocket(
                 competency_score=session_data.get("competency_score", 5.0),
                 skill_id=session_data.get("skill_id"),
                 subskill_id=session_data.get("subskill_id"),
+                unit_id=session_data.get("unit_id"),
                 gemini_service=gemini_service,
                 tutoring_service=tutoring_service,
                 speech_service=azure_speech_service,
+                read_along_integration=read_along_integration,  # NEW: pass the read-along integration
+                
             )
 
             await websocket.send_json({
@@ -96,12 +103,10 @@ async def tutoring_websocket(
                     # Check message type
                     if message.get("type") == "realtime_input":
                         media_chunks = message.get("media_chunks", [])
-                        # if len(media_chunks) > 0:
-                        #     logger.debug(f"[Session {session.id}] Received {len(media_chunks)} media_chunks.")
-                        # else:
-                        #     logger.debug(f"[Session {session.id}] Received realtime input with no media_chunks.")
-
-                        # Pass message to session
+                        await session.process_message(message)
+                    # NEW: Handle read-along request
+                    elif message.get("type") == "read_along_request":
+                        logger.info(f"[Session {session.id}] Read-along request received: {message}")
                         await session.process_message(message)
                     else:
                         logger.warning(f"[Session {session.id}] Unknown message type: {message.get('type')}")
@@ -143,6 +148,30 @@ async def tutoring_websocket(
                 raise
             except Exception as e:
                 logger.error(f"[Session {session.id}] Error in problem response handler: {e}")
+                raise
+
+        # NEW: Add a handler for read-along responses
+        async def handle_read_along_responses():
+            """Handle read-along responses from the session."""
+            try:
+                read_along_count = 0
+                async for read_along in session.get_read_alongs():
+                    if session.quit_event.is_set():
+                        break
+                    
+                    read_along_count += 1
+                    #logger.info(f"[Session {session.id}] Sending read-along #{read_along_count} to client")
+
+                    await websocket.send_json({
+                        "type": "read_along",
+                        "content": read_along
+                    })
+                    logger.info(f"[Session {session.id}] Sent read-along to client")
+            except asyncio.CancelledError:
+                logger.debug(f"[Session {session.id}] Read-along response handler cancelled")
+                raise
+            except Exception as e:
+                logger.error(f"[Session {session.id}] Error in read-along response handler: {e}", exc_info=True)
                 raise
 
         async def handle_transcript_responses():
@@ -233,6 +262,8 @@ async def tutoring_websocket(
                     asyncio.create_task(handle_transcript_responses()),
                     asyncio.create_task(handle_audio_responses()),
                     asyncio.create_task(handle_scene_responses()),
+                    # NEW: Add the read-along response handler
+                    asyncio.create_task(handle_read_along_responses()),
                 ]
                 await asyncio.gather(*tasks)
             except asyncio.CancelledError:

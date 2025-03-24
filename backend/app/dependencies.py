@@ -16,9 +16,10 @@ from .services.visual_content_manager import VisualContentManager
 from .services.gemini import GeminiService
 from .services.tutoring import TutoringService
 from .services.gemini_problem import GeminiProblemIntegration
-from .services.competency import AnalyticsExtension
+from .services.analytics import AnalyticsExtension
 from .services.learning_paths import LearningPathsService
 from .services.learning_analytics import LearningAnalyticsService, ProgressReportGenerator
+from .services.gemini_read_along import GeminiReadAlongIntegration  # NEW: Import the read-along integration
 
 from .db.cosmos_db import CosmosDBService
 from .core.session_manager import SessionManager
@@ -34,6 +35,7 @@ _audio_service: Optional[AudioService] = None
 _anthropic_service: Optional[AnthropicService] = None
 _visual_content_service: Optional[VisualContentService] = None
 _visual_content_manager: Optional[VisualContentManager] = None
+_read_along_integration: Optional[GeminiReadAlongIntegration] = None
 
 # Global services that depend on the above
 _session_manager: Optional[SessionManager] = None
@@ -88,6 +90,16 @@ def get_visual_content_manager(
         logger.info("Initializing VisualContentManager")
         _visual_content_manager = VisualContentManager(visual_content_service)
     return _visual_content_manager
+
+# Add this new dependency function
+def get_read_along_integration() -> GeminiReadAlongIntegration:
+    """Get or create GeminiReadAlongIntegration singleton."""
+    global _read_along_integration
+    if _read_along_integration is None:
+        logger.info("Initializing GeminiReadAlongIntegration")
+        _read_along_integration = GeminiReadAlongIntegration()
+        # We don't initialize here - it will be initialized when the session starts
+    return _read_along_integration
 
 def get_competency_service(
     cosmos_db: CosmosDBService = Depends(get_cosmos_db)
@@ -164,20 +176,18 @@ def get_learning_paths_service(
         )
     return _learning_paths_service
 
-def get_analytics_extension(
-    competency_service: CompetencyService = Depends(get_competency_service),
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
-) -> AnalyticsExtension:
-    """Get AnalyticsExtension instance with dependencies injected."""
-    logger.debug("Creating AnalyticsExtension")
-    analytics = AnalyticsExtension(competency_service)
+async def get_analytics_extension(competency_service: CompetencyService = Depends(get_competency_service)):
+    """Get or create AnalyticsExtension instance."""
+    # Import the AnalyticsExtension from the new location
+    from .services.analytics import AnalyticsExtension
     
-    # Ensure cosmos_db is set
-    if analytics.cosmos_db is None:
-        logger.debug("Setting CosmosDB on AnalyticsExtension")
-        analytics.cosmos_db = cosmos_db
-        
-    return analytics
+    extension = AnalyticsExtension()
+    # We don't need to set Cosmos DB reference anymore, as analytics will use PostgreSQL
+    # But we might still need it for curriculum data or live competencies
+    if competency_service.cosmos_db:
+        extension.cosmos_db = competency_service.cosmos_db
+    
+    return extension
 
 def get_learning_analytics_service(
     competency_service: CompetencyService = Depends(get_competency_service),

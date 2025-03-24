@@ -1,12 +1,19 @@
 # backend/app/api/endpoints/competency.py
 
 from fastapi import APIRouter, HTTPException, Depends
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Union
 from pydantic import BaseModel
+from datetime import datetime, timedelta
+import logging
 
 # Import dependencies
-from ...dependencies import get_competency_service, get_analytics_extension
-from ...services.competency import CompetencyService, AnalyticsExtension
+from ...dependencies import get_competency_service, get_problem_recommender
+from ...services.competency import CompetencyService
+from ...services.recommender import ProblemRecommender
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 router = APIRouter()
 
@@ -123,67 +130,6 @@ async def get_subskill_competency_endpoint( # Renamed to be more specific
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/student/{student_id}/progress")
-async def get_student_progress(
-    student_id: int,
-    days: int = 7,
-    subject: str = "Mathematics",
-    analytics_service: AnalyticsExtension = Depends(get_analytics_extension)
-) -> Dict[str, Any]:
-    """Get comprehensive progress data for student analytics dashboard"""
-    try:
-        # Get daily progress data
-        daily_progress = await analytics_service.get_daily_progress(student_id, days)
-        
-        # Get skill competencies
-        skill_competencies = await analytics_service.get_skill_competencies(student_id, subject)
-        
-        # Get detailed analytics
-        detailed_analytics = await analytics_service.get_detailed_analytics(student_id, subject)
-        
-        return {
-            "dailyProgress": daily_progress,
-            "skillCompetencies": skill_competencies,
-            "detailedAnalytics": detailed_analytics
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/student/{student_id}/daily")
-async def get_daily_progress(
-    student_id: int, 
-    days: int = 7,
-    analytics_service: AnalyticsExtension = Depends(get_analytics_extension)
-) -> List[Dict[str, Any]]:
-    """Get daily progress metrics for specified time range"""
-    try:
-        return await analytics_service.get_daily_progress(student_id, days)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/student/{student_id}/skills/{subject}")
-async def get_skill_analysis(
-    student_id: int, 
-    subject: str,
-    analytics_service: AnalyticsExtension = Depends(get_analytics_extension)
-) -> List[Dict[str, Any]]:
-    """Get skill competency analysis for a subject"""
-    try:
-        return await analytics_service.get_skill_competencies(student_id, subject)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/student/{student_id}/detailed/{subject}")
-async def get_detailed_analytics(
-    student_id: int, 
-    subject: str,
-    analytics_service: AnalyticsExtension = Depends(get_analytics_extension)
-) -> Dict[str, Any]:
-    """Get detailed analytics for a subject"""
-    try:
-        return await analytics_service.get_detailed_analytics(student_id, subject)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/subjects")
 async def get_available_subjects(
@@ -230,3 +176,45 @@ async def get_subskill_types(
     if not types:
         raise HTTPException(status_code=404, detail="Subject not found or no subskills available")
     return {"subject": subject, "problem_types": types}
+
+@router.get("/student/{student_id}/problem-reviews")
+async def get_student_problem_reviews(
+    student_id: int,
+    subject: Optional[str] = None,
+    skill_id: Optional[str] = None, 
+    subskill_id: Optional[str] = None,
+    limit: int = 100,
+    competency_service: CompetencyService = Depends(get_competency_service)
+) -> Dict[str, Any]:
+    """Get detailed problem reviews with structured feedback components for a student."""
+    try:
+        reviews = await competency_service.get_detailed_problem_reviews(
+            student_id=student_id,
+            subject=subject,
+            skill_id=skill_id,
+            subskill_id=subskill_id,
+            limit=limit
+        )
+        
+        # Group reviews by subject and skill for easier frontend processing
+        grouped_reviews = {}
+        for review in reviews:
+            subject_key = review["subject"]
+            skill_key = review["skill_id"]
+            
+            if subject_key not in grouped_reviews:
+                grouped_reviews[subject_key] = {}
+                
+            if skill_key not in grouped_reviews[subject_key]:
+                grouped_reviews[subject_key][skill_key] = []
+                
+            grouped_reviews[subject_key][skill_key].append(review)
+        
+        return {
+            "student_id": student_id,
+            "total_reviews": len(reviews),
+            "grouped_reviews": grouped_reviews,
+            "reviews": reviews  # Include flat list for easier iteration if needed
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

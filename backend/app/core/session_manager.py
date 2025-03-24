@@ -13,6 +13,7 @@ from app.services.tutoring import TutoringService
 from app.services.azure_tts import AzureSpeechService
 from ..services.visual_content_service import VisualContentService
 from ..services.visual_content_manager import VisualContentManager
+from app.services.gemini_read_along import GeminiReadAlongIntegration
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -33,8 +34,10 @@ class TutoringSession:
         gemini_service: GeminiService,      # pass in already constructed service
         tutoring_service: TutoringService,  # pass in already constructed service
         speech_service: AzureSpeechService,  # NEW
+        read_along_integration: GeminiReadAlongIntegration,  # NEW: pass in read-along integration
         skill_id: Optional[str] = None,
-        subskill_id: Optional[str] = None
+        subskill_id: Optional[str] = None,
+        unit_id: Optional[str] = None,  # Add unit_id parameter
     ):
        
         self.id = str(uuid.uuid4())
@@ -47,6 +50,7 @@ class TutoringSession:
         self.speech_service.cosmos_db = cosmos_db     
         self.gemini_service = gemini_service
         self.tutoring_service = tutoring_service
+        self.read_along_integration = read_along_integration  # NEW: store the read-along integration
 
 
         # Session metadata
@@ -57,12 +61,15 @@ class TutoringSession:
         self.competency_score = competency_score
         self.skill_id = skill_id
         self.subskill_id = subskill_id
+        self.unit_id = unit_id  # Store unit_id
 
         # Queues and state management
         self.problem_queue = asyncio.Queue()
         self.text_queue = asyncio.Queue()
         self.transcript_queue = asyncio.Queue()
         self.scene_queue = asyncio.Queue()  # Queue for visual scenes
+        self.read_along_queue = asyncio.Queue()  # Queue for read-along content
+        
         
         self._active = False
         self.quit_event = asyncio.Event()
@@ -70,6 +77,11 @@ class TutoringSession:
         self._event_loop = asyncio.get_event_loop()
         
         logger.debug(f"TutoringSession {self.id} initialized with isolated service instances")
+        logger.debug(f"TutoringSession established for subject: {self.subject}")
+        logger.debug(f"TutoringSession established for unit_id: {self.unit_id}")
+        logger.debug(f"TutoringSession established for skill_description: {self.skill_description}")
+        logger.debug(f"TutoringSession established for skill_id: {self.skill_id}")
+        logger.debug(f"TutoringSession established for subskill_id: {self.subskill_id}")
 
     async def handle_text(self, text: str) -> None:
         """Handle text response from Gemini service"""
@@ -94,10 +106,25 @@ class TutoringSession:
         except Exception as e:
             logger.error(f"Error handling scene in session {self.id}: {e}", exc_info=True)
             raise
-            
+
+    # Add a new method to handle read-along content
+    async def handle_read_along(self, read_along_data: Dict[str, Any]) -> None:
+        """Handle read-along data from Gemini Read-Along service"""
+        try:
+            #logger.info(f"[Session {self.id}] handle_read_along called with data: {read_along_data}")
+            if not self._active:
+                logger.warning(f"[Session {self.id}] Session not active, ignoring read-along")
+                return
+            logger.info(f"[Session {self.id}] Adding read-along to queue, queue size before: {self.read_along_queue.qsize()}")
+            await self.read_along_queue.put(read_along_data)
+            logger.info(f"[Session {self.id}] Read-along added to queue, new size: {self.read_along_queue.qsize()}")
+        except Exception as e:
+            logger.error(f"Error handling read-along in session {self.id}: {e}", exc_info=True)
+            raise
+
     async def initialize(self, 
-                            recommendation_data: Optional[Dict] = None,
-                            objectives_data: Optional[Dict] = None) -> None:
+                        recommendation_data: Optional[Dict] = None,
+                        objectives_data: Optional[Dict] = None) -> None:
         """Initialize the tutoring session"""
         try:
             logger.debug(f"Starting initialization of session {self.id}")
@@ -142,6 +169,43 @@ class TutoringSession:
                 logger.error(f"Failed to initialize visual integration for session {self.id}: {e}")
                 # Non-fatal, continue with initialization
 
+            # NEW: Initialize read-along integration for this session
+            try:
+                # Initialize the read-along integration
+                success = self.read_along_integration.initialize()
+                if not success:
+                    logger.error(f"[Session {self.id}] Failed to initialize read-along integration")
+                else:
+                    logger.info(f"[Session {self.id}] Read-along integration initialized successfully")
+                
+                # Register read-along callback
+                async def read_along_callback(read_along_data: Dict[str, Any]) -> None:
+                    try:
+                        logger.info(f"[Session {self.id}] Read-along callback triggered")
+                        await self.handle_read_along(read_along_data)
+                    except Exception as e:
+                        logger.error(f"[Session {self.id}] Error in read-along callback: {e}", exc_info=True)
+                
+                # Register callbacks for read-along and images
+                self.read_along_integration.register_read_along_callback(read_along_callback)
+                logger.info(f"[Session {self.id}] Read-along callback registered")
+                
+                # Setup image callback if needed
+                async def read_along_image_callback(image_data: Dict[str, Any]) -> None:
+                    try:
+                        logger.info(f"[Session {self.id}] Read-along image callback triggered")
+                        # We can use the same scene handling for these images
+                        await self.handle_scene(image_data)
+                    except Exception as e:
+                        logger.error(f"[Session {self.id}] Error in read-along image callback: {e}", exc_info=True)
+                
+                self.read_along_integration.register_image_callback(read_along_image_callback)
+                logger.info(f"[Session {self.id}] Read-along image callback registered")
+                
+            except Exception as e:
+                logger.error(f"Failed to initialize read-along integration for session {self.id}: {e}")
+                # Non-fatal, continue with initialization
+
             # Register problem callback using the simple pattern like transcription
             async def problem_callback(problem_data: Dict[str, Any]) -> None:
                 try:
@@ -155,6 +219,18 @@ class TutoringSession:
             self.gemini_service.register_problem_callback(problem_callback)
             logger.info(f"Problem callback registered for session {self.id}")
 
+            # Use unit_id from parameters if provided, otherwise use the one stored in the class
+            logger.info(f"[Session {self.id}] Initializing with unit_id: {self.unit_id}")
+
+            # Get the appropriate tool configuration based on unit_id using the centralized tool_config module
+            from app.services.tool_config import get_tool_config_for_unit
+            tool_config = get_tool_config_for_unit(self.unit_id, self.id)
+
+            logger.info(f"Using tool config for session: {tool_config}")
+
+            # Choose the appropriate tool config based on unit_id
+
+
             # Initialize tutoring service
             await self.tutoring_service.initialize_session(
                 subject=self.subject,
@@ -166,7 +242,8 @@ class TutoringSession:
                 skill_id=self.skill_id,
                 subskill_id=self.subskill_id,
                 recommendation_data=recommendation_data,
-                objectives_data=objectives_data
+                objectives_data=objectives_data,
+                unit_id=self.unit_id
             )
 
             self._active = True
@@ -254,6 +331,21 @@ class TutoringSession:
             raise ValueError("Session initialization incomplete")
 
         try:
+            # NEW: Process read-along related messages
+            if message.get("type") == "read_along_request":
+                # Extract parameters from the message
+                complexity = message.get("complexity_level", 1)
+                theme = message.get("theme")
+                with_image = message.get("with_image", True)
+                
+                # Generate read-along content
+                await self.generate_read_along(
+                    complexity_level=complexity,
+                    theme=theme,
+                    with_image=with_image
+                )
+                return
+                
             # Process scene-related messages
             if message.get("type") == "scene_action":
                 action = message.get("action")
@@ -282,6 +374,75 @@ class TutoringSession:
                 yield audio_chunk
             except asyncio.CancelledError:
                 break
+
+    # NEW: Add method to generate read-along content
+    async def generate_read_along(self, complexity_level: int = 1, theme: Optional[str] = None, with_image: bool = True) -> Optional[Dict[str, Any]]:
+        """Generate a read-along experience for the student"""
+        try:
+            if not self._active:
+                logger.warning(f"[Session {self.id}] Cannot generate read-along - session not active")
+                return None
+            
+            # Create session metadata for the read-along
+            session_metadata = {
+                "student_id": self.student_id,
+                "student_grade": "kindergarten",  # Assuming kindergarten by default
+                "reading_level": complexity_level,
+                # Could fetch these from database if available
+                "student_interests": [theme] if theme else ["animals", "nature"]
+            }
+            
+            # Generate the read-along content
+            result = await self.read_along_integration.generate_read_along(
+                session_id=self.id,
+                session_metadata=session_metadata,
+                complexity_level=complexity_level,
+                theme=theme,
+                with_image=with_image
+            )
+            
+            logger.info(f"[Session {self.id}] Read-along generation result: {result.get('status', 'unknown')}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"[Session {self.id}] Error generating read-along: {str(e)}", exc_info=True)
+            return {"status": "error", "message": str(e)}
+
+    # NEW: Add method to get read-along content from the queue
+    async def get_read_alongs(self) -> AsyncGenerator[Dict[str, Any], None]:
+        """Get read-along content updates from the session"""
+        if not self._active:
+            logger.error(f"[Session {self.id}] get_read_alongs called when session not active")
+            raise ValueError("Session is not active")
+
+        try:
+            read_along_count = 0
+            logger.info(f"[Session {self.id}] Starting read-along generator")
+            
+            while not self.quit_event.is_set():
+                try:
+                    # Add timeout to periodically check if session is still active
+                    read_along = await asyncio.wait_for(self.read_along_queue.get(), timeout=1.0)
+                    read_along_count += 1
+                    logger.info(f"[Session {self.id}] Read-along #{read_along_count} dequeued and being sent to frontend")
+                    yield read_along
+                    # Mark task as done
+                    self.read_along_queue.task_done()
+                except asyncio.TimeoutError:
+                    # Just a check - continue waiting
+                    continue
+                except asyncio.CancelledError:
+                    logger.info(f"[Session {self.id}] Read-along generator cancelled after sending {read_along_count} items")
+                    break
+                except Exception as e:
+                    logger.error(f"[Session {self.id}] Error getting read-along from queue: {e}", exc_info=True)
+                    continue
+
+        except asyncio.CancelledError:
+            logger.info(f"[Session {self.id}] Read-along generator cancelled after sending {read_along_count} items")
+        except Exception as e:
+            logger.error(f"[Session {self.id}] Error in read-along generator: {e}", exc_info=True)
+            raise
 
     async def get_problems(self) -> AsyncGenerator[Dict[str, Any], None]:
         """Get problem responses from the session"""
@@ -408,6 +569,15 @@ class TutoringSession:
             except Exception as e:
                 logger.error(f"Error cleaning up tutoring service for session {self.id}: {e}")
                 
+            # NEW: Clean up read-along service
+            try:
+                # Unregister callbacks for this session
+                self.read_along_integration.unregister_read_along_callback(self.id)
+                self.read_along_integration.unregister_image_callback(self.id)
+                logger.info(f"[Session {self.id}] Unregistered read-along callbacks")
+            except Exception as e:
+                logger.error(f"Error cleaning up read-along integration for session {self.id}: {e}")
+                
             logger.info(f"Cleaned up session {self.id}")
             
         except Exception as e:
@@ -442,9 +612,11 @@ class SessionManager:
         competency_score: float,
         gemini_service: GeminiService,    # you want to pass this in
         tutoring_service: TutoringService,# you want to pass this in
-        speech_service: AzureSpeechService,# you want to pass this in
+        speech_service: AzureSpeechService,# you want to pass this in 
+        read_along_integration: GeminiReadAlongIntegration, # NEW: pass in read-along integration
         skill_id: Optional[str] = None,
         subskill_id: Optional[str] = None,
+        unit_id: Optional[str] = None,  # Add unit_id parameter
     ) -> TutoringSession:
         """Create and initialize a new tutoring session with pre-loaded data."""
         # 1. Create the session with all dependencies
@@ -459,9 +631,11 @@ class SessionManager:
             competency_score=competency_score,
             gemini_service=gemini_service,
             tutoring_service=tutoring_service,
-            speech_service=speech_service,  # <--
+            speech_service=speech_service,
+            read_along_integration=read_along_integration,  # NEW: pass to session
             skill_id=skill_id,
-            subskill_id=subskill_id
+            subskill_id=subskill_id,
+            unit_id=unit_id  # Pass unit_id to the session
         )
 
         try:
@@ -486,10 +660,12 @@ class SessionManager:
                 recommendation_data=recommendation_data,
                 objectives_data=objectives_data
             )
+
+
             
             # 4. Store the session
             self.sessions[session.id] = session
-            logger.info(f"Created new session {session.id} for {subject} - {skill_id}")
+            logger.info(f"Created new session {session.id} for {subject} - {unit_id} - {skill_id}")
             return session
             
         except Exception as e:

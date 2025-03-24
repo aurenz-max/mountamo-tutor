@@ -519,6 +519,7 @@ class GeminiService:
         session_id: str,
         unified_prompt: str,
         session_metadata: Dict[str, Any],
+        tool_config: Optional[Dict[str, Any]] = None,
         voice_name: str = "Puck",
     ) -> None:
         """Connect to Gemini and start streaming"""
@@ -554,7 +555,7 @@ class GeminiService:
                     )
                 ),
                 system_instruction=Content(parts=[{"text": unified_prompt}]),
-                tools=[TOOL_PROBLEM_VISUAL]
+                tools=tool_config
             )
 
             # Connect to Gemini and handle the session
@@ -615,7 +616,7 @@ class GeminiService:
                                                 answer_text = result.get('data', {}).get('answer', 'No problem text available')
                                                 
                                                 simplified_result = {
-                                                    "content": f"Problem: {problem_text}\nAnswer: {answer_text}"
+                                                    "content": f"Problem: {problem_text}\nAnswer: {answer_text}\n Please speak exactly the Problem as given."
                                                 }
 
                                             function_responses.append({

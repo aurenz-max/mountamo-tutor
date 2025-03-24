@@ -31,8 +31,8 @@ const NavHeader = () => {
             <Link href="/analytics" className="text-sm hover:opacity-80 transition-opacity">
               Progress
             </Link>
-            <Link href="/gemini" className="text-sm hover:opacity-80 transition-opacity"> {/* New Link for Gemini Demo Page */}
-              Gemini Demo
+            <Link href="/read-along" className="text-sm hover:opacity-80 transition-opacity">
+              Read Along
             </Link>
           </div>
           {/* Right Side Items */}

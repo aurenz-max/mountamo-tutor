@@ -1,0 +1,114 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+Social Studies,First Grade,SS001,Civics and Government,SS001-01,Rules and Laws,SS001-01-A,"Explain the difference between rules and laws, providing examples of each",1,3,2
+Social Studies,First Grade,SS001,Civics and Government,SS001-01,Rules and Laws,SS001-01-B,"Identify the consequences of breaking rules and laws",2,4,3
+Social Studies,First Grade,SS001,Civics and Government,SS001-01,Rules and Laws,SS001-01-C,"Explain why rules and laws are necessary for a community to function",2,5,3
+Social Studies,First Grade,SS001,Civics and Government,SS001-01,Rules and Laws,SS001-01-D,"Analyze scenarios and determine if a rule or law has been broken",3,5,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-01,Rules and Laws,SS001-01-E,"Propose fair rules for a specific situation (e.g., classroom, playground)",3,6,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-01,Rules and Laws,SS001-01-F,"Discuss the importance of respecting rules and laws",4,6,5
+Social Studies,First Grade,SS001,Civics and Government,SS001-02,Rights and Responsibilities,SS001-02-A,"Identify basic rights of citizens (e.g., freedom of speech, right to safety)",1,3,2
+Social Studies,First Grade,SS001,Civics and Government,SS001-02,Rights and Responsibilities,SS001-02-B,"Identify responsibilities that correspond to specific rights",2,4,3
+Social Studies,First Grade,SS001,Civics and Government,SS001-02,Rights and Responsibilities,SS001-02-C,"Explain how rights and responsibilities contribute to a functioning society",2,5,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-02,Rights and Responsibilities,SS001-02-D,"Analyze scenarios and identify if a right or responsibility is being upheld or violated",3,6,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-02,Rights and Responsibilities,SS001-02-E,"Discuss the importance of respecting the rights of others",4,6,5
+Social Studies,First Grade,SS001,Civics and Government,SS001-03,Principles of Democracy,SS001-03-A,"Define democracy and explain its basic principles (e.g., fairness, equality, voting)",1,3,2
+Social Studies,First Grade,SS001,Civics and Government,SS001-03,Principles of Democracy,SS001-03-B,"Identify examples of democratic practices in the classroom and community",2,4,3
+Social Studies,First Grade,SS001,Civics and Government,SS001-03,Principles of Democracy,SS001-03-C,"Explain the importance of voting and majority rule",2,5,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-03,Principles of Democracy,SS001-03-D,"Participate in class elections and decision-making processes",3,5,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-03,Principles of Democracy,SS001-03-E,"Discuss the importance of respecting diverse opinions and perspectives",3,6,5
+Social Studies,First Grade,SS001,Civics and Government,SS001-03,Principles of Democracy,SS001-03-F,Identify examples of leaders displaying democratic ideals,4,6,5
+Social Studies,First Grade,SS001,Civics and Government,SS001-04,National Symbols and Holidays,SS001-04-A,"Identify and explain the significance of major national symbols (e.g., flag, bald eagle, Statue of Liberty)",1,3,2
+Social Studies,First Grade,SS001,Civics and Government,SS001-04,National Symbols and Holidays,SS001-04-B,"Identify and describe the meaning of major national holidays (e.g., Independence Day, Thanksgiving, Memorial Day)",2,4,3
+Social Studies,First Grade,SS001,Civics and Government,SS001-04,National Symbols and Holidays,SS001-04-C,"Explain how national symbols and holidays reflect American values and history",3,5,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-04,National Symbols and Holidays,SS001-04-D,"Create artwork or presentations related to national symbols and holidays",3,6,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-04,National Symbols and Holidays,SS001-04-E,"Compare and contrast how different cultures celebrate holidays",4,7,5
+Social Studies,First Grade,SS001,Civics and Government,SS001-05,Conflict Resolution,SS001-05-A,"Identify common causes of conflict in interpersonal situations",1,3,2
+Social Studies,First Grade,SS001,Civics and Government,SS001-05,Conflict Resolution,SS001-05-B,"Use 'I' statements to express feelings and needs in conflict situations",2,4,3
+Social Studies,First Grade,SS001,Civics and Government,SS001-05,Conflict Resolution,SS001-05-C,"Practice active listening skills during conflict resolution",2,5,3
+Social Studies,First Grade,SS001,Civics and Government,SS001-05,Conflict Resolution,SS001-05-D,"Brainstorm and evaluate possible solutions to conflicts",3,5,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-05,Conflict Resolution,SS001-05-E,"Role-play conflict resolution scenarios using different strategies",3,6,4
+Social Studies,First Grade,SS001,Civics and Government,SS001-05,Conflict Resolution,SS001-05-F,"Explain the importance of compromise and cooperation in resolving conflicts",4,6,5
+Social Studies,First Grade,SS002,Economics,SS002-01,Goods and Services,SS002-01-A,"Distinguish between goods and services with real-world examples",1,3,2
+Social Studies,First Grade,SS002,Economics,SS002-01,Goods and Services,SS002-01-B,"Identify producers and consumers in various economic situations",2,4,3
+Social Studies,First Grade,SS002,Economics,SS002-01,Goods and Services,SS002-01-C,"Explain how goods and services satisfy needs and wants",2,5,3
+Social Studies,First Grade,SS002,Economics,SS002-01,Goods and Services,SS002-01-D,"Trace the production process of a simple good from raw materials to finished product",3,5,4
+Social Studies,First Grade,SS002,Economics,SS002-01,Goods and Services,SS002-01-E,"Classify jobs based on whether they primarily produce goods or provide services",3,6,4
+Social Studies,First Grade,SS002,Economics,SS002-01,Goods and Services,SS002-01-F,"Discuss the interdependence of producers and consumers",4,6,5
+Social Studies,First Grade,SS002,Economics,SS002-02,Scarcity and Choice,SS002-02-A,"Define scarcity and explain how it affects decision-making",1,3,2
+Social Studies,First Grade,SS002,Economics,SS002-02,Scarcity and Choice,SS002-02-B,"Identify examples of scarcity in everyday life",2,4,3
+Social Studies,First Grade,SS002,Economics,SS002-02,Scarcity and Choice,SS002-02-C,"Explain how scarcity forces people to make choices",2,5,3
+Social Studies,First Grade,SS002,Economics,SS002-02,Scarcity and Choice,SS002-02-D,"Analyze scenarios and make choices based on limited resources",3,5,4
+Social Studies,First Grade,SS002,Economics,SS002-02,Scarcity and Choice,SS002-02-E,"Discuss the concept of opportunity cost (what is given up when making a choice)",3,6,4
+Social Studies,First Grade,SS002,Economics,SS002-02,Scarcity and Choice,SS002-02-F,"Explain ways to conserve resources and reduce waste",4,6,5
+Social Studies,First Grade,SS002,Economics,SS002-03,Saving and Spending,SS002-03-A,"Explain the difference between saving and spending",1,3,2
+Social Studies,First Grade,SS002,Economics,SS002-03,Saving and Spending,SS002-03-B,"Identify reasons why people save money",2,4,3
+Social Studies,First Grade,SS002,Economics,SS002-03,Saving and Spending,SS002-03-C,"Create a simple savings plan for a specific goal",3,5,4
+Social Studies,First Grade,SS002,Economics,SS002-03,Saving and Spending,SS002-03-D,"Discuss the importance of making informed spending decisions",3,6,4
+Social Studies,First Grade,SS002,Economics,SS002-03,Saving and Spending,SS002-03-E,"Role-play scenarios involving saving and spending choices",4,6,5
+Social Studies,First Grade,SS002,Economics,SS002-04,Bartering and Trade,SS002-04-A,"Define bartering and explain how it works",1,3,2
+Social Studies,First Grade,SS002,Economics,SS002-04,Bartering and Trade,SS002-04-B,"Identify examples of bartering in historical and contemporary contexts",2,4,3
+Social Studies,First Grade,SS002,Economics,SS002-04,Bartering and Trade,SS002-04-C,"Participate in a simulated bartering activity",3,5,4
+Social Studies,First Grade,SS002,Economics,SS002-04,Bartering and Trade,SS002-04-D,"Explain the advantages and disadvantages of bartering compared to using money",3,6,4
+Social Studies,First Grade,SS002,Economics,SS002-04,Bartering and Trade,SS002-04-E,"Discuss how trade helps people get the goods and services they need and want",4,6,5
+Social Studies,First Grade,SS003,Geography,SS003-01,Map Skills,SS003-01-A,"Identify and use basic map elements (title, legend, compass rose, symbols)",1,3,2
+Social Studies,First Grade,SS003,Geography,SS003-01,Map Skills,SS003-01-B,"Use a compass rose to determine cardinal directions (north, south, east, west)",2,4,3
+Social Studies,First Grade,SS003,Geography,SS003-01,Map Skills,SS003-01-C,"Locate places on a map using a simple grid system",2,5,3
+Social Studies,First Grade,SS003,Geography,SS003-01,Map Skills,SS003-01-D,"Create a simple map of a familiar place (e.g., classroom, bedroom)",3,5,4
+Social Studies,First Grade,SS003,Geography,SS003-01,Map Skills,SS003-01-E,"Compare and contrast different types of maps (e.g., physical, political, road)",3,6,4
+Social Studies,First Grade,SS003,Geography,SS003-01,Map Skills,SS003-01-F,"Use maps to plan routes and determine distances",4,6,5
+Social Studies,First Grade,SS003,Geography,SS003-02,Continents and Oceans,SS003-02-A,"Identify and name the seven continents",1,3,2
+Social Studies,First Grade,SS003,Geography,SS003-02,Continents and Oceans,SS003-02-B,"Identify and name the five oceans",2,4,3
+Social Studies,First Grade,SS003,Geography,SS003-02,Continents and Oceans,SS003-02-C,"Locate the continents and oceans on a world map and globe",2,5,3
+Social Studies,First Grade,SS003,Geography,SS003-02,Continents and Oceans,SS003-02-D,"Describe basic characteristics of each continent (e.g., size, location, climate)",3,5,4
+Social Studies,First Grade,SS003,Geography,SS003-02,Continents and Oceans,SS003-02-E,"Compare and contrast different continents and oceans",4,6,5
+Social Studies,First Grade,SS003,Geography,SS003-03,Landforms and Bodies of Water,SS003-03-A,"Identify and describe common landforms (e.g., mountains, hills, valleys, plains)",1,3,2
+Social Studies,First Grade,SS003,Geography,SS003-03,Landforms and Bodies of Water,SS003-03-B,"Identify and describe common bodies of water (e.g., rivers, lakes, oceans)",2,4,3
+Social Studies,First Grade,SS003,Geography,SS003-03,Landforms and Bodies of Water,SS003-03-C,"Locate landforms and bodies of water on maps and globes",2,5,3
+Social Studies,First Grade,SS003,Geography,SS003-03,Landforms and Bodies of Water,SS003-03-D,"Create models of different landforms and bodies of water",3,5,4
+Social Studies,First Grade,SS003,Geography,SS003-03,Landforms and Bodies of Water,SS003-03-E,"Explain how landforms and bodies of water affect human activities",3,6,4
+Social Studies,First Grade,SS003,Geography,SS003-03,Landforms and Bodies of Water,SS003-03-F,"Compare and contrast characteristics of different landforms,4,6,5
+Social Studies,First Grade,SS003,Geography,SS003-04,Communities and Regions,SS003-04-A,"Define community and identify different types of communities (e.g., rural, urban, suburban)",1,3,2
+Social Studies,First Grade,SS003,Geography,SS003-04,Communities and Regions,SS003-04-B,"Describe the characteristics of their own community",2,4,3
+Social Studies,First Grade,SS003,Geography,SS003-04,Communities and Regions,SS003-04-C,"Compare and contrast different types of communities",2,5,3
+Social Studies,First Grade,SS003,Geography,SS003-04,Communities and Regions,SS003-04-D,"Identify and describe different regions of the United States (e.g., Northeast, South, Midwest, West)",3,5,4
+Social Studies,First Grade,SS003,Geography,SS003-04,Communities and Regions,SS003-04-E,"Explain how geography and climate affect communities and regions",3,6,4
+Social Studies,First Grade,SS003,Geography,SS003-04,Communities and Regions,SS003-04-F,Locate home state within the United States,4,5,4
+Social Studies,First Grade,SS004,History,SS004-01,Past, Present, and Future,SS004-01-A,"Distinguish between past, present, and future events",1,3,2
+Social Studies,First Grade,SS004,History,SS004-01,Past, Present, and Future,SS004-01-B,"Sequence events in chronological order using timelines",2,4,3
+Social Studies,First Grade,SS004,History,SS004-01,Past, Present, and Future,SS004-01-C,"Compare and contrast life in the past with life today",2,5,3
+Social Studies,First Grade,SS004,History,SS004-01,Past, Present, and Future,SS004-01-D,"Identify and describe historical figures and events that have shaped their community and country",3,5,4
+Social Studies,First Grade,SS004,History,SS004-01,Past, Present, and Future,SS004-01-E,"Use primary and secondary sources (e.g., photographs, artifacts, stories) to learn about the past",3,6,4
+Social Studies,First Grade,SS004,History,SS004-01,Past, Present, and Future,SS004-01-F,"Predict possible future events based on past and present trends",4,6,5
+Social Studies,First Grade,SS004,History,SS004-02,Historical Figures and Events,SS004-02-A,"Identify and describe the contributions of important historical figures (e.g., George Washington, Abraham Lincoln, Martin Luther King Jr.)",1,3,2
+Social Studies,First Grade,SS004,History,SS004-02-Historical Figures and Events,SS004-02-B,"Explain the significance of major historical events (e.g., the American Revolution, the Civil Rights Movement)",2,4,3
+Social Studies,First Grade,SS004,History,SS004-02-Historical Figures and Events,SS004-02-C,"Sequence key events in the lives of historical figures and the timeline of historical events",3,5,4
+Social Studies,First Grade,SS004,History,SS004-02-Historical Figures and Events,SS004-02-D,"Create timelines, presentations, or artwork related to historical figures and events",3,6,4
+Social Studies,First Grade,SS004,History,SS004-02-Historical Figures and Events,SS004-02-E,"Compare and contrast the lives and contributions of different historical figures",4,6,5
+Social Studies,First Grade,SS004,History,SS004-03,Family History,SS004-03-A,"Create a family tree showing multiple generations",1,3,2
+Social Studies,First Grade,SS004,History,SS004-03-Family History,SS004-03-B,"Interview family members to gather information about their lives and experiences",2,4,3
+Social Studies,First Grade,SS004,History,SS004-03-Family History,SS004-03-C,"Share family stories and traditions",2,5,3
+Social Studies,First Grade,SS004,History,SS004-03-Family History,SS004-03-D,"Compare and contrast their own lives with the lives of family members from different generations",3,5,4
+Social Studies,First Grade,SS004,History,SS004-03-Family History,SS004-03-E,"Identify and describe family heirlooms and artifacts",3,6,4
+Social Studies,First Grade,SS004,History,SS004-03-Family History,SS004-03-F,"Explain how family history connects to larger historical events",4,6,5
+Social Studies,First Grade,SS004,History,SS004-04,Change Over Time,SS004-04-A,"Identify examples of change over time in their own lives and communities",1,3,2
+Social Studies,First Grade,SS004,History,SS004-04-Change Over Time,SS004-04-B,"Compare and contrast how people lived in the past with how people live today (e.g., transportation, communication, housing)",2,4,3
+Social Studies,First Grade,SS004,History,SS004-04-Change Over Time,SS004-04-C,"Explain how technology has changed over time and impacted people's lives",3,5,4
+Social Studies,First Grade,SS004,History,SS004-04-Change Over Time,SS004-04-D,"Analyze photographs and artifacts to understand how things have changed over time",3,6,4
+Social Studies,First Grade,SS004,History,SS004-04-Change Over Time,SS004-04-E,"Create timelines showing changes in a specific aspect of life (e.g., transportation, communication)",4,6,5
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-01,Cultural Traditions,SS005-01-A,"Define culture and identify elements of culture (e.g., food, clothing, music, language, traditions)",1,3,2
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-01,Cultural Traditions,SS005-01-B,"Describe the cultural traditions of their own families and communities",2,4,3
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-01,Cultural Traditions,SS005-01-C,"Compare and contrast cultural traditions from different groups",2,5,3
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-01,Cultural Traditions,SS005-01-D,"Participate in activities that celebrate different cultures (e.g., music, dance, food, stories)",3,5,4
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-01,Cultural Traditions,SS005-01-E,"Explain how cultural traditions are passed down through generations",3,6,4
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-01,Cultural Traditions,SS005-01-F,"Research and present information about a specific culture",4,6,5
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-02,Diversity and Inclusion,SS005-02-A,"Recognize and appreciate differences among people (e.g., race, ethnicity, religion, abilities)",1,3,2
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-02-Diversity and Inclusion,SS005-02-B,"Explain the importance of treating everyone with respect and fairness",2,4,3
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-02-Diversity and Inclusion,SS005-02-C,"Identify examples of discrimination and prejudice",2,5,3
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-02-Diversity and Inclusion,SS005-02-D,"Discuss ways to promote inclusion and create a welcoming environment for everyone",3,5,4
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-02-Diversity and Inclusion,SS005-02-E,"Role-play scenarios involving diversity and inclusion",3,6,4
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-02-Diversity and Inclusion,SS005-02-F,"Explain how diversity enriches communities and societies",4,6,5
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-03,Global Connections,SS005-03-A,"Identify examples of how people around the world are connected (e.g., trade, communication, travel)",1,3,2
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-03-Global Connections,SS005-03-B,"Locate different countries on a world map and globe",2,4,3
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-03-Global Connections,SS005-03-C,"Compare and contrast daily life in different countries",2,5,3
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-03-Global Connections,SS005-03-D,"Learn basic phrases in different languages",3,5,4
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-03-Global Connections,SS005-03-E,"Research and present information about a specific country or culture",3,6,4
+Social Studies,First Grade,SS005,Culture and Diversity,SS005-03-Global Connections,SS005-03-F,"Discuss the importance of global cooperation and understanding",4,6,5

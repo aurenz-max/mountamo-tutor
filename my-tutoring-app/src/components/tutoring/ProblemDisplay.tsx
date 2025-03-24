@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, CheckCircle2, ThumbsUp, Lightbulb, ArrowRight } from 'lucide-react';
+import { BookOpen, CheckCircle2, ThumbsUp, Lightbulb, ArrowRight, RefreshCw } from 'lucide-react';
 
 interface ProblemDisplayProps {
   problem: any;
@@ -73,6 +73,32 @@ const ProblemDisplay: React.FC<ProblemDisplayProps> = ({
   onSubmit
 }) => {
   const feedbackContent = getFeedbackContent(feedback);
+  // Add state to track when to show next question button
+  const [showNextQuestion, setShowNextQuestion] = useState(false);
+  
+  // When feedback is received, show the next question button
+  useEffect(() => {
+    if (feedback) {
+      setShowNextQuestion(true);
+    } else {
+      setShowNextQuestion(false);
+    }
+  }, [feedback]);
+  
+  // Reset showNextQuestion when a new problem is loaded after previous feedback
+  useEffect(() => {
+    if (problem && !feedback) {
+      setShowNextQuestion(false);
+    }
+  }, [problem, feedback]);
+  
+  // Handle next question
+  const handleNextQuestion = () => {
+    // Keep showing the Next Question button but in loading state
+    // The loading prop will handle showing the spinner
+    // Don't setShowNextQuestion(false) immediately - we'll let the feedback change handle that
+    onGenerateProblem();
+  };
   
   return (
     <Card className={`w-full h-full overflow-hidden flex flex-col ${isTheaterMode ? 'shadow-lg rounded-lg' : ''}`}>
@@ -100,21 +126,50 @@ const ProblemDisplay: React.FC<ProblemDisplayProps> = ({
             {!problem ? (
               <div className="flex-1 flex items-center justify-center py-16">
                 <div className="text-center space-y-4">
+                  {loading ? (
+                    // Loading state when waiting for a problem
+                    <>
+                      <div className="bg-blue-50 dark:bg-blue-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                        <RefreshCw className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
+                      </div>
+                      <h3 className="text-sm font-medium">Loading problem...</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Please wait while we prepare your question
+                      </p>
+                    </>
+                  ) : (
+                    // Initial state with no problem
+                    <>
+                      <div className="bg-blue-50 dark:bg-blue-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                        <BookOpen className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="text-sm font-medium">No active problem</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Generate a new problem to get started
+                      </p>
+                      <Button
+                        onClick={onGenerateProblem}
+                        disabled={loading}
+                        variant="default"
+                        className="mt-2"
+                      >
+                        Generate Problem
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : loading ? (
+              // Loading state when transitioning between problems
+              <div className="flex-1 flex items-center justify-center py-16">
+                <div className="text-center space-y-4">
                   <div className="bg-blue-50 dark:bg-blue-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-                    <BookOpen className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                    <RefreshCw className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
                   </div>
-                  <h3 className="text-sm font-medium">No active problem</h3>
+                  <h3 className="text-sm font-medium">Loading next problem...</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Generate a new problem to get started
+                    Please wait while we prepare your next question
                   </p>
-                  <Button
-                    onClick={onGenerateProblem}
-                    disabled={loading}
-                    variant="default"
-                    className="mt-2"
-                  >
-                    Generate Problem
-                  </Button>
                 </div>
               </div>
             ) : (
@@ -186,14 +241,39 @@ const ProblemDisplay: React.FC<ProblemDisplayProps> = ({
       
       {problem && (
         <CardFooter className="border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3">
-          <Button
-            onClick={onSubmit}
-            className="w-full"
-            variant="default"
-            disabled={submitting}
-          >
-            {submitting ? 'Submitting...' : 'Submit Answer'}
-          </Button>
+          {showNextQuestion ? (
+            <Button
+              onClick={handleNextQuestion}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              variant="default"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Loading Next Question...
+                </>
+              ) : (
+                'Next Question'
+              )}
+            </Button>
+          ) : (
+            <Button
+              onClick={onSubmit}
+              className="w-full"
+              variant="default"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Submit Answer'
+              )}
+            </Button>
+          )}
         </CardFooter>
       )}
     </Card>

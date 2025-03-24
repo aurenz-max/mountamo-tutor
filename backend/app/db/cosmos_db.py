@@ -270,11 +270,26 @@ class CosmosDBService:
         subject: str,
         skill_id: str,
         subskill_id: str,
-        problem_id: str,  # Use a problem ID to identify the specific problem
-        review_data: Dict[str, Any]
+        problem_id: str,
+        review_data: Dict[str, Any],
+        problem_content: Dict[str, Any] = None  # New parameter
     ) -> Dict[str, Any]:
         """Save a structured review of a student's problem solution."""
         timestamp = datetime.utcnow().isoformat()
+
+        # Log all input parameters
+        print(f"[DEBUG] save_problem_review called with:")
+        print(f"[DEBUG]   - student_id: {student_id}")
+        print(f"[DEBUG]   - subject: {subject}")
+        print(f"[DEBUG]   - skill_id: {skill_id}")
+        print(f"[DEBUG]   - subskill_id: {subskill_id}")
+        print(f"[DEBUG]   - problem_id: {problem_id}")
+        print(f"[DEBUG]   - problem_content present: {'yes' if problem_content else 'no'}")
+        
+        if problem_content:
+            print(f"[DEBUG]   - problem_content keys: {problem_content.keys()}")
+        else:
+            print(f"[DEBUG]   - problem_content is None or empty")
         
         # Preserve the original structure but normalize for storage
         review_item = {
@@ -285,6 +300,8 @@ class CosmosDBService:
             "subskill_id": subskill_id,
             "problem_id": problem_id,
             "timestamp": timestamp,
+            # Store the problem content
+            "problem_content": problem_content,
             # Store all the raw data directly
             "full_review": review_data,
             # For easier querying, extract key fields
@@ -370,3 +387,288 @@ class CosmosDBService:
         ))
         
         return results[0] if results else None
+
+    async def get_attempts_by_time_range(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        skill_id: Optional[str] = None,
+        subskill_id: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get attempts within a specific time range with filtering options"""
+        query = "SELECT * FROM c WHERE c.student_id = @student_id"
+        params = [{"name": "@student_id", "value": student_id}]
+        
+        if subject:
+            query += " AND c.subject = @subject"
+            params.append({"name": "@subject", "value": subject})
+        if skill_id:
+            query += " AND c.skill_id = @skill_id"
+            params.append({"name": "@skill_id", "value": skill_id})
+        if subskill_id:
+            query += " AND c.subskill_id = @subskill_id"
+            params.append({"name": "@subskill_id", "value": subskill_id})
+        if start_date:
+            query += " AND c.timestamp >= @start_date"
+            params.append({"name": "@start_date", "value": start_date})
+        if end_date:
+            query += " AND c.timestamp <= @end_date"
+            params.append({"name": "@end_date", "value": end_date})
+            
+        query += " ORDER BY c.timestamp DESC"
+        
+        return list(self.attempts.query_items(
+            query=query,
+            parameters=params,
+            enable_cross_partition_query=True
+        ))
+
+    async def get_subject_competencies(
+        self,
+        student_id: int,
+        subject: str
+    ) -> List[Dict[str, Any]]:
+        """Get all competencies for a specific subject"""
+        query = """
+        SELECT * FROM c 
+        WHERE c.student_id = @student_id 
+        AND c.subject = @subject
+        """
+        
+        params = [
+            {"name": "@student_id", "value": student_id},
+            {"name": "@subject", "value": subject}
+        ]
+        
+        return list(self.competencies.query_items(
+            query=query,
+            parameters=params,
+            enable_cross_partition_query=True
+        ))
+
+    async def get_aggregated_attempts_by_time(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        grouping: str = "day",  # day, week, month
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get aggregated attempt data grouped by time periods"""
+        # Cosmos DB doesn't support complex aggregations natively,
+        # so we'll fetch the data and aggregate it in Python
+        
+        attempts = await self.get_attempts_by_time_range(
+            student_id=student_id,
+            subject=subject,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        from datetime import datetime
+        from collections import defaultdict
+        
+        # Group by time period
+        grouped_data = defaultdict(lambda: {"count": 0, "scores": [], "subjects": set()})
+        
+        for attempt in attempts:
+            dt = datetime.fromisoformat(attempt["timestamp"])
+            
+            if grouping == "day":
+                key = dt.strftime("%Y-%m-%d")
+            elif grouping == "week":
+                # ISO week format: YYYY-WNN (year-week number)
+                key = f"{dt.year}-W{dt.isocalendar()[1]:02d}"
+            elif grouping == "month":
+                key = dt.strftime("%Y-%m")
+            else:
+                key = dt.strftime("%Y-%m-%d")  # Default to day
+                
+            grouped_data[key]["count"] += 1
+            grouped_data[key]["scores"].append(attempt["score"])
+            grouped_data[key]["subjects"].add(attempt["subject"])
+        
+        # Calculate averages and format result
+        result = []
+        for period, data in sorted(grouped_data.items()):
+            avg_score = sum(data["scores"]) / len(data["scores"]) if data["scores"] else 0
+            result.append({
+                "period": period,
+                "count": data["count"],
+                "average_score": avg_score,
+                "subjects": list(data["subjects"])
+            })
+        
+        return result
+
+    async def get_competency_history(
+        self,
+        student_id: int,
+        subject: str,
+        skill_id: Optional[str] = None,
+        subskill_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Reconstruct competency history based on attempts data"""
+        # This is an approximation since we don't store historical competency values
+        
+        attempts = await self.get_attempts_by_time_range(
+            student_id=student_id,
+            subject=subject,
+            skill_id=skill_id,
+            subskill_id=subskill_id
+        )
+        
+        # Sort by timestamp (oldest first)
+        attempts.sort(key=lambda x: x["timestamp"])
+        
+        # Reconstruct progression using a simplified model
+        history = []
+        running_sum = 0
+        default_score = 5.0  # Same as in CompetencyService
+        
+        for i, attempt in enumerate(attempts):
+            # Simple running average calculation
+            running_sum += attempt["score"]
+            avg_score = running_sum / (i + 1)
+            
+            # Simple credibility calculation based on attempts count
+            credibility = min(1.0, (i + 1) / 15)  # Using 15 as full credibility standard
+            
+            # Blend with default score based on credibility
+            blended_score = (avg_score * credibility) + (default_score * (1 - credibility))
+            
+            history.append({
+                "timestamp": attempt["timestamp"],
+                "attempt_number": i + 1,
+                "attempt_score": attempt["score"],
+                "calculated_competency": blended_score,
+                "credibility": credibility
+            })
+        
+        return history
+
+    async def get_competency_distribution(
+        self,
+        student_id: int,
+        subject: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get competency distribution statistics"""
+        query = "SELECT c.current_score, c.credibility, c.subject, c.skill_id, c.subskill_id FROM c WHERE c.student_id = @student_id"
+        params = [{"name": "@student_id", "value": student_id}]
+        
+        if subject:
+            query += " AND c.subject = @subject"
+            params.append({"name": "@subject", "value": subject})
+        
+        competencies = list(self.competencies.query_items(
+            query=query,
+            parameters=params,
+            enable_cross_partition_query=True
+        ))
+        
+        # Filter for competencies with reasonable credibility
+        credible_competencies = [c for c in competencies if c["credibility"] > 0.3]
+        
+        # Calculate distribution
+        score_ranges = {
+            "beginner": [0, 3],
+            "developing": [3, 5],
+            "proficient": [5, 7],
+            "advanced": [7, 9],
+            "mastery": [9, 10]
+        }
+        
+        distribution = {level: 0 for level in score_ranges}
+        subject_distribution = {}
+        
+        for comp in credible_competencies:
+            score = comp["current_score"]
+            subject = comp["subject"]
+            
+            # Add to overall distribution
+            for level, (min_score, max_score) in score_ranges.items():
+                if min_score <= score < max_score:
+                    distribution[level] += 1
+                    break
+            
+            # Add to subject-specific distribution
+            if subject not in subject_distribution:
+                subject_distribution[subject] = {level: 0 for level in score_ranges}
+                
+            for level, (min_score, max_score) in score_ranges.items():
+                if min_score <= score < max_score:
+                    subject_distribution[subject][level] += 1
+                    break
+        
+        return {
+            "student_id": student_id,
+            "overall_distribution": distribution,
+            "subject_distribution": subject_distribution,
+            "total_competencies": len(credible_competencies)
+        }
+
+    async def get_review_patterns(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        recent_count: int = 100
+    ) -> Dict[str, Any]:
+        """Analyze patterns in problem reviews"""
+        reviews = await self.get_problem_reviews(
+            student_id=student_id,
+            subject=subject,
+            limit=recent_count
+        )
+        
+        if not reviews:
+            return {
+                "student_id": student_id,
+                "subject": subject,
+                "patterns": {}
+            }
+        
+        # Extract feedback patterns (simplified example)
+        from collections import Counter
+        
+        # Count common terms in feedback (very basic NLP approach)
+        feedback_text = " ".join([
+            str(review.get("feedback", {}).get("guidance", "")) + " " +
+            str(review.get("feedback", {}).get("encouragement", ""))
+            for review in reviews
+        ]).lower()
+        
+        # Extract some basic word patterns (this would be enhanced in a real NLP system)
+        words = feedback_text.split()
+        word_counts = Counter(words)
+        
+        # Analyze score patterns
+        scores = [review["score"] for review in reviews]
+        avg_score = sum(scores) / len(scores) if scores else 0
+        
+        # Detect improvements or regressions
+        if len(scores) >= 5:
+            first_half = scores[len(scores)//2:]
+            second_half = scores[:len(scores)//2]
+            avg_first = sum(first_half) / len(first_half)
+            avg_second = sum(second_half) / len(second_half)
+            trend = avg_second - avg_first
+        else:
+            trend = 0
+        
+        # Identify most frequent subskills in reviews
+        subskill_counts = Counter([f"{review['subject']}_{review['subskill_id']}" for review in reviews])
+        most_common_subskills = subskill_counts.most_common(5)
+        
+        return {
+            "student_id": student_id,
+            "subject": subject,
+            "patterns": {
+                "average_score": avg_score,
+                "score_trend": trend,
+                "trend_direction": "Improving" if trend > 0.5 else "Declining" if trend < -0.5 else "Stable",
+                "common_feedback_terms": {word: count for word, count in word_counts.most_common(10) if len(word) > 3},
+                "most_reviewed_subskills": most_common_subskills
+            }
+        }

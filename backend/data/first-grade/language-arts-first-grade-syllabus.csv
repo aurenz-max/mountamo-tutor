@@ -1,0 +1,152 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-A,"Identify and explain the function of different punctuation marks (. , ? ! "")",1,3,2
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-B,"Distinguish between different types of sentences (statements, questions, exclamations, commands)",2,4,3
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-C,"Track print accurately during independent reading, using finger or other tool as needed",2,4,3
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-D,"Recognize and explain the purpose of capitalization in various contexts (names, places, titles)",3,5,4
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-E,"Identify and use text features (title, headings, table of contents, index, glossary) in informational texts",3,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-F,"Distinguish between letters, words, sentences, and paragraphs in printed text",4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-G,Identify the role of the author and illustrator,4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-A,"Decode regularly spelled one-syllable words with short and long vowels",1,3,2
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-B,"Read words with consonant blends (bl, st, tr) and digraphs (sh, ch, th, wh)",2,4,3
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-C,"Read words with common inflectional endings (-s, -ed, -ing)",2,4,3
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-D,"Decode two-syllable words with common syllable patterns (e.g., open, closed)",3,5,4
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-E,"Read grade-level high-frequency words automatically",3,5,4
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-F,"Use knowledge of phonics and word analysis skills to decode unfamiliar words",4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-G,"Read grade-level text with accuracy, fluency, and expression",4,7,6
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-H,Decode words with vowel digraphs and diphthongs,5,7,6
+Language Arts,First Grade,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-A,"Write legibly, forming letters correctly and spacing words appropriately",1,3,2
+Language Arts,First Grade,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-B,"Plan, draft, revise, and edit writing with guidance and support",2,4,3
+Language Arts,First Grade,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-C,"Write complete sentences with correct capitalization and punctuation",2,5,4
+Language Arts,First Grade,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-D,"Use a variety of sentence types (statements, questions, exclamations, commands)",3,5,4
+Language Arts,First Grade,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-E,"Organize writing with a clear beginning, middle, and end",3,6,5
+Language Arts,First Grade,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-F,"Use descriptive language and sensory details to enhance writing",4,6,5
+Language Arts,First Grade,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-G,"Write for different purposes (narrative, informative, opinion)",4,7,6
+Language Arts,First Grade,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-H,"Use digital tools to produce and publish writing",5,7,6
+Language Arts,First Grade,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-A,"Participate in shared research and writing projects",1,3,2
+Language Arts,First Grade,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-B,"Gather information from provided sources to answer a question",2,4,3
+Language Arts,First Grade,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-C,"Recall information from experiences or gather information from provided sources to answer a question",3,5,4
+Language Arts,First Grade,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-D,"Take brief notes on sources and sort evidence into provided categories",3,6,5
+Language Arts,First Grade,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-E,"With guidance and support, conduct short research projects that build knowledge about a topic",4,7,6
+Language Arts,First Grade,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-A,"Use correct capitalization for names, places, days of the week, and months",1,3,2
+Language Arts,First Grade,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-B,"Use correct end punctuation for sentences",2,4,3
+Language Arts,First Grade,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-C,"Use commas in dates and to separate items in a series",2,5,4
+Language Arts,First Grade,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-D,"Spell grade-level high-frequency words correctly",3,5,4
+Language Arts,First Grade,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-E,"Use conventional spelling for words with common spelling patterns",3,6,5
+Language Arts,First Grade,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-F,"Use spelling strategies (e.g., sound-letter relationships, visual memory) to spell unfamiliar words",4,7,6
+Language Arts,First Grade,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-G,Use a dictionary to check spelling,4,6,5
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-A,"Follow two- and three-step oral directions",1,3,2
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-B,"Participate in collaborative conversations with diverse partners about grade 1 topics and texts",2,4,3
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-C,"Ask and answer questions about key details in a text read aloud or information presented orally",2,5,4
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-D,"Ask and answer questions to seek help, get information, or clarify something that is not understood",3,5,4
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-E,"Describe people, places, things, and events with relevant details, expressing ideas and feelings clearly",3,6,5
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-F,"Add drawings or other visual displays to descriptions when appropriate to clarify ideas, thoughts, and feelings",4,6,5
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-G,"Produce complete sentences when appropriate to task and situation",4,7,6
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-A,"Speak audibly and express thoughts, feelings, and ideas clearly",1,3,2
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-B,"Recite poems, rhymes, and songs with expression",2,4,3
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-C,"Retell stories, including key details, and demonstrate understanding of their central message or lesson",2,5,4
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-D,"Give simple oral presentations, using appropriate eye contact, volume, and pacing",3,5,4
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-E,"Use visual aids (drawings, props) to enhance oral presentations",3,6,5
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-F,"Participate in group discussions, responding to comments from others and staying on topic",4,6,5
+Language Arts,First Grade,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-G,"Ask clarifying questions during presentations and discussions",4,7,6
+Language Arts,First Grade,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-A,"Identify and use nouns, verbs, adjectives, and adverbs in sentences",1,3,2
+Language Arts,First Grade,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-B,"Use common, proper, and possessive nouns",2,4,3
+Language Arts,First Grade,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-C,"Use singular and plural nouns with matching verbs in basic sentences",2,5,4
+Language Arts,First Grade,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-D,"Use personal, possessive, and indefinite pronouns (e.g., I, me, my; they, them, their, anyone, everything)",3,5,4
+Language Arts,First Grade,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-E,"Use verbs to convey a sense of past, present, and future (e.g., Yesterday I walked home; Today I walk home; Tomorrow I will walk home)",3,6,5
+Language Arts,First Grade,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-F,"Use frequently occurring adjectives",4,6,5
+Language Arts,First Grade,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-G,"Use frequently occurring conjunctions (e.g., and, but, or, so, because)",4,7,6
+Language Arts,First Grade,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-H,Use determiners (e.g., articles, demonstratives),4,6,5
+Language Arts,First Grade,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-I,"Use frequently occurring prepositions (e.g., during, beyond, toward)",4,7,5
+Language Arts,First Grade,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-A,"Identify and produce complete simple and compound sentences",1,3,2
+Language Arts,First Grade,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-B,"Distinguish between different types of sentences (declarative, interrogative, imperative, exclamatory)",2,4,3
+Language Arts,First Grade,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-C,"Expand simple sentences by adding adjectives, adverbs, and prepositional phrases",3,5,4
+Language Arts,First Grade,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-D,"Combine simple sentences to form compound sentences using conjunctions (and, but, or)",3,6,5
+Language Arts,First Grade,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-E,"Rearrange words to create different types of sentences",4,6,5
+Language Arts,First Grade,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-F,Identify run on sentences and fragments,4,6,5
+Language Arts,First Grade,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-A,"Form and use regular and irregular plural nouns",1,3,2
+Language Arts,First Grade,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-B,"Use articles (a, an, the) correctly in sentences",2,4,3
+Language Arts,First Grade,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-C,"Distinguish between definite and indefinite articles",3,5,4
+Language Arts,First Grade,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-A,"Use personal, possessive, and indefinite pronouns correctly in sentences",1,3,2
+Language Arts,First Grade,LA004,Grammar Basics,LA004-04-Basic Pronouns,LA004-04-B,"Distinguish between subject and object pronouns",2,4,3
+Language Arts,First Grade,LA004,Grammar Basics,LA004-04-Basic Pronouns,LA004-04-C,"Ensure pronoun-antecedent agreement",3,5,4
+Language Arts,First Grade,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-A,"Identify and use prepositions and prepositional phrases",1,3,2
+Language Arts,First Grade,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-B,"Use prepositions to show location, direction, time, and other relationships",2,4,3
+Language Arts,First Grade,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-A,"Use regular and irregular verbs correctly in past, present, and future tenses",1,3,2
+Language Arts,First Grade,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-B,"Use subject-verb agreement with singular and plural nouns",2,4,3
+Language Arts,First Grade,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-C,"Use helping verbs (is, are, was, were, has, have, had) correctly",3,5,4
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-A,"Determine the meaning of unknown and multiple-meaning words and phrases",1,3,2
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-B,"Use context clues (e.g., definitions, examples, restatements) to determine the meaning of words and phrases",2,4,3
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-C,"Use known root words and affixes to determine the meaning of unknown words",3,5,4
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-D,"Identify and use synonyms, antonyms, and homographs",3,6,5
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-E,"Use a dictionary and thesaurus to find word meanings and synonyms",4,6,5
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-A,"Use sentence-level context as a clue to the meaning of a word or phrase",1,3,2
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-B,"Identify and use different types of context clues (e.g., definition, restatement, example, contrast)",2,4,3
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-C,"Use knowledge of prefixes and suffixes to determine the meaning of unknown words",3,5,4
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-A,"Identify real-life connections between words and their use (e.g., describe foods that are spicy or juicy)",1,3,2
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-B,"Distinguish shades of meaning among verbs differing in manner (e.g., look, peek, glance, stare, glare) and adjectives differing in intensity (e.g., large, gigantic) by defining or choosing them",2,4,3
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-C,"Sort words into categories (e.g., colors, clothing) to gain a sense of the concepts the categories represent",3,5,4
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-D,"Define words by category and by one or more key attributes (e.g., a duck is a bird that swims; a tiger is a large cat with stripes)",4,6,5
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-A,"Use new vocabulary words correctly in speaking and writing",1,3,2
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-B,"Participate in vocabulary-building activities (e.g., word games, word walls)",2,4,3
+Language Arts,First Grade,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-C,"Use academic vocabulary appropriately in discussions and writing",3,5,4
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-A,"Identify and describe characters, settings, and major events in a story",1,3,2
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-B,"Retell stories, including key details, and demonstrate understanding of their central message or lesson",2,4,3
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-C,"Describe the plot of a story, including the problem and solution",3,5,4
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-D,"Use story maps or other graphic organizers to organize information about story elements",3,6,5
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-E,Identify the narrator of the story,4,6,5
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-A,"Make inferences to determine what the text implies but does not state directly",1,3,2
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-B,"Use text evidence to support inferences",2,4,3
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-C,"Predict what might happen next in a story based on text evidence and prior knowledge",3,5,4
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-D,"Infer character traits, feelings, and motivations based on their words and actions",3,6,5
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-A,"Identify the main idea of a text",1,3,2
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-B,"Identify key details that support the main idea",2,4,3
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-C,"Summarize a text, including the main idea and key details",3,5,4
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-D,"Use graphic organizers to organize information about main idea and details",3,6,5
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-A,"Compare and contrast characters, settings, and events in two or more stories",1,3,2
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-B,"Compare and contrast different versions of the same story (e.g., different illustrations, different authors)",2,4,3
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-C,"Use Venn diagrams or other graphic organizers to compare and contrast texts",3,5,4
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-A,"Identify and use text features (e.g., headings, table of contents, glossaries, electronic menus, icons) to locate information",1,3,2
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-B,"Explain the purpose of different text features",2,4,3
+Language Arts,First Grade,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-C,"Use text features to make predictions about a text",3,5,4
+Language Arts,First Grade,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-A,"Create original stories with a clear beginning, middle, and end",1,3,2
+Language Arts,First Grade,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-B,"Develop characters with distinct traits and motivations",2,4,3
+Language Arts,First Grade,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-C,"Use descriptive language and sensory details to create vivid settings and events",3,5,4
+Language Arts,First Grade,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-D,"Incorporate dialogue into stories",3,6,5
+Language Arts,First Grade,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-E,"Revise and edit stories with guidance and support",4,6,5
+Language Arts,First Grade,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-F,Illustrate stories,4,5,4
+Language Arts,First Grade,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-A,"Role-play familiar characters and situations with increasing complexity",1,3,2
+Language Arts,First Grade,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-B,"Use voice, movement, and expression to convey character traits and emotions",2,4,3
+Language Arts,First Grade,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-C,"Improvise dialogue and actions in dramatic play scenarios",3,5,4
+Language Arts,First Grade,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-D,"Collaborate with peers to create and perform original skits and plays",4,6,5
+Language Arts,First Grade,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-E,"Use props, costumes, and scenery to enhance dramatic play",4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-A,"Identify and explain the function of different punctuation marks (. , ? ! "")",1,3,2
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-B,"Distinguish between different types of sentences (statements, questions, exclamations, commands)",2,4,3
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-C,"Track print accurately during independent reading, using finger or other tool as needed",2,4,3
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-D,"Recognize and explain the purpose of capitalization in various contexts (names, places, titles)",3,5,4
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-E,"Identify and use text features (title, headings, table of contents, index, glossary) in informational texts",3,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-F,"Distinguish between letters, words, sentences, and paragraphs in printed text",4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-G,Identify the role of the author and illustrator,4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-H,"Recognize and use bold print, italics, and underlined words for emphasis or special meaning",3,5,4
+Language Arts,First Grade,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-I,"Identify and explain the purpose of captions and labels in informational texts",4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-A,"Decode regularly spelled one-syllable words with short and long vowels",1,3,2
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-B,"Read words with consonant blends (bl, st, tr) and digraphs (sh, ch, th, wh)",2,4,3
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-C,"Read words with common inflectional endings (-s, -ed, -ing)",2,4,3
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-D,"Decode two-syllable words with common syllable patterns (e.g., open, closed)",3,5,4
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-E,"Read grade-level high-frequency words automatically",3,5,4
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-F,"Use knowledge of phonics and word analysis skills to decode unfamiliar words",4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-G,"Read grade-level text with accuracy, fluency, and expression",4,7,6
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-H,Decode words with vowel digraphs and diphthongs,5,7,6
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-I,"Read words with r-controlled vowels (ar, or, er, ir, ur)",4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-J,"Identify and read contractions (e.g., can't, won't, it's)",3,5,4
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-K,"Use knowledge of syllable types to decode multisyllabic words",5,7,6
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-L,"Read words with prefixes and suffixes (e.g., un-, re-, -ful, -less)",4,6,5
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-M,"Read irregularly spelled words (e.g., said, come, have)",3,5,4
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-N, "Read with sufficient accuracy and fluency to support comprehension.", 5,8,6
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-O, "Read on-level text with purpose and understanding.",5,8,6
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-P,"Read on-level text orally with accuracy, appropriate rate, and expression on successive readings.",5,8,7
+Language Arts,First Grade,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-Q,"Use context to confirm or self-correct word recognition and understanding, rereading as necessary.",5,8,7
+Language Arts, First Grade, LA001, Reading Foundations, LA001-02, Phonological Awareness, LA001-02-A, "Distinguish long from short vowel sounds in spoken single-syllable words.", 1,3,2
+Language Arts, First Grade, LA001, Reading Foundations, LA001-02, Phonological Awareness, LA001-02-B, "Orally produce single-syllable words by blending sounds (phonemes), including consonant blends.", 2,4,3
+Language Arts, First Grade, LA001, Reading Foundations, LA001-02, Phonological Awareness, LA001-02-C, "Isolate and pronounce initial, medial vowel, and final sounds (phonemes) in spoken single-syllable words.", 2,5,4
+Language Arts, First Grade, LA001, Reading Foundations, LA001-02, Phonological Awareness, LA001-02-D, "Segment spoken single-syllable words into their complete sequence of individual sounds (phonemes).", 3,5,4
+Language Arts, First Grade, LA001, Reading Foundations, LA001-02, Phonological Awareness, LA001-02-E, "Add or substitute individual sounds (phonemes) in simple, one-syllable words to make new words.", 4,6,5
