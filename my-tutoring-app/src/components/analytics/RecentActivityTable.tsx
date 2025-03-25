@@ -13,11 +13,11 @@ export default function RecentActivityTable() {
     return <div className="flex items-center justify-center h-[200px] text-muted-foreground">No data available</div>;
   }
   
-  // Extract recent activity data from the API response
+  // Extract recent activity data from the API response using attempt_count
   const generateUnitActivityData = () => {
     return metrics.hierarchical_data.map(unit => ({
       unit: unit.unit_title,
-      recent_activity: unit.attempted,
+      recent_activity: unit.attempt_count, // Using attempt_count instead of attempted
       avg_score: Math.round(unit.mastery * 100), // Convert to percentage
       proficiency: Math.round(unit.proficiency * 100) // Convert to percentage
     })).filter(item => item.recent_activity > 0); // Only show units with activity
@@ -29,7 +29,7 @@ export default function RecentActivityTable() {
     const skills = metrics.hierarchical_data.flatMap(unit => 
       unit.skills.map(skill => ({
         skill: skill.skill_description,
-        recent_activity: skill.attempted,
+        recent_activity: skill.attempt_count, // Using attempt_count instead of attempted
         avg_score: Math.round(skill.mastery * 100) // Convert to percentage
       }))
     ).filter(item => item.recent_activity > 0); // Only show skills with activity
@@ -56,7 +56,7 @@ export default function RecentActivityTable() {
             <TableHead className="w-[300px]">
               {subject ? 'Skill' : 'Units'}
             </TableHead>
-            <TableHead className="text-right">Recent Activity</TableHead>
+            <TableHead className="text-right">Attempt Count</TableHead>
             <TableHead className="text-right">Avg Score</TableHead>
             {!subject && <TableHead className="text-right">Proficiency %</TableHead>}
           </TableRow>

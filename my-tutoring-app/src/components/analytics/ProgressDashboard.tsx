@@ -3,96 +3,132 @@
 
 import React from 'react'
 import { useAnalytics } from './StudentAnalytics'
-import { 
-  Card, 
-  CardContent 
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle } from 'lucide-react'
 import MetricsCards from './MetricsCards'
-import ProgressChart from './ProgressChart'
-import CompletionChart from './CompletionChart'
-import RecentActivityTable from './RecentActivityTable'
-import OverallMasteryTable from './OverallMasteryTable'
+import PerformanceTimeline from './PerformanceTimeline'
+import AttemptsVisualization from './AttemptsVisualization'
+import NextSteps from './NextSteps'
+import RecommendationsPanel from './RecommendationsPanel'
+import HierarchicalMetrics from './HierarchicalMetrics'
 
 export default function ProgressDashboard() {
-  const { loading, error } = useAnalytics()
-
+  const { metrics, loading, error } = useAnalytics()
+  
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="p-6">
+              <Skeleton className="h-4 w-1/3 mb-2" />
+              <Skeleton className="h-8 w-2/3 mb-1" />
+              <Skeleton className="h-4 w-1/4" />
+            </Card>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-2 p-6">
+            <Skeleton className="h-6 w-1/3 mb-4" />
+            <Skeleton className="h-[300px] w-full" />
+          </Card>
+          <Card className="p-6">
+            <Skeleton className="h-6 w-1/2 mb-4" />
+            <Skeleton className="h-[300px] w-full" />
+          </Card>
+        </div>
+      </div>
+    )
+  }
+  
   if (error) {
     return (
-      <Alert variant="destructive" className="mb-6">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
+      <Card className="p-6">
+        <div className="text-red-500 font-medium">Error: {error}</div>
+      </Card>
     )
   }
 
-  if (loading) {
-    return <LoadingSkeleton />
+  if (!metrics) {
+    return (
+      <Card className="p-6">
+        <div className="text-amber-500 font-medium">No data available. Please check your API connection.</div>
+      </Card>
+    )
   }
 
   return (
     <div className="space-y-6">
+      {/* Summary metrics at the top */}
       <MetricsCards />
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-4">Progress Over Time</h2>
-          <ProgressChart />
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left column: Timeline Chart */}
+        <div className="lg:col-span-2">
+          <PerformanceTimeline />
+        </div>
         
-        <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-4">Completion</h2>
-          <CompletionChart />
-        </Card>
-      </div>
-      
-      <Card className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Recent Activity (30 Days)</h2>
-        <RecentActivityTable />
-      </Card>
-      
-      <Card className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Overall Mastery</h2>
-        <OverallMasteryTable />
-      </Card>
-    </div>
-  )
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i} className="p-4">
-            <Skeleton className="h-4 w-1/3 mb-2" />
-            <Skeleton className="h-8 w-1/4 mb-2" />
-            <Skeleton className="h-4 w-2/3" />
+        {/* Right column: Recent Activity */}
+        <div className="lg:col-span-1">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Recent Activity (30 Days)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left font-medium text-sm">Units</th>
+                    <th className="text-right font-medium text-sm">Recent Activity</th>
+                    <th className="text-right font-medium text-sm">Avg Score</th>
+                    <th className="text-right font-medium text-sm">Proficiency %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.hierarchical_data.slice(0, 5).map((unit) => (
+                    <tr key={unit.unit_id} className="border-b border-gray-100">
+                      <td className="py-3 font-medium">{unit.unit_title}</td>
+                      <td className="py-3 text-right">{unit.attempt_count}</td>
+                      <td className="py-3 text-right">
+                        <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                          unit.avg_score >= 0.9 ? 'bg-green-100 text-green-800' :
+                          unit.avg_score >= 0.8 ? 'bg-green-50 text-green-700' :
+                          unit.avg_score >= 0.7 ? 'bg-yellow-100 text-yellow-800' :
+                          unit.avg_score >= 0.6 ? 'bg-orange-100 text-orange-800' :
+                          unit.avg_score > 0 ? 'bg-red-100 text-red-800' : ''
+                        }`}>
+                          {Math.round(unit.avg_score * 100)}%
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">{Math.round(unit.proficiency * 100)}%</td>
+                    </tr>
+                  ))}
+                  <tr className="font-semibold">
+                    <td className="py-3">Total</td>
+                    <td className="py-3 text-right">{metrics.summary.attempt_count}</td>
+                    <td className="py-3 text-right">{Math.round(metrics.summary.avg_score * 100)}%</td>
+                    <td className="py-3 text-right">{Math.round(metrics.summary.proficiency * 100)}%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </CardContent>
           </Card>
-        ))}
+        </div>
       </div>
+      
+      {/* Curriculum Hierarchy */}
+      <HierarchicalMetrics />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-4">
-          <Skeleton className="h-6 w-1/3 mb-4" />
-          <Skeleton className="h-[200px] w-full" />
-        </Card>
+        {/* Recommendations Panel */}
+        <RecommendationsPanel />
         
-        <Card className="p-4">
-          <Skeleton className="h-6 w-1/3 mb-4" />
-          <Skeleton className="h-[200px] w-full" />
-        </Card>
+        {/* Next Steps */}
+        <NextSteps />
       </div>
       
-      <Card className="p-4">
-        <Skeleton className="h-6 w-1/3 mb-4" />
-        <Skeleton className="h-8 w-full mb-2" />
-        <Skeleton className="h-8 w-full mb-2" />
-        <Skeleton className="h-8 w-full mb-2" />
-        <Skeleton className="h-8 w-full mb-2" />
-      </Card>
+      {/* Attempts Visualization */}
+      <AttemptsVisualization />
     </div>
-  )
+  );
 }

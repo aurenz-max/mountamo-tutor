@@ -24,7 +24,8 @@ export default function MetricsCards() {
         mastery: 0,
         proficiency: 0,
         completion: 0,
-        problemsCompleted: 0
+        problemsCompleted: 0,
+        avgScore: 0
       };
     }
     
@@ -40,14 +41,16 @@ export default function MetricsCards() {
       mastery: previous ? ((current.mastery - previous.mastery) * 100) : 0,
       proficiency: previous ? ((current.proficiency - previous.proficiency) * 100) : 0,
       completion: previous ? (current.completion - previous.completion) : 0,
-      problemsCompleted: previous ? (current.attempts - previous.attempts) : 0
+      problemsCompleted: previous ? (current.attempt_count - previous.attempt_count) : 0, // Updated from attempts to attempt_count
+      avgScore: previous && current.avg_score && previous.avg_score ? 
+        ((current.avg_score - previous.avg_score) * 100) : 0, // Use actual avg_score when available
     };
   }
   
   const changes = calculateChanges();
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <MetricCard 
         title="Mastery" 
         value={formatPercentage(metrics.summary.mastery * 100)}
@@ -63,6 +66,13 @@ export default function MetricsCards() {
       />
       
       <MetricCard 
+        title="Avg. Score" 
+        value={formatPercentage(metrics.summary.avg_score * 100)}
+        change={changes.avgScore}
+        changeLabel="vs Last Month"
+      />
+      
+      <MetricCard 
         title="Completion" 
         value={formatPercentage(metrics.summary.completion)}
         change={changes.completion}
@@ -70,8 +80,8 @@ export default function MetricsCards() {
       />
       
       <MetricCard 
-        title="Problems Completed" 
-        value={metrics.summary.attempted_items.toString()}
+        title="Total Attempts" 
+        value={metrics.summary.attempt_count.toString()}  // Updated from attempted_items to attempt_count
         change={changes.problemsCompleted}
         changeLabel="vs Last Month"
         isPercentage={false}
@@ -95,6 +105,8 @@ function MetricCard({ title, value, change, changeLabel, isPercentage = true }: 
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-col space-y-1.5">
+          <p className="text-base font-medium text-muted-foreground">{title}</p>
+          <h3 className="text-3xl font-bold">{value}</h3>
           <div className="flex items-center">
             <span className={cn(
               "text-xs inline-flex items-center gap-1",
@@ -108,8 +120,6 @@ function MetricCard({ title, value, change, changeLabel, isPercentage = true }: 
               {`${isPositive ? '+' : ''}${Math.abs(change).toFixed(2)}${isPercentage ? '%' : ''} ${changeLabel}`}
             </span>
           </div>
-          <h3 className="text-3xl font-bold">{value}</h3>
-          <p className="text-base font-medium text-muted-foreground">{title}</p>
         </div>
       </CardContent>
     </Card>

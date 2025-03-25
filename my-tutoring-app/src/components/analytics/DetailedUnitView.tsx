@@ -5,6 +5,7 @@ import React from 'react'
 import { useAnalytics } from './StudentAnalytics'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ChevronRight, ChevronDown } from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 export default function DetailedUnitView() {
@@ -12,7 +13,16 @@ export default function DetailedUnitView() {
   const [expandedGroups, setExpandedGroups] = React.useState<string[]>(['Ready'])
   
   if (!metrics || !metrics.hierarchical_data) {
-    return <div className="flex items-center justify-center h-[200px] text-muted-foreground">No data available</div>;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Detailed Unit Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[200px] text-muted-foreground">No data available</div>
+        </CardContent>
+      </Card>
+    );
   }
   
   // Process data from the API to group by readiness status
@@ -73,6 +83,11 @@ export default function DetailedUnitView() {
         )
       );
       
+      // Get the appropriate number for attempts - handle both field naming conventions
+      const attemptsValue = unit.attempted_skills !== undefined 
+        ? unit.attempted_skills 
+        : (unit.attempted !== undefined ? unit.attempted : 0);
+      
       // Create unit data
       const unitData = {
         title: unit.unit_title,
@@ -80,7 +95,7 @@ export default function DetailedUnitView() {
         average_score: Math.round(unit.mastery * 100),
         proficiency: Math.round(unit.proficiency * 100),
         mastery: Math.round(unit.mastery * 100),
-        attempts: unit.attempted
+        attempts: attemptsValue
       };
       
       // Add unit to appropriate readiness group
@@ -127,13 +142,18 @@ export default function DetailedUnitView() {
     const filteredGroups = Object.values(readinessGroups)
       .filter(group => group.units.length > 0);
     
+    // Calculate totals - use attempted_items if available, fallback to attempted
+    const totalAttempts = metrics.summary.attempted_items !== undefined 
+      ? metrics.summary.attempted_items 
+      : 0;
+    
     // Calculate totals
     const total = {
       completion_rate: Math.round(metrics.summary.completion),
       average_score: Math.round(metrics.summary.mastery * 100),
       proficiency: Math.round(metrics.summary.proficiency * 100),
       mastery: Math.round(metrics.summary.mastery * 100),
-      attempts: metrics.summary.attempted_items
+      attempts: totalAttempts
     };
     
     return { 
@@ -163,88 +183,95 @@ export default function DetailedUnitView() {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[300px]">Readiness Status</TableHead>
-            <TableHead className="text-right">Completion Rate %</TableHead>
-            <TableHead className="text-right">Average Score</TableHead>
-            <TableHead className="text-right">Proficiency %</TableHead>
-            <TableHead className="text-right">Mastery %</TableHead>
-            <TableHead className="text-right">Attempts</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {/* Readiness Groups */}
-          {data.readiness_groups.map((group) => (
-            <React.Fragment key={group.status}>
-              {/* Group Header Row */}
-              <TableRow className="bg-muted/50">
-                <TableCell className="font-bold flex items-center">
-                  <button 
-                    onClick={() => toggleGroupExpansion(group.status)} 
-                    className="mr-2"
-                  >
-                    {expandedGroups.includes(group.status) ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </button>
-                  {group.status}
-                </TableCell>
-                <TableCell className="text-right font-medium">{group.completion_rate}%</TableCell>
-                <TableCell className="text-right font-medium">{group.average_score}%</TableCell>
-                <TableCell className="text-right font-medium">{group.proficiency}%</TableCell>
-                <TableCell className="text-right font-medium">{group.mastery}%</TableCell>
-                <TableCell className="text-right font-medium">{group.attempts}</TableCell>
+    <Card>
+      <CardHeader>
+        <CardTitle>Detailed Unit Overview</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[300px]">Readiness Status</TableHead>
+                <TableHead className="text-right">Completion Rate %</TableHead>
+                <TableHead className="text-right">Average Score</TableHead>
+                <TableHead className="text-right">Proficiency %</TableHead>
+                <TableHead className="text-right">Mastery %</TableHead>
+                <TableHead className="text-right">Attempts</TableHead>
               </TableRow>
-              
-              {/* Unit Rows */}
-              {expandedGroups.includes(group.status) && group.units.map((unit, index) => (
-                <TableRow 
-                  key={`${group.status}-${index}`}
-                  className={unit.attempts > 0 ? "" : "text-muted-foreground"}
-                >
-                  <TableCell className="pl-8 font-medium">{unit.title}</TableCell>
-                  <TableCell className="text-right">{unit.completion_rate}%</TableCell>
-                  <TableCell className="text-right">
-                    {unit.average_score > 0 && (
-                      <span className={cn(
-                        "px-2 py-1 rounded-md text-xs font-medium",
-                        getScoreColorClass(unit.average_score)
-                      )}>
-                        {unit.average_score}%
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">{unit.proficiency}%</TableCell>
-                  <TableCell className="text-right">{unit.mastery}%</TableCell>
-                  <TableCell className="text-right">{unit.attempts}</TableCell>
-                </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* Readiness Groups */}
+              {data.readiness_groups.map((group) => (
+                <React.Fragment key={group.status}>
+                  {/* Group Header Row */}
+                  <TableRow className="bg-muted/50">
+                    <TableCell className="font-bold flex items-center">
+                      <button 
+                        onClick={() => toggleGroupExpansion(group.status)} 
+                        className="mr-2"
+                      >
+                        {expandedGroups.includes(group.status) ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </button>
+                      {group.status}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">{group.completion_rate}%</TableCell>
+                    <TableCell className="text-right font-medium">{group.average_score}%</TableCell>
+                    <TableCell className="text-right font-medium">{group.proficiency}%</TableCell>
+                    <TableCell className="text-right font-medium">{group.mastery}%</TableCell>
+                    <TableCell className="text-right font-medium">{group.attempts}</TableCell>
+                  </TableRow>
+                  
+                  {/* Unit Rows */}
+                  {expandedGroups.includes(group.status) && group.units.map((unit, index) => (
+                    <TableRow 
+                      key={`${group.status}-${index}`}
+                      className={unit.attempts > 0 ? "" : "text-muted-foreground"}
+                    >
+                      <TableCell className="pl-8 font-medium">{unit.title}</TableCell>
+                      <TableCell className="text-right">{unit.completion_rate}%</TableCell>
+                      <TableCell className="text-right">
+                        {unit.average_score > 0 && (
+                          <span className={cn(
+                            "px-2 py-1 rounded-md text-xs font-medium",
+                            getScoreColorClass(unit.average_score)
+                          )}>
+                            {unit.average_score}%
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">{unit.proficiency}%</TableCell>
+                      <TableCell className="text-right">{unit.mastery}%</TableCell>
+                      <TableCell className="text-right">{unit.attempts}</TableCell>
+                    </TableRow>
+                  ))}
+                </React.Fragment>
               ))}
-            </React.Fragment>
-          ))}
-          
-          {/* Totals Row */}
-          <TableRow className="bg-muted/50">
-            <TableCell className="font-bold">Total</TableCell>
-            <TableCell className="text-right font-bold">{data.total.completion_rate}%</TableCell>
-            <TableCell className="text-right font-bold">
-              <span className={cn(
-                "px-2 py-1 rounded-md text-xs font-medium",
-                getScoreColorClass(data.total.average_score)
-              )}>
-                {data.total.average_score}%
-              </span>
-            </TableCell>
-            <TableCell className="text-right font-bold">{data.total.proficiency}%</TableCell>
-            <TableCell className="text-right font-bold">{data.total.mastery}%</TableCell>
-            <TableCell className="text-right font-bold">{data.total.attempts}</TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </div>
+              
+              {/* Totals Row */}
+              <TableRow className="bg-muted/50">
+                <TableCell className="font-bold">Total</TableCell>
+                <TableCell className="text-right font-bold">{data.total.completion_rate}%</TableCell>
+                <TableCell className="text-right font-bold">
+                  <span className={cn(
+                    "px-2 py-1 rounded-md text-xs font-medium",
+                    getScoreColorClass(data.total.average_score)
+                  )}>
+                    {data.total.average_score}%
+                  </span>
+                </TableCell>
+                <TableCell className="text-right font-bold">{data.total.proficiency}%</TableCell>
+                <TableCell className="text-right font-bold">{data.total.mastery}%</TableCell>
+                <TableCell className="text-right font-bold">{data.total.attempts}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

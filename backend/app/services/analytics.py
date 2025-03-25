@@ -655,8 +655,9 @@ class AnalyticsExtension:
                         "proficiency": skill_proficiency,
                         "avg_score": skill_avg_score,  # Include avg_score
                         "completion": skill_completion,
-                        "attempted": skill["attempted"],
-                        "total": skill["total"],
+                        "attempted_subskills": skill["attempted"],  # Rename for clarity
+                        "total_subskills": skill["total"],          # Rename for clarity
+                        "attempt_count": sum(s["attempt_count"] for s in skill["subskills"].values()),  # Add total attempts
                         "subskills": subskills_list
                     }
                     
@@ -695,6 +696,9 @@ class AnalyticsExtension:
                 unit["proficiency"] = unit_proficiency
                 unit["avg_score"] = unit_avg_score  # Include avg_score
                 unit["completion"] = unit_completion
+                unit["attempted_skills"] = unit["attempted"]  # Rename
+                unit["total_skills"] = unit["total"]         # Rename
+                unit["attempt_count"] = sum(s["attempt_count"] for s in unit_skills)  # Add total attempts
                 unit["skills"] = unit_skills
             
             # Calculate overall metrics
@@ -735,13 +739,13 @@ class AnalyticsExtension:
             summary = {
                 "mastery": float(overall_mastery),
                 "proficiency": float(overall_proficiency),
-                "avg_score": float(overall_avg_score),  # Include avg_score
+                "avg_score": float(overall_avg_score),
                 "completion": float(overall_completion),
+                "attempted_items": total_attempted_items,     # Rename for clarity
+                "total_items": total_curriculum_items,        # Keep as is
+                "attempt_count": total_individual_attempts,   # Consistently name the attempt count
                 "ready_items": ready_items,
-                "recommended_items": recommended_items,
-                "total_items": total_curriculum_items,
-                "attempted_items": total_attempted_items,
-                "raw_attempt_count": total_individual_attempts  # Include the raw attempt count
+                "recommended_items": recommended_items
             }
             
             logger.info(f"Final summary: {summary}")
@@ -769,453 +773,256 @@ class AnalyticsExtension:
                                 start_date: Optional[datetime] = None,
                                 end_date: Optional[datetime] = None,
                                 unit_id: Optional[str] = None,
-                                skill_id: Optional[str] = None) -> List[Dict]:
+                                skill_id: Optional[str] = None,
+                                include_hierarchy: bool = False) -> List[Dict]:
         """
         Get metrics over time for a student at the specified hierarchy level.
-        
-        Args:
-            student_id: The ID of the student
-            subject: Optional subject filter
-            interval: Time interval for grouping ('day', 'week', 'month', 'quarter', 'year')
-            level: Hierarchy level ('subject', 'unit', 'skill', 'subskill')
-            start_date: Optional start date
-            end_date: Optional end date
-            unit_id: Optional unit filter (required for skill and subskill levels)
-            skill_id: Optional skill filter (required for subskill level)
-            
-        Returns:
-            List of dictionaries containing metrics for each time interval
         """
+        from datetime import timedelta  # Move this import to the top of your file
+
+        logger.info(f"=== TIMESERIES FUNCTION STARTED ===")
+        logger.info(f"Parameters: student_id={student_id}, subject={subject}, interval={interval}, level={level}")
+        logger.info(f"Date range: start_date={start_date}, end_date={end_date}")
+        logger.info(f"Filters: unit_id={unit_id}, skill_id={skill_id}, include_hierarchy={include_hierarchy}")
+        
         conn = await self.get_pg_connection()
         try:
+            logger.info("Successfully established database connection")
+            
             # Convert dates to the correct format for PostgreSQL
             if start_date and start_date.tzinfo:
-                start_date = start_date.replace(tzinfo=None)  # Remove timezone info
+                start_date = start_date.replace(tzinfo=None)
+                logger.info(f"Removed timezone from start_date: {start_date}")
         
             if end_date and end_date.tzinfo:
-                end_date = end_date.replace(tzinfo=None)  # Remove timezone info
+                end_date = end_date.replace(tzinfo=None)
+                logger.info(f"Removed timezone from end_date: {end_date}")
 
-            
             # Determine the date trunc function based on interval
             trunc_function = interval.lower()
             if trunc_function not in ('day', 'week', 'month', 'quarter', 'year'):
-                trunc_function = 'month'  # Default to month
+                logger.warning(f"Invalid interval '{interval}', defaulting to 'month'")
+                trunc_function = 'month'
             
-            # Build query based on the hierarchy level
-            if level == 'subject':
-                query = """
-                WITH 
-                -- Get all attempts in the date range grouped by time interval and subject
-                attempts_by_interval AS (
-                    SELECT
-                        student_id,
-                        DATE_TRUNC($3, timestamp) AS interval_date,
-                        subject,
-                        subskill_id,
-                        AVG(score / 10) AS avg_score
-                    FROM
-                        problem_reviews
-                    WHERE
-                        student_id = $1
-                        AND ($4::timestamp IS NULL OR timestamp >= $4::timestamp)
-                        AND ($5::timestamp IS NULL OR timestamp <= $5::timestamp)
-                        AND ($2::text IS NULL OR subject = $2)
-                    GROUP BY
-                        student_id, interval_date, subject, subskill_id
-                ),
+            logger.info(f"Using trunc_function: {trunc_function}")
+            
+            # First, check if there's any data at all for this student and subject
+            test_query = """
+            SELECT COUNT(*) as count, 
+                MIN(timestamp) as min_date, 
+                MAX(timestamp) as max_date
+            FROM attempts 
+            WHERE student_id = $1 
+            AND ($2::text IS NULL OR subject = $2)
+            """
+            test_result = await conn.fetchrow(test_query, student_id, subject)
+            attempt_count = test_result['count'] if test_result else 0
+            min_date = test_result['min_date'] if test_result and 'min_date' in test_result else None
+            max_date = test_result['max_date'] if test_result and 'max_date' in test_result else None
+            
+            logger.info(f"Initial data check: Found {attempt_count} total attempts")
+            logger.info(f"Date range in database: {min_date} to {max_date}")
+            
+            # If start_date and end_date are provided, check if they overlap with data
+            if start_date and max_date and start_date > max_date:
+                logger.warning(f"start_date {start_date} is after the latest data date {max_date}")
+            if end_date and min_date and end_date < min_date:
+                logger.warning(f"end_date {end_date} is before the earliest data date {min_date}")
+            
+            # Check if there's any subject-specific data
+            if subject:
+                subject_query = """
+                SELECT COUNT(*) as count 
+                FROM attempts 
+                WHERE student_id = $1 
+                AND subject = $2
+                """
+                subject_count = await conn.fetchval(subject_query, student_id, subject)
+                logger.info(f"Subject-specific check: Found {subject_count} attempts for subject '{subject}'")
                 
-                -- Count attempts and unique subskills per interval and subject
-                counts_by_interval AS (
-                    SELECT
-                        interval_date,
-                        subject,
-                        COUNT(DISTINCT subskill_id) AS unique_subskills,
-                        COUNT(*) AS attempt_count
-                    FROM
-                        attempts_by_interval
-                    GROUP BY
-                        interval_date, subject
-                ),
+                # Log some sample data if available
+                if subject_count > 0:
+                    sample_query = """
+                    SELECT student_id, subject, timestamp, score
+                    FROM attempts 
+                    WHERE student_id = $1 
+                    AND subject = $2
+                    LIMIT 3
+                    """
+                    sample_data = await conn.fetch(sample_query, student_id, subject)
+                    logger.info(f"Sample data for debugging: {[dict(row) for row in sample_data]}")
+                else:
+                    logger.warning(f"NO DATA FOUND FOR SUBJECT '{subject}'")
+                    # Check if there's a case mismatch issue
+                    case_query = """
+                    SELECT DISTINCT subject
+                    FROM attempts 
+                    WHERE student_id = $1 
+                    AND LOWER(subject) = LOWER($2)
+                    """
+                    case_results = await conn.fetch(case_query, student_id, subject)
+                    if case_results:
+                        logger.warning(f"Found similar subjects with different case: {[row['subject'] for row in case_results]}")
+            
+            # Query to get distinct time intervals
+            intervals_query = """
+            SELECT DISTINCT
+                DATE_TRUNC($3, timestamp) AS interval_date
+            FROM
+                attempts
+            WHERE
+                student_id = $1
+                AND ($2::text IS NULL OR subject = $2)
+                AND ($4::timestamp IS NULL OR timestamp >= $4::timestamp)
+                AND ($5::timestamp IS NULL OR timestamp <= $5::timestamp)
+            ORDER BY
+                interval_date
+            """
+            
+            logger.info(f"Executing intervals query with parameters: [{student_id}, {subject}, {trunc_function}, {start_date}, {end_date}]")
+            
+            # Get all distinct time intervals
+            intervals = await conn.fetch(intervals_query, student_id, subject, trunc_function, start_date, end_date)
+            
+            logger.info(f"Found {len(intervals)} time intervals:")
+            for idx, interval_row in enumerate(intervals):
+                logger.info(f"  Interval {idx+1}: {interval_row['interval_date']}")
+            
+            # If no intervals found, return empty list
+            if not intervals:
+                logger.warning("No intervals found with the provided filters - returning empty result")
+                return []
                 
-                -- Calculate mastery per interval and subject
-                mastery_by_interval AS (
-                    SELECT
-                        interval_date,
-                        subject,
-                        AVG(avg_score) AS mastery_score
-                    FROM
-                        attempts_by_interval
-                    GROUP BY
-                        interval_date, subject
-                ),
+            # For each interval, calculate metrics
+            timeseries_intervals = []
+            
+            for interval_idx, interval_row in enumerate(intervals):
+                interval_date = interval_row["interval_date"]
+                interval_start = interval_date
                 
-                -- Get ready subskills
-                ready_subskills AS (
-                    -- First subskills in learning paths are always ready
-                    SELECT DISTINCT
-                        $1 AS student_id,
-                        c.subject,
-                        c.subskill_id
-                    FROM
-                        curriculum c
-                    LEFT JOIN
-                        subskill_learning_paths slp ON c.subskill_id = slp.next_subskill_id
-                    WHERE
-                        slp.current_subskill_id IS NULL
-                        AND ($2::text IS NULL OR c.subject = $2)
-                    
-                    UNION
-                    
-                    -- Subskills where prerequisites are met
-                    SELECT DISTINCT
-                        $1 AS student_id,
-                        c.subject,
-                        slp.next_subskill_id AS subskill_id
-                    FROM
-                        curriculum c
-                    JOIN
-                        subskill_learning_paths slp ON c.subskill_id = slp.current_subskill_id
-                    JOIN (
-                        SELECT 
-                            subskill_id
-                        FROM 
-                            problem_reviews
-                        WHERE 
-                            student_id = $1
-                        GROUP BY 
-                            subskill_id
-                        HAVING 
-                            AVG(score / 10) >= 0.6
-                    ) pr ON slp.current_subskill_id = pr.subskill_id
-                    WHERE
-                        ($2::text IS NULL OR c.subject = $2)
-                        AND slp.next_subskill_id IS NOT NULL
-                ),
+                logger.info(f"Processing interval {interval_idx+1}/{len(intervals)}: {interval_date}")
                 
-                -- Calculate proficiency per interval and subject
-                proficiency_by_interval AS (
-                    SELECT
-                        a.interval_date,
-                        a.subject,
-                        AVG(a.avg_score) AS proficiency_score
-                    FROM
-                        attempts_by_interval a
-                    JOIN
-                        ready_subskills rs ON a.student_id = rs.student_id 
-                                        AND a.subskill_id = rs.subskill_id
-                                        AND a.subject = rs.subject
-                    GROUP BY
-                        a.interval_date, a.subject
-                ),
+                # Calculate the end of this interval
+                if trunc_function == 'day':
+                    interval_end = interval_date + timedelta(days=1)
+                elif trunc_function == 'week':
+                    interval_end = interval_date + timedelta(weeks=1)
+                elif trunc_function == 'month':
+                    # Get next month
+                    if interval_date.month == 12:
+                        interval_end = datetime(interval_date.year + 1, 1, 1)
+                    else:
+                        interval_end = datetime(interval_date.year, interval_date.month + 1, 1)
+                elif trunc_function == 'quarter':
+                    # Add 3 months
+                    quarter_month = ((interval_date.month - 1) // 3) * 3 + 1
+                    if quarter_month + 3 > 12:
+                        interval_end = datetime(interval_date.year + 1, (quarter_month + 3) % 12 or 12, 1)
+                    else:
+                        interval_end = datetime(interval_date.year, quarter_month + 3, 1)
+                else:  # year
+                    interval_end = datetime(interval_date.year + 1, 1, 1)
                 
-                -- Calculate curriculum counts per subject
-                curriculum_counts AS (
-                    SELECT
-                        subject,
-                        COUNT(DISTINCT subskill_id) AS total_curriculum_items
-                    FROM
-                        curriculum
-                    WHERE
-                        ($2::text IS NULL OR subject = $2)
-                    GROUP BY
-                        subject
-                ),
+                logger.info(f"Interval date range: {interval_start} to {interval_end}")
                 
-                -- Calculate ready curriculum counts per subject
-                ready_counts AS (
-                    SELECT
-                        rs.subject,
-                        COUNT(DISTINCT rs.subskill_id) AS total_ready_items
-                    FROM
-                        ready_subskills rs
-                    GROUP BY
-                        rs.subject
+                # Check how many attempts fall into this interval for this student/subject
+                count_query = """
+                SELECT COUNT(*) 
+                FROM attempts 
+                WHERE student_id = $1
+                AND ($2::text IS NULL OR subject = $2)
+                AND timestamp >= $3
+                AND timestamp < $4
+                """
+                interval_count = await conn.fetchval(count_query, student_id, subject, interval_start, interval_end)
+                logger.info(f"Found {interval_count} attempts in this interval")
+                
+                if interval_count == 0:
+                    logger.warning(f"No attempts found in interval {interval_start} to {interval_end} despite it being returned by the intervals query")
+                
+                # Get metrics for this interval by calling get_hierarchical_metrics
+                logger.info(f"Calling get_hierarchical_metrics for this interval")
+                interval_metrics = await self.get_hierarchical_metrics(
+                    student_id, subject, interval_start, interval_end
                 )
                 
-                -- Combine all metrics by interval and subject
-                SELECT
-                    i.interval_date,
-                    i.subject,
-                    cc.total_curriculum_items,
-                    COALESCE(rc.total_ready_items, 0) AS total_ready_items,
-                    i.unique_subskills,
-                    i.attempt_count,
-                    m.mastery_score,
-                    p.proficiency_score,
-                    i.unique_subskills::float / cc.total_curriculum_items * 100 AS completion_percentage
-                FROM
-                    counts_by_interval i
-                JOIN
-                    curriculum_counts cc ON i.subject = cc.subject
-                LEFT JOIN
-                    ready_counts rc ON i.subject = rc.subject
-                LEFT JOIN
-                    mastery_by_interval m ON i.interval_date = m.interval_date AND i.subject = m.subject
-                LEFT JOIN
-                    proficiency_by_interval p ON i.interval_date = p.interval_date AND i.subject = p.subject
-                ORDER BY
-                    i.subject, i.interval_date
-                """
+                logger.info(f"Retrieved hierarchical metrics with {len(interval_metrics.get('hierarchical_data', []))} units")
+                logger.info(f"Summary metrics: {interval_metrics.get('summary', {})}")
                 
-                params = [student_id, subject, trunc_function, start_date, end_date]
-                
-            elif level == 'unit':
-                query = """
-                WITH 
-                -- Get all attempts in the date range grouped by time interval, subject, and unit
-                attempts_by_interval AS (
-                    SELECT
-                        pr.student_id,
-                        DATE_TRUNC($3, pr.timestamp) AS interval_date,
-                        pr.subject,
-                        c.unit_id,
-                        pr.subskill_id,
-                        AVG(pr.score / 10) AS avg_score
-                    FROM
-                        problem_reviews pr
-                    JOIN
-                        curriculum c ON pr.subskill_id = c.subskill_id
-                    WHERE
-                        pr.student_id = $1
-                        AND ($4::timestamp IS NULL OR pr.timestamp >= $4::timestamp)
-                        AND ($5::timestamp IS NULL OR pr.timestamp <= $5::timestamp)
-                        AND ($2::text IS NULL OR pr.subject = $2)
-                        AND ($6::text IS NULL OR c.unit_id = $6)
-                    GROUP BY
-                        pr.student_id, interval_date, pr.subject, c.unit_id, pr.subskill_id
-                ),
-                
-                -- Count attempts and unique subskills per interval, subject, and unit
-                counts_by_interval AS (
-                    SELECT
-                        interval_date,
-                        subject,
-                        unit_id,
-                        COUNT(DISTINCT subskill_id) AS unique_subskills,
-                        COUNT(*) AS attempt_count
-                    FROM
-                        attempts_by_interval
-                    GROUP BY
-                        interval_date, subject, unit_id
-                ),
-                
-                -- Calculate mastery per interval, subject, and unit
-                mastery_by_interval AS (
-                    SELECT
-                        interval_date,
-                        subject,
-                        unit_id,
-                        AVG(avg_score) AS mastery_score
-                    FROM
-                        attempts_by_interval
-                    GROUP BY
-                        interval_date, subject, unit_id
-                ),
-                
-                -- Get unit titles
-                unit_titles AS (
-                    SELECT DISTINCT
-                        unit_id,
-                        unit_title
-                    FROM
-                        curriculum
-                ),
-                
-                -- Get ready subskills with unit info
-                ready_subskills AS (
-                    -- First subskills in learning paths are always ready
-                    SELECT DISTINCT
-                        $1 AS student_id,
-                        c.subject,
-                        c.unit_id,
-                        c.subskill_id
-                    FROM
-                        curriculum c
-                    LEFT JOIN
-                        subskill_learning_paths slp ON c.subskill_id = slp.next_subskill_id
-                    WHERE
-                        slp.current_subskill_id IS NULL
-                        AND ($2::text IS NULL OR c.subject = $2)
-                        AND ($6::text IS NULL OR c.unit_id = $6)
-                    
-                    UNION
-                    
-                    -- Subskills where prerequisites are met
-                    SELECT DISTINCT
-                        $1 AS student_id,
-                        c.subject,
-                        c.unit_id,
-                        slp.next_subskill_id AS subskill_id
-                    FROM
-                        curriculum c
-                    JOIN
-                        subskill_learning_paths slp ON c.subskill_id = slp.current_subskill_id
-                    JOIN (
-                        SELECT 
-                            subskill_id
-                        FROM 
-                            problem_reviews
-                        WHERE 
-                            student_id = $1
-                        GROUP BY 
-                            subskill_id
-                        HAVING 
-                            AVG(score / 10) >= 0.6
-                    ) pr ON slp.current_subskill_id = pr.subskill_id
-                    WHERE
-                        ($2::text IS NULL OR c.subject = $2)
-                        AND ($6::text IS NULL OR c.unit_id = $6)
-                        AND slp.next_subskill_id IS NOT NULL
-                ),
-                
-                -- Calculate proficiency per interval, subject, and unit
-                proficiency_by_interval AS (
-                    SELECT
-                        a.interval_date,
-                        a.subject,
-                        a.unit_id,
-                        AVG(a.avg_score) AS proficiency_score
-                    FROM
-                        attempts_by_interval a
-                    JOIN
-                        ready_subskills rs ON a.student_id = rs.student_id 
-                                        AND a.subskill_id = rs.subskill_id
-                                        AND a.subject = rs.subject
-                                        AND a.unit_id = rs.unit_id
-                    GROUP BY
-                        a.interval_date, a.subject, a.unit_id
-                ),
-                
-                -- Calculate curriculum counts per subject and unit
-                curriculum_counts AS (
-                    SELECT
-                        subject,
-                        unit_id,
-                        COUNT(DISTINCT subskill_id) AS total_curriculum_items
-                    FROM
-                        curriculum
-                    WHERE
-                        ($2::text IS NULL OR subject = $2)
-                        AND ($6::text IS NULL OR unit_id = $6)
-                    GROUP BY
-                        subject, unit_id
-                ),
-                
-                -- Calculate ready curriculum counts per subject and unit
-                ready_counts AS (
-                    SELECT
-                        rs.subject,
-                        rs.unit_id,
-                        COUNT(DISTINCT rs.subskill_id) AS total_ready_items
-                    FROM
-                        ready_subskills rs
-                    GROUP BY
-                        rs.subject, rs.unit_id
-                )
-                
-                -- Combine all metrics by interval, subject, and unit
-                SELECT
-                    i.interval_date,
-                    i.subject,
-                    i.unit_id,
-                    ut.unit_title,
-                    cc.total_curriculum_items,
-                    COALESCE(rc.total_ready_items, 0) AS total_ready_items,
-                    i.unique_subskills,
-                    i.attempt_count,
-                    m.mastery_score,
-                    p.proficiency_score,
-                    i.unique_subskills::float / cc.total_curriculum_items * 100 AS completion_percentage
-                FROM
-                    counts_by_interval i
-                JOIN
-                    curriculum_counts cc ON i.subject = cc.subject AND i.unit_id = cc.unit_id
-                JOIN
-                    unit_titles ut ON i.unit_id = ut.unit_id
-                LEFT JOIN
-                    ready_counts rc ON i.subject = rc.subject AND i.unit_id = rc.unit_id
-                LEFT JOIN
-                    mastery_by_interval m ON i.interval_date = m.interval_date 
-                                        AND i.subject = m.subject 
-                                        AND i.unit_id = m.unit_id
-                LEFT JOIN
-                    proficiency_by_interval p ON i.interval_date = p.interval_date 
-                                            AND i.subject = p.subject 
-                                            AND i.unit_id = p.unit_id
-                ORDER BY
-                    i.subject, i.unit_id, i.interval_date
-                """
-                
-                params = [student_id, subject, trunc_function, start_date, end_date, unit_id]
-                
-            elif level == 'skill':
-                # Similar to unit level but include skill_id in the groups
-                query = """
-                -- Skill level query with similar structure but including skill_id
-                -- This would follow the same pattern as the unit query
-                -- but with additional skill_id columns and join conditions
-                """
-                
-                params = [student_id, subject, trunc_function, start_date, end_date, unit_id, skill_id]
-                
-            elif level == 'subskill':
-                # Most granular level - includes all hierarchy IDs
-                query = """
-                -- Subskill level query with similar structure
-                -- This would be the most detailed query showing metrics
-                -- for each individual subskill over time
-                """
-                
-                params = [student_id, subject, trunc_function, start_date, end_date, unit_id, skill_id]
-            
-            else:
-                # Default to subject level if an invalid level is specified
-                level = 'subject'
-                # Use subject level query
-                # [...]
-            
-            results = await conn.fetch(query, *params)
-            
-            # Convert to list of dictionaries
-            timeseries = []
-            for row in results:
-                row_dict = dict(row)
-                data_point = {
-                    "interval_date": row_dict["interval_date"].isoformat(),
-                    "metrics": {
-                        "mastery": float(row_dict["mastery_score"] or 0),
-                        "proficiency": float(row_dict["proficiency_score"] or 0),
-                        "completion": float(row_dict["completion_percentage"] or 0),
-                        "attempts": row_dict["attempt_count"],
-                        "unique_subskills": row_dict["unique_subskills"],
-                        "total_curriculum_items": row_dict["total_curriculum_items"],
-                        "total_ready_items": row_dict["total_ready_items"]
-                    }
+                # Create interval data point
+                interval_data = {
+                    "interval_date": interval_date.isoformat(),
+                    "summary": interval_metrics["summary"]
                 }
                 
-                # Add hierarchy information based on level
-                if level != 'subject':
-                    data_point["subject"] = row_dict["subject"]
+                # Include hierarchical data if requested
+                if include_hierarchy:
+                    logger.info(f"Processing hierarchical data filter for level={level}, unit_id={unit_id}, skill_id={skill_id}")
+                    filtered_data = []
+                    original_units = len(interval_metrics["hierarchical_data"])
                     
-                if level in ('unit', 'skill', 'subskill'):
-                    data_point["unit_id"] = row_dict["unit_id"]
-                    data_point["unit_title"] = row_dict["unit_title"]
+                    # Filter hierarchical data based on level
+                    if level == 'unit' and unit_id:
+                        # Filter to just the requested unit
+                        filtered_units = [u for u in interval_metrics["hierarchical_data"] if u["unit_id"] == unit_id]
+                        filtered_data = filtered_units
+                        logger.info(f"Filtered {original_units} units to {len(filtered_data)} units matching unit_id={unit_id}")
+                    elif level == 'skill' and unit_id and skill_id:
+                        # Filter to just the requested skill within the unit
+                        for unit in interval_metrics["hierarchical_data"]:
+                            if unit["unit_id"] == unit_id:
+                                unit_skills = len(unit["skills"])
+                                filtered_skills = [s for s in unit["skills"] if s["skill_id"] == skill_id]
+                                logger.info(f"Unit {unit_id}: Filtered {unit_skills} skills to {len(filtered_skills)} skills matching skill_id={skill_id}")
+                                if filtered_skills:
+                                    filtered_data = [{
+                                        "unit_id": unit["unit_id"],
+                                        "unit_title": unit["unit_title"],
+                                        "skills": filtered_skills
+                                    }]
+                                    break
+                    elif level == 'subskill' and unit_id and skill_id:
+                        # Filter to just the requested unit and skill (keeping all subskills)
+                        for unit in interval_metrics["hierarchical_data"]:
+                            if unit["unit_id"] == unit_id:
+                                for skill in unit["skills"]:
+                                    if skill["skill_id"] == skill_id:
+                                        subskill_count = len(skill["subskills"])
+                                        logger.info(f"Found skill {skill_id} with {subskill_count} subskills")
+                                        filtered_data = [{
+                                            "unit_id": unit["unit_id"],
+                                            "unit_title": unit["unit_title"],
+                                            "skills": [{
+                                                "skill_id": skill["skill_id"],
+                                                "skill_description": skill["skill_description"],
+                                                "subskills": skill["subskills"]
+                                            }]
+                                        }]
+                                        break
+                    else:
+                        # For subject level or when no filters provided, include all hierarchical data
+                        filtered_data = interval_metrics["hierarchical_data"]
+                        logger.info(f"Using all {len(filtered_data)} units for level={level}")
                     
-                if level in ('skill', 'subskill'):
-                    data_point["skill_id"] = row_dict["skill_id"]
-                    data_point["skill_description"] = row_dict["skill_description"]
+                    interval_data["hierarchical_data"] = filtered_data
                     
-                if level == 'subskill':
-                    data_point["subskill_id"] = row_dict["subskill_id"]
-                    data_point["subskill_description"] = row_dict["subskill_description"]
+                    if not filtered_data:
+                        logger.warning(f"Hierarchical data filtering resulted in EMPTY data for level={level}, unit_id={unit_id}, skill_id={skill_id}")
                 
-                timeseries.append(data_point)
+                timeseries_intervals.append(interval_data)
+                logger.info(f"Successfully processed interval {interval_idx+1}")
             
-            return timeseries
+            logger.info(f"Returning {len(timeseries_intervals)} timeseries intervals")
+            logger.info(f"=== TIMESERIES FUNCTION COMPLETED SUCCESSFULLY ===")
+            return timeseries_intervals
+            
         except Exception as e:
+            logger.error(f"=== ERROR IN TIMESERIES FUNCTION ===")
             logger.error(f"Error calculating timeseries metrics: {e}")
+            logger.exception("Full exception details:")
             raise
         finally:
+            logger.info("Closing database connection")
             await conn.close()
 
     async def get_recommendations(self, student_id: int, subject: Optional[str] = None, limit: int = 5) -> List[Dict]:
@@ -1228,7 +1035,7 @@ class AnalyticsExtension:
             limit: Maximum number of recommendations to return
             
         Returns:
-            List of recommendation objects
+            List of recommendation objects with enhanced metadata
         """
         try:
             # First get the hierarchical metrics which contain readiness and priority info
@@ -1272,7 +1079,7 @@ class AnalyticsExtension:
                 # Add until we reach the limit
                 recommended_subskills.extend(ready_not_mastered[:limit - len(recommended_subskills)])
             
-            # Format the recommendations according to the API spec
+            # Format the recommendations according to the API spec with enhanced metadata
             recommendations = []
             for item in recommended_subskills[:limit]:
                 # Determine recommendation type
@@ -1307,9 +1114,17 @@ class AnalyticsExtension:
                     "skill_description": item["skill_description"],
                     "subskill_id": item["subskill_id"],
                     "subskill_description": item["subskill_description"],
-                    "proficiency": item["mastery"],
+                    "proficiency": item["proficiency"],
+                    "mastery": item["mastery"],
+                    "avg_score": item["avg_score"],
                     "priority_level": item["priority_level"],
+                    "priority_order": item["priority_order"],
+                    "readiness_status": item["readiness_status"],
                     "is_ready": item["readiness_status"] == "Ready",
+                    "completion": item["completion"],
+                    "attempt_count": item["attempt_count"],
+                    "is_attempted": item["is_attempted"],
+                    "next_subskill": item["next_subskill"],
                     "message": message
                 })
             

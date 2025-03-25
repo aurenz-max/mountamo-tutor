@@ -19,23 +19,23 @@ export default function OverallMasteryTable() {
   const subjectName = subject || 'All Subjects';
   
   // Calculate overall metrics
-  const totalAttempts = metrics.summary.attempted_items;
+  const totalAttempts = metrics.summary.attempt_count; // Use attempt_count instead of attempted_items
   const totalProficiency = Math.round(metrics.summary.proficiency * 100);
   const totalCompletionRate = Math.round(metrics.summary.completion);
   const totalMastery = Math.round(metrics.summary.mastery * 100);
   
   // Calculate average score from all attempted items
-  const avgScore = Math.round(totalMastery);
+  const avgScore = Math.round(metrics.summary.avg_score * 100); // Use avg_score from the data
   
   // Transform unit data
   const unitData = metrics.hierarchical_data.map(unit => ({
     id: unit.unit_id,
     title: unit.unit_title,
-    attempts: unit.attempted,
+    attempts: unit.attempt_count, // Use attempt_count instead of attempted
     proficiency: Math.round(unit.proficiency * 100),
     completion_rate: Math.round(unit.completion),
     mastery: Math.round(unit.mastery * 100),
-    average_score: Math.round(unit.mastery * 100) // Using mastery as average score since it's the average achieved across attempted items
+    average_score: Math.round(unit.avg_score * 100) // Use avg_score from the data
   }));
   
   // Create data object for rendering
@@ -72,7 +72,7 @@ export default function OverallMasteryTable() {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[300px]">Subject</TableHead>
-            <TableHead className="text-right">Attempts</TableHead>
+            <TableHead className="text-right">Attempt Count</TableHead>
             <TableHead className="text-right">Proficiency %</TableHead>
             <TableHead className="text-right">Completion Rate %</TableHead>
             <TableHead className="text-right">Mastery %</TableHead>
