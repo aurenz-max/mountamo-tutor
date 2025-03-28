@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { api } from '@/lib/api';
 import DrawingWorkspace from './DrawingWorkspace';
 import ProblemReader from './ProblemReader';
-import FeedbackDisplay from './FeedbackDisplay';
+
 
 const ProblemInterface = ({ currentTopic, studentId = 1 }) => {
   const [problem, setProblem] = useState(null);
@@ -44,11 +44,13 @@ const ProblemInterface = ({ currentTopic, studentId = 1 }) => {
         difficulty: currentTopic.difficulty_range?.target || 3.0
       };
   
+      console.log('Sending problem request:', problemRequest);
       const response = await api.generateProblem(problemRequest);
+      console.log('Received problem response:', response);
       setProblem(response);
     } catch (error) {
       console.error('Error generating problem:', error);
-      setError(error.message);
+      setError(error.message || 'An error occurred while generating the problem.');
     }
     setLoading(false);
   };
@@ -60,24 +62,27 @@ const ProblemInterface = ({ currentTopic, studentId = 1 }) => {
     setError(null);
    
     try {
-      const canvasData = drawingRef.current.getCanvasData();
+      const canvasData = await drawingRef.current.getCanvasData();
      
       if (!canvasData) {
         throw new Error('No drawing found. Please draw your answer before submitting.');
       }
      
+      // Fix: Pass the entire problem object, not just problem.problem
       const submission = {
         subject: currentTopic.subject,
-        problem: problem.problem,
+        problem: problem, // Pass the entire problem object
         solution_image: canvasData,
-        skill_id: currentTopic.skill?.id || '',
-        subskill_id: currentTopic.subskill?.id || '',
+        skill_id: currentTopic.selection?.skill || currentTopic.skill?.id || '',
+        subskill_id: currentTopic.selection?.subskill || currentTopic.subskill?.id || '',
         student_answer: '',
         canvas_used: true,
         student_id: studentId
       };
      
+      console.log('Submitting problem with data:', submission);
       const response = await api.submitProblem(submission);
+      console.log('Received submission response:', response);
       setFeedback(response);
     } catch (error) {
       console.error('Error submitting problem:', error);

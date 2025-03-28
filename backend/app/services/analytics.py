@@ -164,44 +164,79 @@ class AnalyticsExtension:
                     sp.proficiency >= 0.6  -- 60% proficiency in any subskill unlocks the skill
             ),
 
-            -- Add a new CTE for priority labeling
-            item_priority AS (
+            attempt_counts AS (
                 SELECT
                     student_id,
                     subskill_id,
-                    proficiency,
-                    CASE
-                        WHEN proficiency >= 0.8 THEN 'Mastered'                     -- Clear mastery (>=80%)
-                        WHEN proficiency BETWEEN 0.4 AND 0.799 THEN 'High Priority' -- Working on it (40-79%)
-                        WHEN proficiency < 0.4 AND proficiency > 0 THEN 'Medium Priority' -- Started but low proficiency
-                        WHEN proficiency = 0 THEN 'Not Started'                     -- No attempts yet
-                        ELSE 'Not Assessed'
-                    END AS priority_level,
-                    CASE 
-                        WHEN proficiency BETWEEN 0.4 AND 0.799 THEN 1  -- Highest priority (partially mastered)
-                        WHEN proficiency < 0.4 AND proficiency > 0 THEN 2  -- Medium priority (just started)
-                        WHEN proficiency = 0 THEN 3                     -- Low priority (not started)
-                        WHEN proficiency >= 0.8 THEN 4                 -- Already mastered
-                        ELSE 5                                        -- Not assessed
-                    END AS priority_order
-                FROM
-                    subskill_proficiency
-            ),
-
-            -- Get all attempts for the student to count individual attempts
-            all_attempts AS (
-                SELECT
-                    student_id,
-                    subskill_id,
-                    skill_id,
-                    timestamp AS attempt_timestamp,
-                    score / 10 as score
+                    COUNT(*) AS num_attempts
                 FROM
                     attempts
                 WHERE
                     student_id = $1
                     AND ($3::timestamp IS NULL OR timestamp >= $3::timestamp)
                     AND ($4::timestamp IS NULL OR timestamp <= $4::timestamp)
+                GROUP BY
+                    student_id, subskill_id
+            ),
+
+            -- Get all attempts for the student with normalized scores
+            all_attempts AS (
+                SELECT
+                    student_id,
+                    subskill_id,
+                    skill_id,
+                    timestamp AS attempt_timestamp,
+                    score / 10 as normalized_score  -- Normalizing to 0-1 scale
+                FROM
+                    attempts
+                WHERE
+                    student_id = $1
+                    AND ($3::timestamp IS NULL OR timestamp >= $3::timestamp)
+                    AND ($4::timestamp IS NULL OR timestamp <= $4::timestamp)
+            ),
+
+            -- Calculate average scores and blended scores with credibility
+            subskill_scores AS (
+                SELECT
+                    a.student_id,
+                    a.subskill_id,
+                    AVG(a.normalized_score) AS avg_score,
+                    COALESCE(ac.num_attempts, 0) AS attempt_count,
+                    POWER(LEAST(COALESCE(ac.num_attempts, 0), 30) / 30.0, 0.5) AS credibility,
+                    AVG(a.normalized_score) * POWER(LEAST(COALESCE(ac.num_attempts, 0), 30) / 30.0, 0.5) AS blended_score
+                FROM
+                    all_attempts a
+                LEFT JOIN
+                    attempt_counts ac ON a.student_id = ac.student_id AND a.subskill_id = ac.subskill_id
+                GROUP BY
+                    a.student_id, a.subskill_id, ac.num_attempts
+            ),
+
+            -- Add priority labeling based on blended scores
+            item_priority AS (
+                SELECT
+                    student_id,
+                    subskill_id,
+                    avg_score,
+                    attempt_count,
+                    credibility,
+                    blended_score,
+                    CASE
+                        WHEN blended_score >= 0.8 THEN 'Mastered'                     -- Clear mastery (>=80%)
+                        WHEN blended_score BETWEEN 0.4 AND 0.799 THEN 'High Priority' -- Working on it (40-79%)
+                        WHEN blended_score < 0.4 AND blended_score > 0 THEN 'Medium Priority' -- Started but low proficiency
+                        WHEN blended_score = 0 THEN 'Not Started'                     -- No attempts yet
+                        ELSE 'Not Assessed'
+                    END AS priority_level,
+                    CASE
+                        WHEN blended_score BETWEEN 0.4 AND 0.799 THEN 1  -- Highest priority (partially mastered)
+                        WHEN blended_score < 0.4 AND blended_score > 0 THEN 2  -- Medium priority (just started)
+                        WHEN blended_score = 0 THEN 3                     -- Low priority (not started)
+                        WHEN blended_score >= 0.8 THEN 4                 -- Already mastered
+                        ELSE 5                                        -- Not assessed
+                    END AS priority_order
+                FROM
+                    subskill_scores
             ),
             
             -- Combined query with readiness and priority information
@@ -213,7 +248,7 @@ class AnalyticsExtension:
                     c.subject,
                     c.skill_id,
                     c.subskill_id,
-                    a.score,
+                    a.normalized_score as score,
                     a.attempt_timestamp,
                     
                     -- Curriculum data
@@ -297,8 +332,8 @@ class AnalyticsExtension:
                     END AS readiness_status,
                     
                     -- Add priority label
-                    ip.priority_level,
-                    ip.priority_order,
+                    COALESCE(ip.priority_level, 'Not Started') AS priority_level,
+                    COALESCE(ip.priority_order, 3) AS priority_order,
                     
                     -- Label for next recommended item
                     CASE

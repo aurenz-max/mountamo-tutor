@@ -2,9 +2,10 @@
 
 from anthropic import Anthropic, AsyncAnthropic
 from ..core.config import settings
+from .base_ai_service import BaseAIService
 from typing import List, Dict, Any, Optional, Union
 
-class AnthropicService:
+class AnthropicService(BaseAIService):
     def __init__(self):
         self.client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         #self.model = "claude-3-5-haiku-20241022"

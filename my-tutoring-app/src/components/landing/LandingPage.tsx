@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Brain, BookOpen, Puzzle } from 'lucide-react';
+import { Brain, BookOpen, Puzzle, LayoutDashboard } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface LandingPageProps {
@@ -33,6 +33,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectMode }) => {
       icon: BookOpen,
       price: "All Grades K-K",
       path: "/curriculum"
+    },
+    {
+      title: "Learning Dashboard",
+      description: "Track progress and get personalized recommendations",
+      icon: LayoutDashboard,
+      price: "All learning activities",
+      badge: "FEATURED",
+      path: "/dashboard"
     }
   ];
 
@@ -51,7 +59,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectMode }) => {
         <h2 className="text-3xl text-gray-500">Take your pick.</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {modes.map((mode) => {
           const Icon = mode.icon;
           return (
@@ -66,8 +74,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectMode }) => {
                 </span>
               )}
               
-              <div className="h-64 flex items-center justify-center mb-6">
-                <Icon className="w-32 h-32 text-gray-800" strokeWidth={1.5} />
+              <div className="h-48 flex items-center justify-center mb-6">
+                <Icon className="w-24 h-24 text-gray-800" strokeWidth={1.5} />
               </div>
 
               <h2 className="text-2xl font-semibold mb-2">{mode.title}</h2>

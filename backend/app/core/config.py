@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     
     # Database settings
     DATABASE_URL: str = "sqlite:///./ai_tutor.db"
+
+    DEFAULT_AI_SERVICE: str
     
     # Anthropic API settings
     ANTHROPIC_API_KEY: Optional[str] = None

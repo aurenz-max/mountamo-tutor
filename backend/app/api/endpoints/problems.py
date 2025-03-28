@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 
@@ -188,4 +188,96 @@ async def update_problem_difficulty(
         raise HTTPException(
             status_code=500,
             detail=f"Error updating difficulty: {str(e)}"
+        )
+
+@router.get("/student/{student_id}/recommended-problems", response_model=List[ProblemResponse])
+async def get_recommended_problems(
+    student_id: int,
+    subject: Optional[str] = None,
+    count: int = Query(3, ge=1, le=10, description="Number of problems to generate"),
+    analytics_service: AnalyticsExtension = Depends(get_analytics_extension),
+    problem_service: ProblemService = Depends(get_problem_service)
+) -> List[ProblemResponse]:
+    """
+    Get personalized recommended problems for a student based on their analytics.
+    Returns multiple problems in a single call based on the top recommendations.
+    """
+    try:
+        # Step 1: Get recommendations from analytics service
+        recommendations = await analytics_service.get_recommendations(
+            student_id, subject, limit=count
+        )
+        
+        if not recommendations or len(recommendations) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="No recommendations found for this student"
+            )
+            
+        # Step 2: Generate multiple problems in a single call
+        problems = await problem_service.get_multiple_problems(
+            student_id=student_id,
+            subject=subject,
+            recommendations=recommendations
+        )
+        
+        if not problems:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to generate recommended problems"
+            )
+            
+        return problems
+        
+    except HTTPException as e:
+        raise
+    except Exception as e:
+        print(f"Error in get_recommended_problems endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
+
+@router.get("/skill-problems/{student_id}")
+async def get_skill_problems(
+    student_id: int,
+    subject: str,
+    skill_id: str,
+    subskill_id: str,
+    count: int = Query(5, ge=3, le=8, description="Number of problems to generate"),
+    problem_service: ProblemService = Depends(get_problem_service)
+) -> List[ProblemResponse]:
+    """
+    Get multiple problems for a specific skill and subskill.
+    Returns varied problems with different concept groups for the same skill/subskill.
+    """
+    try:
+        # Get the problems from the service
+        problems = await problem_service.get_skill_problems(
+            student_id=student_id,
+            subject=subject,
+            skill_id=skill_id,
+            subskill_id=subskill_id,
+            count=count
+        )
+        
+        if not problems:
+            raise HTTPException(
+                status_code=404,
+                detail="Failed to generate problems for the specified skill/subskill"
+            )
+            
+        return problems
+        
+    except HTTPException as e:
+        raise
+    except Exception as e:
+        print(f"Error in get_skill_problems endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
         )

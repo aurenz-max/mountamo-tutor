@@ -345,6 +345,93 @@ export const api = {
       throw error;
     }
   },
+
+  async getRecommendedProblems(data: {
+    student_id: number;
+    subject?: string;
+    count?: number;
+  }): Promise<Problem[]> {
+    const { student_id, subject, count = 3 } = data;
+    
+    let url = `${API_BASE_URL}/problems/student/${student_id}/recommended-problems`;
+    
+    // Add optional parameters
+    const params = new URLSearchParams();
+    if (subject) params.append('subject', subject);
+    if (count !== 3) params.append('count', count.toString());
+    
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+    
+    console.log('Fetching recommended problems:', url);
+    
+    try {
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('Recommended problems error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        throw new Error(errorData?.detail || `Failed to fetch recommended problems: ${response.statusText}`);
+      }
+      
+      const problemsData = await response.json();
+      console.log('Recommended problems response:', problemsData);
+      return problemsData;
+    } catch (error) {
+      console.error('Error fetching recommended problems:', error);
+      throw error;
+    }
+  },
+
+  async getSkillProblems(data: {
+    student_id: number;
+    subject: string;
+    skill_id: string;
+    subskill_id: string;
+    count?: number;
+  }): Promise<Problem[]> {
+    const { student_id, subject, skill_id, subskill_id, count = 5 } = data;
+    
+    let url = `${API_BASE_URL}/problems/skill-problems/${student_id}`;
+    
+    // Add parameters
+    const params = new URLSearchParams();
+    params.append('subject', subject);
+    params.append('skill_id', skill_id);
+    params.append('subskill_id', subskill_id);
+    if (count !== 5) params.append('count', count.toString());
+    
+    url += `?${params.toString()}`;
+    
+    console.log('Fetching skill-based problems:', url);
+    
+    try {
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('Skill problems error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        throw new Error(errorData?.detail || `Failed to fetch skill problems: ${response.statusText}`);
+      }
+      
+      const problemsData = await response.json();
+      console.log('Skill problems response:', problemsData);
+      return problemsData;
+    } catch (error) {
+      console.error('Error fetching skill problems:', error);
+      throw error;
+    }
+  },
+  
   async recordProblemAttempt(data: ProblemAttempt) {
     const response = await fetch(`${API_BASE_URL}/problems/attempt`, {
       method: 'POST',
@@ -570,6 +657,30 @@ connectSTT(): WebSocket {
 
   return ws;
 },
+
+  getAdvancedRecommendations: async ({ student_id, subject, limit = 5 }) => {
+    try {
+      console.log(`Fetching advanced recommendations: http://localhost:8000/api/analytics/student/${student_id}/recommendations?subject=${subject}&limit=${limit}`);
+      
+      const response = await fetch(
+        `http://localhost:8000/api/analytics/student/${student_id}/recommendations?subject=${subject}&limit=${limit}`
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error getting recommendations: ${response.status} - ${errorText}`);
+      }
+      
+      const recommendations = await response.json();
+      console.log("Advanced recommendations response:", recommendations);
+      
+      return recommendations;
+    } catch (error) {
+      console.error("Failed to fetch advanced recommendations:", error);
+      throw error;
+    }
+  },
+  
   
   async getNextRecommendations(params: {
     student_id: number;

@@ -1,65 +1,110 @@
 'use client';
 
-import { useState } from 'react';
-import { WebSocketProvider } from '@/lib/use-websocket';
-import ProblemInterface from '@/components/tutoring/ProblemInterface';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import SyllabusSelector from '@/components/tutoring/SyllabusSelector';
-import GeminiAudioPlayer from '@/components/tutoring/GeminiAudioPlayer';
+import ProblemSet from '@/components/tutoring/ProblemSet';
+import { Button } from "@/components/ui/button"; // Fixed import - should be from ui/button
+import { ChevronLeft, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
 
-export default function PracticePage() {
-  const [currentTopic, setCurrentTopic] = useState(null);
+const PracticePage = () => {
+  const router = useRouter();
+  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [autoStarted, setAutoStarted] = useState(false);
+  
+  useEffect(() => {
+    // Check if there's a saved practice selection in localStorage
+    const savedSelection = localStorage.getItem('selectedPractice');
+    
+    if (savedSelection) {
+      try {
+        const parsedSelection = JSON.parse(savedSelection);
+        setSelectedTopic(parsedSelection);
+        
+        // Clear the localStorage item to prevent auto-loading on future visits
+        // unless we want to maintain state across page refreshes
+        localStorage.removeItem('selectedPractice');
+        
+        // Set flag to track if we auto-started
+        if (parsedSelection.autoStart) {
+          setAutoStarted(true);
+        }
+      } catch (e) {
+        console.error('Error parsing saved selection:', e);
+      }
+    }
+    
+    setLoading(false);
+  }, []);
+  
+  const handleTopicSelect = (topic) => {
+    setSelectedTopic(topic);
+  };
+  
+  const handleBackToSelector = () => {
+    setSelectedTopic(null);
+    setAutoStarted(false);
+  };
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold">Practice Mode.</h1>
-          <h2 className="text-3xl text-gray-500">Master concepts.</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Syllabus Panel */}
-          <div className="lg:col-span-4">
-            <div className="sticky top-4">
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                <SyllabusSelector
-                  onSelect={setCurrentTopic}
-                  currentSelection={currentTopic}
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Main Content Panel */}
-          <div className="lg:col-span-8">
-            <WebSocketProvider>
-              {currentTopic ? (
-                <div className="space-y-4">
-                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                    <ProblemInterface
-                      studentId={1}
-                      currentTopic={currentTopic}
-                    />
-                  </div>
-                  <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
-                    <GeminiAudioPlayer />
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-3xl p-12 shadow-sm border border-gray-100 text-center">
-                  <div className="max-w-md mx-auto">
-                    <h3 className="text-xl font-semibold mb-2">Ready to practice?</h3>
-                    <p className="text-gray-500">
-                      Select a topic from the curriculum to start solving problems
-                    </p>
-                  </div>
-                </div>
-              )}
-            </WebSocketProvider>
-          </div>
+    <div className="container mx-auto p-4">
+      <div className="mb-4">
+        <Link href="/">
+          <Button 
+            variant="ghost" 
+            className="flex items-center text-gray-600"
+          >
+            <ChevronLeft className="mr-1" size={16} />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
+      
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Math Practice</h1>
+          <p className="text-gray-500">
+            {selectedTopic 
+              ? `Working on: ${selectedTopic.skill?.description || selectedTopic.selection.skill || 'Selected Topic'}` 
+              : 'Select a topic to practice'}
+          </p>
         </div>
       </div>
-    </main>
+      
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Loading your practice session...</p>
+        </div>
+      ) : (
+        <>
+          {!selectedTopic ? (
+            <div className="max-w-xl mx-auto">
+              <SyllabusSelector onSelect={handleTopicSelect} />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {autoStarted && (
+                <div className="mb-4">
+                  <Button
+                    onClick={handleBackToSelector}
+                    variant="outline"
+                    className="flex items-center gap-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Change Topic
+                  </Button>
+                </div>
+              )}
+              
+              <ProblemSet currentTopic={selectedTopic} numProblems={5} autoStart={selectedTopic.autoStart} />
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
-}
+};
+
+export default PracticePage;

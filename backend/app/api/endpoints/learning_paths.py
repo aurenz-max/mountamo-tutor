@@ -25,6 +25,28 @@ class NextRecommendationRequest(BaseModel):
     current_skill_id: Optional[str] = None
     current_subskill_id: Optional[str] = None
 
+class RecommendationResponse(BaseModel):
+    type: str
+    priority: str
+    unit_id: str
+    unit_title: str
+    skill_id: str
+    skill_description: str
+    subskill_id: str
+    subskill_description: str
+    proficiency: float
+    mastery: float
+    avg_score: float
+    priority_level: str
+    priority_order: int
+    readiness_status: str
+    is_ready: bool
+    completion: float
+    attempt_count: int
+    is_attempted: bool
+    next_subskill: Optional[str]
+    message: str
+
 @router.get("/learning-paths", response_model=DecisionTreeData)
 async def get_learning_paths():
     """Get complete learning paths decision tree"""

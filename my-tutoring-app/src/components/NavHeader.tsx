@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Search, ShoppingBag, Brain, Route } from 'lucide-react';
+import { Search, ShoppingBag, Brain, Route, LayoutDashboard } from 'lucide-react';
 
 const NavHeader = () => {
   return (
@@ -16,6 +16,9 @@ const NavHeader = () => {
           </Link>
           {/* Main Navigation */}
           <div className="hidden md:flex items-center space-x-8">
+            <Link href="/dashboard" className="text-sm hover:opacity-80 transition-opacity">
+              Dashboard
+            </Link>
             <Link href="/tutoring" className="text-sm hover:opacity-80 transition-opacity">
               AI Tutor
             </Link>

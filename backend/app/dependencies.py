@@ -14,6 +14,10 @@ from .services.visual_content_service import VisualContentService
 from .services.transcript import TranscriptService
 from .services.visual_content_manager import VisualContentManager
 from .services.gemini import GeminiService
+from .services.gemini_generate import GeminiGenerateService  # Import the generation service with alias
+from .services.base_ai_service import BaseAIService
+from .services.ai_service_factory import AIServiceFactory
+
 from .services.tutoring import TutoringService
 from .services.gemini_problem import GeminiProblemIntegration
 from .services.analytics import AnalyticsExtension
@@ -33,6 +37,7 @@ logger.setLevel(logging.INFO)
 _cosmos_db: Optional[CosmosDBService] = None
 _audio_service: Optional[AudioService] = None 
 _anthropic_service: Optional[AnthropicService] = None
+_gemini_generate_service: Optional[GeminiGenerateService] = None  # Add the Gemini Generate service
 _visual_content_service: Optional[VisualContentService] = None
 _visual_content_manager: Optional[VisualContentManager] = None
 _read_along_integration: Optional[GeminiReadAlongIntegration] = None
@@ -65,6 +70,12 @@ def get_audio_service() -> AudioService:
         _audio_service = AudioService()
     return _audio_service
 
+def get_ai_service(service_type: str = None) -> BaseAIService:
+    """Get AI service instance based on type or default configuration"""
+    if service_type is None:
+        service_type = getattr(settings, "DEFAULT_AI_SERVICE", "anthropic")
+    return AIServiceFactory.get_service(service_type)
+
 def get_anthropic_service() -> AnthropicService:
     """Get or create AnthropicService singleton."""
     global _anthropic_service
@@ -72,6 +83,14 @@ def get_anthropic_service() -> AnthropicService:
         logger.info("Initializing AnthropicService")
         _anthropic_service = AnthropicService()
     return _anthropic_service
+
+def get_gemini_generate_service() -> GeminiGenerateService:
+    """Get or create GeminiGenerateService singleton."""
+    global _gemini_generate_service
+    if _gemini_generate_service is None:
+        logger.info("Initializing GeminiGenerateService")
+        _gemini_generate_service = GeminiGenerateService()
+    return _gemini_generate_service
 
 def get_visual_content_service() -> VisualContentService:
     """Get or create VisualContentService singleton."""
@@ -131,8 +150,8 @@ def get_problem_recommender(
 
 def get_problem_service(
     recommender: ProblemRecommender = Depends(get_problem_recommender),
-    anthropic_service: AnthropicService = Depends(get_anthropic_service),
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)  # Add CosmosDB dependency
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db),
+    competency_service: CompetencyService = Depends(get_competency_service)
 ) -> ProblemService:
     """Get or create ProblemService singleton."""
     global _problem_service
@@ -147,12 +166,15 @@ def get_problem_service(
         
     if _problem_service.competency_service is None:
         logger.info("Setting competency_service on ProblemService")
-        _problem_service.competency_service = recommender.competency_service
-        
-    if _problem_service.anthropic is None:
-        logger.info("Setting anthropic_service on ProblemService")
-        _problem_service.anthropic = anthropic_service
+        _problem_service.competency_service = competency_service
     
+    # Set AI service using factory
+    if _problem_service.ai_service is None:
+        # Get default AI service type from settings
+        default_ai_service = getattr(settings, "DEFAULT_AI_SERVICE", "anthropic").lower()
+        logger.info(f"Setting AI service to {default_ai_service} on ProblemService")
+        _problem_service.set_ai_service(default_ai_service)
+        
     # Add CosmosDB service for problem review storage
     if _problem_service.cosmos_db is None:
         logger.info("Setting cosmos_db on ProblemService")

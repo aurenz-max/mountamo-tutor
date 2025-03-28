@@ -13,6 +13,30 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+// Define type for advanced recommendations
+interface AdvancedRecommendation {
+  type: string;
+  priority: string;
+  unit_id: string;
+  unit_title: string;
+  skill_id: string;
+  skill_description: string;
+  subskill_id: string;
+  subskill_description: string;
+  proficiency: number;
+  mastery: number;
+  avg_score: number;
+  priority_level: string;
+  priority_order: number;
+  readiness_status: string;
+  is_ready: boolean;
+  completion: number;
+  attempt_count: number;
+  is_attempted: boolean;
+  next_subskill: string | null;
+  message: string;
+}
+
 // Animation variants for tree items
 const itemVariants = {
   hidden: { opacity: 0, y: -5 },
@@ -28,6 +52,7 @@ const TreeItem = ({
   hasChildren = false,
   level = 0,
   isRecommended = false,
+  recommendationPriority = null,
   icon = null
 }) => {
   // Change the default state to false (collapsed)
@@ -40,6 +65,21 @@ const TreeItem = ({
       setIsOpen(true);
     }
   }, [isSelected]);
+
+  // Get recommendation style based on priority
+  const getRecommendationStyle = () => {
+    if (!isRecommended) return {};
+    
+    if (recommendationPriority === 'high') {
+      return { color: 'text-amber-600 dark:text-amber-400' };
+    } else if (recommendationPriority === 'medium') {
+      return { color: 'text-amber-500 dark:text-amber-300' };
+    } else {
+      return { color: 'text-amber-400 dark:text-amber-200' };
+    }
+  };
+
+  const recommendationStyle = getRecommendationStyle();
 
   return (
     <div className="select-none">
@@ -76,11 +116,11 @@ const TreeItem = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Sparkles className="h-4 w-4 text-amber-400" />
+                  <Sparkles className={`h-4 w-4 ${recommendationStyle.color || 'text-amber-400'}`} />
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Recommended next topic</p>
+                <p>{recommendationPriority ? `${recommendationPriority} priority recommendation` : 'Recommended next topic'}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -113,7 +153,21 @@ const SyllabusSelector = ({ onSelect }) => {
     skill: null,
     subskill: null
   });
-  const [recommendations, setRecommendations] = useState(null);
+  // Only use the advanced recommendations
+  const [recommendations, setRecommendations] = useState<AdvancedRecommendation[]>([]);
+
+  // Function to get the recommendation priority for an item
+  const getRecommendationPriority = (id) => {
+    if (!recommendations || recommendations.length === 0) return null;
+    
+    const recommendation = recommendations.find(rec => 
+      rec.unit_id === id || 
+      rec.skill_id === id || 
+      rec.subskill_id === id
+    );
+    
+    return recommendation ? recommendation.priority : null;
+  };
 
   useEffect(() => {
     const loadSubjects = async () => {
@@ -132,22 +186,30 @@ const SyllabusSelector = ({ onSelect }) => {
   }, []);
 
   useEffect(() => {
-    const loadSyllabus = async () => {
+    const fetchSyllabusAndRecommendations = async () => {
       if (!selectedSubject) return;
 
       setLoading(true);
       setSyllabus(null);
       
       try {
+        // First, load the curriculum data
         const data = await api.getSubjectCurriculum(selectedSubject);
         setSyllabus(data);
         
-        // Get initial recommendations
-        const initialRecommendations = await api.getNextRecommendations({
-          student_id: 1, // You might want to make this configurable
-          subject: selectedSubject
-        });
-        setRecommendations(initialRecommendations);
+        // Then, try to get the advanced recommendations
+        try {
+          const recs = await api.getAdvancedRecommendations({
+            student_id: 1, // You might want to make this configurable
+            subject: selectedSubject,
+            limit: 5
+          });
+          setRecommendations(recs);
+        } catch (recError) {
+          console.error('Failed to fetch advanced recommendations:', recError);
+          // Set empty recommendations if the API call fails
+          setRecommendations([]);
+        }
         
         setSelection({
           subject: selectedSubject,
@@ -162,7 +224,8 @@ const SyllabusSelector = ({ onSelect }) => {
       }
     };
 
-    loadSyllabus();
+    // Call the function that fetches both syllabus and recommendations
+    fetchSyllabusAndRecommendations();
   }, [selectedSubject]);
 
   // Update recommendations when selection changes
@@ -171,13 +234,13 @@ const SyllabusSelector = ({ onSelect }) => {
       if (!selection.subject) return;
 
       try {
-        const newRecommendations = await api.getNextRecommendations({
-          student_id: 1, // You might want to make this configurable
+        // Update advanced recommendations
+        const advancedRecs = await api.getAdvancedRecommendations({
+          student_id: 1,
           subject: selection.subject,
-          current_skill_id: selection.skill,
-          current_subskill_id: selection.subskill
+          limit: 5
         });
-        setRecommendations(newRecommendations);
+        setRecommendations(advancedRecs);
       } catch (err) {
         console.error('Failed to update recommendations:', err);
       }
@@ -240,71 +303,61 @@ const SyllabusSelector = ({ onSelect }) => {
 
   const isSessionEnabled = selection.subject && selection.unit;
 
+  // Check if an item is recommended using only the advanced recommendations
   const isRecommended = (id) => {
-    if (!recommendations?.recommended_skills) return false;
+    if (!recommendations || recommendations.length === 0) return false;
     
-    // Check if this ID or any child ID is in the recommendations
-    const isDirectlyRecommended = recommendations.recommended_skills.includes(id);
+    // Direct match: check if this ID matches any recommended items
+    const directMatch = recommendations.some(rec => 
+      rec.unit_id === id || 
+      rec.skill_id === id || 
+      rec.subskill_id === id
+    );
     
-    // If this is a unit, check if any of its skills or subskills are recommended
+    if (directMatch) return true;
+    
+    // For units and skills, also check if any children are recommended
     if (syllabus?.curriculum) {
+      // If this is a unit, check if any of its skills or subskills are recommended
       const unit = syllabus.curriculum.find(u => u.id === id);
       if (unit) {
-        const hasRecommendedChild = unit.skills.some(skill => 
+        return unit.skills.some(skill => 
           isRecommended(skill.id) || 
           skill.subskills.some(subskill => isRecommended(subskill.id))
         );
-        return isDirectlyRecommended || hasRecommendedChild;
       }
-  
+      
       // If this is a skill, check if any of its subskills are recommended
       const skill = syllabus.curriculum
         .flatMap(u => u.skills)
         .find(s => s.id === id);
       if (skill) {
-        const hasRecommendedChild = skill.subskills.some(subskill => 
-          isRecommended(subskill.id)
-        );
-        return isDirectlyRecommended || hasRecommendedChild;
+        return skill.subskills.some(subskill => isRecommended(subskill.id));
       }
     }
-  
-    // For subskills or if no children found, just check direct recommendation
-    return isDirectlyRecommended;
+    
+    return false;
   };
 
   // Get the next recommended item text for better UX
   const getNextRecommendedText = () => {
-    if (!recommendations?.recommended_skills?.length) return null;
-
-    // Find the first recommended skill or subskill
-    const recId = recommendations.recommended_skills[0];
+    if (!recommendations || recommendations.length === 0) return null;
     
-    let recItem = null;
-    
-    // Search through curriculum for the item
-    if (syllabus?.curriculum) {
-      // Check if it's a unit
-      recItem = syllabus.curriculum.find(u => u.id === recId);
-      if (recItem) return recItem.title;
-      
-      // Check if it's a skill
-      for (const unit of syllabus.curriculum) {
-        const skill = unit.skills.find(s => s.id === recId);
-        if (skill) return skill.description;
-        
-        // Check if it's a subskill
-        for (const skill of unit.skills) {
-          const subskill = skill.subskills.find(ss => ss.id === recId);
-          if (subskill) return subskill.description;
-        }
-      }
-    }
-    
-    return null;
+    // Get the highest priority recommendation (first in the array)
+    return recommendations[0].subskill_description;
   };
 
   const nextRecommendedText = getNextRecommendedText();
+
+  // Get the message for the recommendation
+  const getRecommendationMessage = () => {
+    if (recommendations && recommendations.length > 0) {
+      return recommendations[0].message;
+    }
+    return null;
+  };
+
+  const recommendationMessage = getRecommendationMessage();
 
   if (loading && !syllabus) {
     return (
@@ -348,6 +401,11 @@ const SyllabusSelector = ({ onSelect }) => {
     }
   };
 
+  // Get the number of recommendations
+  const getRecommendationCount = () => {
+    return recommendations?.length || 0;
+  };
+
   return (
     <div className="space-y-5">
       <div className="space-y-2">
@@ -376,6 +434,9 @@ const SyllabusSelector = ({ onSelect }) => {
             <div>
               <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Recommended next:</p>
               <p className="text-xs text-amber-700 dark:text-amber-300">{nextRecommendedText}</p>
+              {recommendationMessage && (
+                <p className="text-xs text-amber-600 dark:text-amber-300 mt-1 italic">{recommendationMessage}</p>
+              )}
             </div>
           </div>
         </div>
@@ -385,10 +446,10 @@ const SyllabusSelector = ({ onSelect }) => {
         <div className="border rounded-lg bg-white dark:bg-gray-950 dark:border-gray-800 overflow-hidden">
           <div className="p-3 bg-gray-50 border-b dark:bg-gray-900 dark:border-gray-800 flex justify-between items-center">
             <h4 className="font-medium text-sm">Learning Path</h4>
-            {recommendations?.recommended_skills?.length > 0 && (
+            {getRecommendationCount() > 0 && (
               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/30">
                 <Sparkles className="h-3 w-3 mr-1" /> 
-                <span className="text-xs">{recommendations.recommended_skills.length} Recommendations</span>
+                <span className="text-xs">{getRecommendationCount()} Recommendations</span>
               </Badge>
             )}
           </div>
@@ -402,6 +463,7 @@ const SyllabusSelector = ({ onSelect }) => {
                 hasChildren={!!unit.skills?.length}
                 isSelected={selection.unit === unit.id}
                 isRecommended={isRecommended(unit.id)}
+                recommendationPriority={getRecommendationPriority(unit.id)}
                 icon={getLevelIcon(0)}
                 onClick={() => setSelection(prev => ({
                   ...prev,
@@ -419,6 +481,7 @@ const SyllabusSelector = ({ onSelect }) => {
                     hasChildren={!!skill.subskills?.length}
                     isSelected={selection.skill === skill.id}
                     isRecommended={isRecommended(skill.id)}
+                    recommendationPriority={getRecommendationPriority(skill.id)}
                     icon={getLevelIcon(1)}
                     onClick={() => setSelection(prev => ({
                       ...prev,
@@ -434,6 +497,7 @@ const SyllabusSelector = ({ onSelect }) => {
                         level={2}
                         isSelected={selection.subskill === subskill.id}
                         isRecommended={isRecommended(subskill.id)}
+                        recommendationPriority={getRecommendationPriority(subskill.id)}
                         icon={getLevelIcon(2)}
                         onClick={() => setSelection(prev => ({
                           ...prev,
