@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catapult Physics Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f5ff;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+            background-color: #e6f7ff;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .control-item {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .value-display {
+            display: inline-block;
+            width: 40px;
+            text-align: right;
+            font-family: monospace;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .results h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+        .message {
+            text-align: center;
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        .physics-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #eafaf1;
+            border-radius: 5px;
+            border-left: 4px solid #2ecc71;
+        }
+        .physics-info h3 {
+            margin-top: 0;
+            color: #27ae60;
+        }
+        .physics-formula {
+            font-family: monospace;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .target-difficulty {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Catapult Physics Simulator</h1>
+        
+        <div class="game-area">
+            <div class="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <h3>Catapult Settings</h3>
+                    <div class="control-item">
+                        <label for="forceSlider">Launch Force</label>
+                        <div class="slider-container">
+                            <input type="range" id="forceSlider" min="10" max="300" value="100">
+                            <span id="forceValue" class="value-display">100</span>
+                            <span>N</span>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="angleSlider">Launch Angle</label>
+                        <div class="slider-container">
+                            <input type="range" id="angleSlider" min="10" max="80" value="45">
+                            <span id="angleValue" class="value-display">45</span>
+                            <span>°</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Projectile Settings</h3>
+                    <div class="control-item">
+                        <label for="massSlider">Projectile Mass</label>
+                        <div class="slider-container">
+                            <input type="range" id="massSlider" min="1" max="10" value="2" step="0.1">
+                            <span id="massValue" class="value-display">2.0</span>
+                            <span>kg</span>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="dragSlider">Air Resistance</label>
+                        <div class="slider-container">
+                            <input type="range" id="dragSlider" min="0" max="0.05" value="0.01" step="0.001">
+                            <span id="dragValue" class="value-display">0.01</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Simulation Controls</h3>
+                    <div class="control-item button-group">
+                        <button id="launchButton">Launch!</button>
+                        <button id="resetButton">Reset</button>
+                    </div>
+                    <div class="control-item">
+                        <label for="gravitySlider">Gravity</label>
+                        <div class="slider-container">
+                            <input type="range" id="gravitySlider" min="1" max="20" value="9.8" step="0.1">
+                            <span id="gravityValue" class="value-display">9.8</span>
+                            <span>m/s²</span>
+                        </div>
+                    </div>
+                    <div class="control-item target-difficulty">
+                        <label for="difficultySlider">Target Difficulty</label>
+                        <div class="slider-container">
+                            <input type="range" id="difficultySlider" min="1" max="3" value="1" step="1">
+                            <span id="difficultyValue" class="value-display">1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="results">
+                <h3>Launch Results</h3>
+                <div id="resultText" class="message">Adjust your settings and click Launch to start!</div>
+                <div id="score" class="score">Score: 0</div>
+                <div id="analytics">
+                    <div>Initial Velocity: <span id="initialVelocity">0</span> m/s</div>
+                    <div>Distance Traveled: <span id="distanceTraveled">0</span> m</div>
+                    <div>Maximum Height: <span id="maxHeight">0</span> m</div>
+                    <div>Flight Time: <span id="flightTime">0</span> s</div>
+                </div>
+            </div>
+            
+            <div class="physics-info">
+                <h3>Physics Behind the Simulation</h3>
+                <p>This simulation models projectile motion with air resistance. The key equations used are:</p>
+                <div class="physics-formula">Initial Velocity = √(2 × Force / Mass)</div>
+                <div class="physics-formula">Horizontal Position: x = v₀ × cos(θ) × t - 0.5 × C × v² × cos(θ) × t²</div>
+                <div class="physics-formula">Vertical Position: y = v₀ × sin(θ) × t - 0.5 × g × t² - 0.5 × C × v² × sin(θ) × t²</div>
+                <p>Where:</p>
+                <ul>
+                    <li>v₀ = initial velocity</li>
+                    <li>θ = launch angle</li>
+                    <li>g = gravitational acceleration</li>
+                    <li>t = time</li>
+                    <li>C = drag coefficient</li>
+                    <li>v = velocity at time t</li>
+                </ul>
+                <p>Try different combinations of force, angle, mass, and air resistance to see how they affect the projectile's trajectory!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wait for all content to load before running the simulation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize global variables and simulation state
+            const simulator = initializeSimulator();
+            
+            // Start the simulation
+            simulator.init();
+        });
+        
+        function initializeSimulator() {
+            // Canvas elements
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // UI Elements
+            const forceSlider = document.getElementById('forceSlider');
+            const forceValue = document.getElementById('forceValue');
+            const angleSlider = document.getElementById('angleSlider');
+            const angleValue = document.getElementById('angleValue');
+            const massSlider = document.getElementById('massSlider');
+            const massValue = document.getElementById('massValue');
+            const dragSlider = document.getElementById('dragSlider');
+            const dragValue = document.getElementById('dragValue');
+            const gravitySlider = document.getElementById('gravitySlider');
+            const gravityValue = document.getElementById('gravityValue');
+            const difficultySlider = document.getElementById('difficultySlider');
+            const difficultyValue = document.getElementById('difficultyValue');
+            
+            const launchButton = document.getElementById('launchButton');
+            const resetButton = document.getElementById('resetButton');
+            
+            const resultText = document.getElementById('resultText');
+            const scoreElement = document.getElementById('score');
+            const initialVelocityElement = document.getElementById('initialVelocity');
+            const distanceTraveledElement = document.getElementById('distanceTraveled');
+            const maxHeightElement = document.getElementById('maxHeight');
+            const flightTimeElement = document.getElementById('flightTime');
+            
+            // Game state
+            const gameState = {
+                force: 100,
+                angle: 45,
+                mass: 2,
+                drag: 0.01,
+                gravity: 9.8,
+                difficulty: 1,
+                score: 0,
+                projectilePosition: null,
+                projectileVelocity: null,
+                catapultPosition: {x: 15, y: 0},
+                targetPosition: null,
+                targetSize: 30,
+                isLaunched: false,
+                animationId: null,
+                trajectory: [],
+                timeElapsed: 0,
+                maxHeight: 0,
+                flightTime: 0,
+                distanceTraveled: 0
+            };
+            
+            // Scale factors for drawing
+            const SCALE = 10; // pixels per meter
+            
+            // Color scheme
+            const COLORS = {
+                sky: '#e6f7ff',
+                ground: '#8bc34a',
+                catapult: '#795548',
+                projectile: '#ff5722',
+                target: '#f44336',
+                trajectory: 'rgba(33, 150, 243, 0.3)'
+            };
+            
+            // Set canvas dimensions to match container
+            function resizeCanvas() {
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                
+                // Redraw if needed
+                if (gameState.targetPosition) {
+                    drawScene();
+                }
+            }
+            
+            // Event listeners
+            function setupEventListeners() {
+                // Window resize
+                window.addEventListener('resize', resizeCanvas);
+                
+                // Slider controls
+                forceSlider.addEventListener('input', function() {
+                    gameState.force = parseInt(this.value);
+                    forceValue.textContent = gameState.force;
+                });
+                
+                angleSlider.addEventListener('input', function() {
+                    gameState.angle = parseInt(this.value);
+                    angleValue.textContent = gameState.angle;
+                    drawScene();
+                });
+                
+                massSlider.addEventListener('input', function() {
+                    gameState.mass = parseFloat(this.value);
+                    massValue.textContent = gameState.mass.toFixed(1);
+                });
+                
+                dragSlider.addEventListener('input', function() {
+                    gameState.drag = parseFloat(this.value);
+                    dragValue.textContent = gameState.drag.toFixed(3);
+                });
+                
+                gravitySlider.addEventListener('input', function() {
+                    gameState.gravity = parseFloat(this.value);
+                    gravityValue.textContent = gameState.gravity.toFixed(1);
+                });
+                
+                difficultySlider.addEventListener('input', function() {
+                    gameState.difficulty = parseInt(this.value);
+                    difficultyValue.textContent = gameState.difficulty;
+                    resetGame();
+                });
+                
+                // Button controls
+                launchButton.addEventListener('click', function() {
+                    if (!gameState.isLaunched) {
+                        launchProjectile();
+                        this.disabled = true;
+                    }
+                });
+                
+                resetButton.addEventListener('click', function() {
+                    resetGame();
+                    launchButton.disabled = false;
+                });
+            }
+            
+            // Initialize game
+            function initGame() {
+                // Set canvas dimensions
+                resizeCanvas();
+                
+                // Set up event listeners
+                setupEventListeners();
+                
+                // Create a random target based on difficulty
+                createRandomTarget();
+                
+                // Initial draw
+                drawScene();
+                
+                // Update UI
+                updateUIValues();
+                
+                // Enable launch button
+                launchButton.disabled = false;
+            }
+            
+            // Create a random target position based on difficulty
+            function createRandomTarget() {
+                // Target distance based on difficulty
+                const minDistance = 40 * gameState.difficulty;
+                const maxDistance = 70 * gameState.difficulty;
+                
+                const targetX = minDistance + Math.random() * (maxDistance - minDistance);
+                const targetY = 0; // On the ground
+                
+                gameState.targetPosition = {x: targetX, y: targetY};
+                
+                // Adjust target size based on difficulty (smaller for higher difficulty)
+                gameState.targetSize = 40 - (gameState.difficulty * 10);
+            }
+            
+            // Launch the projectile
+            function launchProjectile() {
+                // Calculate initial velocity from force and mass
+                const initialSpeed = Math.sqrt(2 * gameState.force / gameState.mass);
+                
+                // Convert angle to radians
+                const angleRad = gameState.angle * Math.PI / 180;
+                
+                // Set initial position and velocity
+                gameState.projectilePosition = {
+                    x: gameState.catapultPosition.x,
+                    y: gameState.catapultPosition.y + 2 // Slightly above ground to account for catapult height
+                };
+                
+                gameState.projectileVelocity = {
+                    x: initialSpeed * Math.cos(angleRad),
+                    y: initialSpeed * Math.sin(angleRad)
+                };
+                
+                // Clear trajectory
+                gameState.trajectory = [];
+                gameState.trajectory.push({...gameState.projectilePosition});
+                
+                // Reset analytics
+                gameState.timeElapsed = 0;
+                gameState.maxHeight = 0;
+                gameState.distanceTraveled = 0;
+                
+                // Update UI with initial velocity
+                initialVelocityElement.textContent = initialSpeed.toFixed(2);
+                
+                // Start animation
+                gameState.isLaunched = true;
+                if (gameState.animationId) {
+                    cancelAnimationFrame(gameState.animationId);
+                }
+                animate();
+            }
+            
+            // Animation loop
+            function animate() {
+                // Update projectile position and state
+                updateProjectile();
+                
+                // Draw the scene
+                drawScene();
+                
+                // Continue animation if projectile is still in flight
+                if (gameState.isLaunched && gameState.projectilePosition.y >= 0) {
+                    gameState.animationId = requestAnimationFrame(animate);
+                } else {
+                    // Animation ended, check results
+                    checkResults();
+                }
+            }
+            
+            // Update projectile position with physics
+            function updateProjectile() {
+                // Small time step for physics calculation
+                const dt = 0.1; // 100ms
+                
+                // Current velocity magnitude
+                const vMag = Math.sqrt(
+                    gameState.projectileVelocity.x * gameState.projectileVelocity.x + 
+                    gameState.projectileVelocity.y * gameState.projectileVelocity.y
+                );
+                
+                // Air resistance force
+                const dragForceX = gameState.drag * vMag * gameState.projectileVelocity.x;
+                const dragForceY = gameState.drag * vMag * gameState.projectileVelocity.y;
+                
+                // Update velocity with gravity and air resistance
+                gameState.projectileVelocity.x -= (dragForceX / gameState.mass) * dt;
+                gameState.projectileVelocity.y -= (gameState.gravity + (dragForceY / gameState.mass)) * dt;
+                
+                // Update position
+                gameState.projectilePosition.x += gameState.projectileVelocity.x * dt;
+                gameState.projectilePosition.y += gameState.projectileVelocity.y * dt;
+                
+                // Track trajectory
+                if (gameState.projectilePosition.y >= 0) {
+                    gameState.trajectory.push({...gameState.projectilePosition});
+                    
+                    // Update maximum height
+                    if (gameState.projectilePosition.y > gameState.maxHeight) {
+                        gameState.maxHeight = gameState.projectilePosition.y;
+                    }
+                    
+                    // Update time elapsed
+                    gameState.timeElapsed += dt;
+                    gameState.flightTime = gameState.timeElapsed;
+                    
+                    // Update distance when projectile lands
+                    if (gameState.projectilePosition.y <= 0 && gameState.projectileVelocity.y < 0) {
+                        gameState.distanceTraveled = gameState.projectilePosition.x;
+                    }
+                }
+                
+                // Update UI during flight
+                updateUIValues();
+            }
+            
+            // Check if projectile hit the target
+            function checkResults() {
+                // Calculate distance from target center
+                const targetCenter = {
+                    x: gameState.targetPosition.x,
+                    y: gameState.targetPosition.y + gameState.targetSize / 2
+                };
+                
+                const landingPointX = gameState.projectilePosition.x;
+                const distance = Math.abs(landingPointX - targetCenter.x);
+                
+                // Determine hit based on target size and distance
+                const maxHitDistance = gameState.targetSize / 2;
+                
+                if (distance <= maxHitDistance * 0.3) {
+                    // Bull's eye
+                    resultText.textContent = "Perfect hit! Bull's eye!";
+                    gameState.score += 100 * gameState.difficulty;
+                } else if (distance <= maxHitDistance) {
+                    // Regular hit
+                    resultText.textContent = "Good shot! You hit the target!";
+                    gameState.score += 50 * gameState.difficulty;
+                } else {
+                    // Miss - calculate how close they were
+                    const missDistance = (distance - maxHitDistance).toFixed(1);
+                    if (landingPointX < targetCenter.x) {
+                        resultText.textContent = `Missed! ${missDistance}m short of the target.`;
+                    } else {
+                        resultText.textContent = `Missed! ${missDistance}m past the target.`;
+                    }
+                }
+                
+                // Update score display
+                scoreElement.textContent = `Score: ${gameState.score}`;
+                
+                // Update UI with final values
+                updateUIValues();
+            }
+            
+            // Reset the game
+            function resetGame() {
+                // Cancel any active animation
+                if (gameState.animationId) {
+                    cancelAnimationFrame(gameState.animationId);
+                    gameState.animationId = null;
+                }
+                
+                // Reset projectile state
+                gameState.projectilePosition = null;
+                gameState.projectileVelocity = null;
+                gameState.isLaunched = false;
+                gameState.trajectory = [];
+                
+                // Create a new target
+                createRandomTarget();
+                
+                // Reset UI elements
+                resultText.textContent = "Adjust your settings and click Launch to start!";
+                initialVelocityElement.textContent = "0";
+                distanceTraveledElement.textContent = "0";
+                maxHeightElement.textContent = "0";
+                flightTimeElement.textContent = "0";
+                
+                // Enable launch button
+                launchButton.disabled = false;
+                
+                // Draw the scene
+                drawScene();
+            }
+            
+            // Update UI values
+            function updateUIValues() {
+                distanceTraveledElement.textContent = gameState.distanceTraveled.toFixed(1);
+                maxHeightElement.textContent = gameState.maxHeight.toFixed(1);
+                flightTimeElement.textContent = gameState.flightTime.toFixed(1);
+            }
+            
+            // Draw the scene
+            function drawScene() {
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const groundY = canvasHeight - 50;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                
+                // Draw sky
+                ctx.fillStyle = COLORS.sky;
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                
+                // Draw ground
+                ctx.fillStyle = COLORS.ground;
+                ctx.fillRect(0, groundY, canvasWidth, 50);
+                
+                // Draw horizontal distance markings
+                drawDistanceMarkings(groundY);
+                
+                // Draw trajectory
+                if (gameState.trajectory.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        gameState.trajectory[0].x * SCALE,
+                        groundY - gameState.trajectory[0].y * SCALE
+                    );
+                    
+                    for (let i = 1; i < gameState.trajectory.length; i++) {
+                        ctx.lineTo(
+                            gameState.trajectory[i].x * SCALE,
+                            groundY - gameState.trajectory[i].y * SCALE
+                        );
+                    }
+                    
+                    ctx.strokeStyle = COLORS.trajectory;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+                
+                // Draw catapult
+                drawCatapult(groundY);
+                
+                // Draw target
+                if (gameState.targetPosition) {
+                    const targetX = gameState.targetPosition.x * SCALE;
+                    const targetY = groundY - gameState.targetSize / 2;
+                    const targetWidth = gameState.targetSize;
+                    const targetHeight = gameState.targetSize;
+                    
+                    // Draw target base
+                    ctx.fillStyle = '#8d6e63';
+                    ctx.fillRect(targetX - targetWidth/2, groundY - 5, targetWidth, 5);
+                    
+                    // Draw target
+                    ctx.fillStyle = COLORS.target;
+                    ctx.beginPath();
+                    ctx.arc(targetX, targetY, targetWidth/2, 0, Math.PI, true);
+                    ctx.fill();
+                    
+                    // Draw target rings
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(targetX, targetY, targetWidth/2 * 0.7, 0, Math.PI, true);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.arc(targetX, targetY, targetWidth/2 * 0.4, 0, Math.PI, true);
+                    ctx.stroke();
+                    
+                    // Draw distance label
+                    ctx.fillStyle = '#333';
+                    ctx.font = '14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`${gameState.targetPosition.x.toFixed(1)}m`, targetX, groundY + 20);
+                }
+                
+                // Draw projectile
+                if (gameState.projectilePosition && gameState.projectilePosition.y >= 0) {
+                    const projectileX = gameState.projectilePosition.x * SCALE;
+                    const projectileY = groundY - gameState.projectilePosition.y * SCALE;
+                    const projectileRadius = 5 + gameState.mass; // Size based on mass
+                    
+                    ctx.fillStyle = COLORS.projectile;
+                    ctx.beginPath();
+                    ctx.arc(projectileX, projectileY, projectileRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Draw angle indicator if not launched
+                if (!gameState.isLaunched) {
+                    const startX = gameState.catapultPosition.x * SCALE;
+                    const startY = groundY - 5;
+                    const angleInRadians = gameState.angle * Math.PI / 180;
+                    const lineLength = 50;
+                    const endX = startX + Math.cos(angleInRadians) * lineLength;
+                    const endY = startY - Math.sin(angleInRadians) * lineLength;
+                    
+                    ctx.strokeStyle = 'rgba(255, 87, 34, 0.7)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 3]);
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            }
+            
+            // Draw the catapult
+            function drawCatapult(groundY) {
+                const catapultX = gameState.catapultPosition.x * SCALE;
+                const catapultY = groundY;
+                
+                // Draw base
+                ctx.fillStyle = COLORS.catapult;
+                ctx.fillRect(catapultX - 15, catapultY - 5, 30, 5);
+                
+                // Draw arm
+                ctx.fillStyle = COLORS.catapult;
+                ctx.save();
+                ctx.translate(catapultX, catapultY - 5);
+                
+                // If launched, draw arm at rest position
+                // Otherwise, draw at the angle
+                if (gameState.isLaunched) {
+                    ctx.rotate(-Math.PI / 4); // Rest position
+                } else {
+                    ctx.rotate(-gameState.angle * Math.PI / 180);
+                }
+                
+                ctx.fillRect(-3, 0, 6, -20);
+                ctx.restore();
+                
+                // Draw cup at the end of the arm
+                if (!gameState.isLaunched) {
+                    const angleInRadians = gameState.angle * Math.PI / 180;
+                    const cupX = catapultX + Math.cos(angleInRadians) * -20;
+                    const cupY = (catapultY - 5) - Math.sin(angleInRadians) * 20;
+                    
+                    ctx.fillStyle = '#5d4037';
+                    ctx.beginPath();
+                    ctx.arc(cupX, cupY, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // Draw distance markings on ground
+            function drawDistanceMarkings(groundY) {
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                
+                for (let i = 10; i <= 150; i += 10) {
+                    const x = i * SCALE;
+                    
+                    // Draw tick
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, groundY);
+                    ctx.lineTo(x, groundY + 10);
+                    ctx.stroke();
+                    
+                    // Draw label every 20m
+                    if (i % 20 === 0) {
+                        ctx.fillText(`${i}m`, x, groundY + 25);
+                        
+                        // Draw vertical grid line
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.moveTo(x, groundY);
+                        ctx.lineTo(x, 0);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+            }
+            
+            // Public API
+            return {
+                init: initGame
+            };
+        }
+    </script>
+</body>
+</html>

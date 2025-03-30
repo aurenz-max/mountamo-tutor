@@ -379,20 +379,25 @@ class PostgreSQLETL:
         
         logger.info(f"Curriculum import completed")
 
-    def import_learning_path(self, conn, file_path=None):
-        """Import learning path data from JSON.
+    def import_learning_path(self, conn, file_path=None, base_nodes_file=None):
+        """Import learning path data from JSON with base node identification.
         
         Args:
             conn: PostgreSQL connection
             file_path: Path to learning path JSON file
+            base_nodes_file: Path to base node skills JSON file
         """
-        logger.info("Importing learning path data...")
+        logger.info("Importing learning path data with base node identification...")
         
         # If no file path specified, use default in data directory
         if not file_path:
             file_path = self.data_dir / "learning_path_decision_tree.json"
         
-        # Verify file exists
+        # If no base nodes file specified, use default in data directory
+        if not base_nodes_file:
+            base_nodes_file = self.data_dir / "base_node_skills.json"
+        
+        # Verify files exist
         if not os.path.exists(file_path):
             logger.warning(f"Learning path file not found: {file_path}")
             # Check if file exists in current directory
@@ -405,33 +410,95 @@ class PostgreSQLETL:
                 logger.error("Could not locate learning path file")
                 return
         
+        # Check if base nodes file exists
+        base_nodes = []
+        if os.path.exists(base_nodes_file):
+            logger.info(f"Loading base node skills from {base_nodes_file}")
+            try:
+                with open(base_nodes_file, 'r') as f:
+                    base_nodes_data = json.load(f)
+                    base_nodes = base_nodes_data.get("base_node_skills", [])
+                logger.info(f"Loaded {len(base_nodes)} base node skills")
+            except Exception as e:
+                logger.error(f"Error loading base node skills: {str(e)}")
+                # Continue with algorithmic detection as fallback
+        else:
+            logger.warning(f"Base nodes file not found: {base_nodes_file}")
+            logger.info("Will identify base nodes algorithmically")
+        
         try:
-            # Load the JSON data
+            # Load the learning path JSON data
             with open(file_path, 'r') as f:
                 learning_path_data = json.load(f)
             
-            # Process learning paths manually to avoid SQL ambiguity
+            # Process learning paths
             with conn.cursor() as cur:
+                # First clear any existing data (optional depending on your needs)
+                cur.execute("TRUNCATE TABLE learning_paths")
+                
                 # Get the learning_path_decision_tree object
                 tree_data = learning_path_data.get("learning_path_decision_tree", {})
-                paths_added = 0
+                
+                # Track skills that appear as prerequisites and those that are unlocked
+                all_prereq_skills = set()
+                all_unlocked_skills = set()
+                
+                # First, gather all skills mentioned in the tree
+                for prereq_skill, unlocks_skills in tree_data.items():
+                    all_prereq_skills.add(prereq_skill)
+                    for unlocks_skill in unlocks_skills:
+                        all_unlocked_skills.add(unlocks_skill)
+                
+                # Identify base nodes algorithmically: 
+                # 1. If they're in the explicit base_nodes list
+                # 2. If they appear as prerequisites but never as unlocked skills
+                algorithmic_base_nodes = all_prereq_skills - all_unlocked_skills
+                
+                # Combine with explicitly defined base nodes
+                combined_base_nodes = set(base_nodes) | algorithmic_base_nodes
+                
+                logger.info(f"Identified {len(combined_base_nodes)} base nodes " 
+                        f"({len(base_nodes)} from file, "
+                        f"{len(algorithmic_base_nodes)} algorithmically)")
+                
+                # Log the identified base nodes
+                logger.info(f"Base nodes: {sorted(list(combined_base_nodes))}")
                 
                 # Process each item in the tree
+                paths_added = 0
+                
+                # First insert all learning paths WITHOUT setting base_node flag
                 for prereq_skill, unlocks_skills in tree_data.items():
                     for unlocks_skill in unlocks_skills:
-                        # Insert directly with proper parameter handling
+                        # Insert with is_base_node as false initially
                         cur.execute(
                             """
                             INSERT INTO learning_paths (
                                 prerequisite_skill_id, 
                                 unlocks_skill_id,
-                                min_score_threshold
-                            ) VALUES (%s, %s, %s)
-                            ON CONFLICT (prerequisite_skill_id, unlocks_skill_id) DO NOTHING
+                                min_score_threshold,
+                                is_base_node
+                            ) VALUES (%s, %s, %s, %s)
                             """,
-                            (prereq_skill, unlocks_skill, 6.0)
+                            (prereq_skill, unlocks_skill, 6.0, False)
                         )
                         paths_added += 1
+                
+                # Now update the is_base_node flag for just the base node skills
+                # This updates the flag only for paths where the base node skill has no prerequisites
+                for base_node in combined_base_nodes:
+                    cur.execute(
+                        """
+                        UPDATE learning_paths 
+                        SET is_base_node = TRUE 
+                        WHERE prerequisite_skill_id = %s
+                        AND NOT EXISTS (
+                            SELECT 1 FROM learning_paths lp 
+                            WHERE lp.unlocks_skill_id = %s
+                        )
+                        """,
+                        (base_node, base_node)
+                    )
                 
                 conn.commit()
             
@@ -439,11 +506,27 @@ class PostgreSQLETL:
             with conn.cursor() as cur:
                 cur.execute("SELECT COUNT(*) FROM learning_paths")
                 path_count = cur.fetchone()[0]
+                
+                # Count base nodes
+                cur.execute("SELECT COUNT(*) FROM learning_paths WHERE is_base_node = TRUE")
+                base_node_count = cur.fetchone()[0]
+                
+                # Count distinct base node skills 
+                cur.execute("""
+                    SELECT COUNT(DISTINCT prerequisite_skill_id) 
+                    FROM learning_paths 
+                    WHERE is_base_node = TRUE
+                """)
+                base_node_skills_count = cur.fetchone()[0]
             
             logger.info(f"Added {paths_added} learning paths, total in database: {path_count}")
+            logger.info(f"Base node paths in database: {base_node_count}")
+            logger.info(f"Distinct base node skills: {base_node_skills_count}")
             
         except Exception as e:
             logger.error(f"Error importing learning path data: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             conn.rollback()
 
     def import_subskill_learning_paths(self, conn, file_path=None):
@@ -457,7 +540,7 @@ class PostgreSQLETL:
         
         # If no file path specified, use default in data directory
         if not file_path:
-            file_path = self.data_dir / "math-subskill-paths.json"
+            file_path = self.data_dir / "subskill-paths.json"
         
         # Verify file exists
         if not os.path.exists(file_path):
@@ -981,6 +1064,22 @@ class PostgreSQLETL:
             for subject, count in subject_counts:
                 logger.info(f"Curriculum - {subject}: {count} records")
             
+            # Check learning paths and base nodes
+            cur.execute("SELECT COUNT(*) FROM learning_paths WHERE is_base_node = TRUE")
+            base_node_count = cur.fetchone()[0]
+            logger.info(f"Learning paths - Base nodes: {base_node_count}")
+            
+            # List some base nodes
+            cur.execute("""
+                SELECT prerequisite_skill_id 
+                FROM learning_paths 
+                WHERE is_base_node = TRUE 
+                GROUP BY prerequisite_skill_id
+                LIMIT 10
+            """)
+            base_nodes = [row[0] for row in cur.fetchall()]
+            logger.info(f"Sample base nodes: {', '.join(base_nodes)}")
+            
             # Check a few problem reviews to verify data is correct
             cur.execute("""
                 SELECT review_id, student_id, subject, score, unit_id 
@@ -1001,7 +1100,7 @@ class PostgreSQLETL:
             
             logger.info("Database verification completed")
 
-    async def run_etl(self, syllabus_file=None, learning_path_file=None, subskill_path_file=None, verify=True):
+    async def run_etl(self, syllabus_file=None, learning_path_file=None, subskill_path_file=None, base_nodes_file=None, verify=True):
         """Run the ETL process.
         
         Args:
@@ -1019,7 +1118,7 @@ class PostgreSQLETL:
             # Import data
             await self.import_students(conn)
             self.import_curriculum_from_csv(conn)
-            self.import_learning_path(conn, learning_path_file)
+            self.import_learning_path(conn, learning_path_file, base_nodes_file)
             self.import_subskill_learning_paths(conn, subskill_path_file)
             
             # Import attempts from Cosmos DB
@@ -1049,10 +1148,12 @@ def get_postgres_etl():
     return postgres_etl
 
 # Utility method to run the ETL process directly
-async def run_etl(syllabus_file=None, learning_path_file=None, subskill_path_file=None):
+async def run_etl(syllabus_file=None, learning_path_file=None, 
+                  subskill_path_file=None, base_nodes_file=None):
     """Run the ETL process."""
     etl = get_postgres_etl()
-    await etl.run_etl(syllabus_file, learning_path_file, subskill_path_file)
+    await etl.run_etl(syllabus_file, learning_path_file, 
+                      subskill_path_file, base_nodes_file)
 
 if __name__ == "__main__":
     """Run ETL when executed directly."""

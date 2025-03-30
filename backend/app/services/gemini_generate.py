@@ -7,6 +7,8 @@ from typing import List, Dict, Any, Optional, Union
 import json
 import base64
 import logging
+import re  # Add the missing import
+
 from .base_ai_service import BaseAIService
 
 logger = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ class GeminiGenerateService(BaseAIService):
             )
             
             # Store model ID for reference
-            self.model_id = 'gemini-2.0-flash-exp'
+            self.model_id = 'gemini-2.0-flash-lite'
             logger.info("Gemini Generate service initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Gemini Generate service: {str(e)}")
@@ -59,15 +61,26 @@ class GeminiGenerateService(BaseAIService):
                     contents=full_prompt,
                     config=types.GenerateContentConfig(
                         temperature=0.6,
-                        max_output_tokens=1024
+                        max_output_tokens=2056
                     )
                 )
                 
                 # Extract text from response
                 if response and response.candidates and response.candidates[0].content.parts:
                     text_response = response.candidates[0].content.parts[0].text.strip()
-
-                return ""
+                    # Add debug log to see raw response before cleaning
+                    print(f"[DEBUG] Raw Gemini response before cleaning: {text_response[:200]}...")
+                    logger.debug(f"Raw Gemini response before cleaning: {text_response[:200]}...")
+                    # Clean JSON if needed
+                    if clean_json:
+                        cleaned_response = self._clean_json_response(text_response)
+                        print(f"[DEBUG] Cleaned response: {cleaned_response[:200]}...")
+                        return cleaned_response
+                    return text_response
+                # Add debug log for empty response case
+                print("[WARNING] Empty response received from Gemini")
+                logger.warning("Empty response received from Gemini")
+                return ""  # Only return empty string if no response
                 
             else:
                 # Handle Anthropic-style message format with potential images
@@ -140,10 +153,18 @@ class GeminiGenerateService(BaseAIService):
                 # Extract text from response
                 if response and response.candidates and response.candidates[0].content.parts:
                     text_response = response.candidates[0].content.parts[0].text.strip()
+                    # Add debug log to see raw response before cleaning
+                    print(f"[DEBUG] Raw Gemini response from message format before cleaning: {text_response[:200]}...")
+                    logger.debug(f"Raw Gemini response from message format before cleaning: {text_response[:200]}...")
                     # Clean JSON if needed
                     if clean_json:
-                        return self._clean_json_response(text_response)
+                        cleaned_response = self._clean_json_response(text_response)
+                        print(f"[DEBUG] Cleaned response from message format: {cleaned_response[:200]}...")
+                        return cleaned_response
                     return text_response
+                # Add debug log for empty response case
+                print("[WARNING] Empty response received from Gemini message format")
+                logger.warning("Empty response received from Gemini message format")
                 return ""
                 
         except Exception as e:
@@ -160,14 +181,40 @@ class GeminiGenerateService(BaseAIService):
         Returns:
             Cleaned text with markdown formatting removed
         """
-        # Check if response is wrapped in ```json and ``` markers
-        if response_text.startswith("```json") or response_text.startswith("```"):
-            # Remove the markdown code block markers
-            cleaned = re.sub(r'^```(?:json)?\s*', '', response_text)
-            cleaned = re.sub(r'\s*```$', '', cleaned)
-            return cleaned.strip()
+        # Log the incoming text
+        print(f"[DEBUG] Cleaning JSON response: {response_text[:50]}...")
         
-        # If not wrapped in code blocks, return as is
+        # Simple cleaning approach without regex if regex causes issues
+        if response_text.startswith("```json"):
+            # Find the first and last occurrences of ``` and extract the content between them
+            start_idx = response_text.find("\n") + 1  # Skip the first line with ```json
+            end_idx = response_text.rfind("```")
+            if start_idx > 0 and end_idx > start_idx:
+                cleaned = response_text[start_idx:end_idx].strip()
+                print(f"[DEBUG] Cleaned JSON using string slicing: {cleaned[:50]}...")
+                return cleaned
+        elif response_text.startswith("```"):
+            # Handle case without json specifier
+            start_idx = response_text.find("\n") + 1  # Skip the first line with ```
+            end_idx = response_text.rfind("```")
+            if start_idx > 0 and end_idx > start_idx:
+                cleaned = response_text[start_idx:end_idx].strip()
+                print(f"[DEBUG] Cleaned JSON using string slicing: {cleaned[:50]}...")
+                return cleaned
+        
+        # Try regex approach if slice method not applicable
+        try:
+            if response_text.startswith("```json") or response_text.startswith("```"):
+                # Remove the markdown code block markers
+                cleaned = re.sub(r'^```(?:json)?\s*', '', response_text)
+                cleaned = re.sub(r'\s*```$', '', cleaned)
+                print(f"[DEBUG] Cleaned JSON using regex: {cleaned[:50]}...")
+                return cleaned.strip()
+        except Exception as e:
+            print(f"[WARNING] Error using regex to clean JSON: {str(e)}")
+            logger.warning(f"Error using regex to clean JSON: {str(e)}")
+        
+        # If not wrapped in code blocks or cleaning failed, return as is
         return response_text
 
     async def generate_questions(self, content: str, num_questions: int = 5) -> List[str]:

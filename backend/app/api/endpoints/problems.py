@@ -3,13 +3,19 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 
 # Import dependencies
-from ...dependencies import get_problem_service, get_competency_service, get_problem_recommender, get_analytics_extension
+from ...dependencies import get_problem_service, get_competency_service, get_problem_recommender, get_analytics_extension, get_review_service
 from ...services.problems import ProblemService
 from ...services.competency import CompetencyService, AnalyticsExtension
 from ...services.recommender import ProblemRecommender
+from ...services.review import ReviewService
 import re
 from pathlib import Path
 from datetime import datetime, timedelta
+import logging  # Add explicit logging import
+
+# Set up logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)  # Set to DEBUG for more details
 
 
 router = APIRouter()
@@ -53,7 +59,7 @@ async def generate_problem(
 ) -> ProblemResponse:
     """Generate a new problem based on curriculum parameters"""
     try:
-        print(f"Received problem generation request: {request}")
+        logger.info(f"Received problem generation request: {request}")
         
         # Validate subject at minimum
         if not request.subject:
@@ -65,7 +71,7 @@ async def generate_problem(
             "subskill": request.subskill_id
         }
         
-        print(f"Processing with context: {context}")
+        logger.info(f"Processing with context: {context}")
         
         # Let the recommender handle missing parameters
         problem = await problem_service.get_problem(
@@ -75,42 +81,30 @@ async def generate_problem(
         )
         
         if not problem:
-            print("No problem generated")
+            logger.error("No problem generated")
             raise HTTPException(
                 status_code=404, 
                 detail="Failed to generate problem. Check server logs for details."
             )
             
-        print(f"Generated problem: {problem}")
+        logger.info(f"Generated problem: {problem}")
         return ProblemResponse(**problem)
         
     except HTTPException as e:
         raise
     except Exception as e:
-        print(f"Error in generate_problem endpoint: {str(e)}")
+        logger.error(f"Error in generate_problem endpoint: {str(e)}")
         import traceback
-        traceback.print_exc()
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"
         )
-
-@router.get("/history/{student_id}")
-async def get_problem_history(
-    student_id: int,
-    problem_service: ProblemService = Depends(get_problem_service)
-) -> List[Dict[str, Any]]:
-    """Get history of problems attempted by a student"""
-    try:
-        history = await problem_service.get_student_history(student_id)
-        return history
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
     
 @router.post("/submit")
 async def submit_problem(
     submission: ProblemSubmission,
-    problem_service: ProblemService = Depends(get_problem_service),
+    review_service: ReviewService = Depends(get_review_service),  # Changed from problem_service
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Submit a problem solution for review and update competency"""
@@ -128,8 +122,8 @@ async def submit_problem(
         if not re.match(r'^[A-Za-z0-9+/=]+$', image_data):
             raise HTTPException(status_code=400, detail="Invalid image data format")
 
-        # Get problem review from AI with student_id
-        review = await problem_service.review_problem(
+        # Get problem review from the review service instead of problem service
+        review = await review_service.review_problem(
             student_id=submission.student_id,
             subject=submission.subject,
             problem=submission.problem,
@@ -159,38 +153,10 @@ async def submit_problem(
         }
             
     except Exception as e:
-        print(f"Error in submit_problem: {str(e)}")
+        logger.error(f"Error in submit_problem: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.post("/difficulty")
-async def update_problem_difficulty(
-    request: ProblemRequest,
-    recommender: ProblemRecommender = Depends(get_problem_recommender)
-) -> Dict[str, Any]:
-    """Update difficulty settings for problem generation"""
-    try:
-        # Store the updated difficulty in the recommender or competency service
-        await recommender.update_difficulty_override(
-            student_id=request.student_id,
-            subject=request.subject,
-            unit_id=request.unit_id,
-            skill_id=request.skill_id,
-            subskill_id=request.subskill_id,
-            difficulty_override=request.difficulty
-        )
-        
-        return {
-            "status": "success",
-            "difficulty": request.difficulty,
-            "message": "Difficulty updated successfully"
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error updating difficulty: {str(e)}"
-        )
-
-@router.get("/student/{student_id}/recommended-problems", response_model=List[ProblemResponse])
+@router.get("/student/{student_id}/recommended-problems")
 async def get_recommended_problems(
     student_id: int,
     subject: Optional[str] = None,
@@ -203,16 +169,21 @@ async def get_recommended_problems(
     Returns multiple problems in a single call based on the top recommendations.
     """
     try:
+        logger.info(f"Getting {count} recommended problems for student {student_id}")
+        
         # Step 1: Get recommendations from analytics service
         recommendations = await analytics_service.get_recommendations(
             student_id, subject, limit=count
         )
         
         if not recommendations or len(recommendations) == 0:
+            logger.error("No recommendations found for this student")
             raise HTTPException(
                 status_code=404,
                 detail="No recommendations found for this student"
             )
+            
+        logger.info(f"Got {len(recommendations)} recommendations")
             
         # Step 2: Generate multiple problems in a single call
         problems = await problem_service.get_multiple_problems(
@@ -222,19 +193,21 @@ async def get_recommended_problems(
         )
         
         if not problems:
+            logger.error("Failed to generate recommended problems")
             raise HTTPException(
                 status_code=500,
                 detail="Failed to generate recommended problems"
             )
             
+        logger.info(f"Generated {len(problems)} problems successfully")
         return problems
         
     except HTTPException as e:
         raise
     except Exception as e:
-        print(f"Error in get_recommended_problems endpoint: {str(e)}")
+        logger.error(f"Error in get_recommended_problems endpoint: {str(e)}")
         import traceback
-        traceback.print_exc()
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"
@@ -254,6 +227,8 @@ async def get_skill_problems(
     Returns varied problems with different concept groups for the same skill/subskill.
     """
     try:
+        logger.info(f"Getting {count} problems for student {student_id}, skill {skill_id}, subskill {subskill_id}")
+        
         # Get the problems from the service
         problems = await problem_service.get_skill_problems(
             student_id=student_id,
@@ -263,20 +238,30 @@ async def get_skill_problems(
             count=count
         )
         
-        if not problems:
+        logger.info(f"Retrieved {len(problems) if problems else 0} problems from service")
+        
+        if not problems or len(problems) == 0:
+            logger.error(f"No problems generated for skill {skill_id}, subskill {subskill_id}")
             raise HTTPException(
                 status_code=404,
                 detail="Failed to generate problems for the specified skill/subskill"
             )
-            
+        
+        # Log problem details to verify data structure
+        for i, problem in enumerate(problems):
+            logger.debug(f"Problem {i+1} type: {problem.get('problem_type', 'unknown')}")
+            logger.debug(f"Problem {i+1} keys: {problem.keys()}")
+        
+        logger.info(f"Successfully returning {len(problems)} problems")
         return problems
         
     except HTTPException as e:
+        logger.error(f"HTTP Exception in get_skill_problems: {e.detail}")
         raise
     except Exception as e:
-        print(f"Error in get_skill_problems endpoint: {str(e)}")
+        logger.error(f"Error in get_skill_problems endpoint: {str(e)}")
         import traceback
-        traceback.print_exc()
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"

@@ -1,0 +1,268 @@
+{
+    "subskill_learning_path": {
+      "SCI001-01-A": {
+        "next_subskill": "SCI001-02-A"
+      },
+      "SCI001-02-A": {
+        "next_subskill": "SCI001-03-A"
+      },
+      "SCI001-03-A": {
+        "next_subskill": "SCI002-02-A"
+      },
+      "SCI002-02-A": {
+        "next_subskill": "SCI002-03-A"
+      },
+      "SCI002-03-A": {
+        "next_subskill": "SCI003-01-A"
+      },
+      "SCI003-01-A": {
+        "next_subskill": "SCI003-02-A"
+      },
+      "SCI003-02-A": {
+        "next_subskill": "SCI003-03-A"
+      },
+      "SCI003-03-A": {
+        "next_subskill": "SCI004-01-A"
+      },
+      "SCI004-01-A": {
+        "next_subskill": "SCI004-01-B"
+      },
+      "SCI004-01-B": {
+        "next_subskill": "SCI001-02-B"
+      },
+      "SCI001-02-B": {
+        "next_subskill": "SCI001-03-B"
+      },
+      "SCI001-03-B": {
+        "next_subskill": "SCI001-01-B"
+      },
+      "SCI001-01-B": {
+        "next_subskill": "SCI001-02-C"
+      },
+      "SCI001-02-C": {
+        "next_subskill": "SCI001-03-C"
+      },
+      "SCI001-03-C": {
+        "next_subskill": "SCI002-01-A"
+      },
+      "SCI002-01-A": {
+        "next_subskill": "SCI002-01-B"
+      },
+      "SCI002-01-B": {
+        "next_subskill": "SCI002-02-B"
+      },
+      "SCI002-02-B": {
+        "next_subskill": "SCI002-03-B"
+      },
+      "SCI002-03-B": {
+        "next_subskill": "SCI002-03-C"
+      },
+      "SCI002-03-C": {
+        "next_subskill": "SCI002-03-D"
+      },
+      "SCI002-03-D": {
+        "next_subskill": "SCI003-01-B"
+      },
+      "SCI003-01-B": {
+        "next_subskill": "SCI003-01-C"
+      },
+      "SCI003-01-C": {
+        "next_subskill": "SCI003-02-B"
+      },
+      "SCI003-02-B": {
+        "next_subskill": "SCI003-03-B"
+      },
+      "SCI003-03-B": {
+        "next_subskill": "SCI004-01-C"
+      },
+      "SCI004-01-C": {
+        "next_subskill": "SCI004-02-A"
+      },
+      "SCI004-02-A": {
+        "next_subskill": "SCI004-02-B"
+      },
+      "SCI004-02-B": {
+        "next_subskill": "SCI001-01-C"
+      },
+      "SCI001-01-C": {
+        "next_subskill": "SCI001-02-D"
+      },
+      "SCI001-02-D": {
+        "next_subskill": "SCI001-02-E"
+      },
+      "SCI001-02-E": {
+        "next_subskill": "SCI001-03-D"
+      },
+      "SCI001-03-D": {
+        "next_subskill": "SCI002-01-C"
+      },
+      "SCI002-01-C": {
+        "next_subskill": "SCI002-02-C"
+      },
+      "SCI002-02-C": {
+        "next_subskill": "SCI003-02-C"
+      },
+      "SCI003-02-C": {
+        "next_subskill": "SCI003-03-C"
+      },
+      "SCI003-03-C": {
+        "next_subskill": "SCI004-01-D"
+      },
+      "SCI004-01-D": {
+        "next_subskill": "SCI001-01-D"
+      },
+      "SCI001-01-D": {
+        "next_subskill": "SCI001-03-E"
+      },
+      "SCI001-03-E": {
+        "next_subskill": "SCI002-03-E"
+      },
+      "SCI002-03-E": {
+        "next_subskill": "SCI002-03-F"
+      },
+      "SCI002-03-F": {
+        "next_subskill": "SCI002-03-G"
+      },
+      "SCI002-03-G": {
+        "next_subskill": "SCI002-03-H"
+      },
+      "SCI002-03-H": {
+        "next_subskill": "SCI003-01-D"
+      },
+      "SCI003-01-D": {
+        "next_subskill": "SCI003-03-D"
+      },
+      "SCI003-03-D": {
+        "next_subskill": "SCI003-03-E"
+      },
+      "SCI003-03-E": {
+        "next_subskill": "SCI004-01-E"
+      },
+      "SCI004-01-E": {
+        "next_subskill": "SCI004-02-C"
+      },
+      "SCI004-02-C": {
+        "next_subskill": "SCI004-02-D"
+      },
+      "SCI004-02-D": {
+        "next_subskill": "SCI001-01-E"
+      },
+      "SCI001-01-E": {
+        "next_subskill": "SCI001-01-F"
+      },
+      "SCI001-01-F": {
+        "next_subskill": "SCI001-02-F"
+      },
+      "SCI001-02-F": {
+        "next_subskill": "SCI001-03-F"
+      },
+      "SCI001-03-F": {
+        "next_subskill": "SCI002-01-D"
+      },
+      "SCI002-01-D": {
+        "next_subskill": "SCI002-01-E"
+      },
+      "SCI002-01-E": {
+        "next_subskill": "SCI002-02-D"
+      },
+      "SCI002-02-D": {
+        "next_subskill": "SCI003-01-E"
+      },
+      "SCI003-01-E": {
+        "next_subskill": "SCI003-02-D"
+      },
+      "SCI003-02-D": {
+        "next_subskill": "SCI003-03-F"
+      },
+      "SCI003-03-F": {
+        "next_subskill": "SCI004-01-F"
+      },
+      "SCI004-01-F": {
+        "next_subskill": "SCI004-02-E"
+      },
+      "SCI004-02-E": {
+        "next_subskill": "SCI001-02-G"
+      },
+      "SCI001-02-G": {
+        "next_subskill": "SCI001-01-G"
+      },
+      "SCI001-01-G": {
+        "next_subskill": "SCI001-03-G"
+      },
+      "SCI001-03-G": {
+        "next_subskill": "SCI003-01-F"
+      },
+      "SCI003-01-F": {
+        "next_subskill": "SCI003-03-G"
+      },
+      "SCI003-03-G": {
+        "next_subskill": "SCI004-01-G"
+      },
+      "SCI004-01-G": {
+        "next_subskill": "SCI004-02-F"
+      },
+      "SCI004-02-F": {
+        "next_subskill": "SCI004-02-G"
+      },
+      "SCI004-02-G": {
+        "next_subskill": "SCI001-01-H"
+      },
+      "SCI001-01-H": {
+        "next_subskill": "SCI001-02-H"
+      },
+      "SCI001-02-H": {
+        "next_subskill": "SCI001-03-H"
+      },
+      "SCI001-03-H": {
+        "next_subskill": "SCI002-01-F"
+      },
+      "SCI002-01-F": {
+        "next_subskill": "SCI002-01-G"
+      },
+      "SCI002-01-G": {
+        "next_subskill": "SCI002-02-E"
+      },
+      "SCI002-02-E": {
+        "next_subskill": "SCI003-01-G"
+      },
+      "SCI003-01-G": {
+        "next_subskill": "SCI003-02-E"
+      },
+      "SCI003-02-E": {
+        "next_subskill": "SCI003-03-H"
+      },
+      "SCI003-03-H": {
+        "next_subskill": "SCI004-01-H"
+      },
+      "SCI004-01-H": {
+        "next_subskill": "SCI004-02-H"
+      },
+      "SCI004-02-H": {
+        "next_subskill": "SCI003-01-H"
+      },
+      "SCI003-01-H": {
+        "next_subskill": "SCI003-02-F"
+      },
+      "SCI003-02-F": {
+        "next_subskill": "SCI002-01-H"
+      },
+      "SCI002-01-H": {
+        "next_subskill": "SCI002-02-F"
+      },
+      "SCI002-02-F": {
+        "next_subskill": "SCI003-02-G"
+      },
+      "SCI003-02-G": {
+        "next_subskill": "SCI003-02-H"
+      },
+      "SCI003-02-H": {
+        "next_subskill": "SCI002-02-G"
+      },
+      "SCI002-02-G": {
+        "next_subskill": "SCI002-02-H"
+      },
+      "SCI002-02-H": {
+        "next_subskill": null
+      }
+    }
+  }

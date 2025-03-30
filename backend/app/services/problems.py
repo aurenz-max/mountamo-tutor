@@ -15,6 +15,7 @@ class ProblemService:
         self.competency_service = None  # Will be set by dependency injection
         self.recommender = None  # Will be set by dependency injection
         self.cosmos_db = None  # Will be set by dependency injection
+        self.problem_optimizer = None  # Will be set by dependency injection
         self._problem_history = {}  # In-memory storage for now
         self._current_ai_service_type = "anthropic"  # Default AI service type
 
@@ -78,7 +79,66 @@ class ProblemService:
             if not recommendation:
                 print("[ERROR] No recommendation generated")
                 return None
+                
+            # Extract skill and subskill IDs for cache lookup
+            skill_id = recommendation['skill']['id']
+            subskill_id = recommendation['subskill']['id']
+            
+            # STEP 1: Check if we have a cached problem for this skill/subskill
+            cached_problems = []
+            if self.cosmos_db:
+                print(f"[DEBUG] Looking for cached problems in cosmos_db")
+                cached_problems = await self.cosmos_db.get_cached_problems(
+                    subject=subject,
+                    skill_id=skill_id,
+                    subskill_id=subskill_id
+                )
+                print(f"[DEBUG] Found {len(cached_problems)} cached problems")
+                
+                # If we have cached problems, select one
+                if cached_problems:
+                    # Use problem optimizer if available to select the best one
+                    if hasattr(self, 'problem_optimizer') and self.problem_optimizer:
+                        print(f"[DEBUG] Using problem optimizer to select from {len(cached_problems)} cached problems")
+                        
+                        # Extract unit_id from recommendation
+                        unit_id = recommendation['unit']['id']
+                        
+                        # Verify problems structure before passing to optimizer
+                        processed_problems = []
+                        for problem in cached_problems:
+                            if "problem_data" in problem and isinstance(problem["problem_data"], dict):
+                                processed_problems.append(problem["problem_data"])
+                            else:
+                                processed_problems.append(problem)
+                        
+                        # Pass processed problems to optimizer
+                        optimal_problems = await self.problem_optimizer.select_optimal_problems(
+                            student_id=student_id,
+                            subject=subject,
+                            skill_id=skill_id,
+                            subskill_id=subskill_id,
+                            unit_id=unit_id,
+                            available_problems=processed_problems,
+                            count=1  # We just need one problem
+                        )
+                        
+                        if optimal_problems and len(optimal_problems) > 0:
+                            print(f"[DEBUG] Selected an optimal problem from cache")
+                            return optimal_problems[0]
+                    else:
+                        # No optimizer available, just pick a random one
+                        import random
+                        selected_problem = random.choice(cached_problems)
+                        
+                        # Extract problem_data if in nested format
+                        if "problem_data" in selected_problem and isinstance(selected_problem["problem_data"], dict):
+                            return selected_problem["problem_data"]
+                        else:
+                            return selected_problem
 
+            # If we reach here, we need to generate a new problem
+            
             # Get detailed objectives for the recommended subskill - now passing subject
             objectives = await self.competency_service.get_detailed_objectives(
                 subject=subject,
@@ -112,8 +172,19 @@ class ProblemService:
                 'skill': recommendation['skill'],
                 'subskill': recommendation['subskill'],
                 'difficulty': recommendation['difficulty'],
-                'objectives': objectives  # Include the selected objectives in metadata
+                'objectives': objectives,  # Include the selected objectives in metadata
+                'subject': subject  # Add subject to metadata for easier searching
             }
+            
+            # STEP 3: Cache the new problem if cosmos_db is available
+            if self.cosmos_db:
+                await self.cosmos_db.save_cached_problem(
+                    subject=subject,
+                    skill_id=skill_id,
+                    subskill_id=subskill_id,
+                    problem_data=problem_data
+                )
+                print(f"[DEBUG] Saved new problem to cache for {subject}/{skill_id}/{subskill_id}")
             
             print(f"[DEBUG] Final problem data: {problem_data}")
             return problem_data
@@ -157,7 +228,64 @@ class ProblemService:
         try:
             print(f"[DEBUG] Using pre-loaded session data for problem generation")
             
-            # Generate the problem using pre-loaded data
+            # Extract skill and subskill IDs for cache lookup
+            skill_id = session_recommendation['skill']['id']
+            subskill_id = session_recommendation['subskill']['id']
+            
+            # STEP 1: Check if we have a cached problem for this skill/subskill
+            cached_problems = []
+            if self.cosmos_db:
+                print(f"[DEBUG] Looking for cached problems in cosmos_db")
+                cached_problems = await self.cosmos_db.get_cached_problems(
+                    subject=subject,
+                    skill_id=skill_id,
+                    subskill_id=subskill_id
+                )
+                print(f"[DEBUG] Found {len(cached_problems)} cached problems")
+                
+                # If we have cached problems, select one
+                if cached_problems:
+                    # Use problem optimizer if available to select the best one
+                    if hasattr(self, 'problem_optimizer') and self.problem_optimizer:
+                        print(f"[DEBUG] Using problem optimizer to select from {len(cached_problems)} cached problems")
+                        
+                        # Extract unit_id from recommendation
+                        unit_id = session_recommendation['unit']['id']
+                        
+                        # Verify problems structure before passing to optimizer
+                        processed_problems = []
+                        for problem in cached_problems:
+                            if "problem_data" in problem and isinstance(problem["problem_data"], dict):
+                                processed_problems.append(problem["problem_data"])
+                            else:
+                                processed_problems.append(problem)
+                        
+                        # Pass processed problems to optimizer
+                        optimal_problems = await self.problem_optimizer.select_optimal_problems(
+                            student_id=student_id,
+                            subject=subject,
+                            skill_id=skill_id,
+                            subskill_id=subskill_id,
+                            unit_id=unit_id,
+                            available_problems=processed_problems,
+                            count=1  # We just need one problem
+                        )
+                        
+                        if optimal_problems and len(optimal_problems) > 0:
+                            print(f"[DEBUG] Selected an optimal problem from cache")
+                            return optimal_problems[0]
+                    else:
+                        # No optimizer available, just pick a random one
+                        import random
+                        selected_problem = random.choice(cached_problems)
+                        
+                        # Extract problem_data if in nested format
+                        if "problem_data" in selected_problem and isinstance(selected_problem["problem_data"], dict):
+                            return selected_problem["problem_data"]
+                        else:
+                            return selected_problem
+            
+            # If we reach here, we need to generate a new problem using pre-loaded data
             raw_problem = await self.generate_problem(
                 subject=subject,
                 recommendation={
@@ -181,8 +309,19 @@ class ProblemService:
                 'skill': session_recommendation['skill'],
                 'subskill': session_recommendation['subskill'],
                 'difficulty': session_recommendation['difficulty'],
-                'objectives': session_objectives
+                'objectives': session_objectives,
+                'subject': subject  # Add subject to metadata for easier searching
             }
+            
+            # STEP 3: Cache the new problem if cosmos_db is available
+            if self.cosmos_db:
+                await self.cosmos_db.save_cached_problem(
+                    subject=subject,
+                    skill_id=skill_id,
+                    subskill_id=subskill_id,
+                    problem_data=problem_data
+                )
+                print(f"[DEBUG] Saved new problem to cache for {subject}/{skill_id}/{subskill_id}")
             
             print(f"[DEBUG] Final problem data: {problem_data}")
             return problem_data
@@ -418,6 +557,7 @@ Return your response EXACTLY in this JSON format:
     ) -> List[Dict[str, Any]]:
         """
         Generate multiple problems based on a list of recommendations in a single operation.
+        Now with caching support.
         
         Args:
             student_id: The ID of the student
@@ -472,59 +612,168 @@ Return your response EXACTLY in this JSON format:
                     }
                 })
             
-            # Generate batch of problems in a single call to the AI service
-            raw_problems_response = await self.generate_multiple_problems(
-                subject=subject,
-                recommendations=formatted_recommendations
-            )
+            # Start with an empty list of selected problems
+            final_problems = []
             
-            if not raw_problems_response:
-                print("[ERROR] Failed to generate raw problems")
-                return []
+            # Track which recommendations need new problems
+            new_problem_indices = []
             
-            # Parse the response to get individual problems
-            try:
-                response_obj = json.loads(raw_problems_response)
-                
-                if not isinstance(response_obj, dict) or "problems" not in response_obj:
-                    print("[ERROR] Response does not contain 'problems' array")
-                    return []
+            # STEP 1: First, check if we have cached problems for each recommendation
+            if self.cosmos_db:
+                for i, rec in enumerate(formatted_recommendations):
+                    skill_id = rec["skill"]["id"]
+                    subskill_id = rec["subskill"]["id"]
                     
-                raw_problems = response_obj["problems"]
-                if not isinstance(raw_problems, list):
-                    print("[ERROR] 'problems' is not an array")
-                    return []
-            except json.JSONDecodeError as e:
-                print(f"[ERROR] Failed to parse JSON response: {str(e)}")
-                return []
-                
-            # Parse the problems
-            problems = []
-            for i, raw_problem in enumerate(raw_problems):
-                if i >= len(formatted_recommendations):
-                    # If we have more problems than recommendations, stop processing
-                    break
-                
-                # Convert to string for _parse_problem if it's not already a string
-                if not isinstance(raw_problem, str):
-                    raw_problem = json.dumps(raw_problem)
+                    print(f"[DEBUG] Looking for cached problems for recommendation {i+1}: {skill_id}/{subskill_id}")
                     
-                problem_data = await self._parse_problem(raw_problem)
-                
-                if problem_data:
-                    # Add metadata about what was actually selected
-                    problem_data['metadata'] = {
-                        'unit': formatted_recommendations[i]['unit'],
-                        'skill': formatted_recommendations[i]['skill'],
-                        'subskill': formatted_recommendations[i]['subskill'],
-                        'difficulty': formatted_recommendations[i]['difficulty'],
-                        'objectives': formatted_recommendations[i]['detailed_objectives'],
-                        'recommendation': formatted_recommendations[i]['recommendation_data']
-                    }
-                    problems.append(problem_data)
+                    cached_problems = await self.cosmos_db.get_cached_problems(
+                        subject=subject,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id
+                    )
+                    
+                    if cached_problems:
+                        print(f"[DEBUG] Found {len(cached_problems)} cached problems for recommendation {i+1}")
+                        
+                        # Use problem optimizer if available to select the best one
+                        if hasattr(self, 'problem_optimizer') and self.problem_optimizer:
+                            # Extract unit_id from recommendation
+                            unit_id = rec["unit"]["id"]
+                            
+                            # Process problems to ensure they have the right format
+                            processed_problems = []
+                            for problem in cached_problems:
+                                if "problem_data" in problem and isinstance(problem["problem_data"], dict):
+                                    processed_problems.append(problem["problem_data"])
+                                else:
+                                    processed_problems.append(problem)
+                            
+                            # Select an optimal problem
+                            optimal_problems = await self.problem_optimizer.select_optimal_problems(
+                                student_id=student_id,
+                                subject=subject,
+                                skill_id=skill_id,
+                                subskill_id=subskill_id,
+                                unit_id=unit_id,
+                                available_problems=processed_problems,
+                                count=1
+                            )
+                            
+                            if optimal_problems and len(optimal_problems) > 0:
+                                # Add metadata if it doesn't exist
+                                selected_problem = optimal_problems[0]
+                                if "metadata" not in selected_problem:
+                                    selected_problem["metadata"] = {
+                                        'unit': rec["unit"],
+                                        'skill': rec["skill"],
+                                        'subskill': rec["subskill"],
+                                        'difficulty': rec["difficulty"],
+                                        'objectives': rec["detailed_objectives"],
+                                        'recommendation': rec["recommendation_data"],
+                                        'subject': subject
+                                    }
+                                
+                                final_problems.append(selected_problem)
+                                continue
+                        else:
+                            # No optimizer available, just pick a random one
+                            import random
+                            selected_problem = random.choice(cached_problems)
+                            
+                            # Extract problem_data if in nested format
+                            if "problem_data" in selected_problem and isinstance(selected_problem["problem_data"], dict):
+                                selected_problem = selected_problem["problem_data"]
+                            
+                            # Add metadata if it doesn't exist
+                            if "metadata" not in selected_problem:
+                                selected_problem["metadata"] = {
+                                    'unit': rec["unit"],
+                                    'skill': rec["skill"],
+                                    'subskill': rec["subskill"],
+                                    'difficulty': rec["difficulty"],
+                                    'objectives': rec["detailed_objectives"],
+                                    'recommendation': rec["recommendation_data"],
+                                    'subject': subject
+                                }
+                            
+                            final_problems.append(selected_problem)
+                            continue
+                    
+                    # If we get here, we need to generate a new problem for this recommendation
+                    new_problem_indices.append(i)
+            else:
+                # No cosmos_db, need to generate all problems
+                new_problem_indices = list(range(len(formatted_recommendations)))
             
-            print(f"[DEBUG] Successfully generated {len(problems)} problems")
-            return problems
+            # STEP 2: Generate new problems for recommendations without cached problems
+            if new_problem_indices:
+                print(f"[DEBUG] Need to generate {len(new_problem_indices)} new problems")
+                
+                # Extract recommendations that need new problems
+                new_recs = [formatted_recommendations[i] for i in new_problem_indices]
+                
+                # Generate batch of problems
+                raw_problems_response = await self.generate_multiple_problems(
+                    subject=subject,
+                    recommendations=new_recs
+                )
+                
+                if raw_problems_response:
+                    try:
+                        response_obj = json.loads(raw_problems_response)
+                        
+                        if isinstance(response_obj, dict) and "problems" in response_obj:
+                            raw_problems = response_obj["problems"]
+                            
+                            # Process each new problem
+                            for i, raw_problem in enumerate(raw_problems):
+                                if i >= len(new_problem_indices):
+                                    break
+                                    
+                                # Get the original recommendation index
+                                rec_index = new_problem_indices[i]
+                                rec = formatted_recommendations[rec_index]
+                                
+                                # Convert to string for _parse_problem if needed
+                                if not isinstance(raw_problem, str):
+                                    raw_problem = json.dumps(raw_problem)
+                                    
+                                problem_data = await self._parse_problem(raw_problem)
+                                
+                                if problem_data:
+                                    # Add metadata
+                                    problem_data['metadata'] = {
+                                        'unit': rec['unit'],
+                                        'skill': rec['skill'],
+                                        'subskill': rec['subskill'],
+                                        'difficulty': rec['difficulty'],
+                                        'objectives': rec['detailed_objectives'],
+                                        'recommendation': rec['recommendation_data'],
+                                        'subject': subject
+                                    }
+                                    
+                                    # Cache the new problem
+                                    if self.cosmos_db:
+                                        await self.cosmos_db.save_cached_problem(
+                                            subject=subject,
+                                            skill_id=rec['skill']['id'],
+                                            subskill_id=rec['subskill']['id'],
+                                            problem_data=problem_data
+                                        )
+                                        print(f"[DEBUG] Saved new problem to cache for recommendation {rec_index+1}")
+                                    
+                                    # Insert in the correct position to match the original recommendation order
+                                    if rec_index < len(final_problems):
+                                        final_problems.insert(rec_index, problem_data)
+                                    else:
+                                        final_problems.append(problem_data)
+                    except Exception as e:
+                        print(f"[ERROR] Error processing generated problems: {str(e)}")
+                        import traceback
+                        traceback.print_exc()
+            
+            print(f"[DEBUG] Successfully generated {len(final_problems)} problems")
+            return final_problems
                 
         except Exception as e:
             print(f"[ERROR] Error in get_multiple_problems: {str(e)}")
@@ -541,123 +790,243 @@ Return your response EXACTLY in this JSON format:
         count: int = 5
     ) -> List[Dict[str, Any]]:
         """
-        Generate multiple problems for a specific skill and subskill.
+        Get multiple problems for a specific skill and subskill.
+        Uses problem optimizer to select ideal problems for the student.
         
-        Args:
-            student_id: The ID of the student
-            subject: The subject area
-            skill_id: The specific skill ID
-            subskill_id: The specific subskill ID
-            count: Number of problems to generate (default 5)
-                
-        Returns:
-            List of problem objects with varied concept groups
+        Flow:
+        1. Try to get problems from cache first
+        2. Use optimizer to select optimal problems
+        3. If not enough, generate new problems and cache them
         """
         try:
-            print(f"[DEBUG] Generating {count} problems for skill: {skill_id}, subskill: {subskill_id}")
+            print(f"[DEBUG] Getting {count} problems for skill: {skill_id}, subskill: {subskill_id}")
             
-            # Create recommendations list
-            recommendations = []
+            # Start with an empty list of selected problems
+            selected_problems = []
             
-            # Generate multiple recommendations for the same skill/subskill but with different concept groups
-            for i in range(count):
-                # Create context with the specific skill and subskill
-                context = {
-                    "unit": None,
-                    "skill": skill_id,
-                    "subskill": subskill_id
-                }
-                
-                # Get recommendation using existing method - this should return different concept groups
-                recommendation = await self.recommender.get_recommendation(
-                    student_id=student_id,
+            # STEP 1: First, check if we have cached problems
+            cached_problems = []
+            if self.cosmos_db:
+                print(f"[DEBUG] Looking for cached problems in cosmos_db")
+                cached_problems = await self.cosmos_db.get_cached_problems(
                     subject=subject,
-                    unit_filter=context.get('unit'),
-                    skill_filter=context.get('skill'),
-                    subskill_filter=context.get('subskill')
+                    skill_id=skill_id,
+                    subskill_id=subskill_id
                 )
+                print(f"[DEBUG] Found {len(cached_problems)} cached problems with keys: {[list(p.keys()) for p in cached_problems[:2]]}")
                 
-                if not recommendation:
-                    print(f"[ERROR] Failed to get recommendation {i+1}")
-                    continue
+            # STEP 2: If we have cached problems, use the optimizer to select the best ones
+            if cached_problems:
+                # Extract unit_id from problem metadata if available
+                unit_id = None
+                for problem in cached_problems:
+                    # Handle both formats: direct problem_data or nested in problem_data field
+                    problem_obj = problem.get("problem_data", problem)
+                    if problem_obj.get("metadata", {}).get("unit", {}).get("id"):
+                        unit_id = problem_obj["metadata"]["unit"]["id"]
+                        break
+                
+                print(f"[DEBUG] Extracted unit_id: {unit_id}")
+                
+                # Use problem optimizer if available
+                if hasattr(self, 'problem_optimizer') and self.problem_optimizer:
+                    print(f"[DEBUG] Using problem optimizer to select from {len(cached_problems)} cached problems")
                     
-                # Get detailed objectives with potentially different concept groups
-                objectives = await self.competency_service.get_detailed_objectives(
-                    subject=subject,
-                    subskill_id=recommendation['subskill']['id']
-                )
+                    # Verify problems structure before passing to optimizer
+                    problematic_problems = []
+                    for i, problem in enumerate(cached_problems):
+                        if not isinstance(problem, dict):
+                            print(f"[WARNING] Problem {i} is not a dictionary: {type(problem)}")
+                            problematic_problems.append(i)
+                        
+                    if problematic_problems:
+                        print(f"[WARNING] Found {len(problematic_problems)} problematic problems, skipping them")
+                        cached_problems = [p for i, p in enumerate(cached_problems) if i not in problematic_problems]
+                    
+                    # Extract problem data if nested
+                    processed_problems = []
+                    for problem in cached_problems:
+                        if "problem_data" in problem and isinstance(problem["problem_data"], dict):
+                            processed_problems.append(problem["problem_data"])
+                        else:
+                            processed_problems.append(problem)
+                    
+                    # Pass processed problems to optimizer
+                    optimal_problems = await self.problem_optimizer.select_optimal_problems(
+                        student_id=student_id,
+                        subject=subject,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id,
+                        unit_id=unit_id,
+                        available_problems=processed_problems,
+                        count=count
+                    )
+                    
+                    if optimal_problems:
+                        print(f"[DEBUG] Selected {len(optimal_problems)} optimal problems from cache")
+                        selected_problems = optimal_problems
+                else:
+                    # No optimizer available, just use random selection
+                    print(f"[DEBUG] No optimizer available, using random selection from cache")
+                    import random
+                    random.shuffle(cached_problems)
+                    # Extract problem_data if in nested format
+                    selected_problems = []
+                    for p in cached_problems[:count]:
+                        if "problem_data" in p and isinstance(p["problem_data"], dict):
+                            selected_problems.append(p["problem_data"])
+                        else:
+                            selected_problems.append(p)
                 
-                print(f"[DEBUG] Got objectives for problem {i+1}: {objectives}")
+            # Log details of selected problems
+            print(f"[DEBUG] Selected problems details:")
+            for i, problem in enumerate(selected_problems[:3]):  # Log first 3 for brevity
+                print(f"[DEBUG] Problem {i+1} keys: {problem.keys()}")
+                print(f"[DEBUG] Problem {i+1} type: {problem.get('problem_type', 'missing')}")
+                if 'metadata' in problem:
+                    print(f"[DEBUG] Problem {i+1} metadata keys: {problem['metadata'].keys()}")
                 
-                # Add to recommendations list with the actual concept group from competency service
-                recommendations.append({
-                    **recommendation,
-                    'detailed_objectives': objectives
-                })
+            # Verify problem structure before returning
+            valid_problems = []
+            for i, problem in enumerate(selected_problems):
+                has_issues = False
                 
-                concept_group = objectives.get("ConceptGroup", "Unknown")
-                print(f"[DEBUG] Added recommendation {i+1} with concept group: {concept_group}")
+                # Check for required fields
+                required_fields = ['problem_type', 'problem', 'answer', 'success_criteria', 'teaching_note']
+                missing_fields = [field for field in required_fields if field not in problem]
+                
+                if missing_fields:
+                    print(f"[WARNING] Problem {i} is missing required fields: {missing_fields}")
+                    has_issues = True
+                    
+                # Check if success_criteria is a list
+                if 'success_criteria' in problem and not isinstance(problem['success_criteria'], list):
+                    print(f"[WARNING] Problem {i} has success_criteria that is not a list: {type(problem['success_criteria'])}")
+                    has_issues = True
+                    
+                if not has_issues:
+                    valid_problems.append(problem)
+                
+            print(f"[DEBUG] Found {len(valid_problems)} valid problems out of {len(selected_problems)} selected")
             
-            # If we couldn't get enough recommendations, return what we have
-            if not recommendations:
-                print("[ERROR] Failed to get any recommendations")
-                return []
+            # STEP 3: If we don't have enough problems, generate more
+            problems_needed = max(0, count - len(valid_problems))
+            if problems_needed > 0:
+                print(f"[DEBUG] Need {problems_needed} more problems, generating new ones")
                 
-            # Generate batch of problems
-            raw_problems_response = await self.generate_multiple_problems(
-                subject=subject,
-                recommendations=recommendations
-            )
-            
-            if not raw_problems_response:
-                print("[ERROR] Failed to generate raw problems")
-                return []
-            
-            # Parse the response
-            try:
-                response_obj = json.loads(raw_problems_response)
-                
-                if not isinstance(response_obj, dict) or "problems" not in response_obj:
-                    print("[ERROR] Response does not contain 'problems' array")
-                    return []
-                    
-                raw_problems = response_obj["problems"]
-                if not isinstance(raw_problems, list):
-                    print("[ERROR] 'problems' is not an array")
-                    return []
-            except json.JSONDecodeError as e:
-                print(f"[ERROR] Failed to parse JSON response: {str(e)}")
-                return []
-                
-            # Parse each problem
-            problems = []
-            for i, raw_problem in enumerate(raw_problems):
-                if i >= len(recommendations):
-                    break
-                    
-                # Convert to string for _parse_problem if needed
-                if not isinstance(raw_problem, str):
-                    raw_problem = json.dumps(raw_problem)
-                    
-                problem_data = await self._parse_problem(raw_problem)
-                
-                if problem_data:
-                    # Add metadata
-                    problem_data['metadata'] = {
-                        'unit': recommendations[i]['unit'],
-                        'skill': recommendations[i]['skill'],
-                        'subskill': recommendations[i]['subskill'],
-                        'difficulty': recommendations[i]['difficulty'],
-                        'objectives': recommendations[i]['detailed_objectives'],
-                        'concept_group': recommendations[i]['detailed_objectives'].get('ConceptGroup', 'Unknown')
+                # Create recommendations list for the missing problems
+                recommendations = []
+                for i in range(problems_needed):
+                    context = {
+                        "unit": None,
+                        "skill": skill_id,
+                        "subskill": subskill_id
                     }
-                    problems.append(problem_data)
-            
-            print(f"[DEBUG] Successfully generated {len(problems)} problems with varied concept groups")
-            return problems
+                    
+                    # Get recommendation
+                    recommendation = await self.recommender.get_recommendation(
+                        student_id=student_id,
+                        subject=subject,
+                        unit_filter=context.get('unit'),
+                        skill_filter=context.get('skill'),
+                        subskill_filter=context.get('subskill')
+                    )
+                    
+                    if not recommendation:
+                        print(f"[ERROR] Failed to get recommendation {i+1}")
+                        continue
+                        
+                    # Get detailed objectives
+                    objectives = await self.competency_service.get_detailed_objectives(
+                        subject=subject,
+                        subskill_id=recommendation['subskill']['id']
+                    )
+                    
+                    # Add to recommendations
+                    recommendations.append({
+                        **recommendation,
+                        'detailed_objectives': objectives
+                    })
                 
+                # Generate the new problems if we have recommendations
+                if recommendations:
+                    # Generate batch of problems
+                    raw_problems_response = await self.generate_multiple_problems(
+                        subject=subject,
+                        recommendations=recommendations
+                    )
+                    
+                    if raw_problems_response:
+                        try:
+                            import json
+                            response_obj = json.loads(raw_problems_response)
+                            
+                            if isinstance(response_obj, dict) and "problems" in response_obj:
+                                raw_problems = response_obj["problems"]
+                                
+                                # Parse and process each problem
+                                new_problems = []
+                                for i, raw_problem in enumerate(raw_problems):
+                                    if i >= len(recommendations):
+                                        break
+                                        
+                                    # Convert to string for _parse_problem if needed
+                                    if not isinstance(raw_problem, str):
+                                        raw_problem = json.dumps(raw_problem)
+                                        
+                                    problem_data = await self._parse_problem(raw_problem)
+                                    
+                                    if problem_data:
+                                        # Add metadata
+                                        problem_data['metadata'] = {
+                                            'unit': recommendations[i]['unit'],
+                                            'skill': recommendations[i]['skill'],
+                                            'subskill': recommendations[i]['subskill'],
+                                            'difficulty': recommendations[i]['difficulty'],
+                                            'objectives': recommendations[i]['detailed_objectives']
+                                        }
+                                        
+                                        # Cache the new problem - let the cosmos_db service handle ID generation
+                                        if self.cosmos_db:
+                                            await self.cosmos_db.save_cached_problem(
+                                                subject=subject,
+                                                skill_id=skill_id,
+                                                subskill_id=subskill_id,
+                                                problem_data=problem_data
+                                            )
+                                        
+                                        new_problems.append(problem_data)
+                                
+                                # Append new problems to valid problems
+                                valid_problems.extend(new_problems)
+                                print(f"[DEBUG] Added {len(new_problems)} newly generated problems")
+                                
+                        except Exception as e:
+                            print(f"[ERROR] Error processing generated problems: {e}")
+                            import traceback
+                            traceback.print_exc()
+                
+                # Ensure we don't return more than requested
+                if len(valid_problems) > count:
+                    valid_problems = valid_problems[:count]
+                    
+                print(f"[DEBUG] Returning {len(valid_problems)} problems in total")
+                
+                # Final validation to ensure we're returning correctly structured data
+                for i, problem in enumerate(valid_problems[:3]):  # Log first 3 for brevity
+                    print(f"[DEBUG] Final problem {i+1} keys: {problem.keys()}")
+                    if 'problem_type' in problem:
+                        print(f"[DEBUG] Final problem {i+1} type: {problem['problem_type']}")
+                    if 'metadata' in problem:
+                        print(f"[DEBUG] Final problem {i+1} metadata keys: {problem['metadata'].keys()}")
+                
+                return valid_problems
+            else:
+                print(f"[DEBUG] We have enough problems ({len(valid_problems)}), returning them")
+                return valid_problems
+                    
         except Exception as e:
-            print(f"[ERROR] Error in get_skill_problems: {str(e)}")
+            print(f"[ERROR] Error in get_skill_problems: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -804,252 +1173,6 @@ Return your response EXACTLY in this JSON format:
             traceback.print_exc()
             return None
 
-    async def get_student_history(self, student_id: int) -> List[Dict[str, Any]]:
-        """Get history of problems attempted by a student"""
-        if student_id not in self._problem_history:
-            return []
-        return self._problem_history[student_id]
-
-    async def review_problem(
-        self,
-        student_id: int,
-        subject: str,
-        problem: Dict[str, Any],  # Accept full problem object from frontend
-        solution_image_base64: str,
-        skill_id: str,
-        subskill_id: str = None,
-        student_answer: str = "",
-        canvas_used: bool = True
-    ) -> Dict[str, Any]:
-        """Review a student's problem solution"""
-        try:
-            # Get the current AI service
-            ai_service = self.get_current_ai_service()
-            
-            # Ensure cosmos_db service is available
-            if not self.cosmos_db:
-                print("[WARNING] CosmosDB service not initialized, review will not be saved")
-                
-            print(f"Review problem called with image data length: {len(solution_image_base64)}")
-            print(f"[DEBUG] Problem object received: {problem.keys()}")
-            print(f"[DEBUG] Problem metadata: {problem.get('metadata', {}).keys()}")
-
-            # Log problem content details
-            if 'problem' in problem:
-                print(f"[DEBUG] Problem text available: {problem['problem']} ")
-            if 'problem_type' in problem:
-                print(f"[DEBUG] Problem type: {problem['problem_type']}")
-
-            # Log before saving to CosmosDB
-            problem_id = problem.get("id", f"{subject}_{skill_id}_{datetime.utcnow().isoformat()}")            
-            print(f"[DEBUG] About to save review to CosmosDB")
-            print(f"[DEBUG] Problem ID being used: {problem_id}")
-            print(f"[DEBUG] Including problem_content in save: {'yes' if problem else 'no'}")
-            
-            system_instructions = """You are an expert kindergarten teacher skilled at reviewing student work.
-            Focus on:
-            1. Clear, simple language
-            2. Positive reinforcement
-            3. Age-appropriate feedback
-            4. Encouraging growth mindset
-            5. Specific, actionable guidance
-            """
-
-            # Extract problem text from problem object
-            problem_text = problem.get('problem', '')
-            
-            # Create the prompt in the correct format
-            # Use triple double quotes to avoid having to escape curly braces
-            json_format_template = """
-    {
-        "observation": {
-            "canvas_description": "If there's a canvas solution, describe in detail what you see in the image",
-            "selected_answer": "If there's a multiple-choice answer, state the selected option",
-            "work_shown": "Describe any additional work or steps shown by the student"
-        },
-        "analysis": {
-            "understanding": "Analyze the student's conceptual understanding",
-            "approach": "Describe the problem-solving approach used",
-            "accuracy": "Compare against the expected answer",
-            "creativity": "Note any creative or alternative valid solutions"
-        },
-        "evaluation": {
-            "score": "Numerical score 1-10",
-            "justification": "Brief explanation of the score"
-        },
-        "feedback": {
-            "praise": "Specific praise for what was done well",
-            "guidance": "Age-appropriate suggestions for improvement",
-            "encouragement": "Positive reinforcement message",
-            "next_steps": "Simple, actionable next steps"
-        }
-    }"""
-            
-            prompt_text = f"""Review this {subject} problem and the student's solution:
-
-    Problem: {problem_text}
-
-    Please follow these steps:
-    1. For observation:
-    - If there's a canvas solution, describe what you see in the image.
-    - If there's a multiple-choice answer, state the selected option.
-    2. For analysis:
-    - Compare the student's answer (canvas work and/or multiple-choice selection) to the provided correct answer.
-    - Consider if the student's answer, while different from the provided correct answer, demonstrates a valid conceptual understanding or an alternative correct solution.
-    - If both canvas and multiple-choice are used, analyze if they are consistent with each other.
-    3. For evaluation:
-    - Provide a numerical evaluation from 1 to 10, where 1 is completely incorrect and 10 is perfectly correct.
-    - Consider conceptual understanding and creativity in problem-solving, not just matching the provided answer.
-    4. For feedback:
-    - Provide feedback appropriate for a 5-6 year old student.
-    - Address their answer and any work shown on the canvas.
-    - If their answer differs from the provided correct answer but demonstrates valid understanding, acknowledge and praise this.
-    - If the answer is incorrect, explain why gently and guide them towards understanding.
-    - Offer encouragement and positive reinforcement for their effort, creativity, and any correct aspects of their answer.
-        
-    Return your review in this EXACT JSON format WITHOUT any markdown formatting or code blocks:
-    {json_format_template}"""
-            
-            # Format prompt with image for the AI service
-            prompt = [{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/png",
-                            "data": solution_image_base64
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt_text
-                    }
-                ]
-            }]
-
-            print("Sending review request to AI service...")
-            try:
-                response = await ai_service.generate_response(
-                    prompt=prompt,
-                    system_instructions=system_instructions
-                )
-                print("Received response from AI service")
-            except Exception as e:
-                print(f"Error with AI review: {str(e)}")
-                
-                # Try with a different AI service as fallback
-                try:
-                    # Determine the alternate service type to try
-                    alternate_service_type = "gemini" if self._current_ai_service_type in ["anthropic", "claude"] else "anthropic"
-                    print(f"[INFO] Attempting fallback to {alternate_service_type} service for review")
-                    
-                    # Cache the original service type
-                    original_service_type = self._current_ai_service_type
-                    
-                    # Try with the alternate service
-                    self.set_ai_service(alternate_service_type)
-                    
-                    # Attempt the review again
-                    response = await ai_service.generate_response(
-                        prompt=prompt,
-                        system_instructions=system_instructions
-                    )
-                    
-                    # If we get here, the fallback worked - restore the original preference
-                    self.set_ai_service(original_service_type)
-                except Exception as fallback_error:
-                    print(f"[ERROR] Fallback also failed for review: {fallback_error}")
-                    raise  # Re-raise to be caught by the outer try/except
-            
-            # Parse the response using the robust approach similar to _parse_problem
-            structured_review = await self._parse_json_response(response)
-            
-            if not structured_review:
-                # Handle parsing failure with default error response
-                error_response = {
-                    "error": "Error parsing review response",
-                    "observation": {
-                        "canvas_description": "Error occurred during review",
-                        "selected_answer": "",
-                        "work_shown": ""
-                    },
-                    "analysis": {
-                        "understanding": "Error occurred during review",
-                        "approach": "",
-                        "accuracy": "",
-                        "creativity": ""
-                    },
-                    "evaluation": {
-                        "score": 0,
-                        "justification": "Error occurred"
-                    },
-                    "feedback": {
-                        "praise": "",
-                        "guidance": "",
-                        "encouragement": "I'm sorry, I had trouble reviewing your work. Let's try again!",
-                        "next_steps": ""
-                    },
-                    "skill_id": skill_id,
-                    "subject": subject,
-                    "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", "")
-                }
-                return error_response
-            
-            print(f"[DEBUG] Parsed JSON structure: {json.dumps(structured_review, indent=2)}")
-
-            # Extract evaluation score and justification
-            evaluation_score = 0
-            evaluation_justification = ""
-            
-            if isinstance(structured_review.get('evaluation'), dict):
-                print("[DEBUG] Found evaluation as dictionary")
-                evaluation_score = float(structured_review['evaluation'].get('score', 0))
-                evaluation_justification = structured_review['evaluation'].get('justification', '')
-            elif isinstance(structured_review.get('evaluation'), (int, float)):
-                print("[DEBUG] Found evaluation as number")
-                evaluation_score = float(structured_review.get('evaluation', 0))
-                
-            # Add required fields for frontend compatibility
-            structured_review.update({
-                "skill_id": skill_id,
-                "subject": subject,
-                "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", "")
-            })
-            
-            # Save to CosmosDB if available
-            if self.cosmos_db: 
-                try:
-                    # Save the full structured review
-                    await self.cosmos_db.save_problem_review(
-                        student_id=student_id,
-                        subject=subject,
-                        skill_id=skill_id,
-                        subskill_id=subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", ""),
-                        problem_id=problem_id,
-                        review_data=structured_review,
-                        problem_content=problem  # Pass the full problem object
-                    )
-                    print(f"[DEBUG] Successfully saved review to CosmosDB for problem {problem_id}")
-                except Exception as e:
-                    print(f"[ERROR] Failed to save review to CosmosDB: {str(e)}")
-            
-            return structured_review
-
-        except Exception as e:
-            print(f"Error in review_problem: {str(e)}")
-            return {
-                "error": f"Error reviewing problem: {str(e)}",
-                "observation": {"canvas_description": "Error occurred during review", "selected_answer": "", "work_shown": ""},
-                "analysis": {"understanding": "Error occurred during review", "approach": "", "accuracy": "", "creativity": ""},
-                "evaluation": {"score": 0, "justification": "Error occurred"},
-                "feedback": {"praise": "", "guidance": "", "encouragement": "I'm sorry, I had trouble reviewing your work. Let's try again!", "next_steps": ""},
-                "skill_id": skill_id,
-                "subject": subject,
-                "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", "")
-            }
-
     async def _parse_json_response(self, raw_response: str) -> Optional[Dict[str, Any]]:
         """
         Parse the AI response, handling both raw JSON and Markdown-wrapped JSON,
@@ -1165,43 +1288,3 @@ Return your response EXACTLY in this JSON format:
             print("[ERROR] Reached end of parsing function without valid data or explicit failure.")
             return None
                 
-    async def save_problem_attempt(
-        self, 
-        student_id: int, 
-        problem: Dict[str, Any],
-        student_answer: str,
-        is_correct: bool
-    ) -> None:
-        """Save a student's problem attempt"""
-        # Save to CosmosDB if available
-        if self.cosmos_db:
-            try:
-                # Format the attempt data
-                attempt_data = {
-                    "student_id": student_id,
-                    "subject": problem.get("metadata", {}).get("subject", "unknown"),
-                    "skill_id": problem.get("metadata", {}).get("skill", {}).get("id", "unknown"),
-                    "subskill_id": problem.get("metadata", {}).get("subskill", {}).get("id", "unknown"),
-                    "score": 10.0 if is_correct else 0.0,  # Simple binary scoring
-                    "analysis": "Automatic assessment",
-                    "feedback": "Automatically scored attempt"
-                }
-                
-                # Save to CosmosDB
-                await self.cosmos_db.save_attempt(**attempt_data)
-                print(f"[DEBUG] Saved attempt to CosmosDB for student {student_id}")
-                
-            except Exception as e:
-                print(f"[ERROR] Failed to save attempt to CosmosDB: {str(e)}")
-                # Fall back to in-memory storage
-        
-        # Always save to in-memory storage as well
-        if student_id not in self._problem_history:
-            self._problem_history[student_id] = []
-            
-        self._problem_history[student_id].append({
-            'problem': problem,
-            'student_answer': student_answer,
-            'is_correct': is_correct,
-            'timestamp': datetime.utcnow().isoformat()
-        })

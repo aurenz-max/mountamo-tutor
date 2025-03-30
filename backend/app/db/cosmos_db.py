@@ -42,6 +42,13 @@ class CosmosDBService:
                 partition_key=PartitionKey(path="/student_id")
             )
 
+        # Add to CosmosDBService.__init__
+        self.cached_problems = self.database.create_container_if_not_exists(
+            id="cached_problems",
+            partition_key=PartitionKey(path="/subject"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/skill_id', '/subskill_id', '/problem_id']}]}
+        )
+
     async def save_conversation_message(
         self,
         session_id: str,
@@ -150,6 +157,93 @@ class CosmosDBService:
         }
         
         return self.attempts.create_item(body=attempt_data)
+
+    async def save_cached_problem(self, subject, skill_id, subskill_id, problem_data):
+        """
+        Save a problem to the cached_problems container with a standardized format.
+        
+        Args:
+            subject: The subject (e.g., 'mathematics')
+            skill_id: The ID of the skill
+            subskill_id: The ID of the subskill
+            problem_data: The full problem data object
+        """
+        try:
+            # Generate a unique ID with timestamp and UUID for uniqueness
+            import uuid
+            from datetime import datetime
+            timestamp_precise = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+            unique_id = f"{subject}_{skill_id}_{subskill_id}_{timestamp_precise}_{uuid.uuid4()}"
+            
+            # Ensure problem_data has proper IDs
+            problem_data["id"] = unique_id
+            problem_data["problem_id"] = unique_id
+            
+            # Ensure metadata exists and has required fields
+            if "metadata" not in problem_data:
+                problem_data["metadata"] = {}
+            
+            if "subject" not in problem_data["metadata"]:
+                problem_data["metadata"]["subject"] = subject
+                
+            # Create the standardized document that will contain the problem
+            document = {
+                "id": unique_id,
+                "problem_id": unique_id,
+                "type": "cached_problem",
+                "subject": subject,
+                "skill_id": skill_id,
+                "subskill_id": subskill_id,
+                "difficulty": problem_data.get("metadata", {}).get("difficulty", 5.0),
+                "timestamp": timestamp_precise,
+                "problem_data": problem_data
+            }
+            
+            # Save to cached_problems container
+            self.cached_problems.create_item(body=document)
+            print(f"[DEBUG] Saved cached problem {unique_id} for {subject}/{skill_id}/{subskill_id}")
+            
+            return unique_id
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to save cached problem: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            return None
+
+    async def get_cached_problems(
+        self,
+        subject: str,
+        skill_id: str,
+        subskill_id: str
+    ) -> List[Dict[str, Any]]:
+        """Get cached problems for a specific skill/subskill combination"""
+        query = """
+        SELECT c.problem_data
+        FROM c
+        WHERE c.subject = @subject
+        AND c.skill_id = @skill_id
+        AND c.subskill_id = @subskill_id
+        """
+        
+        params = [
+            {"name": "@subject", "value": subject},
+            {"name": "@skill_id", "value": skill_id},
+            {"name": "@subskill_id", "value": subskill_id}
+        ]
+        
+        try:
+            items = list(self.cached_problems.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=True
+            ))
+            
+            # Extract problem_data from items
+            return [item.get("problem_data", {}) for item in items]
+        except Exception as e:
+            print(f"Error getting cached problems: {str(e)}")
+            return []
 
     async def get_student_attempts(
         self,

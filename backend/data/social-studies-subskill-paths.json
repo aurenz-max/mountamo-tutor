@@ -1,0 +1,481 @@
+{
+    "subskill_learning_path": {
+      "SS001-01-A": {
+        "next_subskill": "SS001-02-A"
+      },
+      "SS001-02-A": {
+        "next_subskill": "SS001-03-A"
+      },
+      "SS001-03-A": {
+        "next_subskill": "SS001-04-A"
+      },
+      "SS001-04-A": {
+        "next_subskill": "SS001-05-A"
+      },
+      "SS001-05-A": {
+        "next_subskill": "SS002-01-A"
+      },
+      "SS002-01-A": {
+        "next_subskill": "SS002-03-A"
+      },
+      "SS002-03-A": {
+        "next_subskill": "SS002-03-B"
+      },
+      "SS002-03-B": {
+        "next_subskill": "SS002-03-B_1"
+      },
+      "SS002-03-B_1": {
+        "next_subskill": "SS002-03-H"
+      },
+      "SS002-03-H": {
+        "next_subskill": "SS003-02-A"
+      },
+      "SS003-02-A": {
+        "next_subskill": "SS003-03-A"
+      },
+      "SS003-03-A": {
+        "next_subskill": "SS003-03-B"
+      },
+      "SS003-03-B": {
+        "next_subskill": "SS004-03-A"
+      },
+      "SS004-03-A": {
+        "next_subskill": "SS004-04-A"
+      },
+      "SS004-04-A": {
+        "next_subskill": "SS004-05-A"
+      },
+      "SS004-05-A": {
+        "next_subskill": "SS005-02-B"
+      },
+      "SS005-02-B": {
+        "next_subskill": "SS001-05-B"
+      },
+      "SS001-05-B": {
+        "next_subskill": "SS001-01-B"
+      },
+      "SS001-01-B": {
+        "next_subskill": "SS001-02-B"
+      },
+      "SS001-02-B": {
+        "next_subskill": "SS001-03-B"
+      },
+      "SS001-03-B": {
+        "next_subskill": "SS001-03-C"
+      },
+      "SS001-03-C": {
+        "next_subskill": "SS001-04-B"
+      },
+      "SS001-04-B": {
+        "next_subskill": "SS001-04-C"
+      },
+      "SS001-04-C": {
+        "next_subskill": "SS001-05-C"
+      },
+      "SS001-05-C": {
+        "next_subskill": "SS001-05-D"
+      },
+      "SS001-05-D": {
+        "next_subskill": "SS002-01-B"
+      },
+      "SS002-01-B": {
+        "next_subskill": "SS002-01-C"
+      },
+      "SS002-01-C": {
+        "next_subskill": "SS002-03-C"
+      },
+      "SS002-03-C": {
+        "next_subskill": "SS002-03-D"
+      },
+      "SS002-03-D": {
+        "next_subskill": "SS002-03-A_1"
+      },
+      "SS002-03-A_1": {
+        "next_subskill": "SS002-03-F"
+      },
+      "SS002-03-F": {
+        "next_subskill": "SS002-04-B"
+      },
+      "SS002-04-B": {
+        "next_subskill": "SS002-04-F"
+      },
+      "SS002-04-F": {
+        "next_subskill": "SS003-02-B"
+      },
+      "SS003-02-B": {
+        "next_subskill": "SS003-02-C"
+      },
+      "SS003-02-C": {
+        "next_subskill": "SS003-03-C"
+      },
+      "SS003-03-C": {
+        "next_subskill": "SS003-03-D"
+      },
+      "SS003-03-D": {
+        "next_subskill": "SS004-01-A"
+      },
+      "SS004-01-A": {
+        "next_subskill": "SS004-01-B"
+      },
+      "SS004-01-B": {
+        "next_subskill": "SS004-01-C"
+      },
+      "SS004-01-C": {
+        "next_subskill": "SS004-02-A"
+      },
+      "SS004-02-A": {
+        "next_subskill": "SS004-03-B"
+      },
+      "SS004-03-B": {
+        "next_subskill": "SS004-03-C"
+      },
+      "SS004-03-C": {
+        "next_subskill": "SS004-04-B"
+      },
+      "SS004-04-B": {
+        "next_subskill": "SS004-04-C"
+      },
+      "SS004-04-C": {
+        "next_subskill": "SS004-05-B"
+      },
+      "SS004-05-B": {
+        "next_subskill": "SS004-05-C"
+      },
+      "SS004-05-C": {
+        "next_subskill": "SS005-01-A"
+      },
+      "SS005-01-A": {
+        "next_subskill": "SS005-02-A"
+      },
+      "SS005-02-A": {
+        "next_subskill": "SS005-02-C"
+      },
+      "SS005-02-C": {
+        "next_subskill": "SS005-02-D"
+      },
+      "SS005-02-D": {
+        "next_subskill": "SS005-02-E"
+      },
+      "SS005-02-E": {
+        "next_subskill": "SS001-01-C"
+      },
+      "SS001-01-C": {
+        "next_subskill": "SS001-02-D"
+      },
+      "SS001-02-D": {
+        "next_subskill": "SS001-02-I"
+      },
+      "SS001-02-I": {
+        "next_subskill": "SS001-03-D"
+      },
+      "SS001-03-D": {
+        "next_subskill": "SS001-05-E"
+      },
+      "SS001-05-E": {
+        "next_subskill": "SS002-04-D"
+      },
+      "SS002-04-D": {
+        "next_subskill": "SS002-03-G"
+      },
+      "SS002-03-G": {
+        "next_subskill": "SS004-02-B"
+      },
+      "SS004-02-B": {
+        "next_subskill": "SS005-01-B"
+      },
+      "SS005-01-B": {
+        "next_subskill": "SS005-02-F"
+      },
+      "SS005-02-F": {
+        "next_subskill": "SS004-05-D"
+      },
+      "SS004-05-D": {
+        "next_subskill": "SS001-01-D"
+      },
+      "SS001-01-D": {
+        "next_subskill": "SS001-01-E"
+      },
+      "SS001-01-E": {
+        "next_subskill": "SS001-01-F"
+      },
+      "SS001-01-F": {
+        "next_subskill": "SS001-02-C"
+      },
+      "SS001-02-C": {
+        "next_subskill": "SS001-02-E"
+      },
+      "SS001-02-E": {
+        "next_subskill": "SS001-02-G"
+      },
+      "SS001-02-G": {
+        "next_subskill": "SS001-03-E"
+      },
+      "SS001-03-E": {
+        "next_subskill": "SS001-03-F"
+      },
+      "SS001-03-F": {
+        "next_subskill": "SS001-03-G"
+      },
+      "SS001-03-G": {
+        "next_subskill": "SS001-04-D"
+      },
+      "SS001-04-D": {
+        "next_subskill": "SS001-04-E"
+      },
+      "SS001-04-E": {
+        "next_subskill": "SS001-05-F"
+      },
+      "SS001-05-F": {
+        "next_subskill": "SS001-05-G"
+      },
+      "SS001-05-G": {
+        "next_subskill": "SS001-05-I"
+      },
+      "SS001-05-I": {
+        "next_subskill": "SS002-01-D"
+      },
+      "SS002-01-D": {
+        "next_subskill": "SS002-01-E"
+      },
+      "SS002-01-E": {
+        "next_subskill": "SS002-01-F"
+      },
+      "SS002-01-F": {
+        "next_subskill": "SS002-03-E"
+      },
+      "SS002-03-E": {
+        "next_subskill": "SS002-03-F_1"
+      },
+      "SS002-03-F_1": {
+        "next_subskill": "SS002-03-D_1"
+      },
+      "SS002-03-D_1": {
+        "next_subskill": "SS002-03-I"
+      },
+      "SS002-03-I": {
+        "next_subskill": "SS002-04-A"
+      },
+      "SS002-04-A": {
+        "next_subskill": "SS002-04-E"
+      },
+      "SS002-04-E": {
+        "next_subskill": "SS002-04-H"
+      },
+      "SS002-04-H": {
+        "next_subskill": "SS003-02-D"
+      },
+      "SS003-02-D": {
+        "next_subskill": "SS003-02-E"
+      },
+      "SS003-02-E": {
+        "next_subskill": "SS003-02-F"
+      },
+      "SS003-02-F": {
+        "next_subskill": "SS003-02-G"
+      },
+      "SS003-02-G": {
+        "next_subskill": "SS003-03-E"
+      },
+      "SS003-03-E": {
+        "next_subskill": "SS003-03-F"
+      },
+      "SS003-03-F": {
+        "next_subskill": "SS004-01-D"
+      },
+      "SS004-01-D": {
+        "next_subskill": "SS004-01-E"
+      },
+      "SS004-01-E": {
+        "next_subskill": "SS004-01-F"
+      },
+      "SS004-01-F": {
+        "next_subskill": "SS004-02-C"
+      },
+      "SS004-02-C": {
+        "next_subskill": "SS004-02-D"
+      },
+      "SS004-02-D": {
+        "next_subskill": "SS004-03-D"
+      },
+      "SS004-03-D": {
+        "next_subskill": "SS004-03-E"
+      },
+      "SS004-03-E": {
+        "next_subskill": "SS004-04-D"
+      },
+      "SS004-04-D": {
+        "next_subskill": "SS004-04-E"
+      },
+      "SS004-04-E": {
+        "next_subskill": "SS004-05-E"
+      },
+      "SS004-05-E": {
+        "next_subskill": "SS004-05-F"
+      },
+      "SS004-05-F": {
+        "next_subskill": "SS004-05-G"
+      },
+      "SS004-05-G": {
+        "next_subskill": "SS005-01-C"
+      },
+      "SS005-01-C": {
+        "next_subskill": "SS005-01-D"
+      },
+      "SS005-01-D": {
+        "next_subskill": "SS005-01-E"
+      },
+      "SS005-01-E": {
+        "next_subskill": "SS005-02-G"
+      },
+      "SS005-02-G": {
+        "next_subskill": "SS001-01-G"
+      },
+      "SS001-01-G": {
+        "next_subskill": "SS001-01-H"
+      },
+      "SS001-01-H": {
+        "next_subskill": "SS001-01-I"
+      },
+      "SS001-01-I": {
+        "next_subskill": "SS001-03-H"
+      },
+      "SS001-03-H": {
+        "next_subskill": "SS001-03-I"
+      },
+      "SS001-03-I": {
+        "next_subskill": "SS001-04-F"
+      },
+      "SS001-04-F": {
+        "next_subskill": "SS001-04-G"
+      },
+      "SS001-04-G": {
+        "next_subskill": "SS001-05-H"
+      },
+      "SS001-05-H": {
+        "next_subskill": "SS002-01-G"
+      },
+      "SS002-01-G": {
+        "next_subskill": "SS002-03-G_1"
+      },
+      "SS002-03-G_1": {
+        "next_subskill": "SS002-03-C_1"
+      },
+      "SS002-03-C_1": {
+        "next_subskill": "SS002-04-G"
+      },
+      "SS002-04-G": {
+        "next_subskill": "SS003-03-G"
+      },
+      "SS003-03-G": {
+        "next_subskill": "SS004-01-G"
+      },
+      "SS004-01-G": {
+        "next_subskill": "SS004-01-H"
+      },
+      "SS004-01-H": {
+        "next_subskill": "SS004-01-I"
+      },
+      "SS004-01-I": {
+        "next_subskill": "SS004-01-J"
+      },
+      "SS004-01-J": {
+        "next_subskill": "SS004-02-E"
+      },
+      "SS004-02-E": {
+        "next_subskill": "SS004-03-F"
+      },
+      "SS004-03-F": {
+        "next_subskill": "SS004-03-G"
+      },
+      "SS004-03-G": {
+        "next_subskill": "SS004-04-F"
+      },
+      "SS004-04-F": {
+        "next_subskill": "SS004-05-H"
+      },
+      "SS004-05-H": {
+        "next_subskill": "SS005-01-F"
+      },
+      "SS005-01-F": {
+        "next_subskill": "SS001-01-J"
+      },
+      "SS001-01-J": {
+        "next_subskill": "SS001-02-F"
+      },
+      "SS001-02-F": {
+        "next_subskill": "SS001-02-H"
+      },
+      "SS001-02-H": {
+        "next_subskill": "SS001-05-J"
+      },
+      "SS001-05-J": {
+        "next_subskill": "SS002-01-H"
+      },
+      "SS002-01-H": {
+        "next_subskill": "SS002-04-C"
+      },
+      "SS002-04-C": {
+        "next_subskill": "SS002-04-I"
+      },
+      "SS002-04-I": {
+        "next_subskill": "SS002-03-E_1"
+      },
+      "SS002-03-E_1": {
+        "next_subskill": "SS003-02-H"
+      },
+      "SS003-02-H": {
+        "next_subskill": "SS003-02-I"
+      },
+      "SS003-02-I": {
+        "next_subskill": "SS003-03-H"
+      },
+      "SS003-03-H": {
+        "next_subskill": "SS004-02-F"
+      },
+      "SS004-02-F": {
+        "next_subskill": "SS004-02-G"
+      },
+      "SS004-02-G": {
+        "next_subskill": "SS004-02-H"
+      },
+      "SS004-02-H": {
+        "next_subskill": "SS004-04-G"
+      },
+      "SS004-04-G": {
+        "next_subskill": "SS005-01-G"
+      },
+      "SS005-01-G": {
+        "next_subskill": "SS005-01-H"
+      },
+      "SS005-01-H": {
+        "next_subskill": "SS005-02-H"
+      },
+      "SS005-02-H": {
+        "next_subskill": "SS001-04-H"
+      },
+      "SS001-04-H": {
+        "next_subskill": "SS002-01-I"
+      },
+      "SS002-01-I": {
+        "next_subskill": "SS002-03-H_1"
+      },
+      "SS002-03-H_1": {
+        "next_subskill": "SS004-03-H"
+      },
+      "SS004-03-H": {
+        "next_subskill": "SS004-02-I"
+      },
+      "SS004-02-I": {
+        "next_subskill": "SS004-02-J"
+      },
+      "SS004-02-J": {
+        "next_subskill": "SS004-04-H"
+      },
+      "SS004-04-H": {
+        "next_subskill": "SS005-01-I"
+      },
+      "SS005-01-I": {
+        "next_subskill": null
+      }
+    }
+  }

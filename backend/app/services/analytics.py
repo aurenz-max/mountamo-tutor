@@ -126,8 +126,23 @@ class AnalyticsExtension:
             -- Find subskills that are ready based on previous subskill in the learning path
             -- A student is ready for a subskill if they have 60% proficiency in the prerequisite subskill
             ready_subskills AS (
-                -- Base case: First subskills in each sequence (those without prerequisite subskills)
+                -- Base case: First subskills in each sequence (those that are base nodes)
                 -- are always ready
+                SELECT DISTINCT
+                    $1 AS student_id,
+                    c.subskill_id
+                FROM
+                    all_curriculum_items c
+                JOIN (
+                    -- Find base node skills
+                    SELECT DISTINCT prerequisite_skill_id 
+                    FROM learning_paths 
+                    WHERE is_base_node = TRUE
+                ) bn ON c.skill_id = bn.prerequisite_skill_id
+                
+                UNION ALL
+                
+                -- Original logic: First subskills in each sequence
                 SELECT DISTINCT
                     $1 AS student_id,
                     c.subskill_id
@@ -138,9 +153,9 @@ class AnalyticsExtension:
                 WHERE
                     slp.current_subskill_id IS NULL
                 
-                UNION
+                UNION ALL
                 
-                -- Add subskills where the student has 60% proficiency in the prerequisite
+                -- Original logic: Subskills where student has 60% proficiency in prerequisite
                 SELECT DISTINCT
                     sp.student_id,
                     slp.next_subskill_id AS subskill_id
@@ -149,8 +164,8 @@ class AnalyticsExtension:
                 JOIN
                     subskill_learning_paths slp ON sp.subskill_id = slp.current_subskill_id
                 WHERE
-                    sp.proficiency >= 0.6  -- Must have 60% proficiency in prerequisite subskill
-                    AND slp.next_subskill_id IS NOT NULL -- Only if there is a next subskill
+                    sp.proficiency >= 0.6
+                    AND slp.next_subskill_id IS NOT NULL
             ),
 
             -- Determine which skills are unlocked (60% proficiency in any of its subskills)
@@ -1063,18 +1078,28 @@ class AnalyticsExtension:
     async def get_recommendations(self, student_id: int, subject: Optional[str] = None, limit: int = 5) -> List[Dict]:
         """
         Get recommended next steps for a student based on priority and readiness.
-        
-        Args:
-            student_id: The ID of the student
-            subject: Optional subject filter
-            limit: Maximum number of recommendations to return
-            
-        Returns:
-            List of recommendation objects with enhanced metadata
         """
         try:
             # First get the hierarchical metrics which contain readiness and priority info
             metrics = await self.get_hierarchical_metrics(student_id, subject)
+            
+            # Get base node information directly from database
+            conn = await self.get_pg_connection()
+            try:
+                # Get base nodes for this subject
+                base_node_query = """
+                SELECT DISTINCT prerequisite_skill_id 
+                FROM learning_paths 
+                WHERE is_base_node = TRUE
+                AND ($1::text IS NULL OR prerequisite_skill_id LIKE $1 || '%')
+                """
+                pattern = subject if subject else None
+                base_nodes = await conn.fetch(base_node_query, pattern)
+                base_node_skills = set(row['prerequisite_skill_id'] for row in base_nodes)
+                
+                logger.info(f"Found {len(base_node_skills)} base node skills for {subject}: {base_node_skills}")
+            finally:
+                await conn.close()
             
             # Extract all subskills from the hierarchical data
             all_subskills = []
@@ -1086,18 +1111,35 @@ class AnalyticsExtension:
                         subskill["unit_title"] = unit["unit_title"]
                         subskill["skill_id"] = skill["skill_id"]
                         subskill["skill_description"] = skill["skill_description"]
+                        subskill["is_base_node"] = skill["skill_id"] in base_node_skills
                         all_subskills.append(subskill)
             
-            # Filter to find recommended subskills
-            # Recommendations are either:
-            # 1. Items explicitly flagged as recommended_next
-            # 2. Items that are ready and not mastered, ordered by priority
+            logger.info(f"Processing {len(all_subskills)} subskills for recommendations")
+            
+            # These will be our recommendations
             recommended_subskills = []
             
-            # First add explicitly recommended items
-            for subskill in all_subskills:
-                if subskill["recommended_next"]:
-                    recommended_subskills.append(subskill)
+            # First, look for base node subskills that haven't been attempted yet
+            base_nodes_not_attempted = [
+                s for s in all_subskills
+                if s.get("is_base_node") and not s["is_attempted"]
+            ]
+            
+            if base_nodes_not_attempted:
+                logger.info(f"Found {len(base_nodes_not_attempted)} base nodes that haven't been attempted")
+                # Sort by skill_id (this is fairly arbitrary but provides consistency)
+                base_nodes_not_attempted.sort(key=lambda x: x["skill_id"])
+                recommended_subskills.extend(base_nodes_not_attempted[:limit])
+            
+            # Then add explicitly recommended items if we have room
+            if len(recommended_subskills) < limit:
+                explicitly_recommended = [
+                    s for s in all_subskills
+                    if s["recommended_next"] and
+                    not any(r["subskill_id"] == s["subskill_id"] for r in recommended_subskills)
+                ]
+                logger.info(f"Found {len(explicitly_recommended)} explicitly recommended items")
+                recommended_subskills.extend(explicitly_recommended[:limit - len(recommended_subskills)])
             
             # Then add ready items that are not mastered, ordered by priority
             if len(recommended_subskills) < limit:
@@ -1107,38 +1149,39 @@ class AnalyticsExtension:
                     s["priority_level"] != "Mastered" and
                     not any(r["subskill_id"] == s["subskill_id"] for r in recommended_subskills)
                 ]
-                
-                # Sort by priority_order (lower number = higher priority)
+                logger.info(f"Found {len(ready_not_mastered)} ready items that are not mastered")
                 ready_not_mastered.sort(key=lambda x: x["priority_order"])
-                
-                # Add until we reach the limit
                 recommended_subskills.extend(ready_not_mastered[:limit - len(recommended_subskills)])
             
-            # Format the recommendations according to the API spec with enhanced metadata
+            # If we still don't have enough recommendations, add any subskills that are in the "Ready for Subskill" state
+            if len(recommended_subskills) < limit:
+                ready_for_subskill = [
+                    s for s in all_subskills
+                    if s["readiness_status"] == "Ready for Subskill" and
+                    not any(r["subskill_id"] == s["subskill_id"] for r in recommended_subskills)
+                ]
+                logger.info(f"Found {len(ready_for_subskill)} items in 'Ready for Subskill' state")
+                ready_for_subskill.sort(key=lambda x: x["subskill_id"])  # Consistent ordering
+                recommended_subskills.extend(ready_for_subskill[:limit - len(recommended_subskills)])
+            
+            logger.info(f"Final recommendation count: {len(recommended_subskills)}")
+            
+            # Format the recommendations according to the API spec
             recommendations = []
             for item in recommended_subskills[:limit]:
-                # Determine recommendation type
-                rec_type = "performance_gap"
-                if item["priority_level"] == "Not Started":
-                    rec_type = "coverage_gap"
-                elif item["readiness_status"] != "Ready":
-                    rec_type = "future_item"
-                
-                # Determine priority
-                priority = "medium"
-                if item["priority_level"] == "High Priority":
+                # Determine recommendation type and priority
+                if item.get("is_base_node"):
+                    rec_type = "base_node"
                     priority = "high"
-                elif item["priority_level"] == "Mastered":
-                    priority = "low"
-                
-                # Create message based on type and priority
-                message = ""
-                if rec_type == "performance_gap":
+                    message = f"Start with this foundational topic: {item['subskill_description']}"
+                elif item["is_attempted"]:
+                    rec_type = "performance_gap"
+                    priority = "high" if item["priority_level"] == "High Priority" else "medium"
                     message = f"Focus on improving your performance on {item['subskill_description']}"
-                elif rec_type == "coverage_gap":
-                    message = f"Start working on {item['subskill_description']}"
                 else:
-                    message = f"Prepare to work on {item['subskill_description']} next"
+                    rec_type = "coverage_gap"
+                    priority = "medium"
+                    message = f"Start working on {item['subskill_description']}"
                 
                 recommendations.append({
                     "type": rec_type,
@@ -1155,15 +1198,17 @@ class AnalyticsExtension:
                     "priority_level": item["priority_level"],
                     "priority_order": item["priority_order"],
                     "readiness_status": item["readiness_status"],
-                    "is_ready": item["readiness_status"] == "Ready",
+                    "is_ready": item["readiness_status"] in ["Ready", "Ready for Subskill"],
                     "completion": item["completion"],
                     "attempt_count": item["attempt_count"],
                     "is_attempted": item["is_attempted"],
                     "next_subskill": item["next_subskill"],
-                    "message": message
+                    "message": message,
+                    "is_base_node": item.get("is_base_node", False)
                 })
             
             return recommendations
         except Exception as e:
             logger.error(f"Error generating recommendations: {e}")
+            logger.exception("Full exception details:")
             raise

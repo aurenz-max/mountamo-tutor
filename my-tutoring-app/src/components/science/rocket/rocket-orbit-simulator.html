@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocket Launch & Orbital Simulator</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #0d1117;
+            color: #c9d1d9;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #161b22;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #58a6ff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .simulation-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            border: 2px solid #30363d;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #0d1117;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            background-color: #21262d;
+            border-radius: 10px;
+        }
+        .control-section {
+            flex: 1;
+            min-width: 250px;
+        }
+        .control-section h3 {
+            color: #58a6ff;
+            margin-top: 0;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 8px;
+        }
+        .control-item {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            color: #8b949e;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #30363d;
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #58a6ff;
+            cursor: pointer;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .value-display {
+            font-family: monospace;
+            font-size: 14px;
+            color: #c9d1d9;
+            min-width: 45px;
+            text-align: right;
+        }
+        .unit {
+            font-size: 12px;
+            color: #8b949e;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2ea043;
+        }
+        button:disabled {
+            background-color: #2d333b;
+            color: #8b949e;
+            cursor: not-allowed;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .data-panel {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .data-section {
+            flex: 1;
+            min-width: 250px;
+            padding: 15px;
+            background-color: #21262d;
+            border-radius: 10px;
+        }
+        .data-section h3 {
+            color: #58a6ff;
+            margin-top: 0;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 8px;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .data-item {
+            padding: 10px;
+            background-color: #2d333b;
+            border-radius: 6px;
+        }
+        .data-label {
+            font-size: 12px;
+            color: #8b949e;
+            margin-bottom: 5px;
+        }
+        .data-value {
+            font-size: 18px;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        .message-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #21262d;
+            border-radius: 10px;
+            border-left: 4px solid #58a6ff;
+        }
+        .message-title {
+            color: #58a6ff;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .message-content {
+            color: #c9d1d9;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(33, 38, 45, 0.9);
+            color: #c9d1d9;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .physics-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #21262d;
+            border-radius: 10px;
+            border-left: 4px solid #238636;
+        }
+        .physics-info h3 {
+            color: #238636;
+            margin-top: 0;
+        }
+        .formula {
+            font-family: monospace;
+            background-color: #2d333b;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .stage-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 8px 12px;
+            background-color: rgba(33, 38, 45, 0.8);
+            border-radius: 4px;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+        .achievement {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            background-color: rgba(35, 134, 54, 0.8);
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .mission-status {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            background-color: rgba(33, 38, 45, 0.8);
+            border-radius: 4px;
+            color: #c9d1d9;
+            font-size: 14px;
+            max-width: 250px;
+        }
+        @keyframes fadeout {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rocket Launch & Orbital Simulator</h1>
+        
+        <div class="simulation-area">
+            <div class="canvas-container">
+                <canvas id="simulationCanvas"></canvas>
+                <div id="stageIndicator" class="stage-indicator">Pre-Launch</div>
+                <div id="achievement" class="achievement"></div>
+                <div id="missionStatus" class="mission-status">Ready for launch.</div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="control-section">
+                    <h3>Rocket Configuration</h3>
+                    <div class="control-item">
+                        <label for="thrustSlider">Thrust Power</label>
+                        <div class="slider-container">
+                            <input type="range" id="thrustSlider" min="1000" max="10000" value="5000" step="100">
+                            <span id="thrustValue" class="value-display">5000</span>
+                            <span class="unit">kN</span>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="fuelCapacitySlider">Fuel Capacity</label>
+                        <div class="slider-container">
+                            <input type="range" id="fuelCapacitySlider" min="100" max="500" value="250" step="10">
+                            <span id="fuelCapacityValue" class="value-display">250</span>
+                            <span class="unit">tons</span>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="burnRateSlider">Fuel Burn Rate</label>
+                        <div class="slider-container">
+                            <input type="range" id="burnRateSlider" min="10" max="50" value="20" step="1">
+                            <span id="burnRateValue" class="value-display">20</span>
+                            <span class="unit">t/s</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Launch Parameters</h3>
+                    <div class="control-item">
+                        <label for="launchAngleSlider">Initial Launch Angle</label>
+                        <div class="slider-container">
+                            <input type="range" id="launchAngleSlider" min="80" max="90" value="89" step="0.1">
+                            <span id="launchAngleValue" class="value-display">89.0</span>
+                            <span class="unit">°</span>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="gravitySlider">Gravity</label>
+                        <div class="slider-container">
+                            <input type="range" id="gravitySlider" min="5" max="15" value="9.8" step="0.1">
+                            <span id="gravityValue" class="value-display">9.8</span>
+                            <span class="unit">m/s²</span>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="atmosphereDensitySlider">Atmosphere Density</label>
+                        <div class="slider-container">
+                            <input type="range" id="atmosphereDensitySlider" min="0.1" max="2" value="1" step="0.1">
+                            <span id="atmosphereDensityValue" class="value-display">1.0</span>
+                            <span class="unit">x</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Mission Control</h3>
+                    <div class="button-group">
+                        <button id="launchButton">Launch Rocket</button>
+                        <button id="abortButton" disabled>Abort Mission</button>
+                    </div>
+                    <div class="control-item">
+                        <label for="targetAltitudeSlider">Target Orbital Altitude</label>
+                        <div class="slider-container">
+                            <input type="range" id="targetAltitudeSlider" min="100" max="1000" value="400" step="10">
+                            <span id="targetAltitudeValue" class="value-display">400</span>
+                            <span class="unit">km</span>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="stageTimingSlider">Stage Separation Timing</label>
+                        <div class="slider-container">
+                            <input type="range" id="stageTimingSlider" min="60" max="180" value="120" step="5">
+                            <span id="stageTimingValue" class="value-display">120</span>
+                            <span class="unit">s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="data-panel">
+                <div class="data-section">
+                    <h3>Flight Data</h3>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">Altitude</div>
+                            <div id="altitudeValue" class="data-value">0.00 km</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Velocity</div>
+                            <div id="velocityValue" class="data-value">0.00 km/s</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Acceleration</div>
+                            <div id="accelerationValue" class="data-value">0.00 m/s²</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Angle</div>
+                            <div id="angleValue" class="data-value">90.0°</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-section">
+                    <h3>Rocket Status</h3>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">Fuel Remaining</div>
+                            <div id="fuelValue" class="data-value">100%</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Current Stage</div>
+                            <div id="stageValue" class="data-value">1</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Mass</div>
+                            <div id="massValue" class="data-value">0.00 t</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Thrust</div>
+                            <div id="thrustOutputValue" class="data-value">0.00 kN</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-section">
+                    <h3>Orbital Parameters</h3>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">Apogee</div>
+                            <div id="apogeeValue" class="data-value">0.00 km</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Perigee</div>
+                            <div id="perigeeValue" class="data-value">0.00 km</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Orbital Period</div>
+                            <div id="periodValue" class="data-value">0.00 min</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Orbital Velocity</div>
+                            <div id="orbitalVelocityValue" class="data-value">0.00 km/s</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="message-box">
+                <div class="message-title">Mission Log</div>
+                <div id="messageContent" class="message-content">
+                    System initialized. Ready for launch configuration.
+                </div>
+            </div>
+            
+            <div class="physics-info">
+                <h3>Orbital Mechanics</h3>
+                <p>This simulator models rocket launches and orbital mechanics using these key equations:</p>
+                <div class="formula">F = m × a</div>
+                <div class="formula">Δv = v_e × ln(m_0 / m_f)</div>
+                <div class="formula">v_orbit = √(G × M / r)</div>
+                <div class="formula">T = 2π × √(r³ / (G × M))</div>
+                <p>Where:</p>
+                <ul>
+                    <li>F = force (thrust - drag)</li>
+                    <li>m = current mass</li>
+                    <li>a = acceleration</li>
+                    <li>Δv = change in velocity (delta-v)</li>
+                    <li>v_e = exhaust velocity</li>
+                    <li>m_0 = initial mass</li>
+                    <li>m_f = final mass</li>
+                    <li>v_orbit = orbital velocity</li>
+                    <li>G = gravitational constant</li>
+                    <li>M = mass of Earth</li>
+                    <li>r = orbital radius</li>
+                    <li>T = orbital period</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the simulator
+            const simulator = createRocketSimulator();
+            simulator.init();
+        });
+        
+        function createRocketSimulator() {
+            // Canvas elements
+            const canvas = document.getElementById('simulationCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // UI elements
+            const thrustSlider = document.getElementById('thrustSlider');
+            const thrustValue = document.getElementById('thrustValue');
+            const fuelCapacitySlider = document.getElementById('fuelCapacitySlider');
+            const fuelCapacityValue = document.getElementById('fuelCapacityValue');
+            const burnRateSlider = document.getElementById('burnRateSlider');
+            const burnRateValue = document.getElementById('burnRateValue');
+            const launchAngleSlider = document.getElementById('launchAngleSlider');
+            const launchAngleValue = document.getElementById('launchAngleValue');
+            const gravitySlider = document.getElementById('gravitySlider');
+            const gravityValue = document.getElementById('gravityValue');
+            const atmosphereDensitySlider = document.getElementById('atmosphereDensitySlider');
+            const atmosphereDensityValue = document.getElementById('atmosphereDensityValue');
+            const targetAltitudeSlider = document.getElementById('targetAltitudeSlider');
+            const targetAltitudeValue = document.getElementById('targetAltitudeValue');
+            const stageTimingSlider = document.getElementById('stageTimingSlider');
+            const stageTimingValue = document.getElementById('stageTimingValue');
+            
+            const launchButton = document.getElementById('launchButton');
+            const abortButton = document.getElementById('abortButton');
+            
+            const altitudeValue = document.getElementById('altitudeValue');
+            const velocityValue = document.getElementById('velocityValue');
+            const accelerationValue = document.getElementById('accelerationValue');
+            const angleValue = document.getElementById('angleValue');
+            const fuelValue = document.getElementById('fuelValue');
+            const stageValue = document.getElementById('stageValue');
+            const massValue = document.getElementById('massValue');
+            const thrustOutputValue = document.getElementById('thrustOutputValue');
+            const apogeeValue = document.getElementById('apogeeValue');
+            const perigeeValue = document.getElementById('perigeeValue');
+            const periodValue = document.getElementById('periodValue');
+            const orbitalVelocityValue = document.getElementById('orbitalVelocityValue');
+            
+            const messageContent = document.getElementById('messageContent');
+            const stageIndicator = document.getElementById('stageIndicator');
+            const achievementElement = document.getElementById('achievement');
+            const missionStatus = document.getElementById('missionStatus');
+            
+            // Constants
+            const EARTH_RADIUS = 6371; // km
+            const EARTH_MASS = 5.972e24; // kg
+            const G = 6.67430e-11; // Gravitational constant, m³/(kg·s²)
+            const SPACE_BOUNDARY = 100; // km, Kármán line
+            const LOW_EARTH_ORBIT_MIN = 160; // km
+            const LOW_EARTH_ORBIT_MAX = 2000; // km
+            const EXHAUST_VELOCITY = 4500; // m/s, typical for liquid rocket engines
+            
+            // Simulation state
+            const state = {
+                // Rocket parameters
+                thrust: 5000, // kN
+                fuelCapacity: 250, // tons
+                burnRate: 20, // tons per second
+                launchAngle: 89, // degrees
+                stageTimingSeconds: 120, // seconds until stage separation
+                currentStage: 1,
+                dryMass: 50, // tons, mass without fuel
+                
+                // Environment
+                gravity: 9.8, // m/s²
+                atmosphereDensity: 1.0, // multiplier
+                
+                // Mission parameters
+                targetAltitude: 400, // km
+                
+                // Dynamic state
+                fuelRemaining: 250, // tons
+                position: { x: 0, y: 0 }, // km, relative to Earth center
+                velocity: { x: 0, y: 0 }, // km/s
+                acceleration: { x: 0, y: 0 }, // m/s²
+                angle: 90, // degrees
+                time: 0, // seconds
+                launched: false,
+                crashed: false,
+                inOrbit: false,
+                apogee: 0, // km
+                perigee: 0, // km
+                orbitalPeriod: 0, // minutes
+                orbitalVelocity: 0, // km/s
+                
+                // Display scale
+                scale: 20, // pixels per km
+                centerX: 0,
+                centerY: 0,
+                
+                // Achievements
+                achievements: {
+                    reachedSpace: false,
+                    reachedOrbit: false,
+                    completedMission: false
+                },
+                
+                // Animation
+                animationId: null
+            };
+            
+            // Initialize canvas and scales
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+                
+                state.centerX = canvas.width / 2;
+                state.centerY = canvas.height / 2;
+                
+                // Adjust scale based on canvas size and target altitude
+                const maxDimension = Math.min(canvas.width, canvas.height);
+                state.scale = maxDimension / (EARTH_RADIUS + state.targetAltitude * 2) * 0.8;
+                
+                drawScene();
+            }
+            
+            // Set up event listeners
+            function setupEventListeners() {
+                window.addEventListener('resize', resizeCanvas);
+                
+                thrustSlider.addEventListener('input', function() {
+                    state.thrust = parseInt(this.value);
+                    thrustValue.textContent = state.thrust;
+                });
+                
+                fuelCapacitySlider.addEventListener('input', function() {
+                    state.fuelCapacity = parseInt(this.value);
+                    state.fuelRemaining = state.fuelCapacity;
+                    fuelCapacityValue.textContent = state.fuelCapacity;
+                });
+                
+                burnRateSlider.addEventListener('input', function() {
+                    state.burnRate = parseInt(this.value);
+                    burnRateValue.textContent = state.burnRate;
+                });
+                
+                launchAngleSlider.addEventListener('input', function() {
+                    state.launchAngle = parseFloat(this.value);
+                    state.angle = state.launchAngle;
+                    launchAngleValue.textContent = state.launchAngle.toFixed(1);
+                    angleValue.textContent = state.angle.toFixed(1) + '°';
+                    drawScene();
+                });
+                
+                gravitySlider.addEventListener('input', function() {
+                    state.gravity = parseFloat(this.value);
+                    gravityValue.textContent = state.gravity.toFixed(1);
+                });
+                
+                atmosphereDensitySlider.addEventListener('input', function() {
+                    state.atmosphereDensity = parseFloat(this.value);
+                    atmosphereDensityValue.textContent = state.atmosphereDensity.toFixed(1);
+                });
+                
+                targetAltitudeSlider.addEventListener('input', function() {
+                    state.targetAltitude = parseInt(this.value);
+                    targetAltitudeValue.textContent = state.targetAltitude;
+                    resizeCanvas();
+                });
+                
+                stageTimingSlider.addEventListener('input', function() {
+                    state.stageTimingSeconds = parseInt(this.value);
+                    stageTimingValue.textContent = state.stageTimingSeconds;
+                });
+                
+                launchButton.addEventListener('click', function() {
+                    if (!state.launched) {
+                        initLaunch();
+                        this.disabled = true;
+                        abortButton.disabled = false;
+                        disableControls(true);
+                    }
+                });
+                
+                abortButton.addEventListener('click', function() {
+                    if (state.launched && !state.crashed && !state.inOrbit) {
+                        abortMission();
+                    }
+                });
+            }
+            
+            // Initialize launch
+            function initLaunch() {
+                // Reset state
+                state.fuelRemaining = state.fuelCapacity;
+                state.angle = state.launchAngle;
+                state.time = 0;
+                state.currentStage = 1;
+                state.position = {
+                    x: 0,
+                    y: EARTH_RADIUS
+                };
+                state.velocity = {
+                    x: 0,
+                    y: 0
+                };
+                state.acceleration = {
+                    x: 0,
+                    y: 0
+                };
+                state.launched = true;
+                state.crashed = false;
+                state.inOrbit = false;
+                
+                // Reset achievements
+                state.achievements.reachedSpace = false;
+                state.achievements.reachedOrbit = false;
+                state.achievements.completedMission = false;
+                
+                // Update UI
+                stageIndicator.textContent = "Stage 1";
+                missionStatus.textContent = "Liftoff! Monitoring flight parameters...";
+                
+                // Log message
+                addMessage("Launch sequence initiated. T+0s: Liftoff!");
+                
+                // Start animation
+                if (state.animationId) {
+                    cancelAnimationFrame(state.animationId);
+                }
+                animate();
+            }
+            
+            // Abort mission
+            function abortMission() {
+                // Cancel animation
+                if (state.animationId) {
+                    cancelAnimationFrame(state.animationId);
+                    state.animationId = null;
+                }
+                
+                // Update state
+                state.launched = false;
+                
+                // Update UI
+                missionStatus.textContent = "Mission aborted. Analysis in progress...";
+                stageIndicator.textContent = "Aborted";
+                
+                // Log message
+                addMessage("Mission abort command received. Flight terminated at T+" + state.time.toFixed(1) + "s.");
+                
+                // Enable controls
+                launchButton.disabled = false;
+                abortButton.disabled = true;
+                disableControls(false);
+            }
+            
+            // Enable/disable control sliders
+            function disableControls(disabled) {
+                thrustSlider.disabled = disabled;
+                fuelCapacitySlider.disabled = disabled;
+                burnRateSlider.disabled = disabled;
+                launchAngleSlider.disabled = disabled;
+                gravitySlider.disabled = disabled;
+                atmosphereDensitySlider.disabled = disabled;
+                targetAltitudeSlider.disabled = disabled;
+                stageTimingSlider.disabled = disabled;
+            }
+            
+            // Add message to log
+            function addMessage(message) {
+                messageContent.innerHTML = message + "<br><br>" + messageContent.innerHTML.split("<br><br>").slice(0, 5).join("<br><br>");
+            }
+            
+            // Show achievement
+            function showAchievement(message) {
+                achievementElement.textContent = message;
+                achievementElement.style.opacity = 1;
+                
+                setTimeout(() => {
+                    achievementElement.style.animation = "fadeout 2s forwards";
+                    
+                    // Reset animation after it completes
+                    setTimeout(() => {
+                        achievementElement.style.opacity = 0;
+                        achievementElement.style.animation = "";
+                    }, 2000);
+                }, 3000);
+            }
+            
+            // Animation loop
+            function animate() {
+                updateSimulation();
+                drawScene();
+                
+                if (state.launched && !state.crashed && !state.inOrbit) {
+                    state.animationId = requestAnimationFrame(animate);
+                }
+            }
+            
+            // Update simulation state
+            function updateSimulation() {
+                // Time step (seconds)
+                const dt = 0.05;
+                state.time += dt;
+                
+                // Calculate current altitude
+                const altitude = calculateAltitude(state.position) - EARTH_RADIUS;
+                
+                // Check for stage separation
+                if (state.currentStage === 1 && state.time >= state.stageTimingSeconds) {
+                    separateStage();
+                }
+                
+                // Update fuel
+                if (state.fuelRemaining > 0) {
+                    state.fuelRemaining -= state.burnRate * dt;
+                    if (state.fuelRemaining < 0) state.fuelRemaining = 0;
+                }
+                
+                // Calculate rocket mass
+                const totalMass = state.dryMass + state.fuelRemaining;
+                
+                // Calculate thrust vector
+                let thrustForce = { x: 0, y: 0 };
+                if (state.fuelRemaining > 0) {
+                    const angleRad = state.angle * Math.PI / 180;
+                    const thrustMagnitude = state.thrust * 1000; // Convert kN to N
+                    
+                    thrustForce.x = thrustMagnitude * Math.cos(angleRad);
+                    thrustForce.y = thrustMagnitude * Math.sin(angleRad);
+                }
+                
+                // Calculate gravitational force
+                const distance = Math.sqrt(state.position.x * state.position.x + state.position.y * state.position.y);
+                const gravityMagnitude = (G * EARTH_MASS * totalMass * 1000) / Math.pow(distance * 1000, 2); // Convert to N
+                
+                // Gravity vector points toward Earth center
+                const gravityForce = {
+                    x: -state.position.x / distance * gravityMagnitude,
+                    y: -state.position.y / distance * gravityMagnitude
+                };
+                
+                // Calculate atmospheric drag
+                // Drag decreases exponentially with altitude
+                let dragForce = { x: 0, y: 0 };
+                if (altitude < 100) { // Only apply drag in the atmosphere
+                    const dragCoefficient = 0.5;
+                    const rocketArea = 10; // m²
+                    const airDensity = 1.225 * Math.exp(-altitude / 10) * state.atmosphereDensity; // kg/m³
+                    
+                    const velocityMagnitude = Math.sqrt(
+                        state.velocity.x * state.velocity.x +
+                        state.velocity.y * state.velocity.y
+                    ) * 1000; // Convert km/s to m/s
+                    
+                    const dragMagnitude = 0.5 * dragCoefficient * airDensity * rocketArea * velocityMagnitude * velocityMagnitude;
+                    
+                    // Drag opposes velocity
+                    if (velocityMagnitude > 0) {
+                        dragForce.x = -state.velocity.x / (velocityMagnitude / 1000) * dragMagnitude;
+                        dragForce.y = -state.velocity.y / (velocityMagnitude / 1000) * dragMagnitude;
+                    }
+                }
+                
+                // Sum all forces
+                const netForce = {
+                    x: thrustForce.x + gravityForce.x + dragForce.x,
+                    y: thrustForce.y + gravityForce.y + dragForce.y
+                };
+                
+                // Calculate acceleration (F = ma)
+                state.acceleration.x = netForce.x / (totalMass * 1000); // m/s²
+                state.acceleration.y = netForce.y / (totalMass * 1000); // m/s²
+                
+                // Update velocity (v = v₀ + a·t)
+                state.velocity.x += state.acceleration.x * dt / 1000; // km/s
+                state.velocity.y += state.acceleration.y * dt / 1000; // km/s
+                
+                // Update position (p = p₀ + v·t)
+                state.position.x += state.velocity.x * dt; // km
+                state.position.y += state.velocity.y * dt; // km
+                
+                // Calculate new altitude
+                const newAltitude = calculateAltitude(state.position) - EARTH_RADIUS;
+                
+                // Calculate velocity angle for display
+                state.angle = (Math.atan2(state.velocity.y, state.velocity.x) * 180 / Math.PI);
+                if (state.angle < 0) state.angle += 360;
+                
+                // Check for orbit achievement
+                if (!state.achievements.reachedSpace && newAltitude >= SPACE_BOUNDARY) {
+                    state.achievements.reachedSpace = true;
+                    addMessage("T+" + state.time.toFixed(1) + "s: Crossed the Kármán line! Officially in space at " + SPACE_BOUNDARY + " km altitude.");
+                    showAchievement("Space Achieved!");
+                    missionStatus.textContent = "Space reached! Continuing to target orbit...";
+                }
+                
+                // Check if in stable orbit
+                const velocityMagnitude = Math.sqrt(
+                    state.velocity.x * state.velocity.x +
+                    state.velocity.y * state.velocity.y
+                );
+                
+                // Calculate orbital parameters
+                calculateOrbitalParameters();
+                
+                // Check if orbit is achieved
+                if (!state.achievements.reachedOrbit && 
+                    newAltitude >= LOW_EARTH_ORBIT_MIN && 
+                    newAltitude <= LOW_EARTH_ORBIT_MAX &&
+                    state.perigee > 0 && // Valid perigee
+                    Math.abs(state.perigee - state.targetAltitude) < 50) {
+                    
+                    state.achievements.reachedOrbit = true;
+                    state.inOrbit = true;
+                    
+                    addMessage("T+" + state.time.toFixed(1) + "s: Stable orbit achieved at " + newAltitude.toFixed(1) + " km!");
+                    showAchievement("Orbit Achieved!");
+                    missionStatus.textContent = "Stable orbit established! Mission successful.";
+                    
+                    // Check for mission completion
+                    if (Math.abs(newAltitude - state.targetAltitude) < 20) {
+                        state.achievements.completedMission = true;
+                        addMessage("Mission complete! Target altitude of " + state.targetAltitude + " km reached with precision.");
+                        showAchievement("Mission Complete!");
+                    }
+                    
+                    // Disable abort button after successful orbit
+                    abortButton.disabled = true;
+                }
+                
+                // Check for crash
+                if (newAltitude < 0) {
+                    state.crashed = true;
+                    addMessage("T+" + state.time.toFixed(1) + "s: Mission failed. Rocket crashed after reaching maximum altitude of " + state.apogee.toFixed(1) + " km.");
+                    missionStatus.textContent = "Mission failed! Rocket crashed.";
+                    
+                    // Enable controls for new launch
+                    launchButton.disabled = false;
+                    abortButton.disabled = true;
+                    disableControls(false);
+                }
+                
+                // Update UI
+                updateUI();
+            }
+            
+            // Update UI values
+            function updateUI() {
+                // Calculate altitude
+                const altitude = calculateAltitude(state.position) - EARTH_RADIUS;
+                
+                // Calculate velocity magnitude
+                const velocityMagnitude = Math.sqrt(
+                    state.velocity.x * state.velocity.x +
+                    state.velocity.y * state.velocity.y
+                );
+                
+                // Calculate acceleration magnitude
+                const accelerationMagnitude = Math.sqrt(
+                    state.acceleration.x * state.acceleration.x +
+                    state.acceleration.y * state.acceleration.y
+                );
+                
+                // Update flight data
+                altitudeValue.textContent = altitude.toFixed(2) + " km";
+                velocityValue.textContent = velocityMagnitude.toFixed(2) + " km/s";
+                accelerationValue.textContent = accelerationMagnitude.toFixed(2) + " m/s²";
+                angleValue.textContent = state.angle.toFixed(1) + "°";
+                
+                // Update rocket status
+                const fuelPercentage = (state.fuelRemaining / state.fuelCapacity * 100).toFixed(1);
+                fuelValue.textContent = fuelPercentage + "%";
+                stageValue.textContent = state.currentStage;
+                
+                const totalMass = state.dryMass + state.fuelRemaining;
+                massValue.textContent = totalMass.toFixed(2) + " t";
+                
+                // Show thrust only when fuel is available
+                const effectiveThrust = state.fuelRemaining > 0 ? state.thrust : 0;
+                thrustOutputValue.textContent = effectiveThrust.toFixed(2) + " kN";
+                
+                // Update orbital parameters
+                apogeeValue.textContent = state.apogee.toFixed(2) + " km";
+                perigeeValue.textContent = state.perigee.toFixed(2) + " km";
+                periodValue.textContent = state.orbitalPeriod.toFixed(2) + " min";
+                orbitalVelocityValue.textContent = state.orbitalVelocity.toFixed(2) + " km/s";
+            }
+            
+            // Stage separation
+            function separateStage() {
+                // Update state
+                state.currentStage = 2;
+                state.dryMass = 20; // Second stage is lighter
+                
+                // Update UI
+                stageIndicator.textContent = "Stage 2";
+                
+                // Log message
+                addMessage("T+" + state.time.toFixed(1) + "s: Stage separation! Second stage engines ignited.");
+                
+                // Update fuel - typically stage separation happens when fuel is near empty
+                state.fuelRemaining = Math.max(state.fuelRemaining, state.fuelCapacity * 0.5);
+            }
+            
+            // Calculate altitude from position
+            function calculateAltitude(position) {
+                return Math.sqrt(position.x * position.x + position.y * position.y);
+            }
+            
+            // Calculate orbital parameters
+            function calculateOrbitalParameters() {
+                // Current distance from Earth center
+                const r = calculateAltitude(state.position);
+                
+                // Velocity magnitude
+                const v = Math.sqrt(state.velocity.x * state.velocity.x + state.velocity.y * state.velocity.y);
+                
+                // Check if velocity is sufficient for orbit
+                const orbitalVelocityAtR = Math.sqrt(G * EARTH_MASS / (r * 1000)) / 1000; // km/s
+                
+                // Save orbital velocity
+                state.orbitalVelocity = v;
+                
+                // Calculate specific orbital energy
+                const mu = G * EARTH_MASS;
+                const specificEnergy = (v * 1000) * (v * 1000) / 2 - mu / (r * 1000);
+                
+                // Calculate semi-major axis
+                const a = -mu / (2 * specificEnergy) / 1000; // km
+                
+                // Check if orbit is possible (energy negative for elliptical orbit)
+                if (specificEnergy >= 0) {
+                    // Escape trajectory or parabolic orbit
+                    state.apogee = Infinity;
+                    state.perigee = r - EARTH_RADIUS;
+                    state.orbitalPeriod = Infinity;
+                    return;
+                }
+                
+                // Calculate position vector magnitude
+                const position_r = r;
+                
+                // Calculate position • velocity (dot product)
+                const position_dot_velocity = 
+                    state.position.x * state.velocity.x + 
+                    state.position.y * state.velocity.y;
+                
+                // Calculate eccentricity vector
+                const eccentricity_x = 
+                    ((v * 1000) * (v * 1000) * state.position.x / mu) - 
+                    (position_dot_velocity * 1000 * state.velocity.x / mu) - 
+                    (state.position.x / position_r);
+                
+                const eccentricity_y = 
+                    ((v * 1000) * (v * 1000) * state.position.y / mu) - 
+                    (position_dot_velocity * 1000 * state.velocity.y / mu) - 
+                    (state.position.y / position_r);
+                
+                // Calculate eccentricity
+                const eccentricity = Math.sqrt(eccentricity_x * eccentricity_x + eccentricity_y * eccentricity_y);
+                
+                // Calculate apogee and perigee
+                state.apogee = a * (1 + eccentricity) - EARTH_RADIUS;
+                state.perigee = a * (1 - eccentricity) - EARTH_RADIUS;
+                
+                // Calculate orbital period
+                state.orbitalPeriod = 2 * Math.PI * Math.sqrt(Math.pow(a, 3) / (G * EARTH_MASS)) / 60; // minutes
+                
+                // Cap values for display
+                if (state.apogee > 10000) state.apogee = 10000;
+                if (state.perigee < 0) state.perigee = 0;
+                if (state.orbitalPeriod > 1000) state.orbitalPeriod = 1000;
+            }
+            
+            // Draw the simulation
+            function drawScene() {
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, width, height);
+                
+                // Draw background (deep space)
+                ctx.fillStyle = '#0d1117';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Draw stars
+                drawStars();
+                
+                // Draw Earth
+                drawEarth();
+                
+                // Draw target orbit
+                drawTargetOrbit();
+                
+                // Draw rocket trajectory
+                drawTrajectory();
+                
+                // Draw rocket
+                if (state.launched && !state.crashed) {
+                    drawRocket();
+                }
+            }
+            
+            // Draw stars
+            function drawStars() {
+                // Use a fixed seed for consistent star pattern
+                const numStars = 200;
+                
+                ctx.fillStyle = '#ffffff';
+                
+                for (let i = 0; i < numStars; i++) {
+                    const x = (Math.sin(i * 3.74) * 0.5 + 0.5) * canvas.width;
+                    const y = (Math.cos(i * 2.51) * 0.5 + 0.5) * canvas.height;
+                    const size = (Math.sin(i * 8.72) * 0.5 + 0.5) * 2 + 0.5;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // Draw Earth
+            function drawEarth() {
+                // Earth position in screen coordinates
+                const earthX = state.centerX;
+                const earthY = state.centerY;
+                const earthRadius = EARTH_RADIUS * state.scale;
+                
+                // Draw Earth
+                const earthGradient = ctx.createRadialGradient(
+                    earthX, earthY, 0,
+                    earthX, earthY, earthRadius
+                );
+                earthGradient.addColorStop(0, '#1a73e8');
+                earthGradient.addColorStop(0.8, '#1a4e8e');
+                earthGradient.addColorStop(1, '#0d2f5a');
+                
+                ctx.fillStyle = earthGradient;
+                ctx.beginPath();
+                ctx.arc(earthX, earthY, earthRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw atmosphere
+                ctx.strokeStyle = 'rgba(105, 191, 255, 0.3)';
+                ctx.lineWidth = 15;
+                ctx.beginPath();
+                ctx.arc(earthX, earthY, earthRadius + 10, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Draw outer atmosphere boundary (Kármán line)
+                ctx.strokeStyle = 'rgba(255, 105, 180, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.arc(earthX, earthY, (EARTH_RADIUS + SPACE_BOUNDARY) * state.scale, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // Draw target orbit
+            function drawTargetOrbit() {
+                // Calculate orbit radius
+                const orbitRadius = (EARTH_RADIUS + state.targetAltitude) * state.scale;
+                
+                // Draw orbit circle
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.arc(state.centerX, state.centerY, orbitRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw orbit label
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(state.targetAltitude + ' km', state.centerX + orbitRadius + 5, state.centerY);
+            }
+            
+            // Draw rocket trajectory
+            function drawTrajectory() {
+                if (!state.launched) return;
+                
+                // Convert position to screen coordinates
+                const rocketX = state.centerX + state.position.x * state.scale;
+                const rocketY = state.centerY - state.position.y * state.scale;
+                
+                // Draw faint trajectory line
+                if (state.time > 0.1) {
+                    // Trajectory is drawn by simulating the orbit
+                    const trajectoryPoints = [];
+                    
+                    // Start with current position
+                    trajectoryPoints.push({
+                        x: rocketX,
+                        y: rocketY
+                    });
+                    
+                    // Only draw predicted orbit if we're in space
+                    const altitude = calculateAltitude(state.position) - EARTH_RADIUS;
+                    if (altitude >= 50) {
+                        // Simulate orbit for one period or a maximum of 360 steps
+                        const sim = {
+                            position: { ...state.position },
+                            velocity: { ...state.velocity },
+                            time: 0
+                        };
+                        
+                        const steps = 360;
+                        const timeStep = (state.orbitalPeriod > 0 && state.orbitalPeriod < 1000) 
+                            ? state.orbitalPeriod * 60 / steps 
+                            : 10;
+                        
+                        for (let i = 0; i < steps; i++) {
+                            // Simple 2-body simulation
+                            const r = calculateAltitude(sim.position);
+                            
+                            // Gravitational acceleration
+                            const gm = G * EARTH_MASS;
+                            const acc = {
+                                x: -sim.position.x / r * gm / Math.pow(r * 1000, 2) / 1000,
+                                y: -sim.position.y / r * gm / Math.pow(r * 1000, 2) / 1000
+                            };
+                            
+                            // Update velocity
+                            sim.velocity.x += acc.x * timeStep;
+                            sim.velocity.y += acc.y * timeStep;
+                            
+                            // Update position
+                            sim.position.x += sim.velocity.x * timeStep;
+                            sim.position.y += sim.velocity.y * timeStep;
+                            
+                            // Add point to trajectory
+                            const pointX = state.centerX + sim.position.x * state.scale;
+                            const pointY = state.centerY - sim.position.y * state.scale;
+                            
+                            trajectoryPoints.push({
+                                x: pointX,
+                                y: pointY
+                            });
+                            
+                            sim.time += timeStep;
+                            
+                            // Break if we go below Earth's surface
+                            if (calculateAltitude(sim.position) < EARTH_RADIUS) {
+                                break;
+                            }
+                            
+                            // Break if we complete an orbit
+                            if (state.inOrbit && sim.time >= state.orbitalPeriod * 60) {
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Draw trajectory line with gradient
+                    if (trajectoryPoints.length > 1) {
+                        ctx.beginPath();
+                        ctx.moveTo(trajectoryPoints[0].x, trajectoryPoints[0].y);
+                        
+                        for (let i = 1; i < trajectoryPoints.length; i++) {
+                            ctx.lineTo(trajectoryPoints[i].x, trajectoryPoints[i].y);
+                        }
+                        
+                        // Create gradient that fades out
+                        let alpha = 0.7;
+                        if (altitude < 50) {
+                            alpha = 0.3; // Less visible at low altitudes
+                        }
+                        
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            // Draw rocket
+            function drawRocket() {
+                // Convert position to screen coordinates
+                const rocketX = state.centerX + state.position.x * state.scale;
+                const rocketY = state.centerY - state.position.y * state.scale;
+                
+                // Determine rocket angle
+                const rocketAngle = Math.atan2(state.velocity.y, state.velocity.x);
+                
+                // Draw rocket
+                ctx.save();
+                ctx.translate(rocketX, rocketY);
+                ctx.rotate(rocketAngle);
+                
+                // Rocket body
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(15, 0);      // Nose
+                ctx.lineTo(-15, -5);    // Bottom left
+                ctx.lineTo(-10, 0);     // Engine middle
+                ctx.lineTo(-15, 5);     // Bottom right
+                ctx.closePath();
+                ctx.fill();
+                
+                // Rocket engine flame when fuel is available
+                if (state.fuelRemaining > 0) {
+                    // Flame animation effect
+                    const flameLength = 20 + Math.sin(state.time * 20) * 5;
+                    
+                    // Create flame gradient
+                    const flameGradient = ctx.createLinearGradient(-10, 0, -flameLength, 0);
+                    flameGradient.addColorStop(0, '#ff9500');
+                    flameGradient.addColorStop(0.5, '#ff5500');
+                    flameGradient.addColorStop(1, 'rgba(255, 85, 0, 0)');
+                    
+                    ctx.fillStyle = flameGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(-10, 0);
+                    ctx.lineTo(-15, -3);
+                    ctx.lineTo(-flameLength, 0);
+                    ctx.lineTo(-15, 3);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+            
+            // Initialize the simulation
+            function init() {
+                // Set up canvas
+                resizeCanvas();
+                
+                // Set up event listeners
+                setupEventListeners();
+                
+                // Set initial UI values
+                thrustValue.textContent = state.thrust;
+                fuelCapacityValue.textContent = state.fuelCapacity;
+                burnRateValue.textContent = state.burnRate;
+                launchAngleValue.textContent = state.launchAngle.toFixed(1);
+                gravityValue.textContent = state.gravity.toFixed(1);
+                atmosphereDensityValue.textContent = state.atmosphereDensity.toFixed(1);
+                targetAltitudeValue.textContent = state.targetAltitude;
+                stageTimingValue.textContent = state.stageTimingSeconds;
+                
+                // Initial UI update
+                updateUI();
+                
+                // Draw initial scene
+                drawScene();
+            }
+            
+            // Public API
+            return {
+                init: init
+            };
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Electric Circuit Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .circuit-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .circuit-display {
+            width: 100%;
+            height: 400px;
+            background-color: #000;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        .controls-panel {
+            width: 100%;
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .control-group {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-width: 200px;
+        }
+        .control-group h3 {
+            margin-top: 0;
+            color: #2196F3;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .control-item {
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .value-display {
+            font-family: monospace;
+            margin-left: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .readings-panel {
+            width: 100%;
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .readings-panel h3 {
+            margin-top: 0;
+            color: #2196F3;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .readings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .reading-item {
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .reading-value {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .reading-unit {
+            color: #666;
+            font-size: 12px;
+        }
+        #circuit-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .component {
+            position: absolute;
+            cursor: pointer;
+        }
+        .battery {
+            width: 80px;
+            height: 40px;
+            background-color: #ffcc00;
+            border: 2px solid #333;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+        .resistor {
+            width: 100px;
+            height: 20px;
+            background-color: #bc8f8f;
+            border: 2px solid #333;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+        .bulb {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-weight: bold;
+        }
+        .switch {
+            width: 60px;
+            height: 30px;
+            background-color: #4CAF50;
+            border: 2px solid #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+        }
+        .switch-toggle {
+            width: 24px;
+            height: 24px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .switch.off {
+            background-color: #f44336;
+        }
+        .switch.off .switch-toggle {
+            transform: translateX(30px);
+        }
+        .wire {
+            position: absolute;
+            background-color: #ff0000;
+            transform-origin: 0 50%;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Advanced Electric Circuit Simulator</h1>
+        
+        <div class="circuit-container">
+            <div class="circuit-display" id="circuit-display">
+                <canvas id="circuit-canvas"></canvas>
+            </div>
+            
+            <div class="controls-panel">
+                <div class="control-group">
+                    <h3>Power Source</h3>
+                    <div class="control-item">
+                        <label for="voltage-control">Voltage (V): <span id="voltage-value" class="value-display">12.0</span></label>
+                        <input type="range" id="voltage-control" min="1.5" max="24" step="0.1" value="12">
+                    </div>
+                    <div class="control-item">
+                        <label>Battery Type:</label>
+                        <button id="battery-type-dc">DC</button>
+                        <button id="battery-type-ac">AC</button>
+                    </div>
+                    <div class="control-item" id="ac-controls" style="display: none;">
+                        <label for="frequency-control">Frequency (Hz): <span id="frequency-value" class="value-display">60</span></label>
+                        <input type="range" id="frequency-control" min="1" max="100" step="1" value="60">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Resistors</h3>
+                    <div class="control-item">
+                        <label for="resistor1-control">Resistor 1 (Ω): <span id="resistor1-value" class="value-display">100</span></label>
+                        <input type="range" id="resistor1-control" min="10" max="1000" step="10" value="100">
+                    </div>
+                    <div class="control-item">
+                        <label for="resistor2-control">Resistor 2 (Ω): <span id="resistor2-value" class="value-display">200</span></label>
+                        <input type="range" id="resistor2-control" min="10" max="1000" step="10" value="200">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Circuit Configuration</h3>
+                    <div class="control-item">
+                        <button id="config-series">Series Circuit</button>
+                        <button id="config-parallel">Parallel Circuit</button>
+                    </div>
+                    <div class="control-item">
+                        <label>Switch State:</label>
+                        <button id="switch-toggle">Toggle Switch</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Simulation</h3>
+                    <div class="control-item">
+                        <button id="start-simulation">Start</button>
+                        <button id="pause-simulation">Pause</button>
+                        <button id="reset-simulation">Reset</button>
+                    </div>
+                    <div class="control-item">
+                        <label for="current-speed">Current Speed: <span id="current-speed-value" class="value-display">1x</span></label>
+                        <input type="range" id="current-speed" min="0.25" max="2" step="0.25" value="1">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="readings-panel">
+                <h3>Circuit Measurements</h3>
+                <div class="readings-grid">
+                    <div class="reading-item">
+                        <div>Total Current</div>
+                        <div id="total-current" class="reading-value">0.00</div>
+                        <div class="reading-unit">Amperes (A)</div>
+                    </div>
+                    <div class="reading-item">
+                        <div>Total Resistance</div>
+                        <div id="total-resistance" class="reading-value">300.00</div>
+                        <div class="reading-unit">Ohms (Ω)</div>
+                    </div>
+                    <div class="reading-item">
+                        <div>Power Consumption</div>
+                        <div id="power-consumption" class="reading-value">0.00</div>
+                        <div class="reading-unit">Watts (W)</div>
+                    </div>
+                    <div class="reading-item">
+                        <div>Voltage Drop (R1)</div>
+                        <div id="voltage-drop-r1" class="reading-value">0.00</div>
+                        <div class="reading-unit">Volts (V)</div>
+                    </div>
+                    <div class="reading-item">
+                        <div>Voltage Drop (R2)</div>
+                        <div id="voltage-drop-r2" class="reading-value">0.00</div>
+                        <div class="reading-unit">Volts (V)</div>
+                    </div>
+                    <div class="reading-item">
+                        <div>Light Bulb Intensity</div>
+                        <div id="bulb-intensity" class="reading-value">0%</div>
+                        <div class="reading-unit">Percentage</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Circuit Simulator JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // Circuit state
+            let circuitState = {
+                voltage: 12.0,
+                batteryType: 'DC',
+                frequency: 60,
+                resistor1: 100,
+                resistor2: 200,
+                configuration: 'series',
+                switchOn: true,
+                currentSpeed: 1,
+                simulationRunning: false,
+                time: 0
+            };
+            
+            // Element references
+            const voltageControl = document.getElementById('voltage-control');
+            const voltageValue = document.getElementById('voltage-value');
+            const frequencyControl = document.getElementById('frequency-control');
+            const frequencyValue = document.getElementById('frequency-value');
+            const resistor1Control = document.getElementById('resistor1-control');
+            const resistor1Value = document.getElementById('resistor1-value');
+            const resistor2Control = document.getElementById('resistor2-control');
+            const resistor2Value = document.getElementById('resistor2-value');
+            const currentSpeedControl = document.getElementById('current-speed');
+            const currentSpeedValue = document.getElementById('current-speed-value');
+            const acControls = document.getElementById('ac-controls');
+            
+            const totalCurrentDisplay = document.getElementById('total-current');
+            const totalResistanceDisplay = document.getElementById('total-resistance');
+            const powerConsumptionDisplay = document.getElementById('power-consumption');
+            const voltageDropR1Display = document.getElementById('voltage-drop-r1');
+            const voltageDropR2Display = document.getElementById('voltage-drop-r2');
+            const bulbIntensityDisplay = document.getElementById('bulb-intensity');
+            
+            const circuitDisplay = document.getElementById('circuit-display');
+            const canvas = document.getElementById('circuit-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            function resizeCanvas() {
+                canvas.width = circuitDisplay.clientWidth;
+                canvas.height = circuitDisplay.clientHeight;
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Control event listeners
+            voltageControl.addEventListener('input', function() {
+                circuitState.voltage = parseFloat(this.value);
+                voltageValue.textContent = circuitState.voltage.toFixed(1);
+                updateCircuitCalculations();
+            });
+            
+            frequencyControl.addEventListener('input', function() {
+                circuitState.frequency = parseInt(this.value);
+                frequencyValue.textContent = circuitState.frequency;
+                updateCircuitCalculations();
+            });
+            
+            resistor1Control.addEventListener('input', function() {
+                circuitState.resistor1 = parseInt(this.value);
+                resistor1Value.textContent = circuitState.resistor1;
+                updateCircuitCalculations();
+            });
+            
+            resistor2Control.addEventListener('input', function() {
+                circuitState.resistor2 = parseInt(this.value);
+                resistor2Value.textContent = circuitState.resistor2;
+                updateCircuitCalculations();
+            });
+            
+            currentSpeedControl.addEventListener('input', function() {
+                circuitState.currentSpeed = parseFloat(this.value);
+                currentSpeedValue.textContent = circuitState.currentSpeed.toFixed(2) + 'x';
+            });
+            
+            document.getElementById('battery-type-dc').addEventListener('click', function() {
+                circuitState.batteryType = 'DC';
+                acControls.style.display = 'none';
+                updateCircuitCalculations();
+            });
+            
+            document.getElementById('battery-type-ac').addEventListener('click', function() {
+                circuitState.batteryType = 'AC';
+                acControls.style.display = 'block';
+                updateCircuitCalculations();
+            });
+            
+            document.getElementById('config-series').addEventListener('click', function() {
+                circuitState.configuration = 'series';
+                updateCircuitCalculations();
+            });
+            
+            document.getElementById('config-parallel').addEventListener('click', function() {
+                circuitState.configuration = 'parallel';
+                updateCircuitCalculations();
+            });
+            
+            document.getElementById('switch-toggle').addEventListener('click', function() {
+                circuitState.switchOn = !circuitState.switchOn;
+                updateCircuitCalculations();
+            });
+            
+            document.getElementById('start-simulation').addEventListener('click', function() {
+                if (!circuitState.simulationRunning) {
+                    circuitState.simulationRunning = true;
+                    animate();
+                }
+            });
+            
+            document.getElementById('pause-simulation').addEventListener('click', function() {
+                circuitState.simulationRunning = false;
+            });
+            
+            document.getElementById('reset-simulation').addEventListener('click', function() {
+                circuitState.time = 0;
+                updateCircuitCalculations();
+                drawCircuit();
+            });
+            
+            // Circuit calculations
+            function updateCircuitCalculations() {
+                // Calculate total resistance based on configuration
+                let totalResistance = 0;
+                if (circuitState.configuration === 'series') {
+                    totalResistance = circuitState.resistor1 + circuitState.resistor2;
+                } else { // parallel
+                    totalResistance = (circuitState.resistor1 * circuitState.resistor2) / 
+                                     (circuitState.resistor1 + circuitState.resistor2);
+                }
+                
+                // Calculate current
+                let effectiveVoltage = circuitState.voltage;
+                if (circuitState.batteryType === 'AC') {
+                    effectiveVoltage = circuitState.voltage * Math.sin(2 * Math.PI * circuitState.frequency * circuitState.time);
+                    effectiveVoltage = Math.abs(effectiveVoltage); // For display purposes
+                }
+                
+                let totalCurrent = 0;
+                if (circuitState.switchOn) {
+                    totalCurrent = effectiveVoltage / totalResistance;
+                }
+                
+                // Calculate voltage drops
+                let voltageDropR1 = 0;
+                let voltageDropR2 = 0;
+                
+                if (circuitState.switchOn) {
+                    if (circuitState.configuration === 'series') {
+                        voltageDropR1 = totalCurrent * circuitState.resistor1;
+                        voltageDropR2 = totalCurrent * circuitState.resistor2;
+                    } else { // parallel
+                        voltageDropR1 = effectiveVoltage;
+                        voltageDropR2 = effectiveVoltage;
+                    }
+                }
+                
+                // Calculate power
+                const powerConsumption = effectiveVoltage * totalCurrent;
+                
+                // Bulb intensity (normalized power)
+                const maxPower = 24 * 24 / 100; // Max possible voltage^2 / minimum resistance
+                const bulbIntensity = Math.min(100, (powerConsumption / maxPower) * 100);
+                
+                // Update displays
+                totalCurrentDisplay.textContent = totalCurrent.toFixed(2);
+                totalResistanceDisplay.textContent = totalResistance.toFixed(2);
+                powerConsumptionDisplay.textContent = powerConsumption.toFixed(2);
+                voltageDropR1Display.textContent = voltageDropR1.toFixed(2);
+                voltageDropR2Display.textContent = voltageDropR2.toFixed(2);
+                bulbIntensityDisplay.textContent = Math.round(bulbIntensity) + '%';
+                
+                // Update circuit visuals
+                drawCircuit();
+            }
+            
+            // Draw circuit
+            function drawCircuit() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                if (circuitState.configuration === 'series') {
+                    drawSeriesCircuit(centerX, centerY);
+                } else {
+                    drawParallelCircuit(centerX, centerY);
+                }
+            }
+            
+            function drawSeriesCircuit(centerX, centerY) {
+                const circuitWidth = Math.min(canvas.width * 0.8, 600);
+                const circuitHeight = Math.min(canvas.height * 0.7, 300);
+                
+                // Define component positions
+                const batteryX = centerX - circuitWidth / 2;
+                const batteryY = centerY;
+                const batteryWidth = 60;
+                const batteryHeight = 30;
+                
+                const switchX = batteryX + batteryWidth + 40;
+                const switchY = centerY;
+                const switchWidth = 40;
+                const switchHeight = 20;
+                
+                const resistor1X = switchX + switchWidth + 60;
+                const resistor1Y = centerY;
+                const resistor1Width = 80;
+                const resistor1Height = 20;
+                
+                const resistor2X = resistor1X + resistor1Width + 60;
+                const resistor2Y = centerY;
+                const resistor2Width = 80;
+                const resistor2Height = 20;
+                
+                const bulbX = resistor2X + resistor2Width + 40;
+                const bulbY = centerY;
+                const bulbRadius = 20;
+                
+                // Draw components
+                drawBattery(batteryX, batteryY, batteryWidth, batteryHeight);
+                drawSwitch(switchX, switchY, switchWidth, switchHeight);
+                drawResistor(resistor1X, resistor1Y, resistor1Width, resistor1Height, circuitState.resistor1);
+                drawResistor(resistor2X, resistor2Y, resistor2Width, resistor2Height, circuitState.resistor2);
+                drawBulb(bulbX, bulbY, bulbRadius);
+                
+                // Draw connecting wires
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                
+                // Top wire
+                ctx.beginPath();
+                ctx.moveTo(batteryX, batteryY - batteryHeight / 2);
+                ctx.lineTo(batteryX, centerY - circuitHeight / 2);
+                ctx.lineTo(bulbX + bulbRadius, centerY - circuitHeight / 2);
+                ctx.lineTo(bulbX + bulbRadius, bulbY - bulbRadius);
+                ctx.stroke();
+                
+                // Bottom wire
+                ctx.beginPath();
+                ctx.moveTo(batteryX, batteryY + batteryHeight / 2);
+                ctx.lineTo(batteryX, centerY + circuitHeight / 2);
+                ctx.lineTo(bulbX - bulbRadius, centerY + circuitHeight / 2);
+                ctx.lineTo(bulbX - bulbRadius, bulbY + bulbRadius);
+                ctx.stroke();
+                
+                // Draw current flow
+                if (circuitState.simulationRunning && circuitState.switchOn) {
+                    drawCurrentFlow(
+                        [
+                            { x: batteryX, y: batteryY - batteryHeight / 2 },
+                            { x: batteryX, y: centerY - circuitHeight / 2 },
+                            { x: bulbX + bulbRadius, y: centerY - circuitHeight / 2 },
+                            { x: bulbX + bulbRadius, y: bulbY - bulbRadius },
+                            { x: bulbX, y: bulbY },
+                            { x: bulbX - bulbRadius, y: bulbY + bulbRadius },
+                            { x: bulbX - bulbRadius, y: centerY + circuitHeight / 2 },
+                            { x: batteryX, y: centerY + circuitHeight / 2 },
+                            { x: batteryX, y: batteryY + batteryHeight / 2 }
+                        ]
+                    );
+                }
+            }
+            
+            function drawParallelCircuit(centerX, centerY) {
+                const circuitWidth = Math.min(canvas.width * 0.8, 600);
+                const circuitHeight = Math.min(canvas.height * 0.7, 300);
+                
+                // Define component positions
+                const batteryX = centerX - circuitWidth / 2;
+                const batteryY = centerY;
+                const batteryWidth = 60;
+                const batteryHeight = 30;
+                
+                const switchX = batteryX + batteryWidth + 40;
+                const switchY = centerY;
+                const switchWidth = 40;
+                const switchHeight = 20;
+                
+                // Resistors in parallel branches
+                const branchStartX = switchX + switchWidth + 40;
+                const topBranchY = centerY - circuitHeight / 4;
+                const bottomBranchY = centerY + circuitHeight / 4;
+                
+                const resistor1X = centerX;
+                const resistor1Y = topBranchY;
+                const resistor1Width = 80;
+                const resistor1Height = 20;
+                
+                const resistor2X = centerX;
+                const resistor2Y = bottomBranchY;
+                const resistor2Width = 80;
+                const resistor2Height = 20;
+                
+                const branchEndX = branchStartX + circuitWidth / 2;
+                
+                const bulbX = branchEndX + 40;
+                const bulbY = centerY;
+                const bulbRadius = 20;
+                
+                // Draw components
+                drawBattery(batteryX, batteryY, batteryWidth, batteryHeight);
+                drawSwitch(switchX, switchY, switchWidth, switchHeight);
+                drawResistor(resistor1X, resistor1Y, resistor1Width, resistor1Height, circuitState.resistor1);
+                drawResistor(resistor2X, resistor2Y, resistor2Width, resistor2Height, circuitState.resistor2);
+                drawBulb(bulbX, bulbY, bulbRadius);
+                
+                // Draw connecting wires
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                
+                // Left junction
+                ctx.beginPath();
+                ctx.moveTo(branchStartX, centerY);
+                ctx.lineTo(branchStartX, topBranchY);
+                ctx.lineTo(resistor1X - resistor1Width / 2, topBranchY);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(branchStartX, centerY);
+                ctx.lineTo(branchStartX, bottomBranchY);
+                ctx.lineTo(resistor2X - resistor2Width / 2, bottomBranchY);
+                ctx.stroke();
+                
+                // Right junction
+                ctx.beginPath();
+                ctx.moveTo(resistor1X + resistor1Width / 2, topBranchY);
+                ctx.lineTo(branchEndX, topBranchY);
+                ctx.lineTo(branchEndX, centerY);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(resistor2X + resistor2Width / 2, bottomBranchY);
+                ctx.lineTo(branchEndX, bottomBranchY);
+                ctx.lineTo(branchEndX, centerY);
+                ctx.stroke();
+                
+                // Outer circuit
+                ctx.beginPath();
+                ctx.moveTo(batteryX, batteryY - batteryHeight / 2);
+                ctx.lineTo(batteryX, centerY - circuitHeight / 2);
+                ctx.lineTo(bulbX + bulbRadius, centerY - circuitHeight / 2);
+                ctx.lineTo(bulbX + bulbRadius, bulbY - bulbRadius);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(batteryX, batteryY + batteryHeight / 2);
+                ctx.lineTo(batteryX, centerY + circuitHeight / 2);
+                ctx.lineTo(bulbX - bulbRadius, centerY + circuitHeight / 2);
+                ctx.lineTo(bulbX - bulbRadius, bulbY + bulbRadius);
+                ctx.stroke();
+                
+                // Connect switch to branching point
+                ctx.beginPath();
+                ctx.moveTo(switchX + switchWidth, switchY);
+                ctx.lineTo(branchStartX, centerY);
+                ctx.stroke();
+                
+                // Connect branching point to bulb
+                ctx.beginPath();
+                ctx.moveTo(branchEndX, centerY);
+                ctx.lineTo(bulbX - bulbRadius, bulbY);
+                ctx.stroke();
+                
+                // Draw current flow
+                if (circuitState.simulationRunning && circuitState.switchOn) {
+                    // Top branch flow
+                    drawCurrentFlow(
+                        [
+                            { x: batteryX, y: batteryY - batteryHeight / 2 },
+                            { x: batteryX, y: centerY - circuitHeight / 2 },
+                            { x: bulbX + bulbRadius, y: centerY - circuitHeight / 2 },
+                            { x: bulbX + bulbRadius, y: bulbY - bulbRadius },
+                            { x: bulbX, y: bulbY },
+                            { x: bulbX - bulbRadius, y: bulbY },
+                            { x: branchEndX, y: centerY },
+                            { x: branchEndX, y: topBranchY },
+                            { x: resistor1X + resistor1Width / 2, y: topBranchY },
+                            { x: resistor1X - resistor1Width / 2, y: topBranchY },
+                            { x: branchStartX, y: topBranchY },
+                            { x: branchStartX, y: centerY },
+                            { x: switchX + switchWidth, y: switchY },
+                            { x: switchX, y: switchY },
+                            { x: batteryX + batteryWidth, y: batteryY },
+                            { x: batteryX, y: batteryY + batteryHeight / 2 },
+                            { x: batteryX, y: batteryY - batteryHeight / 2 }
+                        ],
+                        0.5
+                    );
+                    
+                    // Bottom branch flow
+                    drawCurrentFlow(
+                        [
+                            { x: batteryX, y: batteryY - batteryHeight / 2 },
+                            { x: batteryX, y: centerY - circuitHeight / 2 },
+                            { x: bulbX + bulbRadius, y: centerY - circuitHeight / 2 },
+                            { x: bulbX + bulbRadius, y: bulbY - bulbRadius },
+                            { x: bulbX, y: bulbY },
+                            { x: bulbX - bulbRadius, y: bulbY },
+                            { x: branchEndX, y: centerY },
+                            { x: branchEndX, y: bottomBranchY },
+                            { x: resistor2X + resistor2Width / 2, y: bottomBranchY },
+                            { x: resistor2X - resistor2Width / 2, y: bottomBranchY },
+                            { x: branchStartX, y: bottomBranchY },
+                            { x: branchStartX, y: centerY },
+                            { x: switchX + switchWidth, y: switchY },
+                            { x: switchX, y: switchY },
+                            { x: batteryX + batteryWidth, y: batteryY },
+                            { x: batteryX, y: batteryY + batteryHeight / 2 },
+                            { x: batteryX, y: batteryY - batteryHeight / 2 }
+                        ],
+                        0.5
+                    );
+                }
+            }
+            
+            // Helper functions to draw components
+            function drawBattery(x, y, width, height) {
+                ctx.fillStyle = circuitState.batteryType === 'DC' ? '#ffcc00' : '#ff9900';
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                
+                // Battery body
+                ctx.beginPath();
+                ctx.rect(x, y - height / 2, width, height);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Battery terminals
+                ctx.fillStyle = '#333';
+                
+                // Positive terminal
+                ctx.beginPath();
+                ctx.rect(x + width - 10, y - height / 4, 5, height / 2);
+                ctx.fill();
+                
+                // Negative terminal
+                ctx.beginPath();
+                ctx.rect(x + 5, y - height / 4, 5, height / 2);
+                ctx.fill();
+                
+                // Label
+                ctx.fillStyle = '#000';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                const voltageText = circuitState.voltage.toFixed(1) + 'V';
+                const typeText = circuitState.batteryType;
+                ctx.fillText(voltageText, x + width / 2, y - 5);
+                ctx.fillText(typeText, x + width / 2, y + 8);
+            }
+            
+            function drawSwitch(x, y, width, height) {
+                ctx.fillStyle = circuitState.switchOn ? '#4CAF50' : '#f44336';
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                
+                // Switch body
+                ctx.beginPath();
+                ctx.rect(x, y - height / 2, width, height);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Switch state indicator
+                ctx.fillStyle = '#fff';
+                const togglePosition = circuitState.switchOn ? x + width * 0.75 : x + width * 0.25;
+                
+                ctx.beginPath();
+                ctx.arc(togglePosition, y, height / 2 - 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Label
+                ctx.fillStyle = '#000';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(circuitState.switchOn ? 'ON' : 'OFF', x + width / 2, y - height / 2 - 2);
+            }
+            
+            function drawResistor(x, y, width, height, value) {
+                // Gradient for resistor
+                const gradient = ctx.createLinearGradient(x - width / 2, y, x + width / 2, y);
+                gradient.addColorStop(0, '#bc8f8f');
+                gradient.addColorStop(0.5, '#d2b48c');
+                gradient.addColorStop(1, '#bc8f8f');
+                
+                ctx.fillStyle = gradient;
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                
+                // Resistor body with zigzag pattern
+                ctx.beginPath();
+                ctx.rect(x - width / 2, y - height / 2, width, height);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Zigzag pattern
+                ctx.beginPath();
+                ctx.moveTo(x - width / 2 + 5, y - height / 2);
+                for (let i = 0; i < 7; i++) {
+                    const xPos = x - width / 2 + 5 + i * (width - 10) / 6;
+                    const yOffset = (i % 2 === 0) ? -height / 4 : height / 4;
+                    ctx.lineTo(xPos, y + yOffset);
+                }
+                ctx.lineTo(x + width / 2 - 5, y - height / 2);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // Label
+                ctx.fillStyle = '#000';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(value + 'Ω', x, y - height / 2 - 2);
+            }
+            
+            function drawBulb(x, y, radius) {
+                // Calculate bulb brightness based on circuit state
+                let brightness = 0;
+                if (circuitState.switchOn) {
+                    let effectiveVoltage = circuitState.voltage;
+                    if (circuitState.batteryType === 'AC') {
+                        effectiveVoltage = circuitState.voltage * Math.sin(2 * Math.PI * circuitState.frequency * circuitState.time);
+                        effectiveVoltage = Math.abs(effectiveVoltage);
+                    }
+                    
+                    let totalResistance = 0;
+                    if (circuitState.configuration === 'series') {
+                        totalResistance = circuitState.resistor1 + circuitState.resistor2;
+                    } else { // parallel
+                        totalResistance = (circuitState.resistor1 * circuitState.resistor2) / 
+                                        (circuitState.resistor1 + circuitState.resistor2);
+                    }
+                    
+                    const totalCurrent = effectiveVoltage / totalResistance;
+                    const powerConsumption = effectiveVoltage * totalCurrent;
+                    
+                    // Normalize brightness
+                    const maxPower = 24 * 24 / 100; // Max possible power
+                    brightness = Math.min(1, powerConsumption / maxPower);
+                }
+                
+                // Bulb base
+                ctx.fillStyle = '#777';
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                
+                ctx.beginPath();
+                ctx.rect(x - radius / 2, y + radius * 0.8, radius, radius / 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Bulb glass
+                const bulbGradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+                
+                // Set colors based on brightness
+                const innerColor = `rgba(255, 255, 200, ${brightness})`;
+                const outerColor = `rgba(255, 255, 0, ${brightness * 0.5})`;
+                
+                bulbGradient.addColorStop(0, innerColor);
+                bulbGradient.addColorStop(0.7, outerColor);
+                bulbGradient.addColorStop(1, 'rgba(240, 240, 240, 0.2)');
+                
+                ctx.fillStyle = bulbGradient;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Filament
+                ctx.beginPath();
+                ctx.moveTo(x, y + radius * 0.8);
+                ctx.lineTo(x, y - radius * 0.2);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                
+                // Add glow effect when bright
+                if (brightness > 0.3) {
+                    ctx.shadowColor = `rgba(255, 255, 200, ${brightness * 0.8})`;
+                    ctx.shadowBlur = radius * brightness * 3;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 200, 0.01)';
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+            
+            function drawCurrentFlow(path, speedMultiplier = 1) {
+                const totalLength = calculatePathLength(path);
+                const numParticles = Math.floor(totalLength / 30); // One particle every 30px
+                
+                for (let i = 0; i < numParticles; i++) {
+                    const position = (circuitState.time * 100 * circuitState.currentSpeed * speedMultiplier + i * (totalLength / numParticles)) % totalLength;
+                    const particlePos = getPositionAlongPath(path, position);
+                    
+                    if (particlePos) {
+                        // Draw electron particle
+                        ctx.beginPath();
+                        ctx.arc(particlePos.x, particlePos.y, 3, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ffff00';
+                        ctx.fill();
+                        
+                        // Add small glow
+                        ctx.beginPath();
+                        ctx.arc(particlePos.x, particlePos.y, 5, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+                        ctx.fill();
+                    }
+                }
+            }
+            
+            function calculatePathLength(path) {
+                let length = 0;
+                for (let i = 0; i < path.length - 1; i++) {
+                    const dx = path[i + 1].x - path[i].x;
+                    const dy = path[i + 1].y - path[i].y;
+                    length += Math.sqrt(dx * dx + dy * dy);
+                }
+                return length;
+            }
+            
+            function getPositionAlongPath(path, distanceAlongPath) {
+                let distanceSoFar = 0;
+                
+                for (let i = 0; i < path.length - 1; i++) {
+                    const dx = path[i + 1].x - path[i].x;
+                    const dy = path[i + 1].y - path[i].y;
+                    const segmentLength = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distanceSoFar + segmentLength >= distanceAlongPath) {
+                        // This is the segment where our point falls
+                        const ratio = (distanceAlongPath - distanceSoFar) / segmentLength;
+                        return {
+                            x: path[i].x + dx * ratio,
+                            y: path[i].y + dy * ratio
+                        };
+                    }
+                    
+                    distanceSoFar += segmentLength;
+                }
+                
+                return null; // Should not happen with modulo totalLength
+            }
+            
+            // Animation loop
+            let lastTime = 0;
+            function animate(timestamp = 0) {
+                if (!lastTime) lastTime = timestamp;
+                const deltaTime = (timestamp - lastTime) / 1000; // Convert to seconds
+                lastTime = timestamp;
+                
+                circuitState.time += deltaTime;
+                
+                // Update calculations if using AC
+                if (circuitState.batteryType === 'AC') {
+                    updateCircuitCalculations();
+                } else {
+                    // Just update the visuals for DC
+                    drawCircuit();
+                }
+                
+                if (circuitState.simulationRunning) {
+                    requestAnimationFrame(animate);
+                } else {
+                    lastTime = 0;
+                }
+            }
+            
+            // Initialize
+            updateCircuitCalculations();
+            
+            // Tooltip functionality
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            circuitDisplay.appendChild(tooltip);
+            
+            canvas.addEventListener('mousemove', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                // Check if mouse is over any component
+                // This is simplified - in a real app, you'd check actual component boundaries
+                let tooltipText = '';
+                
+                // Example tooltip logic (would be expanded in real implementation)
+                if (mouseX < 150 && Math.abs(mouseY - canvas.height / 2) < 30) {
+                    tooltipText = `Battery: ${circuitState.voltage.toFixed(1)}V (${circuitState.batteryType})`;
+                } else if (mouseX > canvas.width - 150 && Math.abs(mouseY - canvas.height / 2) < 30) {
+                    const brightness = parseInt(bulbIntensityDisplay.textContent);
+                    tooltipText = `Light Bulb: ${brightness}% intensity`;
+                }
+                
+                if (tooltipText) {
+                    tooltip.textContent = tooltipText;
+                    tooltip.style.left = `${e.clientX - rect.left + 10}px`;
+                    tooltip.style.top = `${e.clientY - rect.top + 10}px`;
+                    tooltip.style.opacity = '1';
+                } else {
+                    tooltip.style.opacity = '0';
+                }
+            });
+            
+            canvas.addEventListener('mouseout', function() {
+                tooltip.style.opacity = '0';
+            });
+            
+            // Start with simulation paused
+            circuitState.simulationRunning = false;
+        });
+    </script>
+</body>
+</html>

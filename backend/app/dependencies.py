@@ -22,10 +22,11 @@ from .services.tutoring import TutoringService
 from .services.gemini_problem import GeminiProblemIntegration
 from .services.analytics import AnalyticsExtension
 from .services.learning_paths import LearningPathsService
-from .services.learning_analytics import LearningAnalyticsService, ProgressReportGenerator
 from .services.gemini_read_along import GeminiReadAlongIntegration  # NEW: Import the read-along integration
+from .services.review import ReviewService
 
 from .db.cosmos_db import CosmosDBService
+from .db.problem_optimizer import ProblemOptimizer
 from .core.session_manager import SessionManager
 from .core.config import settings
 
@@ -48,8 +49,9 @@ _competency_service: Optional[CompetencyService] = None
 _problem_recommender: Optional[ProblemRecommender] = None
 _problem_service: Optional[ProblemService] = None
 _learning_paths_service: Optional[LearningPathsService] = None
-_learning_analytics_service: Optional[LearningAnalyticsService] = None
-_progress_report_generator: Optional[ProgressReportGenerator] = None
+_problem_optimizer: Optional[ProblemOptimizer] = None
+_review_service: Optional[ReviewService] = None
+
 
 # These services are created per-session but using the dependency pattern
 # No global variables needed since they're not singletons
@@ -148,10 +150,29 @@ def get_problem_recommender(
         _problem_recommender = ProblemRecommender(competency_service)
     return _problem_recommender
 
+def get_problem_optimizer(
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db),
+    recommender: ProblemRecommender = Depends(get_problem_recommender)  # Add recommender dependency
+) -> ProblemOptimizer:
+    """Get or create ProblemOptimizer singleton."""
+    global _problem_optimizer
+    if _problem_optimizer is None:
+        logger.info("Initializing ProblemOptimizer")
+        # Pass both cosmos_db and recommender to the constructor
+        _problem_optimizer = ProblemOptimizer(cosmos_db, recommender)
+    
+    # In case the class instance was created but the recommender wasn't set
+    if not hasattr(_problem_optimizer, 'recommender') or _problem_optimizer.recommender is None:
+        logger.info("Setting recommender on ProblemOptimizer")
+        _problem_optimizer.recommender = recommender
+        
+    return _problem_optimizer
+
 def get_problem_service(
     recommender: ProblemRecommender = Depends(get_problem_recommender),
     cosmos_db: CosmosDBService = Depends(get_cosmos_db),
-    competency_service: CompetencyService = Depends(get_competency_service)
+    competency_service: CompetencyService = Depends(get_competency_service),
+    problem_optimizer: ProblemOptimizer = Depends(get_problem_optimizer)  # Add this dependency
 ) -> ProblemService:
     """Get or create ProblemService singleton."""
     global _problem_service
@@ -179,9 +200,34 @@ def get_problem_service(
     if _problem_service.cosmos_db is None:
         logger.info("Setting cosmos_db on ProblemService")
         _problem_service.cosmos_db = cosmos_db
+    
+    # Set the problem optimizer
+    if not hasattr(_problem_service, 'problem_optimizer') or _problem_service.problem_optimizer is None:
+        logger.info("Setting problem_optimizer on ProblemService")
+        _problem_service.problem_optimizer = problem_optimizer
         
     return _problem_service
 
+def get_review_service(
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+) -> ReviewService:
+    """Get or create ReviewService singleton."""
+    global _review_service
+    if _review_service is None:
+        logger.info("Initializing ReviewService")
+        _review_service = ReviewService()
+        
+        # Set default AI service from config
+        default_review_service = getattr(settings, "DEFAULT_AI_REVIEW_SERVICE", "anthropic")
+        logger.info(f"Setting default AI service to {default_review_service} for ReviewService")
+        _review_service.set_ai_service(default_review_service)
+    
+    # Make sure the cosmos_db is set
+    if _review_service.cosmos_db is None:
+        logger.info("Setting CosmosDB on ReviewService")
+        _review_service.cosmos_db = cosmos_db
+    
+    return _review_service
 
 def get_learning_paths_service(
     competency_service: CompetencyService = Depends(get_competency_service)
@@ -210,31 +256,6 @@ async def get_analytics_extension(competency_service: CompetencyService = Depend
         extension.cosmos_db = competency_service.cosmos_db
     
     return extension
-
-def get_learning_analytics_service(
-    competency_service: CompetencyService = Depends(get_competency_service),
-    problem_service: ProblemService = Depends(get_problem_service),
-    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
-    analytics_extension: AnalyticsExtension = Depends(get_analytics_extension)
-) -> LearningAnalyticsService:
-    """Get or create LearningAnalyticsService singleton."""
-    global _learning_analytics_service
-    if _learning_analytics_service is None:
-        logger.info("Initializing LearningAnalyticsService")
-        _learning_analytics_service = LearningAnalyticsService(
-            competency_service=competency_service,
-            problem_service=problem_service,
-            learning_paths_service=learning_paths_service,
-            analytics_extension=analytics_extension
-        )
-    return _learning_analytics_service
-
-def get_progress_report_generator(
-    learning_analytics_service: LearningAnalyticsService = Depends(get_learning_analytics_service)
-) -> ProgressReportGenerator:
-    """Get ProgressReportGenerator instance."""
-    # This uses the generator from the LearningAnalyticsService
-    return learning_analytics_service.progress_report_generator
 
 def get_session_manager(
     audio_service: AudioService = Depends(get_audio_service),
@@ -302,7 +323,6 @@ def get_gemini_service(
     azure_speech_service: AzureSpeechService = Depends(get_azure_speech_service),
     visual_integration = None,
     problem_integration: GeminiProblemIntegration = Depends(get_gemini_problem_integration),
-    learning_analytics_service: LearningAnalyticsService = Depends(get_learning_analytics_service)
 ) -> GeminiService:
     """Create a new GeminiService instance.
     
@@ -319,7 +339,6 @@ def get_gemini_service(
     gemini_service.problem_integration = problem_integration
     
     # Add learning_analytics_service for personalization
-    gemini_service.learning_analytics_service = learning_analytics_service
     
     return gemini_service
 
@@ -327,7 +346,6 @@ def get_tutoring_service(
     audio_service: AudioService = Depends(get_audio_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
     azure_speech_service: AzureSpeechService = Depends(get_azure_speech_service),
-    learning_analytics_service: LearningAnalyticsService = Depends(get_learning_analytics_service)
 ) -> TutoringService:
     """Create a new TutoringService instance.
     
@@ -339,8 +357,36 @@ def get_tutoring_service(
         gemini_service=gemini_service,
         azure_speech_service=azure_speech_service
     )
-    
-    # Add learning_analytics_service for personalized tutoring
-    tutoring_service.learning_analytics_service = learning_analytics_service
-    
+        
     return tutoring_service
+
+def initialize_services():
+    """Initialize all singleton services for ETL processes."""
+    logger.info("Initializing all services for ETL processes")
+    
+    # Initialize base services
+    cosmos_db = get_cosmos_db()
+    
+    # Initialize dependent services
+    competency_service = get_competency_service(cosmos_db)
+    problem_recommender = get_problem_recommender(competency_service)
+    problem_optimizer = get_problem_optimizer(cosmos_db)
+    review_service = get_review_service(cosmos_db)  # Add this line
+    
+    # Initialize problem service with all dependencies
+    problem_service = get_problem_service(
+        problem_recommender, 
+        cosmos_db, 
+        competency_service, 
+        problem_optimizer
+    )
+    
+    # Return the services in case they're needed
+    return {
+        "cosmos_db": cosmos_db,
+        "competency_service": competency_service,
+        "problem_recommender": problem_recommender,
+        "problem_service": problem_service,
+        "problem_optimizer": problem_optimizer,
+        "review_service": review_service  # Add this line
+    }
