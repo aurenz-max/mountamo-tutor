@@ -1,0 +1,110 @@
+/* styles/SolarSystem.module.css */
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #000;
+    color: white;
+  }
+  
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+  }
+  
+  .title {
+    margin: 1rem 0;
+    font-size: 2.5rem;
+    text-align: center;
+    color: #f0f0f0;
+  }
+  
+  .simulationContainer {
+    width: 100%;
+    height: 70vh;
+    position: relative;
+    margin-bottom: 1rem;
+  }
+  
+  .infoPanel {
+    width: 100%;
+    max-width: 800px;
+    background-color: rgba(20, 20, 40, 0.8);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .infoPanel h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #f0f0f0;
+  }
+  
+  .infoPanel ul {
+    padding-left: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .infoPanel li {
+    margin-bottom: 0.5rem;
+  }
+  
+  .controls {
+    background-color: rgba(40, 40, 80, 0.5);
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  .controls h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+  
+  .controls p {
+    margin: 0.5rem 0;
+  }
+  
+  .footer {
+    width: 100%;
+    height: 60px;
+    border-top: 1px solid #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Responsive adjustments */
+  @media (min-width: 768px) {
+    .main {
+      padding: 2rem;
+    }
+    
+    .simulationContainer {
+      height: 80vh;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .infoPanel {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    
+    .infoPanel h2 {
+      width: 100%;
+    }
+    
+    .infoPanel ul {
+      flex: 2;
+      margin-right: 2rem;
+    }
+    
+    .controls {
+      flex: 1;
+    }
+  }

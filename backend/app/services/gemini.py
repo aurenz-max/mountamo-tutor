@@ -520,7 +520,7 @@ class GeminiService:
         unified_prompt: str,
         session_metadata: Dict[str, Any],
         tool_config: Optional[Dict[str, Any]] = None,
-        voice_name: str = "Puck",
+        voice_name: str = "Leda",
     ) -> None:
         """Connect to Gemini and start streaming"""
         try:
@@ -560,14 +560,14 @@ class GeminiService:
 
             # Connect to Gemini and handle the session
             async with client.aio.live.connect(
-                model="gemini-2.0-flash-exp", config=config
+                model="gemini-2.0-flash-live-001", config=config
             ) as session:
                 self.current_session = session
                 logger.debug(f"[Session {session_id}] Connected to Gemini, starting stream")
                 
                 try:
                     async for response in session.start_stream(
-                        stream=self.stream(), mime_type="audio/pcm;rate=16000"
+                        stream=self.stream(), mime_type="audio/pcm"
                     ):
                         # Check if we should terminate the stream
                         if self.quit.is_set() or self.session_reset_event.is_set():

@@ -2,8 +2,12 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocket
-from .api.endpoints import tutoring, competency, reviews, curriculum, problems, learning_paths, gemini, visual, analytics
+from .api.endpoints import tutoring, competency, reviews, curriculum, problems, learning_paths, gemini, visual, analytics, gemini_tts
 from .core.config import settings
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -30,8 +34,8 @@ app.include_router(learning_paths.router, prefix="/api", tags=["learning-paths"]
 app.include_router(gemini.router, prefix="/api/gemini", tags=["gemini"])
 app.include_router(visual.router, prefix="/api/visual", tags=["visual"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(gemini_tts.router, prefix="/api/tts", tags=["tts"])
 
-#app.include_router(curriculum.router, prefix="/api/curriculum", tags=["curriculum"])
 
 @app.get("/")
 async def root():
@@ -40,3 +44,4 @@ async def root():
         "version": settings.VERSION,
         "docs_url": "/docs"
     }
+

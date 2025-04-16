@@ -199,47 +199,47 @@ class TutoringService:
         logger.info(f"Started tutoring session {session_id}")
         return session_id
 
-async def process_message(self, session_id: str, message: Dict) -> None:
-    """Handle inbound media (audio and images) from the client for a specific session"""
-    session = self._sessions.get(session_id)
-    if not session or not session.get("is_active"):
-        raise ValueError(f"Session not found or inactive: {session_id}")
+    async def process_message(self, session_id: str, message: Dict) -> None:
+        """Handle inbound media (audio and images) from the client for a specific session"""
+        session = self._sessions.get(session_id)
+        if not session or not session.get("is_active"):
+            raise ValueError(f"Session not found or inactive: {session_id}")
 
-    try:
-        # Handle scene-related messages specifically
-        if message.get("type") == "scene_action":
-            # These are handled by the TutoringSession class directly
-            pass
-        # Process realtime input (audio and image data)
-        elif message.get("type") == "realtime_input" or message.get("media_chunks"):
-            # Process media chunks
-            media_chunks = message.get("media_chunks", [])
-            
-            # If using the nested structure format
-            if not media_chunks and message.get("realtime_input", {}).get("media_chunks"):
-                media_chunks = message.get("realtime_input", {}).get("media_chunks", [])
-            
-            for chunk in media_chunks:
-                mime_type = chunk.get("mime_type", "audio/pcm")  # Default to audio if not specified
+        try:
+            # Handle scene-related messages specifically
+            if message.get("type") == "scene_action":
+                # These are handled by the TutoringSession class directly
+                pass
+            # Process realtime input (audio and image data)
+            elif message.get("type") == "realtime_input" or message.get("media_chunks"):
+                # Process media chunks
+                media_chunks = message.get("media_chunks", [])
                 
-                if b64_data := chunk.get("data"):
-                    raw_data = base64.b64decode(b64_data)
+                # If using the nested structure format
+                if not media_chunks and message.get("realtime_input", {}).get("media_chunks"):
+                    media_chunks = message.get("realtime_input", {}).get("media_chunks", [])
+                
+                for chunk in media_chunks:
+                    mime_type = chunk.get("mime_type", "audio/pcm")  # Default to audio if not specified
                     
-                    if mime_type == "audio/pcm":
-                        # Process audio data
-                        array = np.frombuffer(raw_data, dtype=np.int16)
-                        await self.gemini.receive((16000, array))
-                    elif mime_type.startswith("image/"):
-                        # Process image data
-                        # No need to convert to numpy array for images, send raw bytes
-                        await self.gemini.receive_image(raw_data, mime_type)
-                    else:
-                        logger.warning(f"Unsupported mime type received: {mime_type}")
+                    if b64_data := chunk.get("data"):
+                        raw_data = base64.b64decode(b64_data)
+                        
+                        if mime_type == "audio/pcm":
+                            # Process audio data
+                            array = np.frombuffer(raw_data, dtype=np.int16)
+                            await self.gemini.receive((16000, array))
+                        elif mime_type.startswith("image/"):
+                            # Process image data
+                            # No need to convert to numpy array for images, send raw bytes
+                            await self.gemini.receive_image(raw_data, mime_type)
+                        else:
+                            logger.warning(f"Unsupported mime type received: {mime_type}")
 
-    except Exception as e:
-        logger.error(f"Error processing message for session {session_id}: {e}")
-        logger.exception(e)
-        raise            
+        except Exception as e:
+            logger.error(f"Error processing message for session {session_id}: {e}")
+            logger.exception(e)
+            raise            
 
     async def get_transcripts(self, session_id: str) -> AsyncGenerator[Dict[str, Any], None]:
         """Get transcripts for the specific session"""

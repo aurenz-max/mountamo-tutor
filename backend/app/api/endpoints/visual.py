@@ -32,6 +32,7 @@ class MultiObjectSceneRequest(BaseModel):
     layout: str = "grid"
     title: Optional[str] = None
     description: Optional[str] = None
+    
 
 @router.get("/categories")
 async def get_image_categories(

@@ -29,7 +29,7 @@ class AudioCaptureService {
     private onError: ((error: AudioCaptureError) => void) | null = null;
 
     // Audio configuration
-    private readonly TARGET_SAMPLE_RATE: number = 16000; // Required 16kHz for speech
+    private readonly TARGET_SAMPLE_RATE: number = 16000; // Required 16kHz for speech processing
     private readonly BUFFER_SIZE: number = 4096;
     private readonly CHANNEL_COUNT: number = 1;
 
@@ -96,17 +96,14 @@ class AudioCaptureService {
 
     private handleAudioProcess(event: AudioProcessingEvent): void {
         if (!this.isCapturing || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            console.log('Early return - not capturing or ws not open');
             return;
         }
     
         try {
             // Get input data
             const inputData = event.inputBuffer.getChannelData(0);
-            //console.log('Input buffer size:', inputData.length);
             
             const sourceSampleRate = this.audioContext!.sampleRate;
-            //console.log('Source sample rate:', sourceSampleRate);
     
             // Downsample to target rate (16kHz)
             const downsampledData = this.downsampleAudio(
@@ -114,34 +111,21 @@ class AudioCaptureService {
                 sourceSampleRate,
                 this.TARGET_SAMPLE_RATE
             );
-            //console.log('Downsampled size:', downsampledData.length);
     
             // Convert to 16-bit PCM
             const pcmData = this.convertToPCM(downsampledData);
-            //console.log('PCM data size:', pcmData.length);
     
             // Convert to base64
             const base64Data = this.convertToBase64(pcmData);
-            //console.log('Base64 data length:', base64Data.length);
     
-            // Send to WebSocket with the correct message structure
+            // Format to match Gemini API requirements
             const message = {
-                type: "realtime_input",
-                media_chunks: [{
-                    mime_type: 'audio/pcm;rate=16000',
-                    data: base64Data
-                }]
+                type: "audio",
+                mime_type: "audio/pcm;rate=16000",
+                data: base64Data
             };
     
-            // console.log('Message structure:', JSON.stringify({
-            //     type: message.type,
-            //     media_chunks: message.media_chunks ? 
-            //         message.media_chunks.map(chunk => ({
-            //             mime_type: chunk.mime_type,
-            //             data_length: chunk.data.length
-            //         })) : 'no chunks'
-            // }));
-    
+            // Send as JSON string, which is what the backend expects
             this.ws.send(JSON.stringify(message));
     
         } catch (error) {
@@ -224,7 +208,7 @@ class AudioCaptureService {
             if (this.onStateChange) {
                 this.onStateChange({ isCapturing: true });
             }
-        } catch (err) {  // Changed from 'error' to 'err'
+        } catch (err) {
             this.handleError('Failed to start capture', err);
             throw err;
         }
