@@ -1,14 +1,13 @@
 'use client';
 
-// pages/science/bohr/page.tsx
+// pages/language/parts-of-speech/page.tsx
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 
-// Use dynamic import with SSR disabled for Three.js component
-// This avoids errors related to window/document not being available during server-side rendering
-const BohrModel = dynamic(() => import('@/components/science/bohr/BohrModel'), {
+// Use dynamic import with SSR disabled for the PartsOfSpeech component
+const PartsOfSpeechTutor = dynamic(() => import('@/components/reading/grammar/PartofSpeech'), {
   ssr: false
 });
 
@@ -18,33 +17,32 @@ const EnhancedGeminiTutor = dynamic(() =>
   { ssr: false }
 );
 
-
-export default function BohrModelPage() {
+export default function PartsOfSpeechPage() {
   // State to toggle AI Tutor visibility
   const [showTutor, setShowTutor] = useState(true);
   
-  // Bohr model simulation info with educational metadata
+  // Parts of Speech simulation info with educational metadata
   const simulationInfo = {
-    title: 'Bohr Model of the Atom',
-    description: 'An interactive 3D visualization of the Bohr model showing electrons orbiting around a nucleus with protons and neutrons. The model demonstrates basic atomic structure and electron energy levels.',
-    subject: 'Chemistry',
-    skill: 'Atomic Structure',
-    subskill: 'Bohr Model'
+    title: 'Parts of Speech Tutor',
+    description: 'An interactive tool for practicing the identification of different parts of speech in English sentences, including nouns, pronouns, verbs, adjectives, adverbs, prepositions, conjunctions, and interjections.',
+    subject: 'English',
+    skill: 'Grammar',
+    subskill: 'Parts of Speech'
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <Head>
-        <title>3D Bohr Model</title>
-        <meta name="description" content="Interactive 3D Bohr Model of Atoms" />
+        <title>Parts of Speech Tutor</title>
+        <meta name="description" content="Interactive Parts of Speech Learning Tool" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Main content area with your existing Bohr model */}
+        {/* Main content area with your Parts of Speech component */}
         <main className="lg:w-2/3 flex flex-col">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">3D Bohr Model of the Atom</h1>
+            <h1 className="text-3xl font-bold">Parts of Speech Tutor</h1>
             <Button 
               variant="outline" 
               onClick={() => setShowTutor(!showTutor)}
@@ -54,24 +52,23 @@ export default function BohrModelPage() {
           </div>
           
           <div className="w-full">
-            <BohrModel />
+            <PartsOfSpeechTutor />
           </div>
           
           <div className="mt-8 bg-gray-100 p-4 rounded-lg w-full">
-            <h2 className="text-xl font-bold mb-2">About the Bohr Model</h2>
+            <h2 className="text-xl font-bold mb-2">About Parts of Speech</h2>
             <p className="mb-2">
-              The Bohr model, developed by Niels Bohr in 1913, depicts the atom as a small, positively charged nucleus 
-              surrounded by electrons that travel in circular orbits around the nucleus—similar to the structure of the Solar System.
+              Parts of speech are categories of words defined by their role in a sentence. Understanding parts of speech is 
+              fundamental to mastering English grammar, writing clearly, and analyzing text.
             </p>
             <p>
-              While the model has been superseded by more accurate representations based on quantum mechanics, 
-              the Bohr model is still useful for visualizing the basic structure of atoms and understanding 
-              fundamental concepts in chemistry and physics.
+              The eight main parts of speech in English are: nouns, pronouns, verbs, adjectives, adverbs, prepositions, 
+              conjunctions, and interjections. Each plays a specific role in constructing meaningful sentences.
             </p>
           </div>
           
           <footer className="mt-8 text-center text-gray-500">
-            <p>Created with Next.js, React, and Three.js</p>
+            <p>Created with Next.js and React</p>
           </footer>
         </main>
         

@@ -49,6 +49,12 @@ class CosmosDBService:
             unique_key_policy={'uniqueKeys': [{'paths': ['/skill_id', '/subskill_id', '/problem_id']}]}
         )
 
+        self.p5js_code_snippets = self.database.create_container_if_not_exists(
+            id="p5js_code_snippets",
+            partition_key=PartitionKey(path="/student_id"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/title']}]}
+        )
+
     async def save_conversation_message(
         self,
         session_id: str,
@@ -766,3 +772,143 @@ class CosmosDBService:
                 "most_reviewed_subskills": most_common_subskills
             }
         }
+
+    async def save_p5js_code(
+        self,
+        student_id: int,
+        title: str,
+        code: str,
+        description: str = "",
+        tags: List[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Save a p5js code snippet to the database with proper sanitization.
+        
+        Args:
+            student_id: The student's ID
+            title: Title for the code snippet
+            code: The p5js code content (will be stored as a string, never executed)
+            description: Optional description for the code
+            tags: Optional list of tags for categorization
+        """
+        # Generate a unique ID with timestamp for uniqueness
+        import uuid
+        from datetime import datetime
+        timestamp = datetime.utcnow().isoformat()
+        snippet_id = f"{student_id}_{uuid.uuid4()}"
+        
+        # Create the code snippet document - using proper sanitization
+        document = {
+            "id": snippet_id,
+            "student_id": student_id,
+            "title": title,
+            "description": description,
+            "code": code,  # Store as plain text, never execute
+            "tags": tags or [],
+            "created_at": timestamp,
+            "updated_at": timestamp,
+            "type": "p5js_code_snippet"
+        }
+        
+        try:
+            result = self.p5js_code_snippets.create_item(body=document)
+            return result
+        except Exception as e:
+            print(f"Error saving p5js code: {str(e)}")
+            raise
+
+    async def get_student_p5js_codes(
+        self,
+        student_id: int,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Get all p5js code snippets for a student"""
+        query = """
+        SELECT * FROM c 
+        WHERE c.student_id = @student_id 
+        AND c.type = 'p5js_code_snippet'
+        ORDER BY c.updated_at DESC
+        OFFSET 0 LIMIT @limit
+        """
+        
+        params = [
+            {"name": "@student_id", "value": student_id},
+            {"name": "@limit", "value": limit}
+        ]
+        
+        return list(self.p5js_code_snippets.query_items(
+            query=query,
+            parameters=params,
+            partition_key=student_id
+        ))
+
+    async def get_p5js_code_by_id(
+        self,
+        student_id: int,
+        snippet_id: str
+    ) -> Dict[str, Any]:
+        """Get a specific p5js code snippet by ID"""
+        try:
+            result = self.p5js_code_snippets.read_item(
+                item=snippet_id,
+                partition_key=student_id
+            )
+            return result
+        except Exception as e:
+            print(f"Error retrieving p5js code: {str(e)}")
+            return None
+
+    async def update_p5js_code(
+        self,
+        student_id: int,
+        snippet_id: str,
+        title: str = None,
+        code: str = None,
+        description: str = None,
+        tags: List[str] = None
+    ) -> Dict[str, Any]:
+        """Update an existing p5js code snippet"""
+        try:
+            # First get the existing item
+            snippet = await self.get_p5js_code_by_id(student_id, snippet_id)
+            if not snippet:
+                raise ValueError(f"Code snippet {snippet_id} not found")
+                
+            # Update only the provided fields
+            if title is not None:
+                snippet["title"] = title
+            if code is not None:
+                snippet["code"] = code
+            if description is not None:
+                snippet["description"] = description
+            if tags is not None:
+                snippet["tags"] = tags
+                
+            # Update the timestamp
+            snippet["updated_at"] = datetime.utcnow().isoformat()
+            
+            # Save the updated document
+            result = self.p5js_code_snippets.replace_item(
+                item=snippet_id,
+                body=snippet
+            )
+            return result
+        except Exception as e:
+            print(f"Error updating p5js code: {str(e)}")
+            raise
+
+    async def delete_p5js_code(
+        self,
+        student_id: int,
+        snippet_id: str
+    ) -> bool:
+        """Delete a p5js code snippet"""
+        try:
+            self.p5js_code_snippets.delete_item(
+                item=snippet_id,
+                partition_key=student_id
+            )
+            return True
+        except Exception as e:
+            print(f"Error deleting p5js code: {str(e)}")
+            return False

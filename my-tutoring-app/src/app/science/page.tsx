@@ -240,13 +240,6 @@ function SimulationCard({ simulation, onOpenAITutor }) {
               Launch Simulation
             </Button>
           </Link>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onOpenAITutor}
-          >
-            AI Tutor
-          </Button>
         </div>
       </CardFooter>
     </Card>

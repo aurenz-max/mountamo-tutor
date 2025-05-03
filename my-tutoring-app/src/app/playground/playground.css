@@ -1,0 +1,60 @@
+/* app/p5js-playground.css */
+
+/* Page Layout */
+.playground-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    background-color: #f8f9fa;
+  }
+  
+  .playground-header {
+    background-color: #1a73e8;
+    color: white;
+    padding: 1rem 2rem;
+    text-align: center;
+  }
+  
+  .playground-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 500;
+  }
+  
+  .playground-header p {
+    margin: 0.5rem 0 0;
+    font-size: 1rem;
+    opacity: 0.9;
+  }
+  
+  .playground-container {
+    flex: 1;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+  }
+  
+  /* Make the playground take the full available space */
+  .playground-container > div {
+    flex: 1;
+    max-width: 100%;
+    max-height: calc(100vh - 6rem);
+  }
+  
+  /* Global reset */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    font-family: 'Google Sans Text', 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Import the playground specific styles */
+  /* The styles from p5js-playground-css artifact will be imported as a separate file */

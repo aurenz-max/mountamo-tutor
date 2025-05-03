@@ -12,6 +12,8 @@ import base64
 import io
 import traceback
 
+import uuid
+
 import json
 
 from typing import Dict, Any, Optional, List, Union, AsyncGenerator
@@ -97,9 +99,11 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
         config = LiveConnectConfig(
             response_modalities=["AUDIO"],
             context_window_compression=(
-                # Configures compression with default parameters.
-                types.ContextWindowCompressionConfig(
-                    sliding_window=types.SlidingWindow(),
+        # Configure compression with more appropriate parameters
+        types.ContextWindowCompressionConfig(
+                    sliding_window=types.SlidingWindow(
+                    ),
+                    triggerTokens=16000
                 )
             ),
             speech_config=SpeechConfig(
@@ -344,7 +348,6 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
                         except Exception as e:
                             logger.error(f"Error in send_media_to_gemini: {str(e)}")
                 
-                # Create task to receive responses from Gemini
                 async def receive_from_gemini():
                     while True:
                         try:
@@ -377,7 +380,27 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
                             logger.info("Gemini receiving task cancelled")
                             break
                         except Exception as e:
-                            logger.error(f"Error receiving from Gemini: {str(e)}")
+                            error_str = str(e)
+                            logger.error(f"Error receiving from Gemini: {error_str}")
+                            
+                            # Check if it's a deadline exceeded error
+                            if "Deadline expired" in error_str or "1011" in error_str:
+                                logger.info("Deadline exceeded error detected, closing session gracefully")
+                                
+                                # Notify client about the error
+                                try:
+                                    await websocket.send_json({
+                                        "type": "error",
+                                        "content": "The AI service connection timed out. Please refresh to start a new session."
+                                    })
+                                except Exception as ws_err:
+                                    logger.error(f"Error sending error notification: {str(ws_err)}")
+                                
+                                # Return from this function to end the task
+                                return  # This will trigger task completion and cleanup
+                            
+                            # For other types of errors, just wait a bit and continue
+                            await asyncio.sleep(0.5)
                 
                 # Start all tasks with names
                 logger.info("Starting background tasks for WebSocket communication")
@@ -475,34 +498,77 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
         logger.info("Cleaned up resources")
 
 
-@router.post("/generate")
-async def generate_content(
-    model: str = Body("gemini-2.0-flash-exp", description="Gemini model to use"),
-    content: Union[str, List, Dict] = Body(..., description="Content for prompt - can be string, parts list, or dict with parts"),
-    response_modalities: List[str] = Body(["Text"], description="Requested output modalities (Text, Image, Audio)"),
-    config: Optional[Dict[str, Any]] = Body(None, description="Additional configuration for generation"),
+
+@router.post("/generate_storybook")
+async def generate_storybook(
+    theme: Optional[str] = Body(None, description="Theme of the story (optional)"),
+    age_group: str = Body(..., description="Target age group (e.g., 4-6, 7-9)"),
+    main_character: Optional[str] = Body(None, description="Main character name (optional)"),
     session_id: Optional[str] = Body(None, description="Session ID for tracking")
 ):
     """
-    Generic content generation endpoint that accepts custom instructions and config
+    Generate an interactive digital storybook with text and images
     """
     try:
         # Generate session ID if not provided
         if not session_id:
-            session_id = str(uuid.uuid4())        
+            session_id = str(uuid.uuid4())
+
+        client = genai.Client(
+            api_key=settings.GEMINI_API_KEY,
+            http_options={"api_version": "v1alpha"},
+        )
+
+        model = "gemini-2.0-flash-exp"
+            
+        # Simplified prompt focused on story content and illustrations only
+        prompt_text = f"""Create a short interactive digital storybook for children aged {age_group}. 
+The story should include both text and illustrations.
+"""
         
-        # Parse content into appropriate format        
-        logger.info(f"[Session {session_id}] Generating content with model {model}")
+        # Add optional parameters if provided
+        if theme:
+            prompt_text += f"\nTheme: {theme}"
+        else:
+            prompt_text += "\nChoose an engaging and age-appropriate theme for the story."
+            
+        if main_character:
+            prompt_text += f"\nMain character: {main_character}"
+        else:
+            prompt_text += "\nCreate interesting main characters that children will connect with."
+            
+        prompt_text += f"""
+
+For this storybook:
+1. Create a cohesive story with a beginning, middle, and end
+2. Use vocabulary appropriate for {age_group} year-olds
+3. Include simple interactive elements appropriate for the age group
+4. Create colorful, child-friendly illustrations that match the story
+
+IMPORTANT: Your response should ONLY include:
+1. Story text divided into logical sections/pages
+2. Illustrations that accompany each section of text
+
+DO NOT include any explanations, notes, or other content besides the story text and illustrations.
+"""
+
+        gemini_prompt = {
+            "parts": [{"text": prompt_text}]
+        }
         
-        # Set up generation config
+        # Set up generation config to request both text and image output
         generation_config = types.GenerateContentConfig(
-            response_modalities=response_modalities
-        )        
+            response_modalities=["Text", "Image"],
+            temperature=0.7,
+            top_p=0.95,
+            top_k=40,
+            max_output_tokens=2048
+        )
         
-        # Call Gemini API
+        # Call Gemini API once to generate both text and images
         response = client.models.generate_content(
-            model=model,
-            contents=content,
+            model="gemini-2.0-flash-exp",
+            contents=gemini_prompt,
             config=generation_config
         )
         
@@ -512,31 +578,181 @@ async def generate_content(
             logger.error(error_msg)
             raise HTTPException(status_code=500, detail=error_msg)
         
-        # Extract and format response parts
-        parts = []
+        # Process the response to extract text and images
+        story_parts = []
+        current_text = ""
+        
         for part in response.candidates[0].content.parts:
             if hasattr(part, 'text') and part.text is not None:
-                parts.append({"type": "text", "content": part.text})
+                # Store the current text
+                current_text += part.text
             elif hasattr(part, 'inline_data') and part.inline_data is not None:
-                parts.append({
-                    "type": "image",
-                    "content": base64.b64encode(part.inline_data.data).decode('utf-8'),
-                    "mime_type": part.inline_data.mime_type
+                # Found an image, create a new story part with the accumulated text and this image
+                image_data = base64.b64encode(part.inline_data.data).decode('utf-8')
+                
+                story_parts.append({
+                    "text": current_text.strip(),
+                    "image": image_data,
+                    "image_mime_type": part.inline_data.mime_type
                 })
+                
+                # Reset text for the next part
+                current_text = ""
         
-        # Prepare response
+        # Add any remaining text as a final part without an image
+        if current_text.strip():
+            story_parts.append({
+                "text": current_text.strip()
+            })
+        
+        # Add page numbers for ordering
+        for i, part in enumerate(story_parts):
+            part["page_number"] = i + 1
+        
+        # Prepare the final response
         result = {
             "status": "success",
             "session_id": session_id,
             "model": model,
-            "parts": parts
+            "storybook": {
+                "pages": story_parts
+            }
         }
         
-        logger.info(f"[Session {session_id}] Successfully generated content with {len(parts)} parts")
         return result
     
     except Exception as e:
-        error_msg = f"Error generating content: {str(e)}"
+        error_msg = f"Error generating storybook: {str(e)}"
+        logger.error(f"[Session {session_id}] {error_msg}")
+        logger.error(f"[Session {session_id}] Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+@router.post("/generate_explanation")
+async def generate_explanation(
+    subject: str = Body(..., description="Academic subject (e.g., Math, Science, History)"),
+    skill: str = Body(..., description="Specific skill within the subject (e.g., Fractions, Photosynthesis)"),
+    subskill: Optional[str] = Body(None, description="Specific subskill (optional)"),
+    age_group: str = Body(..., description="Target age group (e.g., 8-10, 11-13)"),
+    session_id: Optional[str] = Body(None, description="Session ID for tracking")
+):
+    """
+    Generate an educational explanation with text and supporting visuals
+    """
+    try:
+        # Generate session ID if not provided
+        if not session_id:
+            session_id = str(uuid.uuid4())
+
+        client = genai.Client(
+            api_key=settings.GEMINI_API_KEY,
+            http_options={"api_version": "v1alpha"},
+        )
+
+        model = "gemini-2.0-flash-exp"
+            
+        # Construct prompt for educational explanation
+        prompt_text = f"""Create an educational explanation for students aged {age_group} on the following topic:
+
+Current Lesson Focus:
+- Subject: {subject}
+- Skill: {skill}"""
+        
+        # Add subskill if provided
+        if subskill:
+            prompt_text += f"\n- Subskill: {subskill}"
+            
+        prompt_text += f"""
+
+For this explanation:
+1. Create a clear, engaging explanation appropriate for {age_group} year-olds
+2. Break down complex concepts into digestible sections
+3. Use vocabulary and examples appropriate for the age group
+4. Include helpful visuals that support understanding of key concepts
+5. Include 2-3 practice questions or interactive elements at the end
+
+IMPORTANT: Your response should include:
+1. An introduction to the concept
+2. Step-by-step explanation with key points highlighted
+3. Visual representations of the concept (diagrams, illustrations, etc.)
+4. Real-world examples that students can relate to
+5. Practice questions or activities
+
+DO NOT include any meta-commentary or notes outside the actual educational content.
+"""
+
+        gemini_prompt = {
+            "parts": [{"text": prompt_text}]
+        }
+        
+        # Set up generation config to request both text and image output
+        generation_config = types.GenerateContentConfig(
+            response_modalities=["Text", "Image"],
+            temperature=0.7,
+            max_output_tokens=2048
+        )
+        
+        # Call Gemini API to generate both text and images
+        response = client.models.generate_content(
+            model=model,
+            contents=gemini_prompt,
+            config=generation_config
+        )
+        
+        # Check for valid response
+        if not response or not response.candidates or not response.candidates[0].content.parts:
+            error_msg = f"[Session {session_id}] Empty or invalid response from Gemini"
+            logger.error(error_msg)
+            raise HTTPException(status_code=500, detail=error_msg)
+        
+        # Process the response to extract text and images
+        explanation_parts = []
+        current_text = ""
+        
+        for part in response.candidates[0].content.parts:
+            if hasattr(part, 'text') and part.text is not None:
+                # Store the current text
+                current_text += part.text
+            elif hasattr(part, 'inline_data') and part.inline_data is not None:
+                # Found an image, create a new explanation part with the accumulated text and this image
+                image_data = base64.b64encode(part.inline_data.data).decode('utf-8')
+                
+                explanation_parts.append({
+                    "text": current_text.strip(),
+                    "image": image_data,
+                    "image_mime_type": part.inline_data.mime_type
+                })
+                
+                # Reset text for the next part
+                current_text = ""
+        
+        # Add any remaining text as a final part without an image
+        if current_text.strip():
+            explanation_parts.append({
+                "text": current_text.strip()
+            })
+        
+        # Add section numbers for ordering
+        for i, part in enumerate(explanation_parts):
+            part["section_number"] = i + 1
+        
+        # Prepare the final response
+        result = {
+            "status": "success",
+            "session_id": session_id,
+            "model": model,
+            "explanation": {
+                "subject": subject,
+                "skill": skill,
+                "subskill": subskill,
+                "age_group": age_group,
+                "sections": explanation_parts
+            }
+        }
+        
+        return result
+    
+    except Exception as e:
+        error_msg = f"Error generating explanation: {str(e)}"
         logger.error(f"[Session {session_id}] {error_msg}")
         logger.error(f"[Session {session_id}] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=error_msg)

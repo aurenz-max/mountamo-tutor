@@ -15,21 +15,20 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import AudioCaptureService from '@/lib/AudioCaptureService';
 
 interface EnhancedGeminiTutorProps {
-  // Simulation context
+  // Original props
   simulationTitle: string;
   simulationDescription: string;
-  // Educational metadata
   subject: string;
   skill: string;
   subskill: string;
-  // Optional parameters
+  // Add new prop for simulation container
+  simulationContainerId?: string;
   apiUrl?: string;
   expanded?: boolean;
   onClose?: () => void;
   className?: string;
 }
 
-type MessageType = 'text' | 'audio' | 'screen' | 'end_conversation';
 type MessageRole = 'user' | 'gemini' | 'system';
 
 interface Message {
@@ -44,6 +43,7 @@ const EnhancedGeminiTutor: React.FC<EnhancedGeminiTutorProps> = ({
   subject,
   skill,
   subskill,
+  simulationContainerId = 'simulation-container',
   apiUrl = 'ws://localhost:8000/api/gemini/bidirectional',
   expanded = true,
   onClose,
@@ -75,6 +75,15 @@ const EnhancedGeminiTutor: React.FC<EnhancedGeminiTutorProps> = ({
 
   // Audio constants
   const PLAYBACK_SAMPLE_RATE = 24000; // Gemini outputs 24kHz audio
+
+  // Audio constants and refs
+  const MIN_BUFFER_LENGTH = 1000; // Minimum buffer size to play independently
+  const MAX_BUFFER_QUEUE = 10; // Maximum number of buffers to queue before consolidation
+  const BUFFER_GAP = 0.02; // 20ms gap between buffers - more forgiving
+
+  // Add these refs
+  const bufferConsolidationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastScheduledTimeRef = useRef<number>(0);
 
   // Connect to WebSocket
   const connectWebSocket = () => {
@@ -240,32 +249,154 @@ const EnhancedGeminiTutor: React.FC<EnhancedGeminiTutorProps> = ({
         }
       }
       
+      // Convert to Int16 PCM
+      const int16View = new Int16Array(arrayBuffer);
+      
+      // Convert to Float32 for Web Audio API
+      const numFrames = int16View.length;
+      const floatData = new Float32Array(numFrames);
+      for (let i = 0; i < numFrames; i++) {
+        floatData[i] = int16View[i] / 32768.0;
+      }
+      
       // Create an audio buffer
-      const numFrames = arrayBuffer.byteLength / 2; // 16-bit = 2 bytes per sample
       const audioBuffer = playbackAudioContextRef.current.createBuffer(
         1, // mono
         numFrames,
         sampleRate
       );
       
-      // Fill the audio buffer with PCM data
-      const channelData = audioBuffer.getChannelData(0);
-      const int16View = new Int16Array(arrayBuffer);
+      // Copy the float data to the buffer
+      audioBuffer.copyToChannel(floatData, 0);
       
-      // Convert Int16 PCM to Float32 (WebAudio format)
-      for (let i = 0; i < numFrames; i++) {
-        // Convert from INT16 (-32768 to 32767) to Float32 (-1.0 to 1.0)
-        channelData[i] = int16View[i] / 32768.0;
+      // Add to queue
+      audioQueueRef.current.push(audioBuffer);
+      
+      // Check if buffer queue has grown too large
+      if (audioQueueRef.current.length > MAX_BUFFER_QUEUE) {
+        consolidateBuffers();
       }
       
-      // Add to queue and play
-      audioQueueRef.current.push(audioBuffer);
+      // If not currently playing, start playback
       if (!isPlayingRef.current) {
+        // Ensure the audio context is in a running state
+        if (playbackAudioContextRef.current.state === 'suspended') {
+          playbackAudioContextRef.current.resume().catch(error => {
+            console.error('Error resuming audio context:', error);
+          });
+        }
         playNextAudioInQueue();
       }
     } catch (error) {
       console.error('Error processing raw audio data:', error);
     }
+  };
+  
+  /**
+   * Consolidate small audio buffers into larger ones for smoother playback
+   */
+  const consolidateBuffers = () => {
+    if (!playbackAudioContextRef.current || audioQueueRef.current.length <= 1) {
+      return;
+    }
+    
+    // Calculate total length of all buffers in the queue
+    let totalLength = 0;
+    audioQueueRef.current.forEach(buffer => {
+      totalLength += buffer.length;
+    });
+    
+    // Create a new consolidated buffer
+    const consolidatedBuffer = playbackAudioContextRef.current.createBuffer(
+      1, // mono
+      totalLength,
+      playbackAudioContextRef.current.sampleRate
+    );
+    
+    // Copy data from all buffers into the consolidated one
+    const outputData = consolidatedBuffer.getChannelData(0);
+    let offset = 0;
+    
+    audioQueueRef.current.forEach(buffer => {
+      const bufferData = buffer.getChannelData(0);
+      for (let i = 0; i < buffer.length; i++) {
+        outputData[offset + i] = bufferData[i];
+      }
+      offset += buffer.length;
+    });
+    
+    // Replace the queue with just the single consolidated buffer
+    audioQueueRef.current = [consolidatedBuffer];
+    console.log('Consolidated audio buffers for smoother playback');
+  };
+  
+  /**
+   * Play the next audio buffer with reliable timing
+   */
+  const playNextAudioInQueue = () => {
+    if (audioQueueRef.current.length === 0) {
+      isPlayingRef.current = false;
+      return;
+    }
+  
+    isPlayingRef.current = true;
+    
+    // Get audio context
+    if (!playbackAudioContextRef.current) {
+      isPlayingRef.current = false;
+      return;
+    }
+    
+    // Get the buffer to play
+    const audioBuffer = audioQueueRef.current.shift();
+    if (!audioBuffer) {
+      isPlayingRef.current = false;
+      return;
+    }
+    
+    // Create source
+    const source = playbackAudioContextRef.current.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(playbackAudioContextRef.current.destination);
+    
+    // Calculate when to play this buffer
+    const currentTime = playbackAudioContextRef.current.currentTime;
+    const bufferDuration = audioBuffer.duration;
+    
+    // For very small buffers (< 50ms), play immediately
+    // This prevents excessive scheduling overhead for tiny chunks
+    let startTime;
+    if (bufferDuration < 0.05) {
+      startTime = Math.max(currentTime, lastScheduledTimeRef.current);
+    } else {
+      // For normal buffers, schedule with a gap
+      startTime = Math.max(currentTime, lastScheduledTimeRef.current + BUFFER_GAP);
+    }
+    
+    // Update the last scheduled time
+    lastScheduledTimeRef.current = startTime + bufferDuration;
+    
+    // Store the source node
+    audioSourceNodeRef.current = source;
+    
+    // Start the playback at the calculated time
+    source.start(startTime);
+    
+    // Handle the buffer ending
+    source.onended = () => {
+      audioSourceNodeRef.current = null;
+      
+      // If we have more buffers, schedule the next one
+      if (audioQueueRef.current.length > 0) {
+        // Use a short timeout to give the browser time to process
+        // between scheduling audio, which helps prevent audio glitches
+        setTimeout(() => {
+          playNextAudioInQueue();
+        }, 10);
+      } else {
+        isPlayingRef.current = false;
+      }
+    };
   };
 
   // Handle messages from the Gemini API
@@ -308,40 +439,6 @@ const EnhancedGeminiTutor: React.FC<EnhancedGeminiTutorProps> = ({
     }
   };
 
-  // Play the next audio buffer in the queue
-  const playNextAudioInQueue = () => {
-    if (audioQueueRef.current.length === 0) {
-      isPlayingRef.current = false;
-      return;
-    }
-
-    isPlayingRef.current = true;
-    const audioBuffer = audioQueueRef.current.shift();
-    
-    if (!playbackAudioContextRef.current || !audioBuffer) {
-      isPlayingRef.current = false;
-      return;
-    }
-
-    // Ensure the audio context is resumed (needed due to autoplay policies)
-    if (playbackAudioContextRef.current.state === 'suspended') {
-      playbackAudioContextRef.current.resume().catch(error => {
-        console.error('Error resuming audio context:', error);
-      });
-    }
-
-    const source = playbackAudioContextRef.current.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(playbackAudioContextRef.current.destination);
-    audioSourceNodeRef.current = source;
-    
-    source.onended = () => {
-      audioSourceNodeRef.current = null;
-      playNextAudioInQueue();
-    };
-    
-    source.start(0);
-  };
 
   // Send text message to Gemini
   const sendTextMessage = () => {

@@ -9,7 +9,7 @@ class AnthropicService(BaseAIService):
     def __init__(self):
         self.client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         #self.model = "claude-3-5-haiku-20241022"
-        self.model = "claude-3-5-sonnet-20241022"
+        self.model = "claude-3-7-sonnet-20250219"
 
     async def generate_response(
         self, 
@@ -22,7 +22,7 @@ class AnthropicService(BaseAIService):
             # Create messages list in correct format for the API
             response = await self.client.messages.create(
                 model=self.model,
-                max_tokens=1024,
+                max_tokens=2048,
                 messages=prompt if isinstance(prompt, list) else [{"role": "user", "content": prompt}],
                 system=system_instructions if system_instructions else "You are a friendly and encouraging kindergarten tutor.",
                 # Add this line to fix the temperature setting:
