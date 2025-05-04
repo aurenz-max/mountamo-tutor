@@ -779,7 +779,13 @@ class CosmosDBService:
         title: str,
         code: str,
         description: str = "",
-        tags: List[str] = None
+        tags: List[str] = None,
+        unit_id: str = None,
+        unit_title: str = None,
+        skill_id: str = None,
+        skill_description: str = None,
+        subskill_id: str = None,
+        subskill_description: str = None
     ) -> Dict[str, Any]:
         """
         Save a p5js code snippet to the database with proper sanitization.
@@ -790,6 +796,12 @@ class CosmosDBService:
             code: The p5js code content (will be stored as a string, never executed)
             description: Optional description for the code
             tags: Optional list of tags for categorization
+            unit_id: Optional unit ID from syllabus
+            unit_title: Optional unit title from syllabus
+            skill_id: Optional skill ID from syllabus
+            skill_description: Optional skill description from syllabus
+            subskill_id: Optional subskill ID from syllabus
+            subskill_description: Optional subskill description from syllabus
         """
         # Generate a unique ID with timestamp for uniqueness
         import uuid
@@ -807,7 +819,14 @@ class CosmosDBService:
             "tags": tags or [],
             "created_at": timestamp,
             "updated_at": timestamp,
-            "type": "p5js_code_snippet"
+            "type": "p5js_code_snippet",
+            # Add syllabus metadata
+            "unit_id": unit_id,
+            "unit_title": unit_title,
+            "skill_id": skill_id, 
+            "skill_description": skill_description,
+            "subskill_id": subskill_id,
+            "subskill_description": subskill_description
         }
         
         try:
@@ -865,7 +884,13 @@ class CosmosDBService:
         title: str = None,
         code: str = None,
         description: str = None,
-        tags: List[str] = None
+        tags: List[str] = None,
+        unit_id: str = None,
+        unit_title: str = None,
+        skill_id: str = None,
+        skill_description: str = None,
+        subskill_id: str = None,
+        subskill_description: str = None
     ) -> Dict[str, Any]:
         """Update an existing p5js code snippet"""
         try:
@@ -883,6 +908,19 @@ class CosmosDBService:
                 snippet["description"] = description
             if tags is not None:
                 snippet["tags"] = tags
+            # Update syllabus metadata fields if provided
+            if unit_id is not None:
+                snippet["unit_id"] = unit_id
+            if unit_title is not None:
+                snippet["unit_title"] = unit_title
+            if skill_id is not None:
+                snippet["skill_id"] = skill_id
+            if skill_description is not None:
+                snippet["skill_description"] = skill_description
+            if subskill_id is not None:
+                snippet["subskill_id"] = subskill_id
+            if subskill_description is not None:
+                snippet["subskill_description"] = subskill_description
                 
             # Update the timestamp
             snippet["updated_at"] = datetime.utcnow().isoformat()

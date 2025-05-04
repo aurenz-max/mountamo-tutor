@@ -27,10 +27,17 @@ export interface CodeSnippet {
   id: string;
   title: string;
   code: string;
-  description?: string;
-  tags?: string[];
+  description: string;
+  tags: string[];
   created_at: string;
   updated_at: string;
+  // Add syllabus metadata fields
+  unit_id?: string;
+  unit_title?: string;
+  skill_id?: string;
+  skill_description?: string;
+  subskill_id?: string;
+  subskill_description?: string;
 }
 
 /**
@@ -39,8 +46,15 @@ export interface CodeSnippet {
 export interface SaveCodePayload {
   title: string;
   code: string;
-  description?: string;
-  tags?: string[];
+  description: string;
+  tags: string[];
+  // Add syllabus metadata fields
+  unit_id?: string;
+  unit_title?: string;
+  skill_id?: string;
+  skill_description?: string;
+  subskill_id?: string;
+  subskill_description?: string;
 }
 
 /**

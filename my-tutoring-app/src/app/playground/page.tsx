@@ -8,7 +8,7 @@ import Link from 'next/link';
 // Dynamic import for the playground component
 // This ensures it only loads on the client side
 const P5jsPlayground = dynamic(
-  () => import('@/components/playground/Playground'),
+  () => import('@/components/playground/P5jsPlayground'),
   { 
     ssr: false,
     loading: () => (

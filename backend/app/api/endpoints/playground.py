@@ -45,6 +45,13 @@ class P5jsCodeSnippet(BaseModel):
     code: str
     description: Optional[str] = ""
     tags: Optional[List[str]] = []
+    # Add syllabus metadata fields
+    unit_id: Optional[str] = None
+    unit_title: Optional[str] = None
+    skill_id: Optional[str] = None
+    skill_description: Optional[str] = None
+    subskill_id: Optional[str] = None
+    subskill_description: Optional[str] = None
 
 class P5jsCodeResponse(BaseModel):
     id: str
@@ -54,6 +61,13 @@ class P5jsCodeResponse(BaseModel):
     tags: Optional[List[str]] = []
     created_at: str
     updated_at: str
+    # Add syllabus metadata fields
+    unit_id: Optional[str] = None
+    unit_title: Optional[str] = None
+    skill_id: Optional[str] = None
+    skill_description: Optional[str] = None
+    subskill_id: Optional[str] = None
+    subskill_description: Optional[str] = None
 
 class ConversationMessage(BaseModel):
     role: str
@@ -374,7 +388,13 @@ async def save_p5js_code(
             title=safe_title,
             code=snippet.code,
             description=safe_description,
-            tags=snippet.tags
+            tags=snippet.tags,
+            unit_id=snippet.unit_id,
+            unit_title=snippet.unit_title,
+            skill_id=snippet.skill_id,
+            skill_description=snippet.skill_description,
+            subskill_id=snippet.subskill_id,
+            subskill_description=snippet.subskill_description
         )
         
         return result
@@ -433,7 +453,13 @@ async def update_p5js_code(
             title=snippet.title,
             code=snippet.code,
             description=snippet.description,
-            tags=snippet.tags
+            tags=snippet.tags,
+            unit_id=snippet.unit_id,
+            unit_title=snippet.unit_title,
+            skill_id=snippet.skill_id,
+            skill_description=snippet.skill_description,
+            subskill_id=snippet.subskill_id,
+            subskill_description=snippet.subskill_description
         )
         return result
     except ValueError as e:
