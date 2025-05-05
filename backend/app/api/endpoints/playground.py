@@ -73,6 +73,26 @@ class ConversationMessage(BaseModel):
     role: str
     text: str
 
+class StudentEvaluationRequest(BaseModel):
+    studentId: int
+    exerciseId: str
+    finalCode: str
+    chatInteractions: List[Dict[str, str]]
+    programOutput: Optional[Dict[str, Any]] = None
+    conceptDomain: str
+    exerciseMetadata: Optional[Dict[str, Any]] = None
+
+class StudentEvaluationResponse(BaseModel):
+    evaluationId: str
+    studentId: int
+    exerciseId: str
+    evaluation: str
+    overallGrade: str
+    numericScore: Optional[float] = None
+    criterionScores: List[float]
+    timestamp: str
+    exerciseData: Dict[str, str]
+
 # Helper function to extract code from Gemini's response
 def extract_code(text: str) -> str:
     """Extract JavaScript code from the response text with enhanced logging."""
@@ -486,3 +506,240 @@ async def delete_p5js_code(
     except Exception as e:
         logger.error(f"Error deleting p5js code: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to delete code: {str(e)}")
+
+
+@router.post("/evaluate", response_model=StudentEvaluationResponse)
+async def evaluate_student_work(
+    evaluation_request: StudentEvaluationRequest,
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+):
+    """Evaluate a student's work based on their P5js code and interactions with Gemini."""
+    start_time = time.time()
+    request_id = f"eval_{int(start_time * 1000)}"
+    code_hash = compute_code_hash(evaluation_request.finalCode)
+    
+    try:
+        logger.info(f"[{request_id}] Processing evaluation request: student={evaluation_request.studentId}, exercise={evaluation_request.exerciseId}")
+        logger.info(f"[{request_id}] Request metadata: concept_domain={evaluation_request.conceptDomain}, code_hash={code_hash}")
+        
+        # Log code info
+        if evaluation_request.finalCode:
+            code_lines = len(evaluation_request.finalCode.splitlines())
+            code_bytes = len(evaluation_request.finalCode.encode('utf-8'))
+            logger.info(f"[{request_id}] Code info: lines={code_lines}, bytes={code_bytes}")
+            
+            # Log sample of code beginning (for context)
+            first_lines = evaluation_request.finalCode.split('\n')[:3]
+            logger.info(f"[{request_id}] Code begins with: {first_lines}")
+        else:
+            logger.info(f"[{request_id}] No code provided for evaluation")
+            raise HTTPException(status_code=400, detail="Code is required for evaluation")
+        
+        # Log chat interaction info
+        if evaluation_request.chatInteractions:
+            chat_count = len(evaluation_request.chatInteractions)
+            user_messages = sum(1 for msg in evaluation_request.chatInteractions if msg.get('role', '').lower() == 'user')
+            assistant_messages = sum(1 for msg in evaluation_request.chatInteractions if msg.get('role', '').lower() == 'assistant')
+            
+            logger.info(f"[{request_id}] Chat interactions: {chat_count} total, {user_messages} user, {assistant_messages} assistant")
+        else:
+            logger.info(f"[{request_id}] No chat interactions provided")
+            raise HTTPException(status_code=400, detail="Chat interactions are required for evaluation")
+            
+        # Configure Gemini
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        
+        # Retrieve exercise details (if available from the request)
+        exercise_details = evaluation_request.exerciseMetadata or {}
+        
+        # Create a comprehensive evaluation prompt
+        evaluation_prompt = f"""
+        Evaluate this student's project for {evaluation_request.conceptDomain} exercise {evaluation_request.exerciseId}.
+        
+        CONTEXT:
+        In this learning environment, students collaborate with an AI (Gemini) to create 
+        p5js visualizations that demonstrate {evaluation_request.conceptDomain} concepts. The student's 
+        evaluation should reflect their ability to effectively use AI as a learning tool while 
+        demonstrating understanding of the underlying concepts.
+        
+        {"EXERCISE DETAILS:" + json.dumps(exercise_details, indent=2) if exercise_details else ""}
+        
+        STUDENT WORK:
+        - Final p5js code: ```javascript
+        {evaluation_request.finalCode}
+        ```
+        
+        - Chat interaction summary: 
+        {json.dumps([{"role": msg.get('role', ''), "text": msg.get('text', '')[:150] + "..." if len(msg.get('text', '')) > 150 else msg.get('text', '')} for msg in evaluation_request.chatInteractions[:10]], indent=2)}
+        {f"... and {len(evaluation_request.chatInteractions) - 10} more messages" if len(evaluation_request.chatInteractions) > 10 else ""}
+        
+        EVALUATION CRITERIA:
+        1. Concept Mastery (40%): Does the student demonstrate understanding of the {evaluation_request.conceptDomain} 
+           concepts in their interactions and final project?
+        
+        2. Effective AI Collaboration (20%): How well did the student guide the AI? Did they 
+           ask clarifying questions, request improvements, or demonstrate critical thinking 
+           about the AI's suggestions?
+        
+        3. Technical Implementation (20%): Is the code functional, efficient, and well-structured?
+        
+        4. Creativity and Engagement (10%): Does the project show creative application of concepts?
+        
+        5. Scientific/Mathematical Rigor (10%): Is the representation accurate and precise?
+        
+        For each criterion, provide:
+        - A score (1-10)
+        - Specific evidence from their work
+        - Constructive feedback
+        
+        End with an overall grade (A-F) and 2-3 specific recommendations for improvement.
+        """
+        
+        logger.info(f"[{request_id}] Prepared evaluation prompt of length {len(evaluation_prompt)}")
+        
+        # Call Gemini API for evaluation
+        api_call_start = time.time()
+        logger.info(f"[{request_id}] Calling Gemini API for evaluation...")
+        
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-pro-preview-03-25',
+                contents=evaluation_prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.2,  # Lower temperature for more consistent evaluations
+                    top_p=0.95,
+                    top_k=40,
+                    max_output_tokens=8192,
+                )
+            )
+            
+            # Log API call duration
+            api_duration = time.time() - api_call_start
+            logger.info(f"[{request_id}] Gemini API evaluation completed in {api_duration:.2f}s")
+        except Exception as e:
+            logger.error(f"[{request_id}] Gemini API evaluation failed: {str(e)}")
+            logger.error(f"[{request_id}] Traceback: {traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=f"Evaluation engine error: {str(e)}")
+        
+        # Extract the evaluation text
+        evaluation_text = response.text
+        
+        # Extract overall grade using regex
+        grade_match = re.search(r'overall grade:?\s*([A-F][+-]?)', evaluation_text, re.IGNORECASE)
+        overall_grade = grade_match.group(1) if grade_match else "Not specified"
+        
+        # Parse the evaluation to extract criterion scores
+        score_pattern = re.compile(r'(\d+)(/|\s*out of\s*)10', re.IGNORECASE)
+        scores = score_pattern.findall(evaluation_text)
+        criterion_scores = [int(score[0]) for score in scores] if scores else []
+        
+        # Calculate overall numeric score if possible
+        numeric_score = None
+        if len(criterion_scores) >= 5:
+            # Using the weights mentioned in the prompt: 40%, 20%, 20%, 10%, 10%
+            weights = [0.4, 0.2, 0.2, 0.1, 0.1]
+            numeric_score = sum(score * weight for score, weight in zip(criterion_scores[:5], weights))
+            logger.info(f"[{request_id}] Calculated overall numeric score: {numeric_score:.1f}/10")
+        
+        # Save the evaluation to the database
+        try:
+            # Format evaluation data for storage (similar to your reviews structure)
+            timestamp = datetime.utcnow().isoformat()
+            evaluation_id = f"{evaluation_request.studentId}_{evaluation_request.exerciseId}_{timestamp}_{uuid.uuid4()}"
+            
+            evaluation_data = {
+                "id": evaluation_id,
+                "student_id": evaluation_request.studentId,
+                "exercise_id": evaluation_request.exerciseId,
+                "evaluation_text": evaluation_text,
+                "overall_grade": overall_grade,
+                "numeric_score": numeric_score,
+                "criterion_scores": criterion_scores[:5] if len(criterion_scores) >= 5 else criterion_scores,
+                "code_hash": code_hash,
+                "concept_domain": evaluation_request.conceptDomain,
+                "created_at": timestamp,
+                "type": "p5js_evaluation"
+            }
+            
+            # Store in the p5js_code_snippets container since it's already set up for student projects
+            # You can also create a dedicated evaluations container if preferred
+            result = await cosmos_db.save_p5js_evaluation(evaluation_data)
+            logger.info(f"[{request_id}] Saved evaluation with ID: {evaluation_id}")
+        except Exception as e:
+            logger.error(f"[{request_id}] Failed to save evaluation: {str(e)}")
+            logger.error(f"[{request_id}] Traceback: {traceback.format_exc()}")
+            # Continue without saving to the database
+        
+        # Calculate total processing time
+        total_time = time.time() - start_time
+        logger.info(f"[{request_id}] Total evaluation processing time: {total_time:.2f}s")
+        
+        return StudentEvaluationResponse(
+            evaluationId=evaluation_id,
+            studentId=evaluation_request.studentId,
+            exerciseId=evaluation_request.exerciseId,
+            evaluation=evaluation_text,
+            overallGrade=overall_grade,
+            numericScore=numeric_score,
+            criterionScores=criterion_scores[:5] if len(criterion_scores) >= 5 else criterion_scores,
+            timestamp=timestamp,
+            exerciseData={
+                "domain": evaluation_request.conceptDomain,
+                "title": exercise_details.get("title", "Unknown Exercise")
+            }
+        )
+    
+    except Exception as e:
+        error_msg = f"Error processing evaluation request: {str(e)}"
+        logger.error(f"[{request_id}] {error_msg}")
+        logger.error(f"[{request_id}] Traceback: {traceback.format_exc()}")
+        
+        # Log more detailed error information
+        error_type = type(e).__name__
+        logger.error(f"[{request_id}] Error type: {error_type}")
+        
+        # Calculate total processing time even in error case
+        total_time = time.time() - start_time
+        logger.error(f"[{request_id}] Evaluation request failed after {total_time:.2f}s")
+        
+        raise HTTPException(status_code=500, detail=error_msg)
+
+# Add route to get evaluations for a student
+@router.get("/evaluations", response_model=List[Dict[str, Any]])
+async def get_student_evaluations(
+    student_id: int,
+    exercise_id: Optional[str] = None,
+    limit: int = 10,
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+):
+    """Get evaluations for a student, optionally filtered by exercise."""
+    try:
+        evaluations = await cosmos_db.get_student_evaluations(
+            student_id=student_id,
+            exercise_id=exercise_id,
+            limit=limit
+        )
+        return evaluations
+    except Exception as e:
+        logger.error(f"Error retrieving student evaluations: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve evaluations: {str(e)}")
+
+# Add route to get a specific evaluation
+@router.get("/evaluations/{evaluation_id}", response_model=Dict[str, Any])
+async def get_evaluation_by_id(
+    evaluation_id: str,
+    student_id: int,
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+):
+    """Get a specific evaluation by ID."""
+    try:
+        evaluation = await cosmos_db.get_evaluation_by_id(
+            student_id=student_id,
+            evaluation_id=evaluation_id
+        )
+        if not evaluation:
+            raise HTTPException(status_code=404, detail="Evaluation not found")
+        return evaluation
+    except Exception as e:
+        logger.error(f"Error retrieving evaluation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve evaluation: {str(e)}")

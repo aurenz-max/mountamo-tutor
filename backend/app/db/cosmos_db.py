@@ -950,3 +950,78 @@ class CosmosDBService:
         except Exception as e:
             print(f"Error deleting p5js code: {str(e)}")
             return False
+
+    async def save_p5js_evaluation(self, evaluation_data):
+        """Save a p5js evaluation to the database."""
+        try:
+            # Create the evaluations container if it doesn't exist
+            evaluations = self.database.create_container_if_not_exists(
+                id="evaluations",
+                partition_key=PartitionKey(path="/student_id")
+            )
+            
+            # Save to the evaluations container
+            result = evaluations.create_item(body=evaluation_data)
+            return result
+        except Exception as e:
+            print(f"Error saving p5js evaluation: {str(e)}")
+            raise
+
+    async def get_student_evaluations(
+        self,
+        student_id: int,
+        exercise_id: Optional[str] = None,
+        limit: int = 10
+    ):
+        """Get evaluations for a student, optionally filtered by exercise."""
+        try:
+            # Create the evaluations container if it doesn't exist (for backwards compatibility)
+            evaluations = self.database.create_container_if_not_exists(
+                id="evaluations",
+                partition_key=PartitionKey(path="/student_id")
+            )
+            
+            # Build query
+            query = "SELECT * FROM c WHERE c.student_id = @student_id AND c.type = 'p5js_evaluation'"
+            parameters = [{"name": "@student_id", "value": student_id}]
+            
+            if exercise_id:
+                query += " AND c.exercise_id = @exercise_id"
+                parameters.append({"name": "@exercise_id", "value": exercise_id})
+            
+            query += " ORDER BY c.created_at DESC OFFSET 0 LIMIT @limit"
+            parameters.append({"name": "@limit", "value": limit})
+            
+            # Execute query
+            items = list(evaluations.query_items(
+                query=query,
+                parameters=parameters,
+                partition_key=student_id
+            ))
+            
+            return items
+        except Exception as e:
+            print(f"Error getting student evaluations: {str(e)}")
+            return []
+
+    async def get_evaluation_by_id(
+        self,
+        student_id: int,
+        evaluation_id: str
+    ):
+        """Get a specific evaluation by ID."""
+        try:
+            # Create the evaluations container if it doesn't exist (for backwards compatibility)
+            evaluations = self.database.create_container_if_not_exists(
+                id="evaluations",
+                partition_key=PartitionKey(path="/student_id")
+            )
+            
+            result = evaluations.read_item(
+                item=evaluation_id,
+                partition_key=student_id
+            )
+            return result
+        except Exception as e:
+            print(f"Error retrieving evaluation: {str(e)}")
+            return None
