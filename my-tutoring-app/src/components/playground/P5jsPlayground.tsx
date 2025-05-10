@@ -10,11 +10,10 @@ import { Card } from "@/components/ui/card";
 
 // Import components
 import ChatPanel from '@/components/playground/ChatPanel';
-import ImprovedCodeEditor from '@/components/playground/ImprovedCodeEditor'; // Updated import
+import ImprovedCodeEditor from '@/components/playground/ImprovedCodeEditor';
 import PreviewPanel from '@/components/playground/PreviewPanel';
 import SnippetManager from '@/components/playground/SnippetManager';
 import ImprovedSyllabusSelector from '@/components/tutoring/SyllabusSelector';
-import ExampleCard from '@/components/playground/ExampleCard';
 
 // Import hooks
 import { useP5jsCode } from '@/components/playground/hooks/useP5jsCode';
@@ -36,210 +35,6 @@ function draw() {
   noStroke();
   ellipse(mouseX, mouseY, 60, 60);
 }`;
-
-// Example sketches for cards
-const EXAMPLE_SKETCHES = [
-  {
-    title: 'Bouncing Ball',
-    description: 'Physics simulation with a simple bouncing ball',
-    thumbnail: 'ball',
-    code: `// Bouncing Ball Animation
-let x = 200;
-let y = 100;
-let xSpeed = 4;
-let ySpeed = 3;
-let radius = 30;
-
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-}
-
-function draw() {
-  background(220);
-  
-  // Update position
-  x = x + xSpeed;
-  y = y + ySpeed;
-  
-  // Check for bouncing
-  if (x > width - radius || x < radius) {
-    xSpeed = -xSpeed;
-  }
-  if (y > height - radius || y < radius) {
-    ySpeed = -ySpeed;
-  }
-  
-  // Draw the ball
-  fill(41, 98, 255);
-  noStroke();
-  ellipse(x, y, radius * 2, radius * 2);
-}`
-  },
-  {
-    title: 'Color Mixer',
-    description: 'Interactive color mixing with mouse position',
-    thumbnail: 'color',
-    code: `// Color Mixer
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-  noStroke();
-}
-
-function draw() {
-  background(220);
-  
-  // Use mouse position to control colors
-  let r = map(mouseX, 0, width, 0, 255);
-  let g = map(mouseY, 0, height, 0, 255);
-  let b = map(mouseX + mouseY, 0, width + height, 255, 0);
-  
-  // Draw a gradient background
-  for (let i = 0; i < width; i += 20) {
-    for (let j = 0; j < height; j += 20) {
-      let rGrad = map(i, 0, width, 0, r);
-      let gGrad = map(j, 0, height, 0, g);
-      
-      fill(rGrad, gGrad, b, 150);
-      rect(i, j, 20, 20);
-    }
-  }
-  
-  // Draw center shape
-  fill(r, g, b);
-  ellipse(width/2, height/2, 200, 200);
-  
-  // Display RGB values
-  fill(255);
-  textSize(16);
-  text(\`R: \${Math.floor(r)} G: \${Math.floor(g)} B: \${Math.floor(b)}\`, width/2 - 80, height - 50);
-}`
-  },
-  {
-    title: 'Interactive Shapes',
-    description: 'Click to create random shapes on canvas',
-    thumbnail: 'shapes',
-    code: `// Interactive Shapes
-let shapes = [];
-
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-}
-
-function draw() {
-  background(220);
-  
-  // Draw all shapes
-  for (let shape of shapes) {
-    fill(shape.color);
-    noStroke();
-    
-    if (shape.type === 'circle') {
-      ellipse(shape.x, shape.y, shape.size, shape.size);
-    } else if (shape.type === 'square') {
-      rectMode(CENTER);
-      rect(shape.x, shape.y, shape.size, shape.size);
-    } else if (shape.type === 'triangle') {
-      triangle(
-        shape.x, shape.y - shape.size/2,
-        shape.x - shape.size/2, shape.y + shape.size/2,
-        shape.x + shape.size/2, shape.y + shape.size/2
-      );
-    }
-  }
-  
-  // Instructions
-  fill(0);
-  textSize(16);
-  text('Click anywhere to add a random shape', 20, 30);
-}
-
-function mousePressed() {
-  // Add a new shape when clicked
-  let shapeTypes = ['circle', 'square', 'triangle'];
-  let newShape = {
-    x: mouseX,
-    y: mouseY,
-    size: random(20, 100),
-    type: random(shapeTypes),
-    color: color(random(255), random(255), random(255), 200)
-  };
-  
-  shapes.push(newShape);
-  
-  // Limit the number of shapes to prevent slowdown
-  if (shapes.length > 50) {
-    shapes.shift();
-  }
-}`
-  },
-  {
-    title: 'Particle System',
-    description: 'Dynamic particle system with motion',
-    thumbnail: 'particles',
-    code: `// Particle System
-let particles = [];
-
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-  // Create initial particles
-  for (let i = 0; i < 50; i++) {
-    particles.push(createParticle());
-  }
-}
-
-function draw() {
-  background(0, 20); // Slight trail effect
-  
-  // Update and display particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    let p = particles[i];
-    
-    p.update();
-    p.display();
-    
-    // Remove particles that are off screen
-    if (p.isDead()) {
-      particles.splice(i, 1);
-    }
-  }
-  
-  // Add new particles
-  if (frameCount % 5 === 0) {
-    particles.push(createParticle());
-  }
-}
-
-function createParticle() {
-  return {
-    position: createVector(random(width), random(height)),
-    velocity: createVector(random(-2, 2), random(-2, 2)),
-    acceleration: createVector(0, 0.05),
-    size: random(4, 12),
-    color: color(random(100, 255), random(100, 255), random(200, 255)),
-    lifespan: 255,
-    
-    update: function() {
-      this.velocity.add(this.acceleration);
-      this.position.add(this.velocity);
-      this.lifespan -= 2;
-    },
-    
-    display: function() {
-      noStroke();
-      fill(this.color.levels[0], this.color.levels[1], this.color.levels[2], this.lifespan);
-      ellipse(this.position.x, this.position.y, this.size, this.size);
-    },
-    
-    isDead: function() {
-      return this.lifespan < 0 || 
-             this.position.x < -this.size || 
-             this.position.x > width + this.size ||
-             this.position.y > height + this.size;
-    }
-  };
-}`
-  }
-];
 
 // Chat state enum
 export enum ChatState {
@@ -400,14 +195,6 @@ export default function UpdatedP5jsPlayground() {
     sendMessage(message);
   };
 
-  // Load example sketch
-  const loadExampleSketch = (example) => {
-    updateCode(example.code);
-    setActiveView('code');
-    reloadCode();
-    playSketch();
-  };
-
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -501,7 +288,7 @@ export default function UpdatedP5jsPlayground() {
                     onClick={() => setActiveView('explore')}
                     className="w-full p-2 text-sm rounded-md border border-gray-300 dark:border-gray-600"
                   >
-                    Load Example Sketch
+                    Explore Topics
                   </button>
                 </div>
               </div>
@@ -511,51 +298,31 @@ export default function UpdatedP5jsPlayground() {
               <div className="space-y-4">
                 <h3 className="font-medium">Explore Topics</h3>
                 
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Search topics..." 
-                    className="w-full p-2 pr-8 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  />
+                <div className="p-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800/30 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium text-amber-800 dark:text-amber-400">Select a learning topic:</span>
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="p-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800/30">
-                    <div className="flex items-center space-x-2">
-                      <Sparkles className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm font-medium text-amber-800 dark:text-amber-400">Recommended for you:</span>
-                    </div>
-                    <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">Animation Basics</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    {EXAMPLE_SKETCHES.map((example, index) => (
-                      <ExampleCard
-                        key={index}
-                        title={example.title}
-                        description={example.description}
-                        thumbnail={example.thumbnail}
-                        onSelect={() => loadExampleSketch(example)}
-                      />
-                    ))}
-                  </div>
-                </div>
+                {/* Curriculum Selector directly in the left panel */}
+                <ImprovedSyllabusSelector onSelect={handleCurriculumSelect} />
                 
                 {/* Show your snippets */}
                 {snippets && snippets.length > 0 && (
                   <div className="mt-4">
                     <h4 className="text-sm font-medium mb-2">Your Saved Sketches</h4>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
                       {snippets.slice(0, 4).map((snippet, index) => (
                         <div 
                           key={index} 
-                          className="p-2 border rounded-md text-center hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                          className="p-2 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                           onClick={() => loadSnippet(snippet)}
                         >
-                          <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded mb-1 flex items-center justify-center">
-                            <Save className="h-6 w-6 text-gray-400" />
-                          </div>
-                          <span className="text-xs truncate block">{snippet.title}</span>
+                          <span className="text-sm font-medium truncate block">{snippet.title}</span>
+                          {snippet.description && (
+                            <span className="text-xs text-gray-500 truncate block">{snippet.description}</span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -765,15 +532,7 @@ export default function UpdatedP5jsPlayground() {
               </div>
             )}
             
-            {/* Show curriculum selector if needed */}
-            {activeView === 'explore' && !selectedCurriculum && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Card className="w-full max-w-md p-4 shadow-lg">
-                  <h3 className="text-lg font-medium mb-4">Select a learning topic</h3>
-                  <ImprovedSyllabusSelector onSelect={handleCurriculumSelect} />
-                </Card>
-              </div>
-            )}
+            {/* Main preview area - no overlay for curriculum selection since it's now in the left panel */}
           </div>
           
           {/* Canvas Controls */}

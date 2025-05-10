@@ -58,6 +58,38 @@ export interface SaveCodePayload {
 }
 
 /**
+ * Interface for student evaluation request
+ */
+export interface StudentEvaluationRequest {
+  studentId: number;
+  exerciseId: string;
+  finalCode: string;
+  chatInteractions: Array<{role: string, text: string}>;
+  programOutput?: any;
+  conceptDomain: string;
+  exerciseMetadata?: any;
+}
+
+/**
+ * Interface for student evaluation response
+ */
+export interface StudentEvaluationResponse {
+  evaluationId: string;
+  studentId: number;
+  exerciseId: string;
+  evaluation: string;
+  overallGrade: string;
+  numericScore?: number;
+  criterionScores: number[];
+  timestamp: string;
+  exerciseData: {
+    domain: string;
+    title: string;
+    [key: string]: any;
+  };
+}
+
+/**
  * API client for communicating with the FastAPI backend
  */
 export const apiClient = {
@@ -284,6 +316,127 @@ export const apiClient = {
       return await response.json();
     } catch (error) {
       console.error('Error deleting snippet:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Submit student work for evaluation
+   * @param payload The student evaluation request
+   * @returns A promise that resolves to the evaluation response
+   */
+  async evaluateStudentWork(payload: StudentEvaluationRequest): Promise<StudentEvaluationResponse> {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${backendUrl}/api/playground/evaluate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! Status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch (parseError) {
+          console.error('Error parsing error response:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error evaluating student work:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get evaluations for a student
+   * @param studentId The ID of the student
+   * @param exerciseId Optional exercise ID to filter by
+   * @param limit Optional limit on the number of results
+   * @returns A promise that resolves to an array of evaluations
+   */
+  async getStudentEvaluations(
+    studentId: number, 
+    exerciseId?: string, 
+    limit: number = 10
+  ): Promise<any[]> {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      
+      let url = `${backendUrl}/api/playground/evaluations?student_id=${studentId}&limit=${limit}`;
+      if (exerciseId) {
+        url += `&exercise_id=${exerciseId}`;
+      }
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! Status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch (parseError) {
+          console.error('Error parsing error response:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting student evaluations:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get a specific evaluation
+   * @param evaluationId The ID of the evaluation
+   * @param studentId The ID of the student
+   * @returns A promise that resolves to the evaluation
+   */
+  async getEvaluationById(evaluationId: string, studentId: number): Promise<any> {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${backendUrl}/api/playground/evaluations/${evaluationId}?student_id=${studentId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! Status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch (parseError) {
+          console.error('Error parsing error response:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting evaluation:', error);
       throw error;
     }
   }

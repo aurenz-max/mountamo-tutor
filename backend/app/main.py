@@ -28,6 +28,7 @@ app.add_middleware(
 # Include routers
 app.include_router(tutoring.router, prefix="/api/tutoring", tags=["tutoring"])
 app.include_router(competency.router, prefix="/api/competency", tags=["competency"])
+app.include_router(curriculum.router, prefix="/api/curriculum", tags=["curriculum"])
 app.include_router(reviews.router, prefix="/api/reviews", tags=["reviews"])
 app.include_router(problems.router, prefix="/api/problems", tags=["problems"])
 app.include_router(learning_paths.router, prefix="/api", tags=["learning-paths"])

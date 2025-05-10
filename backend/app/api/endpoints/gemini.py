@@ -112,7 +112,8 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
                         voice_name=DEFAULT_VOICE,
                     )
                 )
-            ),
+            ),           
+            output_audio_transcription={},
             media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW,
             system_instruction=Content(parts=[{
             "text": f"""You are conducting a live kindergarten tutoring session using voice interaction.
@@ -376,6 +377,23 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
                                     })
                                     
                                     logger.info(f"Sent text response: {response.text[:50]}...")
+                                 # New: Handle input transcriptions
+                                if hasattr(response, "input_transcription") and response.input_transcription:
+                                    await websocket.send_json({
+                                        "type": "input_transcription",
+                                        "content": response.input_transcription
+                                    })
+                                    
+                                    logger.info(f"Sent input transcription: {response.input_transcription[:50]}...")
+                                
+                                # New: Handle output transcriptions
+                                if hasattr(response, "output_transcription") and response.output_transcription:
+                                    await websocket.send_json({
+                                        "type": "output_transcription",
+                                        "content": response.output_transcription
+                                    })
+                                    
+                                    logger.info(f"Sent output transcription: {response.output_transcription[:50]}...")
                         except asyncio.CancelledError:
                             logger.info("Gemini receiving task cancelled")
                             break
@@ -627,8 +645,8 @@ DO NOT include any explanations, notes, or other content besides the story text 
         logger.error(f"[Session {session_id}] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.post("/generate_explanation")
-async def generate_explanation(
+@router.post("/generate_lesson")
+async def generate_lesson(
     subject: str = Body(..., description="Academic subject (e.g., Math, Science, History)"),
     skill: str = Body(..., description="Specific skill within the subject (e.g., Fractions, Photosynthesis)"),
     subskill: Optional[str] = Body(None, description="Specific subskill (optional)"),
@@ -643,6 +661,7 @@ async def generate_explanation(
         if not session_id:
             session_id = str(uuid.uuid4())
 
+        # Create async client
         client = genai.Client(
             api_key=settings.GEMINI_API_KEY,
             http_options={"api_version": "v1alpha"},
@@ -651,34 +670,44 @@ async def generate_explanation(
         model = "gemini-2.0-flash-exp"
             
         # Construct prompt for educational explanation
-        prompt_text = f"""Create an educational explanation for students aged {age_group} on the following topic:
+        prompt_text = f"""Create an educational lesson for students aged {age_group} on the following topic:
 
-Current Lesson Focus:
-- Subject: {subject}
-- Skill: {skill}"""
-        
-        # Add subskill if provided
+        Current Lesson Focus:
+        - Subject: {subject}
+        - Skill: {skill}"""
+
         if subskill:
             prompt_text += f"\n- Subskill: {subskill}"
             
         prompt_text += f"""
 
-For this explanation:
-1. Create a clear, engaging explanation appropriate for {age_group} year-olds
-2. Break down complex concepts into digestible sections
-3. Use vocabulary and examples appropriate for the age group
-4. Include helpful visuals that support understanding of key concepts
-5. Include 2-3 practice questions or interactive elements at the end
+        For this explanation:
+        1. Create a clear, engaging explanation appropriate for {age_group} year-olds
+        2. Break down complex concepts into digestible sections
+        3. Use vocabulary and examples appropriate for the age group
+        4. Include helpful visuals that support understanding of key concepts
+        5. Include 2-3 practice questions or interactive elements at the end
 
-IMPORTANT: Your response should include:
-1. An introduction to the concept
-2. Step-by-step explanation with key points highlighted
-3. Visual representations of the concept (diagrams, illustrations, etc.)
-4. Real-world examples that students can relate to
-5. Practice questions or activities
+        IMPORTANT FORMATTING INSTRUCTIONS:
+        - Use proper spacing between sections and paragraphs
+        - Add line breaks between different concepts or steps
+        - For numbered lists, ensure each item is on its own line with a blank line between items
+        - For bullet points, place each point on a separate line
+        - Add extra line breaks before and after headers or section titles
+        - Separate different parts of the lesson with clear visual breaks
+        - When using examples, place them on separate lines for clarity
+        - Keep paragraphs short and well-spaced for young readers
 
-DO NOT include any meta-commentary or notes outside the actual educational content.
-"""
+        Your response should include:
+        1. An introduction to the concept
+        2. Step-by-step explanation with key points highlighted
+        3. Visual representations of the concept (diagrams, illustrations, etc.)
+        4. Real-world examples that students can relate to
+        5. Practice questions or activities
+
+        DO NOT include any meta-commentary or notes outside the actual educational content.
+        Ensure the text is well-formatted with proper spacing and line breaks for easy reading.
+        """
 
         gemini_prompt = {
             "parts": [{"text": prompt_text}]
@@ -691,8 +720,8 @@ DO NOT include any meta-commentary or notes outside the actual educational conte
             max_output_tokens=2048
         )
         
-        # Call Gemini API to generate both text and images
-        response = client.models.generate_content(
+        # Use the async version of generate_content
+        response = await client.aio.models.generate_content(
             model=model,
             contents=gemini_prompt,
             config=generation_config
@@ -714,7 +743,10 @@ DO NOT include any meta-commentary or notes outside the actual educational conte
                 current_text += part.text
             elif hasattr(part, 'inline_data') and part.inline_data is not None:
                 # Found an image, create a new explanation part with the accumulated text and this image
-                image_data = base64.b64encode(part.inline_data.data).decode('utf-8')
+                # Use asyncio.to_thread for CPU-bound operations like base64 encoding if needed
+                image_data = await asyncio.to_thread(
+                    lambda: base64.b64encode(part.inline_data.data).decode('utf-8')
+                )
                 
                 explanation_parts.append({
                     "text": current_text.strip(),

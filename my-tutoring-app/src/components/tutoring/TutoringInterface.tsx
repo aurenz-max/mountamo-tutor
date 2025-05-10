@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
 import AudioCaptureService from '@/lib/AudioCaptureService';
 import { Card } from '@/components/ui/card';
 import GeminiControlPanel from './GeminiControlPanel';

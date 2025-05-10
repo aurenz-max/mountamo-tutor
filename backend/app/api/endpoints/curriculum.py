@@ -32,8 +32,8 @@ async def get_subject_curriculum(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/problem-types/{subject}")
-async def get_problem_types(
+@router.get("/subskills/{subject}")
+async def get_subskills(
     subject: str,
     competency_service: CompetencyService = Depends(get_competency_service)
 ):
