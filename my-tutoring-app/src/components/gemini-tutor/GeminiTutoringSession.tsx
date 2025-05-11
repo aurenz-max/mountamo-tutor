@@ -7,9 +7,10 @@ import { useAudioPlayback } from '@/lib/hooks/useAudioPlayback';
 import { useScreenSharing } from '@/lib/hooks/useScreenSharing';
 import { ChatWindow } from './windows/ChatWindow';
 import { LessonWindow } from './windows/LessonWindow';
-import { ProblemWindow } from './windows/ProblemWindow';
+import { ProblemPanel } from './panels/ProblemPanel';
 import DrawingCanvas from './ui/DrawingCanvas';
 import { Mic, MicOff, Monitor, MonitorOff, Volume2, VolumeX, Settings } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface GeminiTutoringSessionProps {
   initialCurriculum: {
@@ -25,6 +26,7 @@ interface GeminiTutoringSessionProps {
   ageGroup: string;
   apiUrl?: string;
   onSessionEnd: () => void;
+  studentId?: number;
 }
 
 const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
@@ -32,10 +34,13 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
   ageGroup,
   apiUrl = 'ws://localhost:8000/api/gemini/bidirectional',
   onSessionEnd,
+  studentId = 1,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isAudioOn, setIsAudioOn] = useState(true);
+  const [currentProblem, setCurrentProblem] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const canvasRef = useRef<any>(null);
   
   // WebSocket connection management
@@ -109,33 +114,62 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
     }
   };
 
-  // Handle canvas submission
-  const handleCanvasSubmit = (canvasData: string) => {
-    console.log('Canvas data submitted:', canvasData);
-    sendTextMessage("I've completed the problem and would like to submit my answer.");
-    sendEndOfTurn();
-  };
+  // Handle problem submission through API
+  const handleProblemSubmit = async (problemData: any, canvasData?: string) => {
+    if (!canvasData || !problemData) {
+      console.error('Missing canvas data or problem data for submission');
+      return;
+    }
 
-  // Handle problem submission
-  const handleSubmitProblem = () => {
-    if (canvasRef.current) {
-      const canvasData = canvasRef.current.getCanvasData();
-      if (canvasData) {
-        handleCanvasSubmit(canvasData);
-      }
+    setIsSubmitting(true);
+    setCurrentProblem(problemData);
+
+    try {
+      // Submit to the API endpoint
+      const response = await api.submitProblem({
+        student_id: studentId,
+        subject: initialCurriculum.subject,
+        problem: problemData,
+        solution_image: canvasData,
+        skill_id: initialCurriculum.skill?.id || problemData.metadata?.skill?.id,
+        subskill_id: initialCurriculum.subskill?.id || problemData.metadata?.subskill?.id,
+        student_answer: '',
+        canvas_used: true
+      });
+
+      // After successful API submission, notify the tutor via WebSocket
+      const score = typeof response.review.evaluation === 'number' 
+        ? response.review.evaluation 
+        : response.review.evaluation?.score || 0;
+      
+      sendTextMessage(
+        `I've completed the problem and submitted my answer. ` +
+        `The evaluation score was ${score}. ` +
+        `Here's the feedback: ${
+          typeof response.review.feedback === 'string' 
+            ? response.review.feedback 
+            : response.review.feedback?.praise || 'Good effort!'
+        }`
+      );
+      sendEndOfTurn();
+
+    } catch (error) {
+      console.error('Error submitting problem:', error);
+      alert('Failed to submit problem. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // End the session
-  const handleEndSession = () => {
-    console.log('Ending tutoring session...');
-    
-    if (isListening) {
-      stopAudioRecording();
+  // Handle direct canvas submission (for main canvas)
+  const handleCanvasSubmit = async (canvasData: string) => {
+    if (currentProblem) {
+      await handleProblemSubmit(currentProblem, canvasData);
+    } else {
+      // If no problem is set, just send a message via WebSocket
+      sendTextMessage("I've completed the work and would like to submit it.");
+      sendEndOfTurn();
     }
-    
-    disconnect();
-    onSessionEnd();
   };
 
   // Connect on component mount
@@ -158,6 +192,18 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
     setConnectionError(wsError);
   }, [wsError]);
 
+  // End the session
+  const handleEndSession = () => {
+    console.log('Ending tutoring session...');
+    
+    if (isListening) {
+      stopAudioRecording();
+    }
+    
+    disconnect();
+    onSessionEnd();
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-900">
       {/* Main Canvas Area */}
@@ -166,7 +212,7 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
         <DrawingCanvas 
           ref={canvasRef}
           onSubmit={handleCanvasSubmit}
-          loading={isResponding}
+          loading={isSubmitting || isResponding}
         />
 
         {/* Connection Status */}
@@ -248,8 +294,16 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
         </div>
       </div>
 
-      {/* Window Controls */}
-      <div className="fixed bottom-4 left-4 flex gap-2">
+      {/* Problem Panel - Integrated as a slide-out panel */}
+      <ProblemPanel
+        initialCurriculum={initialCurriculum}
+        ageGroup={ageGroup}
+        onSubmit={handleProblemSubmit}
+        studentId={studentId}
+      />
+
+      {/* Window Controls - Only Chat and Lesson windows now */}
+      <div className="fixed bottom-4 left-4 flex gap-2 z-20">
         <ChatWindow 
           messages={messages}
           onSendMessage={sendTextMessage}
@@ -257,11 +311,6 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
         <LessonWindow 
           initialCurriculum={initialCurriculum}
           ageGroup={ageGroup}
-        />
-        <ProblemWindow 
-          initialCurriculum={initialCurriculum}
-          ageGroup={ageGroup}
-          onSubmit={handleSubmitProblem}
         />
       </div>
     </div>

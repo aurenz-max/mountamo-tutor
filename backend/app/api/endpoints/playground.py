@@ -258,8 +258,8 @@ async def process_playground_request(
             
             try:
                 # Call the Gemini API with conversation history
-                response = client.models.generate_content(
-                    model='gemini-2.5-pro-preview-03-25',
+                response = await client.aio.models.generate_content(
+                    model='gemini-2.5-flash-preview-04-17',
                     contents=gen_contents,  # Send the entire conversation
                     config=types.GenerateContentConfig(
                         temperature=0.7,
@@ -286,8 +286,8 @@ async def process_playground_request(
             
             # No conversation history, just send the single message
             try:
-                response = client.models.generate_content(
-                    model='gemini-2.5-pro-preview-03-25',
+                response = await client.aio.models.generate_content(
+                    model='gemini-2.5-flash-preview-04-17',
                     contents=message_text,
                     config=types.GenerateContentConfig(
                         temperature=0.7,
@@ -602,7 +602,7 @@ async def evaluate_student_work(
         logger.info(f"[{request_id}] Calling Gemini API for evaluation...")
         
         try:
-            response = client.models.generate_content(
+            response = await client.aio.models.generate_content(
                 model='gemini-2.5-pro-preview-03-25',
                 contents=evaluation_prompt,
                 config=types.GenerateContentConfig(
