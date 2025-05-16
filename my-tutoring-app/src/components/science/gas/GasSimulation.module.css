@@ -1,0 +1,80 @@
+/* src/components/GasSimulation.module.css */
+/* (Same content as GasSimulation.css previously) */
+.gasSimulation {
+    font-family: sans-serif;
+    max-width: 650px; /* Adjusted max-width slightly */
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Added subtle shadow */
+  }
+  
+  .gasSimulation h2 {
+    text-align: center;
+    color: #333;
+    margin-top: 0; /* Removed top margin */
+    margin-bottom: 25px; /* Increased bottom margin */
+  }
+  
+  .controls {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 15px; /* Use gap for spacing */
+    margin-bottom: 25px;
+    padding: 15px;
+    background-color: #f8f8f8; /* Slightly lighter bg */
+    border-radius: 6px;
+  }
+  
+  .controlGroup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1; /* Allow groups to grow */
+    min-width: 160px; /* Ensure groups don't get too squished */
+  }
+  
+  .controlGroup label {
+    margin-bottom: 8px; /* Increased spacing */
+    font-size: 0.95em; /* Slightly larger font */
+    color: #555;
+    white-space: nowrap; /* Prevent labels from wrapping */
+  }
+  
+  .controlGroup input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+  }
+  
+  .display {
+    text-align: center;
+    margin-bottom: 25px;
+    padding: 12px;
+    border: 1px dashed #ddd;
+    background-color: #fdfdfd;
+    border-radius: 4px; /* Added radius */
+  }
+  
+  .display p {
+    margin: 5px 0;
+    font-size: 1.1em; /* Larger pressure display */
+    font-weight: bold;
+    color: #0056b3; /* Changed pressure color */
+  }
+  
+  .simulationContainer {
+    display: flex;
+    justify-content: center; /* Centers flex items (the Stage div) horizontally */
+    align-items: center;     /* Centers flex items (the Stage div) vertically */
+    margin-top: 15px;
+    border: 1px solid #aaa;
+    background-color: #f0f0f0;
+    min-height: 304px; /* Keep minimum height */
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 4px; /* Added radius */
+    /* The problematic lines have been removed */
+  }

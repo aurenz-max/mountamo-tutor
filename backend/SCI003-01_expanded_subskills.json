@@ -1,0 +1,66 @@
+{
+  "skill_id": "SCI003-01",
+  "skill_name": "Weather and Climate",
+  "subskills": [
+    {
+      "SUBSKILL_ID": "SCI003-01-E",
+      "DESCRIPTION": "Sort and categorize different types of weather-appropriate clothing and accessories (e.g., raincoat, sunhat, mittens)",
+      "DIFFICULTY": "1-3-2"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-F",
+      "DESCRIPTION": "Create simple weather symbols to represent current conditions (sunny, rainy, cloudy, windy)",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-G",
+      "DESCRIPTION": "Match weather conditions to appropriate outdoor activities (e.g., flying kites on windy days, swimming on sunny days)",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-H",
+      "DESCRIPTION": "Use basic weather tools (rain gauge, wind sock, thermometer) to collect daily weather data",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-I",
+      "DESCRIPTION": "Compare local weather conditions with another location using simple charts",
+      "DIFFICULTY": "3-6-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-J",
+      "DESCRIPTION": "Identify cloud types and their relationship to weather conditions",
+      "DIFFICULTY": "4-6-5"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-K",
+      "DESCRIPTION": "Create a simple weather forecast for the next day based on current conditions",
+      "DIFFICULTY": "4-7-5"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-L",
+      "DESCRIPTION": "Demonstrate how water changes states in different weather conditions (ice, liquid, vapor)",
+      "DIFFICULTY": "5-7-6"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-M",
+      "DESCRIPTION": "Construct a simple shelter to protect against different weather conditions",
+      "DIFFICULTY": "5-8-6"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-N",
+      "DESCRIPTION": "Record and graph daily temperature changes over a week using picture graphs",
+      "DIFFICULTY": "6-8-7"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-O",
+      "DESCRIPTION": "Design and conduct simple experiments to show how weather affects plant growth",
+      "DIFFICULTY": "6-9-7"
+    },
+    {
+      "SUBSKILL_ID": "SCI003-01-P",
+      "DESCRIPTION": "Create a seasonal calendar showing typical weather patterns and activities for each month",
+      "DIFFICULTY": "7-9-8"
+    }
+  ]
+}

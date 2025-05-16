@@ -1,0 +1,66 @@
+{
+  "skill_id": "SCI001-02",
+  "skill_name": "Matter and Its Properties",
+  "subskills": [
+    {
+      "SUBSKILL_ID": "matter-E",
+      "DESCRIPTION": "Compare the weight of different objects using a simple balance scale to understand that objects have different masses",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "matter-F",
+      "DESCRIPTION": "Demonstrate that objects maintain their properties even when broken into smaller pieces (e.g., paper, clay, crayon)",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "matter-G",
+      "DESCRIPTION": "Identify which materials sink or float in water through hands-on experimentation",
+      "DIFFICULTY": "2-3-2"
+    },
+    {
+      "SUBSKILL_ID": "matter-H",
+      "DESCRIPTION": "Match objects to their material type (wood, metal, plastic, fabric) using touch and sight",
+      "DIFFICULTY": "1-3-2"
+    },
+    {
+      "SUBSKILL_ID": "matter-I",
+      "DESCRIPTION": "Predict and test which materials are magnetic and non-magnetic",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "matter-J",
+      "DESCRIPTION": "Observe and describe how materials respond to heat (e.g., chocolate melting, toast browning)",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "matter-K",
+      "DESCRIPTION": "Sort materials based on whether they are natural or human-made",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "matter-L",
+      "DESCRIPTION": "Identify which materials are transparent, translucent, or opaque using a light source",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "matter-M",
+      "DESCRIPTION": "Compare the absorbency of different materials using water drops",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "matter-N",
+      "DESCRIPTION": "Demonstrate how some materials can stretch or bend without breaking",
+      "DIFFICULTY": "2-3-2"
+    },
+    {
+      "SUBSKILL_ID": "matter-O",
+      "DESCRIPTION": "Classify materials based on whether they are rough or smooth through touch exploration",
+      "DIFFICULTY": "1-2-1"
+    },
+    {
+      "SUBSKILL_ID": "matter-P",
+      "DESCRIPTION": "Test which materials make sound when struck and describe the differences in sounds",
+      "DIFFICULTY": "2-4-3"
+    }
+  ]
+}

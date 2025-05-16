@@ -1,0 +1,66 @@
+{
+  "skill_id": "SCI001-02",
+  "skill_name": "Matter and Its Properties",
+  "subskills": [
+    {
+      "SUBSKILL_ID": "SCI001-02-E",
+      "DESCRIPTION": "Compare the weight of different objects using a simple balance scale",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-F",
+      "DESCRIPTION": "Demonstrate how different materials sink or float in water",
+      "DIFFICULTY": "2-5-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-G",
+      "DESCRIPTION": "Match objects to their appropriate containers based on size and shape",
+      "DIFFICULTY": "1-3-2"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-H",
+      "DESCRIPTION": "Identify objects as natural or human-made materials",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-I",
+      "DESCRIPTION": "Predict and test which materials are magnetic",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-J",
+      "DESCRIPTION": "Describe how materials feel different at different temperatures",
+      "DIFFICULTY": "3-6-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-K",
+      "DESCRIPTION": "Group materials based on whether they are transparent or opaque",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-L",
+      "DESCRIPTION": "Demonstrate how different materials absorb or repel water",
+      "DIFFICULTY": "4-6-5"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-M",
+      "DESCRIPTION": "Sort materials based on whether they can be stretched or squished",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-N",
+      "DESCRIPTION": "Compare how different materials reflect light",
+      "DIFFICULTY": "4-7-5"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-O",
+      "DESCRIPTION": "Identify which materials make sounds when struck or shaken",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-02-P",
+      "DESCRIPTION": "Match objects to their material type (wood, plastic, metal, fabric)",
+      "DIFFICULTY": "3-5-4"
+    }
+  ]
+}

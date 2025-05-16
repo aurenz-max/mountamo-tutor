@@ -259,13 +259,14 @@ async def process_playground_request(
             try:
                 # Call the Gemini API with conversation history
                 response = await client.aio.models.generate_content(
-                    model='gemini-2.5-flash-preview-04-17',
+                    #model='gemini-2.5-flash-preview-04-17',
+                    model='gemini-2.5-pro-preview-05-06',
                     contents=gen_contents,  # Send the entire conversation
                     config=types.GenerateContentConfig(
                         temperature=0.7,
                         top_p=0.95,
                         top_k=40,
-                        max_output_tokens=8192,
+                        max_output_tokens=16384,
                         system_instruction=SYSTEM_INSTRUCTIONS,
                     ),
                 )
@@ -287,13 +288,13 @@ async def process_playground_request(
             # No conversation history, just send the single message
             try:
                 response = await client.aio.models.generate_content(
-                    model='gemini-2.5-flash-preview-04-17',
+                    model='gemini-2.5-pro-preview-05-06',
                     contents=message_text,
                     config=types.GenerateContentConfig(
                         temperature=0.7,
                         top_p=0.95,
                         top_k=40,
-                        max_output_tokens=8192,
+                        max_output_tokens=16384,
                         system_instruction=SYSTEM_INSTRUCTIONS,
                     ),
                 )

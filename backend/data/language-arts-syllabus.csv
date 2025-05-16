@@ -1,0 +1,330 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-A,Demonstrate understanding of the organization and basic features of print,1,5,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-B,"Follow words from left to right, top to bottom, and page by page",1,4,2
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-C,Recognize that spoken words are represented in written language by specific sequences of letters,3,7,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,LA001-02-A,Recognize and produce rhyming words,2,6,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,LA001-02-B,"Count, pronounce, blend, and segment syllables in spoken words",3,7,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,LA001-02-C,Blend and segment onsets and rimes of single-syllable spoken words,4,8,6
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-A,Demonstrate basic knowledge of one-to-one letter-sound correspondences,2,6,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-B,Associate the long and short sounds with common spellings for the five major vowels,4,8,6
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-C,Read common high-frequency words by sight,3,7,5
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,LA002-01-A,"Use a combination of drawing, dictating, and writing to compose opinion pieces",3,7,5
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,LA002-01-B,"Use a combination of drawing, dictating, and writing to compose informative/explanatory texts",3,7,5
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,LA002-01-C,"Use a combination of drawing, dictating, and writing to narrate a single event or several loosely linked events",4,8,6
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-A,Respond to questions and suggestions from peers to strengthen writing,3,7,5
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-B,"Explore a variety of digital tools to produce and publish writing, including collaboration with peers",4,8,6
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-A,Participate in collaborative conversations with diverse partners about kindergarten topics and texts,2,6,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-B,Confirm understanding of a text read aloud or information presented orally,3,7,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-C,"Ask and answer questions in order to seek help, get information, or clarify something that is not understood",3,7,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-A,"Describe familiar people, places, things, and events",2,6,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-B,Add drawings or other visual displays to descriptions to provide additional detail,3,7,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-C,"Speak audibly and express thoughts, feelings, and ideas clearly",2,6,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-E,Identify and count the number of words in a printed sentence when each word is pointed to,1,2,2
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-F,Locate and point to the first and last word in a printed sentence,2,3,2
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-G,"Identify and point to specific punctuation marks (period, question mark, exclamation point) in printed text",2,4,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-H,"Demonstrate proper book handling skills (right-side up, front cover, back cover)",1,2,2
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-I,"Identify and point to the title, author, and illustrator on a book cover",2,3,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-J,Recognize and point to spaces between words in printed text,2,4,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-K,Match identical printed words in a sentence or short text,3,4,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-L,Identify and point to capital letters at the beginning of sentences,3,4,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-M,Track text with finger while listening to reading at appropriate pace,3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-N,"Differentiate between letters, words, and sentences in printed text",4,5,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,skill_id-O,Locate and count the number of sentences on a page of text,4,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-E,Identify the first sound (initial phoneme) in spoken single-syllable words with 80% accuracy,1,3,2
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-F,Identify the last sound (final phoneme) in spoken single-syllable words with 80% accuracy,2,4,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-G,Sort pictures of objects by their initial sound into groups with 90% accuracy,3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-H,Identify words that begin with the same sound from a group of three spoken words with 85% accuracy,3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-I,Delete the initial sound in a spoken word and say the remaining part with 75% accuracy,4,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-J,Substitute the initial sound in a spoken word to create a new word with 75% accuracy,5,7,6
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-K,Count individual phonemes in spoken single-syllable words with 80% accuracy,5,7,6
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-L,Blend three individual phonemes to form a spoken word with 85% accuracy,6,8,7
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-M,Segment spoken single-syllable words into their complete sequence of individual phonemes with 80% accuracy,7,9,8
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-N,Identify the middle sound (medial phoneme) in spoken single-syllable words with 80% accuracy,7,9,8
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-02,Phonological Awareness,skill_id-O,Manipulate medial sounds in spoken words to create new words with 75% accuracy,8,10,9
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-E,Blend individual sounds (phonemes) together to form and read simple CVC (consonant-vowel-consonant) words,2,4,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-F,"Identify and read common consonant digraphs (sh, ch, th, wh) at the beginning of words",3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-G,Segment spoken CVC words into their individual phonemes using physical manipulatives,3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-H,"Recognize and read words with common word endings (-s, -ing, -ed)",4,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-I,Match pictures to corresponding written words using initial consonant sounds,2,4,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-J,Identify and read rhyming word pairs in simple text,3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-K,Distinguish between similarly spelled words by identifying the sounds of the letters that differ,4,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-L,Read and sort words into categories based on their vowel sounds,4,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-M,"Identify and read common consonant blends (st, pl, br) at the beginning of words",4,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-N,Demonstrate one-to-one word correspondence while reading simple sentences,3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-O,Read and identify compound words by breaking them into smaller known words,5,7,6
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,skill_id-P,Match uppercase and lowercase letters while reading simple text,2,4,3
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-E,"Identify and label key parts of a story (beginning, middle, end) using a combination of pictures and words",2,4,3
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-F,Create a simple sequence story using three connected pictures with one word labels,2,5,3
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-G,Match appropriate feeling words to story characters based on picture clues,3,5,4
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-H,Draw and label a picture showing a problem and its solution,3,6,4
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-I,Use simple sight words to complete sentence frames about a favorite topic,4,6,5
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-J,"Create ""how-to"" instructions using ordered pictures and basic directional words",4,7,5
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-K,Compare two items using pictures and simple descriptive words,4,7,5
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-L,Generate and illustrate rhyming word pairs with supporting pictures,5,7,6
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-M,Create a simple pattern book using repetitive sentence structures and illustrations,5,8,6
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-N,Compose a basic thank-you note using pictures and sight words,5,8,6
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-O,Develop a simple character description using physical and personality trait words,6,8,7
+Language Arts,Kindergarten,LA002,Writing,LA002-01,Text Types and Purposes,skill_id-P,Create a basic weather report using weather vocabulary and supporting symbols,6,9,7
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-E,Draw simple pictures to plan writing ideas before beginning a story,1,2,2
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-F,Write left to right and top to bottom with consistent spacing between words,2,3,3
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-G,Add descriptive words to basic sentences to make writing more interesting,3,4,4
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-H,Use uppercase letters at the start of sentences and for proper names,3,4,4
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-I,Read writing aloud to check if it makes sense and revise unclear parts,4,5,5
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-J,"Choose appropriate ending punctuation (period, question mark, exclamation point)",4,5,5
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-K,"Create a simple beginning, middle, and end in story writing",5,6,6
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-L,"Use basic transition words (first, then, next, last) to connect ideas",5,7,6
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-M,Write complete thoughts using subject and predicate in simple sentences,6,7,7
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-N,Revise writing to include at least one specific detail about the main topic,6,8,7
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-O,Share writing with a partner and incorporate one suggestion for improvement,7,8,8
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,skill_id-P,Create an illustrated cover page with title and author for finished writing pieces,7,9,8
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-E,Follow two-step verbal instructions during group activities with 90% accuracy,1,2,3
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-F,Express agreement or disagreement with peers' ideas using complete sentences and supporting reasons,2,3,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-G,Take turns speaking in small group discussions without interrupting for 5 minutes,2,4,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-H,Recall and share 3 key details from a peer's show-and-tell presentation,3,4,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-I,Use appropriate eye contact when listening to or speaking with peers for 80% of interactions,3,4,6
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-J,Respond to peers' questions with relevant information in group discussions,4,5,6
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-K,Stay on topic during a 3-minute partner discussion about a shared text,4,5,7
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-L,Use appropriate volume when speaking in different classroom settings (small group vs. whole class),4,6,7
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-M,Summarize a partner's idea in own words before adding new information to the discussion,5,7,8
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-N,Build on others' talk in conversations by linking their comments to the remarks of others,6,8,9
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-O,Identify when additional information is needed to understand a topic and formulate specific questions,7,8,9
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,skill_id-P,"Lead a 3-minute small group discussion about a familiar topic, ensuring all members participate",8,9,10
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-E,Sequence 3-4 events in chronological order when sharing a personal story,2,4,3
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-F,Use appropriate gestures and facial expressions to enhance verbal communication,2,5,3
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-G,Ask relevant follow-up questions after listening to peers' presentations,3,5,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-H,Maintain appropriate eye contact with audience during a 1-minute presentation,3,6,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-I,Use props effectively to support a brief show-and-tell presentation,3,5,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-J,Respond to audience questions with relevant answers,3,6,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-K,Present information in complete sentences with appropriate volume,2,5,3
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-L,Stay on topic for the duration of a 2-minute presentation,4,7,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-M,"Use basic transition words (first, next, last) when presenting information",3,5,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-N,Demonstrate active listening during peer presentations by facing the speaker and remaining still,2,4,3
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-O,Share personal experiences using appropriate past tense verbs,3,6,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,skill_id-P,Compare and contrast two objects or experiences in a presentation format,4,7,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-A,"Sort picture cards into nouns (people, places, things) and verbs (actions) with 90% accuracy",1,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-B,"Act out verbs (e.g., jump, clap) when shown the corresponding word card",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-C,"Use descriptive adjectives to verbally enhance simple sentences (e.g., ""big red ball"")",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-A,"Arrange word cards to form complete sentences (e.g., ""The cat sleeps."")",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-B,"Identify and add correct ending punctuation (., ?, !) to printed sentences",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-C,"Combine two short phrases into a compound sentence using ""and"" (e.g., ""I like apples and bananas."")",4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-A,"Match vocabulary words to corresponding images (e.g., ""transportation"" to car, bus)",1,3,2
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-B,"Use new vocabulary words in oral sentences during play-based activities",2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-C,"Sort words into categories (e.g., animals vs. foods) with 85% accuracy",3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-A,"Guess word meanings using picture clues in a storybook",2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-B,"Act out the meaning of a new word learned from a read-aloud story",3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-C,"Use sentence context to choose the correct meaning of a multiple-meaning word (e.g., ""bat"")",4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-A,"Identify main characters in a story using picture clues",1,3,2
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-B,"Match settings (e.g., farm, city) to corresponding story illustrations",2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-C,"Sequence 3-4 story events using picture cards",3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-A,"Predict what happens next in a story using visual prompts",3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-B,"Answer ""why"" questions about character actions in a read-aloud",4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-C,"Connect story events to personal experiences during group discussions",4,7,5
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-A,"Use puppets to create a simple story with a beginning and ending",2,4,3
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-B,"Collaborate with peers to act out an original story using props",3,5,4
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-C,"Draw and describe a fictional character with unique traits",4,6,5
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-A,"Role-play familiar stories using expressive voices and gestures",2,4,3
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-B,"Invent dialogue for wordless picture books during group activities",3,5,4
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-C,"Create a short class play based on a shared story or theme",5,7,6
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-A,"Gather information from provided sources (e.g., books, pictures) to answer a question",1,3,2  
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-B,"Participate in shared research projects by contributing one fact about a topic",2,4,3  
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-C,"Recall information from experiences (e.g., field trips) to add details to writing",3,5,4  
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-D,"Create a simple fact sheet with pictures and labels about a class topic",4,6,5  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-A,"Capitalize the first word in a sentence and the pronoun ""I"" consistently",2,4,3  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-B,"Recognize and name end punctuation (period, question mark, exclamation point)",1,3,2  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-C,"Spell simple CVC words phonetically (e.g., ""cat"", ""sun"")",3,5,4  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-D,"Use finger spaces between words in all written sentences",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-D,"Expand simple sentences by adding descriptive words (e.g., ""The big cat sleeps."")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-E,"Differentiate between complete sentences and sentence fragments using picture-word prompts",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-F,"Use conjunctions (and, but, so) to connect ideas in oral and written sentences",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-G,"Write simple questions ending with a question mark (e.g., ""Can I play?"")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-H,"Build sentences using subject-verb-object word cards (e.g., ""Dog eats bone."")",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-I,"Identify the subject and action in spoken sentences during interactive games",2,3,2
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-D,"Identify simple synonyms (e.g., ""happy/glad"") using picture pairs",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-E,"Sort antonym pairs (e.g., hot/cold, big/small) with 80% accuracy",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-F,"Group words by function (e.g., ""things we eat"" vs. ""things we wear"")",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-D,"Use picture scenes to infer meanings of unfamiliar words during read-alouds",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-E,"Act out multiple meanings of words (e.g., ""bat"" as animal vs. sports tool)",4,6,5  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-F,"Create silly sentences using new vocabulary words from a story",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-A,"Build thematic word webs (e.g., ""weather"": rain, sun, cloud)",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-B,"Match related word pairs (e.g., ""shoe/sock"", ""spoon/bowl"")",1,3,2  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-C,"Identify word associations through group games (e.g., ""What goes with tree?"" → ""bird"")",2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-G,"Match words to their opposites using picture cards (e.g., ""fast/slow"")",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-H,"Sort words into color categories (e.g., red, blue, green) with 90% accuracy",1,3,2  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-I,"Use descriptive words (e.g., ""fluffy"", ""spiky"") to label tactile objects",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-J,"Identify gradable antonyms (e.g., ""hot/warm/cool/cold"") using temperature props",4,6,5  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-K,"Group words by texture (e.g., ""smooth"", ""rough"") during a sensory bin activity",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-L,"Create a word collage for emotions (e.g., ""happy"", ""angry"") using magazine cutouts",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-G,"Guess word meanings using gestures from a teacher during storytime",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-H,"Use puppets to demonstrate the meaning of new vocabulary words",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-I,"Identify words that 'fit' a story scene (e.g., ""rainy day"" words for a storm illustration)",4,6,5  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-J,"Solve riddles using context clues (e.g., ""I’m sticky and sweet. What am I?"" → ""honey"")",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-K,"Role-play actions to explain verbs (e.g., ""march"", ""whisper"")",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-D,"Create word families using rhyming mats (e.g., ""-at"": cat, hat, mat)",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-E,"Match objects to their related locations (e.g., ""fish/pond"", ""book/library"")",1,3,2  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-F,"Build chains of associated words (e.g., ""sun → beach → sand → shovel"")",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-G,"Sort words by season (e.g., ""snowman"", ""ice cream"")",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-A,"Use new vocabulary in 'show and tell' presentations",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-B,"Incorporate action words into classroom commands (e.g., ""skip to the door"")",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-C,"Describe a picture using 3-4 new vocabulary words from a word bank",4,6,5  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-D,"Play 'word charades' to act out and guess vocabulary terms",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-E,"Create a class story by adding one new word per student",3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-F,"Incorporate vocabulary into daily weather reports (e.g., ""Today is sunny"")",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-G,"Use descriptive words to label classroom objects during scavenger hunts",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-H,"Create a word-based art project (e.g., collage using texture words like ""bumpy"" or ""smooth"")",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-I,"Role-play scenarios using occupation-related vocabulary (e.g., ""chef"", ""astronaut"")",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-J,"Build sentences with magnetic words including new vocabulary",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-K,"Record spoken sentences using vocabulary words on a digital device",4,6,5  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-L,"Use vocabulary in simple science experiments (e.g., ""mix"", ""pour"")",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-M,"Construct a ""word wall"" with illustrated vocabulary cards created by students",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-N,"Integrate vocabulary into math activities (e.g., ""count five apples"")",2,4,3  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-O,"Participate in ""word of the day"" challenges during circle time",1,3,2  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-P,"Create rhyming sentences using new vocabulary words",4,6,5  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-Q,"Use vocabulary in guided play scenarios (e.g., ""grocery store"" with food words)",3,5,4  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-R,"Write and illustrate a mini-book using 5-7 new vocabulary words",5,7,6  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-S,"Develop a class recipe using action and ingredient words",4,6,5  
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-T,"Match vocabulary words to their functions (e.g., ""scissors"" → ""cut"")",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-A,"Sort picture cards into singular/plural nouns (e.g., ""cat/cats"")",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-B,"Add ""a"" or ""an"" to noun phrases using picture prompts (e.g., ""a apple"" → ""an apple"")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-C,"Act out irregular plurals (e.g., ""mouse/mice"") with puppets",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-A,"Match pronouns (I, you, he, she) to corresponding pictures of people",1,3,2  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-B,"Replace nouns with pronouns in spoken sentences (e.g., ""Tom runs"" → ""He runs"")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-C,"Use possessive pronouns (my, your) in show-and-tell activities",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-A,"Demonstrate positional words (in, on, under) using classroom objects",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-B,"Follow instructions with prepositions (e.g., ""Put the bear *beside* the box"")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-C,"Create a scene with toys and describe locations using prepositions",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-A,"Act out present/past tense verbs (e.g., ""jump/jumped"") with gesture games",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-B,"Sort picture cards into ""happening now"" vs. ""already happened""",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-C,"Use helping verbs (is, are) in simple sentences (e.g., ""The cat *is* sleeping"")",3,5,4 
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-E,"Capitalize names of people and pets in written sentences",2,4,3  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-F,"Use lowercase letters for all non-initial words in sentences",3,5,4  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-G,"Edit peer writing by circling missing capitals or punctuation",4,6,5  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-H,"Use a spacer tool to ensure consistent finger spaces between words",2,4,3  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-I,"Choose correct end punctuation (., ?, !) for emotion-based sentences",3,5,4  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-J,"Spell 10 high-frequency sight words (e.g., ""the"", ""and"") correctly in writing",3,6,5  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-K,"Identify and fix mixed-up lowercase/uppercase letters in simple sentences",2,4,3  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-L,"Write dates with capitalized month names (e.g., ""October 5"")",4,6,5  
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-M,"Use apostrophes in contractions (e.g., ""can't"") with teacher support",5,7,6  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-M,"Sort common vs. proper nouns using picture cards (e.g., ""city"" vs. ""New York"")",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-N,"Identify verbs in action songs (e.g., ""swim"", ""dance"" during music time)",1,3,2  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-O,"Use superlative adjectives (e.g., ""biggest"", ""smallest"") during show-and-tell",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-P,"Match adverbs to verbs in illustrated scenarios (e.g., ""sleep peacefully"")",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-Q,"Create a noun-verb-adjective mural (e.g., ""bright sun shines"")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-R,"Act out adverb-verb pairs (e.g., ""walk slowly"", ""laugh loudly"")",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-S,"Sort words into noun/verb/adjective/adverb categories using interactive games",3,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-T,"Label classroom objects with compound phrases (e.g., ""fluffy pillow"", ""wooden chair"")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-U,"Identify possessive pronouns (my, your) in illustrated story prompts",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-V,"Use prepositions (over, between) to describe toy arrangements",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-W,"Create sentences using conjunctions (and, but) with picture prompts",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-X,"Identify articles (a, an, the) in simple sentences during read-alouds",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-Y,"Sort interjections (e.g., ""Wow!"", ""Oops!"") by emotion using emoji cards",2,3,2  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-Z,"Build sentences with mixed parts of speech using magnetic word kits",4,7,6  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-AA,"Role-play professions using noun-verb pairs (e.g., ""chef cooks"", ""artist paints"")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-AB,"Use demonstrative pronouns (this, that) to describe objects in a scavenger hunt",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-AC,"Identify abstract nouns (e.g., ""love"", ""joy"") in illustrated story contexts",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-AD,"Sort action verbs vs. linking verbs (e.g., ""run"" vs. ""is"") with picture cards",5,7,6  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-AE,"Create a parts-of-speech flipbook with examples (nouns, verbs, adjectives)",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-AF,"Play ""Grammar Bingo"" with words from different parts of speech",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-D,"Sort nouns by plural endings (-s, -es) using picture cards (e.g., ""bus/buses"", ""box/boxes"")",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-E,"Construct sentences using plural nouns during group storytime (e.g., ""I see two cats."")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-F,"Play a listening game to identify singular/plural nouns (e.g., ""star"" vs. ""stars"")",1,3,2  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-G,"Match irregular plurals (e.g., ""tooth/teeth"") with illustrated flashcards",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-H,"Choose between ""a"", ""an"", or ""the"" for nouns in sentence frames",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-I,"Sort nouns into ""definite (the)"" vs. ""indefinite (a/an)"" categories",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-J,"Complete sentences with missing articles using picture prompts",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-K,"Act out plural nouns in charades (e.g., ""jumping frogs"", ""flying birds"")",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-L,"Create a group story using plural nouns from a themed word bank",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-M,"Find classroom objects and describe them using articles (e.g., ""I found *a* pencil."")",1,3,2  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-N,"Play Plural Noun Bingo with cards showing singular/plural pairs",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-O,"Sort toys into singular/plural groups (e.g., one block vs. three blocks)",1,3,2  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-P,"Use puppets to demonstrate article usage in dialogues (e.g., ""Give me *the* book."")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-Q,"Draw pictures of singular/plural nouns (e.g., one tree vs. many trees)",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-R,"Match article cards (a, an, the) to corresponding noun cards",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-S,"Create a ""Plural Garden"" collage with flowers labeled with plural nouns",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-T,"Identify articles in read-aloud texts using highlighters",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-D,"Sort pronouns into subject (I, he, she) and object (me, him, her) categories using picture cards",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-E,"Use possessive pronouns (his, her) to describe family photos during circle time",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-F,"Act out sentences with reflexive pronouns (e.g., ""I did it myself!"") using role-play",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-G,"Match plural pronouns (we, they) to group scenarios (e.g., ""We play soccer."")",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-H,"Replace nouns with pronouns in illustrated storybook sentences (e.g., ""The girl runs"" → ""She runs"")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-I,"Play ""Pronoun Charades"" to act out sentences like ""They are dancing""",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-J,"Sort pronouns by gender (he/she) and number (singular/plural) using interactive charts",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-K,"Use pronouns in daily classroom routines (e.g., ""She is line leader today."")",1,3,2  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-L,"Create pronoun-illustration pairs (e.g., draw ""we"" as two friends holding hands)",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-M,"Identify pronouns in songs or nursery rhymes (e.g., ""Row, row, row *your* boat"")",1,3,2  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-N,"Build sentences with mixed pronouns using magnetic word boards (e.g., ""He likes apples."")",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-O,"Use pronouns to describe peers during ""All About Us"" class discussions",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-D,"Sort objects into groups based on positional words (e.g., ""above/below"" using toy shelves)",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-E,"Follow a treasure map with prepositional clues (e.g., ""The key is *next to* the book."")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-F,"Act out prepositions through movement games (e.g., ""Crawl *under* the table!"")",1,3,2  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-G,"Draw and label a scene using 3-4 prepositions (e.g., ""The bird is *on* the branch."")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-H,"Build block structures and describe placements (e.g., ""The red block is *between* two blue blocks."")",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-I,"Play ""Preposition Simon Says"" (e.g., ""Stand *behind* your chair!"")",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-J,"Match sentence cards to pictures showing correct prepositions (e.g., ""The cat is *in front of* the door."")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-K,"Use puppets to role-play prepositional phrases (e.g., ""The frog jumps *over* the log."")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-L,"Create a class book titled ""Where Are We?"" with photos of peers using prepositions",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-M,"Sort preposition cards into ""location"" vs. ""direction"" categories (e.g., ""under"" vs. ""toward"")",5,7,6  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-N,"Design a obstacle course and describe paths using prepositions (e.g., ""Crawl *through* the tunnel."")",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-O,"Identify prepositions in read-aloud texts using sticky notes",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-D,"Use future tense verbs with ""will"" in simple sentences (e.g., ""I will play."")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-E,"Match irregular past tense verbs to their present forms using picture cards (e.g., ""run/ran"")",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-F,"Practice subject-verb agreement in spoken sentences (e.g., ""The dog *barks*"" vs. ""Dogs *bark*"")",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-G,"Sort verbs into action (e.g., ""jump"") and linking (e.g., ""is"") categories",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-H,"Play Verb Tense Charades (act out present, past, or future actions)",2,4,3  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-I,"Create sentences using helping verbs (am, is, are) with picture prompts",3,5,4  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-J,"Build a collaborative story using verbs in different tenses (e.g., ""Today we *play*, yesterday we *played*"")",4,6,5  
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-K,"Identify verbs in nursery rhymes or songs (e.g., ""Row, row, row your boat"")",1,3,2  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-A,"Identify the main topic of a story using picture clues (e.g., ""This story is about friendship."")",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-B,"Match supporting details to the main idea using illustrated sentence strips",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-C,"Create a group summary of a story using 1-2 key details",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-A,"Compare characters from two stories using Venn diagram stickers",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-B,"Identify similar settings across different books using picture cards",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-C,"Discuss preferences between stories (e.g., ""I like *Bear Snores On* more because..."")",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-05,Author’s Purpose,LA006-05-A,"Sort books into categories: ""For fun"" vs. ""To teach us something""",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-05,Author’s Purpose,LA006-05-B,"Role-play an author’s goal (e.g., ""I wrote this to make you laugh!"")",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-05,Author’s Purpose,LA006-05-C,"Create a simple class book with a clear purpose (e.g., ""Our Animal Facts Book"")",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-A,"Identify titles and headings in nonfiction books",1,3,2  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-B,"Use labels in diagrams to answer simple questions (e.g., ""Point to the butterfly’s wings."")",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-C,"Create a picture glossary for a class story with teacher support",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-D,"Identify the main problem in a story using picture prompts (e.g., ""The bear is hungry!"")",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-E,"Match solutions to story problems (e.g., ""Share food"" solves ""The bear is hungry"")",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-F,"Label story structure (beginning, middle, end) using sequenced picture cards",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-G,"Describe character traits using adjectives (e.g., ""brave"", ""kind"") with emotion cards",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-H,"Sort stories into fiction vs. nonfiction categories using book covers",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-I,"Predict outcomes based on story events (e.g., ""What will the mouse do next?"")",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-J,"Identify the lesson or moral of a fable (e.g., ""Slow and steady wins the race!"")",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-K,"Compare two versions of the same story (e.g., ""The Three Little Pigs"" vs. ""The True Story"")",5,7,6  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-L,"Retell stories using puppets or props to act out key events",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-M,"Match dialogue bubbles to characters in illustrated scenes",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-N,"Identify repeated phrases or patterns in stories (e.g., ""I’ll huff and puff!"")",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-O,"Draw a story map showing where characters go during the plot",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-P,"Discuss how illustrations contribute to the story mood (e.g., ""dark clouds mean trouble"")",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-Q,"Create an alternate ending to a familiar story using drawings or dictation",5,7,6  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-D,"Use picture clues to infer character feelings (e.g., ""How does the bear feel?"")",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-E,"Predict outcomes using prior knowledge (e.g., ""It’s raining. What will she carry?"")",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-F,"Differentiate between explicit and inferred details using sorting cards",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-G,"Role-play character motivations (e.g., ""Why did the mouse hide?"")",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-H,"Identify cause-effect relationships in stories (e.g., ""The vase broke because...""",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-I,"Infer story settings using environmental clues (e.g., snow = winter)",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-J,"Draw conclusions from dialogue (e.g., ""‘I’m scared!’ means the character is...""",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-K,"Use puppets to explain why events happened in a story",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-L,"Guess characters’ unspoken thoughts using thought bubbles",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-M,"Match emotions to character actions (e.g., crying = sad)",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-N,"Create a ‘What’s Missing?’ game to infer omitted story details",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-O,"Use props to act out possible story continuations",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-P,"Discuss ‘What if...?’ scenarios (e.g., ""What if the hero didn’t help?"")",5,7,6  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-Q,"Identify clues that foreshadow events (e.g., dark clouds = storm)",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-D,"Sort details into 'Main Idea' and 'Extra Information' using picture cards",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-E,"Draw the main idea and add detail stickers (e.g., 'Friendship' + hugging friends)",1,3,2  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-F,"Use a graphic organizer (web) to link details to the main topic",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-G,"Act out a main idea and details in a puppet show",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-H,"Choose the main idea from 3 options after a read-aloud",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-I,"Create a collage: main idea (center) + details (edges)",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-J,"Play 'Detail Detective' to match clues to main ideas",2,4,3  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-K,"Build a block scene representing a main idea and label details",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-L,"Identify the main idea in a song (e.g., 'The Wheels on the Bus')",1,3,2  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-M,"Discuss how details support the main idea using a class anchor chart",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-N,"Use a tablet app to drag details under the correct main idea",3,5,4  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-O,"Create a 'Main Idea Museum' with student-made exhibits",5,7,6  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-P,"Sequence story pictures to show how details build the main idea",4,6,5  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-Q,"Compare two main ideas using a class Venn diagram",5,7,6  
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-R,"Dictate a sentence about the main idea and draw supporting details",3,5,4     

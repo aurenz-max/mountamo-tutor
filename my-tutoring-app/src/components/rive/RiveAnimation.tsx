@@ -1,69 +1,38 @@
 // app/components/rive/RiveAnimation.tsx
 import { useRive } from '@rive-app/react-canvas';
-import { useState } from 'react';
+import { useEffect } from 'react';
 
-export default function RiveAnimation() {
-  // Replace these with the actual animation names from your console.log output
-  const availableAnimations = [
-    'Wave',
-    'Happy Smile',
-    'Question',
-    'Talking 1',
-    'Talking 2',
-    'Idle 1',
-    'Idle 2'
-  ];
+interface RiveAnimationProps {
+  animationName?: string;
+  src?: string;
+}
 
-  const [currentAnimation, setCurrentAnimation] = useState(availableAnimations[0]);
-
+export default function RiveAnimation({ 
+  animationName = 'Idle 1',
+  src = '/animations/elemental.riv' 
+}: RiveAnimationProps) {
   const { rive, RiveComponent } = useRive({
-    src: '/animations/elemental.riv',
+    src: src,
     autoplay: true,
-    animations: currentAnimation,
+    animations: animationName,
   });
 
-  const playAnimation = (animationName) => {
-    if (rive) {
+  // Update animation when prop changes
+  useEffect(() => {
+    if (rive && animationName) {
       rive.play(animationName);
-      setCurrentAnimation(animationName);
     }
-  };
+  }, [animationName, rive]);
 
   return (
-    <div>
-      <div style={{ 
-        width: '300px', 
-        height: '300px', 
-        border: '1px solid #eee',
-        borderRadius: '8px',
-        overflow: 'hidden'
-      }}>
-        <RiveComponent />
-      </div>
-      
-      <div style={{ 
-        marginTop: '15px', 
-        display: 'flex', 
-        flexWrap: 'wrap',
-        gap: '8px' 
-      }}>
-        {availableAnimations.map(animation => (
-          <button
-            key={animation}
-            onClick={() => playAnimation(animation)}
-            style={{
-              padding: '8px 12px',
-              background: currentAnimation === animation ? '#4a90e2' : '#f0f0f0',
-              color: currentAnimation === animation ? 'white' : 'black',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            {animation}
-          </button>
-        ))}
-      </div>
+    <div style={{ 
+      width: '100%', 
+      height: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <RiveComponent style={{ width: '100%', height: '100%' }} />
     </div>
   );
 }

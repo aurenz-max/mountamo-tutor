@@ -1,0 +1,67 @@
+{
+  "skill_id": "PS-01",
+  "skill_name": "Properties of Materials",
+  "skill_description": "Observe and describe physical properties of everyday materials including texture, weight, hardness, and flexibility.",
+  "subskills": [
+    {
+      "SUBSKILL_ID": "prop-A",
+      "DESCRIPTION": "Sort objects into groups based on a single observable property (e.g., all smooth objects, all rough objects)",
+      "DIFFICULTY": "1-2-1"
+    },
+    {
+      "SUBSKILL_ID": "prop-B",
+      "DESCRIPTION": "Use descriptive words to compare the texture of two different objects (rough/smooth, bumpy/flat)",
+      "DIFFICULTY": "1-3-2"
+    },
+    {
+      "SUBSKILL_ID": "prop-C",
+      "DESCRIPTION": "Compare the weight of two objects using hands to determine which is heavier/lighter",
+      "DIFFICULTY": "2-3-2"
+    },
+    {
+      "SUBSKILL_ID": "prop-D",
+      "DESCRIPTION": "Test and describe whether common objects are flexible or rigid by attempting to bend them",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "prop-E",
+      "DESCRIPTION": "Use simple tools (balance scale) to compare and order 3 objects by weight",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "prop-F",
+      "DESCRIPTION": "Identify and group materials based on hardness by testing if they can be scratched with a fingernail",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "prop-G",
+      "DESCRIPTION": "Compare and contrast two materials using multiple properties (texture AND weight)",
+      "DIFFICULTY": "4-6-5"
+    },
+    {
+      "SUBSKILL_ID": "prop-H",
+      "DESCRIPTION": "Predict whether objects will sink or float based on observable properties before testing",
+      "DIFFICULTY": "5-7-6"
+    },
+    {
+      "SUBSKILL_ID": "prop-I",
+      "DESCRIPTION": "Sort a collection of 6-8 objects into a Venn diagram based on two properties (e.g., hard/soft and heavy/light)",
+      "DIFFICULTY": "6-8-7"
+    },
+    {
+      "SUBSKILL_ID": "prop-J",
+      "DESCRIPTION": "Design and conduct a simple investigation to test which materials are best for a specific purpose based on their properties",
+      "DIFFICULTY": "7-9-8"
+    },
+    {
+      "SUBSKILL_ID": "prop-K",
+      "DESCRIPTION": "Create and present a \"property museum\" featuring 5 objects, describing multiple properties of each",
+      "DIFFICULTY": "8-10-9"
+    },
+    {
+      "SUBSKILL_ID": "prop-L",
+      "DESCRIPTION": "Compare similar objects made of different materials and explain how their properties affect their use",
+      "DIFFICULTY": "8-10-9"
+    }
+  ]
+}

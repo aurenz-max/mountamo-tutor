@@ -1,0 +1,61 @@
+{
+  "skill_id": "SCI001-01",
+  "skill_name": "Forces and Motion",
+  "subskills": [
+    {
+      "SUBSKILL_ID": "Forces_Motion-E",
+      "DESCRIPTION": "Sort objects by their ability to float or sink in water, predicting and testing their motion",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-F",
+      "DESCRIPTION": "Demonstrate how magnets can move objects without touching them through magnetic force",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-G",
+      "DESCRIPTION": "Create a simple ramp system to show how incline affects object speed and distance",
+      "DIFFICULTY": "3-6-4"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-H",
+      "DESCRIPTION": "Identify and sort objects that bounce versus those that don't, explaining observed differences",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-I",
+      "DESCRIPTION": "Use wind (breath or fan) to move lightweight objects, controlling direction and distance",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-J",
+      "DESCRIPTION": "Balance objects of different weights on a simple seesaw to explore equilibrium",
+      "DIFFICULTY": "4-6-5"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-K",
+      "DESCRIPTION": "Demonstrate how objects in water can be moved by creating waves and currents",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-L",
+      "DESCRIPTION": "Sort materials by their ability to stretch and return to original shape",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-M",
+      "DESCRIPTION": "Create and test paper airplane designs to explore air resistance and flight",
+      "DIFFICULTY": "4-6-5"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-N",
+      "DESCRIPTION": "Compare how different balls roll on various surfaces (carpet, wood, grass)",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "Forces_Motion-O",
+      "DESCRIPTION": "Design and build a simple pendulum to observe repeated motion patterns",
+      "DIFFICULTY": "4-7-5"
+    }
+  ]
+}

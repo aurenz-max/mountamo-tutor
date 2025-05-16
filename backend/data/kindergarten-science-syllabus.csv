@@ -1,0 +1,17 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+Science,Kindergarten,LIFE001,Living Things,LIFE001-01,Identify living and non-living things,LIFE001-01-A,Differentiate between living and non-living things,1,7,4
+Science,Kindergarten,LIFE001,Living Things,LIFE001-01,Identify living and non-living things,LIFE001-01-B,"Name basic needs of living things (food, water, air)",1,7,4
+Science,Kindergarten,LIFE001,Living Things,LIFE001-02,Observe and describe plants and animals,LIFE001-02-A,"Identify basic parts of plants (roots, stem, leaves, flowers)",4,8,6
+Science,Kindergarten,LIFE001,Living Things,LIFE001-02,Observe and describe plants and animals,LIFE001-02-B,Name common body parts of animals,4,8,6
+Science,Kindergarten,EARTH001,Earth and Space,EARTH001-01,Recognize basic features of Earth,EARTH001-01-A,Identify land and water on a simple map or globe,4,8,6
+Science,Kindergarten,EARTH001,Earth and Space,EARTH001-01,Recognize basic features of Earth,EARTH001-01-B,"Recognize and name basic weather conditions (sunny, rainy, cloudy, windy)",1,7,4
+Science,Kindergarten,EARTH001,Earth and Space,EARTH001-02,Observe and describe objects in the sky,EARTH001-02-A,"Identify the Sun, Moon, and stars",1,7,4
+Science,Kindergarten,EARTH001,Earth and Space,EARTH001-02,Observe and describe objects in the sky,EARTH001-02-B,Recognize that the Sun provides light and warmth,4,8,6
+Science,Kindergarten,MATTER001,Matter and Its Properties,MATTER001-01,Explore properties of objects and materials,MATTER001-01-A,"Sort objects by observable properties (color, shape, size, texture)",4,8,6
+Science,Kindergarten,MATTER001,Matter and Its Properties,MATTER001-01,Explore properties of objects and materials,MATTER001-01-B,"Identify basic states of matter (solid, liquid)",6,10,8
+Science,Kindergarten,MATTER001,Matter and Its Properties,MATTER001-02,Investigate simple physical changes,MATTER001-02-A,"Observe how materials can change (e.g., ice melting, water freezing)",4,8,6
+Science,Kindergarten,MATTER001,Matter and Its Properties,MATTER001-02,Investigate simple physical changes,MATTER001-02-B,"Explore how objects move (push, pull, roll, slide)",1,7,4
+Science,Kindergarten,ECOSYS001,Ecosystems and Environments,ECOSYS001-01,Recognize different types of environments,ECOSYS001-01-A,"Identify basic habitats (forest, ocean, desert)",4,8,6
+Science,Kindergarten,ECOSYS001,Ecosystems and Environments,ECOSYS001-01,Recognize different types of environments,ECOSYS001-01-B,Match common animals to their habitats,4,8,6
+Science,Kindergarten,ECOSYS001,Ecosystems and Environments,ECOSYS001-02,Understand basic environmental care,ECOSYS001-02-A,Recognize ways to care for plants and animals,1,7,4
+Science,Kindergarten,ECOSYS001,Ecosystems and Environments,ECOSYS001-02,Understand basic environmental care,ECOSYS001-02-B,Identify ways to keep the environment clean,1,7,4

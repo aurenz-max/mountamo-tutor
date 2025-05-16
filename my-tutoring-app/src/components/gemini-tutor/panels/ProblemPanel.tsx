@@ -1,5 +1,5 @@
 // components/gemini-tutor/panels/ProblemPanel.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Brain, RefreshCw, Loader2, ChevronLeft, ChevronRight, CheckCircle, TrendingUp } from 'lucide-react';
 import DrawingCanvas from '../ui/DrawingCanvas';
 import { api } from '@/lib/api';
@@ -16,15 +16,19 @@ interface ProblemPanelProps {
   };
   ageGroup: string;
   onSubmit: (problem: any, canvasData?: string) => void;
+  onProblemDisplay?: (problem: any) => void;
   studentId?: number;
+  onToggle?: (isOpen: boolean) => void;
 }
 
-export const ProblemPanel: React.FC<ProblemPanelProps> = ({ 
+export const ProblemPanel = forwardRef<any, ProblemPanelProps>(({ 
   initialCurriculum, 
   ageGroup,
   onSubmit,
-  studentId = 1
-}) => {
+  onProblemDisplay,
+  studentId = 1,
+  onToggle
+}, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [problemData, setProblemData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -37,6 +41,24 @@ export const ProblemPanel: React.FC<ProblemPanelProps> = ({
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const canvasRef = useRef<any>(null);
+
+  // Expose canvas data getter to parent
+  useImperativeHandle(ref, () => ({
+    getCanvasData: () => {
+      if (canvasRef.current) {
+        return canvasRef.current.getCanvasData();
+      }
+      return null;
+    },
+    isOpen: () => isOpen,
+    hasProblem: () => !!problemData
+  }));
+
+  // Handle panel toggle with callback
+  const handleToggle = (newState: boolean) => {
+    setIsOpen(newState);
+    onToggle?.(newState);
+  };
 
   const fetchProblems = async () => {
     setLoading(true);
@@ -65,6 +87,8 @@ export const ProblemPanel: React.FC<ProblemPanelProps> = ({
         setProblems(fetchedProblems);
         setProblemData(fetchedProblems[0]);
         setCurrentProblemIndex(0);
+        // Notify parent about the new problem
+        onProblemDisplay?.(fetchedProblems[0]);
       } else {
         throw new Error('No problems available');
       }
@@ -91,6 +115,8 @@ export const ProblemPanel: React.FC<ProblemPanelProps> = ({
       setProblemData(problemData);
       setProblems([problemData]);
       setCurrentProblemIndex(0);
+      // Notify parent about the new problem
+      onProblemDisplay?.(problemData);
     } catch (err) {
       console.error('Failed to generate problem:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate problem');
@@ -107,23 +133,29 @@ export const ProblemPanel: React.FC<ProblemPanelProps> = ({
 
   const handleNextProblem = () => {
     if (currentProblemIndex < problems.length - 1) {
+      const nextProblem = problems[currentProblemIndex + 1];
       setCurrentProblemIndex(currentProblemIndex + 1);
-      setProblemData(problems[currentProblemIndex + 1]);
+      setProblemData(nextProblem);
       setFeedbackData(null);
       if (canvasRef.current) {
         canvasRef.current.clearCanvas();
       }
+      // Notify parent about the new problem
+      onProblemDisplay?.(nextProblem);
     }
   };
 
   const handlePreviousProblem = () => {
     if (currentProblemIndex > 0) {
+      const previousProblem = problems[currentProblemIndex - 1];
       setCurrentProblemIndex(currentProblemIndex - 1);
-      setProblemData(problems[currentProblemIndex - 1]);
+      setProblemData(previousProblem);
       setFeedbackData(null);
       if (canvasRef.current) {
         canvasRef.current.clearCanvas();
       }
+      // Notify parent about the new problem
+      onProblemDisplay?.(previousProblem);
     }
   };
 
@@ -188,7 +220,7 @@ export const ProblemPanel: React.FC<ProblemPanelProps> = ({
       {/* Toggle Button */}
       <div className="fixed left-0 top-1/2 -translate-y-1/2 z-50">
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => handleToggle(!isOpen)}
           className={`group flex items-center justify-center h-24 bg-purple-600 text-white hover:bg-purple-700 transition-all duration-300 shadow-lg ${
             isOpen ? 'w-12 rounded-r-xl' : 'w-16 rounded-r-2xl'
           }`}
@@ -376,9 +408,9 @@ export const ProblemPanel: React.FC<ProblemPanelProps> = ({
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={() => handleToggle(false)}
         />
       )}
     </>
   );
-};
+});

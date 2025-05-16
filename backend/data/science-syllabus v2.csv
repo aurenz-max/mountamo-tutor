@@ -1,0 +1,31 @@
+Subject,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+Science,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-E,Sort living and non-living things in the environment using observable characteristics,1.0,4.0,2.0
+Science,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-E,Match animals to their homes/habitats through hands-on activities and picture sorting,2.0,5.0,3.0
+Science,SCI002,Life Sciences,SCI002-01,Scientific Observation Skills,SCI002-01-A,Scientific Observation Skills,1.0,6.0,3.0
+Science,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-D,Practice personal hygiene routines and understand their importance for health,1.0,4.0,2.0
+Science,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-E,Explore seasonal changes in plants and animals through observation journals,3.0,7.0,5.0
+Science,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-E,Create models of plant parts using art materials and label their functions,2.0,5.0,3.0
+Science,SCI002,Life Sciences,SCI002-02,Environmental Stewardship,SCI002-02-A,Environmental Stewardship,2.0,6.0,4.0
+Science,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-D,Compare human and animal body parts and movements through movement activities,2.0,5.0,3.0
+Science,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-E,"Use simple tools (rain gauge, wind sock, thermometer) to collect weather data",1.0,4.0,2.0
+Science,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-E,"Sort and classify natural materials (rocks, soil, leaves) by observable properties",1.0,3.0,2.0
+Science,SCI003,Earth and Space Sciences,SCI003-01,Environmental Stewardship,SCI003-01-A,Environmental Stewardship,2.0,6.0,4.0
+Science,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-D,Create simple models of day/night using flashlights and spheres,2.0,5.0,3.0
+Science,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-E,Express weather observations through art and movement,1.0,3.0,2.0
+Science,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-E,Compare seasonal changes in local plants and animals,2.0,5.0,3.0
+Science,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-D,Use positional vocabulary to describe object locations in the sky,1.0,4.0,2.0
+Science,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-E,Create and use simple maps of familiar spaces,3.0,6.0,4.0
+Science,SCI004,Engineering and Technology,SCI004-01,Safety Awareness and Procedures,SCI004-01-A,Safety Awareness and Procedures,1.0,5.0,3.0
+Science,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-D,Communicate design ideas through verbal description,1.0,4.0,2.0
+Science,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-D,Sort and classify tools by their uses,2.0,5.0,3.0
+Science,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-D,Identify problems in daily classroom activities,1.0,4.0,2.0
+Science,SCI004,Engineering and Technology,SCI004-02,Collaborative Engineering,SCI004-02-A,Collaborative Engineering,3.0,7.0,5.0
+Science,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-D,Connect technology use to specific community helpers,2.0,5.0,3.0
+Science,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-D,Use simple measurement tools in design process,3.0,6.0,4.0
+Science,SCI001,Physical Sciences,SCI001-01,Scientific Observation and Recording (Basic documentation of experiments and observations through drawings and simple charts),SCI001-01-A,Scientific Observation and Recording (Basic documentation of experiments and observations through drawings and simple charts),1.0,5.0,3.0
+Science,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-E,Predict Motion Outcomes (Make simple predictions about how objects will move based on their properties),2.0,6.0,4.0
+Science,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-E,Properties in Daily Life (Connect material properties to everyday objects and their uses),1.0,4.0,2.0
+Science,SCI001,Physical Sciences,SCI001-02,Safety in Science (Basic laboratory and experiment safety rules and practices),SCI001-02-A,Safety in Science (Basic laboratory and experiment safety rules and practices),1.0,3.0,2.0
+Science,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-D,Energy Conservation Basics (Simple ways to save energy in daily life),2.0,5.0,3.0
+Science,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-E,Sensory Exploration of Materials (Using multiple senses to investigate material properties),1.0,4.0,2.0
+Science,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-D,Sound Patterns and Music (Connecting energy concepts with musical patterns and rhythm),2.0,6.0,4.0

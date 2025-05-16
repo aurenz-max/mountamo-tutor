@@ -1,0 +1,21 @@
+
+**Exhibit 1: Length Comparison**
+
+*   **Title:** Long and Short!
+*   **Description:** A table with pictures of two objects for comparison. The first row has a picture of a long bus and a short car. The second row has a picture of a long snake and a short worm. Each object should be clearly labeled (e.g., "Long Bus," "Short Car"). An arrow stretches across the images, pointing from left to right, emphasizing the comparison. A label above the arrow states "Longer Than."
+*   **Educational Goal:** To visually demonstrate the concept of length and enable students to compare objects based on their length.
+*   **Layout:** Two columns, with contrasting lengths of familiar objects. Each object should have a simple, clear illustration.
+
+**Exhibit 2: Weight Comparison**
+
+*   **Title:** Heavy and Light!
+*   **Description:** A balance scale with pictures of objects on each side. The first image should show a heavy object (like a rock) on one side of the scale and a light object (like a feather) on the other. The heavy object's side should be lower on the scale. The second image should show a heavy book and a light ball. Label each object clearly (e.g., "Heavy Rock," "Light Feather"). Add text to emphasize which is heavier: "The rock is heavier than the feather."
+*   **Educational Goal:** To illustrate the concept of weight and enable students to compare the weight of objects using a visual representation of a balance scale.
+*   **Layout:** Two columns, each showing a balance scale with different objects illustrating heavy vs. light.
+
+**Exhibit 3: Size Comparison**
+
+*   **Title:** Big and Small!
+*   **Description:** A chart comparing the sizes of two objects. The first row has a picture of a big elephant and a small mouse. The second row has a picture of a big house and a small doghouse. Each object should be clearly labeled (e.g., "Big Elephant," "Small Mouse"). Provide a sentence to describe the size comparison: "The elephant is bigger than the mouse."
+*   **Educational Goal:** To demonstrate the concept of size (large vs. small) using easily recognizable objects.
+*   **Layout:** Two columns showcasing size contrasts with familiar objects.

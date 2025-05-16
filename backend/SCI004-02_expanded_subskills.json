@@ -1,0 +1,66 @@
+{
+  "skill_id": "SCI004-02",
+  "skill_name": "Tools and Technology",
+  "subskills": [
+    {
+      "SUBSKILL_ID": "SCI004-02-D",
+      "DESCRIPTION": "Sort common tools into categories based on their primary function (measuring, cutting, joining, etc.)",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-E",
+      "DESCRIPTION": "Demonstrate safe handling and storage of three basic classroom tools",
+      "DIFFICULTY": "1-3-2"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-F",
+      "DESCRIPTION": "Match specific tools to the jobs they help accomplish (e.g., scissors for cutting, magnifier for observing)",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-G",
+      "DESCRIPTION": "Compare old and new versions of the same tool (e.g., manual vs. electric pencil sharpener)",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-H",
+      "DESCRIPTION": "Identify which sense each tool helps enhance (magnifier-sight, stethoscope-hearing, etc.)",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-I",
+      "DESCRIPTION": "Use simple measuring tools to compare two objects (ruler, balance scale, measuring cups)",
+      "DIFFICULTY": "3-6-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-J",
+      "DESCRIPTION": "Draw and label three parts of a common tool used in the classroom",
+      "DIFFICULTY": "4-6-5"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-K",
+      "DESCRIPTION": "Explain how weather tools help us prepare for different conditions (thermometer, wind sock, rain gauge)",
+      "DIFFICULTY": "4-7-5"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-L",
+      "DESCRIPTION": "Select appropriate protective gear for different activities (goggles, gloves, apron)",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-M",
+      "DESCRIPTION": "Document observations using digital tools (tablet camera, simple recording device)",
+      "DIFFICULTY": "4-7-5"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-N",
+      "DESCRIPTION": "Create a simple device to solve a classroom problem using available materials",
+      "DIFFICULTY": "5-8-6"
+    },
+    {
+      "SUBSKILL_ID": "SCI004-02-O",
+      "DESCRIPTION": "Compare the effectiveness of different tools for the same task (different types of scissors, different magnifiers)",
+      "DIFFICULTY": "4-7-5"
+    }
+  ]
+}

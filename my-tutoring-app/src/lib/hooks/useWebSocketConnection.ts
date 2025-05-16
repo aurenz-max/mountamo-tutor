@@ -10,7 +10,7 @@ export interface Message {
 }
 
 interface WebSocketMessage {
-  type: 'text' | 'audio' | 'screen' | 'error' | 'end_conversation';
+  type: 'text' | 'audio' | 'screen' | 'image' | 'error' | 'end_conversation';
   content?: string;
   data?: string;
   sampleRate?: number;
@@ -18,6 +18,8 @@ interface WebSocketMessage {
   details?: string;
   is_system_message?: boolean;
   end_of_turn?: boolean;
+  image_type?: 'screen_share' | 'canvas_snapshot' | 'problem_submission' | 'workspace_snapshot';
+  metadata?: any;
 }
 
 interface UseWebSocketProps {
@@ -95,11 +97,39 @@ export const useWebSocketConnection = ({
     }
   }, [sendMessage, onMessageReceived]);
 
+  const sendSystemMessage = useCallback((content: string) => {
+    const message: WebSocketMessage = {
+      type: 'text',
+      content: content,
+      is_system_message: true
+    };
+    
+    return sendMessage(message);
+  }, [sendMessage]);
+
   const sendScreenData = useCallback((imageData: string) => {
     return sendMessage({
       type: 'screen',
       data: imageData
     });
+  }, [sendMessage]);
+
+  // New method for sending images with different types
+  const sendImageData = useCallback((imageData: string, imageType: 'screen_share' | 'canvas_snapshot' | 'problem_submission' | 'workspace_snapshot' = 'canvas_snapshot', metadata?: any) => {
+    const message: WebSocketMessage = {
+      type: 'image',
+      data: imageData,
+      image_type: imageType,
+      metadata: metadata
+    };
+    
+    // Don't trigger the response timeout for periodic snapshots
+    if (imageType === 'canvas_snapshot' || imageType === 'workspace_snapshot') {
+      socketRef.current?.send(JSON.stringify(message));
+      return true;
+    } else {
+      return sendMessage(message);
+    }
   }, [sendMessage]);
 
   const sendEndOfTurn = useCallback(() => {
@@ -158,7 +188,7 @@ export const useWebSocketConnection = ({
       contextMessage += ` Focus on: ${initialCurriculum.skill.id}`;
     }
     
-    contextMessage += ` Please provide age-appropriate explanations and examples. Start by greeting the student and asking what they'd like to learn about this topic.`;
+    contextMessage += ` Please provide age-appropriate explanations and examples. Start by greeting the student and asking what they'd like to learn about this topic. You will receive periodic canvas snapshots showing the student's work and system messages about current problems.`;
     
     sendMessage({
       type: 'text',
@@ -270,7 +300,9 @@ export const useWebSocketConnection = ({
     connect,
     disconnect,
     sendTextMessage,
+    sendSystemMessage, // New method for sending system messages
     sendScreenData,
+    sendImageData, // New method for sending images
     sendEndOfTurn,
     sendEndConversation,
     

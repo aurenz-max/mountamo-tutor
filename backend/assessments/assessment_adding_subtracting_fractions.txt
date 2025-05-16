@@ -1,0 +1,35 @@
+Quiz: Adding and Subtracting Fractions (Common Denominators)
+
+Instructions: Please answer all questions to the best of your ability. Show your work where possible.
+
+Name: _________________________
+
+Date: _________________________
+
+1. (Recall - 1 point) What does "denominator" mean in a fraction?
+
+2. (Recall - 1 point) When adding or subtracting fractions, what must be the same?
+
+3. (Application - 2 points) Solve: 2/5 + 1/5 = ?
+
+4. (Application - 2 points) Solve: 4/7 - 2/7 = ?
+
+5. (Application - 2 points) Sarah ate 1/4 of a pizza, and John ate 2/4 of the same pizza. How much of the pizza did they eat in total?
+
+6. (Analysis - 2 points) Explain why we can add or subtract fractions directly when they have the same denominator.
+
+Answer Key:
+
+1.  The bottom number of a fraction that tells how many equal parts the whole is divided into.
+2.  The denominators must be the same.
+3.  3/5
+4.  2/7
+5.  3/4
+6.  Because the pieces are the same size, so we can simply add or subtract the number of pieces (numerators).
+
+Rubric:
+
+*   10 points total
+*   Recall Questions (Questions 1 & 2): 1 point each. Correct answer demonstrates understanding of basic fraction terminology and rules.
+*   Application Questions (Questions 3, 4, & 5): 2 points each. Correct answer with or without work shown receives full points. 1 point awarded for partially correct answers (e.g., correct setup but calculation error).
+*   Analysis Question (Question 6): 2 points. 2 points for a clear and correct explanation. 1 point for a partially correct or vague explanation.

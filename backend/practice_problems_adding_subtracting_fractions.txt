@@ -1,0 +1,35 @@
+Practice Problems: Adding and Subtracting Fractions with Common Denominators
+
+**Instructions:** Solve the following problems. Show your work.
+
+1. **Problem 1 (Multiple Choice):** Sarah ate 2/5 of a pizza, and Michael ate 1/5 of the same pizza. How much of the pizza did they eat altogether?
+
+   a) 3/10
+   b) 3/5
+   c) 1/5
+   d) 2/5
+
+2. **Problem 2 (Short Answer):** Emily has a ribbon that is 7/8 of a meter long. She cuts off 3/8 of a meter to use for a craft project. How much ribbon does Emily have left?
+
+3. **Problem 3 (Word Problem):** A recipe calls for 2/4 cup of sugar and 1/4 cup of flour. How many cups of dry ingredients are needed in total?
+
+4. **Problem 4 (Calculation):** Solve: 9/10 - 4/10 = ?
+
+5. **Problem 5 (Challenging):** John ate 1/6 of a cake, Mary ate 2/6 of the cake, and Peter ate 1/6 of the cake. How much of the cake is left? (Hint: A whole cake is 6/6)
+
+**Answer Key:**
+
+1. **Problem 1:** b) 3/5
+    *Solution:* 2/5 + 1/5 = 3/5
+
+2. **Problem 2:** 4/8 of a meter
+    *Solution:* 7/8 - 3/8 = 4/8
+
+3. **Problem 3:** 3/4 cup
+    *Solution:* 2/4 + 1/4 = 3/4
+
+4. **Problem 4:** 5/10
+    *Solution:* 9/10 - 4/10 = 5/10
+
+5. **Problem 5:** 2/6 of the cake
+    *Solution:* 1/6 + 2/6 + 1/6 = 4/6.  6/6 - 4/6 = 2/6

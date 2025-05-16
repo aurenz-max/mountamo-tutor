@@ -9,7 +9,7 @@ import { ChatWindow } from './windows/ChatWindow';
 import { LessonWindow } from './windows/LessonWindow';
 import { ProblemPanel } from './panels/ProblemPanel';
 import DrawingCanvas from './ui/DrawingCanvas';
-import { Mic, MicOff, Monitor, MonitorOff, Volume2, VolumeX, Settings } from 'lucide-react';
+import { Mic, MicOff, Monitor, MonitorOff, Volume2, VolumeX, Settings, Camera } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface GeminiTutoringSessionProps {
@@ -41,7 +41,13 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [currentProblem, setCurrentProblem] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isWorkspaceStreaming, setIsWorkspaceStreaming] = useState(false);
+  const [streamInterval, setStreamInterval] = useState(10000); // Default 10 seconds
+  const [isProblemPanelOpen, setIsProblemPanelOpen] = useState(false);
+  
   const canvasRef = useRef<any>(null);
+  const problemPanelRef = useRef<any>(null);
+  const workspaceStreamIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // WebSocket connection management
   const {
@@ -52,8 +58,10 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
     connect,
     disconnect,
     sendTextMessage,
+    sendSystemMessage,
     sendScreenData,
     sendEndOfTurn,
+    sendImageData,
     socket,
   } = useWebSocketConnection({
     apiUrl,
@@ -94,6 +102,175 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
   } = useScreenSharing({
     sendScreenData,
   });
+
+  // Function to capture the full workspace view
+  const captureFullWorkspace = async () => {
+    try {
+      // Create an offscreen canvas to combine both canvases
+      const offscreenCanvas = document.createElement('canvas');
+      const ctx = offscreenCanvas.getContext('2d');
+      
+      if (!ctx) return null;
+
+      // Calculate dimensions for the combined view
+      const mainCanvasData = canvasRef.current?.getCanvasData ? 
+        await canvasRef.current.getCanvasData() : null;
+      
+      // If ProblemPanel is open and has a canvas, capture it
+      const problemCanvasData = (isProblemPanelOpen && problemPanelRef.current?.getCanvasData) ? 
+        await problemPanelRef.current.getCanvasData() : null;
+
+      if (!mainCanvasData && !problemCanvasData) {
+        console.warn('No canvas data available');
+        return null;
+      }
+
+      // Determine layout based on what's available
+      if (problemCanvasData && !mainCanvasData) {
+        // Only problem panel is visible
+        const img = new Image();
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.src = 'data:image/png;base64,' + problemCanvasData;
+        });
+        
+        offscreenCanvas.width = img.width;
+        offscreenCanvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+      } else if (mainCanvasData && !problemCanvasData) {
+        // Only main canvas is visible
+        const img = new Image();
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.src = 'data:image/png;base64,' + mainCanvasData;
+        });
+        
+        offscreenCanvas.width = img.width;
+        offscreenCanvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+      } else if (mainCanvasData && problemCanvasData) {
+        // Both are visible - create a side-by-side view
+        const mainImg = new Image();
+        const problemImg = new Image();
+        
+        await Promise.all([
+          new Promise((resolve) => {
+            mainImg.onload = resolve;
+            mainImg.src = 'data:image/png;base64,' + mainCanvasData;
+          }),
+          new Promise((resolve) => {
+            problemImg.onload = resolve;
+            problemImg.src = 'data:image/png;base64,' + problemCanvasData;
+          })
+        ]);
+        
+        // Create a combined canvas with both views
+        const gap = 20; // Gap between canvases
+        offscreenCanvas.width = mainImg.width + problemImg.width + gap;
+        offscreenCanvas.height = Math.max(mainImg.height, problemImg.height);
+        
+        // Fill background
+        ctx.fillStyle = '#f3f4f6'; // Gray background
+        ctx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+        
+        // Draw main canvas on the left
+        ctx.drawImage(mainImg, 0, 0);
+        
+        // Draw problem canvas on the right
+        ctx.drawImage(problemImg, mainImg.width + gap, 0);
+        
+        // Add labels
+        ctx.fillStyle = '#374151';
+        ctx.font = '16px Arial';
+        ctx.fillText('Main Workspace', 10, 20);
+        ctx.fillText('Problem Panel', mainImg.width + gap + 10, 20);
+      }
+
+      // Convert to base64
+      return offscreenCanvas.toDataURL('image/png').split(',')[1];
+    } catch (error) {
+      console.error('Error capturing full workspace:', error);
+      return null;
+    }
+  };
+
+  // Function to capture and send workspace snapshot
+  const captureAndSendWorkspaceSnapshot = async () => {
+    if (!isWorkspaceStreaming || !isConnected) return;
+    
+    try {
+      const workspaceData = await captureFullWorkspace();
+      if (workspaceData) {
+        // Send with metadata about what's included
+        sendImageData(workspaceData, 'workspace_snapshot', {
+          includesProblemPanel: isProblemPanelOpen,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error capturing workspace snapshot:', error);
+    }
+  };
+
+  // Toggle workspace streaming
+  const toggleWorkspaceStreaming = () => {
+    if (isWorkspaceStreaming) {
+      // Stop streaming
+      if (workspaceStreamIntervalRef.current) {
+        clearInterval(workspaceStreamIntervalRef.current);
+        workspaceStreamIntervalRef.current = null;
+      }
+      setIsWorkspaceStreaming(false);
+    } else {
+      // Start streaming
+      setIsWorkspaceStreaming(true);
+      // Send initial snapshot immediately
+      captureAndSendWorkspaceSnapshot();
+      // Set up interval for periodic snapshots
+      workspaceStreamIntervalRef.current = setInterval(captureAndSendWorkspaceSnapshot, streamInterval);
+    }
+  };
+
+  // Clean up workspace streaming on unmount or when streaming stops
+  useEffect(() => {
+    return () => {
+      if (workspaceStreamIntervalRef.current) {
+        clearInterval(workspaceStreamIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Restart interval when stream interval changes
+  useEffect(() => {
+    if (isWorkspaceStreaming && workspaceStreamIntervalRef.current) {
+      clearInterval(workspaceStreamIntervalRef.current);
+      workspaceStreamIntervalRef.current = setInterval(captureAndSendWorkspaceSnapshot, streamInterval);
+    }
+  }, [streamInterval, isWorkspaceStreaming]);
+
+  // Handle changes to problem panel state
+  const handleProblemPanelToggle = (isOpen: boolean) => {
+    setIsProblemPanelOpen(isOpen);
+    
+    // If streaming is active, send an immediate update when panel opens/closes
+    if (isWorkspaceStreaming) {
+      setTimeout(() => {
+        captureAndSendWorkspaceSnapshot();
+      }, 300); // Small delay to allow animation to complete
+    }
+  };
+
+  // Handle when a new problem is displayed
+  const handleProblemDisplay = (problemData: any) => {
+    if (!problemData) return;
+    
+    setCurrentProblem(problemData);
+    
+    // Send system message to tutor about the current problem
+    const systemMessage = `CURRENT PROBLEM = "${problemData.problem}" INSTRUCTIONS = "Please provide assistance, allowing the student to take the lead with you acting as a tutor."`;
+    
+    sendSystemMessage(systemMessage);
+  };
 
   // Handle microphone toggle with WebSocket integration
   const handleToggleMicrophone = async () => {
@@ -200,6 +377,11 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
       stopAudioRecording();
     }
     
+    // Stop workspace streaming
+    if (isWorkspaceStreaming) {
+      toggleWorkspaceStreaming();
+    }
+    
     disconnect();
     onSessionEnd();
   };
@@ -254,7 +436,20 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
             {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
           </button>
 
-          {/* Screen Share */}
+          {/* Workspace Streaming */}
+          <button
+            onClick={toggleWorkspaceStreaming}
+            className={`p-3 rounded-lg transition-all ${
+              isWorkspaceStreaming 
+                ? 'bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-400' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400'
+            }`}
+            title={isWorkspaceStreaming ? 'Stop sharing workspace' : 'Share workspace with tutor'}
+          >
+            <Camera className="w-5 h-5" />
+          </button>
+
+          {/* Screen Share (optional - keep if you still want it) */}
           <button
             onClick={handleToggleScreenSharing}
             className={`p-3 rounded-lg transition-all ${
@@ -277,6 +472,19 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
           >
             {isAudioOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
+
+          {/* Stream Interval Selector */}
+          <select
+            value={streamInterval}
+            onChange={(e) => setStreamInterval(Number(e.target.value))}
+            className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800"
+            disabled={!isWorkspaceStreaming}
+          >
+            <option value={5000}>5s</option>
+            <option value={10000}>10s</option>
+            <option value={15000}>15s</option>
+            <option value={30000}>30s</option>
+          </select>
         </div>
 
         {/* Right Section - Actions */}
@@ -294,12 +502,15 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
         </div>
       </div>
 
-      {/* Problem Panel - Integrated as a slide-out panel */}
+      {/* Problem Panel - Enhanced with ref and state tracking */}
       <ProblemPanel
+        ref={problemPanelRef}
         initialCurriculum={initialCurriculum}
         ageGroup={ageGroup}
         onSubmit={handleProblemSubmit}
+        onProblemDisplay={handleProblemDisplay}
         studentId={studentId}
+        onToggle={handleProblemPanelToggle}
       />
 
       {/* Window Controls - Only Chat and Lesson windows now */}
@@ -307,6 +518,8 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
         <ChatWindow 
           messages={messages}
           onSendMessage={sendTextMessage}
+          isResponding={isResponding} // Add this prop
+
         />
         <LessonWindow 
           initialCurriculum={initialCurriculum}

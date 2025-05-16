@@ -1,0 +1,120 @@
+{
+  "categories": [
+    {
+      "CATEGORY": "Sound and Vibrations",
+      "DESCRIPTION": "Explores how sound travels, what causes sounds, and how we hear them. Helps children understand that sound is a physical phenomenon they can observe and experiment with in their environment.",
+      "EXAMPLE_ACTIVITIES": "Creating simple musical instruments from household items to explore pitch and volume; Using tuning forks in water to see sound waves; Feeling throat vibrations while humming different notes",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "Simple Machines",
+      "DESCRIPTION": "Introduces basic mechanical devices that make work easier through hands-on exploration. Builds understanding of how everyday tools work and how forces can be redirected or amplified.",
+      "EXAMPLE_ACTIVITIES": "Building and testing ramps at different angles; Using pulleys to lift lightweight objects; Creating a lever system with a ruler and fulcrum",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "Light and Shadows",
+      "DESCRIPTION": "Investigates how light travels, interacts with objects, and creates shadows. Connects to daily observations of natural and artificial light while introducing basic concepts of reflection and opacity.",
+      "EXAMPLE_ACTIVITIES": "Shadow puppet theater with different light sources; Making rainbows with prisms; Testing which materials block or allow light to pass through",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "Magnetism and Attraction",
+      "DESCRIPTION": "Explores magnetic forces and their effects on various materials. Introduces the concept of invisible forces while allowing for safe and engaging hands-on discovery.",
+      "EXAMPLE_ACTIVITIES": "Testing which household items are magnetic; Creating magnetic art with iron filings; Making a floating magnetic sculpture",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "States of Matter Changes",
+      "DESCRIPTION": "Focuses specifically on how materials can change from one state to another through heating and cooling. Builds on children's experiences with everyday substances like water, chocolate, and butter.",
+      "EXAMPLE_ACTIVITIES": "Making popsicles and observing melting; Watching steam condense on a cool surface; Creating and melting crayon art",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "Balance and Stability",
+      "DESCRIPTION": "Investigates center of gravity, weight distribution, and what makes things stay upright or fall over. Connects to children's natural curiosity about building and stacking while introducing fundamental physics concepts.",
+      "EXAMPLE_ACTIVITIES": "Building and testing block towers of different shapes; Creating mobiles that balance; Exploring how to make spinning tops stay upright",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    }
+  ],
+  "skills": [
+    {
+      "SKILL_NAME": "Sound Detection",
+      "DESCRIPTION": "Identify and differentiate between various environmental sounds (loud/soft, near/far, natural/artificial)",
+      "DIFFICULTY": "15",
+      "PREREQUISITES": "None",
+      "CONNECTIONS": "Language Arts (descriptive vocabulary), Social Studies (environmental awareness)",
+      "UnitID": "SCI001",
+      "Category": "Sound and Vibrations"
+    },
+    {
+      "SKILL_NAME": "Vibration Basics",
+      "DESCRIPTION": "Recognize that sounds are created by vibrations through simple demonstrations (rubber bands, drums, voice box)",
+      "DIFFICULTY": "25",
+      "PREREQUISITES": "Sound Detection",
+      "CONNECTIONS": "Physical Science, Music",
+      "UnitID": "SCI001",
+      "Category": "Sound and Vibrations"
+    },
+    {
+      "SKILL_NAME": "Sound Travel",
+      "DESCRIPTION": "Demonstrate understanding that sound travels through different materials (air, water, solids) through experiments",
+      "DIFFICULTY": "40",
+      "PREREQUISITES": "Vibration Basics",
+      "CONNECTIONS": "Physics, Engineering",
+      "UnitID": "SCI001",
+      "Category": "Sound and Vibrations"
+    },
+    {
+      "SKILL_NAME": "Volume Exploration",
+      "DESCRIPTION": "Create and control sounds of different volumes and understand the concept of amplitude",
+      "DIFFICULTY": "45",
+      "PREREQUISITES": "Sound Detection, Vibration Basics",
+      "CONNECTIONS": "Math (measurement), Music (dynamics)",
+      "UnitID": "SCI001",
+      "Category": "Sound and Vibrations"
+    },
+    {
+      "SKILL_NAME": "Pattern Making",
+      "DESCRIPTION": "Create and repeat simple sound patterns using classroom instruments or body percussion",
+      "DIFFICULTY": "55",
+      "PREREQUISITES": "Volume Exploration",
+      "CONNECTIONS": "Math (patterns), Music (rhythm), Physical Education",
+      "UnitID": "SCI001",
+      "Category": "Sound and Vibrations"
+    },
+    {
+      "SKILL_NAME": "Sound Mapping",
+      "DESCRIPTION": "Draw or chart different sounds heard in various locations and categorize them",
+      "DIFFICULTY": "60",
+      "PREREQUISITES": "Sound Detection, Volume Exploration",
+      "CONNECTIONS": "Art, Geography, Math (data collection)",
+      "UnitID": "SCI001",
+      "Category": "Sound and Vibrations"
+    },
+    {
+      "SKILL_NAME": "Echo Investigation",
+      "DESCRIPTION": "Explore and understand how sounds can bounce back (basic echo concept) through experimentation",
+      "DIFFICULTY": "70",
+      "PREREQUISITES": "Sound Travel, Volume Exploration",
+      "CONNECTIONS": "Physics, Spatial Awareness",
+      "UnitID": "SCI001",
+      "Category": "Sound and Vibrations"
+    },
+    {
+      "SKILL_NAME": "Sound Design",
+      "DESCRIPTION": "Create simple musical instruments using household materials to demonstrate sound production",
+      "DIFFICULTY": "80",
+      "PREREQUISITES": "Vibration Basics, Sound Travel, Volume Exploration",
+      "CONNECTIONS": "Engineering, Art, Music, Recycling/Environmental Studies",
+      "UnitID": "SCI001",
+      "Category": "Sound and Vibrations"
+    }
+  ]
+}

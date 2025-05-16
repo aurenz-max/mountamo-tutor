@@ -1,0 +1,46 @@
+{
+  "categories": [
+    {
+      "CATEGORY": "Sound and Vibrations",
+      "DESCRIPTION": "Introduces how sound travels through vibrations and explores pitch, volume, and sound properties. Helps children understand both music and everyday sounds while building foundation for wave concepts.",
+      "EXAMPLE_ACTIVITIES": "Making simple instruments from household items to explore pitch changes; Feeling vibrations by placing hands on speakers playing different sounds; Creating \"telephone\" systems with cups and string",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "Light and Shadows",
+      "DESCRIPTION": "Explores how light travels, creates shadows, and interacts with different materials. Builds understanding of transparency, reflection, and the role of light in our daily lives.",
+      "EXAMPLE_ACTIVITIES": "Shadow puppet theater with different light sources; Sorting materials by transparent/translucent/opaque; Making rainbows with prisms and mirrors",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "Simple Machines",
+      "DESCRIPTION": "Introduces basic mechanical devices that make work easier through hands-on exploration. Connects to everyday tools while building early engineering concepts.",
+      "EXAMPLE_ACTIVITIES": "Creating an inclined plane race track; Using pulleys to lift lightweight objects; Building and testing different types of levers",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "Magnetism and Attraction",
+      "DESCRIPTION": "Explores magnetic forces and their effects on various materials. Develops understanding of invisible forces while encouraging prediction and testing.",
+      "EXAMPLE_ACTIVITIES": "Creating magnetic painting with iron filings; Testing which materials are magnetic around the classroom; Making magnetic maze games",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "States of Change",
+      "DESCRIPTION": "Investigates how materials can change form through melting, freezing, mixing, and dissolving. Connects to cooking experiences while introducing basic chemistry concepts.",
+      "EXAMPLE_ACTIVITIES": "Making popsicles to observe liquid to solid changes; Dissolving different materials in water; Creating and separating mixtures",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    },
+    {
+      "CATEGORY": "Weather and Temperature",
+      "DESCRIPTION": "Examines how temperature affects materials and our environment. Links daily weather observations to physical science principles.",
+      "EXAMPLE_ACTIVITIES": "Using thermometers to measure temperatures in different locations; Observing evaporation rates under different conditions; Creating wind-powered devices",
+      "UnitID": "SCI001",
+      "UnitTitle": "Physical Sciences"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+Exhibit 1: Fraction Circles
+Description: A set of circles, each representing a whole. Each circle is divided into different numbers of equal parts (2, 3, 4, 6, and 8). One or more parts of each circle are shaded in a distinct color.
+Layout:
+A large panel with five equally sized circles arranged in a row.
+Circle 1: Divided into 2 equal parts (halves), one part shaded. Label: "1/2"
+Circle 2: Divided into 3 equal parts (thirds), one part shaded. Label: "1/3"
+Circle 3: Divided into 4 equal parts (quarters), one part shaded. Label: "1/4"
+Circle 4: Divided into 6 equal parts (sixths), two parts shaded. Label: "2/6"
+Circle 5: Divided into 8 equal parts (eighths), three parts shaded. Label: "3/8"
+Educational Enhancement: Directly shows how a whole can be divided into equal parts and how fractions represent portions of that whole. Different colors for shading make it easy to distinguish the parts. The labels reinforce the numerical representation of each fraction.
+Additional Element: A brief explanation at the top of the panel: "A fraction shows a part of a whole. The bottom number (denominator) shows how many equal parts the whole is divided into. The top number (numerator) shows how many of those parts we have."
+
+Exhibit 2: Fraction Number Line
+Description: A number line from 0 to 1, divided into sections representing fractions.
+Layout:
+A horizontal number line spanning the exhibit.
+Clearly marked points at 0 and 1.
+The section between 0 and 1 is divided and labeled: 1/2, 1/3, 2/3, 1/4, 2/4, 3/4, 1/5, 2/5, 3/5, 4/5, etc.
+Use different colors or slightly offset the labels to avoid clutter.
+Educational Enhancement: Illustrates fractions as numbers between 0 and 1, helping students visualize their relative sizes and order. Shows equivalent fractions (e.g., 1/2 and 2/4) in a clear, linear format.
+Additional Element: Interactive elements: small markers that students can move along the number line to represent different fractions.
+
+Exhibit 3: Comparing Fractions (Bar Model)
+Description: Uses bar models to visually compare fractions.
+Layout:
+Several pairs of bar models are displayed, one above the other. Each bar represents the same whole.
+Pair 1: One bar divided into 3 equal parts, one part shaded (1/3). The bar below divided into 6 equal parts, two parts shaded (2/6). Label: "1/3 = 2/6"
+Pair 2: One bar divided into 4 equal parts, three parts shaded (3/4). The bar below divided into 8 equal parts, six parts shaded (6/8). Label: "3/4 = 6/8"
+Pair 3: One bar divided into 2 equal parts, one part shaded (1/2). The bar below divided into 4 equal parts, two parts shaded (2/4). Label: "1/2 = 2/4"
+Educational Enhancement: Directly compares fractions visually using area. Highlights equivalent fractions in a concrete way. Demonstrates that different fractions can represent the same amount of a whole.

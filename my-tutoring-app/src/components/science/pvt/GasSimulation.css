@@ -1,0 +1,72 @@
+/* my-tutoring-app\src\components\science\pvt\GasSimulation.css */
+.gas-simulation {
+    font-family: sans-serif;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+  }
+  
+  .gas-simulation h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  .controls {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #eee;
+    border-radius: 4px;
+  }
+  
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 5px 10px;
+    min-width: 150px; /* Ensure groups don't get too squished */
+  }
+  
+  .control-group label {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #555;
+  }
+  
+  .control-group input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+  }
+  
+  .display {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px dashed #ddd;
+    background-color: #f9f9f9;
+  }
+  
+  .display p {
+    margin: 5px 0;
+    font-weight: bold;
+    color: #444;
+  }
+  
+  .simulation-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+    border: 1px solid #aaa; /* Border around the canvas itself */
+    background-color: #f0f0f0; /* Match canvas background */
+    /* The canvas inside will dictate the size */
+    min-height: 304px; /* Ensure space even if canvas is small */
+    max-width: 100%;
+    overflow: hidden; /* Hide potential overflow if canvas resizes weirdly */
+  }

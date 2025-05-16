@@ -1,0 +1,66 @@
+{
+  "skill_id": "SCI001-03",
+  "skill_name": "Energy",
+  "subskills": [
+    {
+      "SUBSKILL_ID": "SCI001-03-D",
+      "DESCRIPTION": "Demonstrate how pushing and pulling objects requires energy by moving toys across different surfaces",
+      "DIFFICULTY": "1-3-2"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-E",
+      "DESCRIPTION": "Sort activities into those that use more energy versus less energy using picture cards",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-F",
+      "DESCRIPTION": "Create simple sound patterns by using different amounts of energy to strike instruments",
+      "DIFFICULTY": "2-5-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-G",
+      "DESCRIPTION": "Match energy sources (sun, wind, electricity) to the devices they power using a sorting game",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-H",
+      "DESCRIPTION": "Compare the warmth of objects placed in sunlight versus shade through touch experiments",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-I",
+      "DESCRIPTION": "Demonstrate how stored energy works by using rubber bands to power simple toys",
+      "DIFFICULTY": "3-6-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-J",
+      "DESCRIPTION": "Identify which household activities require electrical energy versus human energy",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-K",
+      "DESCRIPTION": "Create shadows of different sizes by moving objects closer to and farther from a light source",
+      "DIFFICULTY": "2-4-3"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-L",
+      "DESCRIPTION": "Compare how objects move differently on ramps of various heights using toy cars",
+      "DIFFICULTY": "3-5-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-M",
+      "DESCRIPTION": "Demonstrate how friction affects movement energy by sliding objects on different surfaces",
+      "DIFFICULTY": "3-6-4"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-N",
+      "DESCRIPTION": "Sequence daily activities from those requiring least to most energy consumption",
+      "DIFFICULTY": "4-6-5"
+    },
+    {
+      "SUBSKILL_ID": "SCI001-03-O",
+      "DESCRIPTION": "Design and test simple wind-powered devices using paper materials",
+      "DIFFICULTY": "4-7-5"
+    }
+  ]
+}

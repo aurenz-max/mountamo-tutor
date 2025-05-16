@@ -5,11 +5,12 @@ import Head from 'next/head';
 import SyllabusSelector from '@/components/gemini-tutor/SyllabusSelector';
 import GeminiTutoringSession from '@/components/gemini-tutor/GeminiTutoringSession';
 import P5jsTutoringSession from '@/components/gemini-tutor/P5jsTutoringSession';
+import P5jsCodeEditorScreen from '@/components/gemini-tutor/P5jsCodeEditor';
 import SnippetManager from '@/components/playground/SnippetManager';
 import { 
   BookOpen, Sparkles, Rocket, Palette, MessageSquare, 
   Monitor, ChevronRight, Star, Zap, Trophy, Mic,
-  PlusCircle, FolderOpen
+  PlusCircle, FolderOpen, Code, RefreshCw, Save // Add RefreshCw and Save
 } from 'lucide-react';
 import { useSnippets } from '@/components/playground/hooks/useSnippets';
 import { type CodeSnippet } from '@/lib/playground-api';
@@ -36,7 +37,7 @@ interface CurriculumSelection {
   };
 }
 
-type LearningMode = 'select' | 'general' | 'creative-coding' | 'creative-coding-choice' | 'creative-coding-saved';
+type LearningMode = 'select' | 'general' | 'creative-coding' | 'creative-coding-choice' | 'creative-coding-saved' | 'code-editor-only';
 
 export default function TutoringPage() {
   // State for curriculum selection
@@ -59,7 +60,7 @@ export default function TutoringPage() {
   
   // Load snippets when entering creative coding mode
   useEffect(() => {
-    if (learningMode === 'creative-coding-saved') {
+    if (learningMode === 'creative-coding-saved' || learningMode === 'code-editor-only') {
       snippetHooks.loadSnippets();
     }
   }, [learningMode]);
@@ -146,6 +147,14 @@ export default function TutoringPage() {
           initialCode={selectedSnippetCode || undefined}
         />
       );
+    } else if (learningMode === 'code-editor-only') {
+      return (
+        <P5jsCodeEditorScreen
+          initialCode={selectedSnippetCode || undefined}
+          studentId={studentId}
+          onExit={handleEndSession}
+        />
+      );
     } else {
       return (
         <div className="container mx-auto px-6 py-8 max-w-7xl">
@@ -196,7 +205,7 @@ export default function TutoringPage() {
             <p className="text-lg text-gray-600">Start a new project or continue where you left off!</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Create New Project */}
             <div 
               onClick={() => setLearningMode('creative-coding')}
@@ -226,6 +235,47 @@ export default function TutoringPage() {
                 <li className="flex items-center gap-2">
                   <Star className="w-4 h-4 text-blue-500" />
                   Save your creations
+                </li>
+              </ul>
+            </div>
+            
+            {/* Code Editor Only */}
+            <div 
+              onClick={() => {
+                setCurriculumSelection({
+                  subject: 'Code Editor',
+                  unit: { id: 'editor', title: 'Code Editor' },
+                  skill: { id: 'coding', description: 'P5.js Coding' }
+                });
+                setLearningMode('code-editor-only');
+                setIsSessionActive(true);
+              }}
+              className="bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all cursor-pointer transform hover:scale-105 p-8 border-4 border-indigo-100 hover:border-indigo-300"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="p-4 bg-indigo-100 rounded-2xl">
+                  <Code className="w-12 h-12 text-indigo-600" />
+                </div>
+                <ChevronRight className="w-8 h-8 text-gray-400" />
+              </div>
+              <h2 className="text-2xl font-bold mb-3 text-gray-800">
+                Code Editor
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Pure coding experience with no AI assistance
+              </p>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <Code className="w-4 h-4 text-indigo-500" />
+                  Distraction-free coding
+                </li>
+                <li className="flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-blue-500" />
+                  Instant preview
+                </li>
+                <li className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-green-500" />
+                  Run and test your code
                 </li>
               </ul>
             </div>
@@ -301,13 +351,30 @@ export default function TutoringPage() {
                 <ChevronRight className="w-5 h-5 rotate-180" />
                 Back
               </button>
-              <button
-                onClick={() => setLearningMode('creative-coding')}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-              >
-                <PlusCircle className="w-5 h-5" />
-                New Project
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setCurriculumSelection({
+                      subject: 'Code Editor',
+                      unit: { id: 'editor', title: 'Code Editor' },
+                      skill: { id: 'coding', description: 'P5.js Coding' }
+                    });
+                    setLearningMode('code-editor-only');
+                    setIsSessionActive(true);
+                  }}
+                  className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <Code className="w-5 h-5" />
+                  Code Editor
+                </button>
+                <button
+                  onClick={() => setLearningMode('creative-coding')}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  New Project
+                </button>
+              </div>
             </div>
             
             <SnippetManager
@@ -349,7 +416,7 @@ export default function TutoringPage() {
         </div>
         
         {learningMode === 'select' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {/* General Tutoring Card */}
             <div 
               onClick={() => setLearningMode('general')}
@@ -434,6 +501,58 @@ export default function TutoringPage() {
                 <li className="flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-blue-500" />
                   See instant results
+                </li>
+              </ul>
+            </div>
+            
+            {/* Code Editor Card */}
+            <div 
+              onClick={() => {
+                setCurriculumSelection({
+                  subject: 'Code Editor',
+                  unit: { id: 'editor', title: 'Code Editor' },
+                  skill: { id: 'coding', description: 'P5.js Coding' }
+                });
+                setLearningMode('code-editor-only');
+                setIsSessionActive(true);
+              }}
+              className="bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all cursor-pointer transform hover:scale-105 p-8 border-4 border-indigo-100 hover:border-indigo-300"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="p-4 bg-indigo-100 rounded-2xl">
+                  <Code className="w-12 h-12 text-indigo-600" />
+                </div>
+                <ChevronRight className="w-8 h-8 text-gray-400" />
+              </div>
+              <h2 className="text-2xl font-bold mb-3 text-gray-800">
+                Code Editor Only
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Focused coding experience without AI assistance
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
+                  💻 P5.js Coding
+                </span>
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                  🔍 Focused
+                </span>
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                  🚀 No Distractions
+                </span>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <Code className="w-4 h-4 text-indigo-500" />
+                  Pure coding experience
+                </li>
+                <li className="flex items-center gap-2">
+                  <Save className="w-4 h-4 text-blue-500" />
+                  Save your sketches
+                </li>
+                <li className="flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-green-500" />
+                  Real-time preview
                 </li>
               </ul>
             </div>
