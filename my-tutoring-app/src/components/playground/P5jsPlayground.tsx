@@ -12,7 +12,6 @@ import { Card } from "@/components/ui/card";
 import ChatPanel from '@/components/playground/ChatPanel';
 import ImprovedCodeEditor from '@/components/playground/ImprovedCodeEditor';
 import PreviewPanel from '@/components/playground/PreviewPanel';
-import SnippetManager from '@/components/playground/SnippetManager';
 import ImprovedSyllabusSelector from '@/components/tutoring/SyllabusSelector';
 
 // Import hooks
