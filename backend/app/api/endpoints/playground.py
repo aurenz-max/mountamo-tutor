@@ -39,19 +39,25 @@ there can be no external dependencies: all functions must be in the returned cod
 make extra sure that all functions are either declared in the code or part of p5js.
 the user can modify the code, go along with the user's changes."""
 
-# Add new models for the API
 class P5jsCodeSnippet(BaseModel):
     title: str
     code: str
     description: Optional[str] = ""
     tags: Optional[List[str]] = []
-    # Add syllabus metadata fields
+    
+    # Legacy syllabus metadata fields (keeping for backward compatibility)
     unit_id: Optional[str] = None
     unit_title: Optional[str] = None
     skill_id: Optional[str] = None
     skill_description: Optional[str] = None
     subskill_id: Optional[str] = None
     subskill_description: Optional[str] = None
+    
+    # New educational metadata fields
+    subject: Optional[str] = None
+    skill: Optional[str] = None  # Note: This conflicts with skill_id above, consider renaming one
+    subskill: Optional[str] = None  # Note: This conflicts with subskill_id above
+    key_concepts: Optional[List[str]] = None
 
 class P5jsCodeResponse(BaseModel):
     id: str
@@ -61,13 +67,20 @@ class P5jsCodeResponse(BaseModel):
     tags: Optional[List[str]] = []
     created_at: str
     updated_at: str
-    # Add syllabus metadata fields
+    
+    # Legacy syllabus metadata fields
     unit_id: Optional[str] = None
     unit_title: Optional[str] = None
     skill_id: Optional[str] = None
     skill_description: Optional[str] = None
     subskill_id: Optional[str] = None
     subskill_description: Optional[str] = None
+    
+    # New educational metadata fields
+    subject: Optional[str] = None
+    skill: Optional[str] = None
+    subskill: Optional[str] = None
+    key_concepts: Optional[List[str]] = []
 
 class ConversationMessage(BaseModel):
     role: str
@@ -392,14 +405,13 @@ async def save_p5js_code(
     student_id: int,
     cosmos_db: CosmosDBService = Depends(get_cosmos_db)
 ):
-    """Save a p5js code snippet"""
+    """Save a p5js code snippet with educational metadata"""
     try:
         # Validate input
         if not snippet.title or not snippet.title.strip():
             raise HTTPException(status_code=400, detail="Title is required")
         
         # Sanitize inputs to prevent XSS and other injection attacks
-        # This is a basic example - consider more robust sanitization
         safe_title = snippet.title.strip()
         safe_description = snippet.description.strip() if snippet.description else ""
         
@@ -410,12 +422,18 @@ async def save_p5js_code(
             code=snippet.code,
             description=safe_description,
             tags=snippet.tags,
+            # Legacy fields
             unit_id=snippet.unit_id,
             unit_title=snippet.unit_title,
             skill_id=snippet.skill_id,
             skill_description=snippet.skill_description,
             subskill_id=snippet.subskill_id,
-            subskill_description=snippet.subskill_description
+            subskill_description=snippet.subskill_description,
+            # New educational metadata fields
+            subject=snippet.subject,
+            skill=snippet.skill,
+            subskill=snippet.subskill,
+            key_concepts=snippet.key_concepts
         )
         
         return result
@@ -466,7 +484,7 @@ async def update_p5js_code(
     student_id: int,
     cosmos_db: CosmosDBService = Depends(get_cosmos_db)
 ):
-    """Update a p5js code snippet"""
+    """Update a p5js code snippet with educational metadata"""
     try:
         result = await cosmos_db.update_p5js_code(
             student_id=student_id,
@@ -475,12 +493,18 @@ async def update_p5js_code(
             code=snippet.code,
             description=snippet.description,
             tags=snippet.tags,
+            # Legacy fields
             unit_id=snippet.unit_id,
             unit_title=snippet.unit_title,
             skill_id=snippet.skill_id,
             skill_description=snippet.skill_description,
             subskill_id=snippet.subskill_id,
-            subskill_description=snippet.subskill_description
+            subskill_description=snippet.subskill_description,
+            # New educational metadata fields
+            subject=snippet.subject,
+            skill=snippet.skill,
+            subskill=snippet.subskill,
+            key_concepts=snippet.key_concepts
         )
         return result
     except ValueError as e:
@@ -508,7 +532,27 @@ async def delete_p5js_code(
         logger.error(f"Error deleting p5js code: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to delete code: {str(e)}")
 
-
+@router.get("/code/search", response_model=List[P5jsCodeResponse])
+async def search_p5js_codes(
+    subject: Optional[str] = None,
+    skill: Optional[str] = None,
+    subskill: Optional[str] = None,
+    limit: int = 100,
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+):
+    """Search p5js code snippets by educational metadata"""
+    try:
+        results = await cosmos_db.search_p5js_codes_by_subject(
+            subject=subject,
+            skill=skill,
+            subskill=subskill,
+            limit=limit
+        )
+        return results
+    except Exception as e:
+        logger.error(f"Error searching p5js codes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to search codes: {str(e)}")
+        
 @router.post("/evaluate", response_model=StudentEvaluationResponse)
 async def evaluate_student_work(
     evaluation_request: StudentEvaluationRequest,

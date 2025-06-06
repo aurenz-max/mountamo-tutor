@@ -55,6 +55,13 @@ class CosmosDBService:
             unique_key_policy={'uniqueKeys': [{'paths': ['/title']}]}
         )
 
+        # NEW: Content packages container for educational content integration
+        self.content_packages = self.database.create_container_if_not_exists(
+            id="content_packages",
+            partition_key=PartitionKey(path="/partition_key"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/subject', '/skill', '/subskill']}]}
+        )
+
     async def save_conversation_message(
         self,
         session_id: str,
@@ -785,55 +792,71 @@ class CosmosDBService:
         skill_id: str = None,
         skill_description: str = None,
         subskill_id: str = None,
-        subskill_description: str = None
+        subskill_description: str = None,
+        # New educational metadata fields
+        subject: str = None,
+        skill: str = None,
+        subskill: str = None,
+        key_concepts: List[str] = None
     ) -> Dict[str, Any]:
-        """
-        Save a p5js code snippet to the database with proper sanitization.
-        
-        Args:
-            student_id: The student's ID
-            title: Title for the code snippet
-            code: The p5js code content (will be stored as a string, never executed)
-            description: Optional description for the code
-            tags: Optional list of tags for categorization
-            unit_id: Optional unit ID from syllabus
-            unit_title: Optional unit title from syllabus
-            skill_id: Optional skill ID from syllabus
-            skill_description: Optional skill description from syllabus
-            subskill_id: Optional subskill ID from syllabus
-            subskill_description: Optional subskill description from syllabus
-        """
-        # Generate a unique ID with timestamp for uniqueness
-        import uuid
-        from datetime import datetime
-        timestamp = datetime.utcnow().isoformat()
-        snippet_id = f"{student_id}_{uuid.uuid4()}"
-        
-        # Create the code snippet document - using proper sanitization
-        document = {
-            "id": snippet_id,
-            "student_id": student_id,
-            "title": title,
-            "description": description,
-            "code": code,  # Store as plain text, never execute
-            "tags": tags or [],
-            "created_at": timestamp,
-            "updated_at": timestamp,
-            "type": "p5js_code_snippet",
-            # Add syllabus metadata
-            "unit_id": unit_id,
-            "unit_title": unit_title,
-            "skill_id": skill_id, 
-            "skill_description": skill_description,
-            "subskill_id": subskill_id,
-            "subskill_description": subskill_description
-        }
-        
+        """Save a p5js code snippet with educational metadata"""
         try:
-            result = self.p5js_code_snippets.create_item(body=document)
-            return result
+            snippet_id = f"{student_id}_{uuid.uuid4()}"
+            timestamp = datetime.utcnow().isoformat()
+            
+            item = {
+                "id": snippet_id,
+                "student_id": student_id,
+                "title": title,
+                "description": description,
+                "code": code,
+                "tags": tags or [],
+                "created_at": timestamp,
+                "updated_at": timestamp,
+                "type": "p5js_code_snippet",
+                # Legacy syllabus fields (keeping for backward compatibility)
+                "unit_id": unit_id,
+                "unit_title": unit_title,
+                "skill_id": skill_id,
+                "skill_description": skill_description,
+                "subskill_id": subskill_id,
+                "subskill_description": subskill_description,
+                # New educational metadata fields
+                "subject": subject,
+                "skill": skill,
+                "subskill": subskill,
+                "key_concepts": key_concepts or [],
+                "source": "user_created"
+            }
+            
+            result = self.p5js_code_snippets.create_item(body=item)
+            logger.info(f"Saved p5js code snippet with ID: {snippet_id}")
+            
+            return {
+                "id": result["id"],
+                "student_id": result["student_id"],
+                "title": result["title"],
+                "code": result["code"],
+                "description": result.get("description", ""),
+                "tags": result.get("tags", []),
+                "created_at": result["created_at"],
+                "updated_at": result["updated_at"],
+                # Legacy fields
+                "unit_id": result.get("unit_id"),
+                "unit_title": result.get("unit_title"),
+                "skill_id": result.get("skill_id"),
+                "skill_description": result.get("skill_description"),
+                "subskill_id": result.get("subskill_id"),
+                "subskill_description": result.get("subskill_description"),
+                # New educational metadata fields
+                "subject": result.get("subject"),
+                "skill": result.get("skill"),
+                "subskill": result.get("subskill"),
+                "key_concepts": result.get("key_concepts", [])
+            }
+            
         except Exception as e:
-            print(f"Error saving p5js code: {str(e)}")
+            logger.error(f"Error saving p5js code: {str(e)}")
             raise
 
     async def get_student_p5js_codes(
@@ -890,7 +913,12 @@ class CosmosDBService:
         skill_id: str = None,
         skill_description: str = None,
         subskill_id: str = None,
-        subskill_description: str = None
+        subskill_description: str = None,
+        # New educational metadata fields
+        subject: str = None,
+        skill: str = None,
+        subskill: str = None,
+        key_concepts: List[str] = None
     ) -> Dict[str, Any]:
         """Update an existing p5js code snippet"""
         try:
@@ -950,6 +978,69 @@ class CosmosDBService:
         except Exception as e:
             print(f"Error deleting p5js code: {str(e)}")
             return False
+
+    async def search_p5js_codes_by_subject(
+        self, 
+        subject: str = None, 
+        skill: str = None, 
+        subskill: str = None,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Search p5js code snippets by educational metadata"""
+        try:
+            conditions = ["c.type = 'p5js_code_snippet'"]
+            params = []
+            
+            if subject:
+                conditions.append("c.subject = @subject")
+                params.append({"name": "@subject", "value": subject})
+            
+            if skill:
+                conditions.append("c.skill = @skill")
+                params.append({"name": "@skill", "value": skill})
+            
+            if subskill:
+                conditions.append("c.subskill = @subskill")
+                params.append({"name": "@subskill", "value": subskill})
+            
+            params.append({"name": "@limit", "value": limit})
+            
+            where_clause = " AND ".join(conditions)
+            query = f"""
+            SELECT * FROM c 
+            WHERE {where_clause}
+            ORDER BY c.created_at DESC
+            OFFSET 0 LIMIT @limit
+            """
+            
+            results = list(self.p5js_code_snippets.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=True
+            ))
+            
+            formatted_results = []
+            for result in results:
+                formatted_results.append({
+                    "id": result["id"],
+                    "student_id": result["student_id"],
+                    "title": result["title"],
+                    "code": result["code"],
+                    "description": result.get("description", ""),
+                    "tags": result.get("tags", []),
+                    "created_at": result["created_at"],
+                    "updated_at": result["updated_at"],
+                    "subject": result.get("subject"),
+                    "skill": result.get("skill"),
+                    "subskill": result.get("subskill"),
+                    "key_concepts": result.get("key_concepts", [])
+                })
+            
+            return formatted_results
+            
+        except Exception as e:
+            logger.error(f"Error searching p5js codes by subject: {str(e)}")
+            raise
 
     async def save_p5js_evaluation(self, evaluation_data):
         """Save a p5js evaluation to the database."""
@@ -1025,3 +1116,132 @@ class CosmosDBService:
         except Exception as e:
             print(f"Error retrieving evaluation: {str(e)}")
             return None
+
+
+    async def get_content_packages(
+        self,
+        subject: Optional[str] = None,
+        skill: Optional[str] = None,
+        subskill: Optional[str] = None,
+        status: str = "approved",
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """Get educational content packages with filtering"""
+        try:
+            # Build the query conditions
+            conditions = ["c.document_type = 'content_package'"]
+            params = []
+            
+            if status:
+                conditions.append("c.status = @status")
+                params.append({"name": "@status", "value": status})
+            
+            if subject:
+                conditions.append("c.subject = @subject")
+                params.append({"name": "@subject", "value": subject})
+            
+            if skill:
+                conditions.append("c.skill = @skill")
+                params.append({"name": "@skill", "value": skill})
+            
+            if subskill:
+                conditions.append("c.subskill = @subskill")
+                params.append({"name": "@subskill", "value": subskill})
+            
+            params.append({"name": "@limit", "value": limit})
+            
+            where_clause = " AND ".join(conditions)
+            query = f"""
+            SELECT * FROM c 
+            WHERE {where_clause}
+            ORDER BY c.created_at DESC
+            OFFSET 0 LIMIT @limit
+            """
+            
+            results = list(self.content_packages.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=True
+            ))
+            
+            return results
+            
+        except Exception as e:
+            print(f"Error getting content packages: {str(e)}")
+            return []
+
+    async def get_content_package_by_id(
+        self,
+        package_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get specific content package for session context"""
+        try:
+            # First, try to find the package by querying with the ID
+            query = """
+            SELECT * FROM c 
+            WHERE c.id = @package_id 
+            AND c.document_type = 'content_package'
+            AND c.status = 'approved'
+            """
+            
+            params = [{"name": "@package_id", "value": package_id}]
+            
+            results = list(self.content_packages.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=True
+            ))
+            
+            if results:
+                return results[0]
+            else:
+                print(f"Content package with ID {package_id} not found or not approved")
+                return None
+                
+        except Exception as e:
+            print(f"Error getting content package by ID: {str(e)}")
+            return None
+
+    async def search_content_packages_by_criteria(
+        self,
+        search_criteria: Dict[str, Any],
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """Advanced search for content packages with multiple criteria"""
+        try:
+            conditions = ["c.document_type = 'content_package'", "c.status = 'approved'"]
+            params = [{"name": "@limit", "value": limit}]
+            
+            # Handle different search criteria
+            if search_criteria.get("grade_level"):
+                conditions.append("c.master_context.grade_level = @grade_level")
+                params.append({"name": "@grade_level", "value": search_criteria["grade_level"]})
+            
+            if search_criteria.get("difficulty_level"):
+                conditions.append("c.master_context.difficulty_level = @difficulty_level")
+                params.append({"name": "@difficulty_level", "value": search_criteria["difficulty_level"]})
+            
+            if search_criteria.get("keywords"):
+                # Search in core concepts and key terminology
+                conditions.append("(CONTAINS(LOWER(ARRAY_TO_STRING(c.master_context.core_concepts, ' ')), LOWER(@keywords)) OR CONTAINS(LOWER(c.master_context.key_terminology), LOWER(@keywords)))")
+                params.append({"name": "@keywords", "value": search_criteria["keywords"]})
+            
+            where_clause = " AND ".join(conditions)
+            query = f"""
+            SELECT * FROM c 
+            WHERE {where_clause}
+            ORDER BY c.created_at DESC
+            OFFSET 0 LIMIT @limit
+            """
+            
+            results = list(self.content_packages.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=True
+            ))
+            
+            return results
+            
+        except Exception as e:
+            print(f"Error searching content packages: {str(e)}")
+            return []

@@ -9,7 +9,7 @@ import { ChatWindow } from './windows/ChatWindow';
 import { LessonWindow } from './windows/LessonWindow';
 import { ProblemPanel } from './panels/ProblemPanel';
 import DrawingCanvas from './ui/DrawingCanvas';
-import { Mic, MicOff, Monitor, MonitorOff, Volume2, VolumeX, Settings, Camera } from 'lucide-react';
+import { Mic, MicOff, Monitor, MonitorOff, Volume2, VolumeX, Settings, Camera, Package } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface GeminiTutoringSessionProps {
@@ -27,6 +27,7 @@ interface GeminiTutoringSessionProps {
   apiUrl?: string;
   onSessionEnd: () => void;
   studentId?: number;
+  packageId?: string; // NEW: Optional content package ID
 }
 
 const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
@@ -35,6 +36,7 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
   apiUrl = 'ws://localhost:8000/api/gemini/bidirectional',
   onSessionEnd,
   studentId = 1,
+  packageId, // NEW: Content package ID prop
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -49,7 +51,7 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
   const problemPanelRef = useRef<any>(null);
   const workspaceStreamIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // WebSocket connection management
+  // WebSocket connection management with package ID support
   const {
     isConnected,
     isConnecting,
@@ -67,6 +69,8 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
     apiUrl,
     initialCurriculum,
     ageGroup,
+    packageId, // NEW: Pass package ID to WebSocket connection
+    studentId, // NEW: Pass student ID to WebSocket connection
     onMessageReceived: (message) => {
       setMessages(prev => [...prev, message]);
     },
@@ -403,6 +407,13 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
           </span>
+          {/* NEW: Show enhanced content indicator */}
+          {packageId && (
+            <div className="flex items-center gap-1 ml-2 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+              <Package className="w-3 h-3" />
+              <span>Enhanced</span>
+            </div>
+          )}
         </div>
 
         {/* Error Messages */}
@@ -419,6 +430,12 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
         <div className="flex items-center gap-4">
           <div className="text-sm text-gray-600 dark:text-gray-400">
             {initialCurriculum.subject} • {initialCurriculum.skill?.description || ''} • Age {ageGroup}
+            {/* NEW: Show package indicator */}
+            {packageId && (
+              <span className="ml-2 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+                Enhanced Content
+              </span>
+            )}
           </div>
         </div>
 
@@ -518,12 +535,12 @@ const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
         <ChatWindow 
           messages={messages}
           onSendMessage={sendTextMessage}
-          isResponding={isResponding} // Add this prop
-
+          isResponding={isResponding}
         />
         <LessonWindow 
           initialCurriculum={initialCurriculum}
           ageGroup={ageGroup}
+          packageId={packageId} // NEW: Pass package ID to lesson window
         />
       </div>
     </div>

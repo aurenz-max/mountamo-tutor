@@ -19,6 +19,7 @@ import json
 from typing import Dict, Any, Optional, List, Union, AsyncGenerator
 
 from ...core.config import settings
+from ...db.cosmos_db import CosmosDBService
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -69,15 +70,146 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# WebSocket endpoint for bidirectional audio and screen sharing
+# Initialize Cosmos DB service
+cosmos_db = CosmosDBService()
+
+async def build_enhanced_system_instruction(
+    subject: str, 
+    skill: str, 
+    subskill: str, 
+    package_id: Optional[str] = None,
+    student_id: Optional[int] = None
+) -> str:
+    """Build system instruction using educational content package data"""
+    
+    # Base instruction for when no package is selected
+    base_instruction = f"""You are conducting a live kindergarten tutoring session using voice interaction.
+    
+    Role and Communication Style:
+    - You are a friendly, encouraging kindergarten tutor speaking with a 5-6 year old
+    - Keep your speech simple, clear, and age-appropriate
+    - Use a warm, engaging speaking voice
+    - Keep responses concise (3-5 sentences) to maintain attention
+    - Always be positive and encouraging
+    - Focus on one concept at a time
+    
+    Current Lesson Focus:
+    - Subject: {subject}
+    - Skill: {skill}
+    - Subskill: {subskill}
+    
+    Teaching Guidelines:
+    1. Start with a warm greeting and introduction to the topic
+    2. Relate concepts to things familiar in a 5-6 year old's daily life
+    3. Ask engaging, open-ended questions to encourage participation
+    4. Provide immediate positive feedback to responses
+    5. If the student seems confused, gently guide them back to the lesson
+    6. Include frequent checks for understanding
+    7. Use simple examples and clear explanations
+    8. Maintain an encouraging but professional teaching style
+    
+    Audio Interaction Guidelines:
+    1. Respond naturally to student's voice input
+    2. Keep your responses conversational and engaging
+    3. Use appropriate pauses to allow for student response
+    4. Maintain consistent energy and enthusiasm in your voice
+    5. Speak clearly and at an appropriate pace for a young child"""
+
+    # If no package is selected, return base instruction
+    if not package_id:
+        return base_instruction
+    
+    try:
+        # Get the content package from database
+        package = await cosmos_db.get_content_package_by_id(package_id)
+        
+        if not package:
+            logger.warning(f"Content package {package_id} not found, using base instruction")
+            return base_instruction
+        
+        # Extract educational metadata from the package
+        master_context = package.get("master_context", {})
+        content = package.get("content", {})
+        
+        # Build enhanced instruction with package data
+        enhanced_instruction = f"""You are conducting a live tutoring session using voice interaction with rich educational content.
+
+Role and Communication Style:
+- You are a friendly, encouraging tutor adapted to the appropriate learning level
+- Keep your speech clear and age-appropriate for the target audience
+- Use a warm, engaging speaking voice
+- Keep responses concise but informative
+- Always be positive and encouraging
+- Focus on the specific learning objectives
+
+Educational Content Context from Content Package:
+- Subject: {package.get('subject', subject)}
+- Skill: {package.get('skill', skill)}  
+- Subskill: {package.get('subskill', subskill)}
+- Difficulty Level: {master_context.get('difficulty_level', 'Not specified')}
+
+Core Concepts to Focus On:
+{chr(10).join([f"- {concept}" for concept in master_context.get('core_concepts', [])])}
+
+Key Terminology to Use Consistently:
+{chr(10).join([f"- {term}: {definition}" for term, definition in master_context.get('key_terminology', {}).items()])}
+
+Learning Objectives for This Session:
+{chr(10).join([f"- {obj}" for obj in master_context.get('learning_objectives', [])])}
+
+Real-world Applications to Reference:
+{chr(10).join([f"- {app}" for app in master_context.get('real_world_applications', [])])}
+
+Available Educational Resources:
+- Reading material: {'Available' if content.get('reading') else 'Not available'}
+- Interactive visualization: {'Available' if content.get('visual') else 'Not available'}
+- Audio content: {'Available' if content.get('audio') else 'Not available'}
+- Practice problems: {f"{len(content.get('practice', {}).get('problems', []))} problems available" if content.get('practice') else 'Not available'}
+
+Teaching Guidelines with Content Integration:
+1. Reference the specific core concepts in your explanations
+2. Use the defined terminology consistently throughout the session
+3. Work toward the stated learning objectives
+4. When appropriate, suggest: "You might want to look at the reading material for more details"
+5. When visual concepts arise, suggest: "The interactive demonstration would help show this concept"
+6. For assessment, suggest: "Let's try some practice problems to test your understanding"
+7. Connect learning to the real-world applications mentioned
+8. Maintain age-appropriate language while covering the rich content
+
+Content Reference Guidelines:
+- When students need more detailed explanations, reference the reading material
+- For complex visual concepts, recommend the interactive visualization
+- For reinforcement, suggest the audio content
+- For assessment and practice, recommend the practice problems
+- Track which content elements seem most effective for this student
+
+Audio Interaction Guidelines:
+1. Respond naturally to student's voice input
+2. Keep your responses conversational and engaging
+3. Use appropriate pauses to allow for student response
+4. Maintain consistent energy and enthusiasm in your voice
+5. Speak clearly and at an appropriate pace for the target age group
+6. Seamlessly integrate content package concepts into natural conversation"""
+
+        logger.info(f"Built enhanced system instruction for package {package_id}")
+        return enhanced_instruction
+        
+    except Exception as e:
+        logger.error(f"Error building enhanced system instruction: {str(e)}")
+        return base_instruction
+
+# Enhanced WebSocket endpoint with content package integration
 @router.websocket("/bidirectional")
-async def websocket_bidirectional_endpoint(websocket: WebSocket,
+async def websocket_bidirectional_endpoint(
+    websocket: WebSocket,
     subject: str = Query("General Learning", description="The subject being taught"),
     skill: str = Query("Basic Skills", description="The main skill being taught"),
-    subskill: str = Query("Introduction", description="The specific subskill being focused on")
+    subskill: str = Query("Introduction", description="The specific subskill being focused on"),
+    package_id: Optional[str] = Query(None, description="Educational content package ID"),
+    student_id: Optional[int] = Query(None, description="Student ID for personalization")
 ):
     await manager.connect(websocket)
-    logger.info(f"New WebSocket connection established")
+    logger.info(f"New WebSocket connection established with package_id: {package_id}, student_id: {student_id}")
     
     # Create task groups and queues
     audio_in_queue = asyncio.Queue()  # Queue for incoming audio from Gemini
@@ -90,19 +222,31 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
     session = None
     tasks = []
     
+    # Generate session ID for tracking
+    session_id = str(uuid.uuid4())
+    logger.info(f"Generated session ID: {session_id}")
+    
     # Flag to track if we've already handled a disconnect
     disconnect_handled = False
     
     try:
-        # Set up the Gemini config with both audio and text response capabilities
+        # Build enhanced system instruction with content package data
+        logger.info(f"Building system instruction for package: {package_id}")
+        system_instruction_text = await build_enhanced_system_instruction(
+            subject=subject,
+            skill=skill, 
+            subskill=subskill,
+            package_id=package_id,
+            student_id=student_id
+        )
+        
+        # Set up the Gemini config with enhanced system instruction
         logger.info(f"Setting up Gemini config for model: {MODEL}")
         config = LiveConnectConfig(
             response_modalities=["AUDIO"],
             context_window_compression=(
-        # Configure compression with more appropriate parameters
-        types.ContextWindowCompressionConfig(
-                    sliding_window=types.SlidingWindow(
-                    ),
+                types.ContextWindowCompressionConfig(
+                    sliding_window=types.SlidingWindow(),
                     triggerTokens=16000
                 )
             ),
@@ -115,39 +259,7 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
             ),           
             output_audio_transcription={},
             media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW,
-            system_instruction=Content(parts=[{
-            "text": f"""You are conducting a live kindergarten tutoring session using voice interaction.
-            
-            Role and Communication Style:
-            - You are a friendly, encouraging kindergarten tutor speaking with a 5-6 year old
-            - Keep your speech simple, clear, and age-appropriate
-            - Use a warm, engaging speaking voice
-            - Keep responses concise (3-5 sentences) to maintain attention
-            - Always be positive and encouraging
-            - Focus on one concept at a time
-            
-            Current Lesson Focus:
-            - Subject: {subject}
-            - Skill: {skill}
-            - Subskill: {subskill}
-            
-            Teaching Guidelines:
-            1. Start with a warm greeting and introduction to the topic
-            2. Relate concepts to things familiar in a 5-6 year old's daily life
-            3. Ask engaging, open-ended questions to encourage participation
-            4. Provide immediate positive feedback to responses
-            5. If the student seems confused, gently guide them back to the lesson
-            6. Include frequent checks for understanding
-            7. Use simple examples and clear explanations
-            8. Maintain an encouraging but professional teaching style
-            
-            Audio Interaction Guidelines:
-            1. Respond naturally to student's voice input
-            2. Keep your responses conversational and engaging
-            3. Use appropriate pauses to allow for student response
-            4. Maintain consistent energy and enthusiasm in your voice
-            5. Speak clearly and at an appropriate pace for a young child"""
-        }])
+            system_instruction=Content(parts=[{"text": system_instruction_text}])
         )
         
         # Connect to the Gemini API
@@ -156,7 +268,8 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
             async with client.aio.live.connect(model=MODEL, config=config) as session:
                 logger.info(f"Successfully connected to Gemini API")
                 
-                # Define all task functions
+
+                # Define all task functions (keeping your existing structure)
                 async def receive_from_client():
                     # Create a disconnect flag to signal when we should stop receiving
                     disconnect_received = False
@@ -177,7 +290,7 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
                                 disconnect_received = True
                                 break
                             
-                            # The key change: Handle both text messages and binary messages appropriately
+                            # Handle different message types
                             data = None
                             if "text" in message:
                                 # Try to parse JSON data from text message
@@ -258,7 +371,7 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
                         except Exception as e:
                             logger.error(f"Error receiving client message: {str(e)}")
                             # Don't break on other errors - try to continue receiving
-                                
+
                 # Create task to send text to Gemini
                 async def send_text_to_gemini():
                     while True:
@@ -377,7 +490,8 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
                                     })
                                     
                                     logger.info(f"Sent text response: {response.text[:50]}...")
-                                 # New: Handle input transcriptions
+                                    
+                                # Handle input transcriptions
                                 if hasattr(response, "input_transcription") and response.input_transcription:
                                     await websocket.send_json({
                                         "type": "input_transcription",
@@ -386,7 +500,7 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
                                     
                                     logger.info(f"Sent input transcription: {response.input_transcription[:50]}...")
                                 
-                                # New: Handle output transcriptions
+                                # Handle output transcriptions
                                 if hasattr(response, "output_transcription") and response.output_transcription:
                                     await websocket.send_json({
                                         "type": "output_transcription",
@@ -514,6 +628,8 @@ async def websocket_bidirectional_endpoint(websocket: WebSocket,
             logger.info(f"Final task status - {task_name}: {status}")
             
         logger.info("Cleaned up resources")
+
+
 
 
 

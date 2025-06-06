@@ -2,7 +2,7 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocket
-from .api.endpoints import tutoring, competency, reviews, curriculum, problems, learning_paths, gemini, visual, analytics, gemini_tts, playground
+from .api.endpoints import tutoring, competency, reviews, curriculum, problems, learning_paths, gemini, visual, analytics, playground, education
 from .core.config import settings
 import logging
 
@@ -18,7 +18,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,8 +35,8 @@ app.include_router(learning_paths.router, prefix="/api", tags=["learning-paths"]
 app.include_router(gemini.router, prefix="/api/gemini", tags=["gemini"])
 app.include_router(visual.router, prefix="/api/visual", tags=["visual"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
-app.include_router(gemini_tts.router, prefix="/api/tts", tags=["tts"])
 app.include_router(playground.router, prefix="/api/playground", tags=["playground"])
+app.include_router(education.router, prefix="/api/packages", tags=["education"])
 
 
 @app.get("/")

@@ -30,6 +30,8 @@ interface UseWebSocketProps {
     subskill?: { id: string; };
   };
   ageGroup: string;
+  packageId?: string; // NEW: Optional content package ID
+  studentId?: number; // NEW: Optional student ID
   onMessageReceived?: (message: Message) => void;
   onAudioReceived?: (audioData: string, sampleRate: number) => void;
   onError?: (error: string) => void;
@@ -39,6 +41,8 @@ export const useWebSocketConnection = ({
   apiUrl,
   initialCurriculum,
   ageGroup,
+  packageId, // NEW: Content package ID
+  studentId, // NEW: Student ID
   onMessageReceived,
   onAudioReceived,
   onError,
@@ -188,6 +192,11 @@ export const useWebSocketConnection = ({
       contextMessage += ` Focus on: ${initialCurriculum.skill.id}`;
     }
     
+    // NEW: Add content package information if available
+    if (packageId) {
+      contextMessage += ` This session is using enhanced content package ID: ${packageId} with rich multimedia educational content.`;
+    }
+    
     contextMessage += ` Please provide age-appropriate explanations and examples. Start by greeting the student and asking what they'd like to learn about this topic. You will receive periodic canvas snapshots showing the student's work and system messages about current problems.`;
     
     sendMessage({
@@ -197,12 +206,13 @@ export const useWebSocketConnection = ({
     });
     
     // Add system message to UI
+    const sessionType = packageId ? 'Enhanced Tutoring' : 'Tutoring';
     onMessageReceived?.({ 
       role: 'system', 
-      content: `[Tutoring session started: ${initialCurriculum.subject}]`, 
+      content: `[${sessionType} session started: ${initialCurriculum.subject}]`, 
       timestamp: new Date() 
     });
-  }, [ageGroup, initialCurriculum, sendMessage, onMessageReceived]);
+  }, [ageGroup, initialCurriculum, packageId, sendMessage, onMessageReceived]);
 
   const connect = useCallback(() => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
@@ -227,6 +237,14 @@ export const useWebSocketConnection = ({
       }
       if (initialCurriculum.subskill) {
         wsParams.append('subskill', initialCurriculum.subskill.id);
+      }
+      
+      // NEW: Add content package and student ID parameters
+      if (packageId) {
+        wsParams.append('package_id', packageId);
+      }
+      if (studentId) {
+        wsParams.append('student_id', studentId.toString());
       }
       
       let wsUrl = apiUrl;
@@ -268,7 +286,7 @@ export const useWebSocketConnection = ({
       setConnectionError(`Connection error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsConnecting(false);
     }
-  }, [apiUrl, initialCurriculum, handleWebSocketMessage, sendInitialContext]);
+  }, [apiUrl, initialCurriculum, packageId, studentId, handleWebSocketMessage, sendInitialContext]);
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
