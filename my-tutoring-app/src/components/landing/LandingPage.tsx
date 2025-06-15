@@ -28,11 +28,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSelectMode }) => {
       path: "/practice"
     },
     {
-      title: "Full Library",
-      description: "Complete curriculum access",
+      title: "Guided Learning",
+      description: "Interactive Tutoring",
       icon: BookOpen,
       price: "All Grades K-K",
-      path: "/curriculum"
+      path: "/packages"
     },
     {
       title: "Learning Dashboard",

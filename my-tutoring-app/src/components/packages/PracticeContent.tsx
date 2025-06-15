@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle, FileText, Loader2, TrendingUp, AlertCircle } from 'lucide-react';
+import { CheckCircle, FileText, Loader2, TrendingUp, AlertCircle, Lightbulb, Target, HelpCircle, GraduationCap, RotateCcw } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface PracticeContentProps {
@@ -93,6 +93,156 @@ export function PracticeContent({
     return currentProblem.problem_data.correct_answer || currentProblem.problem_data.answer;
   };
 
+  // Enhanced helper function for creating structured help prompts
+  const createPracticeHelpPrompt = (problem: any, helpType: 'hint' | 'approach' | 'stuck' = 'hint') => {
+    const problemText = problem.problem_data.problem;
+    const correctAnswer = problem.problem_data.correct_answer || problem.problem_data.answer;
+    const problemType = problem.problem_data.problem_type;
+    
+    let helpPrompt = `I need help with this practice problem:
+
+PROBLEM: ${problemText}
+
+PROBLEM TYPE: ${problemType}
+
+INSTRUCTOR NOTE: This student is asking for help with the above problem. The correct answer is "${correctAnswer}" but DO NOT reveal this to the student. Instead:
+
+1. Guide them through the thinking process using questions
+2. Help them identify what the problem is asking for  
+3. Break it down into smaller steps
+4. Ask them to explain their reasoning
+5. Point them toward the right approach without giving away the answer
+6. Encourage them to try different strategies if they're stuck
+
+`;
+
+    // Customize the prompt based on help type
+    switch (helpType) {
+      case 'hint':
+        helpPrompt += `Please give me a hint to get started with this problem, but don't solve it for me!`;
+        break;
+      case 'approach':
+        helpPrompt += `Can you help me understand what approach I should take to solve this problem? Don't give me the answer, just help me think about the strategy.`;
+        break;
+      case 'stuck':
+        helpPrompt += `I'm stuck on this problem. Can you ask me some questions to help me think through it step by step?`;
+        break;
+    }
+    
+    return helpPrompt;
+  };
+
+  // Render help buttons for before submission
+  const renderHelpButtons = () => {
+    if (currentAnswer?.isSubmitted) {
+      return null; // Don't show help after submission
+    }
+
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h5 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
+          <HelpCircle className="w-4 h-4" />
+          Need Help?
+        </h5>
+        <div className="flex flex-wrap gap-2 mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAskAI(createPracticeHelpPrompt(currentProblem, 'hint'))}
+            className="text-blue-600 border-blue-300 hover:bg-blue-50 flex items-center gap-1"
+          >
+            <Lightbulb className="w-3 h-3" />
+            Get a Hint
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAskAI(createPracticeHelpPrompt(currentProblem, 'approach'))}
+            className="text-blue-600 border-blue-300 hover:bg-blue-50 flex items-center gap-1"
+          >
+            <Target className="w-3 h-3" />
+            Help with Approach
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAskAI(createPracticeHelpPrompt(currentProblem, 'stuck'))}
+            className="text-blue-600 border-blue-300 hover:bg-blue-50 flex items-center gap-1"
+          >
+            <HelpCircle className="w-3 h-3" />
+            I'm Stuck!
+          </Button>
+        </div>
+        
+        <p className="text-xs text-blue-600">
+          💡 The AI tutor will guide you through the problem without giving away the answer.
+        </p>
+      </div>
+    );
+  };
+
+  // Render post-submission help for incorrect answers
+  const renderPostSubmissionHelp = () => {
+    if (!currentAnswer?.isSubmitted || !currentAnswer?.feedback) {
+      return null;
+    }
+    
+    const score = getScore(currentAnswer.feedback.review);
+    
+    // Only show additional help if they got it wrong or partially correct
+    if (score >= 8) {
+      return (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+          <h5 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Great job! Want to learn more?
+          </h5>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAskAI(`I got this problem correct: "${currentProblem.problem_data.problem}". Can you explain why this approach works and show me how this concept applies to real-world situations?`)}
+            className="text-green-600 border-green-300 hover:bg-green-50"
+          >
+            <GraduationCap className="w-3 h-3 mr-1" />
+            Learn More About This Concept
+          </Button>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+        <h5 className="font-medium text-yellow-800 mb-3 flex items-center gap-2">
+          <GraduationCap className="w-4 h-4" />
+          Want to understand this better?
+        </h5>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAskAI(`I got this problem wrong: "${currentProblem.problem_data.problem}". My answer was incorrect. Can you help me understand where I went wrong and how to think about this type of problem correctly? Don't just give me the answer - help me learn the approach.`)}
+            className="text-yellow-600 border-yellow-300 hover:bg-yellow-50 flex items-center gap-1"
+          >
+            <GraduationCap className="w-3 h-3" />
+            Learn from Mistake
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAskAI(`Can you give me a similar practice problem to this one so I can try the concept again? Problem: "${currentProblem.problem_data.problem}"`)}
+            className="text-yellow-600 border-yellow-300 hover:bg-yellow-50 flex items-center gap-1"
+          >
+            <RotateCcw className="w-3 h-3" />
+            Try Similar Problem
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const submitProblemToBackend = async (answerData: {
     type: 'option' | 'text' | 'canvas';
     value: number | string | null;
@@ -142,7 +292,7 @@ export function PracticeContent({
 
       setShowExplanation(true);
 
-      // Send feedback to AI tutor
+      // Send feedback to AI tutor with enhanced context
       const score = getScore(response.review);
       const feedbackText = getFeedbackText(response.review);
       
@@ -152,7 +302,7 @@ My answer was: ${studentAnswer}
 Score received: ${score}/10
 Feedback: ${feedbackText}
 
-Can you help me understand this better?`);
+INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouraging feedback about their work and briefly explain the concept without giving away answers to future problems. Focus on the learning process and celebrating their effort.`);
 
     } catch (error) {
       console.error('Error submitting problem:', error);
@@ -373,6 +523,9 @@ Can you help me understand this better?`);
             </div>
           )}
 
+          {/* Help Buttons - Show before submission */}
+          {renderHelpButtons()}
+
           {/* Drawing Canvas - always show for work area */}
           <div className="space-y-4">
             <h4 className="font-medium text-gray-700">Work Area</h4>
@@ -453,6 +606,9 @@ Can you help me understand this better?`);
             </div>
           )}
 
+          {/* Post-submission help */}
+          {renderPostSubmissionHelp()}
+
           {/* Navigation */}
           <div className="flex items-center justify-between pt-4 border-t">
             <Button
@@ -503,9 +659,9 @@ Can you help me understand this better?`);
               <div className="flex gap-3 justify-center">
                 <Button
                   variant="outline"
-                  onClick={() => onAskAI("Can you review my answers and provide feedback on the practice problems I just completed?")}
+                  onClick={() => onAskAI("Can you review my overall performance on these practice problems and give me feedback on areas where I did well and areas I can improve? Please help me understand the key concepts I should focus on.")}
                 >
-                  Get AI feedback on all answers
+                  Get Overall Feedback
                 </Button>
                 <Button 
                   onClick={onComplete}
@@ -522,19 +678,6 @@ Can you help me understand this better?`);
                   )}
                 </Button>
               </div>
-            </div>
-          )}
-
-          {/* Help Button */}
-          {!currentAnswer?.isSubmitted && (
-            <div className="text-center pt-4 border-t">
-              <Button
-                variant="ghost"
-                onClick={() => onAskAI(`Help me with this practice problem: ${currentProblem.problem_data.problem}`)}
-                className="text-orange-600 hover:text-orange-700"
-              >
-                Need help with this problem? Ask AI →
-              </Button>
             </div>
           )}
         </CardContent>
