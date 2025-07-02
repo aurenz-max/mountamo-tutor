@@ -9,14 +9,16 @@ import logging
 import traceback
 import time
 import hashlib
+import json
+from datetime import datetime
+import uuid
 
 from pydantic import BaseModel
 
 from ...core.config import settings
 
-# Add the dependency
-from ...db.cosmos_db import CosmosDBService
-from ...dependencies import get_cosmos_db
+# Updated dependencies to use new auth methodology
+from ...core.middleware import get_user_context, require_auth, get_cosmos_db_service
 
 # Set up logging with more detail
 logging.basicConfig(
@@ -25,7 +27,6 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 logger = logging.getLogger(__name__)
-
 
 # Router setup
 router = APIRouter()
@@ -87,7 +88,6 @@ class ConversationMessage(BaseModel):
     text: str
 
 class StudentEvaluationRequest(BaseModel):
-    studentId: int
     exerciseId: str
     finalCode: str
     chatInteractions: List[Dict[str, str]]
@@ -175,22 +175,24 @@ def log_code_diff(old_code, new_code):
     if not changed and len(old_lines) != len(new_lines):
         logger.info(f"Changes appear after line {min(len(old_lines), len(new_lines))}")
 
-# Enhanced version of your process_playground_request function with better logging
+# Enhanced version of your process_playground_request function with better logging and auth
 @router.post("/gemini")
 async def process_playground_request(
     message: str = Body(..., description="User message"),
     role: str = Body(..., description="Message role (user, system, etc.)"),
     code: Optional[str] = Body(None, description="Current P5js code"),
     codeHasChanged: bool = Body(False, description="Whether code has been modified"),
-    conversationHistory: Optional[List[Dict[str, str]]] = Body(None, description="Previous conversation messages")
+    conversationHistory: Optional[List[Dict[str, str]]] = Body(None, description="Previous conversation messages"),
+    user_context: dict = Depends(get_user_context)
 ):
-    """Process P5js playground requests using Gemini API with simplified code context handling."""
+    """Process P5js playground requests using Gemini API with auth and simplified code context handling."""
     start_time = time.time()
     request_id = f"req_{int(start_time * 1000)}"
     code_hash = hashlib.md5(code.encode('utf-8')).hexdigest() if code else "no_code"
     
     try:
-        logger.info(f"[{request_id}] Processing playground request: role={role}, message_length={len(message)}")
+        logger.info(f"[{request_id}] Processing playground request for user {user_context['email']}: role={role}, message_length={len(message)}")
+        logger.info(f"[{request_id}] User context: student_id={user_context['student_id']}, firebase_uid={user_context['firebase_uid']}")
         logger.info(f"[{request_id}] Request metadata: codeHasChanged={codeHasChanged}, code_hash={code_hash}")
         
         # Log code info with more detail
@@ -272,7 +274,6 @@ async def process_playground_request(
             try:
                 # Call the Gemini API with conversation history
                 response = await client.aio.models.generate_content(
-                    #model='gemini-2.5-flash-preview-04-17',
                     model='gemini-2.5-pro-preview-05-06',
                     contents=gen_contents,  # Send the entire conversation
                     config=types.GenerateContentConfig(
@@ -398,15 +399,18 @@ async def process_playground_request(
         
         raise HTTPException(status_code=500, detail=error_msg)
 
-# Add new endpoints to the router
+# Updated endpoints with user authentication
 @router.post("/code/save", response_model=P5jsCodeResponse)
 async def save_p5js_code(
     snippet: P5jsCodeSnippet,
-    student_id: int,
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    user_context: dict = Depends(get_user_context)
 ):
     """Save a p5js code snippet with educational metadata"""
     try:
+        cosmos_db = get_cosmos_db_service()
+        student_id = user_context['student_id']
+        firebase_uid = user_context['firebase_uid']
+        
         # Validate input
         if not snippet.title or not snippet.title.strip():
             raise HTTPException(status_code=400, detail="Title is required")
@@ -414,6 +418,8 @@ async def save_p5js_code(
         # Sanitize inputs to prevent XSS and other injection attacks
         safe_title = snippet.title.strip()
         safe_description = snippet.description.strip() if snippet.description else ""
+        
+        logger.info(f"Saving P5js code snippet for student {student_id}: {safe_title}")
         
         # Don't execute any code, just save it as a string
         result = await cosmos_db.save_p5js_code(
@@ -433,7 +439,8 @@ async def save_p5js_code(
             subject=snippet.subject,
             skill=snippet.skill,
             subskill=snippet.subskill,
-            key_concepts=snippet.key_concepts
+            key_concepts=snippet.key_concepts,
+            firebase_uid=firebase_uid
         )
         
         return result
@@ -443,15 +450,19 @@ async def save_p5js_code(
 
 @router.get("/code/list", response_model=List[P5jsCodeResponse])
 async def list_p5js_codes(
-    student_id: int,
     limit: int = 100,
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    user_context: dict = Depends(get_user_context)
 ):
     """List all p5js code snippets for a student"""
     try:
+        cosmos_db = get_cosmos_db_service()
+        student_id = user_context['student_id']
+        firebase_uid = user_context['firebase_uid']
+        
         results = await cosmos_db.get_student_p5js_codes(
             student_id=student_id,
-            limit=limit
+            limit=limit,
+            firebase_uid=firebase_uid
         )
         return results
     except Exception as e:
@@ -461,14 +472,18 @@ async def list_p5js_codes(
 @router.get("/code/{snippet_id}", response_model=P5jsCodeResponse)
 async def get_p5js_code(
     snippet_id: str,
-    student_id: int,
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    user_context: dict = Depends(get_user_context)
 ):
     """Get a specific p5js code snippet"""
     try:
+        cosmos_db = get_cosmos_db_service()
+        student_id = user_context['student_id']
+        firebase_uid = user_context['firebase_uid']
+        
         result = await cosmos_db.get_p5js_code_by_id(
             student_id=student_id,
-            snippet_id=snippet_id
+            snippet_id=snippet_id,
+            firebase_uid=firebase_uid
         )
         if not result:
             raise HTTPException(status_code=404, detail="Code snippet not found")
@@ -481,11 +496,14 @@ async def get_p5js_code(
 async def update_p5js_code(
     snippet_id: str,
     snippet: P5jsCodeSnippet,
-    student_id: int,
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    user_context: dict = Depends(get_user_context)
 ):
     """Update a p5js code snippet with educational metadata"""
     try:
+        cosmos_db = get_cosmos_db_service()
+        student_id = user_context['student_id']
+        firebase_uid = user_context['firebase_uid']
+        
         result = await cosmos_db.update_p5js_code(
             student_id=student_id,
             snippet_id=snippet_id,
@@ -504,7 +522,8 @@ async def update_p5js_code(
             subject=snippet.subject,
             skill=snippet.skill,
             subskill=snippet.subskill,
-            key_concepts=snippet.key_concepts
+            key_concepts=snippet.key_concepts,
+            firebase_uid=firebase_uid
         )
         return result
     except ValueError as e:
@@ -516,14 +535,18 @@ async def update_p5js_code(
 @router.delete("/code/{snippet_id}", response_model=Dict[str, bool])
 async def delete_p5js_code(
     snippet_id: str,
-    student_id: int,
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    user_context: dict = Depends(get_user_context)
 ):
     """Delete a p5js code snippet"""
     try:
+        cosmos_db = get_cosmos_db_service()
+        student_id = user_context['student_id']
+        firebase_uid = user_context['firebase_uid']
+        
         success = await cosmos_db.delete_p5js_code(
             student_id=student_id,
-            snippet_id=snippet_id
+            snippet_id=snippet_id,
+            firebase_uid=firebase_uid
         )
         if not success:
             raise HTTPException(status_code=404, detail="Code snippet not found")
@@ -538,10 +561,12 @@ async def search_p5js_codes(
     skill: Optional[str] = None,
     subskill: Optional[str] = None,
     limit: int = 100,
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    user_context: dict = Depends(get_user_context)
 ):
-    """Search p5js code snippets by educational metadata"""
+    """Search p5js code snippets by educational metadata (global search)"""
     try:
+        cosmos_db = get_cosmos_db_service()
+        
         results = await cosmos_db.search_p5js_codes_by_subject(
             subject=subject,
             skill=skill,
@@ -556,7 +581,7 @@ async def search_p5js_codes(
 @router.post("/evaluate", response_model=StudentEvaluationResponse)
 async def evaluate_student_work(
     evaluation_request: StudentEvaluationRequest,
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    user_context: dict = Depends(get_user_context)
 ):
     """Evaluate a student's work based on their P5js code and interactions with Gemini."""
     start_time = time.time()
@@ -564,7 +589,12 @@ async def evaluate_student_work(
     code_hash = compute_code_hash(evaluation_request.finalCode)
     
     try:
-        logger.info(f"[{request_id}] Processing evaluation request: student={evaluation_request.studentId}, exercise={evaluation_request.exerciseId}")
+        cosmos_db = get_cosmos_db_service()
+        student_id = user_context['student_id']
+        firebase_uid = user_context['firebase_uid']
+        
+        logger.info(f"[{request_id}] Processing evaluation request: student={student_id}, exercise={evaluation_request.exerciseId}")
+        logger.info(f"[{request_id}] User context: email={user_context['email']}, firebase_uid={firebase_uid}")
         logger.info(f"[{request_id}] Request metadata: concept_domain={evaluation_request.conceptDomain}, code_hash={code_hash}")
         
         # Log code info
@@ -690,11 +720,11 @@ async def evaluate_student_work(
         try:
             # Format evaluation data for storage (similar to your reviews structure)
             timestamp = datetime.utcnow().isoformat()
-            evaluation_id = f"{evaluation_request.studentId}_{evaluation_request.exerciseId}_{timestamp}_{uuid.uuid4()}"
+            evaluation_id = f"{student_id}_{evaluation_request.exerciseId}_{timestamp}_{uuid.uuid4()}"
             
             evaluation_data = {
                 "id": evaluation_id,
-                "student_id": evaluation_request.studentId,
+                "student_id": student_id,
                 "exercise_id": evaluation_request.exerciseId,
                 "evaluation_text": evaluation_text,
                 "overall_grade": overall_grade,
@@ -706,9 +736,8 @@ async def evaluate_student_work(
                 "type": "p5js_evaluation"
             }
             
-            # Store in the p5js_code_snippets container since it's already set up for student projects
-            # You can also create a dedicated evaluations container if preferred
-            result = await cosmos_db.save_p5js_evaluation(evaluation_data)
+            # Store in the database using the enhanced method with user validation
+            result = await cosmos_db.save_p5js_evaluation(evaluation_data, firebase_uid=firebase_uid)
             logger.info(f"[{request_id}] Saved evaluation with ID: {evaluation_id}")
         except Exception as e:
             logger.error(f"[{request_id}] Failed to save evaluation: {str(e)}")
@@ -721,7 +750,7 @@ async def evaluate_student_work(
         
         return StudentEvaluationResponse(
             evaluationId=evaluation_id,
-            studentId=evaluation_request.studentId,
+            studentId=student_id,
             exerciseId=evaluation_request.exerciseId,
             evaluation=evaluation_text,
             overallGrade=overall_grade,
@@ -752,17 +781,21 @@ async def evaluate_student_work(
 # Add route to get evaluations for a student
 @router.get("/evaluations", response_model=List[Dict[str, Any]])
 async def get_student_evaluations(
-    student_id: int,
     exercise_id: Optional[str] = None,
     limit: int = 10,
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    user_context: dict = Depends(get_user_context)
 ):
     """Get evaluations for a student, optionally filtered by exercise."""
     try:
+        cosmos_db = get_cosmos_db_service()
+        student_id = user_context['student_id']
+        firebase_uid = user_context['firebase_uid']
+        
         evaluations = await cosmos_db.get_student_evaluations(
             student_id=student_id,
             exercise_id=exercise_id,
-            limit=limit
+            limit=limit,
+            firebase_uid=firebase_uid
         )
         return evaluations
     except Exception as e:
@@ -773,14 +806,18 @@ async def get_student_evaluations(
 @router.get("/evaluations/{evaluation_id}", response_model=Dict[str, Any])
 async def get_evaluation_by_id(
     evaluation_id: str,
-    student_id: int,
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    user_context: dict = Depends(get_user_context)
 ):
     """Get a specific evaluation by ID."""
     try:
+        cosmos_db = get_cosmos_db_service()
+        student_id = user_context['student_id']
+        firebase_uid = user_context['firebase_uid']
+        
         evaluation = await cosmos_db.get_evaluation_by_id(
             student_id=student_id,
-            evaluation_id=evaluation_id
+            evaluation_id=evaluation_id,
+            firebase_uid=firebase_uid
         )
         if not evaluation:
             raise HTTPException(status_code=404, detail="Evaluation not found")
@@ -788,3 +825,38 @@ async def get_evaluation_by_id(
     except Exception as e:
         logger.error(f"Error retrieving evaluation: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve evaluation: {str(e)}")
+
+# Health check endpoint
+@router.get("/health")
+async def playground_health_check():
+    """Health check for playground service"""
+    try:
+        # Test Gemini API key availability
+        gemini_available = bool(settings.GEMINI_API_KEY)
+        
+        # Test Cosmos DB connection
+        cosmos_db = get_cosmos_db_service()
+        cosmos_connected = True
+        
+        return {
+            "status": "healthy",
+            "service": "p5js_playground",
+            "gemini_available": gemini_available,
+            "cosmos_db_connected": cosmos_connected,
+            "auth_method": "firebase_with_user_context",
+            "features": [
+                "code_generation",
+                "code_saving",
+                "evaluation",
+                "conversation_history"
+            ]
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "service": "p5js_playground",
+            "error": str(e),
+            "gemini_available": bool(settings.GEMINI_API_KEY),
+            "cosmos_db_connected": False,
+            "auth_method": "firebase_with_user_context"
+        }

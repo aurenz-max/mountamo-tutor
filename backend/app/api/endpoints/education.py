@@ -3,7 +3,7 @@ from google import genai
 from google.genai import types
 from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, PrebuiltVoiceConfig, Content
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException, Path
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException, Path, status
 import asyncio
 import json
 import logging
@@ -14,6 +14,7 @@ from typing import Dict, Any, Optional, List
 
 from ...core.config import settings
 from ...db.cosmos_db import CosmosDBService
+from ...api.endpoints.user_profiles import log_activity
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +40,60 @@ router = APIRouter()
 # Initialize Cosmos DB service
 cosmos_db = CosmosDBService()
 
+# ADD: Helper function to authenticate WebSocket connections (same as gemini.py)
+async def authenticate_websocket_token(token: str) -> dict:
+    """Authenticate WebSocket connection using token from first message"""
+    try:
+        from firebase_admin import auth
+        
+        # Remove 'Bearer ' prefix if present
+        clean_token = token.replace('Bearer ', '')
+        decoded_token = auth.verify_id_token(clean_token)
+        
+        logger.info(f"✅ WebSocket user authenticated: {decoded_token.get('email')}")
+        return decoded_token
+        
+    except Exception as e:
+        logger.error(f"❌ WebSocket authentication error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token"
+        )
+
+# ADD: Connection manager to handle multiple WebSocket connections (enhanced from gemini.py)
+class PackageConnectionManager:
+    def __init__(self):
+        self.active_connections = []
+        self.user_connections = {}  # Track connections by user_id
+        self._lock = asyncio.Lock()  # Add a lock for thread safety
+
+    async def connect(self, websocket: WebSocket, user_id: str = None):
+        await websocket.accept()
+        async with self._lock:
+            if websocket not in self.active_connections:
+                self.active_connections.append(websocket)
+                if user_id:
+                    self.user_connections[user_id] = websocket
+                logger.info(f"Package session client connected. Total connections: {len(self.active_connections)}")
+
+    def disconnect(self, websocket: WebSocket, user_id: str = None):
+        try:
+            if websocket in self.active_connections:
+                self.active_connections.remove(websocket)
+                if user_id and user_id in self.user_connections:
+                    del self.user_connections[user_id]
+                logger.info(f"Package session client disconnected. Total connections: {len(self.active_connections)}")
+            else:
+                logger.info("Attempted to disconnect a client that wasn't in the active connections list")
+        except Exception as e:
+            logger.error(f"Error during connection manager disconnect: {str(e)}")
+            
+    def is_connected(self, websocket: WebSocket) -> bool:
+        return websocket in self.active_connections
+
+# Global connection manager
+connection_manager = PackageConnectionManager()
+
 class PackageSessionManager:
     """Manages package-specific learning sessions"""
     
@@ -46,13 +101,14 @@ class PackageSessionManager:
         self.active_sessions = {}
         self._lock = asyncio.Lock()
 
-    async def create_session(self, package_id: str, student_id: Optional[int] = None) -> str:
+    async def create_session(self, package_id: str, user_id: str, student_id: Optional[int] = None) -> str:
         """Create a new package learning session"""
         session_id = str(uuid.uuid4())
         
         async with self._lock:
             self.active_sessions[session_id] = {
                 "package_id": package_id,
+                "user_id": user_id,  # ADD: Track user_id
                 "student_id": student_id,
                 "created_at": asyncio.get_event_loop().time(),
                 "interactions": []
@@ -81,8 +137,8 @@ class PackageSessionManager:
 # Global session manager
 session_manager = PackageSessionManager()
 
-async def build_package_instruction(package_id: str) -> str:
-    """Build focused system instruction with package context"""
+async def build_package_instruction(package_id: str, user_id: str, user_email: str) -> str:
+    """Build focused system instruction with package context and user info"""
     
     try:
         package = await cosmos_db.get_content_package_by_id(package_id)
@@ -129,6 +185,10 @@ async def build_package_instruction(package_id: str) -> str:
         
         instruction = f"""You are an AI tutor for "{reading_title}" - a {package.get('subject', 'general')} lesson on {package.get('subskill', 'core concepts')}.
 
+STUDENT INFORMATION:
+• Student Email: {user_email}
+• User ID: {user_id}
+
 LEARNING GOALS:
 {objectives_text}
 
@@ -147,6 +207,7 @@ TEACHING APPROACH:
 • Explain concepts clearly and check understanding
 • Be encouraging and adaptive to the student's pace
 • Connect learning to real-world applications when possible
+• Maintain a warm, supportive teaching style
 
 Keep responses conversational and age-appropriate. Focus on helping the student master the learning goals through engaging dialogue."""
         
@@ -156,20 +217,102 @@ Keep responses conversational and age-appropriate. Focus on helping the student 
         logger.error(f"Error building package instruction: {str(e)}")
         return "You are an AI tutor. Be helpful, encouraging, and adaptive."
 
-# Simplified WebSocket endpoint for package-specific learning
+# ENHANCED: WebSocket endpoint for package-specific learning with authentication
 @router.websocket("/{package_id}/learn")
 async def package_learning_session(
     websocket: WebSocket,
     package_id: str = Path(..., description="Content package ID"),
     student_id: Optional[int] = Query(None, description="Student ID for tracking")
 ):
-    """WebSocket endpoint for package-specific tutoring sessions"""
+    """WebSocket endpoint for package-specific tutoring sessions with authentication"""
     
+    # STEP 1: Accept connection first, then authenticate via first message
     await websocket.accept()
-    logger.info(f"Starting tutoring session: package={package_id}, student={student_id}")
+    logger.info(f"Package learning WebSocket connection accepted for package {package_id}, waiting for authentication")
     
-    # Create session
-    session_id = await session_manager.create_session(package_id, student_id)
+    # Authentication variables
+    user_id = None
+    user_email = None
+    firebase_user = None
+    
+    try:
+        # STEP 2: Wait for authentication message
+        auth_message = await asyncio.wait_for(websocket.receive(), timeout=10.0)
+        
+        if "text" in auth_message:
+            try:
+                auth_data = json.loads(auth_message["text"])
+                
+                if auth_data.get("type") != "authenticate":
+                    await websocket.close(code=4001, reason="First message must be authentication")
+                    return
+                
+                token = auth_data.get("token")
+                if not token:
+                    await websocket.close(code=4001, reason="No authentication token provided")
+                    return
+                
+                # Authenticate the token
+                firebase_user = await authenticate_websocket_token(token)
+                user_id = firebase_user['uid']
+                user_email = firebase_user.get('email', 'Unknown')
+                
+                # Send authentication success
+                await websocket.send_json({
+                    "type": "auth_success",
+                    "message": "Authentication successful",
+                    "package_id": package_id
+                })
+                
+            except json.JSONDecodeError:
+                await websocket.close(code=4001, reason="Invalid authentication message format")
+                return
+            except Exception as auth_error:
+                logger.error(f"Authentication failed: {str(auth_error)}")
+                await websocket.close(code=4001, reason="Authentication failed")
+                return
+        else:
+            await websocket.close(code=4001, reason="First message must be text")
+            return
+            
+    except asyncio.TimeoutError:
+        await websocket.close(code=4001, reason="Authentication timeout")
+        return
+    except Exception as e:
+        logger.error(f"Error during authentication: {str(e)}")
+        await websocket.close(code=4001, reason="Authentication error")
+        return
+
+    logger.info(f"New package learning session established for user: {user_email}, package: {package_id}")
+    
+    # STEP 3: Create session with user info
+    session_id = await session_manager.create_session(package_id, user_id, student_id)
+    
+    # STEP 4: Log the tutoring session start
+    try:
+        # Get package info for activity logging
+        package = await cosmos_db.get_content_package_by_id(package_id)
+        package_title = "Unknown Package"
+        subject = "General"
+        if package:
+            package_title = package.get('content', {}).get('reading', {}).get('title', 'Unknown Package')
+            subject = package.get('subject', 'General')
+        
+        await log_activity(
+            user_id=user_id,
+            activity_type="package_tutoring_session",
+            activity_name=f"{package_title}",
+            points=5,
+            metadata={
+                "package_id": package_id,
+                "package_title": package_title,
+                "subject": subject,
+                "student_id": student_id,
+                "session_type": "package_learning"
+            }
+        )
+    except Exception as e:
+        logger.warning(f"Failed to log session start activity: {str(e)}")
     
     # Create queues
     audio_in_queue = asyncio.Queue()
@@ -179,9 +322,12 @@ async def package_learning_session(
     session = None
     tasks = []
     
+    # Track session time
+    session_start_time = asyncio.get_event_loop().time()
+    
     try:
-        # Build system instruction
-        system_instruction_text = await build_package_instruction(package_id)
+        # Build system instruction with user context
+        system_instruction_text = await build_package_instruction(package_id, user_id, user_email)
         
         # Configure Gemini Live
         config = LiveConnectConfig(
@@ -228,6 +374,11 @@ async def package_learning_session(
                         if "text" in message:
                             try:
                                 data = json.loads(message["text"])
+                                
+                                # Skip authentication messages since we already handled that
+                                if data.get("type") == "authenticate":
+                                    continue
+                                    
                                 logger.info(f"Parsed message data type: {data.get('type', 'unknown')}")
                             except json.JSONDecodeError as e:
                                 logger.error(f"Error decoding JSON: {str(e)}, raw text: {message.get('text', '')[:100]}")
@@ -427,7 +578,7 @@ async def package_learning_session(
             logger.info(f"Started {len(tasks)} background tasks")
             
             # Send welcome message
-            await send_welcome_message(session, package_id)
+            await send_welcome_message(session, package_id, user_email)
             
             # Wait for the first task to complete
             logger.info("Waiting for any task to complete...")
@@ -471,12 +622,48 @@ async def package_learning_session(
             pass
     
     finally:
+        # STEP 5: Log session completion and duration (like gemini.py)
+        session_duration = asyncio.get_event_loop().time() - session_start_time
+        try:
+            # Get package info for completion logging
+            package = await cosmos_db.get_content_package_by_id(package_id)
+            package_title = "Unknown Package"
+            subject = "General"
+            if package:
+                package_title = package.get('content', {}).get('reading', {}).get('title', 'Unknown Package')
+                subject = package.get('subject', 'General')
+            
+            await log_activity(
+                user_id=user_id,
+                activity_type="package_tutoring_session_completed",
+                activity_name=f"{package_title}",
+                points=max(10, int(session_duration / 60 * 2)),  # 2 points per minute, minimum 10
+                metadata={
+                    "package_id": package_id,
+                    "package_title": package_title,
+                    "subject": subject,
+                    "student_id": student_id,
+                    "session_duration_seconds": int(session_duration),
+                    "session_type": "package_learning"
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log session completion activity: {str(e)}")
+        
         # Cleanup session
         await session_manager.end_session(session_id)
-        logger.info(f"Tutoring session ended: {session_id}")
+        
+        # Disconnect from connection manager
+        try:
+            connection_manager.disconnect(websocket, user_id)
+            logger.info("Disconnected from connection manager")
+        except Exception as e:
+            logger.error(f"Error during disconnection: {str(e)}")
+            
+        logger.info(f"Package tutoring session ended: {session_id}")
 
-async def send_welcome_message(session, package_id: str):
-    """Send initial welcome message"""
+async def send_welcome_message(session, package_id: str, user_email: str):
+    """Send initial welcome message with user context"""
     try:
         package = await cosmos_db.get_content_package_by_id(package_id)
         if package:
@@ -489,7 +676,7 @@ async def send_welcome_message(session, package_id: str):
     except Exception as e:
         logger.error(f"Error sending welcome message: {str(e)}")
 
-# NEW: Content package browsing endpoints
+# Content package browsing endpoints (unchanged but with better error handling)
 @router.get("/content-packages")
 async def get_content_packages(
     subject: Optional[str] = Query(None),
@@ -555,3 +742,30 @@ async def get_content_package_details(package_id: str):
     except Exception as e:
         logger.error(f"Error getting content package details: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error retrieving content package: {str(e)}")
+
+# ADD: Health check endpoint for package learning service
+@router.get("/health")
+async def package_learning_health_check():
+    """Health check for package learning service"""
+    try:
+        return {
+            "status": "healthy",
+            "service": "package_learning",
+            "active_sessions": len(session_manager.active_sessions),
+            "active_connections": len(connection_manager.active_connections),
+            "gemini_model": MODEL,
+            "audio_format": FORMAT,
+            "features": {
+                "authentication": True,
+                "activity_logging": True,
+                "session_tracking": True,
+                "audio_support": True,
+                "text_support": True
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "service": "package_learning",
+            "error": str(e)
+        }

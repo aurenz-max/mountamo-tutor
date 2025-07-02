@@ -136,7 +136,11 @@ async def get_available_subjects(
     competency_service: CompetencyService = Depends(get_competency_service)
 ):
     """List all available subjects with loaded curriculum"""
-    return list(competency_service.syllabus_cache.keys())
+    try:
+        subjects = await competency_service.get_available_subjects()
+        return subjects
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/curriculum/{subject}")
 async def get_subject_curriculum(

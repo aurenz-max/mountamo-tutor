@@ -3,7 +3,7 @@ from google import genai
 from google.genai import types
 from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, PrebuiltVoiceConfig, Content
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Body, Query, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Body, Query, HTTPException, Depends, status
 from fastapi.responses import StreamingResponse
 import asyncio
 import json
@@ -19,7 +19,9 @@ import json
 from typing import Dict, Any, Optional, List, Union, AsyncGenerator
 
 from ...core.config import settings
-from ...db.cosmos_db import CosmosDBService
+from ...core.middleware import get_user_context, require_auth  # ADD THIS LINE
+from ...api.endpoints.user_profiles import log_activity
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -46,19 +48,24 @@ router = APIRouter()
 class ConnectionManager:
     def __init__(self):
         self.active_connections = []
+        self.user_connections = {}  # ADD: Track connections by user_id
         self._lock = asyncio.Lock()  # Add a lock for thread safety
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket, user_id: str = None):  # MODIFIED: Add user_id parameter
         await websocket.accept()
         async with self._lock:
             if websocket not in self.active_connections:
                 self.active_connections.append(websocket)
+                if user_id:  # ADD: Track user connections
+                    self.user_connections[user_id] = websocket
                 logger.info(f"Client connected. Total connections: {len(self.active_connections)}")
 
-    def disconnect(self, websocket: WebSocket):
+    def disconnect(self, websocket: WebSocket, user_id: str = None):  # MODIFIED: Add user_id parameter
         try:
             if websocket in self.active_connections:
                 self.active_connections.remove(websocket)
+                if user_id and user_id in self.user_connections:  # ADD: Remove user connection tracking
+                    del self.user_connections[user_id]
                 logger.info(f"Client disconnected. Total connections: {len(self.active_connections)}")
             else:
                 logger.info("Attempted to disconnect a client that wasn't in the active connections list")
@@ -70,146 +77,109 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Initialize Cosmos DB service
-cosmos_db = CosmosDBService()
-
-async def build_enhanced_system_instruction(
-    subject: str, 
-    skill: str, 
-    subskill: str, 
-    package_id: Optional[str] = None,
-    student_id: Optional[int] = None
-) -> str:
-    """Build system instruction using educational content package data"""
-    
-    # Base instruction for when no package is selected
-    base_instruction = f"""You are conducting a live kindergarten tutoring session using voice interaction.
-    
-    Role and Communication Style:
-    - You are a friendly, encouraging kindergarten tutor speaking with a 5-6 year old
-    - Keep your speech simple, clear, and age-appropriate
-    - Use a warm, engaging speaking voice
-    - Keep responses concise (3-5 sentences) to maintain attention
-    - Always be positive and encouraging
-    - Focus on one concept at a time
-    
-    Current Lesson Focus:
-    - Subject: {subject}
-    - Skill: {skill}
-    - Subskill: {subskill}
-    
-    Teaching Guidelines:
-    1. Start with a warm greeting and introduction to the topic
-    2. Relate concepts to things familiar in a 5-6 year old's daily life
-    3. Ask engaging, open-ended questions to encourage participation
-    4. Provide immediate positive feedback to responses
-    5. If the student seems confused, gently guide them back to the lesson
-    6. Include frequent checks for understanding
-    7. Use simple examples and clear explanations
-    8. Maintain an encouraging but professional teaching style
-    
-    Audio Interaction Guidelines:
-    1. Respond naturally to student's voice input
-    2. Keep your responses conversational and engaging
-    3. Use appropriate pauses to allow for student response
-    4. Maintain consistent energy and enthusiasm in your voice
-    5. Speak clearly and at an appropriate pace for a young child"""
-
-    # If no package is selected, return base instruction
-    if not package_id:
-        return base_instruction
-    
+# ADD: Helper function to authenticate WebSocket connections
+async def authenticate_websocket_token(token: str) -> dict:
+    """Authenticate WebSocket connection using token from first message"""
     try:
-        # Get the content package from database
-        package = await cosmos_db.get_content_package_by_id(package_id)
+        from firebase_admin import auth
         
-        if not package:
-            logger.warning(f"Content package {package_id} not found, using base instruction")
-            return base_instruction
+        # Remove 'Bearer ' prefix if present
+        clean_token = token.replace('Bearer ', '')
+        decoded_token = auth.verify_id_token(clean_token)
         
-        # Extract educational metadata from the package
-        master_context = package.get("master_context", {})
-        content = package.get("content", {})
-        
-        # Build enhanced instruction with package data
-        enhanced_instruction = f"""You are conducting a live tutoring session using voice interaction with rich educational content.
-
-Role and Communication Style:
-- You are a friendly, encouraging tutor adapted to the appropriate learning level
-- Keep your speech clear and age-appropriate for the target audience
-- Use a warm, engaging speaking voice
-- Keep responses concise but informative
-- Always be positive and encouraging
-- Focus on the specific learning objectives
-
-Educational Content Context from Content Package:
-- Subject: {package.get('subject', subject)}
-- Skill: {package.get('skill', skill)}  
-- Subskill: {package.get('subskill', subskill)}
-- Difficulty Level: {master_context.get('difficulty_level', 'Not specified')}
-
-Core Concepts to Focus On:
-{chr(10).join([f"- {concept}" for concept in master_context.get('core_concepts', [])])}
-
-Key Terminology to Use Consistently:
-{chr(10).join([f"- {term}: {definition}" for term, definition in master_context.get('key_terminology', {}).items()])}
-
-Learning Objectives for This Session:
-{chr(10).join([f"- {obj}" for obj in master_context.get('learning_objectives', [])])}
-
-Real-world Applications to Reference:
-{chr(10).join([f"- {app}" for app in master_context.get('real_world_applications', [])])}
-
-Available Educational Resources:
-- Reading material: {'Available' if content.get('reading') else 'Not available'}
-- Interactive visualization: {'Available' if content.get('visual') else 'Not available'}
-- Audio content: {'Available' if content.get('audio') else 'Not available'}
-- Practice problems: {f"{len(content.get('practice', {}).get('problems', []))} problems available" if content.get('practice') else 'Not available'}
-
-Teaching Guidelines with Content Integration:
-1. Reference the specific core concepts in your explanations
-2. Use the defined terminology consistently throughout the session
-3. Work toward the stated learning objectives
-4. When appropriate, suggest: "You might want to look at the reading material for more details"
-5. When visual concepts arise, suggest: "The interactive demonstration would help show this concept"
-6. For assessment, suggest: "Let's try some practice problems to test your understanding"
-7. Connect learning to the real-world applications mentioned
-8. Maintain age-appropriate language while covering the rich content
-
-Content Reference Guidelines:
-- When students need more detailed explanations, reference the reading material
-- For complex visual concepts, recommend the interactive visualization
-- For reinforcement, suggest the audio content
-- For assessment and practice, recommend the practice problems
-- Track which content elements seem most effective for this student
-
-Audio Interaction Guidelines:
-1. Respond naturally to student's voice input
-2. Keep your responses conversational and engaging
-3. Use appropriate pauses to allow for student response
-4. Maintain consistent energy and enthusiasm in your voice
-5. Speak clearly and at an appropriate pace for the target age group
-6. Seamlessly integrate content package concepts into natural conversation"""
-
-        logger.info(f"Built enhanced system instruction for package {package_id}")
-        return enhanced_instruction
+        logger.info(f"✅ WebSocket user authenticated: {decoded_token.get('email')}")
+        return decoded_token
         
     except Exception as e:
-        logger.error(f"Error building enhanced system instruction: {str(e)}")
-        return base_instruction
+        logger.error(f"❌ WebSocket authentication error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token"
+        )
 
-# Enhanced WebSocket endpoint with content package integration
+# WebSocket endpoint for bidirectional audio and screen sharing
 @router.websocket("/bidirectional")
-async def websocket_bidirectional_endpoint(
-    websocket: WebSocket,
+async def websocket_bidirectional_endpoint(websocket: WebSocket,
     subject: str = Query("General Learning", description="The subject being taught"),
     skill: str = Query("Basic Skills", description="The main skill being taught"),
-    subskill: str = Query("Introduction", description="The specific subskill being focused on"),
-    package_id: Optional[str] = Query(None, description="Educational content package ID"),
-    student_id: Optional[int] = Query(None, description="Student ID for personalization")
+    subskill: str = Query("Introduction", description="The specific subskill being focused on")
 ):
-    await manager.connect(websocket)
-    logger.info(f"New WebSocket connection established with package_id: {package_id}, student_id: {student_id}")
+    # ADD: Accept connection first, then authenticate via first message
+    await websocket.accept()
+    logger.info("WebSocket connection accepted, waiting for authentication")
+    
+    # ADD: Authentication variables
+    user_id = None
+    user_email = None
+    firebase_user = None
+    
+    try:
+        # ADD: Wait for authentication message
+        auth_message = await asyncio.wait_for(websocket.receive(), timeout=10.0)
+        
+        if "text" in auth_message:
+            try:
+                auth_data = json.loads(auth_message["text"])
+                
+                if auth_data.get("type") != "authenticate":
+                    await websocket.close(code=4001, reason="First message must be authentication")
+                    return
+                
+                token = auth_data.get("token")
+                if not token:
+                    await websocket.close(code=4001, reason="No authentication token provided")
+                    return
+                
+                # Authenticate the token
+                firebase_user = await authenticate_websocket_token(token)
+                user_id = firebase_user['uid']
+                user_email = firebase_user.get('email', 'Unknown')
+                
+                # Send authentication success
+                await websocket.send_json({
+                    "type": "auth_success",
+                    "message": "Authentication successful"
+                })
+                
+            except json.JSONDecodeError:
+                await websocket.close(code=4001, reason="Invalid authentication message format")
+                return
+            except Exception as auth_error:
+                logger.error(f"Authentication failed: {str(auth_error)}")
+                await websocket.close(code=4001, reason="Authentication failed")
+                return
+        else:
+            await websocket.close(code=4001, reason="First message must be text")
+            return
+            
+    except asyncio.TimeoutError:
+        await websocket.close(code=4001, reason="Authentication timeout")
+        return
+    except Exception as e:
+        logger.error(f"Error during authentication: {str(e)}")
+        await websocket.close(code=4001, reason="Authentication error")
+        return
+
+    # MODIFIED: Now pass user_id to connect
+    # await manager.connect(websocket)  # OLD
+    logger.info(f"New WebSocket connection established for user: {user_email}")  # MODIFIED: Add user context
+    
+    # ADD: Log the tutoring session start
+    try:
+        await log_activity(
+            user_id=user_id,
+            activity_type="tutoring_session",
+            activity_name=f"{subject} - {skill}",
+            points=5,
+            metadata={
+                "subject": subject,
+                "skill": skill,
+                "subskill": subskill,
+                "session_type": "live_tutoring"
+            }
+        )
+    except Exception as e:
+        logger.warning(f"Failed to log session start activity: {str(e)}")
     
     # Create task groups and queues
     audio_in_queue = asyncio.Queue()  # Queue for incoming audio from Gemini
@@ -222,31 +192,20 @@ async def websocket_bidirectional_endpoint(
     session = None
     tasks = []
     
-    # Generate session ID for tracking
-    session_id = str(uuid.uuid4())
-    logger.info(f"Generated session ID: {session_id}")
-    
     # Flag to track if we've already handled a disconnect
     disconnect_handled = False
+    session_start_time = asyncio.get_event_loop().time()  # ADD: Track session time
     
     try:
-        # Build enhanced system instruction with content package data
-        logger.info(f"Building system instruction for package: {package_id}")
-        system_instruction_text = await build_enhanced_system_instruction(
-            subject=subject,
-            skill=skill, 
-            subskill=subskill,
-            package_id=package_id,
-            student_id=student_id
-        )
-        
-        # Set up the Gemini config with enhanced system instruction
+        # Set up the Gemini config with both audio and text response capabilities
         logger.info(f"Setting up Gemini config for model: {MODEL}")
         config = LiveConnectConfig(
             response_modalities=["AUDIO"],
             context_window_compression=(
-                types.ContextWindowCompressionConfig(
-                    sliding_window=types.SlidingWindow(),
+        # Configure compression with more appropriate parameters
+        types.ContextWindowCompressionConfig(
+                    sliding_window=types.SlidingWindow(
+                    ),
                     triggerTokens=16000
                 )
             ),
@@ -259,7 +218,43 @@ async def websocket_bidirectional_endpoint(
             ),           
             output_audio_transcription={},
             media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW,
-            system_instruction=Content(parts=[{"text": system_instruction_text}])
+            system_instruction=Content(parts=[{
+            "text": f"""You are conducting a live kindergarten tutoring session using voice interaction.
+            
+            Role and Communication Style:
+            - You are a friendly, encouraging kindergarten tutor speaking with a 5-6 year old
+            - Keep your speech simple, clear, and age-appropriate
+            - Use a warm, engaging speaking voice
+            - Keep responses concise (3-5 sentences) to maintain attention
+            - Always be positive and encouraging
+            - Focus on one concept at a time
+            
+            Current Lesson Focus:
+            - Subject: {subject}
+            - Skill: {skill}
+            - Subskill: {subskill}
+            
+            Student Information:
+            - User ID: {user_id}
+            - Email: {user_email}
+            
+            Teaching Guidelines:
+            1. Start with a warm greeting and introduction to the topic
+            2. Relate concepts to things familiar in a 5-6 year old's daily life
+            3. Ask engaging, open-ended questions to encourage participation
+            4. Provide immediate positive feedback to responses
+            5. If the student seems confused, gently guide them back to the lesson
+            6. Include frequent checks for understanding
+            7. Use simple examples and clear explanations
+            8. Maintain an encouraging but professional teaching style
+            
+            Audio Interaction Guidelines:
+            1. Respond naturally to student's voice input
+            2. Keep your responses conversational and engaging
+            3. Use appropriate pauses to allow for student response
+            4. Maintain consistent energy and enthusiasm in your voice
+            5. Speak clearly and at an appropriate pace for a young child"""
+        }])
         )
         
         # Connect to the Gemini API
@@ -268,8 +263,7 @@ async def websocket_bidirectional_endpoint(
             async with client.aio.live.connect(model=MODEL, config=config) as session:
                 logger.info(f"Successfully connected to Gemini API")
                 
-
-                # Define all task functions (keeping your existing structure)
+                # Define all task functions
                 async def receive_from_client():
                     # Create a disconnect flag to signal when we should stop receiving
                     disconnect_received = False
@@ -290,12 +284,17 @@ async def websocket_bidirectional_endpoint(
                                 disconnect_received = True
                                 break
                             
-                            # Handle different message types
+                            # The key change: Handle both text messages and binary messages appropriately
                             data = None
                             if "text" in message:
                                 # Try to parse JSON data from text message
                                 try:
                                     data = json.loads(message["text"])
+                                    
+                                    # ADD: Skip authentication messages since we already handled that
+                                    if data.get("type") == "authenticate":
+                                        continue
+                                    
                                     logger.info(f"Parsed message data type: {data.get('type', 'unknown')}")
                                 except json.JSONDecodeError as e:
                                     logger.error(f"Error decoding JSON: {str(e)}, raw text: {message.get('text', '')[:100]}")
@@ -371,7 +370,7 @@ async def websocket_bidirectional_endpoint(
                         except Exception as e:
                             logger.error(f"Error receiving client message: {str(e)}")
                             # Don't break on other errors - try to continue receiving
-
+                                
                 # Create task to send text to Gemini
                 async def send_text_to_gemini():
                     while True:
@@ -490,8 +489,7 @@ async def websocket_bidirectional_endpoint(
                                     })
                                     
                                     logger.info(f"Sent text response: {response.text[:50]}...")
-                                    
-                                # Handle input transcriptions
+                                 # New: Handle input transcriptions
                                 if hasattr(response, "input_transcription") and response.input_transcription:
                                     await websocket.send_json({
                                         "type": "input_transcription",
@@ -500,7 +498,7 @@ async def websocket_bidirectional_endpoint(
                                     
                                     logger.info(f"Sent input transcription: {response.input_transcription[:50]}...")
                                 
-                                # Handle output transcriptions
+                                # New: Handle output transcriptions
                                 if hasattr(response, "output_transcription") and response.output_transcription:
                                     await websocket.send_json({
                                         "type": "output_transcription",
@@ -610,10 +608,29 @@ async def websocket_bidirectional_endpoint(
                 if not task.done():
                     task.cancel()
     finally:
+        # ADD: Log session completion and duration
+        session_duration = asyncio.get_event_loop().time() - session_start_time
+        try:
+            await log_activity(
+                user_id=user_id,
+                activity_type="tutoring_session_completed",
+                activity_name=f"{subject} - {skill}",
+                points=max(10, int(session_duration / 60 * 2)),  # 2 points per minute, minimum 10
+                metadata={
+                    "subject": subject,
+                    "skill": skill,
+                    "subskill": subskill,
+                    "session_duration_seconds": int(session_duration),
+                    "session_type": "live_tutoring"
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log session completion activity: {str(e)}")
+        
         # Only try to disconnect if we haven't already been disconnected
         try:
-            # Disconnect from connection manager
-            manager.disconnect(websocket)
+            # MODIFIED: Pass user_id to disconnect
+            manager.disconnect(websocket, user_id)  # MODIFIED: Add user_id
             logger.info("Disconnected from connection manager")
         except ValueError:
             # This happens if the connection was already removed from the manager
@@ -628,8 +645,6 @@ async def websocket_bidirectional_endpoint(
             logger.info(f"Final task status - {task_name}: {status}")
             
         logger.info("Cleaned up resources")
-
-
 
 
 

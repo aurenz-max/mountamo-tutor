@@ -4,7 +4,11 @@ from azure.cosmos import CosmosClient, PartitionKey
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 import os
+import uuid
 from ..core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CosmosDBService:
     def __init__(self):
@@ -42,7 +46,6 @@ class CosmosDBService:
                 partition_key=PartitionKey(path="/student_id")
             )
 
-        # Add to CosmosDBService.__init__
         self.cached_problems = self.database.create_container_if_not_exists(
             id="cached_problems",
             partition_key=PartitionKey(path="/subject"),
@@ -55,39 +58,332 @@ class CosmosDBService:
             unique_key_policy={'uniqueKeys': [{'paths': ['/title']}]}
         )
 
-        # NEW: Content packages container for educational content integration
         self.content_packages = self.database.create_container_if_not_exists(
             id="content_packages",
             partition_key=PartitionKey(path="/partition_key"),
             unique_key_policy={'uniqueKeys': [{'paths': ['/subject', '/skill', '/subskill']}]}
         )
 
+        # 🔥 NEW: Student mapping container for linking Firebase users to student records
+        self.student_mappings = self.database.create_container_if_not_exists(
+            id="student_mappings",
+            partition_key=PartitionKey(path="/firebase_uid"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/email']}]}
+        )
+
+    # ============================================================================
+    # 🔥 NEW: STUDENT MAPPING METHODS
+    # ============================================================================
+
+    async def create_student_mapping(
+        self,
+        firebase_uid: str,
+        email: str,
+        display_name: str
+    ) -> Dict[str, Any]:
+        """Create student mapping for a new Firebase user"""
+        try:
+            # Check if mapping already exists
+            existing_mapping = await self.get_student_mapping(firebase_uid)
+            if existing_mapping:
+                logger.info(f"Student mapping already exists for {email}")
+                return existing_mapping
+            
+            # Generate a proper UUID-based student_id
+            student_uuid = str(uuid.uuid4())
+            # For backward compatibility, also generate a numeric student_id
+            numeric_student_id = await self._generate_unique_numeric_student_id()
+            
+            timestamp = datetime.utcnow().isoformat()
+            
+            mapping_data = {
+                "id": str(uuid.uuid4()),  # Document ID
+                "firebase_uid": firebase_uid,
+                "student_id": numeric_student_id,  # Keep numeric for existing code
+                "student_uuid": student_uuid,  # New UUID-based ID
+                "email": email,
+                "display_name": display_name,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+                "active": True
+            }
+            
+            result = self.student_mappings.create_item(body=mapping_data)
+            logger.info(f"Created student mapping for {email} -> student_id: {numeric_student_id}, uuid: {student_uuid}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error creating student mapping: {str(e)}")
+            raise
+
+    async def get_student_mapping(self, firebase_uid: str) -> Optional[Dict[str, Any]]:
+        """Get student mapping for a Firebase user"""
+        try:
+            query = """
+            SELECT * FROM c 
+            WHERE c.firebase_uid = @firebase_uid 
+            AND c.active = true
+            """
+            
+            params = [{"name": "@firebase_uid", "value": firebase_uid}]
+            
+            results = list(self.student_mappings.query_items(
+                query=query,
+                parameters=params,
+                partition_key=firebase_uid
+            ))
+            
+            return results[0] if results else None
+            
+        except Exception as e:
+            logger.error(f"Error getting student mapping: {str(e)}")
+            return None
+
+    async def get_student_id_for_user(self, firebase_uid: str) -> Optional[int]:
+        """Get numeric student_id for a Firebase user (for backward compatibility)"""
+        mapping = await self.get_student_mapping(firebase_uid)
+        return mapping["student_id"] if mapping else None
+
+    async def get_student_uuid_for_user(self, firebase_uid: str) -> Optional[str]:
+        """Get UUID-based student_id for a Firebase user (recommended for new code)"""
+        mapping = await self.get_student_mapping(firebase_uid)
+        return mapping.get("student_uuid") if mapping else None
+
+    async def get_or_create_student_mapping(
+        self,
+        firebase_uid: str,
+        email: str,
+        display_name: str
+    ) -> Dict[str, Any]:
+        """Get existing mapping or create new one - integrates with your middleware"""
+        mapping = await self.get_student_mapping(firebase_uid)
+        if mapping:
+            # Update last access time
+            mapping["last_accessed"] = datetime.utcnow().isoformat()
+            mapping["updated_at"] = datetime.utcnow().isoformat()
+            self.student_mappings.upsert_item(body=mapping)
+            return mapping
+        else:
+            return await self.create_student_mapping(firebase_uid, email, display_name)
+
+    async def _generate_unique_numeric_student_id(self) -> int:
+        """Generate a unique numeric student ID for backward compatibility"""
+        try:
+            # Get the highest existing student_id
+            query = """
+            SELECT VALUE MAX(c.student_id) 
+            FROM c
+            WHERE IS_NUMBER(c.student_id)
+            """
+            
+            results = list(self.student_mappings.query_items(
+                query=query,
+                enable_cross_partition_query=True
+            ))
+            
+            max_id = results[0] if results and results[0] is not None else 1000
+            return max_id + 1
+            
+        except Exception as e:
+            logger.error(f"Error generating student ID: {str(e)}")
+            # Fallback to timestamp-based ID
+            return int(datetime.utcnow().timestamp())
+
+    # ============================================================================
+    # USER VALIDATION HELPERS
+    # ============================================================================
+
+    async def validate_user_access_to_student(
+        self, 
+        firebase_uid: str, 
+        requested_student_id: int
+    ) -> bool:
+        """Validate that a Firebase user has access to a specific student_id"""
+        try:
+            user_student_id = await self.get_student_id_for_user(firebase_uid)
+            
+            if not user_student_id:
+                logger.warning(f"No student mapping found for user {firebase_uid}")
+                return False
+            
+            # Check if user is accessing their own data
+            if user_student_id == requested_student_id:
+                return True
+            
+            # Check for admin access or development mode
+            if getattr(settings, 'ALLOW_ANY_STUDENT_ACCESS', False):
+                logger.warning(f"Allowing cross-student access in development mode")
+                return True
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error validating user access: {str(e)}")
+            return False
+
+    # ============================================================================
+    # ENHANCED CONVERSATION METHODS
+    # ============================================================================
+
     async def save_conversation_message(
         self,
         session_id: str,
         student_id: int,
-        speaker: str,  # 'self' or 'gemini'
+        speaker: str,
         message: str,
-        timestamp: str
+        timestamp: str,
+        firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
+        """Save conversation message with optional user validation"""
+        
+        # Validate user has access to this student_id
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        # Use UUID for message ID to avoid collisions
+        message_id = str(uuid.uuid4())
+        
         message_data = {
-            "id": f"{student_id}_{session_id}_{timestamp}",  # Updated id format
+            "id": message_id,
             "session_id": session_id,
             "student_id": student_id,
             "speaker": speaker,
             "message": message,
-            "timestamp": timestamp
+            "timestamp": timestamp,
+            "firebase_uid": firebase_uid,
+            "created_at": datetime.utcnow().isoformat()
         }
         
         return self.conversations.create_item(body=message_data)
+
+    async def get_session_conversation(
+        self,
+        session_id: str,
+        student_id: int,
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get session conversation with optional user validation"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        query = """
+        SELECT * FROM c 
+        WHERE c.session_id = @session_id 
+        ORDER BY c.timestamp
+        """
+        
+        params = [{"name": "@session_id", "value": session_id}]
+        
+        return list(self.conversations.query_items(
+            query=query,
+            parameters=params,
+            partition_key=student_id
+        ))
+    
+    async def get_student_recent_conversations(
+        self,
+        student_id: int,
+        session_limit: int = 5,
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get recent conversations for a student across sessions"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        query = """
+        SELECT DISTINCT c.session_id,
+                c.timestamp,
+                ARRAY_AGG(c) AS messages
+        FROM c
+        WHERE c.student_id = @student_id
+        GROUP BY c.session_id, c.timestamp
+        ORDER BY c.timestamp DESC
+        OFFSET 0 LIMIT @limit
+        """
+        
+        params = [
+            {"name": "@student_id", "value": student_id},
+            {"name": "@limit", "value": session_limit}
+        ]
+        
+        return list(self.conversations.query_items(
+            query=query,
+            parameters=params,
+            partition_key=student_id
+        ))
+    
+    async def get_student_conversation_summary(
+        self,
+        student_id: int,
+        start_date: str = None,
+        end_date: str = None,
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get summary statistics for student conversations"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        query = """
+        SELECT 
+            COUNT(1) as total_messages,
+            COUNT(DISTINCT c.session_id) as total_sessions,
+            AVG(LENGTH(c.message)) as avg_message_length
+        FROM c
+        WHERE c.student_id = @student_id
+        """
+        
+        params = [{"name": "@student_id", "value": student_id}]
+        
+        if start_date:
+            query += " AND c.timestamp >= @start_date"
+            params.append({"name": "@start_date", "value": start_date})
+        if end_date:
+            query += " AND c.timestamp <= @end_date"
+            params.append({"name": "@end_date", "value": end_date})
+            
+        results = list(self.conversations.query_items(
+            query=query,
+            parameters=params,
+            partition_key=student_id
+        ))
+        
+        return results[0] if results else None
+
+    # ============================================================================
+    # ENHANCED COMPETENCY METHODS
+    # ============================================================================
 
     async def get_competency(
         self,
         student_id: int,
         subject: str,
         skill_id: str,
-        subskill_id: str
+        subskill_id: str,
+        firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
+        """Get competency with optional user validation"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         query = f"""
         SELECT * FROM c 
         WHERE c.student_id = @student_id 
@@ -131,10 +427,22 @@ class CosmosDBService:
         subskill_id: str,
         score: float,
         credibility: float,
-        total_attempts: int
+        total_attempts: int,
+        firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
+        """Update competency with user validation"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        # Use UUID for competency ID
+        competency_id = str(uuid.uuid4())
+        
         competency_data = {
-            "id": f"{student_id}_{subject}_{skill_id}_{subskill_id}",
+            "id": competency_id,
             "student_id": student_id,
             "subject": subject,
             "skill_id": skill_id,
@@ -142,402 +450,27 @@ class CosmosDBService:
             "current_score": score,
             "credibility": credibility,
             "total_attempts": total_attempts,
-            "last_updated": datetime.utcnow().isoformat()
+            "last_updated": datetime.utcnow().isoformat(),
+            "firebase_uid": firebase_uid,
+            "created_at": datetime.utcnow().isoformat()
         }
         
         return self.competencies.upsert_item(body=competency_data)
 
-    async def save_attempt(
-        self,
-        student_id: int,
-        subject: str,
-        skill_id: str,
-        subskill_id: str,
-        score: float,
-        analysis: str,
-        feedback: str
-    ) -> Dict[str, Any]:
-        attempt_data = {
-            "id": f"{student_id}_{datetime.utcnow().isoformat()}",
-            "student_id": student_id,
-            "subject": subject,
-            "skill_id": skill_id,
-            "subskill_id": subskill_id,
-            "score": score,
-            "analysis": analysis,
-            "feedback": feedback,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
-        return self.attempts.create_item(body=attempt_data)
-
-    async def save_cached_problem(self, subject, skill_id, subskill_id, problem_data):
-        """
-        Save a problem to the cached_problems container with a standardized format.
-        
-        Args:
-            subject: The subject (e.g., 'mathematics')
-            skill_id: The ID of the skill
-            subskill_id: The ID of the subskill
-            problem_data: The full problem data object
-        """
-        try:
-            # Generate a unique ID with timestamp and UUID for uniqueness
-            import uuid
-            from datetime import datetime
-            timestamp_precise = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-            unique_id = f"{subject}_{skill_id}_{subskill_id}_{timestamp_precise}_{uuid.uuid4()}"
-            
-            # Ensure problem_data has proper IDs
-            problem_data["id"] = unique_id
-            problem_data["problem_id"] = unique_id
-            
-            # Ensure metadata exists and has required fields
-            if "metadata" not in problem_data:
-                problem_data["metadata"] = {}
-            
-            if "subject" not in problem_data["metadata"]:
-                problem_data["metadata"]["subject"] = subject
-                
-            # Create the standardized document that will contain the problem
-            document = {
-                "id": unique_id,
-                "problem_id": unique_id,
-                "type": "cached_problem",
-                "subject": subject,
-                "skill_id": skill_id,
-                "subskill_id": subskill_id,
-                "difficulty": problem_data.get("metadata", {}).get("difficulty", 5.0),
-                "timestamp": timestamp_precise,
-                "problem_data": problem_data
-            }
-            
-            # Save to cached_problems container
-            self.cached_problems.create_item(body=document)
-            print(f"[DEBUG] Saved cached problem {unique_id} for {subject}/{skill_id}/{subskill_id}")
-            
-            return unique_id
-            
-        except Exception as e:
-            print(f"[ERROR] Failed to save cached problem: {str(e)}")
-            import traceback
-            print(traceback.format_exc())
-            return None
-
-    async def get_cached_problems(
-        self,
-        subject: str,
-        skill_id: str,
-        subskill_id: str
-    ) -> List[Dict[str, Any]]:
-        """Get cached problems for a specific skill/subskill combination"""
-        query = """
-        SELECT c.problem_data
-        FROM c
-        WHERE c.subject = @subject
-        AND c.skill_id = @skill_id
-        AND c.subskill_id = @subskill_id
-        """
-        
-        params = [
-            {"name": "@subject", "value": subject},
-            {"name": "@skill_id", "value": skill_id},
-            {"name": "@subskill_id", "value": subskill_id}
-        ]
-        
-        try:
-            items = list(self.cached_problems.query_items(
-                query=query,
-                parameters=params,
-                enable_cross_partition_query=True
-            ))
-            
-            # Extract problem_data from items
-            return [item.get("problem_data", {}) for item in items]
-        except Exception as e:
-            print(f"Error getting cached problems: {str(e)}")
-            return []
-
-    async def get_student_attempts(
-        self,
-        student_id: int,
-        subject: Optional[str] = None,
-        skill_id: Optional[str] = None,
-        subskill_id: Optional[str] = None,
-        limit: int = 100
-    ) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM c WHERE c.student_id = @student_id"
-        params = [{"name": "@student_id", "value": student_id}]
-        
-        if subject:
-            query += " AND c.subject = @subject"
-            params.append({"name": "@subject", "value": subject})
-        if skill_id:
-            query += " AND c.skill_id = @skill_id"
-            params.append({"name": "@skill_id", "value": skill_id})
-        if subskill_id:
-            query += " AND c.subskill_id = @subskill_id"
-            params.append({"name": "@subskill_id", "value": subskill_id})
-            
-        query += " ORDER BY c.timestamp DESC OFFSET 0 LIMIT @limit"
-        params.append({"name": "@limit", "value": limit})
-        
-        return list(self.attempts.query_items(
-            query=query,
-            parameters=params,
-            enable_cross_partition_query=True
-        ))
-    
-    async def get_session_conversation(
-        self,
-        session_id: str,
-        student_id: int  # Added student_id parameter
-    ) -> List[Dict[str, Any]]:
-        query = """
-        SELECT * FROM c 
-        WHERE c.session_id = @session_id 
-        ORDER BY c.timestamp
-        """
-        
-        params = [
-            {"name": "@session_id", "value": session_id}
-        ]
-        
-        # Now we can query within the student's partition
-        return list(self.conversations.query_items(
-            query=query,
-            parameters=params,
-            partition_key=student_id  # More efficient query using partition key
-        ))
-    
-    async def get_student_recent_conversations(
-        self,
-        student_id: int,
-        session_limit: int = 5
-    ) -> List[Dict[str, Any]]:
-        """Get recent conversations for a student across sessions"""
-        query = """
-        SELECT DISTINCT c.session_id,
-                c.timestamp,
-                ARRAY_AGG(c) AS messages
-        FROM c
-        WHERE c.student_id = @student_id
-        GROUP BY c.session_id, c.timestamp
-        ORDER BY c.timestamp DESC
-        OFFSET 0 LIMIT @limit
-        """
-        
-        params = [
-            {"name": "@student_id", "value": student_id},
-            {"name": "@limit", "value": session_limit}
-        ]
-        
-        return list(self.conversations.query_items(
-            query=query,
-            parameters=params,
-            partition_key=student_id
-        ))
-    
-    async def get_student_conversation_summary(
-        self,
-        student_id: int,
-        start_date: str = None,
-        end_date: str = None
-    ) -> Dict[str, Any]:
-        """Get summary statistics for student conversations"""
-        query = """
-        SELECT 
-            COUNT(1) as total_messages,
-            COUNT(DISTINCT c.session_id) as total_sessions,
-            AVG(LENGTH(c.message)) as avg_message_length
-        FROM c
-        WHERE c.student_id = @student_id
-        """
-        
-        params = [{"name": "@student_id", "value": student_id}]
-        
-        if start_date:
-            query += " AND c.timestamp >= @start_date"
-            params.append({"name": "@start_date", "value": start_date})
-        if end_date:
-            query += " AND c.timestamp <= @end_date"
-            params.append({"name": "@end_date", "value": end_date})
-            
-        results = list(self.conversations.query_items(
-            query=query,
-            parameters=params,
-            partition_key=student_id
-        ))
-        
-        return results[0] if results else None
-    
-    async def save_problem_review(
-        self,
-        student_id: int,
-        subject: str,
-        skill_id: str,
-        subskill_id: str,
-        problem_id: str,
-        review_data: Dict[str, Any],
-        problem_content: Dict[str, Any] = None  # New parameter
-    ) -> Dict[str, Any]:
-        """Save a structured review of a student's problem solution."""
-        timestamp = datetime.utcnow().isoformat()
-
-        # Log all input parameters
-        print(f"[DEBUG] save_problem_review called with:")
-        print(f"[DEBUG]   - student_id: {student_id}")
-        print(f"[DEBUG]   - subject: {subject}")
-        print(f"[DEBUG]   - skill_id: {skill_id}")
-        print(f"[DEBUG]   - subskill_id: {subskill_id}")
-        print(f"[DEBUG]   - problem_id: {problem_id}")
-        print(f"[DEBUG]   - problem_content present: {'yes' if problem_content else 'no'}")
-        
-        if problem_content:
-            print(f"[DEBUG]   - problem_content keys: {problem_content.keys()}")
-        else:
-            print(f"[DEBUG]   - problem_content is None or empty")
-        
-        # Preserve the original structure but normalize for storage
-        review_item = {
-            "id": f"{student_id}_{problem_id}_{timestamp}",
-            "student_id": student_id,
-            "subject": subject,
-            "skill_id": skill_id,
-            "subskill_id": subskill_id,
-            "problem_id": problem_id,
-            "timestamp": timestamp,
-            # Store the problem content
-            "problem_content": problem_content,
-            # Store all the raw data directly
-            "full_review": review_data,
-            # For easier querying, extract key fields
-            "observation": review_data.get("observation", {}),
-            "analysis": review_data.get("analysis", {}),
-            "evaluation": review_data.get("evaluation", {}),
-            "feedback": review_data.get("feedback", {}),
-            # Extract the score for easier querying
-            "score": float(review_data.get("evaluation", {}).get("score", 0)) 
-                if isinstance(review_data.get("evaluation"), dict) 
-                else float(review_data.get("evaluation", 0))
-        }
-        
-        return self.reviews.create_item(body=review_item)
-
-    async def get_problem_reviews(
-        self,
-        student_id: int,
-        subject: Optional[str] = None,
-        skill_id: Optional[str] = None, 
-        subskill_id: Optional[str] = None,
-        limit: int = 100
-    ) -> List[Dict[str, Any]]:
-        """Get problem reviews for a student with optional filters."""
-        query = "SELECT * FROM c WHERE c.student_id = @student_id"
-        params = [{"name": "@student_id", "value": student_id}]
-        
-        if subject:
-            query += " AND c.subject = @subject"
-            params.append({"name": "@subject", "value": subject})
-        if skill_id:
-            query += " AND c.skill_id = @skill_id"
-            params.append({"name": "@skill_id", "value": skill_id})
-        if subskill_id:
-            query += " AND c.subskill_id = @subskill_id"
-            params.append({"name": "@subskill_id", "value": subskill_id})
-            
-        query += " ORDER BY c.timestamp DESC OFFSET 0 LIMIT @limit"
-        params.append({"name": "@limit", "value": limit})
-        
-        return list(self.reviews.query_items(
-            query=query,
-            parameters=params,
-            enable_cross_partition_query=True
-        ))
-
-    async def get_review_summary(
-        self,
-        student_id: int,
-        subject: Optional[str] = None,
-        days: int = 30
-    ) -> Dict[str, Any]:
-        """Get summary statistics for problem reviews."""
-        from datetime import datetime, timedelta
-        
-        start_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
-        
-        query = """
-        SELECT 
-            AVG(c.score) as avg_score,
-            COUNT(1) as total_reviews,
-            COUNT(IIF(c.score >= 8, 1, null)) as high_score_count,
-            COUNT(IIF(c.score >= 5 AND c.score < 8, 1, null)) as medium_score_count,
-            COUNT(IIF(c.score < 5, 1, null)) as low_score_count
-        FROM c
-        WHERE c.student_id = @student_id
-        AND c.timestamp >= @start_date
-        """
-        
-        params = [
-            {"name": "@student_id", "value": student_id},
-            {"name": "@start_date", "value": start_date}
-        ]
-        
-        if subject:
-            query += " AND c.subject = @subject"
-            params.append({"name": "@subject", "value": subject})
-            
-        results = list(self.reviews.query_items(
-            query=query,
-            parameters=params,
-            enable_cross_partition_query=True
-        ))
-        
-        return results[0] if results else None
-
-    async def get_attempts_by_time_range(
-        self,
-        student_id: int,
-        subject: Optional[str] = None,
-        skill_id: Optional[str] = None,
-        subskill_id: Optional[str] = None,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        """Get attempts within a specific time range with filtering options"""
-        query = "SELECT * FROM c WHERE c.student_id = @student_id"
-        params = [{"name": "@student_id", "value": student_id}]
-        
-        if subject:
-            query += " AND c.subject = @subject"
-            params.append({"name": "@subject", "value": subject})
-        if skill_id:
-            query += " AND c.skill_id = @skill_id"
-            params.append({"name": "@skill_id", "value": skill_id})
-        if subskill_id:
-            query += " AND c.subskill_id = @subskill_id"
-            params.append({"name": "@subskill_id", "value": subskill_id})
-        if start_date:
-            query += " AND c.timestamp >= @start_date"
-            params.append({"name": "@start_date", "value": start_date})
-        if end_date:
-            query += " AND c.timestamp <= @end_date"
-            params.append({"name": "@end_date", "value": end_date})
-            
-        query += " ORDER BY c.timestamp DESC"
-        
-        return list(self.attempts.query_items(
-            query=query,
-            parameters=params,
-            enable_cross_partition_query=True
-        ))
-
     async def get_subject_competencies(
         self,
         student_id: int,
-        subject: str
+        subject: str,
+        firebase_uid: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Get all competencies for a specific subject"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         query = """
         SELECT * FROM c 
         WHERE c.student_id = @student_id 
@@ -555,113 +488,20 @@ class CosmosDBService:
             enable_cross_partition_query=True
         ))
 
-    async def get_aggregated_attempts_by_time(
-        self,
-        student_id: int,
-        subject: Optional[str] = None,
-        grouping: str = "day",  # day, week, month
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        """Get aggregated attempt data grouped by time periods"""
-        # Cosmos DB doesn't support complex aggregations natively,
-        # so we'll fetch the data and aggregate it in Python
-        
-        attempts = await self.get_attempts_by_time_range(
-            student_id=student_id,
-            subject=subject,
-            start_date=start_date,
-            end_date=end_date
-        )
-        
-        from datetime import datetime
-        from collections import defaultdict
-        
-        # Group by time period
-        grouped_data = defaultdict(lambda: {"count": 0, "scores": [], "subjects": set()})
-        
-        for attempt in attempts:
-            dt = datetime.fromisoformat(attempt["timestamp"])
-            
-            if grouping == "day":
-                key = dt.strftime("%Y-%m-%d")
-            elif grouping == "week":
-                # ISO week format: YYYY-WNN (year-week number)
-                key = f"{dt.year}-W{dt.isocalendar()[1]:02d}"
-            elif grouping == "month":
-                key = dt.strftime("%Y-%m")
-            else:
-                key = dt.strftime("%Y-%m-%d")  # Default to day
-                
-            grouped_data[key]["count"] += 1
-            grouped_data[key]["scores"].append(attempt["score"])
-            grouped_data[key]["subjects"].add(attempt["subject"])
-        
-        # Calculate averages and format result
-        result = []
-        for period, data in sorted(grouped_data.items()):
-            avg_score = sum(data["scores"]) / len(data["scores"]) if data["scores"] else 0
-            result.append({
-                "period": period,
-                "count": data["count"],
-                "average_score": avg_score,
-                "subjects": list(data["subjects"])
-            })
-        
-        return result
-
-    async def get_competency_history(
-        self,
-        student_id: int,
-        subject: str,
-        skill_id: Optional[str] = None,
-        subskill_id: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        """Reconstruct competency history based on attempts data"""
-        # This is an approximation since we don't store historical competency values
-        
-        attempts = await self.get_attempts_by_time_range(
-            student_id=student_id,
-            subject=subject,
-            skill_id=skill_id,
-            subskill_id=subskill_id
-        )
-        
-        # Sort by timestamp (oldest first)
-        attempts.sort(key=lambda x: x["timestamp"])
-        
-        # Reconstruct progression using a simplified model
-        history = []
-        running_sum = 0
-        default_score = 5.0  # Same as in CompetencyService
-        
-        for i, attempt in enumerate(attempts):
-            # Simple running average calculation
-            running_sum += attempt["score"]
-            avg_score = running_sum / (i + 1)
-            
-            # Simple credibility calculation based on attempts count
-            credibility = min(1.0, (i + 1) / 15)  # Using 15 as full credibility standard
-            
-            # Blend with default score based on credibility
-            blended_score = (avg_score * credibility) + (default_score * (1 - credibility))
-            
-            history.append({
-                "timestamp": attempt["timestamp"],
-                "attempt_number": i + 1,
-                "attempt_score": attempt["score"],
-                "calculated_competency": blended_score,
-                "credibility": credibility
-            })
-        
-        return history
-
     async def get_competency_distribution(
         self,
         student_id: int,
-        subject: Optional[str] = None
+        subject: Optional[str] = None,
+        firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get competency distribution statistics"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         query = "SELECT c.current_score, c.credibility, c.subject, c.skill_id, c.subskill_id FROM c WHERE c.student_id = @student_id"
         params = [{"name": "@student_id", "value": student_id}]
         
@@ -716,17 +556,408 @@ class CosmosDBService:
             "total_competencies": len(credible_competencies)
         }
 
+    # ============================================================================
+    # ENHANCED ATTEMPT METHODS
+    # ============================================================================
+
+    async def save_attempt(
+        self,
+        student_id: int,
+        subject: str,
+        skill_id: str,
+        subskill_id: str,
+        score: float,
+        analysis: str,
+        feedback: str,
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Save attempt with user validation"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        # Use UUID for attempt ID
+        attempt_id = str(uuid.uuid4())
+        
+        attempt_data = {
+            "id": attempt_id,
+            "student_id": student_id,
+            "subject": subject,
+            "skill_id": skill_id,
+            "subskill_id": subskill_id,
+            "score": score,
+            "analysis": analysis,
+            "feedback": feedback,
+            "timestamp": datetime.utcnow().isoformat(),
+            "firebase_uid": firebase_uid,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        return self.attempts.create_item(body=attempt_data)
+
+    async def get_student_attempts(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        skill_id: Optional[str] = None,
+        subskill_id: Optional[str] = None,
+        limit: int = 100,
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get student attempts with optional user validation"""
+        
+        # Validate user access if firebase_uid provided
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        query = "SELECT * FROM c WHERE c.student_id = @student_id"
+        params = [{"name": "@student_id", "value": student_id}]
+        
+        if subject:
+            query += " AND c.subject = @subject"
+            params.append({"name": "@subject", "value": subject})
+        if skill_id:
+            query += " AND c.skill_id = @skill_id"
+            params.append({"name": "@skill_id", "value": skill_id})
+        if subskill_id:
+            query += " AND c.subskill_id = @subskill_id"
+            params.append({"name": "@subskill_id", "value": subskill_id})
+            
+        query += " ORDER BY c.timestamp DESC OFFSET 0 LIMIT @limit"
+        params.append({"name": "@limit", "value": limit})
+        
+        return list(self.attempts.query_items(
+            query=query,
+            parameters=params,
+            enable_cross_partition_query=True
+        ))
+
+    async def get_attempts_by_time_range(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        skill_id: Optional[str] = None,
+        subskill_id: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get attempts within a specific time range with filtering options"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        query = "SELECT * FROM c WHERE c.student_id = @student_id"
+        params = [{"name": "@student_id", "value": student_id}]
+        
+        if subject:
+            query += " AND c.subject = @subject"
+            params.append({"name": "@subject", "value": subject})
+        if skill_id:
+            query += " AND c.skill_id = @skill_id"
+            params.append({"name": "@skill_id", "value": skill_id})
+        if subskill_id:
+            query += " AND c.subskill_id = @subskill_id"
+            params.append({"name": "@subskill_id", "value": subskill_id})
+        if start_date:
+            query += " AND c.timestamp >= @start_date"
+            params.append({"name": "@start_date", "value": start_date})
+        if end_date:
+            query += " AND c.timestamp <= @end_date"
+            params.append({"name": "@end_date", "value": end_date})
+            
+        query += " ORDER BY c.timestamp DESC"
+        
+        return list(self.attempts.query_items(
+            query=query,
+            parameters=params,
+            enable_cross_partition_query=True
+        ))
+
+    async def get_aggregated_attempts_by_time(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        grouping: str = "day",  # day, week, month
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get aggregated attempt data grouped by time periods"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        # Cosmos DB doesn't support complex aggregations natively,
+        # so we'll fetch the data and aggregate it in Python
+        
+        attempts = await self.get_attempts_by_time_range(
+            student_id=student_id,
+            subject=subject,
+            start_date=start_date,
+            end_date=end_date,
+            firebase_uid=firebase_uid
+        )
+        
+        from datetime import datetime
+        from collections import defaultdict
+        
+        # Group by time period
+        grouped_data = defaultdict(lambda: {"count": 0, "scores": [], "subjects": set()})
+        
+        for attempt in attempts:
+            dt = datetime.fromisoformat(attempt["timestamp"])
+            
+            if grouping == "day":
+                key = dt.strftime("%Y-%m-%d")
+            elif grouping == "week":
+                # ISO week format: YYYY-WNN (year-week number)
+                key = f"{dt.year}-W{dt.isocalendar()[1]:02d}"
+            elif grouping == "month":
+                key = dt.strftime("%Y-%m")
+            else:
+                key = dt.strftime("%Y-%m-%d")  # Default to day
+                
+            grouped_data[key]["count"] += 1
+            grouped_data[key]["scores"].append(attempt["score"])
+            grouped_data[key]["subjects"].add(attempt["subject"])
+        
+        # Calculate averages and format result
+        result = []
+        for period, data in sorted(grouped_data.items()):
+            avg_score = sum(data["scores"]) / len(data["scores"]) if data["scores"] else 0
+            result.append({
+                "period": period,
+                "count": data["count"],
+                "average_score": avg_score,
+                "subjects": list(data["subjects"])
+            })
+        
+        return result
+
+    async def get_competency_history(
+        self,
+        student_id: int,
+        subject: str,
+        skill_id: Optional[str] = None,
+        subskill_id: Optional[str] = None,
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Reconstruct competency history based on attempts data"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        # This is an approximation since we don't store historical competency values
+        attempts = await self.get_attempts_by_time_range(
+            student_id=student_id,
+            subject=subject,
+            skill_id=skill_id,
+            subskill_id=subskill_id,
+            firebase_uid=firebase_uid
+        )
+        
+        # Sort by timestamp (oldest first)
+        attempts.sort(key=lambda x: x["timestamp"])
+        
+        # Reconstruct progression using a simplified model
+        history = []
+        running_sum = 0
+        default_score = 5.0  # Same as in CompetencyService
+        
+        for i, attempt in enumerate(attempts):
+            # Simple running average calculation
+            running_sum += attempt["score"]
+            avg_score = running_sum / (i + 1)
+            
+            # Simple credibility calculation based on attempts count
+            credibility = min(1.0, (i + 1) / 15)  # Using 15 as full credibility standard
+            
+            # Blend with default score based on credibility
+            blended_score = (avg_score * credibility) + (default_score * (1 - credibility))
+            
+            history.append({
+                "timestamp": attempt["timestamp"],
+                "attempt_number": i + 1,
+                "attempt_score": attempt["score"],
+                "calculated_competency": blended_score,
+                "credibility": credibility
+            })
+        
+        return history
+
+    # ============================================================================
+    # ENHANCED REVIEW METHODS
+    # ============================================================================
+
+    async def save_problem_review(
+        self,
+        student_id: int,
+        subject: str,
+        skill_id: str,
+        subskill_id: str,
+        problem_id: str,
+        review_data: Dict[str, Any],
+        problem_content: Dict[str, Any] = None,
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Save problem review with user validation"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        timestamp = datetime.utcnow().isoformat()
+        review_id = str(uuid.uuid4())
+
+        logger.info(f"Saving problem review with ID: {review_id} for student {student_id}")
+
+        review_item = {
+            "id": review_id,
+            "student_id": student_id,
+            "subject": subject,
+            "skill_id": skill_id,
+            "subskill_id": subskill_id,
+            "problem_id": problem_id,
+            "timestamp": timestamp,
+            "problem_content": problem_content,
+            "full_review": review_data,
+            "observation": review_data.get("observation", {}),
+            "analysis": review_data.get("analysis", {}),
+            "evaluation": review_data.get("evaluation", {}),
+            "feedback": review_data.get("feedback", {}),
+            "score": float(review_data.get("evaluation", {}).get("score", 0)) 
+                if isinstance(review_data.get("evaluation"), dict) 
+                else float(review_data.get("evaluation", 0)),
+            "firebase_uid": firebase_uid,
+            "created_at": timestamp
+        }
+        
+        return self.reviews.create_item(body=review_item)
+
+    async def get_problem_reviews(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        skill_id: Optional[str] = None, 
+        subskill_id: Optional[str] = None,
+        limit: int = 100,
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get problem reviews for a student with optional filters."""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        query = "SELECT * FROM c WHERE c.student_id = @student_id"
+        params = [{"name": "@student_id", "value": student_id}]
+        
+        if subject:
+            query += " AND c.subject = @subject"
+            params.append({"name": "@subject", "value": subject})
+        if skill_id:
+            query += " AND c.skill_id = @skill_id"
+            params.append({"name": "@skill_id", "value": skill_id})
+        if subskill_id:
+            query += " AND c.subskill_id = @subskill_id"
+            params.append({"name": "@subskill_id", "value": subskill_id})
+            
+        query += " ORDER BY c.timestamp DESC OFFSET 0 LIMIT @limit"
+        params.append({"name": "@limit", "value": limit})
+        
+        return list(self.reviews.query_items(
+            query=query,
+            parameters=params,
+            enable_cross_partition_query=True
+        ))
+
+    async def get_review_summary(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        days: int = 30,
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get summary statistics for problem reviews."""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
+        from datetime import datetime, timedelta
+        
+        start_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        
+        query = """
+        SELECT 
+            AVG(c.score) as avg_score,
+            COUNT(1) as total_reviews,
+            COUNT(IIF(c.score >= 8, 1, null)) as high_score_count,
+            COUNT(IIF(c.score >= 5 AND c.score < 8, 1, null)) as medium_score_count,
+            COUNT(IIF(c.score < 5, 1, null)) as low_score_count
+        FROM c
+        WHERE c.student_id = @student_id
+        AND c.timestamp >= @start_date
+        """
+        
+        params = [
+            {"name": "@student_id", "value": student_id},
+            {"name": "@start_date", "value": start_date}
+        ]
+        
+        if subject:
+            query += " AND c.subject = @subject"
+            params.append({"name": "@subject", "value": subject})
+            
+        results = list(self.reviews.query_items(
+            query=query,
+            parameters=params,
+            enable_cross_partition_query=True
+        ))
+        
+        return results[0] if results else None
+
     async def get_review_patterns(
         self,
         student_id: int,
         subject: Optional[str] = None,
-        recent_count: int = 100
+        recent_count: int = 100,
+        firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
         """Analyze patterns in problem reviews"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         reviews = await self.get_problem_reviews(
             student_id=student_id,
             subject=subject,
-            limit=recent_count
+            limit=recent_count,
+            firebase_uid=firebase_uid
         )
         
         if not reviews:
@@ -780,6 +1011,92 @@ class CosmosDBService:
             }
         }
 
+    # ============================================================================
+    # ENHANCED CACHED PROBLEMS METHODS
+    # ============================================================================
+
+    async def save_cached_problem(self, subject, skill_id, subskill_id, problem_data):
+        """Save a problem to the cached_problems container with UUID-based IDs"""
+        try:
+            # Generate UUID for problem
+            problem_uuid = str(uuid.uuid4())
+            timestamp_precise = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+            
+            # Ensure problem_data has proper IDs
+            problem_data["id"] = problem_uuid
+            problem_data["problem_id"] = problem_uuid
+            
+            # Ensure metadata exists and has required fields
+            if "metadata" not in problem_data:
+                problem_data["metadata"] = {}
+            
+            if "subject" not in problem_data["metadata"]:
+                problem_data["metadata"]["subject"] = subject
+                
+            # Create the standardized document
+            document = {
+                "id": problem_uuid,
+                "problem_id": problem_uuid,
+                "type": "cached_problem",
+                "subject": subject,
+                "skill_id": skill_id,
+                "subskill_id": subskill_id,
+                "difficulty": problem_data.get("metadata", {}).get("difficulty", 5.0),
+                "timestamp": timestamp_precise,
+                "problem_data": problem_data,
+                "created_at": datetime.utcnow().isoformat()
+            }
+            
+            # Save to cached_problems container
+            self.cached_problems.create_item(body=document)
+            logger.info(f"Saved cached problem {problem_uuid} for {subject}/{skill_id}/{subskill_id}")
+            
+            return problem_uuid
+            
+        except Exception as e:
+            logger.error(f"Failed to save cached problem: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            return None
+
+    async def get_cached_problems(
+        self,
+        subject: str,
+        skill_id: str,
+        subskill_id: str
+    ) -> List[Dict[str, Any]]:
+        """Get cached problems for a specific skill/subskill combination"""
+        query = """
+        SELECT c.problem_data
+        FROM c
+        WHERE c.subject = @subject
+        AND c.skill_id = @skill_id
+        AND c.subskill_id = @subskill_id
+        """
+        
+        params = [
+            {"name": "@subject", "value": subject},
+            {"name": "@skill_id", "value": skill_id},
+            {"name": "@subskill_id", "value": subskill_id}
+        ]
+        
+        try:
+            items = list(self.cached_problems.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=True
+            ))
+            
+            # Extract problem_data from items
+            return [item.get("problem_data", {}) for item in items]
+        except Exception as e:
+            logger.error(f"Error getting cached problems: {str(e)}")
+            return []
+
+    # ============================================================================
+    # ENHANCED P5JS CODE METHODS
+    # ============================================================================
+
     async def save_p5js_code(
         self,
         student_id: int,
@@ -793,15 +1110,21 @@ class CosmosDBService:
         skill_description: str = None,
         subskill_id: str = None,
         subskill_description: str = None,
-        # New educational metadata fields
         subject: str = None,
         skill: str = None,
         subskill: str = None,
-        key_concepts: List[str] = None
+        key_concepts: List[str] = None,
+        firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Save a p5js code snippet with educational metadata"""
+        """Save p5js code snippet with user validation and UUIDs"""
         try:
-            snippet_id = f"{student_id}_{uuid.uuid4()}"
+            # Validate user access
+            if firebase_uid:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+            
+            snippet_id = str(uuid.uuid4())
             timestamp = datetime.utcnow().isoformat()
             
             item = {
@@ -814,19 +1137,18 @@ class CosmosDBService:
                 "created_at": timestamp,
                 "updated_at": timestamp,
                 "type": "p5js_code_snippet",
-                # Legacy syllabus fields (keeping for backward compatibility)
                 "unit_id": unit_id,
                 "unit_title": unit_title,
                 "skill_id": skill_id,
                 "skill_description": skill_description,
                 "subskill_id": subskill_id,
                 "subskill_description": subskill_description,
-                # New educational metadata fields
                 "subject": subject,
                 "skill": skill,
                 "subskill": subskill,
                 "key_concepts": key_concepts or [],
-                "source": "user_created"
+                "source": "user_created",
+                "firebase_uid": firebase_uid
             }
             
             result = self.p5js_code_snippets.create_item(body=item)
@@ -841,14 +1163,12 @@ class CosmosDBService:
                 "tags": result.get("tags", []),
                 "created_at": result["created_at"],
                 "updated_at": result["updated_at"],
-                # Legacy fields
                 "unit_id": result.get("unit_id"),
                 "unit_title": result.get("unit_title"),
                 "skill_id": result.get("skill_id"),
                 "skill_description": result.get("skill_description"),
                 "subskill_id": result.get("subskill_id"),
                 "subskill_description": result.get("subskill_description"),
-                # New educational metadata fields
                 "subject": result.get("subject"),
                 "skill": result.get("skill"),
                 "subskill": result.get("subskill"),
@@ -862,9 +1182,17 @@ class CosmosDBService:
     async def get_student_p5js_codes(
         self,
         student_id: int,
-        limit: int = 100
+        limit: int = 100,
+        firebase_uid: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Get all p5js code snippets for a student"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         query = """
         SELECT * FROM c 
         WHERE c.student_id = @student_id 
@@ -887,9 +1215,17 @@ class CosmosDBService:
     async def get_p5js_code_by_id(
         self,
         student_id: int,
-        snippet_id: str
+        snippet_id: str,
+        firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get a specific p5js code snippet by ID"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         try:
             result = self.p5js_code_snippets.read_item(
                 item=snippet_id,
@@ -897,7 +1233,7 @@ class CosmosDBService:
             )
             return result
         except Exception as e:
-            print(f"Error retrieving p5js code: {str(e)}")
+            logger.error(f"Error retrieving p5js code: {str(e)}")
             return None
 
     async def update_p5js_code(
@@ -914,16 +1250,23 @@ class CosmosDBService:
         skill_description: str = None,
         subskill_id: str = None,
         subskill_description: str = None,
-        # New educational metadata fields
         subject: str = None,
         skill: str = None,
         subskill: str = None,
-        key_concepts: List[str] = None
+        key_concepts: List[str] = None,
+        firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
         """Update an existing p5js code snippet"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         try:
             # First get the existing item
-            snippet = await self.get_p5js_code_by_id(student_id, snippet_id)
+            snippet = await self.get_p5js_code_by_id(student_id, snippet_id, firebase_uid)
             if not snippet:
                 raise ValueError(f"Code snippet {snippet_id} not found")
                 
@@ -936,7 +1279,6 @@ class CosmosDBService:
                 snippet["description"] = description
             if tags is not None:
                 snippet["tags"] = tags
-            # Update syllabus metadata fields if provided
             if unit_id is not None:
                 snippet["unit_id"] = unit_id
             if unit_title is not None:
@@ -949,6 +1291,14 @@ class CosmosDBService:
                 snippet["subskill_id"] = subskill_id
             if subskill_description is not None:
                 snippet["subskill_description"] = subskill_description
+            if subject is not None:
+                snippet["subject"] = subject
+            if skill is not None:
+                snippet["skill"] = skill
+            if subskill is not None:
+                snippet["subskill"] = subskill
+            if key_concepts is not None:
+                snippet["key_concepts"] = key_concepts
                 
             # Update the timestamp
             snippet["updated_at"] = datetime.utcnow().isoformat()
@@ -960,15 +1310,23 @@ class CosmosDBService:
             )
             return result
         except Exception as e:
-            print(f"Error updating p5js code: {str(e)}")
+            logger.error(f"Error updating p5js code: {str(e)}")
             raise
 
     async def delete_p5js_code(
         self,
         student_id: int,
-        snippet_id: str
+        snippet_id: str,
+        firebase_uid: Optional[str] = None
     ) -> bool:
         """Delete a p5js code snippet"""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         try:
             self.p5js_code_snippets.delete_item(
                 item=snippet_id,
@@ -976,7 +1334,7 @@ class CosmosDBService:
             )
             return True
         except Exception as e:
-            print(f"Error deleting p5js code: {str(e)}")
+            logger.error(f"Error deleting p5js code: {str(e)}")
             return False
 
     async def search_p5js_codes_by_subject(
@@ -1042,8 +1400,20 @@ class CosmosDBService:
             logger.error(f"Error searching p5js codes by subject: {str(e)}")
             raise
 
-    async def save_p5js_evaluation(self, evaluation_data):
+    # ============================================================================
+    # P5JS EVALUATION METHODS
+    # ============================================================================
+
+    async def save_p5js_evaluation(self, evaluation_data, firebase_uid: Optional[str] = None):
         """Save a p5js evaluation to the database."""
+        
+        # Validate user access if student_id is in evaluation_data
+        student_id = evaluation_data.get("student_id")
+        if firebase_uid and student_id:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         try:
             # Create the evaluations container if it doesn't exist
             evaluations = self.database.create_container_if_not_exists(
@@ -1051,20 +1421,33 @@ class CosmosDBService:
                 partition_key=PartitionKey(path="/student_id")
             )
             
+            # Add UUID and firebase_uid to evaluation data
+            evaluation_data["id"] = str(uuid.uuid4())
+            evaluation_data["firebase_uid"] = firebase_uid
+            evaluation_data["created_at"] = datetime.utcnow().isoformat()
+            
             # Save to the evaluations container
             result = evaluations.create_item(body=evaluation_data)
             return result
         except Exception as e:
-            print(f"Error saving p5js evaluation: {str(e)}")
+            logger.error(f"Error saving p5js evaluation: {str(e)}")
             raise
 
     async def get_student_evaluations(
         self,
         student_id: int,
         exercise_id: Optional[str] = None,
-        limit: int = 10
+        limit: int = 10,
+        firebase_uid: Optional[str] = None
     ):
         """Get evaluations for a student, optionally filtered by exercise."""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         try:
             # Create the evaluations container if it doesn't exist (for backwards compatibility)
             evaluations = self.database.create_container_if_not_exists(
@@ -1092,15 +1475,23 @@ class CosmosDBService:
             
             return items
         except Exception as e:
-            print(f"Error getting student evaluations: {str(e)}")
+            logger.error(f"Error getting student evaluations: {str(e)}")
             return []
 
     async def get_evaluation_by_id(
         self,
         student_id: int,
-        evaluation_id: str
+        evaluation_id: str,
+        firebase_uid: Optional[str] = None
     ):
         """Get a specific evaluation by ID."""
+        
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+        
         try:
             # Create the evaluations container if it doesn't exist (for backwards compatibility)
             evaluations = self.database.create_container_if_not_exists(
@@ -1114,9 +1505,12 @@ class CosmosDBService:
             )
             return result
         except Exception as e:
-            print(f"Error retrieving evaluation: {str(e)}")
+            logger.error(f"Error retrieving evaluation: {str(e)}")
             return None
 
+    # ============================================================================
+    # CONTENT PACKAGES METHODS (unchanged - these are global)
+    # ============================================================================
 
     async def get_content_packages(
         self,
@@ -1167,7 +1561,7 @@ class CosmosDBService:
             return results
             
         except Exception as e:
-            print(f"Error getting content packages: {str(e)}")
+            logger.error(f"Error getting content packages: {str(e)}")
             return []
 
     async def get_content_package_by_id(
@@ -1195,11 +1589,11 @@ class CosmosDBService:
             if results:
                 return results[0]
             else:
-                print(f"Content package with ID {package_id} not found or not approved")
+                logger.info(f"Content package with ID {package_id} not found or not approved")
                 return None
                 
         except Exception as e:
-            print(f"Error getting content package by ID: {str(e)}")
+            logger.error(f"Error getting content package by ID: {str(e)}")
             return None
 
     async def search_content_packages_by_criteria(
@@ -1243,5 +1637,5 @@ class CosmosDBService:
             return results
             
         except Exception as e:
-            print(f"Error searching content packages: {str(e)}")
+            logger.error(f"Error searching content packages: {str(e)}")
             return []

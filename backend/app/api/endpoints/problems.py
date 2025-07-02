@@ -1,33 +1,44 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+# backend/app/api/endpoints/problems.py - SIMPLIFIED VERSION
+
+from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
-
-# Import dependencies
-from ...dependencies import get_problem_service, get_competency_service, get_problem_recommender, get_analytics_extension, get_review_service, get_anthropic_service
-from ...services.problems import ProblemService
-from ...services.anthropic import AnthropicService
-from ...services.competency import CompetencyService, AnalyticsExtension
-from ...services.recommender import ProblemRecommender
-from ...services.review import ReviewService
+from datetime import datetime
+import logging
 import re
-from pathlib import Path
-from datetime import datetime, timedelta
-import logging  # Add explicit logging import
 
-# Set up logging
+# Simplified imports
+from ...core.middleware import get_user_context
+from ...api.endpoints.user_profiles import log_activity
+from ...dependencies import get_problem_service, get_competency_service, get_review_service
+from ...services.problems import ProblemService
+from ...services.competency import CompetencyService
+from ...services.review import ReviewService
+from ...services.bigquery_analytics import BigQueryAnalyticsService
+from ...core.config import settings
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)  # Set to DEBUG for more details
-
-
 router = APIRouter()
 
+# ============================================================================
+# MODELS - Keep existing models
+# ============================================================================
+
 class ProblemRequest(BaseModel):
-    student_id: int
     subject: str
     unit_id: Optional[str] = None
     skill_id: Optional[str] = None
     subskill_id: Optional[str] = None
     difficulty: Optional[float] = None
+
+class ProblemSubmission(BaseModel):
+    subject: str
+    problem: Dict[str, Any]
+    solution_image: str
+    skill_id: str
+    subskill_id: Optional[str] = None
+    student_answer: Optional[str] = ""
+    canvas_used: bool = True
 
 class ProblemResponse(BaseModel):
     problem_type: str
@@ -35,235 +46,470 @@ class ProblemResponse(BaseModel):
     answer: str
     success_criteria: List[str]
     teaching_note: str
-    metadata: Dict[str, Any]  # Contains competency/recommendation data
-
-class ProblemSubmission(BaseModel):
-    subject: str
-    problem: Dict[str, Any]  # Complete problem object
-    solution_image: str  # Base64 encoded image
-    skill_id: str
-    subskill_id: Optional[str] = None
-    student_answer: Optional[str] = ""
-    canvas_used: bool = True
+    metadata: Dict[str, Any]
+    # Simplified user fields
+    user_id: str
     student_id: int
+    generated_at: str
 
-class ReviewAnalyticsRequest(BaseModel):
+class SubmissionResult(BaseModel):
+    review: Dict[str, Any]
+    competency: Dict[str, Any]
+    points_earned: int = 0
+    encouraging_message: str = ""
+    next_recommendations: List[str] = []
     student_id: int
-    subject: str
-    days: Optional[int] = 30
-    skill_id: Optional[str] = None
+    user_id: str
+
+# ============================================================================
+# DEPENDENCY INJECTION - Simplified
+# ============================================================================
+
+def get_bigquery_analytics_service() -> BigQueryAnalyticsService:
+    """Get BigQuery analytics service instance"""
+    project_id = getattr(settings, "BIGQUERY_PROJECT_ID", "your-project-id")
+    dataset_id = getattr(settings, "BIGQUERY_DATASET_ID", "analytics")
+    return BigQueryAnalyticsService(project_id=project_id, dataset_id=dataset_id)
+
+# ============================================================================
+# SIMPLIFIED ENDPOINTS - One consistent pattern
+# ============================================================================
 
 @router.post("/generate")
 async def generate_problem(
     request: ProblemRequest,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
     problem_service: ProblemService = Depends(get_problem_service)
 ) -> ProblemResponse:
-    """Generate a new problem based on curriculum parameters"""
+    """Generate problem with automatic user authentication"""
+    
+    user_id = user_context["user_id"]
+    student_id = user_context["student_id"]
+    
     try:
-        logger.info(f"Received problem generation request: {request}")
+        logger.info(f"User {user_context['email']} generating problem for student {student_id}")
         
-        # Validate subject at minimum
         if not request.subject:
             raise HTTPException(status_code=400, detail="Subject is required")
-            
+        
+        # Build context with user personalization
         context = {
             "unit": request.unit_id,
             "skill": request.skill_id,
-            "subskill": request.subskill_id
+            "subskill": request.subskill_id,
+            "user_id": user_id,
+            "grade_level": user_context.get("grade_level"),
+            "user_preferences": user_context.get("preferences", {})
         }
         
-        logger.info(f"Processing with context: {context}")
-        
-        # Let the recommender handle missing parameters
+        # Generate problem
         problem = await problem_service.get_problem(
-            student_id=request.student_id,
+            student_id=student_id,
             subject=request.subject,
             context=context
         )
         
         if not problem:
-            logger.error("No problem generated")
-            raise HTTPException(
-                status_code=404, 
-                detail="Failed to generate problem. Check server logs for details."
+            # Log failure and raise error
+            background_tasks.add_task(
+                log_activity,
+                user_id=user_id,
+                activity_type="problem_generation_failed",
+                activity_name=f"Failed to generate {request.subject} problem",
+                points=0,
+                metadata={"subject": request.subject, "student_id": student_id}
             )
-            
-        logger.info(f"Generated problem: {problem}")
-        return ProblemResponse(**problem)
+            raise HTTPException(status_code=404, detail="Failed to generate problem")
         
-    except HTTPException as e:
+        # Log success
+        background_tasks.add_task(
+            log_activity,
+            user_id=user_id,
+            activity_type="problem_generated",
+            activity_name=f"Generated {request.subject} problem",
+            points=5,
+            metadata={
+                "subject": request.subject,
+                "skill_id": request.skill_id,
+                "student_id": student_id,
+                "problem_type": problem.get("problem_type")
+            }
+        )
+        
+        return ProblemResponse(
+            **problem,
+            user_id=user_id,
+            student_id=student_id,
+            generated_at=datetime.utcnow().isoformat()
+        )
+        
+    except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in generate_problem endpoint: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
+        logger.error(f"Error generating problem: {str(e)}")
+        background_tasks.add_task(
+            log_activity,
+            user_id=user_id,
+            activity_type="problem_generation_error",
+            activity_name="Problem generation error",
+            points=0,
+            metadata={"error": str(e), "student_id": student_id}
         )
-    
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 @router.post("/submit")
 async def submit_problem(
     submission: ProblemSubmission,
-    review_service: ReviewService = Depends(get_review_service),  # Changed from problem_service
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
+    review_service: ReviewService = Depends(get_review_service),
     competency_service: CompetencyService = Depends(get_competency_service)
-) -> Dict[str, Any]:
-    """Submit a problem solution for review and update competency"""
+) -> SubmissionResult:
+    """Submit problem with automatic user authentication"""
+    
+    user_id = user_context["user_id"]
+    student_id = user_context["student_id"]
+    
     try:
-        # Ensure we have valid base64 data
+        # Validate image data
         if not submission.solution_image:
             raise HTTPException(status_code=400, detail="No image data provided")
 
-        # Clean the base64 string if needed
         image_data = submission.solution_image
         if ',' in image_data:
             image_data = image_data.split(',', 1)[1]
             
-        # Validate base64 format
         if not re.match(r'^[A-Za-z0-9+/=]+$', image_data):
             raise HTTPException(status_code=400, detail="Invalid image data format")
 
-        # Get problem review from the review service instead of problem service
+        logger.info(f"User {user_context['email']} submitting problem for student {student_id}")
+
+        # Get problem review
         review = await review_service.review_problem(
-            student_id=submission.student_id,
+            student_id=student_id,
             subject=submission.subject,
             problem=submission.problem,
             solution_image_base64=image_data,
             skill_id=submission.skill_id,
             subskill_id=submission.subskill_id,
             student_answer=submission.student_answer or "",
-            canvas_used=submission.canvas_used
+            canvas_used=submission.canvas_used,
+            firebase_uid=user_context["firebase_uid"]
         )
         
         if "error" in review:
+            background_tasks.add_task(
+                log_activity,
+                user_id=user_id,
+                activity_type="problem_review_failed",
+                activity_name="Problem review failed",
+                points=0,
+                metadata={"error": review["error"], "skill_id": submission.skill_id}
+            )
             raise HTTPException(status_code=500, detail=review["error"])
         
-        # Update student's competency based on review
+        # Update competency
         competency_update = await competency_service.update_competency_from_problem(
-            student_id=submission.student_id,
+            student_id=student_id,
             subject=submission.subject,
             skill_id=submission.skill_id,
             subskill_id=submission.subskill_id,
-            evaluation=review
+            evaluation=review,
+            firebase_uid=user_context["firebase_uid"]
         )
         
-        # Return combined response
-        return {
-            "review": review,
-            "competency": competency_update
-        }
+        # Calculate points and feedback
+        score = review.get("score", 0)
+        is_correct = review.get("correct", False)
+        accuracy = review.get("accuracy_percentage", score * 10)
+        
+        # Simple point calculation
+        points = 15 if is_correct else 5
+        if accuracy > 90:
+            points += 10
+        if accuracy > 95:
+            encouraging_message = "🎉 Perfect! Outstanding work!"
+        elif accuracy > 80:
+            encouraging_message = "⭐ Excellent job! Keep it up!"
+        elif accuracy > 60:
+            encouraging_message = "👍 Good work! Getting stronger!"
+        else:
+            encouraging_message = "💪 Keep practicing! You're learning!"
+        
+        # Generate recommendations
+        next_recommendations = []
+        if is_correct and accuracy > 85:
+            next_recommendations.append(f"Try a harder {submission.subject} problem!")
+        elif is_correct:
+            next_recommendations.append(f"Practice more {submission.subject} problems")
+        else:
+            next_recommendations.append(f"Review concepts for {submission.skill_id}")
+        
+        # Log submission
+        background_tasks.add_task(
+            log_activity,
+            user_id=user_id,
+            activity_type="problem_submitted",
+            activity_name=f"Submitted {submission.subject} problem",
+            points=points,
+            metadata={
+                "subject": submission.subject,
+                "skill_id": submission.skill_id,
+                "student_id": student_id,
+                "score": score,
+                "accuracy": accuracy,
+                "correct": is_correct
+            }
+        )
+        
+        return SubmissionResult(
+            review=review,
+            competency=competency_update,
+            points_earned=points,
+            encouraging_message=encouraging_message,
+            next_recommendations=next_recommendations,
+            student_id=student_id,
+            user_id=user_id
+        )
             
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error in submit_problem: {str(e)}")
+        logger.error(f"Error submitting problem: {str(e)}")
+        background_tasks.add_task(
+            log_activity,
+            user_id=user_id,
+            activity_type="problem_submission_error",
+            activity_name="Problem submission error",
+            points=0,
+            metadata={"error": str(e), "student_id": student_id}
+        )
         raise HTTPException(status_code=500, detail=str(e))
-    
-@router.get("/student/{student_id}/recommended-problems")
+
+@router.get("/recommended-problems")
 async def get_recommended_problems(
-    student_id: int,
     subject: Optional[str] = None,
-    count: int = Query(3, ge=1, le=10, description="Number of problems to generate"),
-    analytics_service: AnalyticsExtension = Depends(get_analytics_extension),
+    count: int = Query(3, ge=1, le=10),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service),
     problem_service: ProblemService = Depends(get_problem_service)
 ) -> List[ProblemResponse]:
-    """
-    Get personalized recommended problems for a student based on their analytics.
-    Returns multiple problems in a single call based on the top recommendations.
-    """
+    """Get personalized recommended problems"""
+    
+    user_id = user_context["user_id"]
+    student_id = user_context["student_id"]
+    
     try:
-        logger.info(f"Getting {count} recommended problems for student {student_id}")
+        logger.info(f"User {user_context['email']} requesting {count} recommendations")
         
-        # Step 1: Get recommendations from analytics service
+        # Get recommendations from analytics
         recommendations = await analytics_service.get_recommendations(
-            student_id, subject, limit=count
+            student_id=student_id,
+            subject=subject,
+            limit=count
         )
         
-        if not recommendations or len(recommendations) == 0:
-            logger.error("No recommendations found for this student")
-            raise HTTPException(
-                status_code=404,
-                detail="No recommendations found for this student"
+        if not recommendations:
+            background_tasks.add_task(
+                log_activity,
+                user_id=user_id,
+                activity_type="recommendations_empty",
+                activity_name="No recommendations available",
+                points=0,
+                metadata={"student_id": student_id, "subject": subject}
             )
+            raise HTTPException(status_code=404, detail="No recommendations found")
             
-        logger.info(f"Got {len(recommendations)} recommendations")
-            
-        # Step 2: Generate multiple problems in a single call
+        # Generate problems from recommendations
+        enhanced_context = {
+            "user_id": user_id,
+            "grade_level": user_context.get("grade_level"),
+            "recommendations_source": "bigquery_analytics"
+        }
+        
         problems = await problem_service.get_multiple_problems(
             student_id=student_id,
             subject=subject,
-            recommendations=recommendations
+            recommendations=recommendations,
+            context=enhanced_context
         )
         
         if not problems:
-            logger.error("Failed to generate recommended problems")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to generate recommended problems"
+            background_tasks.add_task(
+                log_activity,
+                user_id=user_id,
+                activity_type="recommendations_failed",
+                activity_name="Failed to generate recommended problems",
+                points=0,
+                metadata={"student_id": student_id}
             )
-            
-        logger.info(f"Generated {len(problems)} problems successfully")
-        return problems
+            raise HTTPException(status_code=500, detail="Failed to generate problems")
         
-    except HTTPException as e:
+        # Log success
+        background_tasks.add_task(
+            log_activity,
+            user_id=user_id,
+            activity_type="recommendations_received",
+            activity_name=f"Received {len(problems)} recommendations",
+            points=8,
+            metadata={
+                "student_id": student_id,
+                "subject": subject,
+                "count": len(problems)
+            }
+        )
+        
+        # Return enhanced problems
+        return [
+            ProblemResponse(
+                **problem,
+                user_id=user_id,
+                student_id=student_id,
+                generated_at=datetime.utcnow().isoformat()
+            )
+            for problem in problems
+        ]
+        
+    except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_recommended_problems endpoint: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
+        logger.error(f"Error getting recommendations: {str(e)}")
+        background_tasks.add_task(
+            log_activity,
+            user_id=user_id,
+            activity_type="recommendations_error",
+            activity_name="Recommendations error",
+            points=0,
+            metadata={"error": str(e), "student_id": student_id}
         )
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/skill-problems/{student_id}")
+@router.get("/skill-problems")
 async def get_skill_problems(
-    student_id: int,
     subject: str,
     skill_id: str,
     subskill_id: str,
-    count: int = Query(5, ge=3, le=8, description="Number of problems to generate"),
+    count: int = Query(5, ge=3, le=8),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    user_context: dict = Depends(get_user_context),
     problem_service: ProblemService = Depends(get_problem_service)
 ) -> List[ProblemResponse]:
-    """
-    Get multiple problems for a specific skill and subskill.
-    Returns varied problems with different concept groups for the same skill/subskill.
-    """
+    """Get skill-specific problems"""
+    
+    user_id = user_context["user_id"]
+    student_id = user_context["student_id"]
+    
     try:
-        logger.info(f"Getting {count} problems for student {student_id}, skill {skill_id}, subskill {subskill_id}")
+        logger.info(f"User {user_context['email']} requesting skill problems")
         
-        # Get the problems from the service
+        # Get skill problems
+        enhanced_context = {
+            "user_id": user_id,
+            "grade_level": user_context.get("grade_level"),
+            "request_type": "skill_specific"
+        }
+        
         problems = await problem_service.get_skill_problems(
             student_id=student_id,
             subject=subject,
             skill_id=skill_id,
             subskill_id=subskill_id,
-            count=count
+            count=count,
+            context=enhanced_context
         )
         
-        logger.info(f"Retrieved {len(problems) if problems else 0} problems from service")
-        
-        if not problems or len(problems) == 0:
-            logger.error(f"No problems generated for skill {skill_id}, subskill {subskill_id}")
-            raise HTTPException(
-                status_code=404,
-                detail="Failed to generate problems for the specified skill/subskill"
+        if not problems:
+            background_tasks.add_task(
+                log_activity,
+                user_id=user_id,
+                activity_type="skill_problems_empty",
+                activity_name="No skill problems available",
+                points=0,
+                metadata={"skill_id": skill_id, "subskill_id": subskill_id}
             )
+            raise HTTPException(status_code=404, detail="No problems found for skill")
         
-        # Log problem details to verify data structure
-        for i, problem in enumerate(problems):
-            logger.debug(f"Problem {i+1} type: {problem.get('problem_type', 'unknown')}")
-            logger.debug(f"Problem {i+1} keys: {problem.keys()}")
+        # Log success
+        background_tasks.add_task(
+            log_activity,
+            user_id=user_id,
+            activity_type="skill_problems_received",
+            activity_name=f"Received {len(problems)} skill problems",
+            points=6,
+            metadata={
+                "subject": subject,
+                "skill_id": skill_id,
+                "subskill_id": subskill_id,
+                "count": len(problems)
+            }
+        )
         
-        logger.info(f"Successfully returning {len(problems)} problems")
-        return problems
+        return [
+            ProblemResponse(
+                **problem,
+                user_id=user_id,
+                student_id=student_id,
+                generated_at=datetime.utcnow().isoformat()
+            )
+            for problem in problems
+        ]
         
-    except HTTPException as e:
-        logger.error(f"HTTP Exception in get_skill_problems: {e.detail}")
+    except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_skill_problems endpoint: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
+        logger.error(f"Error getting skill problems: {str(e)}")
+        background_tasks.add_task(
+            log_activity,
+            user_id=user_id,
+            activity_type="skill_problems_error",
+            activity_name="Skill problems error",
+            points=0,
+            metadata={"error": str(e)}
         )
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# UTILITY ENDPOINTS
+# ============================================================================
+
+@router.get("/my-student-info")
+async def get_my_student_info(
+    user_context: dict = Depends(get_user_context)
+) -> Dict[str, Any]:
+    """Get user's student mapping information"""
+    return {
+        "user_email": user_context["email"],
+        "firebase_uid": user_context["firebase_uid"],
+        "student_id": user_context["student_id"],
+        "grade_level": user_context.get("grade_level"),
+        "total_points": user_context.get("total_points", 0),
+        "current_streak": user_context.get("current_streak", 0)
+    }
+
+@router.get("/health")
+async def problems_health_check(
+    user_context: dict = Depends(get_user_context)
+):
+    """Health check with user context"""
+    return {
+        "status": "healthy",
+        "service": "problems",
+        "version": "4.0.0",  # Simplified version
+        "user_context": {
+            "authenticated": True,
+            "user_id": user_context["user_id"],
+            "email": user_context["email"],
+            "student_id": user_context.get("student_id"),
+            "grade_level": user_context.get("grade_level")
+        },
+        "features": {
+            "problem_generation": True,
+            "problem_submission": True,
+            "recommendations": True,
+            "skill_specific_problems": True,
+            "simplified_auth": True  # New feature!
+        },
+        "timestamp": datetime.utcnow().isoformat()
+    }
