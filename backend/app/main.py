@@ -14,7 +14,8 @@ from .api.endpoints import (
     analytics, 
     playground, 
     education,
-    user_profiles
+    user_profiles,
+    daily_activities  
 )
 
 from .api import etl_routes
@@ -127,6 +128,15 @@ app.include_router(
     dependencies=[Depends(get_user_context)]
 )
 
+# 🔥 NEW: Daily Activities Endpoint
+app.include_router(
+    daily_activities.router, 
+    prefix="/api/daily-activities", 
+    tags=["daily-activities"],
+    dependencies=[Depends(get_user_context)]
+)
+
+
 # ETL Management Router (requires auth now)
 app.include_router(
     etl_routes.router, 
@@ -156,7 +166,8 @@ async def root():
             "problems": "/api/problems",
             "analytics": "/api/analytics", 
             "curriculum": "/api/curriculum",
-            "competency": "/api/competency"
+            "competency": "/api/competency",
+            "daily_activities": "/api/daily-activities"  # 🔥 NEW: Added to API docs
         },
         "features": {
             "simplified_authentication": True,
@@ -166,7 +177,8 @@ async def root():
             "points_system": True,
             "badges": True,
             "streaks": True,
-            "data_isolation": True
+            "data_isolation": True,
+            "daily_activities": True  # 🔥 NEW: Added feature flag
         }
     }
 
@@ -186,13 +198,15 @@ async def health_check():
             "curriculum_engine": True,
             "firebase_integration": True,
             "automatic_student_mapping": True,
-            "simplified_dependencies": True
+            "simplified_dependencies": True,
+            "daily_activities": True  # 🔥 NEW: Added to health check
         },
         "endpoints": {
             "auth": "/api/auth/health",
             "profiles": "/api/user-profiles/health",
             "problems": "/api/problems/health",
             "analytics": "/api/analytics/health",
+            "daily_activities": "/api/daily-activities/health",  # 🔥 NEW: Added health endpoint
             "docs": "/docs"
         }
     }

@@ -23,15 +23,18 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import Link from 'next/link';
 import { analyticsApi, Recommendation } from '@/lib/studentAnalyticsAPI';
+import { useAuth } from '@/contexts/AuthContext'; // Add this import
 
 const LearningDashboard = () => {
   const router = useRouter();
+  const { userProfile } = useAuth(); // Get user context
   
-  // Student data
-  const [studentId] = useState(1); // Assuming student ID 1 for API calls
-  const [studentName] = useState('Alex');
-  const [points] = useState(750);
-  const [streak] = useState(5);
+  // FIXED: Get studentId from authenticated user profile
+  const studentId = userProfile?.student_id;
+  const studentName = userProfile?.display_name || 'Student';
+  const points = userProfile?.total_points || 0;
+  const streak = userProfile?.current_streak || 0;
+  
   const [dailyGoal] = useState(85);
   const [goalProgress] = useState(45);
   
@@ -40,18 +43,26 @@ const LearningDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Fetch recommendations on component mount
+  // Fetch recommendations on component mount - ONLY when studentId is available
   useEffect(() => {
+    if (!studentId) {
+      setLoading(false);
+      setError('No student ID available');
+      return;
+    }
+
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
+        setError(null);
         const data = await analyticsApi.getRecommendations(studentId, {
           limit: 5 // Get top 5 recommendations
         });
         setRecommendations(data);
         setLoading(false);
-      } catch (err) {
-        setError('Failed to load recommendations');
+      } catch (err: any) {
+        const errorMsg = err?.message || 'Failed to load recommendations';
+        setError(errorMsg);
         setLoading(false);
         console.error('Error fetching recommendations:', err);
       }
@@ -154,6 +165,34 @@ const LearningDashboard = () => {
     router.push('/practice');
   };
 
+  // Show loading state while waiting for user profile
+  if (!userProfile) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p>Loading your profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if no student ID
+  if (!studentId) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="text-center py-8">
+          <p className="text-red-500">Unable to load student data. Please try refreshing the page.</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4">
       <div className="mb-4">
@@ -183,7 +222,7 @@ const LearningDashboard = () => {
             <span className="font-bold">{streak} day streak</span>
           </div>
           <div className="bg-gray-100 rounded-full p-2">
-            <span className="font-bold">A</span>
+            <span className="font-bold">{studentName.charAt(0).toUpperCase()}</span>
           </div>
         </div>
       </div>
@@ -254,9 +293,21 @@ const LearningDashboard = () => {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-6">Loading recommendations...</div>
+                <div className="text-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                  Loading recommendations...
+                </div>
               ) : error ? (
-                <div className="text-center py-6 text-red-500">{error}</div>
+                <div className="text-center py-6">
+                  <div className="text-red-500 mb-2">{error}</div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => window.location.reload()}
+                  >
+                    Try Again
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {formattedRecommendations.length > 0 ? (

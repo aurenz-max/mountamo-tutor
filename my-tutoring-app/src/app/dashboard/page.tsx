@@ -1,5 +1,5 @@
 import React from 'react';
-import LearningDashboard from '@/components/dashboard/LearningDashboard';
+import EnhancedLearningDashboard from '@/components/dashboard/EnhancedLearningDashboard';
 
 export const metadata = {
   title: 'Learning Dashboard | MathMentor',
@@ -9,7 +9,7 @@ export const metadata = {
 export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-gray-50">
-      <LearningDashboard />
+      <EnhancedLearningDashboard />
     </main>
   );
 }

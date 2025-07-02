@@ -1,4 +1,4 @@
-// contexts/AuthContext.tsx - FULLY UPDATED VERSION
+// contexts/AuthContext.tsx - FIXED VERSION WITH CORRECT TYPES
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -16,7 +16,7 @@ interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
-  student_id?: string;
+  student_id: number; // FIXED: Changed from string to number to match backend
   grade_level?: string;
   total_points?: number;
   current_streak?: number;
@@ -25,6 +25,10 @@ interface UserProfile {
   created_at?: string;
   last_activity?: string;
   preferences?: Record<string, any>;
+  // Add other fields that come from backend
+  email_verified?: boolean;
+  last_login?: string;
+  longest_streak?: number;
 }
 
 interface AuthContextType {
@@ -108,7 +112,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.ok) {
         const profile = await safeParseJSON(response);
         console.log('Profile data:', profile);
-        return profile;
+        
+        // FIXED: Ensure student_id is a number
+        if (profile.student_id && typeof profile.student_id === 'string') {
+          profile.student_id = parseInt(profile.student_id, 10);
+        }
+        
+        return profile as UserProfile;
       } else if (response.status === 404) {
         // User profile doesn't exist yet, this is normal for new users
         console.log('User profile not found, will be created automatically by backend');
@@ -181,7 +191,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email,
           password,
           display_name: displayName,
-          grade_level: gradeLevel || 'K',
+          grade_level: gradeLevel || 'K', // FIXED: Send string grade level
         }),
       });
 

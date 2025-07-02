@@ -23,6 +23,9 @@ from .services.learning_paths import LearningPathsService
 from .services.gemini_read_along import GeminiReadAlongIntegration  # NEW: Import the read-along integration
 from .services.review import ReviewService
 
+from .services.daily_activities import DailyActivitiesService
+from .services.bigquery_analytics import BigQueryAnalyticsService
+
 from .db.cosmos_db import CosmosDBService
 from .db.blob_storage import blob_storage_service
 from .db.problem_optimizer import ProblemOptimizer
@@ -213,6 +216,21 @@ def get_problem_optimizer(
         
     return _problem_optimizer
 
+def get_bigquery_analytics_service() -> 'BigQueryAnalyticsService':
+    """Get or create BigQuery Analytics service singleton."""
+    # Import here to avoid circular imports
+    from .services.bigquery_analytics import BigQueryAnalyticsService
+    
+    global _bigquery_analytics_service
+    if '_bigquery_analytics_service' not in globals() or _bigquery_analytics_service is None:
+        logger.info("Initializing BigQuery Analytics Service")
+        _bigquery_analytics_service = BigQueryAnalyticsService(
+            project_id=settings.GCP_PROJECT_ID,
+            dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
+        )
+    return _bigquery_analytics_service
+
+
 
 def get_problem_service(
     recommender: ProblemRecommender = Depends(get_problem_recommender),
@@ -301,6 +319,30 @@ async def get_analytics_extension(competency_service: CompetencyService = Depend
     
     return extension
 
+def get_daily_activities_service(
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service),
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+) -> DailyActivitiesService:
+    """Get or create Daily Activities service singleton with all dependencies."""
+    global _daily_activities_service
+    if _daily_activities_service is None:
+        logger.info("Initializing Daily Activities Service")
+        try:
+            _daily_activities_service = DailyActivitiesService(
+                analytics_service=analytics_service,
+                learning_paths_service=learning_paths_service,
+                cosmos_db_service=cosmos_db
+            )
+            logger.info("✅ Daily Activities Service initialized successfully")
+        except Exception as e:
+            logger.error(f"❌ Error initializing Daily Activities Service: {str(e)}")
+            # Fallback to minimal service
+            logger.warning("🔄 Falling back to minimal Daily Activities Service")
+            _daily_activities_service = DailyActivitiesService()
+    
+    return _daily_activities_service
+
 def get_gemini_problem_integration(
     problem_service: ProblemService = Depends(get_problem_service)
 ) -> GeminiProblemIntegration:
@@ -333,10 +375,26 @@ async def initialize_services():
     curriculum_service = await get_curriculum_service()
     
     # Initialize dependent services
-    competency_service = await get_competency_service(cosmos_db)
+    competency_service = get_competency_service(cosmos_db)
     problem_recommender = get_problem_recommender(competency_service)
     problem_optimizer = get_problem_optimizer(cosmos_db, problem_recommender)
     review_service = get_review_service(cosmos_db)
+    
+    # Initialize learning paths service
+    learning_paths_service = await get_learning_paths_service(
+        blob_storage_service, 
+        competency_service
+    )
+    
+    # Initialize analytics service
+    analytics_service = get_bigquery_analytics_service()
+    
+    # Initialize daily activities service
+    daily_activities_service = get_daily_activities_service(
+        analytics_service,
+        learning_paths_service, 
+        cosmos_db
+    )
     
     # Initialize problem service with all dependencies
     problem_service = get_problem_service(
@@ -354,5 +412,8 @@ async def initialize_services():
         "problem_recommender": problem_recommender,
         "problem_service": problem_service,
         "problem_optimizer": problem_optimizer,
-        "review_service": review_service
+        "review_service": review_service,
+        "learning_paths_service": learning_paths_service,  # ADD
+        "analytics_service": analytics_service,  # ADD
+        "daily_activities_service": daily_activities_service  # ADD
     }
