@@ -14,7 +14,8 @@ from typing import Dict, Any, Optional, List
 
 from ...core.config import settings
 from ...db.cosmos_db import CosmosDBService
-from ...api.endpoints.user_profiles import log_activity
+from ...services.user_profiles import user_profiles_service  # FIXED: Import the service instance
+from ...models.user_profiles import ActivityLog  # FIXED: Import ActivityLog model
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

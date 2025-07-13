@@ -80,6 +80,13 @@ class AuthResponse(BaseModel):
     email: Optional[str] = None
     display_name: Optional[str] = None
 
+async def get_current_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> dict:
+    """Get current authenticated user"""
+    return await verify_firebase_token(credentials, request)
+
 # Enhanced authentication utilities
 async def verify_firebase_token(
     credentials: HTTPAuthorizationCredentials = Depends(security),

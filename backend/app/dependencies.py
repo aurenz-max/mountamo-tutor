@@ -13,14 +13,14 @@ from .services.curriculum_service import CurriculumService
 from .services.recommender import ProblemRecommender
 from .services.visual_content_service import VisualContentService
 from .services.visual_content_manager import VisualContentManager
-from .services.gemini_generate import GeminiGenerateService  # Import the generation service with alias
+from .services.gemini_generate import GeminiGenerateService
 from .services.base_ai_service import BaseAIService
 from .services.ai_service_factory import AIServiceFactory
 
 from .services.gemini_problem import GeminiProblemIntegration
 from .services.analytics import AnalyticsExtension
 from .services.learning_paths import LearningPathsService
-from .services.gemini_read_along import GeminiReadAlongIntegration  # NEW: Import the read-along integration
+from .services.gemini_read_along import GeminiReadAlongIntegration
 from .services.review import ReviewService
 
 from .services.daily_activities import DailyActivitiesService
@@ -31,9 +31,10 @@ from .db.blob_storage import blob_storage_service
 from .db.problem_optimizer import ProblemOptimizer
 from .core.config import settings
 
-# 🔥 NEW: Import Firebase authentication utilities
+# 🔥 UPDATED: Import Firebase authentication utilities and service layer
 from .api.endpoints.auth import verify_firebase_token
-from .api.endpoints.user_profiles import log_user_activity_internal, ActivityLog, get_user_profile
+from .services.user_profiles import user_profiles_service
+from .models.user_profiles import ActivityLog
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ _cosmos_db: Optional[CosmosDBService] = None
 _curriculum_service: Optional[CurriculumService] = None
 _audio_service: Optional[AudioService] = None 
 _anthropic_service: Optional[AnthropicService] = None
-_gemini_generate_service: Optional[GeminiGenerateService] = None  # Add the Gemini Generate service
+_gemini_generate_service: Optional[GeminiGenerateService] = None
 _visual_content_service: Optional[VisualContentService] = None
 _visual_content_manager: Optional[VisualContentManager] = None
 _read_along_integration: Optional[GeminiReadAlongIntegration] = None
@@ -57,14 +58,14 @@ _learning_paths_service: Optional[LearningPathsService] = None
 _problem_optimizer: Optional[ProblemOptimizer] = None
 _review_service: Optional[ReviewService] = None
 
-# 🔥 NEW: Authentication dependency functions
+# 🔥 UPDATED: Authentication dependency functions using service layer
 async def get_authenticated_user(firebase_user: dict = Depends(verify_firebase_token)) -> dict:
     """Get authenticated user info"""
     return firebase_user
 
 async def get_user_with_profile(firebase_user: dict = Depends(verify_firebase_token)) -> tuple:
-    """Get user with profile data"""
-    user_profile = await get_user_profile(firebase_user['uid'])
+    """Get user with profile data using service layer"""
+    user_profile = await user_profiles_service.get_user_profile(firebase_user['uid'])
     return firebase_user, user_profile
 
 async def log_endpoint_activity(
@@ -74,10 +75,20 @@ async def log_endpoint_activity(
     firebase_user: dict = Depends(verify_firebase_token),
     background_tasks: BackgroundTasks = BackgroundTasks()
 ):
-    """Log user activity for endpoint access"""
+    """Log user activity for endpoint access using service layer"""
     def log_activity():
         try:
             import asyncio
+            
+            # Get student_id from firebase_user or use a default mapping
+            # You might need to adjust this based on your user context structure
+            student_id = firebase_user.get('student_id')
+            if not student_id:
+                # If student_id is not in firebase_user, you might need to look it up
+                # For now, using uid as fallback (you can adjust this)
+                logger.warning(f"No student_id found for user {firebase_user['uid']}, using uid as fallback")
+                student_id = hash(firebase_user['uid']) % 1000000  # Simple fallback
+            
             activity = ActivityLog(
                 activity_type=activity_type,
                 activity_id=endpoint_name,
@@ -89,7 +100,9 @@ async def log_endpoint_activity(
             # Create new event loop for background task
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(log_user_activity_internal(firebase_user['uid'], activity))
+            loop.run_until_complete(
+                user_profiles_service.log_activity(firebase_user['uid'], student_id, activity)
+            )
             loop.close()
             
         except Exception as e:
@@ -97,8 +110,6 @@ async def log_endpoint_activity(
     
     background_tasks.add_task(log_activity)
     return firebase_user
-
-
 
 # 🔥 UPDATED: Service dependencies now include user context
 def get_cosmos_db() -> CosmosDBService:
@@ -113,15 +124,7 @@ def get_blob_storage_service():
     """Get the blob storage service"""
     return blob_storage_service
 
-async def get_curriculum_service() -> CurriculumService:
-    """Get or create CurriculumService singleton."""
-    global _curriculum_service
-    if _curriculum_service is None:
-        logger.info("Initializing CurriculumService")
-        blob_service = get_blob_storage_service()
-        _curriculum_service = CurriculumService(blob_service)
-        await _curriculum_service.initialize()
-    return _curriculum_service
+
 
 def get_audio_service() -> AudioService:
     """Get or create AudioService singleton."""
@@ -177,20 +180,78 @@ def get_read_along_integration() -> GeminiReadAlongIntegration:
     if _read_along_integration is None:
         logger.info("Initializing GeminiReadAlongIntegration")
         _read_along_integration = GeminiReadAlongIntegration()
-        # We don't initialize here - it will be initialized when the session starts
     return _read_along_integration
 
-def get_competency_service(
+# 🔥 UPDATED: Get user profiles service
+def get_user_profiles_service():
+    """Get the user profiles service singleton"""
+    return user_profiles_service
+
+def get_bigquery_analytics_service() -> 'BigQueryAnalyticsService':
+    """Get or create BigQuery Analytics service singleton."""
+    from .services.bigquery_analytics import BigQueryAnalyticsService
+    
+    global _bigquery_analytics_service
+    if '_bigquery_analytics_service' not in globals() or _bigquery_analytics_service is None:
+        logger.info("Initializing BigQuery Analytics Service")
+        _bigquery_analytics_service = BigQueryAnalyticsService(
+            project_id=settings.GCP_PROJECT_ID,
+            dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
+        )
+    return _bigquery_analytics_service
+
+async def get_curriculum_service() -> CurriculumService:
+    """Get or create CurriculumService singleton with BigQuery - CLEAN ASYNC"""
+    global _curriculum_service
+    if _curriculum_service is None:
+        logger.info("Initializing CurriculumService with BigQuery")
+        
+        # Get BigQuery service (required)
+        bigquery_service = get_bigquery_analytics_service()
+        
+        # Get blob service (optional)
+        blob_service = get_blob_storage_service()
+        
+        # Create curriculum service
+        _curriculum_service = CurriculumService(bigquery_service, blob_service)
+        
+        # Initialize - no asyncio.run() needed, we're already async!
+        await _curriculum_service.initialize()
+        
+        logger.info("✅ CurriculumService with BigQuery initialized successfully")
+    
+    return _curriculum_service
+
+async def get_competency_service(
     cosmos_db: CosmosDBService = Depends(get_cosmos_db)
 ) -> CompetencyService:
-    """Get Competency service"""
+    """Get Competency service with BigQuery curriculum service - CLEAN ASYNC"""
     global _competency_service
     if _competency_service is None:
-        _competency_service = CompetencyService()
-        _competency_service.cosmos_db = cosmos_db
+        logger.info("Initializing CompetencyService")
+        
+        try:
+            # Get curriculum service FIRST - now clean and simple
+            curriculum_service = await get_curriculum_service()
+            logger.info("✅ Got curriculum service for competency service")
+            
+            # Create competency service WITH curriculum service
+            _competency_service = CompetencyService(curriculum_service)
+            _competency_service.cosmos_db = cosmos_db
+            
+            # Initialize - clean and simple
+            await _competency_service.initialize()
+            logger.info("✅ CompetencyService initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ Error creating CompetencyService: {str(e)}")
+            logger.warning("🔄 Creating minimal CompetencyService")
+            _competency_service = CompetencyService(None)
+            _competency_service.cosmos_db = cosmos_db
+    
     return _competency_service
 
-def get_problem_recommender(
+async def get_problem_recommender(
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> ProblemRecommender:
     """Get or create ProblemRecommender singleton."""
@@ -200,7 +261,7 @@ def get_problem_recommender(
         _problem_recommender = ProblemRecommender(competency_service)
     return _problem_recommender
 
-def get_problem_optimizer(
+async def get_problem_optimizer(
     cosmos_db: CosmosDBService = Depends(get_cosmos_db),
     recommender: ProblemRecommender = Depends(get_problem_recommender)
 ) -> ProblemOptimizer:
@@ -216,23 +277,9 @@ def get_problem_optimizer(
         
     return _problem_optimizer
 
-def get_bigquery_analytics_service() -> 'BigQueryAnalyticsService':
-    """Get or create BigQuery Analytics service singleton."""
-    # Import here to avoid circular imports
-    from .services.bigquery_analytics import BigQueryAnalyticsService
-    
-    global _bigquery_analytics_service
-    if '_bigquery_analytics_service' not in globals() or _bigquery_analytics_service is None:
-        logger.info("Initializing BigQuery Analytics Service")
-        _bigquery_analytics_service = BigQueryAnalyticsService(
-            project_id=settings.GCP_PROJECT_ID,
-            dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
-        )
-    return _bigquery_analytics_service
 
 
-
-def get_problem_service(
+async def get_problem_service(
     recommender: ProblemRecommender = Depends(get_problem_recommender),
     cosmos_db: CosmosDBService = Depends(get_cosmos_db),
     competency_service: CompetencyService = Depends(get_competency_service),
@@ -292,6 +339,7 @@ def get_review_service(
     
     return _review_service
 
+# Keep other functions that don't need curriculum/competency services as sync
 async def get_learning_paths_service(
     blob_service = Depends(get_blob_storage_service),
     competency_service: CompetencyService = Depends(get_competency_service)
@@ -301,9 +349,8 @@ async def get_learning_paths_service(
     if _learning_paths_service is None:
         logger.info("Initializing LearningPathsService with cloud storage")
         _learning_paths_service = LearningPathsService(
-            competency_service=competency_service  # ✅ Only pass competency_service
+            competency_service=competency_service
         )
-        # No initialize() method needed - blob storage is initialized in constructor
     
     return _learning_paths_service
 
@@ -312,8 +359,6 @@ async def get_analytics_extension(competency_service: CompetencyService = Depend
     from .services.analytics import AnalyticsExtension
     
     extension = AnalyticsExtension(competency_service)
-    # We don't need to set Cosmos DB reference anymore, as analytics will use PostgreSQL
-    # But we might still need it for curriculum data or live competencies
     if competency_service.cosmos_db:
         extension.cosmos_db = competency_service.cosmos_db
     
@@ -337,7 +382,6 @@ def get_daily_activities_service(
             logger.info("✅ Daily Activities Service initialized successfully")
         except Exception as e:
             logger.error(f"❌ Error initializing Daily Activities Service: {str(e)}")
-            # Fallback to minimal service
             logger.warning("🔄 Falling back to minimal Daily Activities Service")
             _daily_activities_service = DailyActivitiesService()
     
@@ -346,19 +390,11 @@ def get_daily_activities_service(
 def get_gemini_problem_integration(
     problem_service: ProblemService = Depends(get_problem_service)
 ) -> GeminiProblemIntegration:
-    """Create a new GeminiProblemIntegration instance with injected dependencies.
-    
-    This is not a singleton because it should be created per-session.
-    """
+    """Create a new GeminiProblemIntegration instance with injected dependencies."""
     logger.debug("Creating new GeminiProblemIntegration")
     gemini_problem = GeminiProblemIntegration()
-    
-    # Inject the properly configured problem_service
     gemini_problem.problem_service = problem_service
-    
     return gemini_problem
-
-
 
 async def initialize_services():
     """Initialize all singleton services for ETL processes."""
@@ -371,8 +407,17 @@ async def initialize_services():
     if not blob_storage_service._initialized:
         await blob_storage_service.initialize()
 
+    # Initialize BigQuery analytics service
+    analytics_service = get_bigquery_analytics_service()
+    await analytics_service.initialize()
+
     # Initialize curriculum service
     curriculum_service = await get_curriculum_service()
+
+    # Initialize competency service and connect curriculum service
+    competency_service = get_competency_service(cosmos_db)
+    competency_service.curriculum_service = curriculum_service  # <-- ADD THIS LINE!
+    await competency_service.initialize()
     
     # Initialize dependent services
     competency_service = get_competency_service(cosmos_db)
@@ -386,8 +431,6 @@ async def initialize_services():
         competency_service
     )
     
-    # Initialize analytics service
-    analytics_service = get_bigquery_analytics_service()
     
     # Initialize daily activities service
     daily_activities_service = get_daily_activities_service(
@@ -413,7 +456,8 @@ async def initialize_services():
         "problem_service": problem_service,
         "problem_optimizer": problem_optimizer,
         "review_service": review_service,
-        "learning_paths_service": learning_paths_service,  # ADD
-        "analytics_service": analytics_service,  # ADD
-        "daily_activities_service": daily_activities_service  # ADD
+        "learning_paths_service": learning_paths_service,
+        "analytics_service": analytics_service,
+        "daily_activities_service": daily_activities_service,
+        "user_profiles_service": user_profiles_service  # 🔥 NEW: Include user profiles service
     }

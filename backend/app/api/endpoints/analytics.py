@@ -10,7 +10,8 @@ import logging
 
 # Simplified imports
 from ...core.middleware import get_user_context
-from ...api.endpoints.user_profiles import log_activity
+from ...services.user_profiles import user_profiles_service  # FIXED: Import the service instance
+from ...models.user_profiles import ActivityLog  # FIXED: Import ActivityLog model
 from ...services.bigquery_analytics import BigQueryAnalyticsService
 from ...services.bigquery_etl import BigQueryETLService
 from ...core.config import settings
@@ -196,17 +197,7 @@ async def get_student_metrics(
                              subject=subject, start_date=start_date, end_date=end_date)
     
     cached_result = get_from_cache(cache_key, ttl_minutes=15)
-    if cached_result:
-        # Log cache hit
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="analytics_view_cached",
-            activity_name=f"Viewed metrics for student {student_id} (cached)",
-            points=1,
-            metadata={"cached": True, "student_id": student_id, "subject": subject}
-        )
-        
+    if cached_result:        
         cached_result["cached"] = True
         cached_result["user_id"] = user_id
         return MetricsResponse(**cached_result)
@@ -231,36 +222,11 @@ async def get_student_metrics(
         
         # Cache the result
         set_cache(cache_key, result.dict())
-        
-        # Log successful analytics generation
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="analytics_generated",
-            activity_name=f"Generated metrics for student {student_id}",
-            points=5,
-            metadata={
-                "cached": False,
-                "student_id": student_id,
-                "subject": subject,
-                "total_items": metrics["summary"]["total_items"],
-                "mastery_score": metrics["summary"]["mastery"]
-            }
-        )
-        
+                
         return result
         
     except Exception as e:
-        # Log analytics errors
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="analytics_error",
-            activity_name=f"Failed to generate metrics for student {student_id}",
-            points=0,
-            metadata={"error": str(e), "student_id": student_id}
-        )
-        
+        # Log analytics errors        
         logger.error(f"Analytics error for user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
@@ -301,16 +267,7 @@ async def get_student_metrics_timeseries(
                              include_hierarchy=include_hierarchy)
     
     cached_result = get_from_cache(cache_key, ttl_minutes=10)
-    if cached_result:
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="timeseries_view_cached",
-            activity_name=f"Viewed {interval} {level} timeseries (cached)",
-            points=1,
-            metadata={"cached": True, "interval": interval, "level": level}
-        )
-        
+    if cached_result:        
         cached_result["cached"] = True
         cached_result["user_id"] = user_id
         return TimeseriesResponse(**cached_result)
@@ -341,33 +298,9 @@ async def get_student_metrics_timeseries(
         # Cache the result
         set_cache(cache_key, result.dict())
         
-        # Log success
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="timeseries_generated",
-            activity_name=f"Generated {interval} {level} timeseries",
-            points=4,
-            metadata={
-                "cached": False,
-                "interval": interval,
-                "level": level,
-                "intervals_count": len(timeseries)
-            }
-        )
-        
         return result
         
-    except Exception as e:
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="timeseries_error",
-            activity_name="Failed timeseries generation",
-            points=0,
-            metadata={"error": str(e)}
-        )
-        
+    except Exception as e:        
         logger.error(f"Timeseries error for user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
@@ -400,15 +333,7 @@ async def get_student_recommendations(
                              subject=subject, limit=limit)
     
     cached_result = get_from_cache(cache_key, ttl_minutes=5)
-    if cached_result:
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="recommendations_view_cached",
-            activity_name=f"Viewed {len(cached_result)} recommendations (cached)",
-            points=2,
-            metadata={"cached": True, "recommendations_count": len(cached_result)}
-        )
+    if cached_result:        
         return cached_result
     
     try:
@@ -424,34 +349,10 @@ async def get_student_recommendations(
         
         # Log success
         high_priority_count = len([r for r in recommendations if r.get('priority') == 'high'])
-        
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="recommendations_generated",
-            activity_name=f"Generated {len(recommendations)} recommendations",
-            points=6,
-            metadata={
-                "cached": False,
-                "recommendations_count": len(recommendations),
-                "high_priority_count": high_priority_count,
-                "student_id": student_id,
-                "subject": subject
-            }
-        )
-        
+                
         return recommendations
         
-    except Exception as e:
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="recommendations_error",
-            activity_name="Failed to generate recommendations",
-            points=0,
-            metadata={"error": str(e)}
-        )
-        
+    except Exception as e:        
         logger.error(f"Recommendations error for user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
@@ -497,43 +398,10 @@ async def trigger_etl_sync(
         # Clear cache after successful sync
         if result.get('success', False):
             analytics_cache.clear()
-            
-            # Log successful ETL
-            background_tasks.add_task(
-                log_activity,
-                user_id=user_id,
-                activity_type="admin_etl_success",
-                activity_name=f"ETL {sync_type} sync completed",
-                points=10,
-                metadata={
-                    "sync_type": sync_type,
-                    "records_processed": result.get('total_records_processed', 0),
-                    "cache_cleared": True
-                }
-            )
-        else:
-            # Log failed ETL
-            background_tasks.add_task(
-                log_activity,
-                user_id=user_id,
-                activity_type="admin_etl_failed",
-                activity_name=f"ETL {sync_type} sync failed",
-                points=0,
-                metadata={"sync_type": sync_type, "result": result}
-            )
-            
+                        
         return result
         
     except Exception as e:
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="admin_etl_error",
-            activity_name="ETL sync error",
-            points=0,
-            metadata={"error": str(e), "sync_type": sync_type}
-        )
-        
         logger.error(f"ETL error for user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -551,16 +419,7 @@ async def clear_analytics_cache(
     try:
         cache_size_before = len(analytics_cache)
         analytics_cache.clear()
-        
-        background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
-            activity_type="admin_cache_clear",
-            activity_name="Cleared all analytics cache",
-            points=5,
-            metadata={"cache_entries_cleared": cache_size_before}
-        )
-        
+                
         return {
             "success": True, 
             "message": "Analytics cache cleared",

@@ -15,7 +15,9 @@ from .api.endpoints import (
     playground, 
     education,
     user_profiles,
-    daily_activities  
+    daily_activities,
+    daily_briefing_live
+    
 )
 
 from .api import etl_routes
@@ -75,8 +77,7 @@ app.include_router(
 app.include_router(
     competency.router, 
     prefix="/api/competency", 
-    tags=["competency"],
-    dependencies=[Depends(get_user_context)]
+    tags=["competency"]   
 )
 
 app.include_router(
@@ -136,6 +137,12 @@ app.include_router(
     dependencies=[Depends(get_user_context)]
 )
 
+# Add this router registration
+app.include_router(
+    daily_briefing_live.router, 
+    prefix="/api", 
+    tags=["daily-briefing"]
+)
 
 # ETL Management Router (requires auth now)
 app.include_router(

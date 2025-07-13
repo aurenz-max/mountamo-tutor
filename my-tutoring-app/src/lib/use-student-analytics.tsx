@@ -1,23 +1,30 @@
-// src/lib/use-student-analytics.ts
-import { useState, useEffect } from 'react';
+// src/lib/use-student-analytics.ts - UPDATED FOR NEW AUTH
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { authApi } from './authApiClient';
 import { 
   analyticsApi, 
   StudentMetrics, 
   TimeSeriesData, 
   Recommendation 
-} from '@/lib/studentAnalyticsAPI';
+} from './studentAnalyticsAPI';
 
 export function useStudentAnalytics() {
+  // Auth state from your existing AuthContext
+  const { user, userProfile, loading: authLoading } = useAuth();
+  
+  // Keep existing interface for backward compatibility
   const [studentId, setStudentId] = useState(1);
   const [subject, setSubject] = useState<string | null>(null);
   const [grade, setGrade] = useState('Kindergarten');
-  // Setting default date values to null instead of specific dates
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [level, setLevel] = useState<string>('subject');
   const [interval, setInterval] = useState<string>('month');
   const [unitId, setUnitId] = useState<string | null>(null);
   const [skillId, setSkillId] = useState<string | null>(null);
+  
+  // Data state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<StudentMetrics | null>(null);
@@ -25,7 +32,21 @@ export function useStudentAnalytics() {
   const [recommendations, setRecommendations] = useState<Recommendation[] | null>(null);
   const [processedMetrics, setProcessedMetrics] = useState<StudentMetrics | null>(null);
 
-  // Update to handle null date values
+  // Get student ID from user profile when available
+  useEffect(() => {
+    if (userProfile?.student_id) {
+      setStudentId(userProfile.student_id);
+    } else if (!user) {
+      // Reset to default when user logs out
+      setStudentId(1);
+      setMetrics(null);
+      setTimeSeriesData(null);
+      setRecommendations(null);
+      setProcessedMetrics(null);
+    }
+  }, [userProfile, user]);
+
+  // Keep existing date range function
   const setDateRange = (start: string | null, end: string | null) => {
     setStartDate(start);
     setEndDate(end);
@@ -141,58 +162,77 @@ export function useStudentAnalytics() {
     return data;
   };
 
+  // Updated refreshData function using new auth API
   const refreshData = async () => {
+    // Use student ID from profile, fallback to manual selection
+    const currentStudentId = userProfile?.student_id || studentId;
+    
+    if (!currentStudentId || (!user && !userProfile?.student_id)) {
+      setError('No student ID available or user not authenticated');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
     try {
-      // Fetch all the data you need from your API
+      // Use the new authenticated API
       const [metricsData, timeSeriesResult, recommendationsData] = await Promise.all([
-        analyticsApi.getStudentMetrics(studentId, {
+        analyticsApi.getStudentMetrics(currentStudentId, {
           subject: subject || undefined,
-          // Only include date parameters if they're not null
           ...(startDate && { startDate }),
           ...(endDate && { endDate }),
         }),
-        analyticsApi.getTimeSeriesMetrics(studentId, {
+        analyticsApi.getTimeSeriesMetrics(currentStudentId, {
           subject: subject || undefined,
-          // Only include date parameters if they're not null
           ...(startDate && { startDate }),
           ...(endDate && { endDate }),
           interval: interval,
           level: level,
           unitId: unitId || undefined,
           skillId: skillId || undefined,
-          includeHierarchy: false, // Set to true if you need hierarchical data
+          includeHierarchy: false,
         }),
-        analyticsApi.getRecommendations(studentId, {
+        analyticsApi.getRecommendations(currentStudentId, {
           subject: subject || undefined,
           limit: 10,
         })
       ]);
       
       setMetrics(metricsData);
-      // Process metrics data to add derived fields and ensure consistent naming
       const processed = processMetricsData(metricsData);
       setProcessedMetrics(processed);
       
-      // Process time series data to handle both old and new formats
       const processedTimeSeriesData = processTimeSeriesData(timeSeriesResult);
       setTimeSeriesData(processedTimeSeriesData);
       
       setRecommendations(recommendationsData);
     } catch (err) {
       console.error('Error fetching analytics data:', err);
-      setError('Failed to load analytics data. Please try again.');
+      
+      // Better error handling for auth issues
+      if (err instanceof Error) {
+        if (err.message.includes('Authentication') || err.message.includes('token')) {
+          setError('Authentication failed. Please log in again.');
+        } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
+          setError('Access denied. You may not have permission to view this data.');
+        } else {
+          setError(`Failed to load analytics data: ${err.message}`);
+        }
+      } else {
+        setError('Failed to load analytics data. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch data when dependencies change
+  // Auto-refresh when dependencies change, but only if authenticated
   useEffect(() => {
-    refreshData();
-  }, [studentId, subject, startDate, endDate, level, interval, unitId, skillId]);
+    if (userProfile?.student_id && !authLoading) {
+      refreshData();
+    }
+  }, [userProfile?.student_id, subject, startDate, endDate, level, interval, unitId, skillId, authLoading]);
 
   // Update time series with different filters
   const updateTimeSeriesView = (newLevel: string, newInterval: string, newUnitId?: string, newSkillId?: string) => {
@@ -206,6 +246,22 @@ export function useStudentAnalytics() {
   const isDataLoaded = () => {
     return Boolean(processedMetrics && timeSeriesData);
   };
+
+  // Auth state helpers
+  const isAuthenticated = useMemo(() => !!user && !authLoading, [user, authLoading]);
+  
+  // Overall loading state
+  const overallLoading = useMemo(() => 
+    authLoading || profileLoading || loading, 
+    [authLoading, profileLoading, loading]
+  );
+
+  // Combined error state
+  const overallError = useMemo(() => {
+    if (authError) return authError.message;
+    if (error) return error;
+    return null;
+  }, [authError, error]);
 
   // Get total attempts for a unit
   const getUnitAttempts = (unitId: string) => {
@@ -247,6 +303,7 @@ export function useStudentAnalytics() {
   };
 
   return {
+    // Keep original interface for backward compatibility
     studentId,
     subject,
     grade,
@@ -256,9 +313,9 @@ export function useStudentAnalytics() {
     interval,
     unitId,
     skillId,
-    loading,
-    error,
-    metrics: processedMetrics || metrics, // Use processed metrics when available
+    loading: overallLoading,
+    error: overallError,
+    metrics: processedMetrics || metrics,
     timeSeriesData,
     recommendations,
     setStudentId,
@@ -271,5 +328,11 @@ export function useStudentAnalytics() {
     getUnitAttempts,
     getSkillAttempts,
     getSubskillAttempts,
+    
+    // New auth-related properties
+    isAuthenticated,
+    user,
+    userProfile,
+    authLoading,
   };
 }

@@ -1,4 +1,4 @@
-# backend/app/api/endpoints/problems.py - SIMPLIFIED VERSION
+# backend/app/api/endpoints/problems.py - FIXED VERSION WITH SERVICE LAYER
 
 from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from typing import Dict, Any, List, Optional
@@ -7,9 +7,10 @@ from datetime import datetime
 import logging
 import re
 
-# Simplified imports
+# FIXED: Import from service layer instead of endpoint
 from ...core.middleware import get_user_context
-from ...api.endpoints.user_profiles import log_activity
+from ...services.user_profiles import user_profiles_service
+from ...models.user_profiles import ActivityLog
 from ...dependencies import get_problem_service, get_competency_service, get_review_service
 from ...services.problems import ProblemService
 from ...services.competency import CompetencyService
@@ -62,8 +63,29 @@ class SubmissionResult(BaseModel):
     user_id: str
 
 # ============================================================================
-# DEPENDENCY INJECTION - Simplified
+# HELPER FUNCTIONS - Use service layer
 # ============================================================================
+
+async def log_activity_helper(
+    user_id: str,
+    student_id: int,
+    activity_type: str,
+    activity_name: str,
+    points: int = 0,
+    metadata: Dict[str, Any] = None
+):
+    """Helper function to log activities using service layer"""
+    try:
+        activity = ActivityLog(
+            activity_type=activity_type,
+            activity_name=activity_name,
+            points_earned=points,
+            metadata=metadata or {}
+        )
+        
+        await user_profiles_service.log_activity(user_id, student_id, activity)
+    except Exception as e:
+        logger.error(f"Failed to log activity: {str(e)}")
 
 def get_bigquery_analytics_service() -> BigQueryAnalyticsService:
     """Get BigQuery analytics service instance"""
@@ -72,7 +94,7 @@ def get_bigquery_analytics_service() -> BigQueryAnalyticsService:
     return BigQueryAnalyticsService(project_id=project_id, dataset_id=dataset_id)
 
 # ============================================================================
-# SIMPLIFIED ENDPOINTS - One consistent pattern
+# FIXED ENDPOINTS - Using service layer for activity logging
 # ============================================================================
 
 @router.post("/generate")
@@ -84,7 +106,7 @@ async def generate_problem(
 ) -> ProblemResponse:
     """Generate problem with automatic user authentication"""
     
-    user_id = user_context["user_id"]
+    firebase_uid = user_context["firebase_uid"]
     student_id = user_context["student_id"]
     
     try:
@@ -98,7 +120,7 @@ async def generate_problem(
             "unit": request.unit_id,
             "skill": request.skill_id,
             "subskill": request.subskill_id,
-            "user_id": user_id,
+            "user_id": firebase_uid,
             "grade_level": user_context.get("grade_level"),
             "user_preferences": user_context.get("preferences", {})
         }
@@ -113,8 +135,9 @@ async def generate_problem(
         if not problem:
             # Log failure and raise error
             background_tasks.add_task(
-                log_activity,
-                user_id=user_id,
+                log_activity_helper,
+                user_id=firebase_uid,
+                student_id=student_id,
                 activity_type="problem_generation_failed",
                 activity_name=f"Failed to generate {request.subject} problem",
                 points=0,
@@ -124,8 +147,9 @@ async def generate_problem(
         
         # Log success
         background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
             activity_type="problem_generated",
             activity_name=f"Generated {request.subject} problem",
             points=5,
@@ -139,7 +163,7 @@ async def generate_problem(
         
         return ProblemResponse(
             **problem,
-            user_id=user_id,
+            user_id=firebase_uid,
             student_id=student_id,
             generated_at=datetime.utcnow().isoformat()
         )
@@ -149,8 +173,9 @@ async def generate_problem(
     except Exception as e:
         logger.error(f"Error generating problem: {str(e)}")
         background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
             activity_type="problem_generation_error",
             activity_name="Problem generation error",
             points=0,
@@ -168,7 +193,7 @@ async def submit_problem(
 ) -> SubmissionResult:
     """Submit problem with automatic user authentication"""
     
-    user_id = user_context["user_id"]
+    firebase_uid = user_context["firebase_uid"]
     student_id = user_context["student_id"]
     
     try:
@@ -195,13 +220,14 @@ async def submit_problem(
             subskill_id=submission.subskill_id,
             student_answer=submission.student_answer or "",
             canvas_used=submission.canvas_used,
-            firebase_uid=user_context["firebase_uid"]
+            firebase_uid=firebase_uid
         )
         
         if "error" in review:
             background_tasks.add_task(
-                log_activity,
-                user_id=user_id,
+                log_activity_helper,
+                user_id=firebase_uid,
+                student_id=student_id,
                 activity_type="problem_review_failed",
                 activity_name="Problem review failed",
                 points=0,
@@ -215,8 +241,7 @@ async def submit_problem(
             subject=submission.subject,
             skill_id=submission.skill_id,
             subskill_id=submission.subskill_id,
-            evaluation=review,
-            firebase_uid=user_context["firebase_uid"]
+            evaluation=review
         )
         
         # Calculate points and feedback
@@ -248,8 +273,9 @@ async def submit_problem(
         
         # Log submission
         background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
             activity_type="problem_submitted",
             activity_name=f"Submitted {submission.subject} problem",
             points=points,
@@ -270,7 +296,7 @@ async def submit_problem(
             encouraging_message=encouraging_message,
             next_recommendations=next_recommendations,
             student_id=student_id,
-            user_id=user_id
+            user_id=firebase_uid
         )
             
     except HTTPException:
@@ -278,8 +304,9 @@ async def submit_problem(
     except Exception as e:
         logger.error(f"Error submitting problem: {str(e)}")
         background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
             activity_type="problem_submission_error",
             activity_name="Problem submission error",
             points=0,
@@ -298,7 +325,7 @@ async def get_recommended_problems(
 ) -> List[ProblemResponse]:
     """Get personalized recommended problems"""
     
-    user_id = user_context["user_id"]
+    firebase_uid = user_context["firebase_uid"]
     student_id = user_context["student_id"]
     
     try:
@@ -313,8 +340,9 @@ async def get_recommended_problems(
         
         if not recommendations:
             background_tasks.add_task(
-                log_activity,
-                user_id=user_id,
+                log_activity_helper,
+                user_id=firebase_uid,
+                student_id=student_id,
                 activity_type="recommendations_empty",
                 activity_name="No recommendations available",
                 points=0,
@@ -324,7 +352,7 @@ async def get_recommended_problems(
             
         # Generate problems from recommendations
         enhanced_context = {
-            "user_id": user_id,
+            "user_id": firebase_uid,
             "grade_level": user_context.get("grade_level"),
             "recommendations_source": "bigquery_analytics"
         }
@@ -338,8 +366,9 @@ async def get_recommended_problems(
         
         if not problems:
             background_tasks.add_task(
-                log_activity,
-                user_id=user_id,
+                log_activity_helper,
+                user_id=firebase_uid,
+                student_id=student_id,
                 activity_type="recommendations_failed",
                 activity_name="Failed to generate recommended problems",
                 points=0,
@@ -349,8 +378,9 @@ async def get_recommended_problems(
         
         # Log success
         background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
             activity_type="recommendations_received",
             activity_name=f"Received {len(problems)} recommendations",
             points=8,
@@ -365,7 +395,7 @@ async def get_recommended_problems(
         return [
             ProblemResponse(
                 **problem,
-                user_id=user_id,
+                user_id=firebase_uid,
                 student_id=student_id,
                 generated_at=datetime.utcnow().isoformat()
             )
@@ -377,8 +407,9 @@ async def get_recommended_problems(
     except Exception as e:
         logger.error(f"Error getting recommendations: {str(e)}")
         background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
             activity_type="recommendations_error",
             activity_name="Recommendations error",
             points=0,
@@ -398,7 +429,7 @@ async def get_skill_problems(
 ) -> List[ProblemResponse]:
     """Get skill-specific problems"""
     
-    user_id = user_context["user_id"]
+    firebase_uid = user_context["firebase_uid"]
     student_id = user_context["student_id"]
     
     try:
@@ -406,7 +437,7 @@ async def get_skill_problems(
         
         # Get skill problems
         enhanced_context = {
-            "user_id": user_id,
+            "user_id": firebase_uid,
             "grade_level": user_context.get("grade_level"),
             "request_type": "skill_specific"
         }
@@ -422,8 +453,9 @@ async def get_skill_problems(
         
         if not problems:
             background_tasks.add_task(
-                log_activity,
-                user_id=user_id,
+                log_activity_helper,
+                user_id=firebase_uid,
+                student_id=student_id,
                 activity_type="skill_problems_empty",
                 activity_name="No skill problems available",
                 points=0,
@@ -433,8 +465,9 @@ async def get_skill_problems(
         
         # Log success
         background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
             activity_type="skill_problems_received",
             activity_name=f"Received {len(problems)} skill problems",
             points=6,
@@ -449,7 +482,7 @@ async def get_skill_problems(
         return [
             ProblemResponse(
                 **problem,
-                user_id=user_id,
+                user_id=firebase_uid,
                 student_id=student_id,
                 generated_at=datetime.utcnow().isoformat()
             )
@@ -461,8 +494,9 @@ async def get_skill_problems(
     except Exception as e:
         logger.error(f"Error getting skill problems: {str(e)}")
         background_tasks.add_task(
-            log_activity,
-            user_id=user_id,
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
             activity_type="skill_problems_error",
             activity_name="Skill problems error",
             points=0,
@@ -496,10 +530,10 @@ async def problems_health_check(
     return {
         "status": "healthy",
         "service": "problems",
-        "version": "4.0.0",  # Simplified version
+        "version": "4.1.0",  # Updated version with service layer
         "user_context": {
             "authenticated": True,
-            "user_id": user_context["user_id"],
+            "firebase_uid": user_context["firebase_uid"],
             "email": user_context["email"],
             "student_id": user_context.get("student_id"),
             "grade_level": user_context.get("grade_level")
@@ -509,7 +543,8 @@ async def problems_health_check(
             "problem_submission": True,
             "recommendations": True,
             "skill_specific_problems": True,
-            "simplified_auth": True  # New feature!
+            "service_layer_integration": True,  # NEW: Service layer integration
+            "activity_logging": True  # NEW: Proper activity logging
         },
         "timestamp": datetime.utcnow().isoformat()
     }

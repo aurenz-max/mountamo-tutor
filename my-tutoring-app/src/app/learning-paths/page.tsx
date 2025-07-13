@@ -5,7 +5,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
-import LearningPaths from '@/components/tutoring/LearningPaths';
+import LearningPaths from '@/components/learning-paths/LearningPaths';
 
 export default function LearningPathsPage() {
   return (

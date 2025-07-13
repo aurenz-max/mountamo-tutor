@@ -802,6 +802,406 @@ class BigQueryETLService:
             logger.error(f"Error ensuring table {table_name} exists: {e}")
             raise
 
+    async def create_students_table(self) -> Dict[str, Any]:
+        """Create students table from unique student_ids in attempts"""
+        
+        try:
+            logger.info("Creating students table from attempts data")
+            
+            # Ensure table exists
+            await self._ensure_table_exists("students", self._get_students_schema())
+            
+            # Create/update students table from attempts
+            students_query = f"""
+            CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.students` AS
+            SELECT DISTINCT
+                student_id,
+                CAST(student_id AS STRING) as name,  -- You might want to update this with actual names
+                CAST(NULL AS STRING) as grade,       -- You might want to update this with actual grades
+                CURRENT_TIMESTAMP() as created_at,
+                CURRENT_TIMESTAMP() as updated_at
+            FROM `{self.project_id}.{self.dataset_id}.attempts`
+            WHERE student_id IS NOT NULL
+            """
+            
+            job = self.client.query(students_query)
+            job.result()
+            
+            # Get count of students created
+            count_query = f"SELECT COUNT(*) as student_count FROM `{self.project_id}.{self.dataset_id}.students`"
+            count_job = self.client.query(count_query)
+            student_count = list(count_job.result())[0]['student_count']
+            
+            logger.info(f"Created students table with {student_count} students")
+            
+            return {
+                "success": True,
+                "records_processed": student_count,
+                "table": f"{self.project_id}.{self.dataset_id}.students"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating students table: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def create_student_analytics_table(self) -> Dict[str, Any]:
+        """Create the comprehensive student analytics table based on your SQL query"""
+        
+        try:
+            logger.info("Creating student analytics table")
+            
+            # Ensure all required tables exist
+            required_tables = ['students', 'attempts', 'curriculum', 'subskill_paths']
+            for table in required_tables:
+                try:
+                    self.client.get_table(f"{self.project_id}.{self.dataset_id}.{table}")
+                except NotFound:
+                    logger.error(f"Required table {table} not found")
+                    return {"success": False, "error": f"Table {table} not found"}
+            
+            # Ensure analytics table exists
+            await self._ensure_table_exists("student_analytics", self._get_student_analytics_schema())
+            
+            # Create the analytics table using your complex query logic
+            analytics_query = self._get_student_analytics_query()
+            
+            # Execute the query
+            job = self.client.query(analytics_query)
+            job.result()
+            
+            # Get count of records created
+            count_query = f"SELECT COUNT(*) as record_count FROM `{self.project_id}.{self.dataset_id}.student_analytics`"
+            count_job = self.client.query(count_query)
+            record_count = list(count_job.result())[0]['record_count']
+            
+            logger.info(f"Created student analytics table with {record_count} records")
+            
+            return {
+                "success": True,
+                "records_processed": record_count,
+                "table": f"{self.project_id}.{self.dataset_id}.student_analytics"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating student analytics table: {e}")
+            return {"success": False, "error": str(e)}
+
+    def _get_student_analytics_query(self) -> str:
+        """Get the BigQuery SQL for creating the student analytics table"""
+        
+        return f"""
+        CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.student_analytics` AS
+        WITH 
+        -- First get all curriculum items to establish the full hierarchy
+        all_curriculum_items AS (
+            SELECT DISTINCT
+                subject,
+                skill_id,
+                subskill_id
+            FROM
+                `{self.project_id}.{self.dataset_id}.curriculum`
+        ),
+
+        -- Calculate average scores for each student and subskill_id (only for attempted items)
+        student_subskill_scores AS (
+            SELECT 
+                student_id,
+                subskill_id,
+                AVG(score / 10) AS avg_score
+            FROM 
+                `{self.project_id}.{self.dataset_id}.attempts`
+            GROUP BY 
+                student_id, 
+                subskill_id
+        ),
+
+        -- Calculate subskill proficiency (including non-attempted subskills as 0)
+        subskill_proficiency AS (
+            SELECT
+                s.student_id,
+                c.subject,
+                c.skill_id,
+                c.subskill_id,
+                COALESCE(sss.avg_score, 0) AS proficiency
+            FROM
+                `{self.project_id}.{self.dataset_id}.students` s
+            CROSS JOIN
+                all_curriculum_items c
+            LEFT JOIN
+                student_subskill_scores sss ON s.student_id = sss.student_id AND c.subskill_id = sss.subskill_id
+        ),
+
+        -- Calculate skill proficiency (average of all subskills including non-attempted)
+        skill_proficiency AS (
+            SELECT
+                student_id,
+                subject,
+                skill_id,
+                AVG(proficiency) AS proficiency
+            FROM
+                subskill_proficiency
+            GROUP BY
+                student_id,
+                subject,
+                skill_id
+        ),
+
+        -- Find subskills that are ready based on previous subskill in the learning path
+        -- A student is ready for a subskill if they have 60% proficiency in the prerequisite subskill
+        ready_subskills AS (
+            -- Base case: First subskills in each sequence (those without prerequisite subskills)
+            -- are always ready
+            SELECT DISTINCT
+                s.student_id,
+                c.subskill_id
+            FROM
+                `{self.project_id}.{self.dataset_id}.students` s
+            CROSS JOIN
+                `{self.project_id}.{self.dataset_id}.curriculum` c
+            LEFT JOIN
+                `{self.project_id}.{self.dataset_id}.subskill_paths` slp ON c.subskill_id = slp.next_subskill
+            WHERE
+                slp.current_subskill IS NULL
+            
+            UNION ALL
+            
+            -- Add subskills where the student has 60% proficiency in the prerequisite
+            SELECT DISTINCT
+                sp.student_id,
+                slp.next_subskill AS subskill_id
+            FROM
+                subskill_proficiency sp
+            JOIN
+                `{self.project_id}.{self.dataset_id}.subskill_paths` slp ON sp.subskill_id = slp.current_subskill
+            WHERE
+                sp.proficiency >= 0.6  -- Must have 60% proficiency in prerequisite subskill
+                AND slp.next_subskill IS NOT NULL -- Only if there is a next subskill
+        ),
+
+        -- Determine which skills are unlocked (60% proficiency in any of its subskills)
+        unlocked_skills AS (
+            SELECT DISTINCT
+                sp.student_id,
+                sp.skill_id
+            FROM
+                subskill_proficiency sp
+            WHERE
+                sp.proficiency >= 0.6  -- 60% proficiency in any subskill unlocks the skill
+        ),
+
+        -- Add a new CTE for priority labeling
+        item_priority AS (
+            SELECT
+                student_id,
+                subskill_id,
+                proficiency,
+                CASE
+                    WHEN proficiency >= 0.8 THEN 'Mastered'                     -- Clear mastery (>=80%)
+                    WHEN proficiency BETWEEN 0.4 AND 0.799 THEN 'High Priority' -- Working on it (40-79%)
+                    WHEN proficiency < 0.4 AND proficiency > 0 THEN 'Medium Priority' -- Started but low proficiency
+                    WHEN proficiency = 0 THEN 'Not Started'                     -- No attempts yet
+                    ELSE 'Not Assessed'
+                END AS priority_level,
+                CASE 
+                    WHEN proficiency BETWEEN 0.4 AND 0.799 THEN 1  -- Highest priority (partially mastered)
+                    WHEN proficiency < 0.4 AND proficiency > 0 THEN 2  -- Medium priority (just started)
+                    WHEN proficiency = 0 THEN 3                     -- Low priority (not started)
+                    WHEN proficiency >= 0.8 THEN 4                 -- Already mastered
+                    ELSE 5                                        -- Not assessed
+                END AS priority_order
+            FROM
+                subskill_proficiency
+        ),
+
+        -- Combined query with readiness and priority information
+        combined_data AS (
+            -- Start with all problem attempts
+            SELECT 
+                -- Problem attempt data
+                a.student_id,
+                s.name AS student_name,
+                CAST(s.grade AS STRING) AS student_grade,
+                a.subject,
+                a.skill_id,
+                a.subskill_id,
+                a.score / 10 as score,
+                a.timestamp AS attempt_timestamp,
+                
+                -- Curriculum data
+                c.grade AS curriculum_grade,
+                c.unit_id,
+                c.unit_title,
+                c.skill_description,
+                c.subskill_description,
+                c.difficulty_start,
+                c.difficulty_end,
+                c.target_difficulty,
+                'Has Attempts' AS coverage_status,
+                
+                -- Simplified readiness indicator that combines skill and subskill readiness
+                CASE 
+                    WHEN rs.subskill_id IS NOT NULL AND us.skill_id IS NOT NULL THEN 'Ready'
+                    WHEN rs.subskill_id IS NOT NULL THEN 'Ready for Subskill'
+                    WHEN us.skill_id IS NOT NULL THEN 'Ready for Skill'
+                    ELSE 'Not Ready'
+                END AS readiness_status,
+                
+                -- Add priority label
+                ip.priority_level,
+                ip.priority_order,
+                
+                -- Label for next recommended item
+                CASE
+                    WHEN rs.subskill_id IS NOT NULL AND ip.priority_level IN ('High Priority', 'Medium Priority') 
+                    THEN 'Recommended Next'
+                    ELSE NULL
+                END AS recommended_next,
+                
+                -- Include proficiency data
+                COALESCE(sp.proficiency, 0) AS subskill_proficiency,
+                COALESCE(skp.proficiency, 0) AS skill_proficiency,
+                
+                -- Include next subskill in learning path
+                slp.next_subskill AS next_subskill,
+                
+                -- Add sync timestamp
+                CURRENT_TIMESTAMP() AS sync_timestamp
+            FROM 
+                `{self.project_id}.{self.dataset_id}.attempts` a
+            JOIN 
+                `{self.project_id}.{self.dataset_id}.students` s ON a.student_id = s.student_id
+            LEFT JOIN 
+                `{self.project_id}.{self.dataset_id}.curriculum` c ON a.subskill_id = c.subskill_id
+            LEFT JOIN
+                ready_subskills rs ON a.student_id = rs.student_id AND a.subskill_id = rs.subskill_id
+            LEFT JOIN 
+                unlocked_skills us ON a.student_id = us.student_id AND a.skill_id = us.skill_id
+            LEFT JOIN
+                subskill_proficiency sp ON a.student_id = sp.student_id AND a.subskill_id = sp.subskill_id
+            LEFT JOIN
+                skill_proficiency skp ON a.student_id = skp.student_id AND a.skill_id = skp.skill_id
+            LEFT JOIN
+                `{self.project_id}.{self.dataset_id}.subskill_paths` slp ON a.subskill_id = slp.current_subskill
+            LEFT JOIN
+                item_priority ip ON a.student_id = ip.student_id AND a.subskill_id = ip.subskill_id
+                
+            UNION ALL
+            
+            -- Add curriculum items without attempts
+            SELECT 
+                s.student_id,
+                s.name AS student_name,
+                CAST(s.grade AS STRING) AS student_grade,
+                c.subject,
+                c.skill_id,
+                c.subskill_id,
+                NULL AS score,
+                NULL AS attempt_timestamp,
+                
+                c.grade AS curriculum_grade,
+                c.unit_id,
+                c.unit_title,
+                c.skill_description,
+                c.subskill_description,
+                c.difficulty_start,
+                c.difficulty_end,
+                c.target_difficulty,
+                'No Attempts' AS coverage_status,
+                
+                -- Simplified readiness indicator that combines skill and subskill readiness
+                CASE 
+                    WHEN rs.subskill_id IS NOT NULL AND us.skill_id IS NOT NULL THEN 'Ready'
+                    WHEN rs.subskill_id IS NOT NULL THEN 'Ready for Subskill'
+                    WHEN us.skill_id IS NOT NULL THEN 'Ready for Skill'
+                    ELSE 'Not Ready'
+                END AS readiness_status,
+                
+                -- Add priority label
+                ip.priority_level,
+                ip.priority_order,
+                
+                -- Label for next recommended item
+                CASE
+                    WHEN rs.subskill_id IS NOT NULL AND ip.priority_level IN ('High Priority', 'Medium Priority') 
+                    THEN 'Recommended Next'
+                    ELSE NULL
+                END AS recommended_next,
+                
+                -- Include proficiency data
+                COALESCE(sp.proficiency, 0) AS subskill_proficiency,
+                COALESCE(skp.proficiency, 0) AS skill_proficiency,
+                
+                -- Include next subskill in learning path
+                slp.next_subskill AS next_subskill,
+                
+                -- Add sync timestamp
+                CURRENT_TIMESTAMP() AS sync_timestamp
+            FROM 
+                `{self.project_id}.{self.dataset_id}.curriculum` c
+            CROSS JOIN
+                `{self.project_id}.{self.dataset_id}.students` s
+            LEFT JOIN
+                ready_subskills rs ON s.student_id = rs.student_id AND c.subskill_id = rs.subskill_id
+            LEFT JOIN 
+                unlocked_skills us ON s.student_id = us.student_id AND c.skill_id = us.skill_id
+            LEFT JOIN
+                subskill_proficiency sp ON s.student_id = sp.student_id AND c.subskill_id = sp.subskill_id
+            LEFT JOIN
+                skill_proficiency skp ON s.student_id = skp.student_id AND c.skill_id = skp.skill_id
+            LEFT JOIN
+                `{self.project_id}.{self.dataset_id}.subskill_paths` slp ON c.subskill_id = slp.current_subskill
+            LEFT JOIN
+                item_priority ip ON s.student_id = ip.student_id AND c.subskill_id = ip.subskill_id
+            WHERE 
+                NOT EXISTS (
+                    SELECT 1 
+                    FROM `{self.project_id}.{self.dataset_id}.attempts` a 
+                    WHERE a.subskill_id = c.subskill_id
+                    AND a.student_id = s.student_id
+                )
+        )
+        -- Final query with all relevant information
+        SELECT * FROM combined_data
+        ORDER BY
+            student_id,
+            subject,
+            recommended_next DESC, -- Put recommended items first
+            priority_order,        -- Then sort by priority
+            skill_id,
+            subskill_id,
+            attempt_timestamp
+        """
+
+    def _get_student_analytics_schema(self) -> List[bigquery.SchemaField]:
+        """Get BigQuery schema for student analytics table"""
+        return [
+            bigquery.SchemaField("student_id", "INTEGER", mode="REQUIRED"),
+            bigquery.SchemaField("student_name", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("student_grade", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("subject", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("skill_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("subskill_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("score", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("attempt_timestamp", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("curriculum_grade", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("unit_id", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("unit_title", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("skill_description", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("subskill_description", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("difficulty_start", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("difficulty_end", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("target_difficulty", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("coverage_status", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("readiness_status", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("priority_level", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("priority_order", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("recommended_next", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("subskill_proficiency", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("skill_proficiency", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("next_subskill", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
+        ]
+
     def _get_attempts_schema(self) -> List[bigquery.SchemaField]:
         """Get BigQuery schema for attempts table"""
         return [
@@ -859,6 +1259,16 @@ class BigQueryETLService:
             bigquery.SchemaField("min_score_threshold", "FLOAT", mode="REQUIRED"),
             bigquery.SchemaField("is_base_node", "BOOLEAN", mode="REQUIRED"),
             bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
+        ]
+
+    def _get_students_schema(self) -> List[bigquery.SchemaField]:
+        """Get BigQuery schema for students table"""
+        return [
+            bigquery.SchemaField("student_id", "INTEGER", mode="REQUIRED"),
+            bigquery.SchemaField("name", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("grade", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"),
         ]
 
     async def _upsert_curriculum_data(self, curriculum_records: List[Dict], subject: str):

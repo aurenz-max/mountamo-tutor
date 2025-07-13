@@ -1,10 +1,10 @@
-// src/components/analytics/ProgressDashboard.tsx
+// src/components/analytics/ProgressDashboard.tsx - Updated to work with simplified analytics
 'use client'
 
 import React from 'react'
-import { useAnalytics } from './StudentAnalytics'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AnalyticsMetricsResponse, AnalyticsTimeseriesResponse } from '@/lib/authApiClient'
 import MetricsCards from './MetricsCards'
 import PerformanceTimeline from './PerformanceTimeline'
 import AttemptsVisualization from './AttemptsVisualization'
@@ -12,8 +12,19 @@ import NextSteps from './NextSteps'
 import RecommendationsPanel from './RecommendationsPanel'
 import HierarchicalMetrics from './HierarchicalMetrics'
 
-export default function ProgressDashboard() {
-  const { metrics, loading, error } = useAnalytics()
+interface ProgressDashboardProps {
+  data: AnalyticsMetricsResponse | null;
+  timeseries?: AnalyticsTimeseriesResponse | null;
+  loading?: boolean;
+  error?: string | null;
+}
+
+export default function ProgressDashboard({ 
+  data: metrics, 
+  timeseries, 
+  loading = false, 
+  error = null 
+}: ProgressDashboardProps) {
   
   if (loading) {
     return (
@@ -60,12 +71,12 @@ export default function ProgressDashboard() {
   return (
     <div className="space-y-6">
       {/* Summary metrics at the top */}
-      <MetricsCards />
+      <MetricsCards data={metrics} />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column: Timeline Chart */}
         <div className="lg:col-span-2">
-          <PerformanceTimeline />
+          <PerformanceTimeline data={timeseries} />
         </div>
         
         {/* Right column: Recent Activity */}
@@ -85,7 +96,7 @@ export default function ProgressDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {metrics.hierarchical_data.slice(0, 5).map((unit) => (
+                  {metrics.hierarchical_data?.slice(0, 5).map((unit) => (
                     <tr key={unit.unit_id} className="border-b border-gray-100">
                       <td className="py-3 font-medium">{unit.unit_title}</td>
                       <td className="py-3 text-right">{unit.attempt_count}</td>
@@ -102,13 +113,21 @@ export default function ProgressDashboard() {
                       </td>
                       <td className="py-3 text-right">{Math.round(unit.proficiency * 100)}%</td>
                     </tr>
-                  ))}
-                  <tr className="font-semibold">
-                    <td className="py-3">Total</td>
-                    <td className="py-3 text-right">{metrics.summary.attempt_count}</td>
-                    <td className="py-3 text-right">{Math.round(metrics.summary.avg_score * 100)}%</td>
-                    <td className="py-3 text-right">{Math.round(metrics.summary.proficiency * 100)}%</td>
-                  </tr>
+                  )) || (
+                    <tr>
+                      <td colSpan={4} className="py-3 text-center text-muted-foreground">
+                        No unit data available
+                      </td>
+                    </tr>
+                  )}
+                  {metrics.summary && (
+                    <tr className="font-semibold">
+                      <td className="py-3">Total</td>
+                      <td className="py-3 text-right">{metrics.summary.attempt_count}</td>
+                      <td className="py-3 text-right">{Math.round(metrics.summary.avg_score * 100)}%</td>
+                      <td className="py-3 text-right">{Math.round(metrics.summary.proficiency * 100)}%</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </CardContent>
@@ -117,18 +136,18 @@ export default function ProgressDashboard() {
       </div>
       
       {/* Curriculum Hierarchy */}
-      <HierarchicalMetrics />
+      <HierarchicalMetrics data={metrics} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recommendations Panel */}
-        <RecommendationsPanel />
+        <RecommendationsPanel studentId={metrics.student_id} />
         
         {/* Next Steps */}
-        <NextSteps />
+        <NextSteps data={metrics} />
       </div>
       
       {/* Attempts Visualization */}
-      <AttemptsVisualization />
+      <AttemptsVisualization data={metrics} />
     </div>
   );
 }

@@ -1,127 +1,59 @@
 // src/components/analytics/MetricsCards.tsx
 'use client'
 
-import React from 'react'
-import { useAnalytics } from './StudentAnalytics'
-import { Card, CardContent } from '@/components/ui/card'
-import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnalyticsMetricsResponse } from '@/lib/authApiClient';
 
-export default function MetricsCards() {
-  const { metrics, timeSeriesData } = useAnalytics()
-  
-  if (!metrics) return null
+interface MetricsCardsProps {
+  data: AnalyticsMetricsResponse;
+}
 
-  const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`
-  }
+export default function MetricsCards({ data }: MetricsCardsProps) {
+  // Replace: const { metrics } = useAnalytics()
+  // With: Use the 'data' prop directly
   
-  // Calculate changes by comparing the most recent time period with the previous one
-  // This is dynamically calculated from the API's time series data
-  const calculateChanges = () => {
-    if (!timeSeriesData || !timeSeriesData.data || timeSeriesData.data.length < 2) {
-      return {
-        mastery: 0,
-        proficiency: 0,
-        completion: 0,
-        problemsCompleted: 0,
-        avgScore: 0
-      };
-    }
-    
-    // Sort data by date
-    const sortedData = [...timeSeriesData.data].sort((a, b) => 
-      new Date(b.interval_date).getTime() - new Date(a.interval_date).getTime()
-    );
-    
-    const current = sortedData[0]?.metrics;
-    const previous = sortedData[1]?.metrics;
-    
-    return {
-      mastery: previous ? ((current.mastery - previous.mastery) * 100) : 0,
-      proficiency: previous ? ((current.proficiency - previous.proficiency) * 100) : 0,
-      completion: previous ? (current.completion - previous.completion) : 0,
-      problemsCompleted: previous ? (current.attempt_count - previous.attempt_count) : 0, // Updated from attempts to attempt_count
-      avgScore: previous && current.avg_score && previous.avg_score ? 
-        ((current.avg_score - previous.avg_score) * 100) : 0, // Use actual avg_score when available
-    };
-  }
-  
-  const changes = calculateChanges();
+  if (!data?.summary) return null;
+
+  const { summary } = data;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-      <MetricCard 
-        title="Mastery" 
-        value={formatPercentage(metrics.summary.mastery * 100)}
-        change={changes.mastery}
-        changeLabel="vs Last Month"
-      />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Overall Mastery</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{Math.round(summary.mastery * 100)}%</div>
+        </CardContent>
+      </Card>
       
-      <MetricCard 
-        title="Proficiency" 
-        value={formatPercentage(metrics.summary.proficiency * 100)}
-        change={changes.proficiency}
-        changeLabel="vs Last Month"
-      />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Proficiency</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{Math.round(summary.proficiency * 100)}%</div>
+        </CardContent>
+      </Card>
       
-      <MetricCard 
-        title="Avg. Score" 
-        value={formatPercentage(metrics.summary.avg_score * 100)}
-        change={changes.avgScore}
-        changeLabel="vs Last Month"
-      />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Completion</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{summary.attempted_items}/{summary.total_items}</div>
+        </CardContent>
+      </Card>
       
-      <MetricCard 
-        title="Completion" 
-        value={formatPercentage(metrics.summary.completion)}
-        change={changes.completion}
-        changeLabel="vs Last Month"
-      />
-      
-      <MetricCard 
-        title="Total Attempts" 
-        value={metrics.summary.attempt_count.toString()}  // Updated from attempted_items to attempt_count
-        change={changes.problemsCompleted}
-        changeLabel="vs Last Month"
-        isPercentage={false}
-      />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Ready Items</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{summary.ready_items}</div>
+        </CardContent>
+      </Card>
     </div>
-  )
-}
-
-interface MetricCardProps {
-  title: string
-  value: string
-  change: number
-  changeLabel: string
-  isPercentage?: boolean
-}
-
-function MetricCard({ title, value, change, changeLabel, isPercentage = true }: MetricCardProps) {
-  const isPositive = change >= 0
-  
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex flex-col space-y-1.5">
-          <p className="text-base font-medium text-muted-foreground">{title}</p>
-          <h3 className="text-3xl font-bold">{value}</h3>
-          <div className="flex items-center">
-            <span className={cn(
-              "text-xs inline-flex items-center gap-1",
-              isPositive ? "text-green-500" : "text-red-500"
-            )}>
-              {isPositive ? (
-                <ArrowUpIcon className="h-3 w-3" />
-              ) : (
-                <ArrowDownIcon className="h-3 w-3" />
-              )}
-              {`${isPositive ? '+' : ''}${Math.abs(change).toFixed(2)}${isPercentage ? '%' : ''} ${changeLabel}`}
-            </span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+  );
 }

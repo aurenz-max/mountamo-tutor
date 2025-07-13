@@ -1,4 +1,4 @@
-# backend/app/core/middleware.py
+# backend/app/core/middleware.py - FIXED VERSION
 from fastapi import Depends, HTTPException, status
 from typing import Dict, Any, Optional
 import logging
@@ -32,11 +32,11 @@ async def get_user_context(firebase_user: dict = Depends(verify_firebase_token))
     This replaces all the specialized auth functions
     """
     try:
-        # Import here to avoid circular imports
-        from ..api.endpoints.user_profiles import get_user_profile
+        # FIXED: Import the service directly instead of endpoint function
+        from ..services.user_profiles import user_profiles_service
         
-        # Get user profile
-        user_profile = await get_user_profile(firebase_user['uid'])
+        # Get user profile using the service
+        user_profile = await user_profiles_service.get_user_profile(firebase_user['uid'])
         
         # Get or create student mapping
         cosmos_db = get_cosmos_db_service()
@@ -67,6 +67,9 @@ async def get_user_context(firebase_user: dict = Depends(verify_firebase_token))
         
     except Exception as e:
         logger.error(f"Failed to get user context: {str(e)}")
+        # IMPROVED: More specific error handling for debugging
+        logger.error(f"Exception type: {type(e).__name__}")
+        logger.error(f"Firebase user data: {firebase_user}")
         raise HTTPException(status_code=500, detail="Failed to get user context")
 
 async def validate_student_access(

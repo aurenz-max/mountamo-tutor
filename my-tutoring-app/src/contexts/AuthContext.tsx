@@ -1,4 +1,4 @@
-// contexts/AuthContext.tsx - FIXED VERSION WITH CORRECT TYPES
+// contexts/AuthContext.tsx - FIXED VERSION
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -16,7 +16,7 @@ interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
-  student_id: number; // FIXED: Changed from string to number to match backend
+  student_id: number;
   grade_level?: string;
   total_points?: number;
   current_streak?: number;
@@ -25,7 +25,6 @@ interface UserProfile {
   created_at?: string;
   last_activity?: string;
   preferences?: Record<string, any>;
-  // Add other fields that come from backend
   email_verified?: boolean;
   last_login?: string;
   longest_streak?: number;
@@ -61,324 +60,225 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Get the backend API URL
+  console.log('🔄 AuthProvider render - State:', {
+    hasUser: !!user,
+    userEmail: user?.email,
+    hasProfile: !!userProfile,
+    loading,
+    timestamp: new Date().toISOString()
+  });
+
   const getApiUrl = () => {
-    return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    const url = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    console.log('🌐 API URL:', url);
+    return url;
   };
 
-  // Get auth token for API calls
-  const getAuthToken = async (): Promise<string | null> => {
-    if (!user) return null;
+  // FIXED: Accept user parameter instead of relying on state
+  const getAuthToken = async (userParam?: User): Promise<string | null> => {
+    const currentUser = userParam || user;
+    console.log('🔑 getAuthToken called, user exists:', !!currentUser);
+    
+    if (!currentUser) {
+      console.warn('❌ No user available for token generation');
+      return null;
+    }
+    
     try {
-      return await user.getIdToken();
+      console.log('🎫 Calling Firebase getIdToken...');
+      const token = await currentUser.getIdToken();
+      console.log('✅ Token received:', {
+        exists: !!token,
+        length: token?.length || 0,
+        preview: token?.substring(0, 20) + '...'
+      });
+      return token;
     } catch (error) {
-      console.error('Error getting auth token:', error);
+      console.error('❌ Failed to get token:', error);
       return null;
     }
   };
 
-  // Safe JSON parsing helper
-  const safeParseJSON = async (response: Response) => {
-    const text = await response.text();
-    console.log('Backend response text:', text); // Debug log
+  // FIXED: Accept user parameter to avoid race condition
+  const fetchUserProfile = async (userParam: User): Promise<UserProfile | null> => {
+    console.log('📊 Fetching user profile for:', userParam.email);
     
-    if (!text) {
-      throw new Error('Empty response from server');
-    }
-
     try {
-      return JSON.parse(text);
-    } catch (error) {
-      console.error('Failed to parse JSON response:', text);
-      throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}...`);
-    }
-  };
+      const token = await getAuthToken(userParam);
+      if (!token) {
+        console.error('❌ No token available for profile fetch');
+        return null;
+      }
 
-  // Fetch user profile from your backend with improved error handling
-  const fetchUserProfile = async (authToken: string): Promise<UserProfile | null> => {
-    try {
       const apiUrl = getApiUrl();
-      console.log('Fetching user profile from:', `${apiUrl}/api/user-profiles/profile`);
+      const profileUrl = `${apiUrl}/api/user-profiles/profile`;
       
-      const response = await fetch(`${apiUrl}/api/user-profiles/profile`, {
+      console.log('🌐 Fetching from:', profileUrl);
+      console.log('🔑 Using token preview:', token.substring(0, 20) + '...');
+
+      const response = await fetch(profileUrl, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
 
-      console.log('Profile response status:', response.status);
+      console.log('📨 Profile response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
 
       if (response.ok) {
-        const profile = await safeParseJSON(response);
-        console.log('Profile data:', profile);
+        const profile = await response.json();
+        console.log('✅ Profile data received:', profile);
         
-        // FIXED: Ensure student_id is a number
+        // Ensure student_id is a number
         if (profile.student_id && typeof profile.student_id === 'string') {
           profile.student_id = parseInt(profile.student_id, 10);
         }
         
         return profile as UserProfile;
       } else if (response.status === 404) {
-        // User profile doesn't exist yet, this is normal for new users
-        console.log('User profile not found, will be created automatically by backend');
+        console.log('ℹ️ Profile not found - will be created automatically');
         return null;
-      } else if (response.status === 401) {
-        // Handle authentication errors gracefully
-        try {
-          const errorData = await safeParseJSON(response);
-          console.warn('Authentication issue:', errorData);
-          
-          // If email not verified, we can still proceed in development
-          if (errorData.detail?.includes('Email not verified')) {
-            console.log('Email not verified - continuing in development mode');
-            return null; // Backend will create profile when needed
-          }
-          
-          // For other auth errors, don't throw - let the app continue
-          console.warn('Auth error when fetching profile:', errorData.detail);
-          return null;
-        } catch (parseError) {
-          console.warn('Could not parse auth error response');
-          return null;
-        }
       } else {
         const errorText = await response.text();
-        console.error('Failed to fetch user profile:', response.status, errorText);
+        console.error('❌ Profile fetch failed:', {
+          status: response.status,
+          error: errorText
+        });
         return null;
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      
-      // Don't throw errors for profile fetching - let the app continue
-      // The profile will be created when the user first accesses protected endpoints
+      console.error('❌ Error fetching user profile:', error);
       return null;
     }
   };
 
-  // Refresh user profile
   const refreshUserProfile = async () => {
+    console.log('🔄 Refreshing user profile...');
     if (!user) return;
     
     try {
-      const token = await getAuthToken();
-      if (token) {
-        const profile = await fetchUserProfile(token);
-        setUserProfile(profile);
-      }
+      const profile = await fetchUserProfile(user);
+      setUserProfile(profile);
+      console.log('✅ Profile refreshed');
     } catch (error) {
-      console.error('Error refreshing user profile:', error);
-      // Don't throw - just log the error
+      console.error('❌ Error refreshing user profile:', error);
     }
   };
 
-  // Register new user with improved error handling
   const register = async (email: string, password: string, displayName: string, gradeLevel?: string) => {
     try {
+      console.log('📝 Registering user:', email);
+      
       const apiUrl = getApiUrl();
       const registerUrl = `${apiUrl}/api/auth/register`;
       
-      console.log('Registering user at:', registerUrl);
-      console.log('Registration data:', { email, display_name: displayName, grade_level: gradeLevel });
+      console.log('🌐 Registration URL:', registerUrl);
 
-      // First register with your backend (which creates Firebase user)
       const response = await fetch(registerUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
           password,
           display_name: displayName,
-          grade_level: gradeLevel || 'K', // FIXED: Send string grade level
+          grade_level: gradeLevel || 'K',
         }),
       });
 
-      console.log('Registration response status:', response.status);
-      console.log('Registration response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('📨 Registration response:', response.status);
 
       if (!response.ok) {
-        let errorMessage = `Registration failed with status ${response.status}`;
-        
-        try {
-          const errorData = await safeParseJSON(response);
-          console.error('Registration error data:', errorData);
-          
-          // Handle specific error types
-          if (errorData.detail) {
-            if (Array.isArray(errorData.detail)) {
-              // Validation errors from Pydantic
-              const validationErrors = errorData.detail.map((err: any) => {
-                if (err.loc && err.msg) {
-                  return `${err.loc.join('.')}: ${err.msg}`;
-                }
-                return err.msg || JSON.stringify(err);
-              }).join(', ');
-              errorMessage = `Validation error: ${validationErrors}`;
-            } else {
-              errorMessage = errorData.detail;
-            }
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
-          }
-        } catch (parseError) {
-          // If we can't parse the error, get the raw text
-          const errorText = await response.text();
-          console.error('Raw error response:', errorText);
-          errorMessage = `Server error: ${errorText.substring(0, 200)}`;
-        }
-        
-        throw new Error(errorMessage);
+        const errorData = await response.json();
+        console.error('❌ Registration failed:', errorData);
+        throw new Error(errorData.detail || 'Registration failed');
       }
 
-      const registrationResult = await safeParseJSON(response);
-      console.log('Registration successful:', registrationResult);
-
-      // Then sign in with Firebase (frontend)
-      console.log('Signing in with Firebase...');
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ Backend registration successful, signing in...');
       
-      // Update display name if it wasn't set
-      if (userCredential.user && displayName) {
-        await updateProfile(userCredential.user, { displayName });
+      // Sign in with Firebase
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      if (displayName) {
+        await updateProfile(auth.currentUser!, { displayName });
       }
-
-      console.log('Firebase sign-in successful');
-
+      
+      console.log('✅ Registration complete');
     } catch (error: any) {
-      console.error('Registration error:', error);
-      
-      // Provide more specific error messages
-      if (error.message.includes('Failed to fetch')) {
-        throw new Error('Cannot connect to server. Please check if the backend is running.');
-      } else if (error.message.includes('CORS')) {
-        throw new Error('CORS error. Please check backend CORS configuration.');
-      } else if (error.message.includes('TypeError: Failed to fetch')) {
-        throw new Error('Network error. Please check your internet connection and try again.');
-      } else {
-        // Re-throw the error with the original message
-        throw error;
-      }
+      console.error('❌ Registration error:', error);
+      throw error;
     }
   };
 
-  // Login user with improved error handling
   const login = async (email: string, password: string) => {
     try {
-      console.log('Logging in user:', email);
+      console.log('🔑 Logging in user:', email);
       await signInWithEmailAndPassword(auth, email, password);
-      console.log('Login successful');
+      console.log('✅ Login successful');
     } catch (error: any) {
-      console.error('Login error:', error);
-      
-      // Provide user-friendly error messages
-      let userMessage = 'Login failed';
-      
-      if (error.code) {
-        switch (error.code) {
-          case 'auth/user-not-found':
-            userMessage = 'No account found with this email address';
-            break;
-          case 'auth/wrong-password':
-            userMessage = 'Incorrect password';
-            break;
-          case 'auth/invalid-email':
-            userMessage = 'Invalid email address';
-            break;
-          case 'auth/user-disabled':
-            userMessage = 'This account has been disabled';
-            break;
-          case 'auth/too-many-requests':
-            userMessage = 'Too many failed attempts. Please try again later';
-            break;
-          case 'auth/network-request-failed':
-            userMessage = 'Network error. Please check your connection and try again';
-            break;
-          default:
-            userMessage = error.message || 'Login failed';
-        }
-      } else {
-        userMessage = error.message || 'Login failed';
-      }
-      
-      throw new Error(userMessage);
+      console.error('❌ Login error:', error);
+      throw error;
     }
   };
 
-  // Logout user with improved error handling
   const logout = async () => {
     try {
-      // Call backend logout endpoint to revoke tokens
-      const token = await getAuthToken();
-      if (token) {
-        const apiUrl = getApiUrl();
-        try {
-          const response = await fetch(`${apiUrl}/api/auth/logout`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          if (!response.ok) {
-            console.warn('Backend logout failed, but continuing with local logout');
-          }
-        } catch (error) {
-          console.warn('Backend logout failed, proceeding with local logout:', error);
-        }
-      }
-      
-      // Sign out from Firebase
+      console.log('🚪 Logging out...');
       await signOut(auth);
       setUserProfile(null);
-      console.log('Logout successful');
+      console.log('✅ Logout successful');
     } catch (error) {
-      console.error('Logout error:', error);
-      // Still sign out locally even if backend call fails
-      try {
-        await signOut(auth);
-        setUserProfile(null);
-      } catch (firebaseError) {
-        console.error('Firebase logout also failed:', firebaseError);
-      }
+      console.error('❌ Logout error:', error);
     }
   };
 
-  // Listen to auth state changes with improved error handling
+  // FIXED: Auth state listener that passes user directly to avoid race conditions
   useEffect(() => {
+    console.log('🎯 Setting up auth state listener...');
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
-      setUser(firebaseUser);
+      console.log('🔔 Auth state changed:', {
+        hasUser: !!firebaseUser,
+        userEmail: firebaseUser?.email,
+        userUID: firebaseUser?.uid,
+        emailVerified: firebaseUser?.emailVerified,
+        timestamp: new Date().toISOString()
+      });
       
       if (firebaseUser) {
-        // User is signed in, fetch their profile
+        console.log('👤 User signed in, setting user state...');
+        setUser(firebaseUser);
+        
+        console.log('📊 Fetching user profile with firebaseUser...');
+        
+        // FIXED: Pass firebaseUser directly instead of waiting for state update
         try {
-          const token = await firebaseUser.getIdToken();
-          const profile = await fetchUserProfile(token);
+          const profile = await fetchUserProfile(firebaseUser);
+          console.log('📊 Profile fetch result:', !!profile);
           setUserProfile(profile);
-          
-          // If no profile exists, it will be created automatically by the backend
-          // when the user first accesses protected endpoints
-          if (!profile) {
-            console.log('No user profile found - will be created on first API call');
-          }
         } catch (error) {
-          console.error('Error setting up user profile:', error);
-          // Don't prevent login if profile fetch fails
+          console.error('❌ Profile fetch error:', error);
           setUserProfile(null);
+        } finally {
+          console.log('✅ Setting loading to false');
+          setLoading(false);
         }
       } else {
-        // User is signed out
+        console.log('👋 User signed out');
+        setUser(null);
         setUserProfile(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      console.log('🧹 Cleaning up auth listener');
+      unsubscribe();
+    };
+  }, []); // No dependencies to avoid re-running
 
   const value: AuthContextType = {
     user,

@@ -1,3 +1,4 @@
+// src/components/analytics/ProblemReviews.tsx - UPDATED FOR NEW AUTH
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -6,8 +7,38 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { api } from '@/lib/api';
-import type { ProblemReviewsResponse, ProblemReviewDetails } from '@/lib/api';
+import { authApi } from '@/lib/authApiClient'; // Use new auth API
+import { AlertCircleIcon } from 'lucide-react';
+
+// Define types since we're using the new auth API
+interface ProblemReviewDetails {
+  id: string;
+  subject: string;
+  skill_id: string;
+  subskill_id: string;
+  timestamp: string;
+  score: number;
+  feedback_components: {
+    observation?: any;
+    analysis?: any;
+    evaluation?: any;
+    feedback?: any;
+  };
+  problem_content?: {
+    metadata?: {
+      skill?: { description?: string };
+      subskill?: { description?: string };
+    };
+    problem_type?: string;
+    problem?: string;
+    answer?: string;
+  };
+}
+
+interface ProblemReviewsResponse {
+  reviews: ProblemReviewDetails[];
+  grouped_reviews: Record<string, Record<string, ProblemReviewDetails[]>>;
+}
 
 interface ProblemReviewsProps {
   studentId: number;
@@ -28,16 +59,34 @@ const ProblemReviews: React.FC<ProblemReviewsProps> = ({
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        const data = await api.getProblemReviews(
-          studentId, 
-          selectedSubject || undefined,
-          selectedSkill || undefined
-        );
-        setReviews(data);
         setError(null);
+
+        // Since there's no specific getProblemReviews method in your authApi,
+        // we'll need to construct the endpoint manually or add it to your API client
+        // For now, let's use a generic approach
+        const params = new URLSearchParams();
+        if (selectedSubject) params.append('subject', selectedSubject);
+        if (selectedSkill) params.append('skill_id', selectedSkill);
+        
+        const queryString = params.toString();
+        const endpoint = `/api/analytics/student/${studentId}/problem-reviews${queryString ? `?${queryString}` : ''}`;
+        
+        // Use the authApi's generic get method
+        const data = await authApi.get<ProblemReviewsResponse>(endpoint);
+        setReviews(data);
       } catch (err) {
-        setError('Failed to load problem reviews');
         console.error('Error fetching reviews:', err);
+        if (err instanceof Error) {
+          if (err.message.includes('Authentication') || err.message.includes('token')) {
+            setError('Authentication failed. Please log in again.');
+          } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
+            setError('Access denied. You may not have permission to view this data.');
+          } else {
+            setError(`Failed to load problem reviews: ${err.message}`);
+          }
+        } else {
+          setError('Failed to load problem reviews');
+        }
       } finally {
         setLoading(false);
       }
@@ -50,10 +99,20 @@ const ProblemReviews: React.FC<ProblemReviewsProps> = ({
     return <div className="p-8 text-center">Loading problem reviews...</div>;
   }
 
-  if (error || !reviews) {
+  if (error) {
     return (
       <Alert variant="destructive">
-        <AlertDescription>{error || 'No review data available'}</AlertDescription>
+        <AlertCircleIcon className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!reviews) {
+    return (
+      <Alert>
+        <AlertCircleIcon className="h-4 w-4" />
+        <AlertDescription>No review data available</AlertDescription>
       </Alert>
     );
   }
@@ -129,162 +188,3 @@ const ProblemReviews: React.FC<ProblemReviewsProps> = ({
     </div>
   );
 };
-
-// Component to display a single review
-const ReviewCard = ({ review }: { review: ProblemReviewDetails }) => {
-  const { subject, skill_id, subskill_id, timestamp, score, feedback_components, problem_content } = review;
-  const { observation, analysis, evaluation, feedback } = feedback_components;
-  
-  // Format date
-  const formattedDate = new Date(timestamp).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-
-  // Extract meaningful information from problem_content if available
-  const problemTitle = problem_content?.metadata?.subskill?.description || 
-                      problem_content?.metadata?.skill?.description || 
-                      `${subject} - ${skill_id}`;
-  
-  const problemType = problem_content?.problem_type || '';
-  const problemText = problem_content?.problem || '';
-  const problemAnswer = problem_content?.answer || '';
-  
-  // Extract metadata if available
-  const skillDescription = problem_content?.metadata?.skill?.description || '';
-  const subskillDescription = problem_content?.metadata?.subskill?.description || '';
-  
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">
-            {/* Use the more descriptive title if available, otherwise fall back to IDs */}
-            {subskillDescription || skillDescription || `${subject} - ${skill_id} - ${subskill_id}`}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">{formattedDate}</span>
-            <div className={`px-3 py-1 rounded-full text-white font-medium ${
-              score >= 8 ? 'bg-green-500' : 
-              score >= 6 ? 'bg-yellow-500' : 
-              'bg-red-500'
-            }`}>
-              {score.toFixed(1)}
-            </div>
-          </div>
-        </div>
-        {/* Show problem type if available */}
-        {problemType && (
-          <div className="text-sm text-gray-500">
-            Problem Type: {problemType}
-          </div>
-        )}
-      </CardHeader>
-      <CardContent>
-        {/* Show problem content if available */}
-        {problemText && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-md">
-            <div className="flex justify-between">
-              <h3 className="font-semibold text-sm mb-1">Problem</h3>
-              {problemAnswer && (
-                <div className="text-xs text-gray-500">
-                  Expected answer: {problemAnswer}
-                </div>
-              )}
-            </div>
-            <p className="text-sm">{problemText}</p>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          {/* Observation Section */}
-          {observation && Object.keys(observation).length > 0 && (
-            <div>
-              <h3 className="font-semibold text-base mb-1">Observation</h3>
-              <div className="pl-3 border-l-2 border-gray-200">
-                {observation.canvas_description && (
-                  <p className="text-sm mb-1"><span className="font-medium">Canvas:</span> {observation.canvas_description}</p>
-                )}
-                {observation.selected_answer && (
-                  <p className="text-sm mb-1"><span className="font-medium">Answer:</span> {observation.selected_answer}</p>
-                )}
-                {observation.work_shown && (
-                  <p className="text-sm"><span className="font-medium">Work:</span> {observation.work_shown}</p>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Analysis Section */}
-          {analysis && Object.keys(analysis).length > 0 && (
-            <div>
-              <h3 className="font-semibold text-base mb-1">Analysis</h3>
-              <div className="pl-3 border-l-2 border-gray-200">
-                {analysis.understanding && (
-                  <p className="text-sm mb-1"><span className="font-medium">Understanding:</span> {analysis.understanding}</p>
-                )}
-                {analysis.approach && (
-                  <p className="text-sm mb-1"><span className="font-medium">Approach:</span> {analysis.approach}</p>
-                )}
-                {analysis.accuracy && (
-                  <p className="text-sm mb-1"><span className="font-medium">Accuracy:</span> {analysis.accuracy}</p>
-                )}
-                {analysis.creativity && (
-                  <p className="text-sm"><span className="font-medium">Creativity:</span> {analysis.creativity}</p>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Evaluation Section */}
-          {evaluation && typeof evaluation === 'object' && Object.keys(evaluation).length > 0 && (
-            <div>
-              <h3 className="font-semibold text-base mb-1">Evaluation</h3>
-              <div className="pl-3 border-l-2 border-gray-200">
-                {evaluation.justification && (
-                  <p className="text-sm"><span className="font-medium">Justification:</span> {evaluation.justification}</p>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Feedback Section */}
-          {feedback && typeof feedback === 'object' && Object.keys(feedback).length > 0 && (
-            <div>
-              <h3 className="font-semibold text-base mb-1">Feedback</h3>
-              <div className="pl-3 border-l-2 border-gray-200">
-                {feedback.praise && (
-                  <p className="text-sm mb-1"><span className="font-medium">Praise:</span> {feedback.praise}</p>
-                )}
-                {feedback.guidance && (
-                  <p className="text-sm mb-1"><span className="font-medium">Guidance:</span> {feedback.guidance}</p>
-                )}
-                {feedback.encouragement && (
-                  <p className="text-sm mb-1"><span className="font-medium">Encouragement:</span> {feedback.encouragement}</p>
-                )}
-                {feedback.next_steps && (
-                  <p className="text-sm"><span className="font-medium">Next Steps:</span> {feedback.next_steps}</p>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Handle string feedback format */}
-          {feedback && typeof feedback === 'string' && (
-            <div>
-              <h3 className="font-semibold text-base mb-1">Feedback</h3>
-              <div className="pl-3 border-l-2 border-gray-200">
-                <p className="text-sm">{feedback}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default ProblemReviews;

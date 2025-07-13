@@ -1,4 +1,4 @@
-# backend/app/services/curriculum_service.py
+# backend/app/services/curriculum_service.py - STREAMLINED BIGQUERY VERSION
 
 import logging
 import pandas as pd
@@ -8,34 +8,39 @@ from datetime import datetime, timezone
 from io import BytesIO
 
 from app.db.blob_storage import BlobStorageService
+from app.services.bigquery_analytics import BigQueryAnalyticsService
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 class CurriculumService:
-    """Service for managing curriculum data using Azure Blob Storage"""
+    """Streamlined curriculum service using BigQuery for data and blob storage for file management"""
     
-    def __init__(self, blob_service: BlobStorageService):
+    def __init__(self, bigquery_service: BigQueryAnalyticsService, blob_service: Optional[BlobStorageService] = None):
+        self.bigquery_service = bigquery_service
         self.blob_service = blob_service
         
-        # In-memory cache to avoid repeated blob downloads
-        self._curriculum_cache = {}
-        self._objectives_cache = {}
+        # Simple cache with TTL
+        self._cache = {}
         self._cache_timestamps = {}
         
     async def initialize(self) -> bool:
         """Initialize the curriculum service"""
         try:
-            # Ensure blob service is initialized
-            if not self.blob_service._initialized:
+            # Initialize BigQuery (required)
+            if not await self.bigquery_service.initialize():
+                raise Exception("BigQuery service initialization failed")
+            
+            # Initialize blob service (optional, for file management)
+            if self.blob_service and not getattr(self.blob_service, '_initialized', False):
                 await self.blob_service.initialize()
             
-            logger.info("CurriculumService initialized successfully")
+            logger.info("✅ CURRICULUM_SERVICE: Initialized successfully")
             return True
             
         except Exception as e:
-            logger.error(f"Failed to initialize CurriculumService: {str(e)}")
-            return False
+            logger.error(f"❌ CURRICULUM_SERVICE: Initialization failed: {str(e)}")
+            raise
     
     def _is_cache_valid(self, cache_key: str) -> bool:
         """Check if cached data is still valid"""
@@ -47,302 +52,293 @@ class CurriculumService:
         cache_ttl_seconds = getattr(settings, 'CURRICULUM_CACHE_TTL_MINUTES', 60) * 60
         return (current_time - cache_time).total_seconds() < cache_ttl_seconds
     
-    def _get_curriculum_blob_name(self, subject: str, file_type: str) -> str:
-        """Generate blob name for curriculum files"""
-        return f"curriculum/{subject.lower()}/{file_type}.csv"
-    
-    async def upload_curriculum_csv(self, subject: str, csv_content: bytes, file_type: str = "syllabus") -> Dict[str, Any]:
-        """Upload curriculum CSV to blob storage"""
-        try:
-            # Validate CSV structure first
-            df = pd.read_csv(BytesIO(csv_content))
-            
-            # Validate required columns based on file type
-            if file_type == "syllabus":
-                required_columns = [
-                    'Subject', 'UnitID', 'UnitTitle', 'SkillID', 
-                    'SkillDescription', 'SubskillID', 'SubskillDescription',
-                    'DifficultyStart', 'DifficultyEnd', 'TargetDifficulty'
-                ]
-            elif file_type == "detailed_objectives":
-                required_columns = [
-                    'Subject', 'SubskillID', 'SubskillDescription', 
-                    'ConceptGroup', 'DetailedObjective'
-                ]
-            else:
-                raise ValueError(f"Unknown file type: {file_type}")
-            
-            missing_columns = set(required_columns) - set(df.columns)
-            if missing_columns:
-                return {
-                    "success": False,
-                    "error": f"Missing required columns: {missing_columns}",
-                    "blob_name": None
-                }
-            
-            # Get the curriculum container name
-            curriculum_container = getattr(settings, 'CURRICULUM_CONTAINER_NAME', 'curriculum-data')
-            
-            # Use blob storage client directly for curriculum container
-            container_client = self.blob_service.blob_service_client.get_container_client(
-                curriculum_container
-            )
-            
-            blob_name = self._get_curriculum_blob_name(subject, file_type)
-            blob_client = container_client.get_blob_client(blob_name)
-            
-            # Upload with metadata
-            from azure.storage.blob import ContentSettings
-            blob_client.upload_blob(
-                data=csv_content,
-                overwrite=True,
-                content_settings=ContentSettings(
-                    content_type='text/csv',
-                    cache_control=getattr(settings, 'BLOB_STORAGE_CACHE_CONTROL', 'max-age=3600')
-                ),
-                metadata={
-                    'subject': subject,
-                    'file_type': file_type,
-                    'upload_timestamp': datetime.now(timezone.utc).isoformat(),
-                    'row_count': str(len(df)),
-                    'version': '1.0'
-                }
-            )
-            
-            # Invalidate cache for this subject
-            self._invalidate_cache(subject)
-            
-            logger.info(f"Uploaded {file_type} curriculum for {subject}: {blob_name}")
-            
-            return {
-                "success": True,
-                "blob_name": blob_name,
-                "blob_url": blob_client.url,
-                "row_count": len(df),
-                "subject": subject,
-                "file_type": file_type
-            }
-            
-        except Exception as e:
-            logger.error(f"Failed to upload curriculum CSV: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e),
-                "blob_name": None
-            }
-    
-    async def download_curriculum_csv(self, subject: str, file_type: str = "syllabus") -> Optional[pd.DataFrame]:
-        """Download and parse curriculum CSV from blob storage"""
-        try:
-            blob_name = self._get_curriculum_blob_name(subject, file_type)
-            curriculum_container = getattr(settings, 'CURRICULUM_CONTAINER_NAME', 'curriculum-data')
-            
-            container_client = self.blob_service.blob_service_client.get_container_client(
-                curriculum_container
-            )
-            blob_client = container_client.get_blob_client(blob_name)
-            
-            # Download blob content
-            blob_data = blob_client.download_blob().readall()
-            
-            # Parse CSV
-            df = pd.read_csv(BytesIO(blob_data))
-            
-            logger.info(f"Downloaded {file_type} curriculum for {subject}: {len(df)} rows")
-            return df
-            
-        except Exception as e:
-            logger.warning(f"Failed to download curriculum CSV {blob_name}: {str(e)}")
-            return None
+    async def get_available_subjects(self) -> List[str]:
+        """Get list of all available subjects from BigQuery"""
+        cache_key = "available_subjects"
+        
+        # Check cache
+        if cache_key in self._cache and self._is_cache_valid(cache_key):
+            return self._cache[cache_key]
+        
+        query = f"""
+        SELECT DISTINCT subject
+        FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.curriculum`
+        WHERE subject IS NOT NULL AND subject != ''
+        ORDER BY subject
+        """
+        
+        results = await self.bigquery_service.execute_query(query)
+        subjects = [row['subject'] for row in results]
+        
+        # Cache the result
+        self._cache[cache_key] = subjects
+        self._cache_timestamps[cache_key] = datetime.now(timezone.utc)
+        
+        return subjects
     
     async def get_curriculum(self, subject: str) -> List[Dict]:
-        """Get curriculum data with in-memory caching"""
+        """Get curriculum data from BigQuery"""
         cache_key = f"curriculum_{subject.lower()}"
         
-        # Check cache first
-        if cache_key in self._curriculum_cache and self._is_cache_valid(cache_key):
-            logger.debug(f"Using cached curriculum data for {subject}")
-            return self._curriculum_cache[cache_key]
+        # Check cache
+        if cache_key in self._cache and self._is_cache_valid(cache_key):
+            return self._cache[cache_key]
         
-        try:
-            # Download and process curriculum
-            syllabus_df = await self.download_curriculum_csv(subject, "syllabus")
-            if syllabus_df is None:
-                logger.warning(f"No syllabus data found for {subject}")
-                return []
-            
-            # Structure the curriculum data
-            structured_curriculum = self._structure_curriculum_data(syllabus_df)
-            
-            # Cache the result
-            self._curriculum_cache[cache_key] = structured_curriculum
-            self._cache_timestamps[cache_key] = datetime.now(timezone.utc)
-            
-            logger.info(f"Loaded and cached curriculum for {subject}: {len(structured_curriculum)} units")
-            return structured_curriculum
-            
-        except Exception as e:
-            logger.error(f"Failed to get curriculum for {subject}: {str(e)}")
-            return []
+        query = f"""
+        SELECT 
+            subject,
+            grade,
+            unit_id,
+            unit_title,
+            skill_id,
+            skill_description,
+            subskill_id,
+            subskill_description,
+            difficulty_start,
+            difficulty_end,
+            target_difficulty
+        FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.curriculum`
+        WHERE subject = @subject
+        ORDER BY unit_id, skill_id, subskill_id
+        """
+        
+        from google.cloud import bigquery
+        parameters = [bigquery.ScalarQueryParameter("subject", "STRING", subject)]
+        
+        results = await self.bigquery_service.execute_query(query, parameters)
+        structured_curriculum = self._structure_curriculum_data(results)
+        
+        # Cache the result
+        self._cache[cache_key] = structured_curriculum
+        self._cache_timestamps[cache_key] = datetime.now(timezone.utc)
+        
+        return structured_curriculum
     
-    def _structure_curriculum_data(self, df: pd.DataFrame) -> List[Dict]:
-        """Convert flat CSV data to hierarchical structure"""
+    def _structure_curriculum_data(self, flat_data: List[Dict]) -> List[Dict]:
+        """Convert BigQuery results to hierarchical curriculum structure"""
         structured = []
         current_unit = None
         current_skill = None
         
-        for _, row in df.sort_values(["UnitID", "SkillID", "SubskillID"]).iterrows():
+        for row in flat_data:
             # Add unit
-            if not current_unit or current_unit["id"] != row["UnitID"]:
+            if not current_unit or current_unit["id"] != row["unit_id"]:
                 current_unit = {
-                    "id": row["UnitID"],
-                    "title": row["UnitTitle"],
+                    "id": row["unit_id"],
+                    "title": row["unit_title"],
+                    "grade": row.get("grade"),
+                    "subject": row["subject"],
                     "skills": []
                 }
                 structured.append(current_unit)
             
             # Add skill
-            if not current_skill or current_skill["id"] != row["SkillID"]:
+            if not current_skill or current_skill["id"] != row["skill_id"]:
                 current_skill = {
-                    "id": row["SkillID"],
-                    "description": row["SkillDescription"],
+                    "id": row["skill_id"],
+                    "description": row["skill_description"],
                     "subskills": []
                 }
                 current_unit["skills"].append(current_skill)
             
             # Add subskill
             current_skill["subskills"].append({
-                "id": row["SubskillID"],
-                "description": row["SubskillDescription"],
+                "id": row["subskill_id"],
+                "description": row["subskill_description"],
                 "difficulty_range": {
-                    "start": row["DifficultyStart"],
-                    "end": row["DifficultyEnd"],
-                    "target": row["TargetDifficulty"]
+                    "start": row.get("difficulty_start"),
+                    "end": row.get("difficulty_end"),
+                    "target": row.get("target_difficulty")
                 }
             })
         
         return structured
     
-    async def get_detailed_objectives(self, subject: str, subskill_id: str) -> Dict[str, Any]:
-        """Get detailed objectives for a specific subskill"""
-        cache_key = f"objectives_{subject.lower()}"
-        
-        # Check cache first
-        if cache_key not in self._objectives_cache or not self._is_cache_valid(cache_key):
-            # Load objectives from blob
-            try:
-                objectives_df = await self.download_curriculum_csv(subject, "detailed_objectives")
-                if objectives_df is None:
-                    logger.warning(f"No detailed objectives found for {subject}")
-                    return self._get_default_objective()
-                
-                # Process objectives into dictionary
-                objectives_dict = {}
-                for _, row in objectives_df.iterrows():
-                    subskill = row["SubskillID"]
-                    if subskill not in objectives_dict:
-                        objectives_dict[subskill] = []
-                    
-                    objectives_dict[subskill].append({
-                        'ConceptGroup': row['ConceptGroup'],
-                        'DetailedObjective': row['DetailedObjective'],
-                        'SubskillDescription': row['SubskillDescription']
-                    })
-                
-                # Cache the results
-                self._objectives_cache[cache_key] = objectives_dict
-                self._cache_timestamps[cache_key] = datetime.now(timezone.utc)
-                
-            except Exception as e:
-                logger.error(f"Failed to load objectives for {subject}: {str(e)}")
-                return self._get_default_objective()
-        
-        # Get objectives for the specific subskill
-        objectives_dict = self._objectives_cache.get(cache_key, {})
-        
-        if subskill_id in objectives_dict:
-            return random.choice(objectives_dict[subskill_id])
-        
-        logger.warning(f"No objectives found for {subject}/{subskill_id}")
-        return self._get_default_objective()
-    
-    async def get_all_objectives(self, subject: str, subskill_id: str) -> List[Dict]:
-        """Get ALL detailed objectives for a subskill"""
-        cache_key = f"objectives_{subject.lower()}"
-        
-        # Ensure objectives are loaded
-        if cache_key not in self._objectives_cache or not self._is_cache_valid(cache_key):
-            await self.get_detailed_objectives(subject, subskill_id)  # This will load and cache
-        
-        objectives_dict = self._objectives_cache.get(cache_key, {})
-        return objectives_dict.get(subskill_id, [])
-    
-    def _get_default_objective(self) -> Dict[str, str]:
-        """Return default objective when none found"""
-        return {
-            'ConceptGroup': 'General',
-            'DetailedObjective': 'Develop core skills',
-            'SubskillDescription': 'General skill development'
-        }
-    
-    async def get_available_subjects(self) -> List[str]:
-        """Get list of all available subjects from blob storage"""
-        try:
-            files_result = await self.list_curriculum_files()
-            if not files_result["success"]:
-                return []
-            
-            # Extract unique subjects from curriculum files
-            subjects = set()
-            for file_info in files_result["files"]:
-                subject = file_info.get("subject", "").title()
-                if subject and subject != "unknown":
-                    subjects.add(subject)
-            
-            return sorted(list(subjects))
-            
-        except Exception as e:
-            logger.error(f"Error getting available subjects: {str(e)}")
-            return []
-    
     async def get_subskill_types(self, subject: str) -> List[str]:
-        """Get list of all problem types (subskills) available"""
-        try:
-            curriculum = await self.get_curriculum(subject)
-            return [
-                subskill["id"]
-                for unit in curriculum
-                for skill in unit["skills"]
-                for subskill in skill["subskills"]
-            ]
-        except Exception as e:
-            logger.error(f"Error getting subskill types: {str(e)}")
-            return []
+        """Get list of all subskills for a subject from BigQuery"""
+        query = f"""
+        SELECT DISTINCT subskill_id
+        FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.curriculum`
+        WHERE subject = @subject
+        ORDER BY subskill_id
+        """
+        
+        from google.cloud import bigquery
+        parameters = [bigquery.ScalarQueryParameter("subject", "STRING", subject)]
+        
+        results = await self.bigquery_service.execute_query(query, parameters)
+        return [row['subskill_id'] for row in results]
     
-    def _invalidate_cache(self, subject: str):
-        """Invalidate cache for a specific subject"""
-        cache_keys_to_remove = [
-            f"curriculum_{subject.lower()}",
-            f"objectives_{subject.lower()}"
-        ]
+    async def get_detailed_objectives(self, subject: str, subskill_id: str) -> Dict[str, Any]:
+        """Get detailed objectives from BigQuery"""
+        try:
+            query = f"""
+            SELECT 
+                concept_group,
+                detailed_objective,
+                subskill_description
+            FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.detailed_objectives`
+            WHERE subskill_id = @subskill_id
+            """
+            
+            from google.cloud import bigquery
+            parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
+            
+            results = await self.bigquery_service.execute_query(query, parameters)
+            
+            if results:
+                objective = random.choice(results)
+                return {
+                    'ConceptGroup': objective.get('concept_group', f'{subject} Skills'),
+                    'DetailedObjective': objective.get('detailed_objective'),
+                    'SubskillDescription': objective.get('subskill_description')
+                }
+            else:
+                # Return default if no detailed objectives found
+                return {
+                    'ConceptGroup': f'{subject} Skills',
+                    'DetailedObjective': f'Develop proficiency in {subskill_id}',
+                    'SubskillDescription': f'Practice and master {subskill_id} concepts'
+                }
+                
+        except Exception as e:
+            logger.warning(f"Error getting detailed objectives, using default: {str(e)}")
+            return {
+                'ConceptGroup': f'{subject} Skills',
+                'DetailedObjective': f'Develop proficiency in {subskill_id}',
+                'SubskillDescription': f'Practice and master {subskill_id} concepts'
+            }
+    
+    async def get_curriculum_stats(self, subject: Optional[str] = None) -> Dict[str, Any]:
+        """Get curriculum statistics from BigQuery"""
+        where_clause = "WHERE subject = @subject" if subject else ""
         
-        for key in cache_keys_to_remove:
-            if key in self._curriculum_cache:
-                del self._curriculum_cache[key]
-            if key in self._objectives_cache:
-                del self._objectives_cache[key]
-            if key in self._cache_timestamps:
-                del self._cache_timestamps[key]
+        query = f"""
+        SELECT 
+            subject,
+            COUNT(DISTINCT unit_id) as total_units,
+            COUNT(DISTINCT skill_id) as total_skills,
+            COUNT(DISTINCT subskill_id) as total_subskills,
+            AVG(target_difficulty) as avg_target_difficulty,
+            MIN(difficulty_start) as min_difficulty,
+            MAX(difficulty_end) as max_difficulty
+        FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.curriculum`
+        {where_clause}
+        GROUP BY subject
+        ORDER BY subject
+        """
         
-        logger.info(f"Invalidated cache for {subject}")
+        parameters = []
+        if subject:
+            from google.cloud import bigquery
+            parameters = [bigquery.ScalarQueryParameter("subject", "STRING", subject)]
+        
+        results = await self.bigquery_service.execute_query(query, parameters)
+        
+        if subject and results:
+            return results[0]
+        else:
+            return {"subjects": results}
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """Check curriculum service health"""
+        try:
+            # Test BigQuery connectivity
+            bq_health = await self.bigquery_service.health_check()
+            
+            # Test curriculum table access
+            test_query = f"""
+            SELECT COUNT(*) as total_records
+            FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.curriculum`
+            LIMIT 1
+            """
+            
+            await self.bigquery_service.execute_query(test_query)
+            
+            return {
+                "status": "healthy",
+                "mode": "bigquery",
+                "bigquery_service": bq_health,
+                "blob_storage_available": self.blob_service is not None,
+                "cache_size": len(self._cache),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+    
+    # FILE MANAGEMENT METHODS (if blob storage is available)
+    async def upload_curriculum_csv(self, subject: str, csv_content: bytes, file_type: str = "syllabus") -> Dict[str, Any]:
+        """Upload curriculum CSV to blob storage"""
+        if not self.blob_service:
+            return {"success": False, "error": "Blob storage not available"}
+        
+        try:
+            # Parse CSV to validate
+            df = pd.read_csv(BytesIO(csv_content))
+            
+            blob_name = f"curriculum/{subject.lower()}/{file_type}.csv"
+            curriculum_container = getattr(settings, 'CURRICULUM_CONTAINER_NAME', 'curriculum-data')
+            
+            container_client = self.blob_service.blob_service_client.get_container_client(curriculum_container)
+            blob_client = container_client.get_blob_client(blob_name)
+            
+            # Upload with metadata
+            blob_client.upload_blob(
+                csv_content, 
+                overwrite=True,
+                metadata={
+                    "subject": subject,
+                    "file_type": file_type,
+                    "row_count": str(len(df)),
+                    "upload_timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            )
+            
+            # Clear cache
+            self.clear_cache()
+            
+            return {
+                "success": True,
+                "blob_name": blob_name,
+                "row_count": len(df),
+                "columns": list(df.columns)
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def download_curriculum_csv(self, subject: str, file_type: str = "syllabus") -> Optional[pd.DataFrame]:
+        """Download curriculum CSV from blob storage"""
+        if not self.blob_service:
+            return None
+            
+        try:
+            blob_name = f"curriculum/{subject.lower()}/{file_type}.csv"
+            curriculum_container = getattr(settings, 'CURRICULUM_CONTAINER_NAME', 'curriculum-data')
+            
+            container_client = self.blob_service.blob_service_client.get_container_client(curriculum_container)
+            blob_client = container_client.get_blob_client(blob_name)
+            
+            blob_data = blob_client.download_blob().readall()
+            return pd.read_csv(BytesIO(blob_data))
+            
+        except Exception as e:
+            logger.warning(f"Failed to download curriculum CSV {blob_name}: {str(e)}")
+            return None
     
     async def list_curriculum_files(self) -> Dict[str, Any]:
-        """List all curriculum files in blob storage"""
+        """List curriculum files in blob storage"""
+        if not self.blob_service:
+            return {"success": False, "error": "Blob service not available", "files": []}
+        
         try:
             curriculum_container = getattr(settings, 'CURRICULUM_CONTAINER_NAME', 'curriculum-data')
-            container_client = self.blob_service.blob_service_client.get_container_client(
-                curriculum_container
-            )
+            container_client = self.blob_service.blob_service_client.get_container_client(curriculum_container)
             
             files = []
             for blob in container_client.list_blobs(name_starts_with="curriculum/"):
@@ -356,128 +352,17 @@ class CurriculumService:
                         "last_modified": blob.last_modified.isoformat() if blob.last_modified else None,
                         "subject": properties.metadata.get("subject", "unknown"),
                         "file_type": properties.metadata.get("file_type", "unknown"),
-                        "row_count": properties.metadata.get("row_count", "unknown"),
-                        "url": blob_client.url
+                        "row_count": properties.metadata.get("row_count", "unknown")
                     })
                 except Exception as e:
                     logger.warning(f"Could not get properties for {blob.name}: {e}")
             
-            return {
-                "success": True,
-                "files": files,
-                "total_count": len(files)
-            }
+            return {"success": True, "files": files, "total_count": len(files)}
             
         except Exception as e:
-            logger.error(f"Failed to list curriculum files: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e),
-                "files": []
-            }
+            return {"success": False, "error": str(e), "files": []}
     
-    async def health_check(self) -> Dict[str, Any]:
-        """Check curriculum service health"""
-        try:
-            # Check blob storage connection
-            blob_health = await self.blob_service.health_check()
-            
-            # Check if we can list curriculum files
-            files_result = await self.list_curriculum_files()
-            
-            return {
-                "status": "healthy" if blob_health["status"] == "healthy" and files_result["success"] else "unhealthy",
-                "blob_storage": blob_health,
-                "curriculum_files_accessible": files_result["success"],
-                "curriculum_file_count": files_result.get("total_count", 0),
-                "cache_size": {
-                    "curriculum_items": len(self._curriculum_cache),
-                    "objectives_items": len(self._objectives_cache)
-                },
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-            
-        except Exception as e:
-            return {
-                "status": "unhealthy",
-                "error": str(e),
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-
-    # Additional utility methods for curriculum management
-    
-    async def refresh_curriculum_cache(self, subject: str = None) -> Dict[str, Any]:
-        """Manually refresh curriculum cache for a subject or all subjects"""
-        try:
-            if subject:
-                # Refresh cache for specific subject
-                self._invalidate_cache(subject)
-                curriculum = await self.get_curriculum(subject)
-                objectives = await self.get_detailed_objectives(subject, "dummy")  # This loads the objectives cache
-                
-                return {
-                    "success": True,
-                    "subject": subject,
-                    "curriculum_units": len(curriculum),
-                    "message": f"Cache refreshed for {subject}"
-                }
-            else:
-                # Refresh cache for all subjects
-                subjects = await self.get_available_subjects()
-                results = []
-                
-                for subj in subjects:
-                    self._invalidate_cache(subj)
-                    curriculum = await self.get_curriculum(subj)
-                    results.append({
-                        "subject": subj,
-                        "curriculum_units": len(curriculum)
-                    })
-                
-                return {
-                    "success": True,
-                    "subjects_refreshed": len(subjects),
-                    "results": results,
-                    "message": "Cache refreshed for all subjects"
-                }
-                
-        except Exception as e:
-            logger.error(f"Failed to refresh curriculum cache: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-    
-    async def get_curriculum_stats(self) -> Dict[str, Any]:
-        """Get statistics about the curriculum data"""
-        try:
-            subjects = await self.get_available_subjects()
-            stats = {
-                "total_subjects": len(subjects),
-                "subjects": []
-            }
-            
-            for subject in subjects:
-                curriculum = await self.get_curriculum(subject)
-                subskills = await self.get_subskill_types(subject)
-                
-                subject_stats = {
-                    "subject": subject,
-                    "units": len(curriculum),
-                    "total_skills": sum(len(unit["skills"]) for unit in curriculum),
-                    "total_subskills": len(subskills)
-                }
-                
-                stats["subjects"].append(subject_stats)
-            
-            return {
-                "success": True,
-                "stats": stats
-            }
-            
-        except Exception as e:
-            logger.error(f"Failed to get curriculum stats: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+    def clear_cache(self):
+        """Clear all cached data"""
+        self._cache.clear()
+        self._cache_timestamps.clear()

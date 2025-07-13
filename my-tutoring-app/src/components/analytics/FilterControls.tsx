@@ -1,221 +1,273 @@
-// src/components/analytics/FilterControls.tsx
+// components/analytics/FilterControls.tsx - Updated with dynamic subject fetching
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useAnalytics } from './StudentAnalytics'
-import { 
-  Select, 
-  SelectContent, 
-  SelectGroup, 
-  SelectItem, 
-  SelectLabel, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, RefreshCwIcon } from 'lucide-react'
-import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
-import { api } from '@/lib/api' // Import the api object that has getSubjects()
+import { Calendar, Filter, X, RefreshCw, AlertCircle } from 'lucide-react'
+import { authApi } from '@/lib/authApiClient'
 
-export default function FilterControls() {
-  const { 
-    studentId, 
-    subject, 
-    grade, 
-    startDate, 
-    endDate, 
-    setStudentId, 
-    setSubject, 
-    setGrade, 
-    setDateRange, 
-    refreshData 
-  } = useAnalytics()
-  
-  const [subjects, setSubjects] = useState<string[]>([])
-  const [isLoadingSubjects, setIsLoadingSubjects] = useState(false)
-  const [subjectsError, setSubjectsError] = useState<string | null>(null)
-  
-  // Define some student options (you could also fetch these from an API)
-  const studentOptions = [
-    { id: 1, name: 'Student #1' },
-    { id: 2, name: 'Student #2' },
-    { id: 3, name: 'Student #3' },
-    { id: 4, name: 'Student #4' },
-  ]
-  
-  // Define grade options
-  const gradeOptions = [
-    'Preschool',
-    'Kindergarten',
-    'Grade 1',
-    'Grade 2',
-    'Grade 3',
-    'Grade 4',
-    'Grade 5',
-    'Grade 6',
-    'Grade 7',
-    'Grade 8',
-  ]
+interface AnalyticsFilters {
+  subject?: string;
+  startDate?: string;
+  endDate?: string;
+  dateRange?: 'week' | 'month' | 'quarter' | 'year' | 'all';
+}
 
-  // Convert string dates to Date objects for the calendar component
-  const fromDate = startDate ? new Date(startDate) : undefined
-  const toDate = endDate ? new Date(endDate) : undefined
-  
-  // Format a date for display
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Select date'
-    return format(new Date(dateString), 'PPP')
-  }
+interface FilterControlsProps {
+  filters: AnalyticsFilters;
+  onFiltersChange: (filters: Partial<AnalyticsFilters>) => void;
+  disabled?: boolean;
+}
 
-  // Fetch subjects from the API
+const DATE_RANGES = [
+  { value: 'week', label: 'Past Week' },
+  { value: 'month', label: 'Past Month' },
+  { value: 'quarter', label: 'Past Quarter' },
+  { value: 'year', label: 'Past Year' },
+  { value: 'all', label: 'All Time' },
+];
+
+export default function FilterControls({ 
+  filters, 
+  onFiltersChange, 
+  disabled = false 
+}: FilterControlsProps) {
+  
+  // Dynamic subjects state
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
+  const [subjectsError, setSubjectsError] = useState<string | null>(null);
+
+  // Fetch available subjects on component mount
   useEffect(() => {
     const fetchSubjects = async () => {
-      setIsLoadingSubjects(true)
-      setSubjectsError(null)
       try {
-        const subjectList = await api.getSubjects()
-        setSubjects(subjectList)
+        setSubjectsLoading(true);
+        setSubjectsError(null);
+        
+        console.log('🔍 FilterControls: Fetching available subjects...');
+        const subjects = await authApi.getSubjects();
+        
+        console.log('✅ FilterControls: Subjects received:', subjects);
+        setAvailableSubjects(subjects || []);
+        
+        // If current filter subject is not in available subjects, clear it
+        if (filters.subject && subjects && !subjects.includes(filters.subject)) {
+          console.log(`⚠️ FilterControls: Current filter subject "${filters.subject}" not available, clearing...`);
+          onFiltersChange({ subject: undefined });
+        }
+        
       } catch (error) {
-        console.error('Error fetching subjects:', error)
-        setSubjectsError('Failed to load subjects')
-        // Fallback to some default subjects
-        setSubjects(['Mathematics', 'English', 'Science', 'Social Studies'])
+        console.error('❌ FilterControls: Failed to fetch subjects:', error);
+        setSubjectsError(error instanceof Error ? error.message : 'Failed to load subjects');
+        // Fallback to empty array
+        setAvailableSubjects([]);
       } finally {
-        setIsLoadingSubjects(false)
+        setSubjectsLoading(false);
       }
-    }
-    
-    fetchSubjects()
-  }, [])
+    };
 
-  // Handle date range selection
-  const handleDateRangeChange = (range: { from?: Date; to?: Date }) => {
-    const from = range.from ? format(range.from, 'yyyy-MM-dd') : null
-    const to = range.to ? format(range.to, 'yyyy-MM-dd') : null
-    setDateRange(from, to)
-  }
+    fetchSubjects();
+  }, []); // Run once on mount
+
+  const hasActiveFilters = filters.subject || (filters.dateRange && filters.dateRange !== 'month');
+
+  const clearFilters = () => {
+    onFiltersChange({
+      subject: undefined,
+      dateRange: 'month',
+      startDate: undefined,
+      endDate: undefined
+    });
+  };
+
+  const handleSubjectChange = (value: string) => {
+    onFiltersChange({ 
+      subject: value === 'all' ? undefined : value 
+    });
+  };
+
+  const handleDateRangeChange = (value: string) => {
+    onFiltersChange({ 
+      dateRange: value as AnalyticsFilters['dateRange'],
+      // Clear custom dates when using preset ranges
+      startDate: undefined,
+      endDate: undefined
+    });
+  };
+
+  const retrySubjectsFetch = () => {
+    setSubjectsError(null);
+    setSubjectsLoading(true);
+    // Re-trigger the effect by updating a dependency
+    window.location.reload(); // Simple reload for now
+  };
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 bg-gray-50 p-4 rounded-lg">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
-        <div>
-          <label className="text-sm font-medium mb-1 block">Student:</label>
-          <Select value={studentId.toString()} onValueChange={(value) => setStudentId(parseInt(value))}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select Student" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Students</SelectLabel>
-                {studentOptions.map((student) => (
-                  <SelectItem key={student.id} value={student.id.toString()}>
-                    {student.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium mb-1 block">Subject:</label>
-          <Select 
-            value={subject || 'all'} 
-            onValueChange={(value) => setSubject(value === 'all' ? null : value)}
-            disabled={isLoadingSubjects}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={isLoadingSubjects ? "Loading subjects..." : "All Subjects"} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Subjects</SelectLabel>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {subjects.map((subj) => (
-                  <SelectItem key={subj} value={subj}>
-                    {subj}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          {subjectsError && (
-            <p className="text-red-500 text-xs mt-1">{subjectsError}</p>
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            <CardTitle className="text-base">Filters</CardTitle>
+          </div>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              disabled={disabled}
+              className="h-8 px-2"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Clear
+            </Button>
           )}
         </div>
-
-        <div>
-          <label className="text-sm font-medium mb-1 block">Date Range:</label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !startDate && !endDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate || endDate ? (
-                  <>
-                    {formatDate(startDate)} - {formatDate(endDate)}
-                  </>
-                ) : (
-                  "All Time"
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                initialFocus
-                mode="range"
-                selected={{ 
-                  from: fromDate,
-                  to: toDate
-                }}
-                onSelect={handleDateRangeChange}
-                numberOfMonths={2}
-              />
-              <div className="p-3 border-t flex justify-between">
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          {/* Subject Filter - Dynamic */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Subject</label>
+            
+            {subjectsLoading ? (
+              <div className="flex items-center justify-center h-10 border rounded-md bg-gray-50">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+                  <span className="text-sm text-muted-foreground">Loading...</span>
+                </div>
+              </div>
+            ) : subjectsError ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-center h-10 border rounded-md bg-red-50 border-red-200">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="h-3 w-3 text-red-500" />
+                    <span className="text-xs text-red-600">Failed to load</span>
+                  </div>
+                </div>
                 <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setDateRange(null, null)}
+                  variant="outline" 
+                  size="sm" 
+                  onClick={retrySubjectsFetch}
+                  className="w-full h-8"
                 >
-                  Clear
-                </Button>
-                <Button 
-                  size="sm"
-                  onClick={() => {
-                    const today = new Date()
-                    const thirtyDaysAgo = new Date()
-                    thirtyDaysAgo.setDate(today.getDate() - 30)
-                    setDateRange(
-                      format(thirtyDaysAgo, 'yyyy-MM-dd'),
-                      format(today, 'yyyy-MM-dd')
-                    )
-                  }}
-                >
-                  Last 30 Days
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Retry
                 </Button>
               </div>
-            </PopoverContent>
-          </Popover>
+            ) : (
+              <Select
+                value={filters.subject || 'all'}
+                onValueChange={handleSubjectChange}
+                disabled={disabled || availableSubjects.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All subjects" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subjects</SelectItem>
+                  {availableSubjects.map((subject) => (
+                    <SelectItem key={subject} value={subject}>
+                      {subject}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
+            {/* Show subjects count when loaded */}
+            {!subjectsLoading && !subjectsError && (
+              <div className="text-xs text-muted-foreground">
+                {availableSubjects.length} subject{availableSubjects.length !== 1 ? 's' : ''} available
+              </div>
+            )}
+          </div>
+
+          {/* Date Range Filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Time Period</label>
+            <Select
+              value={filters.dateRange || 'month'}
+              onValueChange={handleDateRangeChange}
+              disabled={disabled}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select period" />
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_RANGES.map((range) => (
+                  <SelectItem key={range.value} value={range.value}>
+                    {range.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Custom Date Range (Future Enhancement) */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Custom Range</label>
+            <Button
+              variant="outline"
+              disabled={true} // Disabled for now, can be implemented later
+              className="w-full justify-start"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Coming Soon
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-end"> 
-          <Button 
-            className="w-full"
-            onClick={() => refreshData()}
-          >
-            <RefreshCwIcon className="mr-2 h-4 w-4" /> 
-            Refresh Data
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
+        {/* Active Filters Display */}
+        {hasActiveFilters && (
+          <div className="mt-4 pt-3 border-t border-border">
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm text-muted-foreground">Active filters:</span>
+              
+              {filters.subject && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
+                  Subject: {filters.subject}
+                  <button
+                    onClick={() => onFiltersChange({ subject: undefined })}
+                    disabled={disabled}
+                    className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              
+              {filters.dateRange && filters.dateRange !== 'month' && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-secondary/50 text-secondary-foreground">
+                  Period: {DATE_RANGES.find(d => d.value === filters.dateRange)?.label || filters.dateRange}
+                  <button
+                    onClick={() => onFiltersChange({ dateRange: 'month' })}
+                    disabled={disabled}
+                    className="ml-1 hover:bg-secondary/70 rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Debug Info (remove in production) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-2 bg-gray-50 rounded text-xs">
+            <div><strong>Debug:</strong></div>
+            <div>Available subjects: {availableSubjects.join(', ') || 'None'}</div>
+            <div>Current filter: {filters.subject || 'All'}</div>
+            <div>Subjects loading: {subjectsLoading ? 'Yes' : 'No'}</div>
+            {subjectsError && <div className="text-red-600">Error: {subjectsError}</div>}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }

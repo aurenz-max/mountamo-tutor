@@ -1,15 +1,18 @@
-// src/components/analytics/HierarchicalMetrics.tsx
+// src/components/analytics/HierarchicalMetrics.tsx - Updated to use props while preserving all features
 'use client'
 
 import React, { useState } from 'react'
-import { useAnalytics } from './StudentAnalytics'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronRight, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AnalyticsMetricsResponse } from '@/lib/authApiClient'
 
-export default function HierarchicalMetrics() {
-  const { metrics } = useAnalytics()
+interface HierarchicalMetricsProps {
+  data: AnalyticsMetricsResponse;
+}
+
+export default function HierarchicalMetrics({ data: metrics }: HierarchicalMetricsProps) {
   const [expandedUnits, setExpandedUnits] = useState<string[]>([])
   const [expandedSkills, setExpandedSkills] = useState<string[]>([])
   
@@ -55,26 +58,26 @@ export default function HierarchicalMetrics() {
   }
 
   // Calculate total number of subskills in a unit
-  const getTotalSubskills = (unit) => {
-    return unit.skills.reduce((total, skill) => total + skill.total_subskills, 0);
+  const getTotalSubskills = (unit: any) => {
+    return unit.skills.reduce((total: number, skill: any) => total + skill.total_subskills, 0);
   }
 
   // Calculate total number of attempted subskills in a unit
-  const getAttemptedSubskills = (unit) => {
-    return unit.skills.reduce((total, skill) => 
+  const getAttemptedSubskills = (unit: any) => {
+    return unit.skills.reduce((total: number, skill: any) => 
       total + skill.attempted_subskills, 0);
   }
 
   // Get status display for a unit
-  const getUnitStatus = (unit) => {
-    const readyItems = unit.skills.reduce((total, skill) => 
-      total + skill.subskills.filter(subskill => 
+  const getUnitStatus = (unit: any) => {
+    const readyItems = unit.skills.reduce((total: number, skill: any) => 
+      total + skill.subskills.filter((subskill: any) => 
         subskill.readiness_status === 'Ready' || 
         subskill.readiness_status === 'Ready for Subskill'
       ).length, 0);
     
-    const recommendedItems = unit.skills.reduce((total, skill) => 
-      total + skill.subskills.filter(subskill => 
+    const recommendedItems = unit.skills.reduce((total: number, skill: any) => 
+      total + skill.subskills.filter((subskill: any) => 
         subskill.recommended_next !== null
       ).length, 0);
 
@@ -147,7 +150,7 @@ export default function HierarchicalMetrics() {
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatPercent(metrics.summary.completion / 100)}
+                  {formatPercent(metrics.summary.completion)}
                 </TableCell>
                 <TableCell className="text-right">{metrics.summary.attempt_count}</TableCell>
                 <TableCell>
@@ -170,7 +173,7 @@ export default function HierarchicalMetrics() {
                     <TableCell>
                       <button 
                         onClick={() => toggleUnitExpansion(unit.unit_id)}
-                        className="flex items-center text-left font-medium"
+                        className="flex items-center text-left font-medium hover:text-primary"
                       >
                         {expandedUnits.includes(unit.unit_id) ? (
                           <ChevronDown className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -204,7 +207,7 @@ export default function HierarchicalMetrics() {
                         {formatPercent(unit.avg_score)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">{formatPercent(unit.completion / 100)}</TableCell>
+                    <TableCell className="text-right">{formatPercent(unit.completion)}</TableCell>
                     <TableCell className="text-right">{unit.attempt_count}</TableCell>
                     <TableCell>
                       {getUnitStatus(unit)}
@@ -219,7 +222,7 @@ export default function HierarchicalMetrics() {
                         <TableCell className="pl-8">
                           <button 
                             onClick={() => toggleSkillExpansion(skill.skill_id)}
-                            className="flex items-center text-left"
+                            className="flex items-center text-left hover:text-primary"
                           >
                             {expandedSkills.includes(skill.skill_id) ? (
                               <ChevronDown className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -253,7 +256,7 @@ export default function HierarchicalMetrics() {
                             {formatPercent(skill.avg_score)}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right">{formatPercent(skill.completion / 100)}</TableCell>
+                        <TableCell className="text-right">{formatPercent(skill.completion)}</TableCell>
                         <TableCell className="text-right">
                           {skill.attempt_count}
                         </TableCell>
@@ -304,7 +307,7 @@ export default function HierarchicalMetrics() {
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
-                            {formatPercent(subskill.completion / 100)}
+                            {formatPercent(subskill.completion)}
                           </TableCell>
                           <TableCell className="text-right">
                             {subskill.attempt_count}

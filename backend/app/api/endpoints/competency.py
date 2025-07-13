@@ -1,4 +1,4 @@
-# backend/app/api/endpoints/competency.py
+# backend/app/api/endpoints/competency.py - FIXED AUTH VERSION
 
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any, List, Optional, Union
@@ -10,7 +10,7 @@ import logging
 from ...dependencies import get_competency_service, get_problem_recommender
 from ...services.competency import CompetencyService
 from ...services.recommender import ProblemRecommender
-
+from ...core.middleware import get_user_context  # 🔥 ADDED: Import the auth dependency
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -33,6 +33,7 @@ class CompetencyQuery(BaseModel):
 @router.post("/update")
 async def update_competency(
     request: CompetencyUpdate,
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Update a student's competency based on session performance"""
@@ -51,6 +52,7 @@ async def update_competency(
 @router.get("/student/{student_id}")
 async def get_student_overview(
     student_id: int,
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get overview of all competencies for a student"""
@@ -60,13 +62,13 @@ async def get_student_overview(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/student/{student_id}/subject/{subject}/skill/{skill_id}/subskill/{subskill_id}")
 async def get_competency(
     student_id: int,
     subject: str,
     skill_id: str,
     subskill_id: str,
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get specific competency level for a student at the subskill level (RESTful URL)"""
@@ -96,6 +98,7 @@ async def get_skill_competency_endpoint(
     student_id: int,
     subject: str,
     skill_id: str,
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get competency level for a student at the skill level"""
@@ -116,6 +119,7 @@ async def get_subskill_competency_endpoint( # Renamed to be more specific
     subject: str,
     skill_id: str,
     subskill_id: str,
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get specific competency level for a student at the subskill level"""
@@ -130,9 +134,9 @@ async def get_subskill_competency_endpoint( # Renamed to be more specific
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/subjects")
 async def get_available_subjects(
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ):
     """List all available subjects with loaded curriculum"""
@@ -145,6 +149,7 @@ async def get_available_subjects(
 @router.get("/curriculum/{subject}")
 async def get_subject_curriculum(
     subject: str,
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get complete curriculum structure for a subject"""
@@ -157,6 +162,7 @@ async def get_subject_curriculum(
 async def get_detailed_objectives(
     subject: str, 
     subskill_id: str,
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get detailed learning objectives for a subskill"""
@@ -173,6 +179,7 @@ async def get_detailed_objectives(
 @router.get("/problem-types/{subject}")
 async def get_subskill_types(
     subject: str,
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get all available problem types (subskills) for a subject"""
@@ -188,6 +195,7 @@ async def get_student_problem_reviews(
     skill_id: Optional[str] = None, 
     subskill_id: Optional[str] = None,
     limit: int = 100,
+    user_context: dict = Depends(get_user_context),  # 🔥 ADDED: Auth dependency
     competency_service: CompetencyService = Depends(get_competency_service)
 ) -> Dict[str, Any]:
     """Get detailed problem reviews with structured feedback components for a student."""
@@ -222,3 +230,85 @@ async def get_student_problem_reviews(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.get("/debug-auth")
+async def debug_auth(
+    user_context: dict = Depends(get_user_context)
+):
+    """Debug endpoint to test if auth is working in competency service"""
+    logger.info(f"🔍 DEBUG: Auth endpoint reached")
+    logger.info(f"🔍 DEBUG: User context: {user_context}")
+    
+    return {
+        "message": "🎉 AUTH WORKING in competency!",
+        "user_context": user_context,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@router.get("/debug-curriculum/{subject}")
+async def debug_curriculum(
+    subject: str,
+    user_context: dict = Depends(get_user_context),
+    competency_service: CompetencyService = Depends(get_competency_service)
+):
+    """Debug version of curriculum endpoint with detailed logging"""
+    logger.info(f"🔍 DEBUG: Curriculum endpoint reached for subject: {subject}")
+    logger.info(f"🔍 DEBUG: User context: {user_context}")
+    
+    try:
+        curriculum = await competency_service.get_curriculum(subject)
+        logger.info(f"🔍 DEBUG: Got curriculum, type: {type(curriculum)}")
+        
+        if not curriculum:
+            logger.warning(f"🔍 DEBUG: No curriculum found for {subject}")
+            raise HTTPException(status_code=404, detail="Subject not found")
+        
+        logger.info(f"✅ DEBUG: Successfully returning curriculum for {subject}")
+        return {
+            "subject": subject, 
+            "curriculum": curriculum,
+            "debug_info": {
+                "user_id": user_context.get("user_id"),
+                "student_id": user_context.get("student_id"),
+                "curriculum_length": len(curriculum) if curriculum else 0
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ DEBUG: Error in curriculum endpoint: {str(e)}")
+        logger.error(f"❌ DEBUG: Error type: {type(e)}")
+        raise HTTPException(status_code=500, detail=f"Debug error: {str(e)}")
+
+# 🔥 ADDED: Health check endpoint for consistency
+@router.get("/health")
+async def competency_health_check(
+    user_context: dict = Depends(get_user_context),
+    competency_service: CompetencyService = Depends(get_competency_service)
+):
+    """Health check for competency service"""
+    try:
+        # Test basic service functionality
+        subjects = await competency_service.get_available_subjects()
+        
+        return {
+            "status": "healthy",
+            "service": "competency",
+            "available_subjects": len(subjects) if subjects else 0,
+            "subjects_list": subjects,
+            "user_context": {
+                "user_id": user_context.get("user_id"),
+                "email": user_context.get("email"),
+                "student_id": user_context.get("student_id")
+            },
+            "auth_working": True,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "service": "competency",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }

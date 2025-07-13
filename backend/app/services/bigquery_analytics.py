@@ -150,7 +150,7 @@ class BigQueryAnalyticsService:
               SELECT DISTINCT lp.unlocks_skill_id as skill_id
               FROM `{self.project_id}.{self.dataset_id}.learning_paths` lp
               JOIN subskill_metrics sm 
-                ON REGEXP_EXTRACT(sm.subskill_id, r'^([^-]+)') = lp.prerequisite_skill_id
+                ON REGEXP_EXTRACT(sm.subskill_id, r'^([A-Z0-9]+-[A-Z0-9]+)') = lp.prerequisite_skill_id
               WHERE sm.mastery >= @ready_threshold
             ),
             curriculum_with_metrics AS (
@@ -387,44 +387,80 @@ class BigQueryAnalyticsService:
             logger.error(f"Error in get_timeseries_metrics: {e}")
             raise
 
+    # Replace your existing get_recommendations method with this optimized version
     async def get_recommendations(
         self, 
         student_id: int, 
         subject: Optional[str] = None, 
         limit: int = 5
     ) -> List[Dict]:
-        """Get learning recommendations based on readiness and performance"""
+        """Get learning recommendations based on readiness and performance - OPTIMIZED"""
+
+        logger.info(f"Starting get_recommendations for student_id={student_id}, subject={subject}, limit={limit}")
+
+        # Step 1: Check if the student has any activity
+        activity_check_query = f"""
+            SELECT 1 
+            FROM `{self.project_id}.{self.dataset_id}.attempts`
+            WHERE student_id = @student_id
+            LIMIT 1
+        """
+        activity_params = [bigquery.ScalarQueryParameter("student_id", "INT64", student_id)]
+        activity_result = await self._run_query_async(activity_check_query, activity_params)
         
+        has_activity = len(activity_result) > 0
+        logger.info(f"Student {student_id} has_activity: {has_activity}")
+
+        if not has_activity:
+            # Step 2: Use fast pre-computed recommendations for new students
+            logger.info(f"No activity found for student {student_id}. Using FAST initial recommendations from pre-computed table.")
+            return await self._get_initial_recommendations_fast(subject, limit)
+
+        # Step 3: If activity exists, proceed with the original logic for experienced students
         try:
+            logger.info(f"Student {student_id} has activity. Proceeding with full recommendation logic.")
+            
+            # Log the subject filtering
+            if subject:
+                logger.info(f"Filtering recommendations for subject: {subject}")
+            else:
+                logger.info("No subject filter applied - getting recommendations across all subjects")
+
             query = f"""
             WITH student_metrics AS (
-              SELECT 
+            SELECT 
                 subskill_id,
                 AVG(score / 10.0) as avg_score,
                 COUNT(*) as attempt_count,
                 AVG(score / 10.0) * LEAST(COUNT(*) / 10.0, 1.0) as mastery
-              FROM `{self.project_id}.{self.dataset_id}.attempts`
-              WHERE student_id = @student_id
+            FROM `{self.project_id}.{self.dataset_id}.attempts`
+            WHERE student_id = @student_id
                 AND (@subject IS NULL OR subject = @subject)
-              GROUP BY subskill_id
+            GROUP BY subskill_id
             ),
             ready_skills AS (
-              -- Base node skills
-              SELECT DISTINCT prerequisite_skill_id as skill_id
-              FROM `{self.project_id}.{self.dataset_id}.learning_paths`
-              WHERE is_base_node = TRUE
-              
-              UNION DISTINCT
-              
-              -- Unlocked skills
-              SELECT DISTINCT lp.unlocks_skill_id as skill_id
-              FROM `{self.project_id}.{self.dataset_id}.learning_paths` lp
-              JOIN student_metrics sm 
-                ON REGEXP_EXTRACT(sm.subskill_id, r'^([^-]+)') = lp.prerequisite_skill_id
-              WHERE sm.mastery >= @ready_threshold
+            -- Base node skills
+            SELECT DISTINCT prerequisite_skill_id as skill_id
+            FROM `{self.project_id}.{self.dataset_id}.learning_paths`
+            WHERE is_base_node = TRUE
+            
+            UNION DISTINCT
+            
+            -- Unlocked skills
+            SELECT DISTINCT lp.unlocks_skill_id as skill_id
+            FROM `{self.project_id}.{self.dataset_id}.learning_paths` lp
+            JOIN student_metrics sm 
+                ON REGEXP_EXTRACT(sm.subskill_id, r'^([A-Z0-9]+-[A-Z0-9]+)') = lp.prerequisite_skill_id
+            WHERE sm.mastery >= @ready_threshold
+            ),
+            curriculum_filtered AS (
+            SELECT *
+            FROM `{self.project_id}.{self.dataset_id}.curriculum` c
+            WHERE (@subject IS NULL OR c.subject = @subject)
             ),
             recommendations AS (
-              SELECT 
+            SELECT 
+                c.subject,
                 c.unit_id,
                 c.unit_title,
                 c.skill_id,
@@ -438,60 +474,60 @@ class BigQueryAnalyticsService:
                 CASE WHEN sm.attempt_count > 0 THEN TRUE ELSE FALSE END as is_attempted,
                 -- Priority calculation
                 CASE 
-                  WHEN rs.skill_id IS NOT NULL AND sm.attempt_count = 0 THEN 1  -- Ready, not started
-                  WHEN rs.skill_id IS NOT NULL AND sm.mastery < 0.6 THEN 2     -- Ready, needs work
-                  WHEN rs.skill_id IS NULL AND sm.mastery > 0 THEN 3           -- Prerequisites needed
-                  WHEN rs.skill_id IS NULL AND sm.mastery = 0 THEN 4           -- Not ready, not started
-                  ELSE 5
+                WHEN rs.skill_id IS NOT NULL AND sm.attempt_count = 0 THEN 1  -- Ready, not started
+                WHEN rs.skill_id IS NOT NULL AND sm.mastery < 0.6 THEN 2     -- Ready, needs work
+                WHEN rs.skill_id IS NULL AND sm.mastery > 0 THEN 3           -- Prerequisites needed
+                WHEN rs.skill_id IS NULL AND sm.mastery = 0 THEN 4           -- Not ready, not started
+                ELSE 5
                 END as priority_order,
                 CASE 
-                  WHEN rs.skill_id IS NOT NULL AND sm.attempt_count = 0 THEN 'coverage_gap'
-                  WHEN rs.skill_id IS NOT NULL AND sm.mastery < 0.6 THEN 'performance_gap'
-                  ELSE 'prerequisite_needed'
+                WHEN rs.skill_id IS NOT NULL AND sm.attempt_count = 0 THEN 'coverage_gap'
+                WHEN rs.skill_id IS NOT NULL AND sm.mastery < 0.6 THEN 'performance_gap'
+                ELSE 'prerequisite_needed'
                 END as rec_type,
                 CASE 
-                  WHEN rs.skill_id IS NOT NULL AND sm.attempt_count = 0 THEN 'high'
-                  WHEN rs.skill_id IS NOT NULL AND sm.mastery < 0.6 THEN 'high'
-                  ELSE 'medium'
+                WHEN rs.skill_id IS NOT NULL AND sm.attempt_count = 0 THEN 'high'
+                WHEN rs.skill_id IS NOT NULL AND sm.mastery < 0.6 THEN 'high'
+                ELSE 'medium'
                 END as priority,
                 -- Priority level for compatibility
                 CASE 
-                  WHEN sm.mastery >= 0.8 THEN 'Mastered'
-                  WHEN sm.mastery BETWEEN 0.4 AND 0.799 THEN 'High Priority'
-                  WHEN sm.mastery > 0 AND sm.mastery < 0.4 THEN 'Medium Priority'
-                  ELSE 'Not Started'
+                WHEN sm.mastery >= 0.8 THEN 'Mastered'
+                WHEN sm.mastery BETWEEN 0.4 AND 0.799 THEN 'High Priority'
+                WHEN sm.mastery > 0 AND sm.mastery < 0.4 THEN 'Medium Priority'
+                ELSE 'Not Started'
                 END as priority_level
-              FROM `{self.project_id}.{self.dataset_id}.curriculum` c
-              LEFT JOIN student_metrics sm ON c.subskill_id = sm.subskill_id
-              LEFT JOIN ready_skills rs ON c.skill_id = rs.skill_id
-              WHERE (@subject IS NULL OR c.subject = @subject)
-                AND (rs.skill_id IS NOT NULL OR sm.mastery > 0)  -- Only ready or attempted items
+            FROM curriculum_filtered c
+            LEFT JOIN student_metrics sm ON c.subskill_id = sm.subskill_id
+            LEFT JOIN ready_skills rs ON c.skill_id = rs.skill_id
+            WHERE (rs.skill_id IS NOT NULL OR sm.mastery > 0)  -- Only ready or attempted items
             )
             SELECT 
-              rec_type as type,
-              priority,
-              unit_id,
-              unit_title,
-              skill_id,
-              skill_description,
-              subskill_id,
-              subskill_description,
-              proficiency,
-              mastery,
-              proficiency as avg_score,  -- For compatibility
-              priority_level,
-              priority_order,
-              CASE WHEN is_ready THEN 'Ready' ELSE 'Not Ready' END as readiness_status,
-              is_ready,
-              CASE WHEN is_attempted THEN 100.0 ELSE 0.0 END as completion,
-              attempt_count,
-              is_attempted,
-              NULL as next_subskill,  -- Would need subskill learning paths
-              CASE 
+            subject,
+            rec_type as type,
+            priority,
+            unit_id,
+            unit_title,
+            skill_id,
+            skill_description,
+            subskill_id,
+            subskill_description,
+            proficiency,
+            mastery,
+            proficiency as avg_score,  -- For compatibility
+            priority_level,
+            priority_order,
+            CASE WHEN is_ready THEN 'Ready' ELSE 'Not Ready' END as readiness_status,
+            is_ready,
+            CASE WHEN is_attempted THEN 100.0 ELSE 0.0 END as completion,
+            attempt_count,
+            is_attempted,
+            NULL as next_subskill,  -- Would need subskill learning paths
+            CASE 
                 WHEN rec_type = 'coverage_gap' THEN CONCAT('Start working on ', subskill_description)
                 WHEN rec_type = 'performance_gap' THEN CONCAT('Continue practicing ', subskill_description)
                 ELSE CONCAT('Work on prerequisites for ', subskill_description)
-              END as message
+            END as message
             FROM recommendations
             WHERE priority_order <= 3
             ORDER BY priority_order, mastery ASC
@@ -505,12 +541,227 @@ class BigQueryAnalyticsService:
                 bigquery.ScalarQueryParameter("limit", "INT64", limit)
             ]
             
+            logger.info(f"Executing full recommendations query for student with activity...")
             results = await self._run_query_async(query, parameters)
+            
+            logger.info(f"Full recommendations query returned {len(results)} results")
+            
+            if results:
+                subjects_in_results = list(set(r.get('subject') for r in results))
+                logger.info(f"Subjects in results: {subjects_in_results}")
+                
+                for i, result in enumerate(results):
+                    logger.info(f"Recommendation {i+1}: {result.get('type')} - {result.get('subject')} - {result.get('subskill_description')} (priority: {result.get('priority_order')})")
+            else:
+                logger.warning(f"No recommendations found for student {student_id} with subject filter '{subject}'")
+                
             return results
             
         except Exception as e:
-            logger.error(f"Error in get_recommendations: {e}")
+            logger.error(f"Error in get_recommendations for student {student_id}: {e}")
+            logger.error(f"Exception details: {type(e).__name__}: {str(e)}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             raise
+
+    async def _get_initial_recommendations_fast(self, subject: Optional[str], limit: int) -> List[Dict]:
+        """Get recommendations for new students using pre-computed table"""
+        
+        logger.info(f"Getting initial recommendations (FAST) for subject={subject}, limit={limit}")
+        
+        # Simple query against pre-computed table
+        query = f"""
+        SELECT 
+        type,
+        priority,
+        subject,
+        unit_id,
+        unit_title,
+        skill_id,
+        skill_description,
+        subskill_id,
+        subskill_description,
+        proficiency,
+        mastery,
+        avg_score,
+        priority_level,
+        priority_order,
+        readiness_status,
+        is_ready,
+        completion,
+        attempt_count,
+        is_attempted,
+        next_subskill,
+        message
+        FROM `{self.project_id}.{self.dataset_id}.starting_recommendations`
+        WHERE (@subject IS NULL OR subject = @subject)
+        ORDER BY priority_order
+        LIMIT @limit
+        """
+        
+        parameters = [
+            bigquery.ScalarQueryParameter("subject", "STRING", subject),
+            bigquery.ScalarQueryParameter("limit", "INT64", limit)
+        ]
+        
+        try:
+            logger.info("Executing fast starting recommendations query...")
+            results = await self._run_query_async(query, parameters)
+            logger.info(f"Fast initial recommendations returned {len(results)} results (minimal query cost)")
+            
+            if results:
+                for i, result in enumerate(results):
+                    logger.info(f"Fast recommendation {i+1}: {result.get('subject')} - {result.get('skill_id')} - {result.get('subskill_id')} - {result.get('subskill_description')}")
+            
+            return results
+            
+        except Exception as e:
+            logger.warning(f"Fast recommendations failed ({str(e)}), falling back to computed method")
+            # Fallback to the original method if table doesn't exist or query fails
+            return await self._get_initial_recommendations(subject, limit)
+
+    async def execute_query(self, query: str, parameters: List = None) -> List[Dict]:
+        """
+        Compatible execute_query method for existing endpoints
+        Handles both old and new parameter formats
+        """
+        try:
+            # Convert parameters to BigQuery format if needed
+            bq_parameters = []
+            if parameters:
+                for param in parameters:
+                    if isinstance(param, dict):
+                        # Old format: {"name": "student_id", "type": "INT64", "value": 1001}
+                        bq_param = bigquery.ScalarQueryParameter(
+                            param["name"], 
+                            param["type"], 
+                            param["value"]
+                        )
+                    else:
+                        # New format: already BigQuery parameters
+                        bq_param = param
+                    bq_parameters.append(bq_param)
+            
+            return await self._run_query_async(query, bq_parameters)
+            
+        except Exception as e:
+            logger.error(f"Error executing query: {str(e)}")
+            raise
+      
+    async def get_content_packages_for_llm(self, 
+                                         student_id: Optional[int] = None,
+                                         subject: Optional[str] = None,
+                                         difficulty_levels: List[str] = None,
+                                         limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Get content packages specifically formatted for LLM consumption
+        This method encapsulates the BigQuery logic and provides a clean API
+        """
+        
+        # Default difficulty levels
+        if difficulty_levels is None:
+            difficulty_levels = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']
+        
+        # Build cache key
+        cache_key = self._get_cache_key(
+            "content_packages_llm",
+            student_id=student_id,
+            subject=subject,
+            difficulty_levels=",".join(sorted(difficulty_levels)),
+            limit=limit
+        )
+        
+        # Check cache
+        cached_result = self._get_cache(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached LLM content packages")
+            return cached_result
+        
+        try:
+            # Build WHERE conditions
+            where_conditions = []
+            parameters = []
+            
+            if difficulty_levels:
+                placeholders = ",".join([f"@difficulty_{i}" for i in range(len(difficulty_levels))])
+                where_conditions.append(f"difficulty_level IN ({placeholders})")
+                for i, level in enumerate(difficulty_levels):
+                    parameters.append(bigquery.ScalarQueryParameter(f"difficulty_{i}", "STRING", level))
+            
+            if subject:
+                where_conditions.append("subject = @subject")
+                parameters.append(bigquery.ScalarQueryParameter("subject", "STRING", subject))
+            
+            where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+            
+            query = f"""
+            SELECT 
+                package_id,
+                subject,
+                unit,
+                skill,
+                subskill,
+                learning_path,
+                difficulty_level,
+                difficulty_numeric,
+                reading_level,
+                reading_grade_level,
+                key_terminology,
+                prerequisites,
+                core_concepts,
+                learning_objectives,
+                real_world_applications,
+                related_packages_same_level,
+                progression_path_within_unit,
+                progression_path_cross_unit,
+                llm_context_block,
+                llm_json_payload
+            FROM `{self.project_id}.{self.dataset_id}.llm_learning_recommendations_v1`
+            {where_clause}
+            ORDER BY difficulty_numeric, reading_grade_level, subject, unit
+            LIMIT @limit
+            """
+            
+            parameters.append(bigquery.ScalarQueryParameter("limit", "INT64", limit))
+            
+            results = await self._run_query_async(query, parameters)
+            
+            # Process results into structured format
+            packages = []
+            for row in results:
+                package = {
+                    "package_id": row.get("package_id"),
+                    "subject": row.get("subject"),
+                    "unit": row.get("unit"),
+                    "skill": row.get("skill"),
+                    "subskill": row.get("subskill"),
+                    "learning_path": row.get("learning_path"),
+                    "difficulty_level": row.get("difficulty_level"),
+                    "difficulty_numeric": row.get("difficulty_numeric"),
+                    "reading_level": row.get("reading_level"),
+                    "reading_grade_level": row.get("reading_grade_level"),
+                    "key_terminology": self._safe_list_field(row.get("key_terminology")),
+                    "prerequisites": self._safe_list_field(row.get("prerequisites")),
+                    "core_concepts": self._safe_list_field(row.get("core_concepts")),
+                    "learning_objectives": self._safe_list_field(row.get("learning_objectives")),
+                    "real_world_applications": self._safe_list_field(row.get("real_world_applications")),
+                    "related_packages_same_level": self._safe_list_field(row.get("related_packages_same_level")),
+                    "progression_path_within_unit": self._safe_list_field(row.get("progression_path_within_unit")),
+                    "progression_path_cross_unit": self._safe_list_field(row.get("progression_path_cross_unit")),
+                    "llm_context_block": row.get("llm_context_block"),
+                    "llm_json_payload": row.get("llm_json_payload")
+                }
+                packages.append(package)
+            
+            # Cache the result
+            self._set_cache(cache_key, packages)
+            
+            logger.info(f"Retrieved {len(packages)} content packages for LLM")
+            return packages
+            
+        except Exception as e:
+            logger.error(f"Error getting content packages for LLM: {str(e)}")
+            return []
 
     def _structure_hierarchical_data(self, flat_data: List[Dict], student_id: int, subject: Optional[str], start_date: Optional[datetime], end_date: Optional[datetime]) -> Dict:
         """Convert flat BigQuery results to hierarchical structure"""
@@ -734,6 +985,12 @@ class BigQueryAnalyticsService:
                 bigquery.SchemaField("min_score_threshold", "FLOAT", mode="NULLABLE"),
                 bigquery.SchemaField("is_base_node", "BOOLEAN", mode="NULLABLE"),
             ],
+            "subskill_paths": [
+                bigquery.SchemaField("current_subskill", "STRING", mode="REQUIRED"),
+                bigquery.SchemaField("next_subskill", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("created_at", "TIMESTAMP", mode="NULLABLE"),
+                bigquery.SchemaField("updated_at", "TIMESTAMP", mode="NULLABLE"),
+            ],
             "reviews": [
                 bigquery.SchemaField("review_id", "STRING", mode="REQUIRED"),
                 bigquery.SchemaField("student_id", "INTEGER", mode="REQUIRED"),
@@ -812,7 +1069,7 @@ class BigQueryAnalyticsService:
                 ssm.student_id
               FROM `{self.project_id}.{self.dataset_id}.learning_paths` lp
               JOIN `{self.project_id}.{self.dataset_id}.student_subskill_metrics` ssm
-                ON lp.prerequisite_skill_id = REGEXP_EXTRACT(ssm.subskill_id, r'^([^-]+)')
+                ON lp.prerequisite_skill_id = REGEXP_EXTRACT(ssm.subskill_id, r'^([A-Z0-9]+-[A-Z0-9]+)')
               WHERE ssm.proficiency >= 0.6  -- 60% threshold
             )
             SELECT student_id, skill_id, 'Ready' as readiness_status
@@ -820,10 +1077,10 @@ class BigQueryAnalyticsService:
             UNION ALL
             SELECT DISTINCT 
               ssm.student_id, 
-              REGEXP_EXTRACT(ssm.subskill_id, r'^([^-]+)') as skill_id,
+              REGEXP_EXTRACT(ssm.subskill_id, r'^([A-Z0-9]+-[A-Z0-9]+)') as skill_id,
               'Ready' as readiness_status
             FROM `{self.project_id}.{self.dataset_id}.student_subskill_metrics` ssm
-            JOIN base_skills bs ON REGEXP_EXTRACT(ssm.subskill_id, r'^([^-]+)') = bs.skill_id
+            JOIN base_skills bs ON REGEXP_EXTRACT(ssm.subskill_id, r'^([A-Z0-9]+-[A-Z0-9]+)') = bs.skill_id
             """,
             
             "daily_progress": f"""

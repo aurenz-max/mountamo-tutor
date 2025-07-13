@@ -222,6 +222,61 @@ class CosmosDBService:
             logger.error(f"Error validating user access: {str(e)}")
             return False
 
+    async def query_items(self, container_name: str, query: str, parameters: List[Dict] = None) -> List[Dict]:
+        """
+        Generic method to query items from a Cosmos DB container
+        """
+        try:
+            container = self.database.get_container_client(container_name)
+            
+            # Convert parameters to Cosmos DB format if provided
+            query_params = []
+            if parameters:
+                for param in parameters:
+                    query_params.append({
+                        "name": param["name"],
+                        "value": param["value"]
+                    })
+            
+            # Execute query
+            items = container.query_items(
+                query=query,
+                parameters=query_params if query_params else None,
+                enable_cross_partition_query=True
+            )
+            
+            # Convert to list and return
+            results = list(items)
+            logger.info(f"Query returned {len(results)} items from {container_name}")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error querying {container_name}: {str(e)}")
+            raise
+
+    async def get_user_profile_by_student_id(self, student_id: int) -> Optional[Dict]:
+        """
+        Get user profile by student_id
+        """
+        try:
+            query = "SELECT * FROM c WHERE c.student_id = @student_id AND c.type = 'user_profile'"
+            parameters = [{"name": "@student_id", "value": student_id}]
+            
+            results = await self.query_items(
+                container_name="user_profiles",  # Adjust to your actual container name
+                query=query,
+                parameters=parameters
+            )
+            
+            if results and len(results) > 0:
+                return results[0]
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting user profile for student_id {student_id}: {str(e)}")
+            return None
+
     # ============================================================================
     # ENHANCED CONVERSATION METHODS
     # ============================================================================

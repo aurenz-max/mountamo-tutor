@@ -1,0 +1,806 @@
+Subject,Grade,UnitID,UnitTitle,SkillID,SkillDescription,SubskillID,SubskillDescription,DifficultyStart,DifficultyEnd,TargetDifficulty
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-A,Recognize and pronounce letter A,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-B,Recognize and pronounce letter B,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-C,Recognize and pronounce letter C,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-D,Recognize and pronounce letter D,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-E,Recognize and pronounce letter E,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-F,Recognize and pronounce letter F,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-G,Recognize and pronounce letter G,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-H,Recognize and pronounce letter H,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-I,Recognize and pronounce letter I,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-J,Recognize and pronounce letter J,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-K,Recognize and pronounce letter K,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-L,Recognize and pronounce letter L,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-M,Recognize and pronounce letter M,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-N,Recognize and pronounce letter N,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-O,Recognize and pronounce letter O,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-P,Recognize and pronounce letter P,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-Q,Recognize and pronounce letter Q,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-R,Recognize and pronounce letter R,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-S,Recognize and pronounce letter S,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-T,Recognize and pronounce letter T,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-U,Recognize and pronounce letter U,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-V,Recognize and pronounce letter V,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-W,Recognize and pronounce letter W,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-X,Recognize and pronounce letter X,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-Y,Recognize and pronounce letter Y,1,5,3
+ABC123,Kindergarten,ALPHA001,Alphabet Recognition,ALPHA001-01,Recognize and pronounce uppercase letters,ALPHA001-01-Z,Recognize and pronounce letter Z,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-A,Recognize and pronounce number 1,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-B,Recognize and pronounce number 2,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-C,Recognize and pronounce number 3,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-D,Recognize and pronounce number 4,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-E,Recognize and pronounce number 5,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-F,Recognize and pronounce number 6,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-G,Recognize and pronounce number 7,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-H,Recognize and pronounce number 8,1,5,3
+ABC123,Kindergarten,NUM001,Number Recognition,NUM001-01,Recognize and pronounce numbers,NUM001-01-I,Recognize and pronounce number 9,1,5,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,ART001-01-A,Explore a variety of art materials and tools,1,5,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,ART001-01-B,Create art that represents natural and constructed environments,2,6,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,ART001-01-C,Use basic shapes and lines to represent ideas,3,7,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,ART001-02-A,Select art objects for personal portfolio and display,2,6,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,ART001-02-B,Explain the process of making art,3,7,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,ART001-02-C,Identify places where art may be displayed or saved,3,7,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,ART001-03-A,Identify uses of art within one's personal environment,2,6,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,ART001-03-B,Describe what an image represents,3,7,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,ART001-03-C,Explain reasons for selecting a preferred artwork,4,8,6
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,ART002-01-A,Explore and experience a variety of music concepts,2,6,4
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,ART002-01-B,Create simple rhythmic patterns,3,7,5
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,ART002-01-C,Improvise simple musical ideas,4,8,6
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,ART002-02-A,Sing a variety of simple songs,2,6,4
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,ART002-02-B,Play simple rhythmic instruments,3,7,5
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,ART002-02-C,Perform appropriate musical works with expression,4,8,6
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,ART002-03-A,"Identify simple musical contrasts (fast/slow, loud/soft)",2,6,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,ART002-03-B,Demonstrate awareness of steady beat,3,7,5
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,ART002-03-C,Express preferences for varied musical selections,4,8,6
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,ART003-01-A,Use imagination to transform objects and experiences into dramatic play,2,6,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,ART003-01-B,Create roles and situations for dramatic play and guided drama experiences,3,7,5
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,ART003-01-C,Collaborate with peers to create plots in guided drama experiences,4,8,6
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,ART003-02-A,Engage in dramatic play or a guided drama experience,2,6,4
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,ART003-02-B,Use body and voice to communicate character traits and emotions,3,7,5
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,ART003-02-C,Demonstrate the ability to follow simple performance directions,4,8,6
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,ART003-03-A,Express preferences for parts of a drama/theatre work,2,6,4
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,ART003-03-B,Identify characters and settings in a guided drama experience,3,7,5
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,ART003-03-C,Explain how personal preferences connect to emotions evoked by a drama/theatre work,4,8,6
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-E,Mix two primary colors to create a secondary color and use it in an artwork,2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-F,Create a simple pattern using two alternating shapes or colors,1,2,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-G,Build a 3D structure using clay or playdough that can stand on its own,2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-H,Cut and paste paper shapes to form a recognizable object or animal,2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-I,Draw a self-portrait including at least three facial features,3,4,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-J,"Create texture in artwork using simple tools (combs, sponges, etc.)",2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-K,"Combine two different art materials in one artwork (e.g., crayon and watercolor)",3,4,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-L,Paint within defined lines or boundaries with 80% accuracy,2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-M,Create a simple collage using torn paper pieces,2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-N,Draw and color a scene that shows foreground and background,3,5,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-O,Use stamps or found objects to create prints in a deliberate arrangement,2,3,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-01,Creating,Creating-P,Create an artwork that expresses a specific emotion through color choice,3,4,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-E,Take turns sharing artwork with a partner using complete sentences,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-F,"Follow 3-step process to prepare artwork for display (clean hands, flat surface, careful handling)",2,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-G,"Use basic art vocabulary (color, shape, line) when describing artwork to others",3,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-H,Respond to 2-3 questions about their artwork from peers or teachers,3,4,6
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-I,Practice appropriate audience behavior during art presentations,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-J,Sort artwork into 2 categories (complete/incomplete) for display readiness,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-K,Write or dictate a simple title for their artwork,3,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-L,"Choose and apply a method to sign their artwork (initials, name, or symbol)",2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-M,Position artwork at eye level when displaying on vertical surfaces,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-N,Compare two display locations and choose the better option for showing artwork,3,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-O,"Use basic tools (tape, clips, pins) to help display artwork with assistance",3,4,5
+Arts,Kindergarten,ART001,Visual Arts,ART001-02,Presenting,Presenting-P,Identify at least one thing they like about a classmate's displayed artwork,2,3,4
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-E,"Compare and contrast two artworks using basic art vocabulary (colors, shapes, lines)",2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-F,Express personal feelings about an artwork using emotion words and simple gestures,1,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-G,"Match similar artistic elements (colors, patterns, shapes) between two different artworks",2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-H,Name three different materials used to create an artwork,1,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-I,"Sort artworks into basic categories (paintings, sculptures, drawings)",2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-J,Identify the main subject or focal point in an artwork,2,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-K,"Use simple hand signals to show understanding of art elements (tall/short, smooth/rough)",1,2,1
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-L,Connect an artwork to a personal experience or memory,2,4,3
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-M,"Identify basic mood or feeling conveyed in an artwork (happy, sad, excited)",2,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-N,Locate and point to specific elements requested by the teacher in an artwork,1,2,1
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-O,Show appropriate museum behavior when viewing artworks,1,3,2
+Arts,Kindergarten,ART001,Visual Arts,ART001-03,Responding,Responding-P,"Recognize and name common symbols in artwork (heart, star, rainbow)",2,3,2
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-E,"Design a simple musical pattern using body percussion (clapping, patting, stomping)",1,3,2
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-F,Combine two different sounds to create a repeating musical sequence,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-G,Create sound effects to match characters in a familiar story,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-H,Use classroom instruments to represent different weather sounds,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-I,Make up simple lyrics to a familiar melody,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-J,Create a musical response to another student's musical phrase,4,6,5
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-K,Design a simple musical pattern using pictures or symbols,4,6,5
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-L,"Create movements to express different musical moods (happy, sad, excited)",3,5,4
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-M,Compose a short musical phrase using three different classroom instruments,5,7,6
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-N,Create and perform a musical introduction for a familiar song,5,7,6
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-O,"Use voice to create different sound effects (high/low, loud/soft, fast/slow)",2,4,3
+Arts,Kindergarten,ART002,Music,ART002-01,Creating,Creating-P,Design a simple musical pattern using alternating silence and sound,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-E,Echo short melodic patterns sung by the teacher using correct pitch,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-F,"Maintain a steady beat while walking, marching, or dancing to music",1,3,2
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-G,"Follow basic conductor hand signals for start, stop, and dynamics",2,4,3
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-H,Demonstrate proper posture while singing in a group,1,2,1
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-I,Clap or tap simple four-beat rhythm patterns accurately,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-J,"Move creatively to express different musical moods (happy, sad, excited)",1,3,2
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-K,Take turns performing solo parts within a group musical activity,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-L,"Use appropriate voice levels (whisper, speaking, singing) when performing",2,3,2
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-M,Mirror simple movement patterns demonstrated by the teacher,1,3,2
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-N,Play simple call-and-response patterns using body percussion,2,4,3
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-O,Perform simple songs using sign language or hand motions,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-02,Performing,performing-P,Demonstrate proper care and handling of classroom instruments,1,2,1
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-E,"Move body parts to match different musical dynamics (e.g., big movements for loud, small movements for soft)",1,2,2
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-F,"Match simple emotions (happy, sad, scared) to corresponding musical examples using picture cards",2,3,3
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-G,"Echo short rhythmic patterns using body percussion (clap, pat, snap)",2,4,3
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-H,Identify when melodies move upward or downward using hand gestures,3,4,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-I,"Sort instruments into groups based on how they sound (shake, strike, scrape)",3,4,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-J,Follow simple musical cues to start and stop movement,1,2,2
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-K,Distinguish between singing voice and speaking voice in recorded examples,2,3,3
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-L,Use visual icons to track changes in musical tempo,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-M,Identify which instrument is playing from a choice of two familiar instruments,2,3,3
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-N,Show recognition of repeated musical phrases through movement patterns,3,5,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-O,"Use simple words to describe musical textures (smooth, bumpy, choppy)",3,4,4
+Arts,Kindergarten,ART002,Music,ART002-03,Responding,Responding-P,Demonstrate appropriate audience behavior during short musical performances,1,2,2
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-E,Design and construct simple props using classroom materials to enhance dramatic play scenarios,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-F,Generate original sound effects using voice and body percussion to accompany dramatic scenes,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-G,"Develop simple movement patterns to represent different characters (animals, people, objects)",3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-H,Compose basic dialogue exchanges between two characters in guided storytelling,3,6,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-I,Design simple story settings using available classroom space and furniture,3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-J,Create emotional expressions through facial features and body language for different characters,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-K,Invent simple solutions to basic dramatic conflicts within guided storylines,4,6,5
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-L,Develop basic costume pieces using available materials and accessories,3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-M,Generate alternative endings to familiar stories through dramatic play,4,7,5
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-N,Create simple puppet characters using basic craft materials,3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-O,Compose basic scene transitions using physical movement and verbal cues,4,6,5
+Arts,Kindergarten,ART003,Drama,ART003-01,Creating,Creating-P,Design simple stage areas using tape or markers to define performance spaces,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-E,Mirror simple movement sequences demonstrated by the teacher with 80% accuracy,1,2,3
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-F,Maintain a steady beat while performing simple rhythmic patterns using body percussion,2,3,4
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-G,"Create and perform three distinct facial expressions to show basic emotions (happy, sad, angry)",2,3,4
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-H,Demonstrate appropriate audience behavior during a 5-minute performance,2,3,5
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-I,Use props appropriately in a guided performance for 2-3 minutes,3,4,5
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-J,Perform a memorized 4-line nursery rhyme with clear pronunciation,3,4,6
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-K,Transition between two different characters in a guided story using voice and movement,4,5,6
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-L,Collaborate with a partner to perform a simple dialogue of 4-6 lines,4,5,7
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-M,"Execute three basic stage directions (center stage, stage right, stage left) accurately",4,6,7
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-N,Maintain character focus during a 2-minute guided performance without breaking role,5,6,8
+Arts,Kindergarten,ART003,Drama,ART003-02,Performing,performing-O,Perform a simple movement sequence in sync with background music,5,7,8
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-E,"Use basic theatre vocabulary (stage, audience, actor) when discussing a drama experience",1,2,2
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-F,Demonstrate appropriate audience behavior during a live performance,1,3,2
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-G,Identify basic emotions portrayed by actors in a drama scene,2,3,3
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-H,Draw a picture showing their favorite moment from a drama experience,2,3,3
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-I,Describe the costumes worn by characters in a drama/theatre work,2,4,3
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-J,Compare two different characters' actions in a guided drama experience,3,4,4
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-K,Identify props used during a drama/theatre work and explain their purpose,3,5,4
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-L,"Recognize and describe different voice types used by actors (loud/soft, high/low)",4,5,5
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-M,Explain how music or sound effects contribute to a drama scene,4,6,5
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-N,"Identify the beginning, middle, and end of a dramatic story",5,6,6
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-O,Compare facial expressions with the emotions they represent in drama,5,7,6
+Arts,Kindergarten,ART003,Drama,ART003-03,Responding,Responding-P,Describe how movement and gestures help tell the story in drama,6,8,7
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-A,"Identify and demonstrate basic movements (push, pull, roll, slide) of everyday objects",1,3,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-B,"Sort objects based on how they move in response to forces (wind, water, pushing)",2,4,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-C,Explore how strength and direction of pushes and pulls affect object motion,2,5,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-D,Investigate how different surfaces affect object motion through simple friction experiments,3,5,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-E,"Compare object behavior in different environments (air vs. water, ramps, barriers)",3,6,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-F,"Demonstrate how objects can be moved without direct contact (magnets, air, water)",3,6,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-G,"Experiment with weight distribution and balance using simple tools (seesaws, scales)",4,6,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-01,Forces and Motion,SCI001-01-H,"Create and explain simple force transfer systems (dominos, pulleys, chain reactions)",4,7,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-A,"Sort and classify objects by basic observable properties (color, shape, size, texture)",1,3,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-B,"Identify and match common materials (wood, metal, plastic, fabric) in everyday objects",1,4,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-C,"Investigate basic material properties (magnetic attraction, floating/sinking, light reflection)",2,4,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-D,"Test and compare material characteristics (flexibility, strength, water absorption)",2,5,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-E,"Explore light interaction with materials (transparent, translucent, opaque)",2,5,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-F,"Recognize and describe the three states of matter (solid, liquid, gas) through observation",3,6,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-G,"Demonstrate how materials change with temperature (melting, freezing, softening)",3,6,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-02,Matter and Its Properties,SCI001-02-H,Explore simple combinations of materials and their resulting properties,4,7,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-A,"Identify objects that need energy to work versus those that don't (e.g., flashlight vs. pencil)",1,3,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-B,"Demonstrate how our bodies use energy for movement through pushing, pulling, walking, and running",1,4,2
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-C,"Recognize and name basic forms of energy (light, heat, sound) in everyday situations",2,4,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-D,"Match common energy sources (sun, batteries, electricity) to devices and explore simple examples of energy transfer",2,5,3
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-E,Investigate light energy through shadow creation and material transparency experiments,3,5,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-F,Explore sound energy through simple instruments and sound-blocking materials,3,6,4
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-G,Conduct basic heat energy experiments using sunlight and different colored surfaces,4,6,5
+Science,Kindergarten,SCI001,Physical Sciences,SCI001-03,Energy,SCI001-03-H,"Create simple energy-based devices (pinwheels, circuits with batteries) to demonstrate energy conversion",4,7,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-A,"Identify and name basic plant parts (roots, stem, leaves, flower, seeds) through observation of real specimens",2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-B,"Recognize basic needs of plants and animals (food, water, light, air) and how they obtain them",2,5,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-C,"Classify animals by physical characteristics (fur, feathers, scales) and movement patterns (walk, fly, swim)",3,5,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-D,"Match animal body parts to their functions and survival purposes (wings/flying, fins/swimming, claws/hunting)",3,6,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-E,"Observe and document growth changes in plants and animals, including parent-offspring relationships",3,6,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-F,"Explain how plants and animals adapt to their environments (seasonal changes, camouflage, migration)",4,7,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-G,"Sort living things by their habitats and eating habits (herbivore, carnivore, omnivore)",4,7,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-01,Plants and Animals,SCI002-01-H,"Create simple food chains showing relationships between producers, consumers, and decomposers",5,8,6
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-A,Differentiate between living and non-living things in various environments with 80% accuracy,1,3,2
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-B,"Identify the three basic needs (food, water, shelter) of plants and animals through sorting activities",2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-C,"Match five common animals to their appropriate habitats (desert, ocean, forest, etc.)",2,5,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-D,Demonstrate how plants and animals use their body parts and senses to meet basic needs,3,6,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-E,Explain how seasonal and weather changes affect plant and animal behavior using examples,4,7,5
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-F,Create simple food chains showing how animals depend on other plants and animals for food,5,8,6
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-G,Investigate ways plants and animals adapt to survive in their environments,6,8,7
+Science,Kindergarten,SCI002,Life Sciences,SCI002-02,Ecosystems,SCI002-02-H,Design a model habitat showing the relationship between living things and their environment,7,9,8
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-A,Identify and name major external body parts and their basic functions,1,3,2
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-B,Explore and demonstrate the five senses through guided sensory activities,2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-C,"Practice fundamental body movements and identify corresponding joints (bending, stretching, rotating)",2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-D,"Demonstrate basic health and hygiene practices (handwashing, dental care, daily routines)",2,4,3
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-E,"Identify internal body basics (heart, lungs, stomach) and their primary functions",3,5,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-F,"Connect physical activities to body responses (increased heart rate, breathing, sweating)",3,5,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-G,"Apply basic body care and safety practices (healthy food choices, exercise, protective equipment)",3,5,4
+Science,Kindergarten,SCI002,Life Sciences,SCI002-03,Human Body,SCI002-03-H,"Recognize and respond to basic body needs (hunger, thirst, rest, movement)",3,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-A,"Use sensory observations and basic vocabulary to describe current weather conditions (sight, sound, feel)",1,3,2
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-B,Match and use common weather symbols to record daily weather conditions on a simple chart,2,4,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-C,Identify appropriate clothing and activities for different weather conditions,2,4,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-D,Recognize and describe characteristics of the four seasons using evidence from weather patterns,3,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-E,"Measure and record basic weather conditions using simple tools (thermometer, rain gauge, wind sock)",3,6,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-F,Identify major cloud types and their relationship to weather conditions,4,6,5
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-G,Compare weather patterns between different locations and times using simple graphs and charts,4,7,5
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-01,Weather and Climate,SCI003-01-H,Demonstrate understanding of weather safety procedures and make basic weather predictions,4,7,6
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-A,"Sort and classify rocks and soil using observable properties (color, size, texture)",1,3,2
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-B,Identify basic weather conditions using symbols and create simple weather journals,2,4,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-C,Recognize the four seasons and their impact on local environment and activities,2,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-D,Identify and describe common landforms and bodies of water in the local environment,3,6,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-E,"Explore how water exists in different forms (solid, liquid, gas) through guided experiments",4,7,5
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-F,"Investigate relationships between soil, water, and living things through simple experiments",4,7,6
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-G,Demonstrate how wind and water can change land shapes using models and observations,5,8,6
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-02,Earth's Systems,SCI003-02-H,Connect natural resources to their everyday uses and environmental impact,5,9,7
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-A,"Sort and classify objects as ""space objects"" (sun, moon, stars) or ""Earth objects"" with 90% accuracy",1,3,2
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-B,"Identify and describe basic features of the day sky (sun, clouds) and night sky (moon, stars)",2,4,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-C,Track and record the sun's position and shadows throughout a day using simple tools and drawings,2,5,3
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-D,"Identify and draw the three main moon phases (full, half, crescent) using provided templates",3,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-E,"Create a daily schedule based on sun position, connecting activities to different times of day",3,5,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-F,"Compare size relationships between Earth, sun, and moon using manipulatives and simple models",3,6,4
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-G,Demonstrate how Earth's rotation creates day and night using a globe and light source,4,6,5
+Science,Kindergarten,SCI003,Earth and Space Sciences,SCI003-03,Space Systems,SCI003-03-H,Collect and analyze data about daylight length and weather patterns over multiple weeks,4,7,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-A,"Ask questions and identify simple design problems in familiar situations (e.g., toy organization, classroom setup)",1,3,2
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-B,"Explore and sort building materials based on physical properties (hard/soft, rough/smooth) through hands-on investigation",1,3,2
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-C,Follow and complete pictorial instruction guides to build basic structures in 2-3 steps,2,4,3
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-D,Create simple drawings and models to communicate design ideas for solving a problem,2,5,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-E,"Measure and compare design elements using non-standard units (blocks, paperclips) to inform planning",3,5,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-F,"Make predictions and test simple design solutions, recording observations through pictures and basic words",3,6,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-G,Evaluate design outcomes by comparing two solutions and explaining which works better using evidence,4,6,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-01,Engineering Design Process,SCI004-01-H,"Improve designs based on test results and feedback, suggesting and implementing specific modifications",4,7,6
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-A,"Identify common classroom tools and their basic purposes (e.g., scissors for cutting, rulers for measuring)",2,4,3
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-B,Demonstrate proper safety practices and handling of basic classroom tools under supervision,2,4,3
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-C,"Sort and categorize tools based on their primary functions (measuring, cutting, building, digital)",3,5,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-D,Use basic tools independently to complete simple classroom tasks and projects,3,5,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-E,"Demonstrate fundamental digital device skills (mouse control, keyboard basics, educational programs)",3,6,4
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-F,"Compare traditional and modern versions of common tools, explaining key differences",4,6,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-G,Connect specific tools to community jobs and explain their importance in daily work,4,6,5
+Science,Kindergarten,SCI004,Engineering and Technology,SCI004-02,Tools and Technology,SCI004-02-H,"Identify how tools and technology help solve everyday problems in different situations (weather, tasks, needs)",4,7,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-A,"Demonstrate proper book handling skills (orientation, covers, page turning)",1,3,2
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-B,"Identify key book elements (title, author, illustrator) on covers and title pages",2,4,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-C,"Follow text directionality (left-to-right, top-to-bottom, page-by-page)",2,4,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-D,"Distinguish between letters, words, and spaces in printed text",2,5,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-E,Track text with finger while listening to reading at appropriate pace,3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-F,"Identify basic punctuation marks (period, question mark, exclamation point) and their purposes",3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-G,Recognize and count words within printed sentences,3,6,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-H,"Identify complete sentences, including capital letters and ending punctuation",4,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-01,Print Concepts,LA001-01-I,Connect spoken words to their written representations in text,4,7,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-A,Match and identify uppercase and lowercase letters in text,2,4,3
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-B,Demonstrate one-to-one letter-sound correspondences for consonants and vowels,2,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-C,Distinguish between long and short vowel sounds in single-syllable words,3,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-D,Blend and segment individual sounds (phonemes) in simple CVC words using manipulatives,3,5,4
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-E,Read common high-frequency sight words in isolation and simple text,3,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-F,"Identify and read common consonant digraphs (sh, ch, th, wh) and blends (st, pl, br)",4,6,5
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-G,"Read and comprehend words with common endings (-s, -ing, -ed) and compound words",4,7,6
+Language Arts,Kindergarten,LA001,Reading Foundations,LA001-03,Phonics and Word Recognition,LA001-03-H,Apply phonics skills to distinguish between similarly spelled words in context,5,7,6
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-A,Write left to right and top to bottom with consistent spacing between words,1,3,2
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-B,Draw and label pictures to plan writing ideas before composing text,2,4,3
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-C,Form complete simple sentences using subject and predicate,3,5,4
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-D,Use proper capitalization for sentence beginnings and names,3,5,4
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-E,"Apply appropriate ending punctuation (period, question mark, exclamation point)",4,6,5
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-F,Enhance writing by adding descriptive words and specific details,4,6,5
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-G,"Organize stories with clear beginning, middle, and end using basic transition words",5,7,6
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-H,"Read writing aloud to self and peers, incorporating feedback for improvement",6,8,7
+Language Arts,Kindergarten,LA002,Writing,LA002-02,Production and Distribution of Writing,LA002-02-I,"Use digital tools to produce, illustrate, and share writing with peers",6,8,7
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-A,"Identify basic information sources in the classroom (e.g., books, charts, pictures)",1,3,2
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-B,Answer simple yes/no questions using provided picture sources,1,3,2
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-C,Extract one specific fact from a teacher-selected source,2,4,3
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-D,Share personal experiences related to a class topic using 2-3 details,2,4,3
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-E,Match pictures to facts about a research topic with guidance,3,5,4
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-F,Contribute one relevant fact to a group research project,3,5,4
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-G,Create simple labels for pictures about a research topic,4,6,5
+Language Arts,Kindergarten,LA002,Writing,LA002-03,Research to Build and Present Knowledge,LA002-03-H,Combine 2-3 facts and pictures to share information about a topic,4,6,5
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-A,"Use finger spaces between words consistently when writing, using tools if needed",2,4,3
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-B,"Recognize and name end punctuation marks (., ?, !)",1,3,2
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-C,Apply end punctuation marks correctly in simple sentences,2,4,3
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-D,"Capitalize the first word in sentences and the pronoun ""I""",2,4,3
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-E,Use lowercase letters appropriately for non-capitalized words,2,4,3
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-F,"Capitalize names of people, pets, and months",3,5,4
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-G,Spell simple CVC words and common sight words correctly,3,5,4
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-H,Edit simple sentences for capital letters and punctuation,3,5,4
+Language Arts,Kindergarten,LA002,Writing,LA002-04,Conventions of Standard English,LA002-04-I,Write basic contractions with apostrophes using teacher support,4,6,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-A,Follow two-step verbal instructions during classroom activities with 90% accuracy,1,3,2
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-B,Use appropriate speaking volume and eye contact in different classroom settings,2,4,3
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-C,Take turns speaking without interrupting during 3-minute group discussions,2,5,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-D,Ask and answer simple questions to get help or clarify understanding,3,5,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-E,Demonstrate understanding of oral presentations by recalling 3 key details,3,6,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-F,Express agreement or disagreement with peers using complete sentences and reasons,4,6,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-G,Maintain topic focus during partner discussions about shared texts or topics,4,7,6
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-H,Respond to peers with relevant information and connect to others' ideas,5,7,6
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-I,Summarize peers' ideas before adding new information to discussions,6,8,7
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-01,Comprehension and Collaboration,LA003-01-J,Form specific questions when additional information is needed for understanding,7,9,8
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-A,"Demonstrate active listening behaviors during peer presentations (facing speaker, remaining still, maintaining attention)",2,4,3
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-B,Speak audibly and clearly when sharing information with the class,2,5,3
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-C,"Describe familiar people, places, things, and events using complete sentences",2,5,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-D,"Use appropriate nonverbal communication (eye contact, gestures, facial expressions) while speaking",2,6,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-E,"Sequence 3-4 events using transition words (first, next, last) when sharing personal stories",3,6,4
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-F,"Enhance presentations with visual elements (drawings, props, or displays) to provide additional detail",3,6,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-G,Engage in presentation dialogue by asking and answering relevant questions,3,7,5
+Language Arts,Kindergarten,LA003,Speaking and Listening,LA003-02,Presentation of Knowledge and Ideas,LA003-02-H,Deliver a focused 2-minute presentation comparing two objects or experiences,4,7,6
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-A,"Sort basic nouns (people, places, things) and action verbs using picture cards with 90% accuracy",1,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-B,"Demonstrate understanding of action verbs through physical movement and songs (jump, dance, swim)",1,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-C,"Use simple descriptive adjectives to enhance nouns (big ball, red car) during guided activities",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-D,"Distinguish between common and proper nouns using familiar examples (dog vs. Spot, city vs. Boston)",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-E,"Use basic pronouns (I, my, your) and articles (a, an, the) in simple sentences",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-F,"Apply prepositions (in, on, under, between) to describe object locations during hands-on activities",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-G,"Create simple sentences using nouns, verbs, and adjectives with picture support",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-H,"Use basic adverbs (quickly, slowly, loudly) to modify actions through movement activities",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-I,"Connect ideas using simple conjunctions (and, but) in guided storytelling",3,6,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-J,"Express emotions using appropriate interjections (wow, oops, yay) in context",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-K,Build complete sentences using mixed parts of speech with manipulative word cards,4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-01,Parts of Speech,LA004-01-L,Participate in interactive grammar games combining multiple parts of speech concepts,4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-A,Identify subject and action in spoken sentences through interactive games and songs,1,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-B,"Match subject-verb picture cards to create basic sentences (e.g., ""Dog runs"")",2,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-C,"Arrange word cards to form simple subject-verb-object sentences (e.g., ""Cat drinks milk"")",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-D,Distinguish between complete sentences and fragments using picture-word prompts,2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-E,"Add appropriate ending punctuation (., ?, !) to given sentences",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-F,"Create simple questions with correct word order and punctuation (e.g., ""Can I play?"")",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-G,"Expand simple sentences by adding descriptive words (e.g., ""The big cat sleeps softly"")",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-02,Sentence Structure,LA004-02-H,"Connect related ideas using basic conjunctions (and, but) to form compound sentences",4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-A,Identify singular and plural nouns through listening activities and physical objects,1,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-B,Sort physical objects and picture cards into singular/plural categories,2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-C,Match basic singular-plural pairs using picture cards (-s endings only),2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-D,"Identify and use articles ""a"" and ""the"" with singular nouns using picture prompts",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-E,"Distinguish between ""a"" and ""an"" usage based on beginning sounds",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-F,Form regular plurals with both -s and -es endings using picture supports,3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-G,"Recognize and match common irregular plural pairs (e.g., mouse/mice, tooth/teeth)",4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-H,"Use articles in simple sentences with picture support (e.g., ""I see a cat."")",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-I,Create plural forms in guided speaking activities and games,3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-J,Distinguish between definite and indefinite articles in context,4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-K,Use irregular plurals in guided speaking and storytelling activities,4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-03,Plurals and Articles,LA004-03-L,"Combine articles and plural nouns in creative activities (stories, descriptions)",4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-A,"Identify basic pronouns (I, you, he, she) in pictures and spoken language",1,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-B,"Use personal pronouns (I, you) correctly during daily classroom routines and conversations",1,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-C,"Match singular pronouns (he, she) to corresponding pictures and people",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-D,"Use basic possessive pronouns (my, your) in show-and-tell and personal descriptions",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-E,"Apply plural pronouns (we, they) in group situations and stories",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-F,Replace simple nouns with appropriate pronouns in sentences using pictures and spoken language,3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-G,"Use advanced possessive pronouns (his, her, their) to describe relationships and ownership",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-H,Distinguish between subject and object pronouns through interactive activities,3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-I,Create simple sentences using mixed pronouns with magnetic words and illustrations,4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-04,Basic Pronouns,LA004-04-J,"Use basic reflexive pronouns (myself, yourself) in guided speaking activities",4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-A,"Identify and demonstrate basic positional words (in, on, under) through movement games and physical actions",1,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-B,"Follow single-step instructions using common prepositions in classroom activities (e.g., ""Put the pencil in the box"")",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-C,"Sort objects and pictures based on basic positional relationships (above/below, in front/behind)",2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-D,Match preposition cards to corresponding pictures showing spatial relationships,3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-E,Use prepositions to describe locations of objects in self-created scenes or block structures,3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-F,"Follow and create simple treasure maps using prepositional clues (next to, between, beside)",4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-G,Draw and label scenes using 3-4 different prepositions accurately,4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-H,"Create and follow multi-step instructions using directional prepositions (through, around, across)",4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-05,Prepositions,LA004-05-I,Identify and categorize prepositions as location or direction words in spoken and written contexts,5,7,6
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-A,"Identify action verbs in familiar songs and nursery rhymes (e.g., ""row,"" ""jump,"" ""sing"")",1,3,2
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-B,Demonstrate understanding of action verbs through physical movement and gesture games,2,4,3
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-C,"Distinguish between action verbs and linking verbs (is, are, am) using picture cards",3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-D,Use present tense verbs correctly in simple spoken sentences with picture prompts,3,5,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-E,Apply basic subject-verb agreement in present tense (singular/plural subjects),3,6,4
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-F,Differentiate between present and past tense using regular -ed endings,4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-G,"Match common irregular past tense verbs to their present forms (run/ran, go/went)",4,7,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-H,"Construct simple future tense statements using ""will"" with picture prompts",4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-I,"Create simple sentences using helping verbs (is, are, am) with continuous actions",4,6,5
+Language Arts,Kindergarten,LA004,Grammar Basics,LA004-06,Verb Forms,LA004-06-J,"Apply verb tenses (present, past, future) in guided storytelling activities",5,7,6
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-A,"Match basic vocabulary words to corresponding pictures in common categories (e.g., animals, foods, colors)",1,3,2
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-B,"Sort vocabulary words into basic categories (e.g., animals, foods, colors) with 85% accuracy",2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-C,Use new vocabulary words in complete oral sentences during guided activities,2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-D,"Group words by function and use (e.g., ""things we eat,"" ""things we wear,"" ""places we go"")",2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-E,"Identify and match basic opposite pairs using picture cards (e.g., big/small, hot/cold)",2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-F,"Use descriptive words for physical properties (e.g., texture, size, shape) during hands-on activities",3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-G,Match emotion vocabulary to situations and facial expressions using various media,3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-01,Word Meaning,LA005-01-H,"Identify and use gradable concept words (e.g., tiny/small/big/huge, freezing/cold/cool/warm/hot)",4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-A,Use picture clues in storybooks to predict meanings of unfamiliar words,2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-B,Follow and respond to teacher gestures that demonstrate word meanings during read-alouds,2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-C,Demonstrate understanding of action words through physical movement and role-play,2,5,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-D,Match vocabulary words to corresponding story scene illustrations,3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-E,Use puppets or props to demonstrate understanding of new vocabulary words,3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-F,Create simple sentences using newly learned vocabulary words from stories,3,6,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-G,"Identify and demonstrate multiple meanings of common words (e.g., ""bat,"" ""run"")",4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-H,Use sentence context and picture clues to determine appropriate word meanings,4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-02,Context Clues,LA005-02-I,Solve simple word riddles using context clues and prior vocabulary knowledge,4,7,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-A,"Match basic pairs of related objects from visual cards (e.g., sock/shoe, spoon/fork)",1,3,2
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-B,"Sort common objects into basic categories (e.g., food, animals, clothes)",2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-C,"Create simple rhyming pairs using picture support (e.g., cat/hat, dog/log)",2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-D,"Match objects to their typical locations (e.g., bed/bedroom, book/library)",2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-E,"Build three-word rhyming families with common endings (e.g., cat/hat/mat)",3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-F,"Create simple thematic word webs with 3-4 related items (e.g., farm: cow, pig, barn)",3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-G,"Sort words and pictures by seasonal categories with reasoning (e.g., ""mittens go in winter because..."")",4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-03,Word Relationships,LA005-03-H,"Build sequential word chains with logical connections (e.g., seed → plant → flower → bee)",4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-A,"Participate in daily vocabulary introduction activities during circle time (""word of the day"")",1,3,2
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-B,Match vocabulary words to physical objects or pictures in classroom scavenger hunts,2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-C,Use basic action words in following and giving classroom commands,2,4,3
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-D,"Demonstrate vocabulary understanding through movement and dramatic play (charades, role-play)",3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-E,Contribute to collaborative word walls with illustrations and example sentences,3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-F,"Apply vocabulary in structured activities (weather reports, counting exercises, simple experiments)",3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-G,Create simple sentences using new vocabulary with magnetic words or writing tools,3,5,4
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-H,"Present ""show and tell"" using 2-3 target vocabulary words accurately",4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-I,Describe images or scenarios using multiple vocabulary words from a word bank,4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-J,Generate rhyming words and simple poems using target vocabulary,4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-K,"Participate in guided writing activities using new vocabulary (class stories, recipes)",4,6,5
+Language Arts,Kindergarten,LA005,Vocabulary Development,LA005-04,Word Usage,LA005-04-L,Create and present an illustrated mini-book incorporating 5+ vocabulary words,5,7,6
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-A,Identify main characters in stories using picture clues and name their basic traits using emotion cards,1,3,2
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-B,Match story settings to illustrations and identify key location changes throughout the story,2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-C,"Sequence 3-4 major story events using picture cards and label beginning, middle, and end",2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-D,Identify problems and match appropriate solutions in simple stories using picture prompts,3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-E,"Recognize and use story patterns, including repeated phrases and predictable sequences",3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-F,"Connect illustrations to story meaning, including mood, character feelings, and plot clues",3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-G,"Retell stories using props, including correct sequence and character dialogue",4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-H,Make predictions and identify simple morals or lessons in stories,4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-01,Story Elements,LA006-01-I,Compare different versions of familiar stories and create simple alternate endings,5,7,6
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-A,"Match basic emotions to character expressions in picture books (e.g., smiling=happy, crying=sad)",2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-B,Use picture clues to identify character feelings and environmental settings,2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-C,Predict simple story outcomes using visual prompts and prior knowledge,3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-D,"Answer ""why"" questions about character actions in read-alouds using evidence",3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-E,Connect story events to personal experiences during guided discussions,3,6,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-F,Identify basic cause-effect relationships in stories using verbal and visual clues,4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-G,"Use dramatic play (puppets, role-play) to demonstrate character motivations",4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-H,Differentiate between explicitly stated details and those requiring inference,4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-I,Infer character thoughts and feelings from dialogue and actions,4,7,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-02,Inference Making,LA006-02-J,"Predict and discuss alternative story outcomes using ""What if?"" scenarios",5,7,6
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-A,Identify the main topic of a familiar story using picture clues and simple stories,1,3,2
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-B,Select the main idea from three choices after listening to a read-aloud story,2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-C,Create visual representations of main ideas using drawing and stickers,2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-D,Sort picture cards into 'Main Idea' and 'Supporting Details' categories,3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-E,Use a simple web graphic organizer to connect main idea with supporting details,3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-F,Participate in interactive storytelling to demonstrate main idea and details through movement or puppetry,3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-G,Create a group summary of a story identifying both main idea and 2-3 key supporting details,4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-H,Use digital tools to organize and match details with corresponding main ideas,4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-I,Sequence story events to show how details build toward the main idea,4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-03,Main Idea and Details,LA006-03-J,Compare main ideas between two simple stories using guided discussion and visual aids,5,7,6
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-A,"Identify basic story elements (main character, setting) in a single story using picture prompts",1,3,2
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-B,Match similar characters from different stories using visual aids,2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-C,Match similar settings from different stories using visual aids,2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-D,Use simple words to describe how two characters are alike,3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-E,Use simple words to describe how two characters are different,3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-F,Complete a teacher-guided Venn diagram comparing two characters,4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-G,"Express story preferences using ""I like"" statements with one reason",4,6,5
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-H,Compare two stories' main events using sequence cards,5,7,6
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-04,Comparing Texts,LA006-04-I,"Express story preferences using multiple reasons with ""because""",5,7,6
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-A,Recognize that books have titles on their covers,1,2,1
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-B,"Point to and name basic text features (title, author name, pictures)",1,3,2
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-C,Identify page numbers and explain their purpose,2,3,2
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-D,Locate headings in simple nonfiction texts,2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-E,Match simple labels to parts of pictures or diagrams,2,4,3
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-F,Use picture captions to understand images with teacher support,3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-G,Find specific information using simple tables of contents,3,5,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-H,Create basic picture labels for classroom objects or simple drawings,3,6,4
+Language Arts,Kindergarten,LA006,Reading Comprehension,LA006-06,Text Features,LA006-06-I,Contribute to a class picture dictionary by drawing and labeling items,4,6,5
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-A,"Listen to and retell a simple story in own words using sequential terms (first, next, last)",1,3,2
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-B,Create simple verbal stories using provided story starter prompts,2,4,3
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-C,Use puppets to act out familiar stories with clear beginning and ending,2,4,3
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-D,Draw and describe an original character with at least two distinct traits,3,5,4
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-E,"Use puppets to create and perform original stories with beginning, middle, and ending",3,5,4
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-F,Collaborate with peers to plan and act out stories using props and simple dialogue,4,6,5
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-G,Create and illustrate a simple picture book with connected events and characters,4,6,5
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-01,Imaginative Storytelling,LA007-01-H,"Develop and perform original stories incorporating setting, characters, and basic plot",5,7,6
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-A,"Use basic gestures and facial expressions to show emotions (happy, sad, scared)",1,3,2
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-B,Imitate familiar character voices from read-aloud stories,2,4,3
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-C,"Act out daily routines through simple dramatic play (shopping, cooking, school)",2,4,3
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-D,Role-play familiar story characters with basic props and costumes,3,5,4
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-E,Create simple dialogue between two characters in guided dramatic play,3,5,4
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-F,Narrate actions while acting out wordless picture books,4,6,5
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-G,"Collaborate with peers to act out a familiar story with beginning, middle, and end",4,6,5
+Language Arts,Kindergarten,LA007,Creative Expression,LA007-02,Dramatic Play,LA007-02-H,Participate in a class play with assigned character roles and simple memorized lines,5,7,6
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-A,"Count and recognize numbers 0-10, including matching spoken words to written numerals",1,3,2
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-B,"Write numbers 0-10 and their number words, demonstrating one-to-one correspondence with objects",2,4,3
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-C,"Count, recognize, and write numbers 11-20, with proper sequence and order",3,5,4
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-D,"Demonstrate sequential understanding through 20 (before/after, missing numbers, backward counting)",4,6,5
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-E,Count by 2s and 5s up to 50 using visual aids and concrete objects,5,7,6
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-F,"Count and recognize numbers from 21-100, with emphasis on decade numbers",6,8,7
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-01,Know number names and the count sequence,COUNT001-01-G,Count forward from any given number up to 100 and identify sequence errors,7,9,8
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-A,Count up to 5 objects using one-to-one correspondence with correct touching and tracking,1,3,2
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-B,"Count up to 10 objects in various arrangements (linear, scattered, circular) with consistent accuracy",2,4,3
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-C,Demonstrate counting conservation by counting objects of different sizes and in different arrangements while recognizing total remains unchanged,3,5,4
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-D,"Count up to 20 objects in structured arrangements (lines, arrays) and count out requested quantities",4,6,5
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-E,Compare quantities between groups and count backwards from 10 using concrete objects,5,7,6
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-F,Count objects in groups of 2 up to 20 (skip counting) and track running totals as objects change,6,8,7
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-02,Count to tell the number of objects,COUNT001-02-G,"Count combined visible and hidden objects up to 10, including briefly shown then hidden sets",7,9,8
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-A,"Compare two groups of up to 5 objects using one-to-one correspondence and the terms ""more than,"" ""less than,"" and ""equal to""",1,3,2
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-B,Compare two groups of 6-10 objects using visual patterns and one-to-one correspondence,2,4,3
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-C,Compare two written numerals between 1-10 using number lines and visual representations,3,5,4
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-D,Order three or more numbers/groups (up to 10) from least to greatest or greatest to least,4,6,5
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-E,"Use inequality symbols (<, >) correctly when comparing numbers up to 10 with justification",5,7,6
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-F,"Identify numbers that are ""one more"" or ""one less"" than a given number up to 20",6,8,7
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-03,Compare numbers,COUNT001-03-G,Compare two numbers between 11-20 using place value understanding and visual models,7,9,8
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,COUNT001-04-A,Recognize and name ordinal positions (first through fifth) in a simple line or sequence,2,4,3
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,COUNT001-04-B,Match ordinal number words (first through fifth) with their corresponding symbols (1st-5th),3,5,4
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,COUNT001-04-C,Apply ordinal numbers (first through fifth) to daily routines and story sequences,3,5,4
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,COUNT001-04-D,Extend ordinal number understanding to tenth position (sixth through tenth),4,6,5
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,COUNT001-04-E,"Compare and analyze relative positions using ordinal numbers (e.g., ""What comes before fourth?"")",5,7,6
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,COUNT001-04-F,Create and complete sequences using ordinal numbers (first through tenth),6,8,7
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-04,Understand ordinal numbers,COUNT001-04-G,Solve simple word problems involving ordinal numbers in real-world contexts,7,9,8
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-A,Identify a group of ten ones within numbers 11-19 using objects or drawings,2,4,3
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-B,Represent numbers 11-15 as ten ones plus additional ones using manipulatives,3,5,4
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-C,Represent numbers 16-19 as ten ones plus additional ones using manipulatives,4,6,5
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-D,Break apart numbers 11-15 into ten ones and some further ones using visual models,4,6,5
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-E,Break apart numbers 16-19 into ten ones and some further ones using visual models,5,7,6
+Mathematics,Kindergarten,COUNT001,Counting and Cardinality,COUNT001-05,Compose and Decompose Numbers 11–19,COUNT001-05-F,"Compose and decompose numbers 11-19 using equations (e.g., 14 = 10 + 4)",6,8,7
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-01,Identify and describe shapes,GEOM001-01-A,"Match and name basic 2D shapes (circles, squares, triangles, rectangles) regardless of size, color, or orientation",1,3,2
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-01,Identify and describe shapes,GEOM001-01-B,"Identify and describe shapes in real-world environments using geometric vocabulary (sides, corners) and basic attributes (curved vs. straight sides)",2,4,3
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-01,Identify and describe shapes,GEOM001-01-C,"Count and compare shape properties (number of sides, vertices) and sort shapes into groups based on these characteristics",3,5,4
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-01,Identify and describe shapes,GEOM001-01-D,"Recognize and name 3D shapes (cubes, cones, cylinders) and distinguish between 2D and 3D objects",4,6,5
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-01,Identify and describe shapes,GEOM001-01-E,Draw and trace basic shapes using templates and verbal descriptions of their properties,4,6,5
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-01,Identify and describe shapes,GEOM001-01-F,Compose larger shapes by combining basic shapes and decompose larger shapes into smaller basic shapes,5,7,6
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-02,"Analyze, compare, create, and compose shapes",GEOM001-02-A,Identify and name basic 2D shapes based on their attributes (sides and vertices),1,3,2
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-02,"Analyze, compare, create, and compose shapes",GEOM001-02-B,"Sort and classify shapes by single attributes (sides, corners, size) and identify shapes that don't belong",2,4,3
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-02,"Analyze, compare, create, and compose shapes",GEOM001-02-C,"Recognize and match shapes in different orientations and sizes, including shapes in real-world objects",3,5,4
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-02,"Analyze, compare, create, and compose shapes",GEOM001-02-D,"Create and complete basic shapes through drawing, building, and completing half-drawn figures",4,6,5
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-02,"Analyze, compare, create, and compose shapes",GEOM001-02-E,Analyze and compare 3D shapes by building and manipulating physical models,5,7,6
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-02,"Analyze, compare, create, and compose shapes",GEOM001-02-F,Compose and decompose shapes to form larger shapes and create pictures of familiar objects,6,8,7
+Mathematics,Kindergarten,GEOM001,Geometry,GEOM001-02,"Analyze, compare, create, and compose shapes",GEOM001-02-G,"Create, extend, and describe repeating patterns using multiple shapes and attributes",7,9,8
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-01,Describe and compare measurable attributes,MEAS001-01-A,"Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",1,3,2
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-01,Describe and compare measurable attributes,MEAS001-01-B,Compare and contrast two objects based on a single measurable attribute using direct comparison and comparative language,2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-01,Describe and compare measurable attributes,MEAS001-01-C,"Sort and classify objects into groups based on one measurable attribute (size, weight, or length)",3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-01,Describe and compare measurable attributes,MEAS001-01-D,"Measure objects using non-standard units (cubes, paper clips) and compare results",4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-01,Describe and compare measurable attributes,MEAS001-01-E,"Order 3-5 objects by a single measurable attribute (length, weight, or capacity)",5,7,6
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-01,Describe and compare measurable attributes,MEAS001-01-F,Compare and measure capacity using water or sand with various containers,6,8,7
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-01,Describe and compare measurable attributes,MEAS001-01-G,"Classify objects using multiple measurable attributes simultaneously (height and width, weight and size)",7,9,8
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-02,Classify objects and count the number of objects in each category,MEAS001-02-A,"Create and sort objects into basic categories based on one observable attribute (color, size, or shape)",1,3,2
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-02,Classify objects and count the number of objects in each category,MEAS001-02-B,"Count and compare objects within categories (up to 5 objects), using terms ""more,"" ""fewer,"" and ""equal""",2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-02,Classify objects and count the number of objects in each category,MEAS001-02-C,Sort objects into given categories (up to 3 categories) and count up to 10 objects per category,3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-02,Classify objects and count the number of objects in each category,MEAS001-02-D,"Classify objects using two attributes simultaneously (e.g., blue and round) and explain sorting criteria",4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-02,Classify objects and count the number of objects in each category,MEAS001-02-E,Record and represent category data using tally marks and simple pictographs,4,7,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-02,Classify objects and count the number of objects in each category,MEAS001-02-F,Sort objects by function and create self-designed category systems with clear labels,5,7,6
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-02,Classify objects and count the number of objects in each category,MEAS001-02-G,Reclassify objects into new categories and identify items that don't belong with explanations,6,8,7
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-03,Collect and Represent Data,MEAS001-03-A,Sort and match data into given categories using picture cards or objects,1,3,2
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-03,Collect and Represent Data,MEAS001-03-B,Create physical representations of data through human graphs and object arrangements,2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-03,Collect and Represent Data,MEAS001-03-C,Record simple data using tally marks and stickers for class surveys,2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-03,Collect and Represent Data,MEAS001-03-D,Construct basic pictographs and bar charts with teacher guidance,3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-03,Collect and Represent Data,MEAS001-03-E,"Read and interpret simple graphs to answer ""how many"" and ""which has more/less"" questions",3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-03,Collect and Represent Data,MEAS001-03-F,Make predictions about data outcomes and verify through collection,4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-03,Collect and Represent Data,MEAS001-03-G,Explain data representations to others using simple comparative language,4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-04,Estimate and Measure,MEAS001-04-A,"Compare and describe objects' attributes (longer/shorter, heavier/lighter) using direct observation and manipulation",1,3,2
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-04,Estimate and Measure,MEAS001-04-B,"Estimate quantities and measurements using everyday references (steps, handspans, blocks) before measuring",2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-04,Estimate and Measure,MEAS001-04-C,"Measure lengths using non-standard units (blocks, LEGO bricks, paper strips) and record results",2,5,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-04,Estimate and Measure,MEAS001-04-D,Compare weights of various objects using a balance scale and predict outcomes,3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-04,Estimate and Measure,MEAS001-04-E,"Measure and compare volumes using standard measuring tools (cups, spoons) with sand, water, or rice",3,6,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-04,Estimate and Measure,MEAS001-04-F,"Track and record measurements over time (plant growth, daily temperature) using simple tools and graphs",4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-04,Estimate and Measure,MEAS001-04-G,Measure time durations for simple activities using stopwatches and compare results with peers,4,7,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-05,Using Non-Standard Tools,MEAS001-05-A,Compare two objects directly side by side to determine longer/shorter,1,3,2
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-05,Using Non-Standard Tools,MEAS001-05-B,"Use body parts (fingers, hands) to measure and describe object lengths",2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-05,Using Non-Standard Tools,MEAS001-05-C,"Measure single objects using uniform items (paper clips, cubes) and count units",2,5,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-05,Using Non-Standard Tools,MEAS001-05-D,Compare measurements of the same object using different non-standard units,3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-05,Using Non-Standard Tools,MEAS001-05-E,Record and represent measurement results using simple drawings or numbers,3,6,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-05,Using Non-Standard Tools,MEAS001-05-F,Measure and compare multiple objects using the same non-standard unit,4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-06,Exploring Temperature,MEAS001-06-A,Identify objects as 'hot' or 'cold' through direct sensory experience (with safety guidance),1,3,2
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-06,Exploring Temperature,MEAS001-06-B,"Sort picture cards into temperature categories (hot, warm, cold) with real-world examples",2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-06,Exploring Temperature,MEAS001-06-C,Connect weather conditions to relative temperature using seasonal pictures and vocabulary,2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-06,Exploring Temperature,MEAS001-06-D,"Read basic picture thermometers showing hot, warm, and cold zones",3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-06,Exploring Temperature,MEAS001-06-E,"Predict temperature changes in simple scenarios (ice in sun vs. shade, hot chocolate cooling)",3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-06,Exploring Temperature,MEAS001-06-F,"Compare temperatures of different locations/objects using comparative language (hotter than, colder than)",4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-07,Time Durations,MEAS001-07-A,"Identify activities as 'quick' or 'long' using direct observation (e.g., clapping vs. drawing a picture)",1,3,2
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-07,Time Durations,MEAS001-07-B,"Use a sand timer to measure and compare simple activity durations (e.g., hopping vs. building with blocks)",2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-07,Time Durations,MEAS001-07-C,"Order 3 familiar activities from shortest to longest duration (e.g., washing hands, eating snack, playing outside)",3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-07,Time Durations,MEAS001-07-D,"Predict whether an activity will finish before or after a given time marker (e.g., before/after sand timer runs out)",3,6,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-07,Time Durations,MEAS001-07-E,"Match common activities to appropriate time measurement tools (e.g., sand timer for teeth brushing, clock for naptime)",4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-07,Time Durations,MEAS001-07-F,Create a simple timeline of daily classroom routines using picture cards and duration vocabulary,4,7,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-08,Comparing Capacities,MEAS001-08-A,"Identify containers as ""empty"" or ""full"" using visual observation",1,3,2
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-08,Comparing Capacities,MEAS001-08-B,"Compare two identical containers with different amounts using terms ""more"" and ""less""",2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-08,Comparing Capacities,MEAS001-08-C,Sort three or more identical containers by amount (least to most),3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-08,Comparing Capacities,MEAS001-08-D,Predict and test which of two different-shaped containers holds more liquid,4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-08,Comparing Capacities,MEAS001-08-E,"Group containers by capacity size (small, medium, large) using standard measuring tools",4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-08,Comparing Capacities,MEAS001-08-F,Compare capacities of different containers using non-standard units (cups of rice/sand),5,7,6
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-09,Data Interpretation,MEAS001-09-A,Place stickers or markers on simple charts to represent personal choices and identify basic patterns,1,3,2
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-09,Data Interpretation,MEAS001-09-B,Match physical objects to their corresponding quantities shown in pictographs and simple bar graphs,2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-09,Data Interpretation,MEAS001-09-C,Identify most and least popular items in class data displays and explain basic reasoning,2,4,3
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-09,Data Interpretation,MEAS001-09-D,"Use manipulatives (blocks, counters) to represent and compare data from simple charts",3,5,4
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-09,Data Interpretation,MEAS001-09-E,"Compare two related data sets to identify similarities and differences (e.g., comparing favorite foods across seasons)",4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-09,Data Interpretation,MEAS001-09-F,"Draw basic conclusions from data and suggest actions based on findings (e.g., planning quantities for class activities)",4,6,5
+Mathematics,Kindergarten,MEAS001,Measurement and Data,MEAS001-09,Data Interpretation,MEAS001-09-G,Make predictions about future data patterns based on current trends and seasonal changes,5,7,6
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-01,Understand addition as putting together and adding to,OPS001-01-A,"Represent addition within 5 using concrete objects, fingers, and acting out situations",1,3,2
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-01,Understand addition as putting together and adding to,OPS001-01-B,"Model addition within 5 using drawings, pictures, and number lines, connecting to concrete representations",2,4,3
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-01,Understand addition as putting together and adding to,OPS001-01-C,Express addition situations within 5 using verbal explanations and written equations,3,5,4
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-01,Understand addition as putting together and adding to,OPS001-01-D,"Decompose numbers up to 5 into pairs in multiple ways, using objects and drawings",4,6,5
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-01,Understand addition as putting together and adding to,OPS001-01-E,"Solve addition word problems within 10 using objects, drawings, or equations",5,7,6
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-01,Understand addition as putting together and adding to,OPS001-01-F,"Use multiple strategies (ten frames, tally marks, doubles) to solve addition problems within 10",6,8,7
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-01,Understand addition as putting together and adding to,OPS001-01-G,Create and solve addition stories and problems involving real-world contexts (including money),7,9,8
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-02,Understand subtraction as taking apart and taking from,OPS001-02-A,"Represent subtraction within 5 using concrete objects, fingers, and physical actions",1,3,2
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-02,Understand subtraction as taking apart and taking from,OPS001-02-B,"Decompose numbers up to 5 into pairs using objects and drawings, recording each decomposition",2,4,3
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-02,Understand subtraction as taking apart and taking from,OPS001-02-C,"Solve subtraction word problems within 5 using objects, drawings, and equations",3,5,4
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-02,Understand subtraction as taking apart and taking from,OPS001-02-D,Model and solve subtraction problems within 10 using ten frames and number lines,4,6,5
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-02,Understand subtraction as taking apart and taking from,OPS001-02-E,Create and solve real-world subtraction situations within 10 using various representations,5,7,6
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-02,Understand subtraction as taking apart and taking from,OPS001-02-F,Find missing numbers in subtraction equations within 10 (missing difference or minuend),6,8,7
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-02,Understand subtraction as taking apart and taking from,OPS001-02-G,Connect addition and subtraction as inverse operations within 10 using related facts,7,9,8
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-03,Fluently add and subtract within 5,OPS001-03-A,Count forward and backward within 5 fluently (within 3 seconds),1,3,2
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-03,Fluently add and subtract within 5,OPS001-03-B,Add and subtract fluently within 3 using objects and mental strategies,2,4,3
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-03,Fluently add and subtract within 5,OPS001-03-C,Match visual representations to addition and subtraction equations within 5,3,5,4
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-03,Fluently add and subtract within 5,OPS001-03-D,Add and subtract fluently within 5 using mental strategies,4,6,5
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-03,Fluently add and subtract within 5,OPS001-03-E,"Solve missing number problems within 5 (e.g., 3 + __ = 5, 5 - __ = 2)",5,7,6
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-03,Fluently add and subtract within 5,OPS001-03-F,"Complete fact families for numbers within 5, demonstrating addition-subtraction relationship",6,8,7
+Mathematics,Kindergarten,OPS001,Operations and Algebraic Thinking,OPS001-03,Fluently add and subtract within 5,OPS001-03-G,Solve and create word problems involving addition and subtraction within 5,7,9,8
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-01,Recognizing and Creating Patterns,PTRN001-01-A,Identify simple patterns in everyday objects and sounds,1,3,2
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-01,Recognizing and Creating Patterns,PTRN001-01-B,Copy existing AB patterns using concrete objects or actions,2,4,3
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-01,Recognizing and Creating Patterns,PTRN001-01-C,"Extend simple AB patterns with colors, shapes, or sounds",2,5,3
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-01,Recognizing and Creating Patterns,PTRN001-01-D,Create original AB patterns using two elements,3,5,4
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-01,Recognizing and Creating Patterns,PTRN001-01-E,Identify missing elements within AB patterns,3,6,4
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-01,Recognizing and Creating Patterns,PTRN001-01-F,Extend ABC patterns using multiple elements,4,6,5
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-01,Recognizing and Creating Patterns,PTRN001-01-G,Create and explain original patterns using multiple elements,4,7,5
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-02,Sorting by Attributes,PTRN001-02-A,"Sort objects by a single obvious attribute (e.g., all red items together)",1,3,2
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-02,Sorting by Attributes,PTRN001-02-B,Verbally describe the sorting rule used for a single-attribute group,2,4,3
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-02,Sorting by Attributes,PTRN001-02-C,Sort the same set of objects using a different single attribute,3,5,4
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-02,Sorting by Attributes,PTRN001-02-D,"Sort objects by two attributes simultaneously (e.g., color AND shape)",4,6,5
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-02,Sorting by Attributes,PTRN001-02-E,Create and label sorting categories before grouping objects,4,6,5
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-02,Sorting by Attributes,PTRN001-02-F,"Explain complex sorting rules using ""because"" statements",5,7,6
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-02,Sorting by Attributes,PTRN001-02-G,Find objects that don't belong in a sorted group and explain why,6,8,7
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-03,Exploring Sequences,PTRN001-03-A,"Identify ""first"" and ""last"" positions in a simple 3-step sequence using concrete objects",1,3,2
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-03,Exploring Sequences,PTRN001-03-B,"Copy and repeat a simple 2-step movement sequence (e.g., clap-jump)",2,4,3
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-03,Exploring Sequences,PTRN001-03-C,"Arrange 3 picture cards to show a logical sequence (morning, noon, night)",3,5,4
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-03,Exploring Sequences,PTRN001-03-D,Create and demonstrate an original 3-step movement sequence,3,5,4
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-03,Exploring Sequences,PTRN001-03-E,Identify the missing middle step in a familiar 3-step sequence,4,6,5
+Mathematics,Kindergarten,PTRN001,Patterns and Sorting,PTRN001-03,Exploring Sequences,PTRN001-03-F,Arrange 4-5 picture cards to tell a simple story with clear sequential order,5,7,6
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-01,Understanding Daily and Seasonal Time,TIME001-01-A,"Identify parts of the day (morning, afternoon, evening) using visual cues from the sun and daily activities",1,3,2
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-01,Understanding Daily and Seasonal Time,TIME001-01-B,"Sequence 3 basic daily routines in chronological order (wake up, lunch, bedtime)",2,4,3
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-01,Understanding Daily and Seasonal Time,TIME001-01-C,"Sequence 5 detailed daily activities with specific times (breakfast at 8:00, school at 9:00, etc.)",3,5,4
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-01,Understanding Daily and Seasonal Time,TIME001-01-D,Name and order the four seasons using environmental clues and weather patterns,2,4,3
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-01,Understanding Daily and Seasonal Time,TIME001-01-E,Match appropriate clothing and activities to weather conditions in different seasons,3,5,4
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-01,Understanding Daily and Seasonal Time,TIME001-01-F,Create a simple weekly schedule using pictures and basic time concepts,4,6,5
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-02,Using Calendars,TIME001-02-A,Recite days of the week in order using songs or rhymes,1,3,2
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-02,Using Calendars,TIME001-02-B,Identify today's day of the week on a calendar,2,4,3
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-02,Using Calendars,TIME001-02-C,Point to yesterday and tomorrow on a calendar,2,4,3
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-02,Using Calendars,TIME001-02-D,Count forward up to 7 days from any given day,3,5,4
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-02,Using Calendars,TIME001-02-E,Identify and mark special events on a monthly calendar,3,5,4
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-02,Using Calendars,TIME001-02-F,Count the number of days between two marked events,4,6,5
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-03,Telling Time to the Hour,TIME001-03-A,Identify the hour hand and minute hand on an analog clock,1,3,2
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-03,Telling Time to the Hour,TIME001-03-B,Count numbers 1-12 in order around an analog clock face,2,4,3
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-03,Telling Time to the Hour,TIME001-03-C,"Recognize and state ""o'clock"" times when hour hand points exactly to a number",3,5,4
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-03,Telling Time to the Hour,TIME001-03-D,Match spoken whole-hour times to analog clock displays,3,5,4
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-03,Telling Time to the Hour,TIME001-03-E,Draw hour hand to show specific whole-hour times on a blank clock face,4,6,5
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-03,Telling Time to the Hour,TIME001-03-F,Match analog clock times to digital displays for whole hours,4,6,5
+Mathematics,Kindergarten,TIME001,Time and Calendar,TIME001-03,Telling Time to the Hour,TIME001-03-G,Connect whole-hour times to daily activities in sequence,4,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-A,"Follow basic 3-step classroom routines independently (entering, storing belongings, starting assigned task)",1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-B,Identify and demonstrate proper care of shared classroom materials and spaces,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-C,"Sort safe and unsafe behaviors using picture scenarios in different settings (home, school, community)",2,5,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-D,"Explain the purpose of 3-4 essential rules in different settings (home, school, playground)",2,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-E,Identify personal responsibilities and their importance at home and school through visual representations,3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-F,"Demonstrate respectful communication skills using ""I-messages"" and appropriate group entry strategies",3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-G,Recognize authority figures' roles and responsibilities in maintaining community safety and order,3,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-H,Apply basic conflict resolution strategies through guided role-play and puppet scenarios,4,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-I,Connect actions to consequences through real-world scenarios and collaborative discussion,4,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-01,Rules and Responsibilities,SS001-01-J,Participate in creating and following simple class agreements through group consensus,4,8,6
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-A,"Demonstrate basic classroom citizenship behaviors (sharing materials, following routines, listening quietly)",1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-B,"Identify and explain the roles of common community helpers (police, firefighters, teachers, etc.)",2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-C,"Recognize and explain the meaning of basic American symbols (flag, Statue of Liberty, state symbols)",3,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-D,"Demonstrate appropriate participation in patriotic activities (Pledge of Allegiance, songs, ceremonies)",2,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-E,Practice classroom democracy through voting and job responsibilities,3,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-F,"Apply conflict resolution strategies using ""I"" statements and active listening",4,7,6
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-G,"Demonstrate environmental and community stewardship (recycling, conservation, helping others)",3,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-H,Create and interpret simple maps of classroom and school community,4,7,6
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-02,Citizenship,SS001-02-I,Identify and respond appropriately to safety signs and emergency procedures,2,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-A,Identify the American flag and demonstrate appropriate behavior during the Pledge of Allegiance,1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-B,"Identify and locate basic government buildings in their community (city hall, post office, library)",2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-C,Match community helpers with their government roles and explain their basic duties,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-D,Distinguish between classroom rules and community laws using real-world examples,2,5,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-E,Participate in classroom voting activities and explain why voting is important,3,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-F,"Identify the three main community leaders (mayor, governor, president) and their basic roles",3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-G,Explain how governments help meet community needs through services and buildings,3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-H,"Demonstrate ways families can participate in community government (voting, meetings, events)",4,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-03,Government,SS001-03-I,Create a simple visual representation showing how taxes help pay for community services,4,7,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-A,"Identify common public places in the community (library, park, school)",1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-B,Match community helpers to their workplace locations,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-C,Explain how public spaces help people in the community,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-D,"Sort community services into basic categories (safety, education, recreation)",3,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-E,Create simple maps showing locations of local public services,3,6,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-F,Build and describe a model of a public space using blocks,4,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-G,Participate in group discussions about community improvements,4,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-04,Local Governance,SS001-04-H,Role-play a simple town meeting with assigned community roles,5,7,6
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-A,"Identify common community problems in familiar settings (classroom, playground, neighborhood)",1,3,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-B,"Match community helpers to the problems they help solve (e.g., firefighter-fire, doctor-illness)",1,4,2
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-C,Sort and categorize tools used by different community helpers,2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-D,"Identify basic conflict resolution vocabulary (share, take turns, apologize, listen)",2,4,3
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-E,"Use ""I feel"" statements to express needs in conflict situations",2,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-F,Practice active listening skills during peer conversations,3,5,4
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-G,Participate in simple peer mediation scenarios with teacher guidance,3,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-H,"Create simple solutions for classroom problems (making rules, sharing schedules)",4,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-I,"Design basic visual aids (drawings, posters) to promote positive classroom behavior",3,6,5
+Social Studies,Kindergarten,SS001,Civics and Government,SS001-05,Community Problem-Solving,SS001-05-J,Collaborate with peers to implement a simple classroom improvement project,4,7,6
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-A,"Sort basic items into categories of ""needs"" (survival) versus ""wants"" (nice to have) using picture cards",1,3,2
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-B,"Identify and compare seasonal needs versus wants in daily life (clothing, activities, supplies)",2,4,3
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-C,"Match community helpers and jobs to the basic needs they help fulfill (food, shelter, health)",2,4,3
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-D,Create a simple picture-based spending plan dividing resources between needs and wants,2,5,4
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-E,"Demonstrate resource conservation by identifying and illustrating ways to save water, food, and energy",3,5,4
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-F,Role-play shopping scenarios making choices with limited resources,3,6,5
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-G,Compare needs and wants across different families and cultures using visual aids,4,6,5
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-H,"Plan and prioritize needs versus wants for a specific event (party, trip, emergency kit) within given constraints",4,7,6
+Social Studies,Kindergarten,SS002,Economics,SS002-01,Needs and Wants,SS002-01-I,Demonstrate understanding of how sharing and trading helps communities meet everyone's needs,5,7,6
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-A,"Identify basic goods (toys, food, clothes) from pictures",1,3,2
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-B,"Identify common service providers (teacher, doctor, firefighter) from pictures",1,3,2
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-C,Sort items into 'goods' and 'services' categories using picture cards,2,4,3
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-D,Match community helpers to their tools and workplaces,2,4,3
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-E,Connect specific services to the goods they help create or provide,3,5,4
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-F,Role-play simple service provider scenarios using props and costumes,3,5,4
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-G,"Use play money to ""purchase"" goods in a classroom store setting",4,6,5
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Goods and Services,SS002-03-H,Create and operate a basic classroom marketplace with both goods and services,5,7,6
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-A,"Use basic directional words (left, right, up, down) to describe locations of objects in familiar spaces",1,3,2
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-B,Create simple maps of the classroom and playground using basic symbols and a legend,2,4,3
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-C,Identify common buildings in the community and explain their basic purposes,2,4,3
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-D,Recognize and describe basic landforms and natural features in the local environment,2,5,4
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-E,"Compare characteristics of different living environments (urban, suburban, rural) and the types of homes found in each",3,6,4
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-F,"Connect weather conditions to appropriate clothing, activities, and transportation methods",3,5,4
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-G,"Observe and describe how seasonal changes affect people, plants, and animals in the local environment",3,6,5
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-H,Identify ways people use and protect natural resources in their environment,4,7,5
+Social Studies,Kindergarten,SS003,Geography,SS003-02,Places and Environments,SS003-02-I,Compare how people adapt to different environments using various tools and technologies,4,7,6
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-A,"Identify basic natural features in pictures (trees, mountains, rivers)",1,3,2
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-B,"Identify basic human-made features in pictures (houses, roads, bridges)",1,3,2
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-C,Sort pictures into natural and human-made categories using a simple T-chart,2,4,3
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-D,"Match natural resources to their human-made products (trees→paper, rocks→bricks)",2,4,3
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-E,Create a simple map showing both natural and human-made features in the classroom,3,5,4
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-F,"Explain how human-made structures help people use natural features (bridges cross rivers, tunnels go through mountains)",3,5,4
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-G,Create a collage comparing natural and human-made features in their neighborhood,4,6,5
+Social Studies,Kindergarten,SS003,Geography,SS003-03,Natural vs. Human-Made,SS003-03-H,"Design and explain a simple solution to interact with a natural feature (shade structure for playground, bridge for stream)",4,7,5
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-A,"Identify basic time markers in a day (morning, afternoon, evening) and sequence daily activities",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-B,"Compare physical changes using personal photographs from different ages (baby, toddler, current)",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-C,Match family members' roles with their responsibilities in the household,2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-D,Create a personal timeline using 3-4 major life events with pictures and dates,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-E,Draw and label a basic family tree showing three generations,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-F,"Identify and describe personal growth through measurable changes (height, abilities, independence)",3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-G,Explore and describe family traditions and how they have changed or stayed the same,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-H,Compare aspects of their own life with those of their parents' childhood,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-I,Create and present a memory collection that represents significant personal moments,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-01,Personal History,SS004-01-J,Analyze and describe how their immediate environment has changed over time,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-A,"Sort common objects and pictures into ""past"" and ""present"" categories with 80% accuracy",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-B,"Identify 3 basic American symbols (flag, Liberty Bell, bald eagle) and explain their importance",2,5,3
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-C,"Sequence 3-4 personal or familiar events using a simple timeline (e.g., morning routine, seasons)",2,5,4
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-D,"Compare basic life aspects (clothing, toys, transportation) between past and present using visual aids",3,6,4
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-E,"Recognize and explain the significance of 3 major national holidays (Thanksgiving, Independence Day, MLK Jr. Day)",3,6,5
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-F,Create a simple three-generation family tree and discuss how family life has changed over time,3,7,5
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-G,"Match 4 historical figures (Washington, Lincoln, MLK Jr., Parks) to their main achievements using pictures and stories",4,7,5
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-H,Compare schools and education between past and present using 3 specific examples,4,7,6
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-I,Demonstrate understanding of a historical figure's life through simple role-play and storytelling,4,8,6
+Social Studies,Kindergarten,SS004,History,SS004-02,Historical Figures and Events,SS004-02-J,"Identify how 2 basic technologies or tools (communication, transportation) have evolved from past to present",4,8,6
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-A,"Identify ""before"" and ""after"" in daily classroom activities",1,3,2
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-B,Sequence 3 events from a familiar story using picture cards,2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-C,"Order daily activities using a picture schedule (morning, afternoon, evening)",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-D,"Place yesterday, today, and tomorrow events on a 3-day timeline",3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-E,Sort seasonal events into a four-seasons timeline,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-F,Create a personal timeline showing 5 key life events,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-G,Construct a class timeline of monthly school events using photos,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-03,Understanding Timelines,SS004-03-H,Compare events on personal timeline with a family member's timeline,5,7,6
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-A,Identify whether common objects are from the past or present when shown pictures,1,3,2
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-B,"Match pairs of related objects from past and present (e.g., candle/lightbulb)",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-C,"Sort everyday items into ""past"" and ""present"" categories using picture cards",2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-D,Explain basic differences between past and present versions of common tools,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-E,"Demonstrate simple daily tasks as done in past vs. present (e.g., washing clothes)",3,6,4
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-F,Compare transportation methods from past to present using pictures and discussion,4,6,5
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-G,Create before/after timeline cards showing how specific objects have changed over time,4,7,5
+Social Studies,Kindergarten,SS004,History,SS004-04,Past vs. Present,SS004-04-H,Build simple models comparing past and present homes using basic materials,5,8,6
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-A,Identify personal family traditions through simple drawings,1,3,2
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-B,Match cultural symbols to their meanings using picture cards,2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-C,Share a family photograph and describe one cultural element,2,4,3
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-D,Create basic cultural symbols representing family heritage,2,5,3
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-E,Compare traditional foods from two different cultures,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-F,Demonstrate a simple cultural practice or tradition,3,5,4
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-G,Explain how family celebrations connect to cultural heritage,3,6,4
+Social Studies,Kindergarten,SS004,History,SS004-05,Cultural Heritage,SS004-05-H,Create and present a family traditions collage,4,6,5
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-A,Recognize that people have different cultures through stories and pictures,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-B,Demonstrate basic cultural greetings and gestures from 3 different cultures,2,5,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-C,"Sort and categorize cultural items (food, clothing, toys) from different cultures",3,5,4
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-D,"Identify and describe traditional homes, foods, and clothing from 3 cultures",3,6,4
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-E,"Participate in cultural activities (games, crafts, songs) from 2 different cultures",3,6,4
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-F,Compare family celebrations and traditions between 2 cultures,4,6,5
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-G,Identify similarities and differences in daily life across cultures,4,7,5
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-H,Demonstrate respect for cultural differences through stories and role-play,4,7,5
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-01,Cultural Awareness,SS005-01-I,Create and explain simple cultural artifacts representing different celebrations,4,8,6
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-A,Locate their continent on a simplified world map and recognize that the world contains many different countries,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-B,Demonstrate basic cultural greetings through gestures and simple phrases from three different cultures,1,3,2
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-C,Match climate types to appropriate clothing and housing styles from different regions of the world,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-D,Identify and compare common transportation methods used in different parts of the world,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-E,Connect traditional foods and clothing to their countries of origin using picture matching,2,4,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-F,"Participate in cultural expression through songs, games, and simple art projects from different cultures",2,5,3
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-G,Compare daily routines and school activities between their own culture and another culture,3,6,4
+Social Studies,Kindergarten,SS005,Culture and Diversity,SS005-02,Global Connections,SS005-02-H,"Recognize and explain how people around the world have both similarities and differences in their celebrations, languages, and ways of life",4,7,5
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-A,"Role-play making a product (e.g., paper bracelets) and trading with peers",2,4,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-B,"Sort pictures of producers (farmers, bakers) and consumers (shoppers, families)",1,3,2  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-C,"Create a classroom 'business' to sell handmade goods using play money",4,6,5  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-D,"Discuss why producers need consumers and vice versa using simple scenarios",3,5,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-A,"Use a pretend lemonade stand to explore scarcity (e.g., 'What if lemons run out?')",3,5,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-B,"Sort items into 'high demand' (toys) and 'low demand' (broken pencils) categories",2,4,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-C,"Simulate a market where prices change based on availability (e.g., rainy day vs. sunny day)",4,7,5  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-D,"Draw a picture showing what happens when everyone wants the same toy",2,5,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-E,"Collaborate to create a class business plan (e.g., product name, roles)",4,7,5  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-F,"Use play money to 'pay' peers for helping with a classroom task",2,4,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-G,"Identify and draw three ways people use money in the community",2,5,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-H,"Sort items into 'goods we make' (crafts) and 'goods we grow' (plants)",1,3,2  
+Social Studies,Kindergarten,SS002,Economics,SS002-03,Producers and Consumers,SS002-03-I,"Role-play a farmer selling crops at a market and a buyer negotiating prices",3,6,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-E,"Predict what happens when a popular toy is scarce using a voting activity",3,5,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-F,"Use a pictograph to show how weather affects demand for items (umbrellas on rainy days)",2,4,3  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-G,"Design a poster advertising a 'limited edition' classroom item to increase demand",4,6,5  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-H,"Compare prices of the same item in different pretend stores (e.g., toy vs. grocery shop)",3,5,4  
+Social Studies,Kindergarten,SS002,Economics,SS002-04,Supply and Demand,SS002-04-I,"Simulate a 'sale day' where discounts are applied to less popular items",4,7,5  
+

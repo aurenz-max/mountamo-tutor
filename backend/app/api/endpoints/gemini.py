@@ -20,7 +20,8 @@ from typing import Dict, Any, Optional, List, Union, AsyncGenerator
 
 from ...core.config import settings
 from ...core.middleware import get_user_context, require_auth  # ADD THIS LINE
-from ...api.endpoints.user_profiles import log_activity
+from ...services.user_profiles import user_profiles_service  # FIXED: Import the service instance
+from ...models.user_profiles import ActivityLog  # FIXED: Import ActivityLog model
 
 
 # Set up logging
