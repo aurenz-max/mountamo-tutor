@@ -34,6 +34,9 @@ import DailyBriefingGemini from './DailyBriefingGemini';
 // Import the existing Daily Briefing Component (current activities display)
 import DailyBriefing from './DailyBriefingComponent';
 
+// Import the SubskillLearningHub component
+import SubskillLearningHub from './SubskillLearningHub';
+
 // Enhanced Learning Dashboard Component
 const EnhancedLearningDashboard: React.FC = () => {
   const { userProfile } = useAuth();
@@ -42,20 +45,53 @@ const EnhancedLearningDashboard: React.FC = () => {
   const [showPreferences, setShowPreferences] = useState(false);
   const [showDailyBriefing, setShowDailyBriefing] = useState(false);
   const [briefingExpanded, setBriefingExpanded] = useState(false);
+  
+  // New state for learning hub navigation
+  const [currentView, setCurrentView] = useState<'dashboard' | 'learning-hub'>('dashboard');
+  const [selectedActivity, setSelectedActivity] = useState<any>(null);
+  const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
 
   const studentId = userProfile?.student_id;
   const studentName = userProfile?.display_name || 'Student';
   const points = userProfile?.total_points || 0;
   const streak = userProfile?.current_streak || 0;
 
-  // Handle activity click - navigate to subskill learning hub
+  // Updated handleActivityClick function to show learning hub instead of navigating
   const handleActivityClick = (activity: any) => {
     console.log('Activity clicked:', activity);
     
     if (activity.id) {
-      // Use the activity ID directly (e.g., "rec-COUNT001-01-A")
-      // Clean URL without passing all the metadata
-      router.push(`/daily-learning/${activity.id}`);
+      setLoadingActivity(activity.id);
+      
+      // Set the selected activity and switch to learning hub view
+      setSelectedActivity(activity);
+      setCurrentView('learning-hub');
+      setLoadingActivity(null);
+    }
+  };
+
+  // Add function to handle going back to dashboard
+  const handleBackToDashboard = () => {
+    setCurrentView('dashboard');
+    setSelectedActivity(null);
+    setLoadingActivity(null);
+  };
+
+  // Add function to handle learning option selection
+  const handleLearningOptionSelect = (option: any) => {
+    console.log('Learning option selected:', option);
+    
+    // Navigate to the appropriate route based on the option
+    if (option.route) {
+      router.push(option.route);
+    } else if (option.endpoint) {
+      router.push(option.endpoint);
+    } else {
+      // Fallback navigation
+      const endpoint = option.curriculum_context ? 
+        `/learning/${option.curriculum_context.subskill_id}?type=${option.id}` :
+        `/learning/${selectedActivity?.id}?type=${option.id}`;
+      router.push(endpoint);
     }
   };
 
@@ -84,6 +120,20 @@ const EnhancedLearningDashboard: React.FC = () => {
     );
   }
 
+  // Render learning hub if an activity is selected
+  if (currentView === 'learning-hub' && selectedActivity) {
+    return (
+      <SubskillLearningHub
+        activityData={selectedActivity}
+        studentId={studentId}
+        onBack={handleBackToDashboard}
+        onLearningOptionSelect={handleLearningOptionSelect}
+        loading={loadingActivity === selectedActivity.id}
+      />
+    );
+  }
+
+  // Main dashboard view
   return (
     <div className="container mx-auto p-4 relative">
       {/* Header */}
@@ -166,7 +216,10 @@ const EnhancedLearningDashboard: React.FC = () => {
                       <Users className="text-blue-500 mr-3" />
                       <span>Live Tutoring</span>
                     </li>
-                    <li className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <li 
+                      className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
+                      onClick={() => setActiveTab('analytics')}
+                    >
                       <BarChart2 className="text-blue-500 mr-3" />
                       <span>My Analytics</span>
                     </li>
@@ -233,6 +286,18 @@ const EnhancedLearningDashboard: React.FC = () => {
                 studentId={studentId}
                 onActivityClick={handleActivityClick}
               />
+
+              {/* Loading indicator for activity selection */}
+              {loadingActivity && (
+                <Card className="border-blue-200 bg-blue-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-center space-x-2">
+                      <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                      <span className="text-blue-800">Loading activity: {loadingActivity}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </TabsContent>

@@ -4,8 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, Lightbulb, ArrowRight, RefreshCw, Sparkles } from 'lucide-react';
-import { api } from '@/lib/api';
+import { ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, Lightbulb, ArrowRight, RefreshCw, Sparkles, Home, BookOpen } from 'lucide-react';
+import { authApi } from '@/lib/authApiClient';
 import DrawingWorkspace from './DrawingWorkspace';
 import LoadingOverlay from './LoadingOverlay';
 
@@ -26,7 +26,7 @@ interface Problem {
       description?: string;
     };
     difficulty?: number;
-    concept_group?: string; // Added for new API
+    concept_group?: string;
   };
 }
 
@@ -35,8 +35,36 @@ interface ProblemSetProps {
   studentId?: number;
   numProblems?: number;
   autoStart?: boolean;
-  fromDashboard?: boolean; // Added to track if this came from dashboard recommendation
+  fromDashboard?: boolean;
 }
+
+// Enhanced helper function to clean IDs and extract components
+const parseActivityId = (activityId: string) => {
+  // Remove "rec-" prefix if present
+  const cleanId = activityId.startsWith('rec-') ? activityId.substring(4) : activityId;
+  
+  // For COUNT001-01-A format:
+  // - Unit: COUNT001
+  // - Skill: COUNT001-01  
+  // - Subskill: COUNT001-01-A
+  
+  const parts = cleanId.split('-');
+  if (parts.length >= 3) {
+    const unit = parts[0]; // COUNT001
+    const skill = `${parts[0]}-${parts[1]}`; // COUNT001-01
+    const subskill = cleanId; // COUNT001-01-A
+    
+    return { unit, skill, subskill, cleanId };
+  }
+  
+  // Fallback for simpler IDs
+  return { 
+    unit: parts[0] || cleanId, 
+    skill: cleanId, 
+    subskill: cleanId, 
+    cleanId 
+  };
+};
 
 // Helper function to extract feedback content
 const getFeedbackContent = (feedback: any) => {
@@ -103,10 +131,9 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const drawingRef = useRef<any>(null);
 
-  // Auto-start problem generation if specified - MODIFIED to never use recommendations by default
+  // Auto-start problem generation if specified
   useEffect(() => {
     if (autoStart && currentTopic && problems.length === 0 && !loadingSet) {
-      // Always use standard problem set by default, even when coming from dashboard
       setShowLoadingOverlay(true);
       generateProblemSet();
     }
@@ -120,78 +147,88 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setUsingRecommendations(false);
     
     try {
-      // Use the new skill-based problem generation API
+      // Parse IDs from the current topic
+      let skillId, subskillId, unitId;
+      
+      if (currentTopic.selection) {
+        // Parse the subskill first since it contains the full hierarchy
+        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
+        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
+        
+        // Use subskill parsing as the primary source of truth
+        unitId = subskillParsed.unit;
+        subskillId = subskillParsed.subskill;
+        
+        // Derive skill_id from subskill_id if needed
+        // For COUNT001-01-A, skill should be COUNT001-01
+        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
+          skillId = subskillParsed.skill;
+        } else {
+          // Fallback to the skill selection if it looks more complete
+          skillId = skillParsed.skill || skillParsed.cleanId;
+        }
+      } else if (currentTopic.id) {
+        // Parse from activity ID directly
+        const parsed = parseActivityId(currentTopic.id);
+        unitId = parsed.unit;
+        skillId = parsed.skill;
+        subskillId = parsed.subskill;
+      } else {
+        throw new Error('No valid skill/subskill identifiers found in currentTopic');
+      }
+      
+      console.log('=== DEBUG: ID Parsing ===');
+      console.log('Original currentTopic:', JSON.stringify(currentTopic, null, 2));
+      console.log('Parsed IDs:', { unitId, skillId, subskillId });
+      
+      // Validate required IDs
+      if (!skillId || !subskillId) {
+        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
+      }
+      
+      // Use the skill-based problem generation API
       const skillProblemsRequest = {
-        student_id: studentId,
         subject: currentTopic.subject || 'mathematics',
-        skill_id: currentTopic.selection.skill,
-        subskill_id: currentTopic.selection.subskill,
+        skill_id: skillId,
+        subskill_id: subskillId,
         count: numProblems
       };
       
+      console.log('=== API REQUEST ===');
       console.log('Requesting skill-based problems:', skillProblemsRequest);
       
-      // Call the new API endpoint
-      const problemsArray = await api.getSkillProblems(skillProblemsRequest);
+      // Call the skill-problems API endpoint
+      const problemsArray = await authApi.getSkillProblems(skillProblemsRequest);
+      
+      console.log('=== API RESPONSE ===');
+      console.log('Problems received:', problemsArray);
+      
+      if (!problemsArray || problemsArray.length === 0) {
+        throw new Error('No problems returned from skill-problems API');
+      }
       
       setProblems(problemsArray);
-      // Initialize attempt and feedback tracking arrays
       setProblemAttempted(new Array(problemsArray.length).fill(false));
       setProblemFeedback(new Array(problemsArray.length).fill(null));
       setCurrentIndex(0);
-    } catch (error: any) {
-      console.error('Error generating problem set:', error);
-      setError(error.message || 'An error occurred while generating the problem set.');
       
-      // If the skill-based problem generation fails, fall back to the old method
-      try {
-        console.warn('Falling back to individual problem generation');
-        await generateProblemSetFallback();
-      } catch (fallbackError: any) {
-        console.error('Fallback also failed:', fallbackError);
-        setError('Failed to generate problems. Please try again later.');
-      }
+    } catch (error: any) {
+      console.error('=== ERROR ===');
+      console.error('Error generating problem set:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      });
+      
+      setError(`Failed to generate problems: ${error.message || 'Unknown error'}`);
     }
     
     setLoadingSet(false);
     setShowLoadingOverlay(false);
   };
 
-  // Fallback to the original method of generating problems one by one
-  const generateProblemSetFallback = async () => {
-    const problemsArray = [];
-    
-    // Generate multiple problems for the set using the original method
-    for (let i = 0; i < numProblems; i++) {
-      const problemRequest = {
-        subject: currentTopic.subject,
-        unit: {
-          id: currentTopic.selection.unit,
-          title: currentTopic.unit?.title || ''
-        },
-        skill: {
-          id: currentTopic.selection.skill,
-          description: currentTopic.skill?.description || ''
-        },
-        subskill: {
-          id: currentTopic.selection.subskill,
-          description: currentTopic.subskill?.description || ''
-        },
-        difficulty: currentTopic.difficulty_range?.target || 3.0
-      };
-      
-      const response = await api.generateProblem(problemRequest);
-      problemsArray.push(response);
-    }
-    
-    setProblems(problemsArray);
-    // Initialize attempt and feedback tracking arrays
-    setProblemAttempted(new Array(problemsArray.length).fill(false));
-    setProblemFeedback(new Array(problemsArray.length).fill(null));
-    setCurrentIndex(0);
-  };
-
-  // Generate recommended problems based on student analytics - kept for manual use
+  // Generate recommended problems using recommendations API
   const generateRecommendedProblems = async () => {
     setLoadingSet(true);
     setError(null);
@@ -199,50 +236,28 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setUsingRecommendations(true);
     
     try {
-      // If from dashboard recommendation and has specific subskill, use skill-based problems API
-      if (fromDashboard && currentTopic.selection.subskill) {
-        const skillProblemsRequest = {
-          student_id: studentId,
-          subject: currentTopic.subject || 'mathematics',
-          skill_id: currentTopic.selection.skill,
-          subskill_id: currentTopic.selection.subskill,
-          count: numProblems
-        };
-        
-        console.log('Requesting skill-based problems for recommendation:', skillProblemsRequest);
-        
-        // Call the new API endpoint
-        const problemsArray = await api.getSkillProblems(skillProblemsRequest);
-        
-        setProblems(problemsArray);
-        // Initialize attempt and feedback tracking arrays
-        setProblemAttempted(new Array(problemsArray.length).fill(false));
-        setProblemFeedback(new Array(problemsArray.length).fill(null));
-      } else {
-        // Otherwise use the general recommendation API
-        const recommendedProblems = await api.getRecommendedProblems({
-          student_id: studentId,
-          subject: currentTopic.subject || 'mathematics',
-          count: numProblems,
-          subskill_id: fromDashboard ? currentTopic.selection.subskill : undefined
-        });
-        
-        // Set the problems state with the received data
-        setProblems(recommendedProblems);
-        
-        // Initialize attempt and feedback tracking arrays
-        setProblemAttempted(new Array(recommendedProblems.length).fill(false));
-        setProblemFeedback(new Array(recommendedProblems.length).fill(null));
+      console.log('=== RECOMMENDATIONS REQUEST ===');
+      
+      const recommendedProblems = await authApi.getRecommendedProblems({
+        subject: currentTopic.subject || 'mathematics',
+        count: numProblems
+      });
+      
+      console.log('Recommended problems received:', recommendedProblems);
+      
+      if (!recommendedProblems || recommendedProblems.length === 0) {
+        throw new Error('No recommended problems returned');
       }
       
+      setProblems(recommendedProblems);
+      setProblemAttempted(new Array(recommendedProblems.length).fill(false));
+      setProblemFeedback(new Array(recommendedProblems.length).fill(null));
       setCurrentIndex(0);
+      
     } catch (error: any) {
       console.error('Error generating recommended problems:', error);
-      setError(error.message || 'An error occurred while generating recommended problems.');
-      
-      // Fallback to standard problem generation if recommendations fail
+      setError(`Failed to generate recommended problems: ${error.message}`);
       setUsingRecommendations(false);
-      await generateProblemSet();
     }
     
     setLoadingSet(false);
@@ -265,18 +280,34 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
      
       const currentProblem = problems[currentIndex];
       
+      // Parse IDs for submission
+      const parsed = parseActivityId(
+        currentProblem.metadata?.subskill?.id || 
+        currentTopic.selection?.subskill || 
+        currentTopic.id || 
+        ''
+      );
+      
       const submission = {
         subject: currentTopic.subject || 'mathematics',
         problem: currentProblem,
         solution_image: canvasData,
-        skill_id: currentProblem.metadata?.skill?.id || currentTopic.selection?.skill || '',
-        subskill_id: currentProblem.metadata?.subskill?.id || currentTopic.selection?.subskill || '',
+        skill_id: parsed.skill,
+        subskill_id: parsed.subskill,
         student_answer: '',
-        canvas_used: true,
-        student_id: studentId
+        canvas_used: true
       };
      
-      const response = await api.submitProblem(submission);
+      console.log('=== SUBMISSION ===');
+      console.log('Submitting problem:', {
+        parsed_ids: parsed,
+        submission_ids: {
+          skill_id: parsed.skill,
+          subskill_id: parsed.subskill
+        }
+      });
+     
+      const response = await authApi.submitProblem(submission);
       
       // Update the attempted and feedback states for this problem
       const newAttempted = [...problemAttempted];
@@ -296,13 +327,12 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setSubmitting(false);
   };
 
-  // Navigation functions - unchanged
+  // Navigation functions
   const handleNext = () => {
     if (currentIndex < problems.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setFeedback(problemFeedback[currentIndex + 1]);
       
-      // Clear canvas for the next problem if it hasn't been attempted
       if (!problemAttempted[currentIndex + 1] && drawingRef.current) {
         drawingRef.current.clearCanvas();
       }
@@ -316,7 +346,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     }
   };
 
-  // Calculation functions - unchanged
+  // Calculation functions
   const calculateTotalScore = () => {
     return problemFeedback.reduce((sum, fb) => {
       if (fb && fb.review) {
@@ -342,22 +372,83 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     return (attemptedCount / problems.length) * 100;
   };
 
-  // UI helper function - unchanged
+  // Completion notification
   const renderCompletionNotification = () => {
-    if (fromDashboard && problemAttempted.every(Boolean)) {
-      return (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="font-medium text-blue-800 mb-2">Recommendation Complete!</h3>
-          <p className="text-blue-700">
-            Great job completing this recommended problem set! This will help improve your proficiency in this skill area.
-          </p>
-          <div className="mt-2">
-            <Button onClick={() => window.location.href = '/'} variant="outline" className="mt-2">
-              Return to Dashboard
-            </Button>
+    if (problemAttempted.every(Boolean)) {
+      if (fromDashboard) {
+        const parsed = parseActivityId(currentTopic.selection?.subskill || currentTopic.id || '');
+        
+        return (
+          <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+            <div className="flex items-center mb-3">
+              <CheckCircle2 className="h-6 w-6 text-green-600 mr-2" />
+              <h3 className="font-bold text-green-800 text-lg">Learning Objective Complete!</h3>
+            </div>
+            <p className="text-green-700 mb-4">
+              Outstanding work! You've successfully completed the practice problems for this learning objective.
+            </p>
+            <div className="bg-white p-4 rounded-lg border border-green-200 mb-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium text-gray-600">Problems Completed:</span>
+                  <span className="ml-2 font-bold text-green-600">{problems.length}/{problems.length}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Total Score:</span>
+                  <span className="ml-2 font-bold text-green-600">{calculateTotalScore()}/{problems.length * 10}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                onClick={() => window.location.href = `/daily-learning/${parsed.subskill}`} 
+                variant="outline"
+                className="flex items-center"
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Back to Learning Hub
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/dashboard'} 
+                className="bg-blue-600 hover:bg-blue-700 flex items-center"
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Return to Dashboard
+              </Button>
+            </div>
           </div>
-        </div>
-      );
+        );
+      } else {
+        return (
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h3 className="font-medium text-green-800 mb-2">Problem Set Complete!</h3>
+            <p className="text-green-700 mb-4">
+              You've completed all problems with a total score of {calculateTotalScore()} out of {problems.length * 10}.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                onClick={() => {
+                  setShowLoadingOverlay(true);
+                  generateProblemSet();
+                }}
+                variant="outline"
+              >
+                Start New Set
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowLoadingOverlay(true);
+                  generateRecommendedProblems();
+                }}
+                className="flex items-center justify-center"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Get Recommendations
+              </Button>
+            </div>
+          </div>
+        );
+      }
     }
     return null;
   };
@@ -379,6 +470,19 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
+          )}
+
+          {/* Debug Information in Development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-3 bg-gray-100 rounded text-xs font-mono">
+              <div><strong>Current Topic:</strong> {JSON.stringify(currentTopic, null, 2)}</div>
+              {currentTopic.selection && (
+                <div><strong>Parsed Selection:</strong> {JSON.stringify({
+                  skill: parseActivityId(currentTopic.selection.skill || ''),
+                  subskill: parseActivityId(currentTopic.selection.subskill || '')
+                }, null, 2)}</div>
+              )}
+            </div>
           )}
 
           {problems.length === 0 ? (
@@ -439,6 +543,11 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                       Personalized based on your learning analytics
                     </p>
                   )}
+                  {fromDashboard && (
+                    <p className="text-sm text-green-600 mt-1">
+                      ✓ From Learning Hub recommendation
+                    </p>
+                  )}
                 </div>
                 {problemAttempted.some(Boolean) && (
                   <div className="text-right">
@@ -457,7 +566,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 </div>
                 <div className="w-full bg-gray-200 h-2 rounded-full">
                   <div 
-                    className="bg-blue-500 h-2 rounded-full" 
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${calculateProgress()}%` }}
                   ></div>
                 </div>
@@ -472,19 +581,19 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                       setCurrentIndex(index);
                       setFeedback(problemFeedback[index]);
                     }}
-                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center 
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all 
                       ${currentIndex === index 
-                        ? 'bg-blue-500 text-white' 
+                        ? 'bg-blue-500 text-white shadow-lg' 
                         : problemAttempted[index] 
                           ? 'bg-green-500 text-white' 
-                          : 'bg-gray-200 text-gray-700'}`}
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                   >
                     {index + 1}
                   </button>
                 ))}
               </div>
 
-              {/* Current problem display - ProblemReader removed */}
+              {/* Current problem display */}
               <div className="text-lg font-medium p-4 bg-gray-50 rounded-lg">
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-sm text-gray-500">Problem {currentIndex + 1} of {problems.length}</span>
@@ -499,14 +608,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                         Difficulty: {problems[currentIndex].metadata.difficulty.toFixed(1)}
                       </span>
                     )}
-                    {problems[currentIndex]?.metadata?.concept_group && (
-                      <span className="text-sm px-2 py-1 rounded bg-green-100 text-green-800">
-                        {problems[currentIndex].metadata.concept_group}
-                      </span>
-                    )}
                   </div>
                 </div>
-                {/* Problem text displayed directly without ProblemReader */}
                 <div className="mt-2">
                   {problems[currentIndex]?.problem}
                 </div>
@@ -541,8 +644,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                     if (!feedbackContent) return null;
                     
                     return (
-                      <div className="mt-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
-                        <div className="px-4 py-3 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden">
+                        <div className="px-4 py-3 bg-slate-100 border-b border-slate-200">
                           <h3 className="text-sm font-medium flex items-center">
                             <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
                             Feedback
@@ -552,37 +655,37 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                           {feedbackContent.praise && (
                             <div className="flex items-start">
                               <ThumbsUp className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
-                              <p className="text-green-700 dark:text-green-400">{feedbackContent.praise}</p>
+                              <p className="text-green-700">{feedbackContent.praise}</p>
                             </div>
                           )}
                           
                           {feedbackContent.guidance && (
                             <div className="flex items-start">
                               <Lightbulb className="w-4 h-4 mr-2 text-blue-500 mt-0.5" />
-                              <p className="text-blue-700 dark:text-blue-400">{feedbackContent.guidance}</p>
+                              <p className="text-blue-700">{feedbackContent.guidance}</p>
                             </div>
                           )}
                           
                           {feedbackContent.encouragement && (
                             <div className="flex items-start">
                               <ArrowRight className="w-4 h-4 mr-2 text-purple-500 mt-0.5" />
-                              <p className="text-purple-700 dark:text-purple-400">{feedbackContent.encouragement}</p>
+                              <p className="text-purple-700">{feedbackContent.encouragement}</p>
                             </div>
                           )}
                           
                           {feedbackContent.nextSteps && (
-                            <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                              <p className="text-sm text-slate-600 dark:text-slate-300">
+                            <div className="mt-2 pt-2 border-t border-slate-200">
+                              <p className="text-sm text-slate-600">
                                 {feedbackContent.nextSteps}
                               </p>
                             </div>
                           )}
                           
                           {feedbackContent.score > 0 && (
-                            <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                            <div className="mt-2 pt-2 border-t border-slate-200">
                               <div className="flex justify-between items-center">
                                 <span className="text-sm font-medium">Score:</span>
-                                <span className="text-sm font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 px-2 py-0.5 rounded">
+                                <span className="text-sm font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
                                   {feedbackContent.score}/10
                                 </span>
                               </div>
@@ -616,38 +719,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 </Button>
               </div>
 
-              {/* Problem set completion summary - only show when all problems are attempted */}
-              {problemAttempted.every(Boolean) && (
-                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h3 className="font-medium text-green-800 mb-2">Problem Set Complete!</h3>
-                  <p className="text-green-700">
-                    You've completed all problems in this set with a total score of {calculateTotalScore()} out of {problems.length * 10}.
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <Button 
-                      onClick={() => {
-                        setShowLoadingOverlay(true);
-                        generateProblemSet();
-                      }}
-                      variant="outline"
-                    >
-                      Start New Standard Set
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        setShowLoadingOverlay(true);
-                        generateRecommendedProblems();
-                      }}
-                      className="flex items-center justify-center"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Get New Recommendations
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
-              {/* Dashboard recommendation completion notification */}
+              {/* Problem set completion summary */}
               {renderCompletionNotification()}
             </div>
           )}

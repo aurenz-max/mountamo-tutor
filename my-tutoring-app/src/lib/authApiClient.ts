@@ -418,6 +418,41 @@ class AuthenticatedApiClient {
     return this.post('/api/problems/submit', data);
   }
 
+  async getSkillProblems(params: {
+    subject: string;
+    skill_id: string;
+    subskill_id: string;
+    count?: number;
+  }) {
+    const queryParams = new URLSearchParams();
+    queryParams.append('subject', params.subject);
+    queryParams.append('skill_id', params.skill_id);
+    queryParams.append('subskill_id', params.subskill_id);
+    if (params.count) queryParams.append('count', params.count.toString());
+    
+    return this.get(`/api/problems/skill-problems?${queryParams.toString()}`);
+  }
+
+  async getRecommendedProblems(params?: {
+    subject?: string;
+    count?: number;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params?.subject) queryParams.append('subject', params.subject);
+    if (params?.count) queryParams.append('count', params.count.toString());
+    
+    const queryString = queryParams.toString();
+    return this.get(`/api/problems/recommended-problems${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getMyStudentInfo() {
+    return this.get('/api/problems/my-student-info');
+  }
+
+  async getProblemsHealth() {
+    return this.get('/api/problems/health');
+  }
+
   // AI Tutor endpoints
   async sendTutorMessage(message: string, context?: any) {
     return this.post('/api/gemini/chat', { message, context });

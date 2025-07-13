@@ -220,7 +220,6 @@ async def submit_problem(
             subskill_id=submission.subskill_id,
             student_answer=submission.student_answer or "",
             canvas_used=submission.canvas_used,
-            firebase_uid=firebase_uid
         )
         
         if "error" in review:
@@ -350,18 +349,12 @@ async def get_recommended_problems(
             )
             raise HTTPException(status_code=404, detail="No recommendations found")
             
-        # Generate problems from recommendations
-        enhanced_context = {
-            "user_id": firebase_uid,
-            "grade_level": user_context.get("grade_level"),
-            "recommendations_source": "bigquery_analytics"
-        }
-        
+        # Generate problems from recommendations - REMOVED the context parameter
         problems = await problem_service.get_multiple_problems(
             student_id=student_id,
             subject=subject,
-            recommendations=recommendations,
-            context=enhanced_context
+            recommendations=recommendations
+            # context=enhanced_context  # REMOVED - this was causing errors
         )
         
         if not problems:
@@ -417,6 +410,7 @@ async def get_recommended_problems(
         )
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/skill-problems")
 async def get_skill_problems(
     subject: str,
@@ -435,20 +429,14 @@ async def get_skill_problems(
     try:
         logger.info(f"User {user_context['email']} requesting skill problems")
         
-        # Get skill problems
-        enhanced_context = {
-            "user_id": firebase_uid,
-            "grade_level": user_context.get("grade_level"),
-            "request_type": "skill_specific"
-        }
-        
+        # Get skill problems - REMOVED the context parameter
         problems = await problem_service.get_skill_problems(
             student_id=student_id,
             subject=subject,
             skill_id=skill_id,
             subskill_id=subskill_id,
-            count=count,
-            context=enhanced_context
+            count=count
+            # context=enhanced_context  # REMOVED - this was causing the error
         )
         
         if not problems:

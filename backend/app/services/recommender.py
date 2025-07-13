@@ -28,21 +28,31 @@ class ProblemRecommender:
                 
             from asyncio import to_thread
 
+            # FIXED: Use get_available_subjects() instead of syllabus_cache
+            print(f"[DEBUG] Getting available subjects for matching: {subject}")
+            available_subjects = await self.competency_service.get_available_subjects()
+            print(f"[DEBUG] Available subjects: {available_subjects}")
+            
             # Move subject matching to thread since it's CPU-intensive
             matched_subject = await to_thread(lambda: next(
-                (s for s in self.competency_service.syllabus_cache.keys() 
+                (s for s in available_subjects 
                  if s.lower() == subject.lower()), 
                 None
             ))
             
             if not matched_subject:
                 print(f"[ERROR] No subject found matching: {subject}")
+                print(f"[DEBUG] Available subjects were: {available_subjects}")
                 return None
                 
+            print(f"[DEBUG] Matched subject: {matched_subject}")
+            
             curriculum = await self.competency_service.get_curriculum(matched_subject)
             if not curriculum:
                 print(f"[ERROR] No curriculum found for subject: {matched_subject}")
                 return None
+
+            print(f"[DEBUG] Got curriculum with {len(curriculum)} units")
 
             # Get filtered items with async processing
             filtered_items = await self._filter_curriculum_async(
@@ -53,15 +63,21 @@ class ProblemRecommender:
                 print("[ERROR] No items match the filter criteria")
                 return None
 
+            print(f"[DEBUG] Filtered to {len(filtered_items)} items")
+
             selected_skill = await self._select_skill(student_id, filtered_items)
             if not selected_skill:
                 print("[ERROR] Failed to select skill")
                 return None
 
+            print(f"[DEBUG] Selected skill with {len(selected_skill['items'])} items")
+
             selected_subskill = await self._select_subskill(student_id, selected_skill)
             if not selected_subskill:
                 print("[ERROR] Failed to select subskill")
                 return None
+
+            print(f"[DEBUG] Selected subskill: {selected_subskill['subskill_id']}")
 
             # Move unit finding to thread
             unit = await to_thread(lambda: next(u for u in curriculum if u["id"] == selected_subskill["unit_id"]))
@@ -146,6 +162,8 @@ class ProblemRecommender:
             filtered = []
             tasks = []
 
+            print(f"[DEBUG] Filtering curriculum - filters: unit={unit_filter}, skill={skill_filter}, subskill={subskill_filter}")
+
             # Create tasks for all potential items
             for unit in curriculum:
                 if unit_filter and unit["id"] != unit_filter:
@@ -176,30 +194,38 @@ class ProblemRecommender:
                             )
                         })
 
-            # Process all tasks in parallel
-            for task in tasks:
-                competency = await task["competency_task"]
-                objective = await task["objective_task"]
-                
-                filtered.append({
-                    "unit_id": task["unit"]["id"],
-                    "unit_title": task["unit"]["title"],
-                    "skill_id": task["skill"]["id"],
-                    "skill_description": task["skill"]["description"],
-                    "subskill_id": task["subskill"]["id"],
-                    "subskill_description": task["subskill"]["description"],
-                    "difficulty_range": task["subskill"]["difficulty_range"],
-                    "concept_group": objective["ConceptGroup"],
-                    "detailed_objective": objective["DetailedObjective"],
-                    "competency": competency
-                })
+            print(f"[DEBUG] Created {len(tasks)} tasks for filtering")
 
+            # Process all tasks in parallel
+            for i, task in enumerate(tasks):
+                try:
+                    competency = await task["competency_task"]
+                    objective = await task["objective_task"]
+                    
+                    filtered.append({
+                        "unit_id": task["unit"]["id"],
+                        "unit_title": task["unit"]["title"],
+                        "skill_id": task["skill"]["id"],
+                        "skill_description": task["skill"]["description"],
+                        "subskill_id": task["subskill"]["id"],
+                        "subskill_description": task["subskill"]["description"],
+                        "difficulty_range": task["subskill"]["difficulty_range"],
+                        "concept_group": objective.get("ConceptGroup", "General"),
+                        "detailed_objective": objective.get("DetailedObjective", "Develop core skills"),
+                        "competency": competency
+                    })
+                except Exception as e:
+                    print(f"[ERROR] Error processing task {i+1}: {str(e)}")
+                    continue
+
+            print(f"[DEBUG] Successfully processed {len(filtered)} items")
             return filtered
 
         except Exception as e:
             print(f"[ERROR] Error in _filter_curriculum_async: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return []
-
 
     async def _select_skill(self, student_id: int, filtered: List[Dict]) -> Optional[Dict]:
         """Weighted random skill selection based on competency"""
@@ -233,7 +259,6 @@ class ProblemRecommender:
             return random.choices(skill_list, weights=weights, k=1)[0]
 
         return await to_thread(process_selection)
-
 
     async def _select_subskill(self, student_id: int, skill: Dict) -> Optional[Dict]:
         """Weighted subskill selection with new student detection"""

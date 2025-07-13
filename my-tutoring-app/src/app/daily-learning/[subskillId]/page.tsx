@@ -68,15 +68,23 @@ export default function SubskillPage({ params }: SubskillPageProps) {
     router.push('/dashboard'); // Adjust to your dashboard route
   };
 
-  // Handle learning option selection
+  // Handle learning option selection with updated routing
   const handleLearningOptionSelect = (option: any) => {
-    // Route to specific learning endpoints based on option
+    console.log('Learning option selected:', option);
+    
+    // If the option has a route, use it directly
+    if (option.route) {
+      router.push(option.route);
+      return;
+    }
+    
+    // Fallback to the original routing logic based on option ID
     switch (option.id) {
       case 'live-tutoring':
         router.push(`/tutoring/live/${subskillId}`);
         break;
       case 'practice-problems':
-        router.push(`/practice/problems/${subskillId}`);
+        router.push(`/practice/${subskillId}`); // Updated to match your filepath
         break;
       case 'educational-content':
         router.push(`/content/packages/${subskillId}`);
