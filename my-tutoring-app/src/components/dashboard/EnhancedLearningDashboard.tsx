@@ -1,19 +1,15 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; // Updated for App Router
+import { useRouter } from 'next/navigation';
 import { 
   Award, 
   BarChart2, 
   PenTool, 
   Users,
-  Star,
   RefreshCw,
-  TrendingUp,
   Flame,
   Settings,
-  MessageCircle,
-  Mic,
   BookOpen,
   Calendar
 } from 'lucide-react';
@@ -22,80 +18,55 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Import your actual auth context
+// Import components
 import { useAuth } from '@/contexts/AuthContext';
-
-// Import the User Preferences Module
 import UserPreferencesModule from './UserPreferencesModule';
+import DailyBriefingComponent from './DailyBriefingComponent';
+import { AICoachToggleButton } from '@/components/layout/GlobalAICoachToggle'; // Import the global toggle
 
-// Import the Daily Briefing Gemini Component
-import DailyBriefingGemini from './DailyBriefingGemini';
-
-// Import the existing Daily Briefing Component (current activities display)
-import DailyBriefing from './DailyBriefingComponent';
-
-// Import the SubskillLearningHub component
-import SubskillLearningHub from './SubskillLearningHub';
-
-// Enhanced Learning Dashboard Component
 const EnhancedLearningDashboard: React.FC = () => {
   const { userProfile } = useAuth();
-  const router = useRouter(); // App Router hook
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showPreferences, setShowPreferences] = useState(false);
-  const [showDailyBriefing, setShowDailyBriefing] = useState(false);
-  const [briefingExpanded, setBriefingExpanded] = useState(false);
-  
-  // New state for learning hub navigation
-  const [currentView, setCurrentView] = useState<'dashboard' | 'learning-hub'>('dashboard');
-  const [selectedActivity, setSelectedActivity] = useState<any>(null);
-  const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
 
   const studentId = userProfile?.student_id;
   const studentName = userProfile?.display_name || 'Student';
   const points = userProfile?.total_points || 0;
   const streak = userProfile?.current_streak || 0;
 
-  // Updated handleActivityClick function to show learning hub instead of navigating
-  const handleActivityClick = (activity: any) => {
-    console.log('Activity clicked:', activity);
-    
-    if (activity.id) {
-      setLoadingActivity(activity.id);
-      
-      // Set the selected activity and switch to learning hub view
-      setSelectedActivity(activity);
-      setCurrentView('learning-hub');
-      setLoadingActivity(null);
+  // Different contexts for different sections
+  const dashboardContext = {
+    type: 'daily_planning' as const,
+    title: 'Dashboard Overview',
+    focus_area: 'General learning guidance and daily planning',
+    metadata: {
+      page: 'dashboard',
+      sessionType: 'general'
     }
   };
 
-  // Add function to handle going back to dashboard
-  const handleBackToDashboard = () => {
-    setCurrentView('dashboard');
-    setSelectedActivity(null);
-    setLoadingActivity(null);
-  };
-
-  // Add function to handle learning option selection
-  const handleLearningOptionSelect = (option: any) => {
-    console.log('Learning option selected:', option);
-    
-    // Navigate to the appropriate route based on the option
-    if (option.route) {
-      router.push(option.route);
-    } else if (option.endpoint) {
-      router.push(option.endpoint);
-    } else {
-      // Fallback navigation
-      const endpoint = option.curriculum_context ? 
-        `/learning/${option.curriculum_context.subskill_id}?type=${option.id}` :
-        `/learning/${selectedActivity?.id}?type=${option.id}`;
-      router.push(endpoint);
+  const todayContext = {
+    type: 'daily_planning' as const,
+    title: 'Today\'s Learning Plan',
+    focus_area: 'Today\'s specific learning activities and goals',
+    metadata: {
+      page: 'today',
+      sessionType: 'daily_planning'
     }
   };
 
-  // Loading state while we get user profile
+  const analyticsContext = {
+    type: 'activity' as const,
+    title: 'Learning Analytics',
+    focus_area: 'Performance analysis and improvement strategies',
+    metadata: {
+      page: 'analytics',
+      sessionType: 'progress_review'
+    }
+  };
+
+  // Loading state
   if (!userProfile) {
     return (
       <div className="container mx-auto p-4">
@@ -120,22 +91,8 @@ const EnhancedLearningDashboard: React.FC = () => {
     );
   }
 
-  // Render learning hub if an activity is selected
-  if (currentView === 'learning-hub' && selectedActivity) {
-    return (
-      <SubskillLearningHub
-        activityData={selectedActivity}
-        studentId={studentId}
-        onBack={handleBackToDashboard}
-        onLearningOptionSelect={handleLearningOptionSelect}
-        loading={loadingActivity === selectedActivity.id}
-      />
-    );
-  }
-
-  // Main dashboard view
   return (
-    <div className="container mx-auto p-4 relative">
+    <div className="container mx-auto p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -152,17 +109,11 @@ const EnhancedLearningDashboard: React.FC = () => {
             <span className="font-bold">{streak} day streak</span>
           </div>
           
-          {/* Daily Briefing Button */}
-          <button
-            onClick={() => setShowDailyBriefing(true)}
-            className="flex items-center px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
-            title="Daily Briefing"
-          >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Daily Briefing</span>
-          </button>
+          {/* Global AI Coach Toggle */}
+          <AICoachToggleButton 
+            context={activeTab === 'today' ? todayContext : activeTab === 'analytics' ? analyticsContext : dashboardContext}
+          />
           
-          {/* Preferences Button */}
           <button
             onClick={() => setShowPreferences(true)}
             className="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -182,148 +133,110 @@ const EnhancedLearningDashboard: React.FC = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="daily-plan">Today's Plan</TabsTrigger>
+          <TabsTrigger value="today">Today's Plan</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         {/* Dashboard Tab */}
         <TabsContent value="dashboard" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Left Sidebar - Quick Access */}
-            <div className="lg:col-span-1 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Access</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    <li 
-                      className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                      onClick={() => setShowDailyBriefing(true)}
-                    >
-                      <MessageCircle className="text-blue-500 mr-3" />
-                      <span>Daily Briefing</span>
-                      <Badge className="ml-auto bg-blue-500 text-xs">AI</Badge>
-                    </li>
-                    <li 
-                      className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                      onClick={() => setShowPreferences(true)}
-                    >
-                      <Settings className="text-blue-500 mr-3" />
-                      <span>Preferences</span>
-                    </li>
-                    <li className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                      <Users className="text-blue-500 mr-3" />
-                      <span>Live Tutoring</span>
-                    </li>
-                    <li 
-                      className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                      onClick={() => setActiveTab('analytics')}
-                    >
-                      <BarChart2 className="text-blue-500 mr-3" />
-                      <span>My Analytics</span>
-                    </li>
-                    <li className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                      <BookOpen className="text-blue-500 mr-3" />
-                      <span>Learning Path</span>
-                    </li>
-                    <li className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                      <PenTool className="text-blue-500 mr-3" />
-                      <span>Practice Problems</span>
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              {/* Daily Briefing Quick Access Card */}
-              <Card className="border-blue-200 bg-blue-50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-blue-800 flex items-center text-sm">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    AI Coach
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-blue-700 mb-3">
-                    Get personalized guidance and discuss your learning plan with your AI coach.
-                  </p>
-                  <Button 
-                    onClick={() => setBriefingExpanded(true)}
-                    size="sm" 
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Mic className="h-3 w-3 mr-2" />
-                    Quick Chat
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+          <div className="space-y-6">
+            {/* Welcome Card */}
+            <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
+              <CardContent className="pt-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Good morning, {studentName}!</h2>
+                  <p className="mb-4">Ready to continue your learning journey? Your activities are ready below, and your AI coach is standing by to help.</p>
+                </div>
+              </CardContent>
+            </Card>
             
-            {/* Main Dashboard Area */}
-            <div className="lg:col-span-3 space-y-6">
-              {/* Welcome Card with Daily Briefing CTA */}
-              <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold mb-2">Good morning, {studentName}!</h2>
-                      <p className="mb-4">Ready to continue your learning journey? Your AI coach has prepared a personalized briefing for you.</p>
-                    </div>
-                    <Button 
-                      onClick={() => setShowDailyBriefing(true)}
-                      className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                      size="lg"
-                    >
-                      <Mic className="h-5 w-5 mr-2" />
-                      Start Daily Briefing
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              {/* Daily Activities Display Component - Updated with new handler */}
-              <DailyBriefing 
-                studentId={studentId}
-                onActivityClick={handleActivityClick}
-              />
-
-              {/* Loading indicator for activity selection */}
-              {loadingActivity && (
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-center space-x-2">
-                      <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
-                      <span className="text-blue-800">Loading activity: {loadingActivity}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <Button 
+                    variant="outline" 
+                    className="h-20 flex flex-col items-center justify-center space-y-2"
+                    onClick={() => setActiveTab('today')}
+                  >
+                    <Calendar className="h-6 w-6 text-blue-500" />
+                    <span className="text-sm">Today's Plan</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="h-20 flex flex-col items-center justify-center space-y-2"
+                  >
+                    <Users className="h-6 w-6 text-green-500" />
+                    <span className="text-sm">Live Tutoring</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="h-20 flex flex-col items-center justify-center space-y-2"
+                    onClick={() => setActiveTab('analytics')}
+                  >
+                    <BarChart2 className="h-6 w-6 text-purple-500" />
+                    <span className="text-sm">My Analytics</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="h-20 flex flex-col items-center justify-center space-y-2"
+                  >
+                    <BookOpen className="h-6 w-6 text-orange-500" />
+                    <span className="text-sm">Learning Path</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="h-20 flex flex-col items-center justify-center space-y-2"
+                  >
+                    <PenTool className="h-6 w-6 text-red-500" />
+                    <span className="text-sm">Practice</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="h-20 flex flex-col items-center justify-center space-y-2"
+                    onClick={() => setShowPreferences(true)}
+                  >
+                    <Settings className="h-6 w-6 text-gray-500" />
+                    <span className="text-sm">Settings</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Today's Activities Preview */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Today's Activities</CardTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setActiveTab('today')}
+                  >
+                    Focus Mode
+                  </Button>
+                </div>
+                <CardDescription>All your learning activities for today</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DailyBriefingComponent 
+                  studentId={studentId}
+                  className="max-w-none"
+                />
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
-        {/* Daily Plan Tab - Show existing daily briefing component + Gemini AI */}
-        <TabsContent value="daily-plan" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <DailyBriefing 
-                studentId={studentId}
-                className="max-w-none"
-                onActivityClick={handleActivityClick}
-              />
-            </div>
-            
-            {/* Embedded Daily Briefing Gemini for Today's Plan */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-4">
-                <DailyBriefingGemini
-                  studentId={studentId}
-                  expanded={true}
-                  className="h-[600px]"
-                />
-              </div>
-            </div>
-          </div>
+        {/* Today's Plan Tab */}
+        <TabsContent value="today" className="mt-6">
+          <DailyBriefingComponent 
+            studentId={studentId}
+            className="max-w-none"
+          />
         </TabsContent>
 
         {/* Analytics Tab */}
@@ -351,9 +264,9 @@ const EnhancedLearningDashboard: React.FC = () => {
                       <td className="px-6 py-2 font-medium">Counting and Cardinality</td>
                       <td className="text-right px-4">45</td>
                       <td className="text-right px-4">
-                        <span className="px-2 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                           74%
-                        </span>
+                        </Badge>
                       </td>
                       <td className="text-right px-6">83%</td>
                     </tr>
@@ -361,9 +274,9 @@ const EnhancedLearningDashboard: React.FC = () => {
                       <td className="px-6 py-2 font-medium">Geometry</td>
                       <td className="text-right px-4">4</td>
                       <td className="text-right px-4">
-                        <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
                           95%
-                        </span>
+                        </Badge>
                       </td>
                       <td className="text-right px-6">93%</td>
                     </tr>
@@ -371,9 +284,9 @@ const EnhancedLearningDashboard: React.FC = () => {
                       <td className="px-6 py-2 font-medium">Fractions</td>
                       <td className="text-right px-4">12</td>
                       <td className="text-right px-4">
-                        <span className="px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-800">
+                        <Badge variant="secondary" className="bg-red-100 text-red-800">
                           65%
-                        </span>
+                        </Badge>
                       </td>
                       <td className="text-right px-6">68%</td>
                     </tr>
@@ -381,31 +294,14 @@ const EnhancedLearningDashboard: React.FC = () => {
                       <td className="px-6 py-2 font-bold">Total</td>
                       <td className="text-right px-4 font-bold">61</td>
                       <td className="text-right px-4 font-bold">
-                        <span className="px-2 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                           78%
-                        </span>
+                        </Badge>
                       </td>
                       <td className="text-right px-6 font-bold">81%</td>
                     </tr>
                   </tbody>
                 </table>
-              </div>
-              
-              {/* Analytics Actions */}
-              <div className="px-6 pt-4 border-t">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-gray-600">
-                    Want to dive deeper into your learning analytics?
-                  </p>
-                  <Button 
-                    onClick={() => setShowDailyBriefing(true)} 
-                    variant="outline" 
-                    size="sm"
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Discuss with AI
-                  </Button>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -416,28 +312,6 @@ const EnhancedLearningDashboard: React.FC = () => {
       <UserPreferencesModule 
         isOpen={showPreferences} 
         onClose={() => setShowPreferences(false)} 
-      />
-
-      {/* Daily Briefing Modal - Full Screen */}
-      {showDailyBriefing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-4xl w-full h-[80vh]">
-            <DailyBriefingGemini 
-              studentId={studentId}
-              expanded={true}
-              onClose={() => setShowDailyBriefing(false)}
-              className="w-full h-full"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Floating Daily Briefing - Bottom Right */}
-      <DailyBriefingGemini
-        studentId={studentId}
-        expanded={briefingExpanded}
-        onClose={() => setBriefingExpanded(false)}
-        className={briefingExpanded ? "fixed bottom-4 right-4 w-96 h-[500px] z-40" : ""}
       />
     </div>
   );

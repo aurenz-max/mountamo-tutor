@@ -1,12 +1,19 @@
 # backend/app/services/daily_activities.py
-# Clean, structured approach with BigQuery integration
+# Enhanced version with curriculum metadata
 
 import logging
+import re
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+class CurriculumMetadata(BaseModel):
+    subject: str
+    unit: Dict[str, str]  # {id, title, description}
+    skill: Dict[str, str]  # {id, description}
+    subskill: Dict[str, str]  # {id, description}
 
 class DailyActivity(BaseModel):
     id: str
@@ -22,6 +29,7 @@ class DailyActivity(BaseModel):
     endpoint: str
     icon_type: str
     metadata: Dict[str, Any] = {}
+    curriculum_metadata: Optional[CurriculumMetadata] = None
 
 class DailyProgress(BaseModel):
     completed_activities: int
@@ -39,8 +47,138 @@ class DailyPlan(BaseModel):
     personalization_source: str  # 'bigquery_recommendations' or 'fallback'
     total_points: int
 
+class CurriculumParser:
+    """Parse activity IDs and create curriculum metadata"""
+    
+    # Subject mappings
+    SUBJECT_MAPPING = {
+        'COUNT': 'Mathematics',
+        'SS': 'Social Studies', 
+        'SCI': 'Science',
+        'ART': 'Arts',
+        'LA': 'Language Arts',
+        'MATH': 'Mathematics',
+        'ELA': 'English Language Arts'
+    }
+    
+    # Unit descriptions
+    UNIT_DESCRIPTIONS = {
+        'COUNT001': 'Counting and Cardinality',
+        'SS001': 'Classroom Routines and Social Skills',
+        'SCI001': 'Scientific Observation and Classification',
+        'ART001': 'Art Materials and Creative Expression',
+        'LA001': 'Print Concepts and Book Handling',
+        'MATH001': 'Number Sense Foundations',
+        'ELA001': 'Phonological Awareness'
+    }
+    
+    # Skill descriptions by unit and skill number
+    SKILL_DESCRIPTIONS = {
+        ('COUNT001', '01'): 'Number Recognition and Counting 0-10',
+        ('COUNT001', '02'): 'Number Writing and Formation',
+        ('SS001', '01'): 'Basic Classroom Procedures and Independence',
+        ('SS001', '02'): 'Social Interaction and Communication',
+        ('SCI001', '01'): 'Observation and Description Skills',
+        ('SCI001', '02'): 'Classification and Sorting',
+        ('ART001', '01'): 'Material Exploration and Tool Use',
+        ('ART001', '02'): 'Creative Expression Techniques',
+        ('LA001', '01'): 'Print Awareness and Book Orientation',
+        ('LA001', '02'): 'Letter Recognition and Sound Awareness'
+    }
+    
+    @classmethod
+    def parse_activity_id(cls, activity_id: str) -> Optional[Dict]:
+        """
+        Parse activity ID to extract curriculum metadata
+        Expected formats:
+        - rec-COUNT001-01-A
+        - rec-[SUBJECT][UNIT]-[SKILL]-[SUBSKILL]
+        """
+        try:
+            # Remove 'rec-' prefix if present
+            clean_id = activity_id.replace('rec-', '') if activity_id.startswith('rec-') else activity_id
+            
+            # Split into parts
+            parts = clean_id.split('-')
+            if len(parts) < 3:
+                logger.warning(f"Activity ID {activity_id} doesn't match expected format")
+                return None
+            
+            subject_unit = parts[0]  # e.g., COUNT001
+            skill_num = parts[1]     # e.g., 01
+            subskill_code = parts[2] # e.g., A
+            
+            # Extract subject code and unit number using regex
+            match = re.match(r'([A-Z]+)(\d+)', subject_unit)
+            if not match:
+                logger.warning(f"Cannot parse subject/unit from {subject_unit}")
+                return None
+            
+            subject_code = match.group(1)  # e.g., COUNT
+            unit_num = match.group(2)      # e.g., 001
+            
+            # Get descriptions
+            subject_name = cls.SUBJECT_MAPPING.get(subject_code, subject_code)
+            unit_description = cls.UNIT_DESCRIPTIONS.get(subject_unit, f"Unit {unit_num}")
+            skill_description = cls.SKILL_DESCRIPTIONS.get((subject_unit, skill_num), f"Skill {skill_num}")
+            
+            return {
+                'subject': subject_name,
+                'unit': {
+                    'id': subject_unit,
+                    'title': unit_description,
+                    'description': unit_description
+                },
+                'skill': {
+                    'id': skill_num,
+                    'description': skill_description
+                },
+                'subskill': {
+                    'id': subskill_code,
+                    'description': 'Learning Activity'  # Will be overridden by actual title
+                }
+            }
+            
+        except Exception as e:
+            logger.warning(f"Failed to parse activity ID {activity_id}: {e}")
+            return None
+    
+    @classmethod
+    def enhance_activity_with_curriculum_data(cls, activity_dict: Dict, title: str = None) -> Dict:
+        """Add curriculum metadata to activity dictionary"""
+        
+        curriculum_data = cls.parse_activity_id(activity_dict.get('id', ''))
+        
+        if curriculum_data:
+            # Clean up the title for subskill description
+            clean_title = title or activity_dict.get('title', '')
+            if clean_title.startswith('Learn: '):
+                clean_title = clean_title[7:]  # Remove "Learn: " prefix
+            elif clean_title.startswith('Practice: '):
+                clean_title = clean_title[10:]  # Remove "Practice: " prefix
+            elif clean_title.startswith('Review: '):
+                clean_title = clean_title[8:]  # Remove "Review: " prefix
+            
+            # Update subskill description with actual learning objective
+            curriculum_data['subskill']['description'] = clean_title
+            
+            # Add curriculum metadata
+            activity_dict['curriculum_metadata'] = curriculum_data
+            
+            # Also enhance the metadata for backward compatibility
+            if 'metadata' not in activity_dict:
+                activity_dict['metadata'] = {}
+            
+            activity_dict['metadata'].update({
+                'subject': curriculum_data['subject'],
+                'unit_description': curriculum_data['unit']['description'],
+                'skill_description': curriculum_data['skill']['description']
+            })
+        
+        return activity_dict
+
 class DailyActivitiesService:
-    """Clean service that gets BigQuery recommendations and creates activities"""
+    """Enhanced service with curriculum metadata support"""
     
     def __init__(self, analytics_service=None):
         self.analytics_service = analytics_service
@@ -94,10 +232,9 @@ class DailyActivitiesService:
             return None
         
         try:
-            # Get recommendations from your BigQuery service
             recommendations = await self.analytics_service.get_recommendations(
                 student_id=student_id,
-                limit=5  # Get 5 recommendations to work with
+                limit=5
             )
             
             if recommendations and len(recommendations) > 0:
@@ -112,7 +249,7 @@ class DailyActivitiesService:
             return None
     
     def _create_activities_from_recommendations(self, recommendations: List[Dict]) -> List[DailyActivity]:
-        """Convert BigQuery recommendations into daily activities"""
+        """Convert BigQuery recommendations into daily activities with curriculum metadata"""
         
         activities = []
         
@@ -125,32 +262,29 @@ class DailyActivitiesService:
             skill_id = rec.get('skill_id', '')
             subskill_id = rec.get('subskill_id', f'skill_{i}')
             
-            # Determine activity type based on recommendation data
+            # Determine activity type and get config
             activity_type = self._determine_activity_type(rec)
-            
-            # Get configuration for this activity type
             config = self._get_activity_config(activity_type, subskill_desc)
             
-            # Calculate points
+            # Calculate points and assign time slot
             points = self._calculate_points(priority, mastery)
-            
-            # Assign time slot
             time_slot = ['morning', 'midday', 'afternoon', 'evening'][i % 4]
             
-            activity = DailyActivity(
-                id=f"rec-{subskill_id}",
-                type=activity_type,
-                title=config['title'],
-                description=config['description'],
-                category=config['category'],
-                estimated_time=config['time'],
-                points=points,
-                priority=priority,
-                time_slot=time_slot,
-                action=config['action'],
-                endpoint=config['endpoint'],
-                icon_type=config['icon'],
-                metadata={
+            # Create base activity dictionary
+            activity_dict = {
+                'id': f"rec-{subskill_id}",
+                'type': activity_type,
+                'title': config['title'],
+                'description': config['description'],
+                'category': config['category'],
+                'estimated_time': config['time'],
+                'points': points,
+                'priority': priority,
+                'time_slot': time_slot,
+                'action': config['action'],
+                'endpoint': config['endpoint'],
+                'icon_type': config['icon'],
+                'metadata': {
                     'from_recommendations': True,
                     'recommendation_id': subskill_id,
                     'subject': subject,
@@ -159,142 +293,126 @@ class DailyActivitiesService:
                     'priority_level': rec.get('priority_level'),
                     'readiness_status': rec.get('readiness_status', 'Ready')
                 }
+            }
+            
+            # Enhance with curriculum metadata
+            enhanced_dict = CurriculumParser.enhance_activity_with_curriculum_data(
+                activity_dict, 
+                config['title']
             )
             
+            # Create DailyActivity from enhanced dictionary
+            activity = DailyActivity(**enhanced_dict)
             activities.append(activity)
         
         return activities
     
     def _create_fallback_activities(self) -> List[DailyActivity]:
-        """Create basic activities when no recommendations available"""
+        """Create basic activities with curriculum metadata when no recommendations available"""
         
-        return [
-            DailyActivity(
-                id="fallback-math-practice",
-                type="practice",
-                title="Math Practice Session",
-                description="Essential math skill building",
-                category="Practice Problems",
-                estimated_time="10 min",
-                points=15,
-                priority="high",
-                time_slot="morning",
-                action="Start Practice",
-                endpoint="/practice",
-                icon_type="zap",
-                metadata={'fallback': True, 'subject': 'mathematics'}
-            ),
-            DailyActivity(
-                id="fallback-tutoring",
-                type="tutoring",
-                title="AI Tutor Session",
-                description="Interactive learning with AI tutor",
-                category="AI Tutoring",
-                estimated_time="12 min",
-                points=18,
-                priority="medium",
-                time_slot="midday",
-                action="Start Session",
-                endpoint="/tutoring",
-                icon_type="headphones",
-                metadata={'fallback': True}
-            ),
-            DailyActivity(
-                id="fallback-pathway",
-                type="pathway",
-                title="Learning Path",
-                description="Explore structured learning content",
-                category="Learning Journey",
-                estimated_time="10 min",
-                points=15,
-                priority="medium",
-                time_slot="afternoon",
-                action="Continue Path",
-                endpoint="/learning-paths",
-                icon_type="target",
-                metadata={'fallback': True}
-            ),
-            DailyActivity(
-                id="fallback-review",
-                type="review",
-                title="Quick Review",
-                description="Reinforce recent learning",
-                category="Review Session",
-                estimated_time="8 min",
-                points=12,
-                priority="low",
-                time_slot="evening",
-                action="Review",
-                endpoint="/practice",
-                icon_type="brain",
-                metadata={'fallback': True}
-            )
+        fallback_configs = [
+            {
+                'id': 'rec-COUNT001-01-A',
+                'title': 'Learn: Count and recognize numbers 0-10, including matching spoken words to written numerals',
+                'subject': 'Mathematics'
+            },
+            {
+                'id': 'rec-SS001-01-A', 
+                'title': 'Learn: Follow basic 3-step classroom routines independently (entering, storing belongings, starting assigned task)',
+                'subject': 'Social Studies'
+            },
+            {
+                'id': 'rec-SCI001-02-A',
+                'title': 'Learn: Sort and classify objects by basic observable properties (color, shape, size, texture)',
+                'subject': 'Science'
+            },
+            {
+                'id': 'rec-ART001-01-A',
+                'title': 'Learn: Explore a variety of art materials and tools',
+                'subject': 'Arts'
+            },
+            {
+                'id': 'rec-LA001-01-A',
+                'title': 'Learn: Demonstrate proper book handling skills (orientation, covers, page turning)',
+                'subject': 'Language Arts'
+            }
         ]
+        
+        activities = []
+        time_slots = ['morning', 'midday', 'afternoon', 'evening']
+        
+        for i, config in enumerate(fallback_configs):
+            activity_dict = {
+                'id': config['id'],
+                'type': 'practice',
+                'title': config['title'],
+                'description': f"Essential skill building in {config['subject'].lower()}",
+                'category': config['subject'],
+                'estimated_time': '12 min',
+                'points': 23,
+                'priority': 'medium',
+                'time_slot': time_slots[i % len(time_slots)],
+                'action': 'Start Learning',
+                'endpoint': '/practice',
+                'icon_type': 'zap',
+                'metadata': {
+                    'fallback': True,
+                    'subject': config['subject'],
+                    'from_recommendations': True  # These are AI-generated fallbacks
+                }
+            }
+            
+            # Enhance with curriculum metadata
+            enhanced_dict = CurriculumParser.enhance_activity_with_curriculum_data(
+                activity_dict,
+                config['title']
+            )
+            
+            activity = DailyActivity(**enhanced_dict)
+            activities.append(activity)
+        
+        return activities
     
     def _determine_activity_type(self, recommendation: Dict) -> str:
         """Determine best activity type based on recommendation data"""
-        
         mastery = recommendation.get('mastery', 0.0)
         priority = recommendation.get('priority', 'medium')
-        readiness = recommendation.get('readiness_status', 'Ready')
         
-        # Simple logic for activity type
         if mastery < 0.3:
-            return 'tutoring'  # Low mastery = need teaching
+            return 'tutoring'
         elif priority == 'high':
-            return 'practice'  # High priority = practice needed
+            return 'practice'
         elif mastery > 0.7:
-            return 'review'    # High mastery = review/reinforce
-        elif readiness == 'Not Ready':
-            return 'pathway'   # Not ready = need learning path
+            return 'review'
         else:
-            return 'practice'  # Default to practice
+            return 'practice'
     
     def _get_activity_config(self, activity_type: str, subskill_desc: str) -> Dict[str, str]:
         """Get configuration for activity type"""
-        
         configs = {
             "practice": {
                 "title": f"Practice: {subskill_desc}",
-                "description": f"Targeted practice problems for {subskill_desc.lower()}",
+                "description": f"Targeted practice for {subskill_desc.lower()}",
                 "category": "Practice Problems",
-                "time": "10 min",
+                "time": "12 min",
                 "action": "Start Practice",
                 "endpoint": "/practice",
                 "icon": "zap"
             },
             "tutoring": {
                 "title": f"Learn: {subskill_desc}",
-                "description": f"AI tutoring session on {subskill_desc.lower()}",
+                "description": f"Interactive learning session on {subskill_desc.lower()}",
                 "category": "AI Tutoring",
                 "time": "12 min",
                 "action": "Start Session",
                 "endpoint": "/tutoring",
                 "icon": "headphones"
             },
-            "pathway": {
-                "title": f"Explore: {subskill_desc}",
-                "description": f"Learning path for {subskill_desc.lower()}",
-                "category": "Learning Path",
-                "time": "10 min",
-                "action": "Continue Path",
-                "endpoint": "/learning-paths",
-                "icon": "target"
-            },
-            "visual": {
-                "title": f"Discover: {subskill_desc}",
-                "description": f"Visual exploration of {subskill_desc.lower()}",
-                "category": "Visual Learning",
-                "time": "8 min",
-                "action": "Explore",
-                "endpoint": "/library",
-                "icon": "eye"
-            },
             "review": {
                 "title": f"Review: {subskill_desc}",
                 "description": f"Reinforce {subskill_desc.lower()} concepts",
                 "category": "Review Session",
-                "time": "8 min",
+                "time": "12 min",
                 "action": "Review",
                 "endpoint": "/practice",
                 "icon": "brain"
@@ -305,19 +423,4 @@ class DailyActivitiesService:
     
     def _calculate_points(self, priority: str, mastery: float) -> int:
         """Calculate points for activity"""
-        
-        base_points = 15
-        
-        # Adjust for priority
-        if priority == 'high':
-            base_points += 5
-        elif priority == 'low':
-            base_points -= 3
-        
-        # Adjust for difficulty (lower mastery = more points)
-        if mastery < 0.3:
-            base_points += 3
-        elif mastery > 0.7:
-            base_points -= 2
-        
-        return max(10, base_points)  # Minimum 10 points
+        return 23  # Standard points for now

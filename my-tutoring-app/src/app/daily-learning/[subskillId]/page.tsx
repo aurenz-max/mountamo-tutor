@@ -1,11 +1,15 @@
 // app/daily-learning/[subskillId]/page.tsx
+// This page now serves as a redirect/fallback since the card-based interface 
+// eliminates the need for the intermediate learning hub screen
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import SubskillLearningHub from '@/components/dashboard/SubskillLearningHub';
+import { ArrowLeft, Info } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface SubskillPageProps {
   params: {
@@ -17,84 +21,19 @@ export default function SubskillPage({ params }: SubskillPageProps) {
   const { userProfile } = useAuth();
   const router = useRouter();
   const { subskillId } = params;
-  const [activityData, setActivityData] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // Fetch activity data from your API (optional - fallback to placeholder if it fails)
+  // Auto-redirect to dashboard since we now use card-based interface
   useEffect(() => {
-    const fetchActivityData = async () => {
-      if (!userProfile?.student_id) {
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        setLoading(true);
-        
-        // Try to fetch the daily plan to get activity details
-        const response = await fetch(`/api/daily-plan/${userProfile.student_id}`);
-        if (!response.ok) {
-          console.log('API call failed, using placeholder data');
-          setActivityData(null); // Will use fallback data in component
-          setLoading(false);
-          return;
-        }
-        
-        const data = await response.json();
-        
-        // Find the specific activity by ID
-        const activity = data.activities?.find((act: any) => act.id === subskillId);
-        
-        if (activity) {
-          console.log('Found activity data from API:', activity);
-          setActivityData(activity);
-        } else {
-          console.log('Activity not found in API response, using placeholder data');
-          setActivityData(null); // Will use fallback data in component
-        }
-      } catch (err) {
-        console.log('Error fetching activity data, using placeholder data:', err);
-        setActivityData(null); // Will use fallback data in component
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Small delay to show the redirect message
+    const timer = setTimeout(() => {
+      router.push('/dashboard');
+    }, 2000);
 
-    fetchActivityData();
-  }, [subskillId, userProfile?.student_id]);
+    return () => clearTimeout(timer);
+  }, [router]);
 
-  // Handle back navigation
   const handleBackToDashboard = () => {
-    router.push('/dashboard'); // Adjust to your dashboard route
-  };
-
-  // Handle learning option selection with updated routing
-  const handleLearningOptionSelect = (option: any) => {
-    console.log('Learning option selected:', option);
-    
-    // If the option has a route, use it directly
-    if (option.route) {
-      router.push(option.route);
-      return;
-    }
-    
-    // Fallback to the original routing logic based on option ID
-    switch (option.id) {
-      case 'live-tutoring':
-        router.push(`/tutoring/live/${subskillId}`);
-        break;
-      case 'practice-problems':
-        router.push(`/practice/${subskillId}`); // Updated to match your filepath
-        break;
-      case 'educational-content':
-        router.push(`/content/packages/${subskillId}`);
-        break;
-      case 'projects':
-        router.push(`/projects/activities/${subskillId}`);
-        break;
-      default:
-        console.log('Unknown learning option:', option);
-    }
+    router.push('/dashboard');
   };
 
   if (!userProfile) {
@@ -110,27 +49,61 @@ export default function SubskillPage({ params }: SubskillPageProps) {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p>Loading activity data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Always render the SubskillLearningHub - it will handle fallback data internally
   return (
-    <SubskillLearningHub
-      subskillId={subskillId}
-      activityData={activityData} // null if API failed, actual data if successful
-      studentId={userProfile.student_id}
-      onBack={handleBackToDashboard}
-      onLearningOptionSelect={handleLearningOptionSelect}
-    />
+    <div className="container mx-auto p-4">
+      {/* Header */}
+      <div className="mb-6">
+        <Button 
+          onClick={handleBackToDashboard}
+          variant="ghost" 
+          className="flex items-center text-gray-600 mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Dashboard
+        </Button>
+      </div>
+
+      {/* Redirect Message */}
+      <div className="max-w-2xl mx-auto">
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center text-blue-800">
+              <Info className="mr-2 h-5 w-5" />
+              Learning Experience Updated
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-blue-700">
+                We've improved the learning experience! Instead of navigating to separate pages, 
+                you can now choose your learning method directly from the activity cards on your dashboard.
+              </p>
+              
+              <div className="bg-white border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">What's New:</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Click any activity card to see learning options</li>
+                  <li>• Choose from AI Tutoring, Practice Problems, Educational Content, or Projects</li>
+                  <li>• No more intermediate screens - go straight to learning!</li>
+                </ul>
+              </div>
+
+              <div className="pt-2">
+                <p className="text-sm text-blue-600 mb-3">
+                  You're being redirected to the dashboard where you can find the activity for <strong>{subskillId}</strong>.
+                </p>
+                
+                <Button 
+                  onClick={handleBackToDashboard}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  Go to Dashboard Now
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
