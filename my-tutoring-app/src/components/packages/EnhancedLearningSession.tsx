@@ -14,7 +14,8 @@ import Link from 'next/link';
 
 // Import your existing hooks and services
 import { usePackageDetail } from '@/lib/packages/hooks';
-import { packageAPI } from '@/lib/packages/api';
+import { authApi } from '@/lib/authApiClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAudioPlayback } from '@/lib/hooks/useAudioPlayback';
 import AudioCaptureService from '@/lib/AudioCaptureService';
 
@@ -36,6 +37,9 @@ interface EnhancedLearningSessionProps {
 }
 
 export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearningSessionProps) {
+  // Auth context
+  const { user, userProfile, loading: authLoading } = useAuth();
+  
   // Package data from your API
   const { package: pkg, loading: packageLoading, error: packageError } = usePackageDetail(packageId);
   
@@ -66,13 +70,23 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
   const { processAndPlayRawAudio, stopAudioPlayback } = useAudioPlayback({ sampleRate: 24000 });
 
   // WebSocket connection
-  const connectWebSocket = () => {
+  const connectWebSocket = async () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) return;
+    
+    // Wait for authentication to complete
+    if (authLoading || !user) {
+      console.log('⏳ Waiting for authentication before connecting WebSocket');
+      return;
+    }
 
     setIsConnecting(true);
     
     try {
-      socketRef.current = packageAPI.createLearningSessionWebSocket(packageId, studentId);
+      console.log('🔌 Creating authenticated WebSocket connection');
+      socketRef.current = await authApi.createLearningSessionWebSocket(
+        packageId, 
+        studentId || userProfile?.student_id
+      );
 
       socketRef.current.onopen = () => {
         setIsConnected(true);
@@ -259,9 +273,12 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
     }
   };
 
-  // Connect on mount
+  // Connect when authentication is ready
   useEffect(() => {
-    connectWebSocket();
+    if (!authLoading && user) {
+      console.log('✅ Auth ready, connecting WebSocket');
+      connectWebSocket();
+    }
     
     return () => {
       if (responseTimeoutRef.current) clearTimeout(responseTimeoutRef.current);
@@ -269,7 +286,7 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
       if (audioCaptureServiceRef.current) audioCaptureServiceRef.current.destroy();
       stopAudioPlayback();
     };
-  }, [packageId, studentId, stopAudioPlayback]);
+  }, [packageId, studentId, stopAudioPlayback, authLoading, user]);
 
   // Auto-scroll messages
   useEffect(() => {

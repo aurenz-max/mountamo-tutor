@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude config show)",
+      "Bash(claude config --help)",
+      "Bash(claude config list)"
+    ],
+    "deny": []
+  }
+}

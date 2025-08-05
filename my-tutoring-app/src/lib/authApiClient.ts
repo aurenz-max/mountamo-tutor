@@ -347,6 +347,156 @@ class AuthenticatedApiClient {
     return this.get('/api/analytics/health');
   }
 
+
+// ============================================================================
+// PACKAGE ENDPOINTS - Add to your AuthenticatedApiClient class
+// ============================================================================
+
+/**
+ * Get content packages with filtering
+ */
+async getContentPackages(filters: {
+  status?: string;
+  subject?: string;
+  skill?: string;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<{ packages: any[]; total_count: number }> {
+  const queryParams = new URLSearchParams();
+  
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) queryParams.append(key, value.toString());
+  });
+  
+  const queryString = queryParams.toString();
+  return this.get(`/api/packages/content-packages${queryString ? `?${queryString}` : ''}`);
+}
+
+async findPackageByCurriculumId(curriculumId: string): Promise<{
+  status: string;
+  package_id: string;
+  package: any;
+  curriculum_mapping: any;
+}> {
+  return this.get(`/api/education/packages/find-by-curriculum/${curriculumId}`);
+}
+
+/**
+ * Get individual package details
+ */
+async getContentPackageDetail(packageId: string): Promise<any> {
+  const result = await this.get(`/api/packages/content-packages/${packageId}`);
+  
+  // Handle different response formats from your backend
+  if (result.package) {
+    return result.package;
+  } else if (result.status === "success" && result.data) {
+    return result.data;
+  }
+  return result;
+}
+
+/**
+ * Create WebSocket connection for learning sessions with proper authentication flow
+ */
+async createLearningSessionWebSocket(packageId: string, studentId?: number): Promise<WebSocket> {
+  const token = await this.getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required for WebSocket connection');
+  }
+
+  const params = new URLSearchParams();
+  if (studentId) params.append('student_id', studentId.toString());
+  
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//localhost:8000/api/packages/${packageId}/learn?${params}`;
+  
+  console.log('🔌 Creating WebSocket connection to:', wsUrl);
+  
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(wsUrl);
+    let authSent = false;
+    
+    // Set a timeout for the entire connection process
+    const connectionTimeout = setTimeout(() => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        ws.close();
+        reject(new Error('WebSocket connection timeout'));
+      }
+    }, 8000); // 8 seconds, less than backend's 10 second timeout
+    
+    ws.onopen = () => {
+      console.log('🔌 WebSocket opened, sending authentication immediately');
+      clearTimeout(connectionTimeout);
+      
+      // Send authentication immediately
+      try {
+        ws.send(JSON.stringify({
+          type: 'authenticate',
+          token: token
+        }));
+        authSent = true;
+        console.log('✅ Authentication message sent');
+      } catch (error) {
+        console.error('❌ Failed to send authentication:', error);
+        reject(error);
+        return;
+      }
+    };
+    
+    // Wait for auth success response
+    const originalOnMessage = ws.onmessage;
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'auth_success') {
+          console.log('✅ Authentication successful, WebSocket ready');
+          // Restore original message handler or clear it
+          ws.onmessage = originalOnMessage;
+          resolve(ws);
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing auth response:', error);
+      }
+      
+      // Call original handler if it exists
+      if (originalOnMessage) {
+        originalOnMessage(event);
+      }
+    };
+    
+    ws.onerror = (error) => {
+      console.error('🔌 WebSocket error:', error);
+      clearTimeout(connectionTimeout);
+      reject(error);
+    };
+    
+    ws.onclose = (event) => {
+      clearTimeout(connectionTimeout);
+      if (!authSent) {
+        reject(new Error(`WebSocket closed before authentication: ${event.code} ${event.reason}`));
+      }
+    };
+  });
+}
+
+// Add this helper method to your AuthenticatedApiClient class
+private async getAuthToken(): Promise<string> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  try {
+    const token = await user.getIdToken();
+    return token;
+  } catch (error) {
+    console.error('Failed to get auth token:', error);
+    throw new Error('Authentication token unavailable');
+  }
+}
+
   // ============================================================================
   // LEGACY ANALYTICS METHODS (for backwards compatibility)
   // ============================================================================

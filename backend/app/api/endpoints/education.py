@@ -3,7 +3,7 @@ from google import genai
 from google.genai import types
 from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, PrebuiltVoiceConfig, Content
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException, Path, status
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException, Path, status, Depends
 import asyncio
 import json
 import logging
@@ -14,16 +14,35 @@ from typing import Dict, Any, Optional, List
 
 from ...core.config import settings
 from ...db.cosmos_db import CosmosDBService
-from ...services.user_profiles import user_profiles_service  # FIXED: Import the service instance
-from ...models.user_profiles import ActivityLog  # FIXED: Import ActivityLog model
+from ...services.user_profiles import user_profiles_service
+from ...models.user_profiles import ActivityLog
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# 🔥 FIXED: Import the correct auth dependency from your middleware
+from ...core.middleware import get_user_context
+
+# Enhanced logging configuration - CLEANED UP VERSION (from daily_briefing_live.py)
+logging.basicConfig(
+    level=logging.INFO,  # Changed from DEBUG to INFO to reduce noise
+    format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
+# Create a separate logger for Gemini interactions
+gemini_logger = logging.getLogger('gemini_interaction')
+gemini_logger.setLevel(logging.INFO)
+
+# Suppress verbose websockets logging
+websockets_logger = logging.getLogger('websockets')
+websockets_logger.setLevel(logging.WARNING)
+
+# Suppress verbose google_genai logging
+google_genai_logger = logging.getLogger('google_genai')
+google_genai_logger.setLevel(logging.WARNING)
+
+# Updated Gemini configuration (from daily_briefing_live.py)
 client = genai.Client(
     api_key=settings.GEMINI_API_KEY,
-    http_options={"api_version": "v1beta"},
+    http_options={"api_version": "v1alpha"},  # Updated API version
 )
 
 DEFAULT_VOICE = "Leda"
@@ -41,7 +60,7 @@ router = APIRouter()
 # Initialize Cosmos DB service
 cosmos_db = CosmosDBService()
 
-# ADD: Helper function to authenticate WebSocket connections (same as gemini.py)
+# Helper function to authenticate WebSocket connections
 async def authenticate_websocket_token(token: str) -> dict:
     """Authenticate WebSocket connection using token from first message"""
     try:
@@ -61,12 +80,12 @@ async def authenticate_websocket_token(token: str) -> dict:
             detail="Invalid authentication token"
         )
 
-# ADD: Connection manager to handle multiple WebSocket connections (enhanced from gemini.py)
+# Enhanced Connection manager
 class PackageConnectionManager:
     def __init__(self):
         self.active_connections = []
-        self.user_connections = {}  # Track connections by user_id
-        self._lock = asyncio.Lock()  # Add a lock for thread safety
+        self.user_connections = {}
+        self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket, user_id: str = None):
         await websocket.accept()
@@ -84,8 +103,6 @@ class PackageConnectionManager:
                 if user_id and user_id in self.user_connections:
                     del self.user_connections[user_id]
                 logger.info(f"Package session client disconnected. Total connections: {len(self.active_connections)}")
-            else:
-                logger.info("Attempted to disconnect a client that wasn't in the active connections list")
         except Exception as e:
             logger.error(f"Error during connection manager disconnect: {str(e)}")
             
@@ -109,7 +126,7 @@ class PackageSessionManager:
         async with self._lock:
             self.active_sessions[session_id] = {
                 "package_id": package_id,
-                "user_id": user_id,  # ADD: Track user_id
+                "user_id": user_id,
                 "student_id": student_id,
                 "created_at": asyncio.get_event_loop().time(),
                 "interactions": []
@@ -164,7 +181,6 @@ async def build_package_instruction(package_id: str, user_id: str, user_email: s
         # Key terminology (limit to 8 most important terms)
         terminology = master_context.get('key_terminology', {})
         if terminology:
-            # Take first 8 terms
             key_terms = list(terminology.items())[:8]
             terms_text = "\n".join([f"• {term}: {definition}" for term, definition in key_terms])
         else:
@@ -201,6 +217,13 @@ IMPORTANT TERMS:
 
 AVAILABLE RESOURCES: {resources_text}
 
+IMPORTANT AUDIO INTERACTION RULES:
+• Keep your responses concise and engaging (30-60 seconds max per response)
+• PAUSE frequently to let the student respond - don't give long monologues
+• Listen carefully for interruptions and respond naturally
+• If the student interrupts you, acknowledge it gracefully: "Oh, you have a question!"
+• Break complex information into smaller, digestible chunks
+
 TEACHING APPROACH:
 • Start by asking what the student wants to focus on
 • Use the key terminology consistently throughout
@@ -209,6 +232,7 @@ TEACHING APPROACH:
 • Be encouraging and adaptive to the student's pace
 • Connect learning to real-world applications when possible
 • Maintain a warm, supportive teaching style
+• KEEP RESPONSES SHORT AND CONVERSATIONAL - this is a dialogue, not a lecture
 
 Keep responses conversational and age-appropriate. Focus on helping the student master the learning goals through engaging dialogue."""
         
@@ -218,7 +242,7 @@ Keep responses conversational and age-appropriate. Focus on helping the student 
         logger.error(f"Error building package instruction: {str(e)}")
         return "You are an AI tutor. Be helpful, encouraging, and adaptive."
 
-# ENHANCED: WebSocket endpoint for package-specific learning with authentication
+# ENHANCED: WebSocket endpoint with improved Gemini Live API usage
 @router.websocket("/{package_id}/learn")
 async def package_learning_session(
     websocket: WebSocket,
@@ -227,444 +251,363 @@ async def package_learning_session(
 ):
     """WebSocket endpoint for package-specific tutoring sessions with authentication"""
     
-    # STEP 1: Accept connection first, then authenticate via first message
+    logger.info(f"🚀 Package learning WebSocket connection initiated for package {package_id}")
     await websocket.accept()
-    logger.info(f"Package learning WebSocket connection accepted for package {package_id}, waiting for authentication")
-    
-    # Authentication variables
     user_id = None
     user_email = None
-    firebase_user = None
+    session_start_time = asyncio.get_event_loop().time()
+    gemini_session = None
     
     try:
-        # STEP 2: Wait for authentication message
-        auth_message = await asyncio.wait_for(websocket.receive(), timeout=10.0)
-        
-        if "text" in auth_message:
-            try:
-                auth_data = json.loads(auth_message["text"])
-                
-                if auth_data.get("type") != "authenticate":
-                    await websocket.close(code=4001, reason="First message must be authentication")
-                    return
-                
-                token = auth_data.get("token")
-                if not token:
-                    await websocket.close(code=4001, reason="No authentication token provided")
-                    return
-                
-                # Authenticate the token
-                firebase_user = await authenticate_websocket_token(token)
-                user_id = firebase_user['uid']
-                user_email = firebase_user.get('email', 'Unknown')
-                
-                # Send authentication success
-                await websocket.send_json({
-                    "type": "auth_success",
-                    "message": "Authentication successful",
-                    "package_id": package_id
-                })
-                
-            except json.JSONDecodeError:
-                await websocket.close(code=4001, reason="Invalid authentication message format")
-                return
-            except Exception as auth_error:
-                logger.error(f"Authentication failed: {str(auth_error)}")
-                await websocket.close(code=4001, reason="Authentication failed")
-                return
-        else:
-            await websocket.close(code=4001, reason="First message must be text")
+        # Step 1: Authenticate user (same format as daily_briefing_live)
+        logger.info("🔐 Waiting for authentication...")
+        try:
+            auth_message = await asyncio.wait_for(websocket.receive(), timeout=15.0)
+        except asyncio.TimeoutError:
+            logger.error("❌ Authentication timeout - client didn't send auth message within 15 seconds")
+            await websocket.close(code=4001, reason="Authentication timeout")
+            return
+        except Exception as e:
+            logger.error(f"❌ Error receiving authentication message: {e}")
+            await websocket.close(code=4000, reason="Connection error")
             return
             
-    except asyncio.TimeoutError:
-        await websocket.close(code=4001, reason="Authentication timeout")
-        return
-    except Exception as e:
-        logger.error(f"Error during authentication: {str(e)}")
-        await websocket.close(code=4001, reason="Authentication error")
-        return
-
-    logger.info(f"New package learning session established for user: {user_email}, package: {package_id}")
-    
-    # STEP 3: Create session with user info
-    session_id = await session_manager.create_session(package_id, user_id, student_id)
-    
-    # STEP 4: Log the tutoring session start
-    try:
-        # Get package info for activity logging
-        package = await cosmos_db.get_content_package_by_id(package_id)
-        package_title = "Unknown Package"
-        subject = "General"
-        if package:
-            package_title = package.get('content', {}).get('reading', {}).get('title', 'Unknown Package')
-            subject = package.get('subject', 'General')
+        logger.info(f"🔍 Received message: {auth_message}")  # Debug log
         
-        await log_activity(
-            user_id=user_id,
-            activity_type="package_tutoring_session",
-            activity_name=f"{package_title}",
-            points=5,
-            metadata={
-                "package_id": package_id,
-                "package_title": package_title,
-                "subject": subject,
-                "student_id": student_id,
-                "session_type": "package_learning"
-            }
-        )
-    except Exception as e:
-        logger.warning(f"Failed to log session start activity: {str(e)}")
-    
-    # Create queues
-    audio_in_queue = asyncio.Queue()
-    text_queue = asyncio.Queue()
-    client_audio_queue = asyncio.Queue()
-    
-    session = None
-    tasks = []
-    
-    # Track session time
-    session_start_time = asyncio.get_event_loop().time()
-    
-    try:
-        # Build system instruction with user context
+        try:
+            auth_data = json.loads(auth_message["text"])
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"❌ Invalid authentication message format: {e}")
+            await websocket.close(code=4002, reason="Invalid message format")
+            return
+            
+        logger.info(f"🔍 Parsed auth_data: {auth_data}")  # Debug log
+        
+        if auth_data.get("type") != "authenticate":
+            logger.error(f"❌ Authentication type mismatch: expected 'authenticate', got '{auth_data.get('type')}'")
+            await websocket.close(code=4001, reason="Authentication required")
+            return
+        
+        # Use same authentication logic as daily_briefing_live
+        from firebase_admin import auth
+        token = auth_data.get("token", "").replace('Bearer ', '')
+        decoded_token = auth.verify_id_token(token)
+        user_id = decoded_token['uid']
+        user_email = decoded_token.get('email', 'Unknown')
+        logger.info(f"✅ Authentication successful for user {user_id} ({user_email})")
+        
+        # Get student_id if not provided (same as daily_briefing_live)
+        if not student_id:
+            logger.info("🔍 Looking up student mapping...")
+            from ..db.cosmos_db import cosmos_db
+            student_mapping = await cosmos_db.get_student_mapping(user_id)
+            student_id = student_mapping["student_id"] if student_mapping else None
+            logger.info(f"📝 Student mapping result: {student_id}")
+            
+            if not student_id:
+                logger.error("❌ No student mapping found")
+                await websocket.close(code=4001, reason="No student mapping found")
+                return
+        
+        await websocket.send_json({
+            "type": "auth_success", 
+            "package_id": package_id,
+            "message": "Authentication successful"
+        })
+        logger.info(f"✅ Authentication complete for package {package_id}")
+        
+        # Step 2: Create session
+        session_id = await session_manager.create_session(package_id, user_id, student_id)
+        logger.info(f"📝 Session created: {session_id}")
+        
+        # Step 3: Configure Gemini session
+        logger.info("🤖 Configuring Gemini session...")
         system_instruction_text = await build_package_instruction(package_id, user_id, user_email)
+        logger.info(f"📋 System instruction prepared (length: {len(system_instruction_text)})")
         
-        # Configure Gemini Live
+        # Updated Gemini Live configuration (from daily_briefing_live.py)
         config = LiveConnectConfig(
             response_modalities=["AUDIO"],
-            context_window_compression=(
-                types.ContextWindowCompressionConfig(
-                    sliding_window=types.SlidingWindow(),
-                    triggerTokens=16000
-                )
-            ),
             speech_config=SpeechConfig(
                 voice_config=VoiceConfig(
-                    prebuilt_voice_config=PrebuiltVoiceConfig(
-                        voice_name=DEFAULT_VOICE,
-                    )
+                    prebuilt_voice_config=PrebuiltVoiceConfig(voice_name=DEFAULT_VOICE)
                 )
             ),
             realtime_input_config=types.RealtimeInputConfig(turn_coverage="TURN_INCLUDES_ALL_INPUT"),
-            media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW,
+            context_window_compression=types.ContextWindowCompressionConfig(
+                trigger_tokens=25600,
+                sliding_window=types.SlidingWindow(target_tokens=12800),
+            ),
             system_instruction=Content(parts=[{"text": system_instruction_text}])
         )
+        logger.info("🔧 Gemini config created")
         
-        # Connect to Gemini
+        # Step 4: Start Gemini session
+        logger.info(f"🚀 Starting Gemini session with model {MODEL}...")
         async with client.aio.live.connect(model=MODEL, config=config) as session:
-            logger.info(f"Connected to Gemini for package {package_id}")
+            gemini_session = session
+            gemini_logger.info(f"✅ Gemini session established for package {package_id}")
             
-            async def receive_from_client():
-                disconnect_received = False
-                
-                while not disconnect_received:
+            # Communication queues - simplified approach from daily_briefing_live.py
+            text_queue = asyncio.Queue()
+            audio_queue = asyncio.Queue()
+            
+            # Handle messages from client (improved from daily_briefing_live.py)
+            async def handle_client_messages():
+                while True:
                     try:
-                        logger.info("Waiting to receive message from client...")
                         message = await asyncio.wait_for(websocket.receive(), timeout=5.0)
                         
-                        message_type = message.get("type", "unknown")
-                        logger.info(f"Received message type: {message_type}")
-                        
-                        if message_type == "websocket.disconnect":
-                            logger.info("WebSocket disconnect message received")
-                            disconnect_received = True
+                        if message.get("type") == "websocket.disconnect":
+                            logger.info("🔌 Client disconnected")
                             break
-                        
-                        data = None
+                            
                         if "text" in message:
-                            try:
-                                data = json.loads(message["text"])
-                                
-                                # Skip authentication messages since we already handled that
-                                if data.get("type") == "authenticate":
-                                    continue
-                                    
-                                logger.info(f"Parsed message data type: {data.get('type', 'unknown')}")
-                            except json.JSONDecodeError as e:
-                                logger.error(f"Error decoding JSON: {str(e)}, raw text: {message.get('text', '')[:100]}")
+                            data = json.loads(message["text"])
+                            
+                            # Skip authentication messages since we already handled that
+                            if data.get("type") == "authenticate":
                                 continue
-                        elif "bytes" in message:
-                            logger.info(f"Received raw binary data: {len(message['bytes'])} bytes")
-                            audio_data = message["bytes"]
-                            mime_type = f"{FORMAT};rate={SEND_SAMPLE_RATE}"
-                            await client_audio_queue.put({
-                                "data": audio_data, 
-                                "mime_type": mime_type
-                            })
-                            logger.info(f"Queued {len(audio_data)} bytes of raw binary audio data")
-                            continue
-                        else:
-                            logger.warning(f"Unknown message format received: {message.keys()}")
-                            continue
-                        
-                        if data:
-                            if data["type"] == "text":
-                                text = data.get("content", "")
-                                if text:
-                                    logger.info(f"Received text: {text[:50]}...")
-                                    await text_queue.put(text)
-                                    # Log interaction
-                                    await session_manager.log_interaction(
-                                        session_id, 
-                                        {"type": "student_text", "content": text[:100]}
-                                    )
-                            elif data["type"] == "end_conversation":
-                                logger.info("Client requested end of conversation")
-                                disconnect_received = True
-                                break
-                            elif data["type"] == "audio":
-                                audio_data = data.get("data")
-                                mime_type = data.get("mime_type", FORMAT)
+                            
+                            # Handle text-based chat messages
+                            if data.get("type") == "text":
+                                text_content = data.get("content", "")
+                                logger.info(f"💬 Received text from client: {text_content[:100]}...")
+                                await text_queue.put(text_content)
                                 
-                                if audio_data:
-                                    logger.info(f"Received audio data (base64), length: {len(audio_data)}")
-                                    try:
-                                        audio_bytes = base64.b64decode(audio_data)
-                                        logger.info(f"Decoded {len(audio_bytes)} bytes of audio data")
-                                        
-                                        await client_audio_queue.put({
-                                            "data": audio_bytes, 
-                                            "mime_type": mime_type
-                                        })
-                                        logger.info(f"Queued {len(audio_bytes)} bytes of audio data with mime type {mime_type}")
-                                    except Exception as e:
-                                        logger.error(f"Error decoding base64 audio: {str(e)}")
-                    
-                    except asyncio.TimeoutError:
-                        logger.info("No message received within timeout, but keeping connection open for live session")
-                        continue
-                    except WebSocketDisconnect as wsd:
-                        logger.info(f"WebSocketDisconnect exception caught: {str(wsd)}")
-                        disconnect_received = True
-                        break
-                    except Exception as e:
-                        logger.error(f"Error receiving client message: {str(e)}")
-            
-            async def send_text_to_gemini():
-                while True:
-                    try:
-                        text = await text_queue.get()
-                        await session.send(input=text, end_of_turn=True)
-                    except asyncio.CancelledError:
-                        break
-                    except Exception as e:
-                        logger.error(f"Error sending text to Gemini: {str(e)}")
-            
-            async def send_audio_to_gemini():
-                consecutive_errors = 0
-                max_consecutive_errors = 5
-                
-                while True:
-                    try:
-                        audio_msg = await client_audio_queue.get()
-                        
-                        data_length = len(audio_msg.get('data', b'')) if 'data' in audio_msg else 0
-                        mime_type = audio_msg.get('mime_type', 'unknown')
-                        
-                        if data_length > 0:
-                            logger.info(f"Preparing to send audio to Gemini: {data_length} bytes, mime type: {mime_type}")
+                                # Log interaction
+                                await session_manager.log_interaction(
+                                    session_id, 
+                                    {"type": "student_text", "content": text_content[:100]}
+                                )
                             
-                            data = audio_msg.get('data')
-                            if hasattr(data, '__len__') and len(data) >= 4:
-                                first_bytes = str([b for b in data[:16]])
-                                logger.info(f"First bytes of audio data to send: {first_bytes}")
+                            # Handle JSON-wrapped audio messages - LESS VERBOSE
+                            elif data.get("type") == "audio":
+                                base64_data = data.get("data")
+                                if base64_data:
+                                    # Only log audio reception occasionally to avoid spam
+                                    if hasattr(handle_client_messages, '_audio_count'):
+                                        handle_client_messages._audio_count += 1
+                                    else:
+                                        handle_client_messages._audio_count = 1
+                                    
+                                    # Log every 10th audio message instead of every one
+                                    if handle_client_messages._audio_count % 10 == 0:
+                                        logger.debug(f"🎤 Received audio batch #{handle_client_messages._audio_count} ({len(base64_data)} chars)")
+                                    
+                                    # Decode the base64 string back into binary bytes
+                                    audio_bytes = base64.b64decode(base64_data)
+                                    
+                                    # Format the data for the audio queue
+                                    audio_data_for_queue = {
+                                        "data": audio_bytes,
+                                        "mime_type": data.get("mime_type", f"{FORMAT};rate={SEND_SAMPLE_RATE}")
+                                    }
+                                    await audio_queue.put(audio_data_for_queue)
+                            
+                            elif data.get("type") == "end_conversation":
+                                logger.info("🔚 End conversation signal received")
+                                break
                         
-                            formatted_audio_msg = {
-                                "data": audio_msg.get('data', b''),
-                                "mime_type": mime_type
+                        elif "bytes" in message:
+                            # Handle raw binary audio - LESS VERBOSE
+                            audio_data = {
+                                "data": message["bytes"], 
+                                "mime_type": f"{FORMAT};rate={SEND_SAMPLE_RATE}"
                             }
+                            # Only log occasionally
+                            if not hasattr(handle_client_messages, '_raw_audio_count'):
+                                handle_client_messages._raw_audio_count = 0
+                            handle_client_messages._raw_audio_count += 1
                             
-                            logger.info(f"Sending audio to Gemini: {len(formatted_audio_msg.get('data', b''))} bytes with mime type: {formatted_audio_msg.get('mime_type')}")
+                            if handle_client_messages._raw_audio_count % 10 == 0:
+                                logger.debug(f"🎤 Received raw audio batch #{handle_client_messages._raw_audio_count} ({len(message['bytes'])} bytes)")
                             
-                            await session.send(input=formatted_audio_msg)
-                            logger.info(f"Successfully sent audio data to Gemini")
+                            await audio_queue.put(audio_data)
                             
-                            consecutive_errors = 0
-                        
-                    except asyncio.CancelledError:
-                        logger.info("Audio sending task cancelled")
+                    except asyncio.TimeoutError:
+                        continue
+                    except WebSocketDisconnect:
+                        logger.info("🔌 WebSocket disconnected in client handler")
                         break
                     except Exception as e:
-                        consecutive_errors += 1
-                        logger.error(f"Error sending audio to Gemini: {str(e)}")
-                        logger.error(f"Exception traceback: {traceback.format_exc()}")
-                        
-                        if consecutive_errors >= max_consecutive_errors:
-                            logger.error(f"Too many consecutive errors ({consecutive_errors}), stopping audio stream")
-                            break
-                        
-                        await asyncio.sleep(0.1)
+                        logger.error(f"❌ Client message error: {str(e)}")
             
+            # Send to gemini (improved from daily_briefing_live.py)
+            async def send_to_gemini():
+                send_count = 0
+                while True:
+                    try:
+                        # Wait for either a text or audio message to become available
+                        text_task = asyncio.create_task(text_queue.get())
+                        audio_task = asyncio.create_task(audio_queue.get())
+
+                        done, pending = await asyncio.wait(
+                            {text_task, audio_task},
+                            return_when=asyncio.FIRST_COMPLETED
+                        )
+
+                        if text_task in done:
+                            text = text_task.result()
+                            gemini_logger.info(f"📤 Sending text to Gemini: {text[:100]}...")
+                            await session.send(input=text, end_of_turn=True)
+                            # If there was a concurrent audio task, put it back in the queue
+                            if not audio_task.done():
+                                audio_task.cancel()
+                            else:
+                                audio = audio_task.result()
+                                if len(audio.get('data', b'')) > 0:
+                                    send_count += 1
+                                    # Only log every 10th audio send to reduce spam
+                                    if send_count % 10 == 0:
+                                        gemini_logger.debug(f"📤 Sending audio batch #{send_count} to Gemini: {len(audio['data'])} bytes")
+                                    await session.send(input=audio)
+
+                        if audio_task in done:
+                            audio = audio_task.result()
+                            if len(audio.get('data', b'')) > 0:
+                                send_count += 1
+                                # Only log every 10th audio send to reduce spam
+                                if send_count % 10 == 0:
+                                    gemini_logger.debug(f"📤 Sending audio batch #{send_count} to Gemini: {len(audio['data'])} bytes")
+                                await session.send(input=audio)
+                            if not text_task.done():
+                                text_task.cancel()
+
+                    except asyncio.CancelledError:
+                        break
+                    except Exception as e:
+                        gemini_logger.error(f"❌ Gemini send error: {str(e)}")
+            
+            # Receive responses from Gemini - MAKE NON-BLOCKING (from daily_briefing_live.py)
             async def receive_from_gemini():
+                audio_receive_count = 0
                 while True:
                     try:
                         turn = session.receive()
                         async for response in turn:
-                            # Handle audio response
-                            if hasattr(response, "data") and response.data:
-                                audio_b64 = base64.b64encode(response.data).decode('utf-8')
-                                await websocket.send_json({
-                                    "type": "audio",
-                                    "format": "raw-pcm",
-                                    "sampleRate": RECEIVE_SAMPLE_RATE,
-                                    "bitsPerSample": 16,
-                                    "channels": CHANNELS,
-                                    "data": audio_b64,
-                                })
-                                logger.info(f"Sent {len(response.data)} bytes of audio as base64")
-                            
-                            # Handle text response
-                            if hasattr(response, "text") and response.text:
-                                await websocket.send_json({
-                                    "type": "text",
-                                    "content": response.text,
-                                    "package_id": package_id,
-                                    "session_id": session_id
-                                })
-                                logger.info(f"Sent text response: {response.text[:50]}...")
+                            # Check if response has server_content with model_turn
+                            if hasattr(response, 'server_content') and response.server_content:
+                                # Handle model turn with parts
+                                if hasattr(response.server_content, 'model_turn') and response.server_content.model_turn:
+                                    model_turn = response.server_content.model_turn
+                                    if hasattr(model_turn, 'parts') and model_turn.parts:
+                                        for part in model_turn.parts:
+                                            # Handle text parts
+                                            if hasattr(part, 'text') and part.text:
+                                                gemini_logger.info(f"📥 Received text from Gemini: {part.text[:100]}...")
+                                                
+                                                # Send without awaiting to prevent blocking
+                                                asyncio.create_task(websocket.send_json({
+                                                    "type": "text",
+                                                    "content": part.text,
+                                                    "package_id": package_id,
+                                                    "session_id": session_id
+                                                }))
+                                                
+                                                # Log AI response
+                                                asyncio.create_task(session_manager.log_interaction(
+                                                    session_id,
+                                                    {"type": "ai_response", "content": part.text[:100]}
+                                                ))
+                                            
+                                            # Handle inline_data (audio) parts - MUCH LESS VERBOSE
+                                            elif hasattr(part, 'inline_data') and part.inline_data:
+                                                if hasattr(part.inline_data, 'data') and part.inline_data.data:
+                                                    audio_receive_count += 1
+                                                    # Only log every 20th audio message to significantly reduce spam
+                                                    if audio_receive_count % 20 == 0:
+                                                        gemini_logger.debug(f"📥 Received audio batch #{audio_receive_count} from Gemini: {len(part.inline_data.data)} bytes")
+                                                    
+                                                    audio_b64 = base64.b64encode(part.inline_data.data).decode('utf-8')
+                                                    
+                                                    # Send without awaiting to prevent blocking
+                                                    asyncio.create_task(websocket.send_json({
+                                                        "type": "audio",
+                                                        "format": "raw-pcm",
+                                                        "sampleRate": RECEIVE_SAMPLE_RATE,
+                                                        "bitsPerSample": 16,
+                                                        "channels": CHANNELS,
+                                                        "data": audio_b64
+                                                    }))
                                 
-                                # Log AI response
-                                await session_manager.log_interaction(
-                                    session_id,
-                                    {"type": "ai_response", "content": response.text[:100]}
-                                )
-                            
-                            # Handle input transcriptions
-                            if hasattr(response, "input_transcription") and response.input_transcription:
-                                await websocket.send_json({
-                                    "type": "input_transcription",
-                                    "content": response.input_transcription
-                                })
-                                logger.info(f"Sent input transcription: {response.input_transcription[:50]}...")
-                            
-                            # Handle output transcriptions
-                            if hasattr(response, "output_transcription") and response.output_transcription:
-                                await websocket.send_json({
-                                    "type": "output_transcription",
-                                    "content": response.output_transcription
-                                })
-                                logger.info(f"Sent output transcription: {response.output_transcription[:50]}...")
-                    
+                                # Handle input transcription
+                                if hasattr(response.server_content, 'input_transcription') and response.server_content.input_transcription:
+                                    if hasattr(response.server_content.input_transcription, 'text') and response.server_content.input_transcription.text:
+                                        logger.info(f"🎤 User transcription: {response.server_content.input_transcription.text}")
+                                        
+                                        # Send without awaiting to prevent blocking
+                                        asyncio.create_task(websocket.send_json({
+                                            "type": "input_transcription",
+                                            "content": response.server_content.input_transcription.text
+                                        }))
+                                
+                                # Handle output transcription  
+                                if hasattr(response.server_content, 'output_transcription') and response.server_content.output_transcription:
+                                    if hasattr(response.server_content.output_transcription, 'text') and response.server_content.output_transcription.text:
+                                        logger.info(f"🎯 AI transcription: {response.server_content.output_transcription.text}")
+                                        
+                                        # Send without awaiting to prevent blocking
+                                        asyncio.create_task(websocket.send_json({
+                                            "type": "output_transcription", 
+                                            "content": response.server_content.output_transcription.text
+                                        }))
+                                        
                     except asyncio.CancelledError:
-                        logger.info("Gemini receiving task cancelled")
                         break
                     except Exception as e:
-                        error_str = str(e)
-                        logger.error(f"Error receiving from Gemini: {error_str}")
-                        
-                        if "Deadline expired" in error_str or "1011" in error_str:
-                            logger.info("Deadline exceeded error detected, closing session gracefully")
-                            
-                            try:
-                                await websocket.send_json({
-                                    "type": "error",
-                                    "content": "The AI service connection timed out. Please refresh to start a new session."
-                                })
-                            except Exception as ws_err:
-                                logger.error(f"Error sending error notification: {str(ws_err)}")
-                            
-                            return
-                        
-                        await asyncio.sleep(0.5)
+                        gemini_logger.error(f"❌ Gemini receive error: {str(e)}")
+                        break
             
-            # Start all tasks with names
-            logger.info("Starting background tasks for WebSocket communication")
+            # Start all communication tasks
             tasks = [
-                asyncio.create_task(receive_from_client(), name="receive_from_client"),
-                asyncio.create_task(send_text_to_gemini(), name="send_text_to_gemini"),
-                asyncio.create_task(send_audio_to_gemini(), name="send_audio_to_gemini"),
-                asyncio.create_task(receive_from_gemini(), name="receive_from_gemini"),
+                asyncio.create_task(handle_client_messages()),
+                asyncio.create_task(send_to_gemini()),
+                asyncio.create_task(receive_from_gemini())
             ]
-            logger.info(f"Started {len(tasks)} background tasks")
             
-            # Send welcome message
-            await send_welcome_message(session, package_id, user_email)
+            # Send welcome message to start conversation
+            gemini_logger.info("🚀 Sending welcome message to Gemini...")
+            welcome_message = await create_welcome_message(package_id, user_email)
+            await session.send(input=welcome_message, end_of_turn=True)
+            gemini_logger.info("✅ Welcome message sent")
             
-            # Wait for the first task to complete
-            logger.info("Waiting for any task to complete...")
+            # Wait for any task to complete (usually means session ended)
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             
-            for completed_task in done:
-                task_name = completed_task.get_name()
-                if completed_task.exception():
-                    logger.error(f"Task {task_name} completed with exception: {completed_task.exception()}")
-                else:
-                    logger.info(f"Task {task_name} completed successfully")
-            
-            # Cancel remaining tasks gracefully
-            logger.info(f"Cancelling {len(pending)} remaining tasks")
+            # Clean up remaining tasks
             for task in pending:
-                task_name = task.get_name()
-                logger.info(f"Cancelling task: {task_name}")
                 task.cancel()
-            
-            # Wait for tasks to be cancelled with a timeout
-            try:
-                logger.info("Waiting for tasks to complete cancellation...")
-                await asyncio.wait_for(
-                    asyncio.gather(*pending, return_exceptions=True),
-                    timeout=2.0
-                )
-                logger.info("All tasks cancelled successfully")
-            except asyncio.TimeoutError:
-                logger.warning("Some tasks took too long to cancel and timed out")
-            except Exception as e:
-                logger.error(f"Error during task cancellation: {str(e)}")
+            await asyncio.gather(*pending, return_exceptions=True)
     
     except Exception as e:
-        logger.error(f"Error in tutoring session: {str(e)}")
+        logger.error(f"❌ Package learning session error: {str(e)}", exc_info=True)
         try:
             await websocket.send_json({
                 "type": "error",
-                "content": f"Session error: {str(e)}"
+                "message": f"Session error: {str(e)}"
             })
         except:
             pass
     
     finally:
-        # STEP 5: Log session completion and duration (like gemini.py)
         session_duration = asyncio.get_event_loop().time() - session_start_time
-        try:
-            # Get package info for completion logging
-            package = await cosmos_db.get_content_package_by_id(package_id)
-            package_title = "Unknown Package"
-            subject = "General"
-            if package:
-                package_title = package.get('content', {}).get('reading', {}).get('title', 'Unknown Package')
-                subject = package.get('subject', 'General')
-            
-            await log_activity(
-                user_id=user_id,
-                activity_type="package_tutoring_session_completed",
-                activity_name=f"{package_title}",
-                points=max(10, int(session_duration / 60 * 2)),  # 2 points per minute, minimum 10
-                metadata={
-                    "package_id": package_id,
-                    "package_title": package_title,
-                    "subject": subject,
-                    "student_id": student_id,
-                    "session_duration_seconds": int(session_duration),
-                    "session_type": "package_learning"
-                }
-            )
-        except Exception as e:
-            logger.warning(f"Failed to log session completion activity: {str(e)}")
+        logger.info(f"🏁 Package learning session completed for package {package_id} ({session_duration:.1f}s)")
+        if gemini_session:
+            gemini_logger.info("🔚 Gemini session ended")
         
         # Cleanup session
-        await session_manager.end_session(session_id)
+        if 'session_id' in locals():
+            await session_manager.end_session(session_id)
         
         # Disconnect from connection manager
         try:
             connection_manager.disconnect(websocket, user_id)
-            logger.info("Disconnected from connection manager")
         except Exception as e:
             logger.error(f"Error during disconnection: {str(e)}")
-            
-        logger.info(f"Package tutoring session ended: {session_id}")
 
-async def send_welcome_message(session, package_id: str, user_email: str):
-    """Send initial welcome message with user context"""
+async def create_welcome_message(package_id: str, user_email: str) -> str:
+    """Create welcome message based on package content"""
     try:
         package = await cosmos_db.get_content_package_by_id(package_id)
         if package:
@@ -673,13 +616,17 @@ async def send_welcome_message(session, package_id: str, user_email: str):
         else:
             welcome = "Hi! I'm your AI tutor. What would you like to learn about today?"
         
-        await session.send(input=welcome, end_of_turn=True)
+        logger.info(f"💬 Welcome message created: {welcome}")
+        return welcome
+        
     except Exception as e:
-        logger.error(f"Error sending welcome message: {str(e)}")
+        logger.error(f"Error creating welcome message: {str(e)}")
+        return "Hi! I'm your AI tutor. What would you like to learn about today?"
 
 # Content package browsing endpoints (unchanged but with better error handling)
 @router.get("/content-packages")
 async def get_content_packages(
+    user_context: dict = Depends(get_user_context),
     subject: Optional[str] = Query(None),
     skill: Optional[str] = Query(None), 
     subskill: Optional[str] = Query(None),
@@ -688,6 +635,8 @@ async def get_content_packages(
 ):
     """Get available content packages with filtering"""
     try:
+        logger.info(f"📦 User {user_context['email']} browsing content packages")
+        
         packages = await cosmos_db.get_content_packages(
             subject=subject,
             skill=skill,
@@ -725,9 +674,14 @@ async def get_content_packages(
         raise HTTPException(status_code=500, detail=f"Error retrieving content packages: {str(e)}")
 
 @router.get("/content-packages/{package_id}")
-async def get_content_package_details(package_id: str):
+async def get_content_package_details(
+    package_id: str,
+    user_context: dict = Depends(get_user_context)
+):
     """Get detailed information about a specific content package"""
     try:
+        logger.info(f"📦 User {user_context['email']} viewing package {package_id}")
+        
         package = await cosmos_db.get_content_package_by_id(package_id)
         
         if not package:
@@ -744,14 +698,84 @@ async def get_content_package_details(package_id: str):
         logger.error(f"Error getting content package details: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error retrieving content package: {str(e)}")
 
-# ADD: Health check endpoint for package learning service
+@router.get("/packages/find-by-curriculum/{curriculum_id}")
+async def find_package_by_curriculum_id(
+    curriculum_id: str,
+    user_context: dict = Depends(get_user_context)
+):
+    """Find a content package by curriculum ID (e.g., rec-COUNT001-01-A)"""
+    try:
+        from ..services.daily_activities import CurriculumParser
+        
+        logger.info(f"🔍 User {user_context['email']} finding package for curriculum ID: {curriculum_id}")
+        
+        # Parse the curriculum ID to extract subject, unit, skill, subskill
+        curriculum_data = CurriculumParser.parse_activity_id(curriculum_id)
+        if not curriculum_data:
+            raise HTTPException(status_code=400, detail=f"Invalid curriculum ID format: {curriculum_id}")
+        
+        # Extract the components
+        subject = curriculum_data.get('subject')
+        unit_id = curriculum_data.get('unit_id')  
+        skill_id = curriculum_data.get('skill_id')
+        subskill_id = curriculum_data.get('subskill_id')
+        
+        # Try to find matching content package
+        packages = await cosmos_db.get_content_packages(
+            subject=subject,
+            limit=10  # Get a few to find the best match
+        )
+        
+        # Filter packages that might match the curriculum structure
+        matching_packages = []
+        for package in packages:
+            # Check if this package matches our curriculum structure
+            pkg_skill = package.get('skill', '')
+            pkg_subskill = package.get('subskill', '')
+            
+            # Look for packages that contain our skill/subskill pattern
+            if (skill_id and skill_id in pkg_skill) or (subskill_id and subskill_id in pkg_subskill):
+                matching_packages.append(package)
+        
+        if not matching_packages:
+            # If no exact match, return the first available package for the subject
+            if packages:
+                matching_packages = [packages[0]]
+            else:
+                raise HTTPException(status_code=404, detail=f"No content package found for curriculum: {curriculum_id}")
+        
+        # Return the best match
+        best_match = matching_packages[0]
+        
+        logger.info(f"✅ Found package {best_match.get('id')} for curriculum {curriculum_id}")
+        
+        return {
+            "status": "success",
+            "package_id": best_match.get("id"),
+            "package": best_match,
+            "curriculum_mapping": {
+                "curriculum_id": curriculum_id,
+                "subject": subject,
+                "unit_id": unit_id,
+                "skill_id": skill_id,
+                "subskill_id": subskill_id
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error finding package by curriculum ID: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error finding package: {str(e)}")
+
+# Health check endpoint
 @router.get("/health")
 async def package_learning_health_check():
     """Health check for package learning service"""
     try:
         return {
             "status": "healthy",
-            "service": "package_learning",
+            "service": "package_learning_enhanced",
             "active_sessions": len(session_manager.active_sessions),
             "active_connections": len(connection_manager.active_connections),
             "gemini_model": MODEL,
@@ -761,12 +785,14 @@ async def package_learning_health_check():
                 "activity_logging": True,
                 "session_tracking": True,
                 "audio_support": True,
-                "text_support": True
+                "text_support": True,
+                "non_blocking_websocket": True,
+                "enhanced_gemini_api": True
             }
         }
     except Exception as e:
         return {
             "status": "unhealthy",
-            "service": "package_learning",
+            "service": "package_learning_enhanced",
             "error": str(e)
         }

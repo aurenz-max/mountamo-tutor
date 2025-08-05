@@ -51,16 +51,50 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
   };
 
   // Handle learning option selection
-  const handleLearningSelect = (option: any) => {
+  const handleLearningSelect = async (option: any) => {
     setLoadingActivity(option.id);
     
-    // Navigate to the selected learning option
-    if (option.route) {
-      router.push(option.route);
-    } else {
-      // Fallback routing
-      const baseRoute = option.id.replace('-', '/');
-      router.push(`/${baseRoute}/${option.activityId || 'unknown'}`);
+    try {
+      // Check if this is a curriculum-to-package mapping request
+      if (option.route && option.route.startsWith('packages-curriculum-')) {
+        const curriculumId = option.route.replace('packages-curriculum-', '');
+        
+        // Import the auth API client dynamically to avoid SSR issues
+        const { authApi } = await import('@/lib/authApiClient');
+        
+        console.log('🔍 Looking up package for curriculum ID:', curriculumId);
+        
+        // Find the corresponding package ID
+        const packageMapping = await authApi.findPackageByCurriculumId(curriculumId);
+        
+        if (packageMapping.package_id) {
+          console.log('✅ Found package:', packageMapping.package_id);
+          // Navigate to the actual package learn page
+          router.push(`/packages/${packageMapping.package_id}/learn`);
+        } else {
+          console.error('❌ No package found for curriculum ID:', curriculumId);
+          // Fallback to packages list
+          router.push('/packages');
+        }
+      } else if (option.route) {
+        // Normal navigation
+        router.push(option.route);
+      } else {
+        // Fallback routing
+        const baseRoute = option.id.replace('-', '/');
+        router.push(`/${baseRoute}/${option.activityId || 'unknown'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error handling learning selection:', error);
+      // Fallback to packages list on error
+      if (option.route && option.route.startsWith('packages-curriculum-')) {
+        router.push('/packages');
+      } else {
+        // Try the original navigation
+        router.push(option.route || '/dashboard');
+      }
+    } finally {
+      setLoadingActivity(null);
     }
   };
 

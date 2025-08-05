@@ -125,8 +125,8 @@ app.include_router(
 app.include_router(
     education.router, 
     prefix="/api/packages", 
-    tags=["education"],
-    dependencies=[Depends(get_user_context)]
+    tags=["education"]
+    # Note: Auth handled per-route like daily_briefing_live
 )
 
 # 🔥 NEW: Daily Activities Endpoint

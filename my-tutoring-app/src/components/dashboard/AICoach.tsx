@@ -463,13 +463,7 @@ const AICoach: React.FC<AICoachProps> = ({
       if (connection.audioService) {
         connection.audioService.stopCapture();
       }
-      
-      sendMessage({ 
-        type: 'text', 
-        content: '', 
-        end_of_turn: true 
-      });
-      
+            
       dispatch({ type: 'SET_LISTENING', isListening: false });
     } else {
       // Start recording logic

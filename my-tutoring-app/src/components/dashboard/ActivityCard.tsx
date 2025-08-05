@@ -105,7 +105,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       title: 'Learn',
       icon: BookOpen,
       color: 'bg-purple-500',
-      route: `/content/packages/${activityData.id}`
+      route: `packages-curriculum-${activityData.id}` // Special flag for curriculum mapping
     },
     {
       id: 'projects',

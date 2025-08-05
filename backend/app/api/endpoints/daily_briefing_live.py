@@ -1,5 +1,5 @@
-# backend/app/api/endpoints/daily_briefing_enhanced.py
-# Enhanced version with comprehensive logging for debugging
+# backend/app/api/endpoints/daily_briefing_live.py
+# Simple fix - keep original audio format, just make sends non-blocking
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException
 import asyncio
@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional
 
 from google import genai
+from google.genai import types  # Add this import for types module
 from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, PrebuiltVoiceConfig, Content
 
 from ...core.config import settings
@@ -17,16 +18,24 @@ from ...services.daily_activities import DailyActivitiesService, DailyPlan
 from ...services.bigquery_analytics import BigQueryAnalyticsService
 from ...db.cosmos_db import CosmosDBService
 
-# Enhanced logging configuration
+# Enhanced logging configuration - CLEANED UP VERSION
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,  # Changed from DEBUG to INFO to reduce noise
     format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
 # Create a separate logger for Gemini interactions
 gemini_logger = logging.getLogger('gemini_interaction')
-gemini_logger.setLevel(logging.DEBUG)
+gemini_logger.setLevel(logging.INFO)  # Changed from DEBUG to INFO
+
+# Suppress verbose websockets logging
+websockets_logger = logging.getLogger('websockets')
+websockets_logger.setLevel(logging.WARNING)  # Only show warnings and errors
+
+# Suppress verbose google_genai logging
+google_genai_logger = logging.getLogger('google_genai')
+google_genai_logger.setLevel(logging.WARNING)  # Only show warnings and errors
 
 # Gemini configuration
 client = genai.Client(
@@ -121,6 +130,13 @@ You are conducting a structured daily learning briefing, NOT a tutoring session.
 4. BUILD EXCITEMENT about the specific content and skills they'll develop
 5. ASK IF THEY'RE READY TO BEGIN their learning adventure
 
+IMPORTANT AUDIO INTERACTION RULES:
+• Keep your responses concise and engaging (30-60 seconds max per response)
+• PAUSE frequently to let the student respond - don't give long monologues
+• Listen carefully for interruptions and respond naturally
+• If the student interrupts you, acknowledge it gracefully: "Oh, you have a question!"
+• Break complex information into smaller, digestible chunks
+
 BRIEFING STRUCTURE TO FOLLOW:
 - Start: "Good morning! I'm excited to go over your personalized learning plan..."
 - Streak celebration: Reference their {daily_plan.progress.current_streak}-day streak
@@ -143,7 +159,8 @@ CRITICAL INSTRUCTIONS:
 • DO NOT say you don't have access to learning plans - you clearly do!
 • DO NOT ask what they want to learn - present the prepared activities
 • DO NOT act like a generic tutor - you're a coach with a specific daily plan
-• DO reference specific activity names, subjects, and point values from above"""
+• DO reference specific activity names, subjects, and point values from above
+• KEEP RESPONSES SHORT AND CONVERSATIONAL - this is a dialogue, not a lecture"""
 
     else:
         logger.info("📚 Using standard daily activities approach")
@@ -151,6 +168,13 @@ CRITICAL INSTRUCTIONS:
 
 YOUR ROLE AS DAILY BRIEFING COACH:
 You are conducting a structured daily learning briefing to present today's activities and build excitement.
+
+IMPORTANT AUDIO INTERACTION RULES:
+• Keep your responses concise and engaging (30-60 seconds max per response)
+• PAUSE frequently to let the student respond - don't give long monologues
+• Listen carefully for interruptions and respond naturally
+• If the student interrupts you, acknowledge it gracefully: "Oh, you have a question!"
+• Break complex information into smaller, digestible chunks
 
 BRIEFING STRUCTURE TO FOLLOW:
 - Warm greeting acknowledging their {daily_plan.progress.current_streak}-day learning streak
@@ -164,7 +188,8 @@ CRITICAL INSTRUCTIONS:
 • DO NOT say you don't have access to learning plans - you clearly do!
 • Present the day as a planned learning adventure with the {len(daily_plan.activities)} specific activities listed
 • Be specific about the activities you've prepared
-• Reference actual activity titles, subjects, and point values from the plan above"""
+• Reference actual activity titles, subjects, and point values from the plan above
+• KEEP RESPONSES SHORT AND CONVERSATIONAL - this is a dialogue, not a lecture"""
     
     final_instruction = base_instruction + coaching_approach
     
@@ -228,7 +253,7 @@ Let me tell you about each activity and what amazing things you'll discover and 
 
 @router.websocket("/daily-briefing")
 async def daily_briefing_session(websocket: WebSocket, student_id: Optional[int] = Query(None)):
-    """Main WebSocket endpoint for daily briefing with Gemini"""
+    """Main WebSocket endpoint for daily briefing with Gemini - Back to original working format"""
     
     logger.info(f"🚀 Daily briefing WebSocket connection initiated for student {student_id}")
     await websocket.accept()
@@ -302,8 +327,6 @@ async def daily_briefing_session(websocket: WebSocket, student_id: Optional[int]
         for i, activity in enumerate(daily_plan.activities, 1):
             activity_type = getattr(activity, 'activity_type', getattr(activity, 'type', 'Unknown'))
             logger.debug(f"📚 Activity {i}: {activity.title} ({activity_type}, {activity.points}pts) - {activity.metadata.get('subject', 'No subject')}")
-            # Log all available attributes for debugging
-            logger.debug(f"🔍 Activity {i} attributes: {list(activity.__dict__.keys()) if hasattr(activity, '__dict__') else 'No __dict__'}")
         
         # Step 3: Send plan details to client
         await websocket.send_json({
@@ -331,6 +354,11 @@ async def daily_briefing_session(websocket: WebSocket, student_id: Optional[int]
                     prebuilt_voice_config=PrebuiltVoiceConfig(voice_name=DEFAULT_VOICE)
                 )
             ),
+            realtime_input_config=types.RealtimeInputConfig(turn_coverage="TURN_INCLUDES_ALL_INPUT"),
+            context_window_compression=types.ContextWindowCompressionConfig(
+                trigger_tokens=25600,
+                sliding_window=types.SlidingWindow(target_tokens=12800),
+            ),
             system_instruction=Content(parts=[{"text": system_instruction}])
         )
         logger.info("🔧 Gemini config created")
@@ -343,11 +371,12 @@ async def daily_briefing_session(websocket: WebSocket, student_id: Optional[int]
             gemini_logger.info(f"🎯 Using personalization source: {daily_plan.personalization_source}")
             gemini_logger.info(f"📊 System instruction length: {len(system_instruction)} chars")
             
-            # Communication queues
+            # Communication queues - back to simple approach
             text_queue = asyncio.Queue()
             audio_queue = asyncio.Queue()
             
             # Handle messages from client
+            # Clean up the audio handling functions with less verbose logging
             async def handle_client_messages():
                 while True:
                     try:
@@ -359,20 +388,57 @@ async def daily_briefing_session(websocket: WebSocket, student_id: Optional[int]
                             
                         if "text" in message:
                             data = json.loads(message["text"])
+                            
+                            # Handle text-based chat messages
                             if data.get("type") == "text":
                                 text_content = data.get("content", "")
                                 logger.info(f"💬 Received text from client: {text_content[:100]}...")
                                 await text_queue.put(text_content)
+                            
+                            # Handle JSON-wrapped audio messages - LESS VERBOSE
+                            elif data.get("type") == "audio":
+                                base64_data = data.get("data")
+                                if base64_data:
+                                    # Only log audio reception occasionally to avoid spam
+                                    if hasattr(handle_client_messages, '_audio_count'):
+                                        handle_client_messages._audio_count += 1
+                                    else:
+                                        handle_client_messages._audio_count = 1
+                                    
+                                    # Log every 10th audio message instead of every one
+                                    if handle_client_messages._audio_count % 10 == 0:
+                                        logger.debug(f"🎤 Received audio batch #{handle_client_messages._audio_count} ({len(base64_data)} chars)")
+                                    
+                                    # Decode the base64 string back into binary bytes
+                                    audio_bytes = base64.b64decode(base64_data)
+                                    
+                                    # Format the data for the audio queue
+                                    audio_data_for_queue = {
+                                        "data": audio_bytes,
+                                        "mime_type": data.get("mime_type", f"{FORMAT};rate={SEND_SAMPLE_RATE}")
+                                    }
+                                    await audio_queue.put(audio_data_for_queue)
+                            
                             elif data.get("type") == "end_briefing":
                                 logger.info("🔚 End briefing signal received")
                                 break
+                        
                         elif "bytes" in message:
+                            # Handle raw binary audio - LESS VERBOSE
                             audio_data = {
                                 "data": message["bytes"], 
                                 "mime_type": f"{FORMAT};rate={SEND_SAMPLE_RATE}"
                             }
-                            logger.debug(f"🎤 Received audio data: {len(message['bytes'])} bytes")
+                            # Only log occasionally
+                            if not hasattr(handle_client_messages, '_raw_audio_count'):
+                                handle_client_messages._raw_audio_count = 0
+                            handle_client_messages._raw_audio_count += 1
+                            
+                            if handle_client_messages._raw_audio_count % 10 == 0:
+                                logger.debug(f"🎤 Received raw audio batch #{handle_client_messages._raw_audio_count} ({len(message['bytes'])} bytes)")
+                            
                             await audio_queue.put(audio_data)
+                            
                     except asyncio.TimeoutError:
                         continue
                     except WebSocketDisconnect:
@@ -381,69 +447,119 @@ async def daily_briefing_session(websocket: WebSocket, student_id: Optional[int]
                     except Exception as e:
                         logger.error(f"❌ Client message error: {str(e)}")
             
-            # Send messages to Gemini
+            #send to gemini
             async def send_to_gemini():
+                send_count = 0
                 while True:
                     try:
-                        # Handle text messages
-                        try:
-                            text = text_queue.get_nowait()
+                        # Wait for either a text or audio message to become available
+                        text_task = asyncio.create_task(text_queue.get())
+                        audio_task = asyncio.create_task(audio_queue.get())
+
+                        done, pending = await asyncio.wait(
+                            {text_task, audio_task},
+                            return_when=asyncio.FIRST_COMPLETED
+                        )
+
+                        if text_task in done:
+                            text = text_task.result()
                             gemini_logger.info(f"📤 Sending text to Gemini: {text[:100]}...")
                             await session.send(input=text, end_of_turn=True)
-                        except asyncio.QueueEmpty:
-                            pass
-                        
-                        # Handle audio messages
-                        try:
-                            audio = audio_queue.get_nowait()
+                            # If there was a concurrent audio task, put it back in the queue
+                            if not audio_task.done():
+                                audio_task.cancel()
+                            else:
+                                audio = audio_task.result()
+                                if len(audio.get('data', b'')) > 0:
+                                    send_count += 1
+                                    # Only log every 10th audio send to reduce spam
+                                    if send_count % 10 == 0:
+                                        gemini_logger.debug(f"📤 Sending audio batch #{send_count} to Gemini: {len(audio['data'])} bytes")
+                                    await session.send(input=audio)
+
+                        if audio_task in done:
+                            audio = audio_task.result()
                             if len(audio.get('data', b'')) > 0:
-                                gemini_logger.debug(f"📤 Sending audio to Gemini: {len(audio['data'])} bytes")
+                                send_count += 1
+                                # Only log every 10th audio send to reduce spam
+                                if send_count % 10 == 0:
+                                    gemini_logger.debug(f"📤 Sending audio batch #{send_count} to Gemini: {len(audio['data'])} bytes")
                                 await session.send(input=audio)
-                        except asyncio.QueueEmpty:
-                            pass
-                            
-                        await asyncio.sleep(0.01)
+                            if not text_task.done():
+                                text_task.cancel()
+
                     except asyncio.CancelledError:
                         break
                     except Exception as e:
                         gemini_logger.error(f"❌ Gemini send error: {str(e)}")
             
-            # Receive responses from Gemini
+            # Receive responses from Gemini - MAKE NON-BLOCKING
             async def receive_from_gemini():
+                audio_receive_count = 0
                 while True:
                     try:
                         turn = session.receive()
                         async for response in turn:
-                            # Handle audio response
-                            if hasattr(response, "data") and response.data:
-                                audio_b64 = base64.b64encode(response.data).decode('utf-8')
-                                gemini_logger.debug(f"📥 Received audio from Gemini: {len(response.data)} bytes")
-                                await websocket.send_json({
-                                    "type": "ai_audio",
-                                    "format": "raw-pcm",
-                                    "sampleRate": RECEIVE_SAMPLE_RATE,
-                                    "bitsPerSample": 16,
-                                    "channels": CHANNELS,
-                                    "data": audio_b64
-                                })
-                            
-                            # Handle text response
-                            if hasattr(response, "text") and response.text:
-                                gemini_logger.info(f"📥 Received text from Gemini: {response.text[:200]}...")
-                                await websocket.send_json({
-                                    "type": "ai_text",
-                                    "content": response.text,
-                                    "personalization_source": daily_plan.personalization_source
-                                })
-                            
-                            # Handle user transcription
-                            if hasattr(response, "input_transcription") and response.input_transcription:
-                                logger.info(f"🎤 User transcription: {response.input_transcription}")
-                                await websocket.send_json({
-                                    "type": "user_transcription",
-                                    "content": response.input_transcription
-                                })
+                            # Check if response has server_content with model_turn
+                            if hasattr(response, 'server_content') and response.server_content:
+                                # Handle model turn with parts
+                                if hasattr(response.server_content, 'model_turn') and response.server_content.model_turn:
+                                    model_turn = response.server_content.model_turn
+                                    if hasattr(model_turn, 'parts') and model_turn.parts:
+                                        for part in model_turn.parts:
+                                            # Handle text parts
+                                            if hasattr(part, 'text') and part.text:
+                                                gemini_logger.info(f"📥 Received text from Gemini: {part.text[:100]}...")
+                                                
+                                                # Send without awaiting to prevent blocking
+                                                asyncio.create_task(websocket.send_json({
+                                                    "type": "ai_text",
+                                                    "content": part.text,
+                                                    "personalization_source": daily_plan.personalization_source
+                                                }))
+                                            
+                                            # Handle inline_data (audio) parts - MUCH LESS VERBOSE
+                                            elif hasattr(part, 'inline_data') and part.inline_data:
+                                                if hasattr(part.inline_data, 'data') and part.inline_data.data:
+                                                    audio_receive_count += 1
+                                                    # Only log every 20th audio message to significantly reduce spam
+                                                    if audio_receive_count % 20 == 0:
+                                                        gemini_logger.debug(f"📥 Received audio batch #{audio_receive_count} from Gemini: {len(part.inline_data.data)} bytes")
+                                                    
+                                                    audio_b64 = base64.b64encode(part.inline_data.data).decode('utf-8')
+                                                    
+                                                    # Send without awaiting to prevent blocking
+                                                    asyncio.create_task(websocket.send_json({
+                                                        "type": "ai_audio",
+                                                        "format": "raw-pcm",
+                                                        "sampleRate": RECEIVE_SAMPLE_RATE,
+                                                        "bitsPerSample": 16,
+                                                        "channels": CHANNELS,
+                                                        "data": audio_b64
+                                                    }))
                                 
+                                # Handle input transcription
+                                if hasattr(response.server_content, 'input_transcription') and response.server_content.input_transcription:
+                                    if hasattr(response.server_content.input_transcription, 'text') and response.server_content.input_transcription.text:
+                                        logger.info(f"🎤 User transcription: {response.server_content.input_transcription.text}")
+                                        
+                                        # Send without awaiting to prevent blocking
+                                        asyncio.create_task(websocket.send_json({
+                                            "type": "user_transcription",
+                                            "content": response.server_content.input_transcription.text
+                                        }))
+                                
+                                # Handle output transcription  
+                                if hasattr(response.server_content, 'output_transcription') and response.server_content.output_transcription:
+                                    if hasattr(response.server_content.output_transcription, 'text') and response.server_content.output_transcription.text:
+                                        logger.info(f"🎯 AI transcription: {response.server_content.output_transcription.text}")
+                                        
+                                        # Send without awaiting to prevent blocking
+                                        asyncio.create_task(websocket.send_json({
+                                            "type": "ai_transcription", 
+                                            "content": response.server_content.output_transcription.text
+                                        }))
+                                        
                     except asyncio.CancelledError:
                         break
                     except Exception as e:
@@ -496,13 +612,15 @@ async def briefing_health_check():
         
         return {
             "status": "healthy",
-            "service": "daily_briefing_structured",
+            "service": "daily_briefing_non_blocking_original_format",
             "features": {
                 "bigquery_integration": True,
                 "gemini_websocket": True,
                 "daily_activities": True,
                 "fallback_support": True,
-                "enhanced_logging": True
+                "enhanced_logging": True,
+                "non_blocking_websocket": True,
+                "original_audio_format": True
             },
             "timestamp": datetime.now().isoformat()
         }

@@ -13,14 +13,19 @@ import {
   LogOut, 
   Settings, 
   BarChart3,
-  ChevronDown
+  ChevronDown,
+  Bot
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGlobalAICoachUI } from '@/components/layout/GlobalAICoachToggle';
 
 const NavHeader = () => {
   const { user, userProfile, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const router = useRouter();
+
+  // Get AI Coach state and controls
+  const { showAICoach, setShowAICoach, notificationCount, clearNotifications } = useGlobalAICoachUI();
 
   const handleLogout = async () => {
     try {
@@ -28,6 +33,14 @@ const NavHeader = () => {
       router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
+    }
+  };
+
+  const handleAICoachToggle = () => {
+    setShowAICoach(!showAICoach);
+    // Clear notifications when opening
+    if (!showAICoach && notificationCount > 0) {
+      clearNotifications();
     }
   };
 
@@ -161,6 +174,27 @@ const NavHeader = () => {
                 <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                   <ShoppingBag className="h-5 w-5" />
                 </button>
+                
+                {/* AI Coach Toggle Button */}
+                <div className="relative">
+                  <button
+                    onClick={handleAICoachToggle}
+                    className={`p-2 rounded-full transition-colors relative ${
+                      showAICoach 
+                        ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
+                        : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                    title="Toggle AI Coach"
+                  >
+                    <Bot className="h-5 w-5" />
+                    {/* Dynamic notification badge with bounce animation */}
+                    {notificationCount > 0 && (
+                      <div className="absolute -top-1 -right-1 min-w-[12px] h-3 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center px-1 animate-bounce">
+                        {notificationCount > 9 ? '9+' : notificationCount}
+                      </div>
+                    )}
+                  </button>
+                </div>
               </>
             )}
             
