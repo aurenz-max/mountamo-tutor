@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle, FileText, Loader2, TrendingUp, AlertCircle, Lightbulb, Target, HelpCircle, GraduationCap, RotateCcw } from 'lucide-react';
-import { api } from '@/lib/api';
+import { CheckCircle, FileText, Loader2, TrendingUp, AlertCircle, Lightbulb, Target, HelpCircle, GraduationCap, RotateCcw, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { authApi } from '@/lib/authApiClient';
 
 interface PracticeContentProps {
   content: {
@@ -61,6 +61,9 @@ export function PracticeContent({
   }>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [showWorkArea, setShowWorkArea] = useState(false);
+  const [inContextHint, setInContextHint] = useState<string | null>(null);
+  const [isLoadingHint, setIsLoadingHint] = useState(false);
   
   const canvasRef = useRef<any>(null);
 
@@ -132,58 +135,86 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
     return helpPrompt;
   };
 
-  // Render help buttons for before submission
+  // Get hint directly and show inline
+  const getInContextHint = async (helpType: 'hint' | 'approach' | 'stuck' = 'hint') => {
+    setIsLoadingHint(true);
+    setInContextHint(null);
+    
+    try {
+      // Simulate getting AI response - in a real implementation you'd have an API call here
+      const prompt = createPracticeHelpPrompt(currentProblem, helpType);
+      onAskAI(prompt);
+      
+      // For now, show a placeholder - you'd replace this with actual AI response
+      setTimeout(() => {
+        let hintText = '';
+        switch (helpType) {
+          case 'hint':
+            hintText = '💡 Think about what the problem is asking you to find first. What information are you given?';
+            break;
+          case 'approach':
+            hintText = '🎯 Break this problem down into smaller steps. What would be your first step?';
+            break;
+          case 'stuck':
+            hintText = '❓ Let me ask you this: What part of the problem seems most confusing to you right now?';
+            break;
+        }
+        setInContextHint(hintText);
+        setIsLoadingHint(false);
+      }, 1000);
+    } catch (error) {
+      setIsLoadingHint(false);
+    }
+  };
+
+  // Render help buttons for tools column
   const renderHelpButtons = () => {
     if (currentAnswer?.isSubmitted) {
-      return null; // Don't show help after submission
+      return null;
     }
 
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h5 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
-          <HelpCircle className="w-4 h-4" />
+      <div className="space-y-3">
+        <h4 className="font-medium text-gray-800 flex items-center gap-2">
+          <HelpCircle className="w-4 h-4 text-gray-600" />
           Need Help?
-        </h5>
-        <div className="flex flex-wrap gap-2 mb-3">
+        </h4>
+        <div className="space-y-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => onAskAI(createPracticeHelpPrompt(currentProblem, 'hint'))}
-            className="text-blue-600 border-blue-300 hover:bg-blue-50 flex items-center gap-1"
+            onClick={() => getInContextHint('hint')}
+            className="w-full justify-start text-gray-700 hover:bg-gray-50 flex items-center gap-2"
           >
-            <Lightbulb className="w-3 h-3" />
+            <Lightbulb className="w-4 h-4" />
             Get a Hint
           </Button>
           
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => onAskAI(createPracticeHelpPrompt(currentProblem, 'approach'))}
-            className="text-blue-600 border-blue-300 hover:bg-blue-50 flex items-center gap-1"
+            onClick={() => getInContextHint('approach')}
+            className="w-full justify-start text-gray-700 hover:bg-gray-50 flex items-center gap-2"
           >
-            <Target className="w-3 h-3" />
+            <Target className="w-4 h-4" />
             Help with Approach
           </Button>
           
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => onAskAI(createPracticeHelpPrompt(currentProblem, 'stuck'))}
-            className="text-blue-600 border-blue-300 hover:bg-blue-50 flex items-center gap-1"
+            onClick={() => getInContextHint('stuck')}
+            className="w-full justify-start text-gray-700 hover:bg-gray-50 flex items-center gap-2"
           >
-            <HelpCircle className="w-3 h-3" />
+            <HelpCircle className="w-4 h-4" />
             I'm Stuck!
           </Button>
         </div>
-        
-        <p className="text-xs text-blue-600">
-          💡 The AI tutor will guide you through the problem without giving away the answer.
-        </p>
       </div>
     );
   };
 
-  // Render post-submission help for incorrect answers
+  // Render post-submission help for tools column
   const renderPostSubmissionHelp = () => {
     if (!currentAnswer?.isSubmitted || !currentAnswer?.feedback) {
       return null;
@@ -191,54 +222,42 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
     
     const score = getScore(currentAnswer.feedback.review);
     
-    // Only show additional help if they got it wrong or partially correct
-    if (score >= 8) {
-      return (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-          <h5 className="font-medium text-green-800 mb-2 flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Great job! Want to learn more?
-          </h5>
+    return (
+      <div className="space-y-3">
+        <h4 className="font-medium text-gray-800">Additional Help</h4>
+        {score >= 8 ? (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => onAskAI(`I got this problem correct: "${currentProblem.problem_data.problem}". Can you explain why this approach works and show me how this concept applies to real-world situations?`)}
-            className="text-green-600 border-green-300 hover:bg-green-50"
+            className="w-full justify-start text-green-700 hover:bg-green-50 flex items-center gap-2"
           >
-            <GraduationCap className="w-3 h-3 mr-1" />
+            <GraduationCap className="w-4 h-4" />
             Learn More About This Concept
           </Button>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
-        <h5 className="font-medium text-yellow-800 mb-3 flex items-center gap-2">
-          <GraduationCap className="w-4 h-4" />
-          Want to understand this better?
-        </h5>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onAskAI(`I got this problem wrong: "${currentProblem.problem_data.problem}". My answer was incorrect. Can you help me understand where I went wrong and how to think about this type of problem correctly? Don't just give me the answer - help me learn the approach.`)}
-            className="text-yellow-600 border-yellow-300 hover:bg-yellow-50 flex items-center gap-1"
-          >
-            <GraduationCap className="w-3 h-3" />
-            Learn from Mistake
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onAskAI(`Can you give me a similar practice problem to this one so I can try the concept again? Problem: "${currentProblem.problem_data.problem}"`)}
-            className="text-yellow-600 border-yellow-300 hover:bg-yellow-50 flex items-center gap-1"
-          >
-            <RotateCcw className="w-3 h-3" />
-            Try Similar Problem
-          </Button>
-        </div>
+        ) : (
+          <div className="space-y-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onAskAI(`I got this problem wrong: "${currentProblem.problem_data.problem}". My answer was incorrect. Can you help me understand where I went wrong and how to think about this type of problem correctly? Don't just give me the answer - help me learn the approach.`)}
+              className="w-full justify-start text-amber-700 hover:bg-amber-50 flex items-center gap-2"
+            >
+              <GraduationCap className="w-4 h-4" />
+              Learn from Mistake
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onAskAI(`Can you give me a similar practice problem to this one so I can try the concept again? Problem: "${currentProblem.problem_data.problem}"`)}
+              className="w-full justify-start text-amber-700 hover:bg-amber-50 flex items-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Try Similar Problem
+            </Button>
+          </div>
+        )}
       </div>
     );
   };
@@ -275,7 +294,7 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
         canvas_used: answerData.type === 'canvas'
       };
 
-      const response = await api.submitProblem(submissionPayload);
+      const response = await authApi.submitProblem(submissionPayload);
 
       // Store the feedback
       setQuestionAnswers(prev => ({
@@ -312,16 +331,9 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
     }
   };
 
-  const handleAnswerSelect = async (answerIndex: number) => {
+  const handleAnswerSelect = (answerIndex: number) => {
     setSelectedAnswer(answerIndex);
-    
-    const answerData = {
-      type: 'option' as const,
-      value: answerIndex
-    };
-
-    // Auto-submit for multiple choice
-    await submitProblemToBackend(answerData);
+    // No auto-submit - user must click Submit Work button
   };
 
   const handleTextSubmit = async () => {
@@ -372,6 +384,9 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
     setTextAnswer(answer?.type === 'text' ? answer.value as string : '');
     setShowExplanation(!!answer?.isSubmitted);
     setSubmissionError(null);
+    setInContextHint(null);
+    setIsLoadingHint(false);
+    setShowWorkArea(false);
     
     if (canvasRef.current) {
       canvasRef.current.clearCanvas();
@@ -398,34 +413,93 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
       : review.feedback?.praise || 'Good effort!';
   };
 
+  // Single submit function for all work (canvas + multiple choice selection)
+  const handleSubmitWork = async () => {
+    if (currentAnswer?.isSubmitted) return;
+
+    const canvasData = canvasRef.current?.getCanvasData();
+
+    // For multiple choice, submit the selected option (with optional canvas work)
+    if (currentProblem.problem_data.options) {
+      if (selectedAnswer === null) {
+        alert('Please select an answer before submitting.');
+        return;
+      }
+      
+      const answerData = {
+        type: 'option' as const,
+        value: selectedAnswer,
+        canvasData: canvasData || undefined
+      };
+      await submitProblemToBackend(answerData);
+      return;
+    }
+
+    // For all other types, submit canvas work
+    if (canvasData) {
+      const answerData = {
+        type: 'canvas' as const,
+        value: null,
+        canvasData
+      };
+      await submitProblemToBackend(answerData);
+      return;
+    }
+
+    // Allow submission even without canvas work for open-ended questions
+    const answerData = {
+      type: 'canvas' as const,
+      value: 'No work shown',
+      canvasData: null
+    };
+    await submitProblemToBackend(answerData);
+  };
+
+  // Check if user has provided any answer or work
+  const hasAnswer = () => {
+    // For multiple choice, check if option is selected
+    if (currentProblem.problem_data.options) {
+      return selectedAnswer !== null;
+    }
+    // For other types, always allow submission (they can use canvas or not)
+    return true;
+  };
+  
+  // Check if there's canvas work
+  const hasCanvasWork = () => {
+    return canvasRef.current?.getCanvasData();
+  };
+
   const renderAnswerInterface = () => {
-    const problemType = currentProblem.problem_data.problem_type.toLowerCase();
-    
-    // Multiple Choice
+    // Multiple Choice - show options for selection only
     if (currentProblem.problem_data.options) {
       return (
         <div className="space-y-3">
-          <h4 className="font-medium text-gray-700">Select your answer:</h4>
+          <h4 className="font-medium text-gray-700 text-sm">Select your answer:</h4>
           {currentProblem.problem_data.options.map((option, idx) => (
             <Button
               key={idx}
-              onClick={() => handleAnswerSelect(idx)}
+              onClick={() => setSelectedAnswer(idx)}
               variant="outline"
-              disabled={currentAnswer?.isSubmitted || isSubmitting}
-              className={`w-full text-left p-4 h-auto justify-start transition-all ${
+              disabled={currentAnswer?.isSubmitted}
+              className={`w-full text-left p-3 h-auto justify-start transition-all ${
                 selectedAnswer === idx
-                  ? isCorrectAnswer(idx)
-                    ? 'bg-green-50 border-green-300 text-green-800 hover:bg-green-50'
-                    : 'bg-red-50 border-red-300 text-red-800 hover:bg-red-50'
+                  ? currentAnswer?.isSubmitted
+                    ? isCorrectAnswer(idx)
+                      ? 'bg-green-50 border-green-300 text-green-800'
+                      : 'bg-red-50 border-red-300 text-red-800'
+                    : 'bg-blue-50 border-blue-300 text-blue-800'
                   : 'hover:bg-gray-50'
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-bold ${
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs font-bold ${
                   selectedAnswer === idx
-                    ? isCorrectAnswer(idx)
-                      ? 'bg-green-100 border-green-300 text-green-700'
-                      : 'bg-red-100 border-red-300 text-red-700'
+                    ? currentAnswer?.isSubmitted
+                      ? isCorrectAnswer(idx)
+                        ? 'bg-green-100 border-green-300 text-green-700'
+                        : 'bg-red-100 border-red-300 text-red-700'
+                      : 'bg-blue-100 border-blue-300 text-blue-700'
                     : 'border-gray-300 text-gray-600'
                 }`}>
                   {String.fromCharCode(65 + idx)}
@@ -438,250 +512,280 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
       );
     }
     
-    // Text Answer
-    if (problemType.includes('short answer') || problemType.includes('problem solving') || 
-        problemType.includes('creative thinking') || problemType.includes('application')) {
-      return (
-        <div className="space-y-3">
-          <h4 className="font-medium text-gray-700">Write your answer:</h4>
-          <Textarea
-            value={textAnswer}
-            onChange={(e) => setTextAnswer(e.target.value)}
-            placeholder="Type your answer here..."
-            className="min-h-[100px]"
-            disabled={currentAnswer?.isSubmitted || isSubmitting}
-          />
-          <Button
-            onClick={handleTextSubmit}
-            disabled={!textAnswer.trim() || currentAnswer?.isSubmitted || isSubmitting}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              'Submit Answer'
-            )}
-          </Button>
-        </div>
-      );
-    }
-    
-    // Default: Canvas + text option
+    // For all other types, no additional interface needed - just use canvas
     return null;
   };
 
+
   return (
-    <div className="max-w-4xl mx-auto">
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold">
-                {currentQuestion + 1}
-              </div>
-              <div>
-                <CardTitle className="text-xl">Question {currentQuestion + 1}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  of {content.problems.length} • ~{content.estimated_time_minutes} minutes
-                </p>
-              </div>
+    <div className="max-w-7xl mx-auto">
+      {/* Progress Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold">
+              {currentQuestion + 1}
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white">
-                {Object.keys(questionAnswers).length} / {content.problems.length} answered
-              </Badge>
-              {currentAnswer?.isSubmitted && (
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  ✓ Submitted
-                </Badge>
-              )}
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Question {currentQuestion + 1}</h1>
+              <p className="text-sm text-gray-600">
+                of {content.problems.length} • ~{content.estimated_time_minutes} minutes
+              </p>
             </div>
           </div>
-          
-          <div className="bg-white rounded-lg p-4">
-            <Badge variant="secondary" className="mb-3">
-              {currentProblem.problem_data.problem_type}
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-white">
+              {Object.keys(questionAnswers).length} / {content.problems.length} answered
             </Badge>
-            <p className="text-xl font-medium text-gray-900">
-              {currentProblem.problem_data.problem}
-            </p>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {/* Error Display */}
-          {submissionError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                <span className="font-medium text-red-800">Submission Error</span>
-              </div>
-              <p className="text-red-700 mt-1">{submissionError}</p>
-            </div>
-          )}
-
-          {/* Help Buttons - Show before submission */}
-          {renderHelpButtons()}
-
-          {/* Drawing Canvas - always show for work area */}
-          <div className="space-y-4">
-            <h4 className="font-medium text-gray-700">Work Area</h4>
-            <div className="bg-gray-50 rounded-lg p-4" style={{ height: '400px' }}>
-              <DrawingCanvas
-                ref={canvasRef}
-                onSubmit={handleCanvasSubmit}
-                loading={isSubmitting}
-              />
-            </div>
-            {!currentAnswer?.isSubmitted && (
-              <Button
-                onClick={handleCanvasSubmit}
-                disabled={isSubmitting}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting Canvas Work...
-                  </>
-                ) : (
-                  'Submit Canvas Work'
-                )}
-              </Button>
+            {currentAnswer?.isSubmitted && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                ✓ Submitted
+              </Badge>
             )}
           </div>
+        </div>
+        
+        {/* Navigation */}
+        <div className="flex items-center justify-between">
+          <Button
+            onClick={() => navigateQuestion('prev')}
+            disabled={currentQuestion === 0}
+            variant="outline"
+            size="sm"
+          >
+            ← Previous
+          </Button>
           
-          {/* Answer Interface */}
-          {renderAnswerInterface()}
+          <div className="flex items-center gap-2">
+            {content.problems.map((_, idx) => (
+              <Button
+                key={idx}
+                onClick={() => navigateQuestion(idx)}
+                size="sm"
+                variant={
+                  idx === currentQuestion 
+                    ? "default" 
+                    : questionAnswers[idx]?.isSubmitted
+                      ? "secondary" 
+                      : "outline"
+                }
+                className="w-8 h-8 p-0"
+              >
+                {idx + 1}
+              </Button>
+            ))}
+          </div>
+
+          <Button
+            onClick={() => navigateQuestion('next')}
+            disabled={currentQuestion === content.problems.length - 1}
+            variant="outline"
+            size="sm"
+          >
+            Next →
+          </Button>
+        </div>
+      </div>
+
+      {/* Two-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Column - Problem Zone */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Question Card - Enhanced Visual Prominence */}
+          <Card className="shadow-lg border-l-4 border-l-orange-500">
+            <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 border-b">
+              <Badge variant="secondary" className="w-fit">
+                {currentProblem.problem_data.problem_type}
+              </Badge>
+              <CardTitle className="text-xl font-semibold text-gray-900 leading-relaxed mt-2">
+                {currentProblem.problem_data.problem}
+              </CardTitle>
+            </CardHeader>
+            
+            <CardContent className="p-6">
+              {/* Error Display */}
+              {submissionError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                    <span className="font-medium text-red-800">Submission Error</span>
+                  </div>
+                  <p className="text-red-700 mt-1">{submissionError}</p>
+                </div>
+              )}
+
+              {/* In-Context Hint Display */}
+              {(inContextHint || isLoadingHint) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {setInContextHint(null); setIsLoadingHint(false);}}
+                    className="absolute top-2 right-2 h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className="w-5 h-5 text-blue-600" />
+                    <span className="font-medium text-blue-800">AI Hint</span>
+                  </div>
+                  {isLoadingHint ? (
+                    <div className="flex items-center gap-2 text-blue-700">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>AI is thinking...</span>
+                    </div>
+                  ) : (
+                    <p className="text-blue-800">{inContextHint}</p>
+                  )}
+                </div>
+              )}
+              
+              {/* Answer Interface */}
+              {renderAnswerInterface()}
+              
+              {/* Work Area - Always show in main column */}
+              <div className="mt-6">
+                <h4 className="font-medium text-gray-800 mb-3">Work Area</h4>
+                <div className="bg-gray-50 rounded-lg p-4" style={{ height: '500px' }}>
+                  <DrawingCanvas
+                    ref={canvasRef}
+                    loading={isSubmitting}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Use the work area above to show your thinking, draw diagrams, or work through the problem
+                </p>
+              </div>
+              
+              {/* Single Submit Button */}
+              {!currentAnswer?.isSubmitted && (
+                <div className="mt-6">
+                  <Button
+                    onClick={handleSubmitWork}
+                    disabled={!hasAnswer() || isSubmitting}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 text-lg"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Submitting Work...
+                      </>
+                    ) : (
+                      'Submit Work'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Feedback Display */}
           {currentAnswer?.feedback && (
-            <div className="space-y-3">
-              {/* Score Display */}
-              <div className={`p-4 rounded-lg ${
-                getScore(currentAnswer.feedback.review) >= 8 ? 'bg-green-50 border border-green-200' :
-                getScore(currentAnswer.feedback.review) >= 6 ? 'bg-yellow-50 border border-yellow-200' :
-                'bg-red-50 border border-red-200'
-              }`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className={`w-5 h-5 ${
-                    getScore(currentAnswer.feedback.review) >= 8 ? 'text-green-600' :
-                    getScore(currentAnswer.feedback.review) >= 6 ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`} />
-                  <span className="font-semibold text-lg">
-                    Score: {getScore(currentAnswer.feedback.review)}/10
-                  </span>
-                </div>
-                <p className="text-gray-700">{getFeedbackText(currentAnswer.feedback.review)}</p>
-                <p className="text-sm text-gray-600 mt-2">
-                  <strong>Correct answer:</strong> {getCorrectAnswer()}
-                </p>
-              </div>
-
-              {/* Competency Update */}
-              {currentAnswer.feedback.competency && currentAnswer.feedback.competency.new_competency !== undefined && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-800">Progress Update</span>
-                  </div>
-                  <div className="text-sm text-gray-700">
-                    Competency: {currentAnswer.feedback.competency.previous_competency?.toFixed(1)} → {currentAnswer.feedback.competency.new_competency.toFixed(1)}
-                    {currentAnswer.feedback.competency.delta !== undefined && (
-                      <span className={`ml-2 font-semibold ${
-                        currentAnswer.feedback.competency.delta > 0 ? 'text-green-600' : 
-                        currentAnswer.feedback.competency.delta < 0 ? 'text-red-600' : 
-                        'text-gray-600'
-                      }`}>
-                        ({currentAnswer.feedback.competency.delta > 0 ? '+' : ''}{currentAnswer.feedback.competency.delta.toFixed(2)})
+            <Card className="shadow-lg">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {/* Score Display */}
+                  <div className={`p-4 rounded-lg ${
+                    getScore(currentAnswer.feedback.review) >= 8 ? 'bg-green-50 border border-green-200' :
+                    getScore(currentAnswer.feedback.review) >= 6 ? 'bg-yellow-50 border border-yellow-200' :
+                    'bg-red-50 border border-red-200'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className={`w-5 h-5 ${
+                        getScore(currentAnswer.feedback.review) >= 8 ? 'text-green-600' :
+                        getScore(currentAnswer.feedback.review) >= 6 ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`} />
+                      <span className="font-semibold text-lg">
+                        Score: {getScore(currentAnswer.feedback.review)}/10
                       </span>
-                    )}
+                    </div>
+                    <p className="text-gray-700">{getFeedbackText(currentAnswer.feedback.review)}</p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      <strong>Correct answer:</strong> {getCorrectAnswer()}
+                    </p>
                   </div>
+
+                  {/* Competency Update */}
+                  {currentAnswer.feedback.competency && currentAnswer.feedback.competency.new_competency !== undefined && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <TrendingUp className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-800">Progress Update</span>
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        Competency: {currentAnswer.feedback.competency.previous_competency?.toFixed(1)} → {currentAnswer.feedback.competency.new_competency.toFixed(1)}
+                        {currentAnswer.feedback.competency.delta !== undefined && (
+                          <span className={`ml-2 font-semibold ${
+                            currentAnswer.feedback.competency.delta > 0 ? 'text-green-600' : 
+                            currentAnswer.feedback.competency.delta < 0 ? 'text-red-600' : 
+                            'text-gray-600'
+                          }`}>
+                            ({currentAnswer.feedback.competency.delta > 0 ? '+' : ''}{currentAnswer.feedback.competency.delta.toFixed(2)})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           )}
-
-          {/* Post-submission help */}
-          {renderPostSubmissionHelp()}
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <Button
-              onClick={() => navigateQuestion('prev')}
-              disabled={currentQuestion === 0}
-              variant="outline"
-            >
-              ← Previous
-            </Button>
-            
-            <div className="flex items-center gap-2">
-              {content.problems.map((_, idx) => (
-                <Button
-                  key={idx}
-                  onClick={() => navigateQuestion(idx)}
-                  size="sm"
-                  variant={
-                    idx === currentQuestion 
-                      ? "default" 
-                      : questionAnswers[idx]?.isSubmitted
-                        ? "secondary" 
-                        : "outline"
-                  }
-                  className="w-8 h-8 p-0"
-                >
-                  {idx + 1}
-                </Button>
-              ))}
-            </div>
-
-            <Button
-              onClick={() => navigateQuestion('next')}
-              disabled={currentQuestion === content.problems.length - 1}
-              variant="outline"
-            >
-              Next →
-            </Button>
-          </div>
 
           {/* Completion Status */}
           {allAnswered && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-              <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Great work!</h3>
-              <p className="text-gray-600 mb-4">
-                You've answered all {content.problems.length} practice problems.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => onAskAI("Can you review my overall performance on these practice problems and give me feedback on areas where I did well and areas I can improve? Please help me understand the key concepts I should focus on.")}
-                >
-                  Get Overall Feedback
-                </Button>
-                <Button 
-                  onClick={onComplete}
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
-                  disabled={isCompleted}
-                >
-                  {isCompleted ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Completed
-                    </>
-                  ) : (
-                    'Complete Practice Session'
-                  )}
-                </Button>
-              </div>
-            </div>
+            <Card className="shadow-lg">
+              <CardContent className="p-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                  <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Great work!</h3>
+                  <p className="text-gray-600 mb-4">
+                    You've answered all {content.problems.length} practice problems.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => onAskAI("Can you review my overall performance on these practice problems and give me feedback on areas where I did well and areas I can improve? Please help me understand the key concepts I should focus on.")}
+                    >
+                      Get Overall Feedback
+                    </Button>
+                    <Button 
+                      onClick={onComplete}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      disabled={isCompleted}
+                    >
+                      {isCompleted ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Completed
+                        </>
+                      ) : (
+                        'Complete Practice Session'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Right Column - Tools & Support Zone */}
+        <div className="space-y-6">
+          <Card className="shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Tools & Support</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Help Buttons */}
+              {renderHelpButtons()}
+              
+              {/* Post-submission help */}
+              {renderPostSubmissionHelp()}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

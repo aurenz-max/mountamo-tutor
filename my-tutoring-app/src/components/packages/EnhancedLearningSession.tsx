@@ -24,6 +24,7 @@ import { ReadingContent } from './ReadingContent';
 import { VisualContent } from './VisualContent';
 import { AudioContent } from './AudioContent';
 import { PracticeContent } from './PracticeContent';
+import { SessionGoalsModal } from './SessionGoalsModal';
 
 interface Message {
   role: 'user' | 'gemini' | 'system';
@@ -59,6 +60,11 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
   // Audio State
   const [isListening, setIsListening] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
+  
+  // Session Goals Modal State
+  const [isSessionStarted, setIsSessionStarted] = useState(
+    () => sessionStorage.getItem(`session_started_${packageId}`) === 'true'
+  );
   
   // Refs
   const socketRef = useRef<WebSocket | null>(null);
@@ -273,6 +279,22 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
     }
   };
 
+  const handleStartSession = () => {
+    sessionStorage.setItem(`session_started_${packageId}`, 'true');
+    setIsSessionStarted(true);
+  };
+
+  // Calculate total estimated time
+  const totalEstimatedTime = React.useMemo(() => {
+    if (!pkg) return 0;
+    
+    const readingTime = Math.ceil(pkg.content.reading.word_count / 200); // Assumes avg. 200 WPM
+    const audioTime = Math.ceil((pkg.content.audio?.duration_seconds || 0) / 60);
+    const practiceTime = pkg.content.practice?.estimated_time_minutes || 0;
+    
+    return readingTime + audioTime + practiceTime;
+  }, [pkg]);
+
   // Connect when authentication is ready
   useEffect(() => {
     if (!authLoading && user) {
@@ -324,6 +346,18 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  // Show session goals modal if session hasn't started
+  if (!isSessionStarted) {
+    return (
+      <SessionGoalsModal
+        title={pkg.content.reading.title}
+        learningObjectives={pkg.master_context.learning_objectives}
+        estimatedTime={totalEstimatedTime}
+        onStartSession={handleStartSession}
+      />
     );
   }
 

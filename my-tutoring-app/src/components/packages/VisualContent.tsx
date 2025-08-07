@@ -135,7 +135,7 @@ export function VisualContent({ content, isCompleted, onComplete, onAskAI }: Vis
   }
 
   return (
-    <div className={`max-w-4xl mx-auto ${isFullscreen ? 'fixed inset-0 z-50 bg-white max-w-none' : ''}`}>
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white' : 'w-full'}`}>
       <Card className="shadow-lg h-full">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -181,7 +181,7 @@ export function VisualContent({ content, isCompleted, onComplete, onAskAI }: Vis
               ref={iframeRef}
               title="Interactive Visualization"
               sandbox="allow-scripts allow-same-origin"
-              className={`w-full border-0 rounded-lg ${isFullscreen ? 'h-[calc(100vh-200px)]' : 'h-96'}`}
+              className={`w-full border-0 rounded-lg ${isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-300px)]'}`}
             />
           </div>
 

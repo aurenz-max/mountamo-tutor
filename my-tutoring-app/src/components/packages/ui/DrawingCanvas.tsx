@@ -1,14 +1,12 @@
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import { Pencil, Eraser, Trash2, Download, Save } from 'lucide-react';
+import { Pencil, Eraser, Trash2 } from 'lucide-react';
 
 interface DrawingCanvasProps {
-  onSubmit?: (canvasData: string) => void;
   loading?: boolean;
   captureImagesCallback?: (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => void;
 }
 
 const DrawingCanvas = forwardRef<any, DrawingCanvasProps>(({ 
-  onSubmit, 
   loading = false, 
   captureImagesCallback 
 }, ref) => {
@@ -16,8 +14,8 @@ const DrawingCanvas = forwardRef<any, DrawingCanvasProps>(({
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [tool, setTool] = useState('pen');
-  const [strokeColor, setStrokeColor] = useState('#000000');
-  const [strokeWidth, setStrokeWidth] = useState(2);
+  const [strokeColor] = useState('#000000');
+  const [strokeWidth] = useState(3);
   const [canvasData, setCanvasData] = useState<ImageData | null>(null);
 
   // Clear the canvas
@@ -70,16 +68,6 @@ const DrawingCanvas = forwardRef<any, DrawingCanvasProps>(({
     return combinedCanvas.toDataURL('image/png').split(',')[1];
   };
 
-  // Download canvas as image
-  const downloadCanvas = () => {
-    if (canvasRef.current) {
-      const dataUrl = canvasRef.current.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = 'drawing.png';
-      link.href = dataUrl;
-      link.click();
-    }
-  };
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -165,7 +153,7 @@ const DrawingCanvas = forwardRef<any, DrawingCanvasProps>(({
       context.lineWidth = strokeWidth;
     } else {
       context.globalCompositeOperation = 'destination-out';
-      context.lineWidth = 20;
+      context.lineWidth = 15;
     }
   };
 
@@ -187,95 +175,50 @@ const DrawingCanvas = forwardRef<any, DrawingCanvasProps>(({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-900">
-      {/* Top Toolbar */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
+    <div className="h-full flex flex-col bg-white">
+      {/* Simple Toolbar */}
+      <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           {/* Drawing Tools */}
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1">
+          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
             <button
               onClick={() => setTool('pen')}
               className={`p-2 rounded transition-all ${
                 tool === 'pen' 
-                  ? 'bg-white dark:bg-gray-700 shadow-sm' 
-                  : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-white shadow-sm' 
+                  : 'hover:bg-gray-200'
               }`}
+              title="Draw"
             >
-              <Pencil className="w-5 h-5" />
+              <Pencil className="w-4 h-4" />
             </button>
             <button
               onClick={() => setTool('eraser')}
               className={`p-2 rounded transition-all ${
                 tool === 'eraser' 
-                  ? 'bg-white dark:bg-gray-700 shadow-sm' 
-                  : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-white shadow-sm' 
+                  : 'hover:bg-gray-200'
               }`}
+              title="Erase"
             >
-              <Eraser className="w-5 h-5" />
+              <Eraser className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Color Picker */}
-          <input
-            type="color"
-            value={strokeColor}
-            onChange={(e) => setStrokeColor(e.target.value)}
-            className="w-10 h-10 rounded cursor-pointer"
-            disabled={tool === 'eraser'}
-          />
-
-          {/* Stroke Width */}
-          <select
-            value={strokeWidth}
-            onChange={(e) => setStrokeWidth(Number(e.target.value))}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-            disabled={tool === 'eraser'}
-          >
-            <option value={2}>Thin</option>
-            <option value={4}>Medium</option>
-            <option value={8}>Thick</option>
-          </select>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Clear Canvas */}
-          <button
-            onClick={clearCanvas}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            title="Clear canvas"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
-
-          {/* Download */}
-          <button
-            onClick={downloadCanvas}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            title="Download drawing"
-          >
-            <Download className="w-5 h-5" />
-          </button>
-
-          {/* Save/Submit */}
-          {onSubmit && (
-            <button
-              onClick={() => {
-                const canvasData = captureCanvasWithImages();
-                if (canvasData) onSubmit(canvasData);
-              }}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              <span>{loading ? 'Saving...' : 'Submit'}</span>
-            </button>
-          )}
-        </div>
+        {/* Clear Canvas */}
+        <button
+          onClick={clearCanvas}
+          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          title="Clear all"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Canvas Area */}
-      <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-800 p-4">
-        <div className="w-full h-full bg-white dark:bg-gray-900 rounded-lg shadow-inner overflow-hidden">
+      <div className="flex-1 overflow-hidden bg-gray-50 p-2">
+        <div className="w-full h-full bg-white rounded-lg border-2 border-dashed border-gray-200 overflow-hidden">
           <canvas
             ref={canvasRef}
             className="touch-none cursor-crosshair"
@@ -289,6 +232,11 @@ const DrawingCanvas = forwardRef<any, DrawingCanvasProps>(({
             style={{ display: 'block' }}
           />
         </div>
+      </div>
+      
+      {/* Helper Text */}
+      <div className="px-3 py-2 text-xs text-gray-500 text-center border-t border-gray-200">
+        Use the drawing tools above to show your work
       </div>
     </div>
   );

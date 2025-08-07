@@ -16,7 +16,8 @@ from .api.endpoints import (
     education,
     user_profiles,
     daily_activities,
-    daily_briefing_live
+    daily_briefing_live,
+    packages
     
 )
 
@@ -129,6 +130,14 @@ app.include_router(
     # Note: Auth handled per-route like daily_briefing_live
 )
 
+# 🔥 NEW: Discovery Threads for Packages
+app.include_router(
+    packages.router, 
+    prefix="/api/discovery", 
+    tags=["discovery-threads"],
+    dependencies=[Depends(get_user_context)]
+)
+
 # 🔥 NEW: Daily Activities Endpoint
 app.include_router(
     daily_activities.router, 
@@ -174,7 +183,8 @@ async def root():
             "analytics": "/api/analytics", 
             "curriculum": "/api/curriculum",
             "competency": "/api/competency",
-            "daily_activities": "/api/daily-activities"  # 🔥 NEW: Added to API docs
+            "daily_activities": "/api/daily-activities",
+            "discovery_threads": "/api/discovery"  # 🔥 NEW: Discovery threads for packages
         },
         "features": {
             "simplified_authentication": True,
@@ -185,7 +195,8 @@ async def root():
             "badges": True,
             "streaks": True,
             "data_isolation": True,
-            "daily_activities": True  # 🔥 NEW: Added feature flag
+            "daily_activities": True,
+            "discovery_threads": True  # 🔥 NEW: Discovery threads for learning packages
         }
     }
 
@@ -206,7 +217,8 @@ async def health_check():
             "firebase_integration": True,
             "automatic_student_mapping": True,
             "simplified_dependencies": True,
-            "daily_activities": True  # 🔥 NEW: Added to health check
+            "daily_activities": True,
+            "discovery_threads": True  # 🔥 NEW: Discovery threads for packages
         },
         "endpoints": {
             "auth": "/api/auth/health",
