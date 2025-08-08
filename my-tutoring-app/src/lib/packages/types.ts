@@ -1,6 +1,7 @@
 // lib/packages/types.ts
 export interface ContentPackage {
   id: string;
+  subskill_id?: string;
   subject: string;
   skill: string;
   subskill: string;

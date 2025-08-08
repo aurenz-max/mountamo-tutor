@@ -130,7 +130,15 @@ app.include_router(
     # Note: Auth handled per-route like daily_briefing_live
 )
 
-# 🔥 NEW: Discovery Threads for Packages
+# 🔥 NEW: Packages and Discovery Threads 
+app.include_router(
+    packages.router, 
+    prefix="/api/packages", 
+    tags=["packages"],
+    dependencies=[Depends(get_user_context)]
+)
+
+# 🔥 COMPATIBILITY: Keep discovery threads route for existing frontend
 app.include_router(
     packages.router, 
     prefix="/api/discovery", 

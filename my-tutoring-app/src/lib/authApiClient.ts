@@ -531,6 +531,30 @@ private async getAuthToken(): Promise<string> {
     return this.get(`/api/competency/curriculum/${encodeURIComponent(subject)}`);
   }
 
+  async getSkillCompetency(params: {
+    subject: string;
+    skill: string;
+  }) {
+    const queryParams = new URLSearchParams();
+    queryParams.append('subject', params.subject);
+    queryParams.append('skill', params.skill);
+    
+    return this.get(`/api/competency/skill?${queryParams.toString()}`);
+  }
+
+  async getSubskillCompetency(params: {
+    subject: string;
+    skill: string;
+    subskill: string;
+  }) {
+    const queryParams = new URLSearchParams();
+    queryParams.append('subject', params.subject);
+    queryParams.append('skill', params.skill);
+    queryParams.append('subskill', params.subskill);
+    
+    return this.get(`/api/competency/subskill?${queryParams.toString()}`);
+  }
+
   // Learning paths endpoints
   async getLearningPaths() {
     return this.get('/api/learning-paths');
@@ -597,6 +621,20 @@ private async getAuthToken(): Promise<string> {
 
   async getMyStudentInfo() {
     return this.get('/api/problems/my-student-info');
+  }
+
+  // ============================================================================
+  // CONTENT PACKAGE FOR SUBSKILL ENDPOINTS (Product Spec Implementation)
+  // ============================================================================
+
+  /**
+   * Get or generate content package for a specific subskill
+   * Implements the product spec endpoint: GET /api/packages/content-package/for-subskill/{subskill_id}
+   */
+  async getContentPackageForSubskill(subskillId: string): Promise<{
+    packageId: string;
+  }> {
+    return this.get(`/api/packages/content-package/for-subskill/${encodeURIComponent(subskillId)}`);
   }
 
   async getProblemsHealth() {

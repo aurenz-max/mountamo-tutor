@@ -64,6 +64,13 @@ class CosmosDBService:
             unique_key_policy={'uniqueKeys': [{'paths': ['/subject', '/skill', '/subskill']}]}
         )
 
+        # 🆕 NEW: Visualize concepts container for storing generated visualizations
+        self.visualize_concepts = self.database.create_container_if_not_exists(
+            id="visualize_concepts",
+            partition_key=PartitionKey(path="/subskill_id"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/subskill_id', '/section_heading']}]}
+        )
+
         # 🔥 NEW: Student mapping container for linking Firebase users to student records
         self.student_mappings = self.database.create_container_if_not_exists(
             id="student_mappings",
@@ -1694,3 +1701,173 @@ class CosmosDBService:
         except Exception as e:
             logger.error(f"Error searching content packages: {str(e)}")
             return []
+
+    # ============================================================================
+    # 🆕 VISUALIZE CONCEPTS METHODS
+    # ============================================================================
+
+    async def save_visualize_concept(
+        self,
+        subskill_id: str,
+        section_heading: str,
+        section_content: str,
+        html_content: str,
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Save a generated visual concept to Cosmos DB"""
+        try:
+            # Generate unique ID for this visualization
+            visualization_id = str(uuid.uuid4())
+            timestamp = datetime.utcnow().isoformat()
+            
+            visualization_data = {
+                "id": visualization_id,
+                "subskill_id": subskill_id,
+                "section_heading": section_heading,
+                "section_content": section_content,
+                "html_content": html_content,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+                "created_by": firebase_uid,
+                "document_type": "visualize_concept",
+                "version": 1
+            }
+            
+            # Save to Cosmos DB
+            result = self.visualize_concepts.create_item(body=visualization_data)
+            logger.info(f"Saved visualize concept for subskill {subskill_id}, section: {section_heading[:50]}...")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error saving visualize concept: {str(e)}")
+            raise
+
+    async def get_visualize_concepts_by_subskill(
+        self,
+        subskill_id: str,
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get all saved visualize concepts for a specific subskill"""
+        try:
+            query = """
+            SELECT * FROM c 
+            WHERE c.subskill_id = @subskill_id 
+            AND c.document_type = 'visualize_concept'
+            ORDER BY c.created_at DESC
+            """
+            
+            params = [{"name": "@subskill_id", "value": subskill_id}]
+            
+            results = list(self.visualize_concepts.query_items(
+                query=query,
+                parameters=params,
+                partition_key=subskill_id
+            ))
+            
+            logger.info(f"Found {len(results)} visualize concepts for subskill {subskill_id}")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error getting visualize concepts for subskill {subskill_id}: {str(e)}")
+            return []
+
+    async def get_visualize_concept_by_section(
+        self,
+        subskill_id: str,
+        section_heading: str,
+        firebase_uid: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get a specific visualize concept by subskill_id and section_heading"""
+        try:
+            query = """
+            SELECT * FROM c 
+            WHERE c.subskill_id = @subskill_id 
+            AND c.section_heading = @section_heading
+            AND c.document_type = 'visualize_concept'
+            ORDER BY c.created_at DESC
+            """
+            
+            params = [
+                {"name": "@subskill_id", "value": subskill_id},
+                {"name": "@section_heading", "value": section_heading}
+            ]
+            
+            results = list(self.visualize_concepts.query_items(
+                query=query,
+                parameters=params,
+                partition_key=subskill_id
+            ))
+            
+            if results:
+                logger.info(f"Found existing visualize concept for subskill {subskill_id}, section: {section_heading}")
+                return results[0]  # Return the most recent one
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting visualize concept: {str(e)}")
+            return None
+
+    async def update_visualize_concept(
+        self,
+        visualization_id: str,
+        subskill_id: str,
+        html_content: str,
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Update an existing visualize concept with new HTML content"""
+        try:
+            # First, get the existing visualization
+            existing = await self.get_visualize_concept_by_id(visualization_id, subskill_id)
+            if not existing:
+                raise ValueError(f"Visualize concept {visualization_id} not found")
+            
+            # Update the visualization
+            existing["html_content"] = html_content
+            existing["updated_at"] = datetime.utcnow().isoformat()
+            existing["version"] = existing.get("version", 1) + 1
+            if firebase_uid:
+                existing["updated_by"] = firebase_uid
+            
+            # Save back to Cosmos DB
+            result = self.visualize_concepts.upsert_item(body=existing)
+            logger.info(f"Updated visualize concept {visualization_id}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error updating visualize concept: {str(e)}")
+            raise
+
+    async def get_visualize_concept_by_id(
+        self,
+        visualization_id: str,
+        subskill_id: str,
+        firebase_uid: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get a specific visualize concept by ID"""
+        try:
+            query = """
+            SELECT * FROM c 
+            WHERE c.id = @visualization_id
+            AND c.subskill_id = @subskill_id
+            AND c.document_type = 'visualize_concept'
+            """
+            
+            params = [
+                {"name": "@visualization_id", "value": visualization_id},
+                {"name": "@subskill_id", "value": subskill_id}
+            ]
+            
+            results = list(self.visualize_concepts.query_items(
+                query=query,
+                parameters=params,
+                partition_key=subskill_id
+            ))
+            
+            return results[0] if results else None
+            
+        except Exception as e:
+            logger.error(f"Error getting visualize concept by ID: {str(e)}")
+            return None

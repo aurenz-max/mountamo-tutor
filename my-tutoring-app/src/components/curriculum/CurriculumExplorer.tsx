@@ -18,11 +18,14 @@ import {
   TreePine,
   Layers,
   GraduationCap,
-  LogIn
+  LogIn,
+  Play,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi, AuthApiError } from '@/lib/authApiClient';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface SubSkill {
   id: string;
@@ -59,6 +62,7 @@ interface CompetencyData {
 
 const CurriculumExplorer = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [curriculumData, setCurriculumData] = useState<CurriculumData | null>(null);
@@ -71,6 +75,10 @@ const CurriculumExplorer = () => {
   
   // Competency data
   const [competencyScores, setCompetencyScores] = useState<Map<string, CompetencyData>>(new Map());
+
+  // Content package loading states
+  const [loadingSubskills, setLoadingSubskills] = useState<Set<string>>(new Set());
+  const [packageErrors, setPackageErrors] = useState<Map<string, string>>(new Map());
 
   // Fetch available subjects
   const fetchAvailableSubjects = async () => {
@@ -197,6 +205,62 @@ const CurriculumExplorer = () => {
     fetchCompetencyForItem(skillId, subskillId);
   };
 
+  // Handle "Start Learning" button click
+  const handleStartLearning = async (subskillId: string) => {
+    console.log('🚀 Starting learning session for subskill:', subskillId);
+    
+    // Add to loading state
+    setLoadingSubskills(prev => new Set(prev).add(subskillId));
+    
+    // Clear any previous errors for this subskill
+    setPackageErrors(prev => {
+      const newErrors = new Map(prev);
+      newErrors.delete(subskillId);
+      return newErrors;
+    });
+
+    try {
+      // Call the content package API
+      const response = await authApi.getContentPackageForSubskill(subskillId);
+      console.log('✅ Content package response:', response);
+      
+      if (response.packageId) {
+        // Navigate to the learning session
+        console.log('🎯 Navigating to packages session:', response.packageId);
+        router.push(`/packages/${response.packageId}/learn`);
+      } else {
+        throw new Error('No package ID returned from server');
+      }
+    } catch (error) {
+      console.error('❌ Failed to get content package for subskill:', subskillId, error);
+      
+      let errorMessage = 'Failed to start learning session';
+      
+      if (error && typeof error === 'object' && 'status' in error) {
+        const apiError = error as AuthApiError;
+        if (apiError.status === 404) {
+          errorMessage = 'No content available for this subskill yet';
+        } else if (apiError.status === 500) {
+          errorMessage = 'Content generation failed. Please try again.';
+        } else {
+          errorMessage = apiError.message || errorMessage;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      // Store error for this subskill
+      setPackageErrors(prev => new Map(prev).set(subskillId, errorMessage));
+    } finally {
+      // Remove from loading state
+      setLoadingSubskills(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(subskillId);
+        return newSet;
+      });
+    }
+  };
+
   // Calculate progress statistics
   const getProgressStats = () => {
     if (!curriculumData) return { total: 0, attempted: 0, mastered: 0 };
@@ -260,6 +324,9 @@ const CurriculumExplorer = () => {
     setExpandedUnits(new Set());
     setExpandedSkills(new Set());
     setError(null);
+    // Clear content package states
+    setLoadingSubskills(new Set());
+    setPackageErrors(new Map());
   };
 
   // Expand all items
@@ -587,27 +654,75 @@ const CurriculumExplorer = () => {
                         <div className="mt-3 ml-6 space-y-2">
                           {skill.subskills.map(subskill => {
                             const competency = competencyScores.get(subskill.id);
+                            const isLoading = loadingSubskills.has(subskill.id);
+                            const error = packageErrors.get(subskill.id);
+                            
                             return (
                               <div
                                 key={subskill.id}
-                                className="p-3 bg-white border rounded hover:bg-gray-50 transition-colors cursor-pointer"
-                                onClick={() => loadSubskillCompetency(skill.id, subskill.id)}
+                                className="p-3 bg-white border rounded hover:bg-gray-50 transition-colors"
                               >
-                                <div className="flex items-center gap-2">
-                                  {getCompetencyIcon(competency?.current_score, competency?.total_attempts || 0)}
-                                  <span className="font-medium text-sm">{subskill.description}</span>
-                                  {competency && (
-                                    <span className={`text-xs font-medium ${getCompetencyColor(competency.current_score)}`}>
-                                      {((competency.current_score || 0) * 100).toFixed(0)}%
+                                <div className="flex items-center justify-between gap-2">
+                                  <div 
+                                    className="flex items-center gap-2 flex-1 cursor-pointer"
+                                    onClick={() => loadSubskillCompetency(skill.id, subskill.id)}
+                                  >
+                                    {getCompetencyIcon(competency?.current_score, competency?.total_attempts || 0)}
+                                    <span className="font-medium text-sm">{subskill.description}</span>
+                                    {competency && (
+                                      <span className={`text-xs font-medium ${getCompetencyColor(competency.current_score)}`}>
+                                        {((competency.current_score || 0) * 100).toFixed(0)}%
+                                      </span>
+                                    )}
+                                    <span className="text-xs text-gray-500">
+                                      Difficulty: {subskill.difficulty_range.start}-{subskill.difficulty_range.end}
                                     </span>
-                                  )}
-                                  <span className="text-xs text-gray-500">
-                                    Difficulty: {subskill.difficulty_range.start}-{subskill.difficulty_range.end}
-                                  </span>
+                                  </div>
+                                  
+                                  {/* Start Learning Button */}
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStartLearning(subskill.id);
+                                    }}
+                                    disabled={isLoading}
+                                    className="shrink-0"
+                                  >
+                                    {isLoading ? (
+                                      <>
+                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                        Generating...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Play className="w-3 h-3 mr-1" />
+                                        Start Learning
+                                      </>
+                                    )}
+                                  </Button>
                                 </div>
+                                
+                                {/* Competency Info Row */}
                                 {competency && competency.total_attempts > 0 && (
-                                  <div className="text-xs text-gray-500 mt-1">
+                                  <div className="text-xs text-gray-500 mt-2">
                                     {competency.total_attempts} attempts • Credibility: {(competency.credibility * 100).toFixed(0)}%
+                                  </div>
+                                )}
+                                
+                                {/* Error Display */}
+                                {error && (
+                                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    {error}
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="ml-auto h-auto p-0 text-red-600 hover:text-red-800"
+                                      onClick={() => handleStartLearning(subskill.id)}
+                                    >
+                                      Try Again
+                                    </Button>
                                   </div>
                                 )}
                               </div>

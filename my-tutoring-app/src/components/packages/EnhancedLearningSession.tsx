@@ -382,6 +382,7 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
             isCompleted={completedSections.reading || false}
             onComplete={() => markComplete('reading')}
             onAskAI={sendInteractionMessage}
+            subskillId={pkg.subskill_id} // 🆕 Pass subskill_id for auto-saving visualizations
           />
         );
 

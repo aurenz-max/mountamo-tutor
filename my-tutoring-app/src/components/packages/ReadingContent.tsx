@@ -18,6 +18,7 @@ interface ReadingContentProps {
   isCompleted: boolean;
   onComplete: () => void;
   onAskAI: (message: string) => void;
+  subskillId?: string; // 🆕 For saving visualizations to Cosmos DB
 }
 
 interface DiscoveryThreads {
@@ -37,7 +38,7 @@ interface VisualContent {
   };
 }
 
-export function ReadingContent({ content, isCompleted, onComplete, onAskAI }: ReadingContentProps) {
+export function ReadingContent({ content, isCompleted, onComplete, onAskAI, subskillId }: ReadingContentProps) {
   const [discoveryThreads, setDiscoveryThreads] = useState<DiscoveryThreads>({});
   const [visualContent, setVisualContent] = useState<VisualContent>({});
 
@@ -197,7 +198,8 @@ export function ReadingContent({ content, isCompleted, onComplete, onAskAI }: Re
       try {
         const data = await authApi.post('/api/discovery/section/generate-visual', {
           heading: heading,
-          content: sectionContent
+          content: sectionContent,
+          subskill_id: subskillId // 🆕 Auto-save to Cosmos DB if provided
         });
         
         setVisualContent(prev => ({
