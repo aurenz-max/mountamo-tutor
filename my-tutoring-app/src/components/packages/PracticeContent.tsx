@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle, FileText, Loader2, TrendingUp, AlertCircle, Lightbulb, Target, HelpCircle, GraduationCap, RotateCcw, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { CheckCircle, FileText, Loader2, TrendingUp, AlertCircle, Lightbulb, Target, HelpCircle, GraduationCap, RotateCcw, ChevronDown, ChevronUp, X, ThumbsUp, AlertTriangle, Star, Trophy } from 'lucide-react';
 import { authApi } from '@/lib/authApiClient';
 
 interface PracticeContentProps {
@@ -49,6 +49,7 @@ export function PracticeContent({
   onAskAI, 
   studentId = 1 
 }: PracticeContentProps) {
+  const [isRefreshingProblems, setIsRefreshingProblems] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [textAnswer, setTextAnswer] = useState('');
@@ -58,7 +59,9 @@ export function PracticeContent({
     value: number | string | null;
     feedback?: any;
     isSubmitted?: boolean;
+    attempts?: number;
   }>>({});
+  const [reviewMode, setReviewMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [showWorkArea, setShowWorkArea] = useState(false);
@@ -296,6 +299,10 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
 
       const response = await authApi.submitProblem(submissionPayload);
 
+      // Get the score to determine next steps
+      const score = getScore(response.review);
+      const currentAttempts = (questionAnswers[currentQuestion]?.attempts || 0) + 1;
+      
       // Store the feedback
       setQuestionAnswers(prev => ({
         ...prev,
@@ -305,14 +312,23 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
             review: response.review,
             competency: response.competency
           },
-          isSubmitted: true
+          isSubmitted: score >= 8 || currentAttempts >= 2, // Only mark as submitted if correct OR this is their second attempt
+          attempts: currentAttempts
         }
       }));
 
-      setShowExplanation(true);
+      // Implement Multi-Stage Feedback Logic
+      if (score < 8 && currentAttempts === 1) {
+        // First incorrect attempt - enter review mode
+        setReviewMode(true);
+        setShowExplanation(false); // Don't show full explanation yet
+      } else {
+        // Either correct answer or second attempt - show full feedback
+        setReviewMode(false);
+        setShowExplanation(true);
+      }
 
       // Send feedback to AI tutor with enhanced context
-      const score = getScore(response.review);
       const feedbackText = getFeedbackText(response.review);
       
       onAskAI(`I just submitted my answer for: "${currentProblem.problem_data.problem}" 
@@ -334,6 +350,64 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
   const handleAnswerSelect = (answerIndex: number) => {
     setSelectedAnswer(answerIndex);
     // No auto-submit - user must click Submit Work button
+  };
+  
+  // Multi-Stage Feedback handlers
+  const handleTryAgain = () => {
+    setReviewMode(false);
+    setShowExplanation(false);
+    // Clear the canvas for a fresh attempt
+    if (canvasRef.current) {
+      canvasRef.current.clearCanvas();
+    }
+    // Reset any selected answers but keep the question data for attempt tracking
+    setSelectedAnswer(null);
+    setTextAnswer('');
+  };
+  
+  const handleShowAnswer = () => {
+    setReviewMode(false);
+    setShowExplanation(true);
+    // Mark as fully submitted
+    setQuestionAnswers(prev => ({
+      ...prev,
+      [currentQuestion]: {
+        ...prev[currentQuestion],
+        isSubmitted: true
+      }
+    }));
+  };
+  
+  // Try Another Set functionality for replayability
+  const handleTryAnotherSet = async () => {
+    setIsRefreshingProblems(true);
+    try {
+      // Clear all current answers and reset state
+      setQuestionAnswers({});
+      setCurrentQuestion(0);
+      setSelectedAnswer(null);
+      setTextAnswer('');
+      setShowExplanation(false);
+      setSubmissionError(null);
+      setInContextHint(null);
+      setIsLoadingHint(false);
+      setReviewMode(false);
+      
+      // Clear canvas
+      if (canvasRef.current) {
+        canvasRef.current.clearCanvas();
+      }
+      
+      // Force a page refresh to trigger dynamic problem hydration
+      // The backend will automatically generate new problems when the package is fetched again
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Error refreshing problems:', error);
+      setSubmissionError('Failed to load new problems. Please try again.');
+    } finally {
+      setIsRefreshingProblems(false);
+    }
   };
 
   const handleTextSubmit = async () => {
@@ -387,6 +461,7 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
     setInContextHint(null);
     setIsLoadingHint(false);
     setShowWorkArea(false);
+    setReviewMode(false); // Reset review mode when navigating
     
     if (canvasRef.current) {
       canvasRef.current.clearCanvas();
@@ -657,8 +732,8 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
                 </p>
               </div>
               
-              {/* Single Submit Button */}
-              {!currentAnswer?.isSubmitted && (
+              {/* Submit Button or Review Mode Actions */}
+              {!currentAnswer?.isSubmitted && !reviewMode && (
                 <div className="mt-6">
                   <Button
                     onClick={handleSubmitWork}
@@ -676,6 +751,41 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
                   </Button>
                 </div>
               )}
+              
+              {/* Review Mode Actions - Multi-Stage Feedback */}
+              {reviewMode && currentAnswer?.feedback && (
+                <div className="mt-6">
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-5 h-5 text-amber-600" />
+                      <span className="font-semibold text-amber-800">Let's Review Your Work</span>
+                    </div>
+                    <p className="text-amber-700 mb-4">
+                      {getFeedbackText(currentAnswer.feedback.review)}
+                    </p>
+                    <p className="text-sm text-amber-600">
+                      Take another look at your work above. Can you spot what might need to be adjusted?
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleTryAgain}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Try Again
+                    </Button>
+                    <Button
+                      onClick={handleShowAnswer}
+                      variant="outline"
+                      className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3"
+                    >
+                      Show Me the Answer
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -684,26 +794,87 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
             <Card className="shadow-lg">
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  {/* Score Display */}
-                  <div className={`p-4 rounded-lg ${
-                    getScore(currentAnswer.feedback.review) >= 8 ? 'bg-green-50 border border-green-200' :
-                    getScore(currentAnswer.feedback.review) >= 6 ? 'bg-yellow-50 border border-yellow-200' :
-                    'bg-red-50 border border-red-200'
+                  {/* Enhanced Score Display with Better Visual Feedback */}
+                  <div className={`p-5 rounded-xl border-2 ${
+                    getScore(currentAnswer.feedback.review) >= 8 ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' :
+                    getScore(currentAnswer.feedback.review) >= 6 ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200' :
+                    'bg-gradient-to-br from-red-50 to-pink-50 border-red-200'
                   }`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className={`w-5 h-5 ${
-                        getScore(currentAnswer.feedback.review) >= 8 ? 'text-green-600' :
-                        getScore(currentAnswer.feedback.review) >= 6 ? 'text-yellow-600' :
-                        'text-red-600'
-                      }`} />
-                      <span className="font-semibold text-lg">
-                        Score: {getScore(currentAnswer.feedback.review)}/10
-                      </span>
+                    <div className="flex items-center gap-3 mb-3">
+                      {getScore(currentAnswer.feedback.review) >= 8 ? (
+                        <div className="flex items-center gap-2">
+                          <Trophy className="w-6 h-6 text-green-600" />
+                          <span className="font-bold text-xl text-green-800">
+                            Excellent! {getScore(currentAnswer.feedback.review)}/10
+                          </span>
+                        </div>
+                      ) : getScore(currentAnswer.feedback.review) >= 6 ? (
+                        <div className="flex items-center gap-2">
+                          <ThumbsUp className="w-6 h-6 text-yellow-600" />
+                          <span className="font-bold text-xl text-yellow-800">
+                            Good work! {getScore(currentAnswer.feedback.review)}/10
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-6 h-6 text-red-600" />
+                          <span className="font-bold text-xl text-red-800">
+                            Keep trying! {getScore(currentAnswer.feedback.review)}/10
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-gray-700">{getFeedbackText(currentAnswer.feedback.review)}</p>
-                    <p className="text-sm text-gray-600 mt-2">
-                      <strong>Correct answer:</strong> {getCorrectAnswer()}
-                    </p>
+                    
+                    {/* Enhanced Feedback Text with Better Styling */}
+                    <div className={`p-4 rounded-lg ${
+                      getScore(currentAnswer.feedback.review) >= 8 ? 'bg-white/60 border border-green-100' :
+                      getScore(currentAnswer.feedback.review) >= 6 ? 'bg-white/60 border border-yellow-100' :
+                      'bg-white/60 border border-red-100'
+                    }`}>
+                      <p className="text-gray-800 font-medium leading-relaxed">{getFeedbackText(currentAnswer.feedback.review)}</p>
+                    </div>
+                    
+                    {/* Correct Answer Display with Better Visual Hierarchy */}
+                    <div className="mt-4 p-3 bg-white/80 rounded-lg border border-gray-100">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Star className="w-4 h-4 text-blue-600" />
+                        <span className="font-semibold text-blue-800 text-sm">Correct Answer:</span>
+                      </div>
+                      <p className="text-gray-700 font-medium">{getCorrectAnswer()}</p>
+                    </div>
+                    
+                    {/* Success Criteria Display - Phase 1 Quick Win */}
+                    {currentProblem.problem_data.success_criteria && getScore(currentAnswer.feedback.review) >= 8 && (
+                      <div className="mt-4 p-3 bg-green-25 border border-green-100 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Target className="w-4 h-4 text-green-600" />
+                          <span className="font-medium text-green-800 text-sm">Why this was a great answer:</span>
+                        </div>
+                        <ul className="text-sm text-green-700 space-y-1">
+                          {currentProblem.problem_data.success_criteria.map((criteria, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-green-500 mt-0.5">✓</span>
+                              <span>{criteria}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* "Why was this correct?" Button - Phase 1 Quick Win */}
+                    {getScore(currentAnswer.feedback.review) >= 8 && (
+                      <div className="mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onAskAI(`I got this problem correct: "${currentProblem.problem_data.problem}". Can you explain why this approach works and help me understand the underlying concept in more detail? Connect this back to the broader learning objective and show me how this concept applies in other situations.`)}
+                          className="text-green-700 border-green-200 hover:bg-green-50 flex items-center gap-2"
+                        >
+                          <Lightbulb className="w-4 h-4" />
+                          Why was this the correct answer?
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Competency Update */}
@@ -742,27 +913,55 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
                   <p className="text-gray-600 mb-4">
                     You've answered all {content.problems.length} practice problems.
                   </p>
-                  <div className="flex gap-3 justify-center">
-                    <Button
-                      variant="outline"
-                      onClick={() => onAskAI("Can you review my overall performance on these practice problems and give me feedback on areas where I did well and areas I can improve? Please help me understand the key concepts I should focus on.")}
-                    >
-                      Get Overall Feedback
-                    </Button>
-                    <Button 
-                      onClick={onComplete}
-                      className="bg-orange-600 hover:bg-orange-700 text-white"
-                      disabled={isCompleted}
-                    >
-                      {isCompleted ? (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Completed
-                        </>
-                      ) : (
-                        'Complete Practice Session'
-                      )}
-                    </Button>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-3 justify-center">
+                      <Button
+                        variant="outline"
+                        onClick={() => onAskAI("Can you review my overall performance on these practice problems and give me feedback on areas where I did well and areas I can improve? Please help me understand the key concepts I should focus on.")}
+                      >
+                        Get Overall Feedback
+                      </Button>
+                      <Button 
+                        onClick={onComplete}
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                        disabled={isCompleted}
+                      >
+                        {isCompleted ? (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Completed
+                          </>
+                        ) : (
+                          'Complete Practice Session'
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {/* Try Another Set - Phase 2 Replayability */}
+                    <div className="border-t border-gray-200 pt-4">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 mb-3">
+                          Want to practice more with different problems?
+                        </p>
+                        <Button
+                          onClick={handleTryAnotherSet}
+                          disabled={isRefreshingProblems}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2"
+                        >
+                          {isRefreshingProblems ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Loading New Problems...
+                            </>
+                          ) : (
+                            <>
+                              <RotateCcw className="w-4 h-4 mr-2" />
+                              Practice Again (New Problems)
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>

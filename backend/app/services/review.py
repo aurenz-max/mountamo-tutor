@@ -2,29 +2,50 @@
 from typing import Dict, Any, Optional
 import json
 import re
+import base64
+import logging
 from datetime import datetime
+from google import genai
+from google.genai.types import GenerateContentConfig, Content, Part, Blob
+from google.genai import types
 from .base_ai_service import BaseAIService
 from .ai_service_factory import AIServiceFactory
+from ..generators.content_schemas import PROBLEM_REVIEW_SCHEMA
+from ..core.config import settings
+
+logger = logging.getLogger(__name__)
 
 class ReviewService:
     def __init__(self):
         self.cosmos_db = None  # Will be set by dependency injection
-        self._current_ai_service_type = None  # Will be set based on config
-        self.ai_service = None  # Current AI service instance
+        # Initialize Gemini client directly (similar to practice problems generator)
+        try:
+            self.client = genai.Client(
+                api_key=settings.GEMINI_GENERATE_KEY,
+                http_options={"api_version": "v1alpha"},
+            )
+            self.model_id = 'gemini-2.5-flash-preview-05-20'
+            logger.info("Review service initialized with Gemini Flash")
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini client for review service: {str(e)}")
+            # Fallback to AI service factory approach if direct Gemini fails
+            self._current_ai_service_type = None
+            self.ai_service = None
+            self.client = None
         
     def set_ai_service(self, service_type: str) -> None:
-        """Set the AI service to use for reviews"""
+        """Set the AI service to use for reviews (fallback method)"""
         self._current_ai_service_type = service_type
         self.ai_service = AIServiceFactory.get_service(service_type)
         print(f"[INFO] Review service set to use: {service_type}")
         
     def get_current_ai_service(self) -> BaseAIService:
-        """Get the current AI service based on the set service type"""
+        """Get the current AI service based on the set service type (fallback method)"""
         if not self.ai_service:
             if not self._current_ai_service_type:
-                # Use the default from settings if not explicitly set
+                # Use Gemini Flash as the default for review service (better JSON formatting)
                 from ..core.config import settings
-                self._current_ai_service_type = getattr(settings, "DEFAULT_AI_REVIEW_SERVICE", "anthropic")
+                self._current_ai_service_type = getattr(settings, "DEFAULT_AI_REVIEW_SERVICE", "gemini")
             self.ai_service = AIServiceFactory.get_service(self._current_ai_service_type)
         return self.ai_service
         
@@ -39,93 +60,198 @@ class ReviewService:
         student_answer: str = "",
         canvas_used: bool = True
     ) -> Dict[str, Any]:
-        """Review a student's problem solution"""
+        """Review a student's problem solution using Gemini Flash with structured JSON"""
         try:
-            # Get the current AI service
-            ai_service = self.get_current_ai_service()
-            
             # Ensure cosmos_db service is available
             if not self.cosmos_db:
-                print("[WARNING] CosmosDB service not initialized, review will not be saved")
+                logger.warning("CosmosDB service not initialized, review will not be saved")
                 
-            print(f"Review problem called with image data length: {len(solution_image_base64)}")
-            print(f"[DEBUG] Problem object received: {problem.keys()}")
-            print(f"[DEBUG] Problem metadata: {problem.get('metadata', {}).keys()}")
-
-            # Log problem content details
-            if 'problem' in problem:
-                print(f"[DEBUG] Problem text available: {problem['problem']} ")
-            if 'problem_type' in problem:
-                print(f"[DEBUG] Problem type: {problem['problem_type']}")
-
-            # Log before saving to CosmosDB
-            problem_id = problem.get("id", f"{subject}_{skill_id}_{datetime.utcnow().isoformat()}")            
-            print(f"[DEBUG] About to save review to CosmosDB")
-            print(f"[DEBUG] Problem ID being used: {problem_id}")
-            print(f"[DEBUG] Including problem_content in save: {'yes' if problem else 'no'}")
+            logger.info(f"Review problem called with image data length: {len(solution_image_base64)}")
             
-            system_instructions = """You are an expert kindergarten teacher skilled at reviewing student work.
-            Focus on:
-            1. Clear, simple language
-            2. Positive reinforcement
-            3. Age-appropriate feedback
-            4. Encouraging growth mindset
-            5. Specific, actionable guidance
-            """
-
-            # Extract problem text from problem object
+            if not solution_image_base64:
+                logger.error("No image data received!")
+                return self._create_error_response(Exception("No image data provided"), skill_id, subject, subskill_id, problem)
+            
+            problem_id = problem.get("id", f"{subject}_{skill_id}_{datetime.utcnow().isoformat()}")
             problem_text = problem.get('problem', '')
+            correct_answer = problem.get('answer', '')
             
-            # Create the prompt in the correct format
-            json_format_template = """
-    {
-        "observation": {
-            "canvas_description": "If there's a canvas solution, describe in detail what you see in the image",
-            "selected_answer": "If there's a multiple-choice answer, state the selected option",
-            "work_shown": "Describe any additional work or steps shown by the student"
-        },
-        "analysis": {
-            "understanding": "Analyze the student's conceptual understanding",
-            "approach": "Describe the problem-solving approach used",
-            "accuracy": "Compare against the expected answer",
-            "creativity": "Note any creative or alternative valid solutions"
-        },
-        "evaluation": {
-            "score": "Numerical score 1-10",
-            "justification": "Brief explanation of the score"
-        },
-        "feedback": {
-            "praise": "Specific praise for what was done well",
-            "guidance": "Age-appropriate suggestions for improvement",
-            "encouragement": "Positive reinforcement message",
-            "next_steps": "Simple, actionable next steps"
+            # Create the prompt for structured review
+            prompt_text = f"""You are an expert kindergarten teacher reviewing a student's work. 
+
+PROBLEM DETAILS:
+- Subject: {subject}
+- Problem: {problem_text}
+- Correct Answer: {correct_answer}
+- Student also provided: {student_answer if student_answer else 'No additional text answer'}
+
+REVIEW INSTRUCTIONS:
+1. Look carefully at the image showing the student's work (canvas drawing/writing)
+2. Observe what the student drew, wrote, or selected
+3. Analyze their understanding and approach
+4. Compare their work to the correct answer
+5. Provide encouraging, age-appropriate feedback for a 5-6 year old
+
+Focus on:
+- Positive reinforcement and encouragement
+- Clear, simple language appropriate for kindergarten
+- Recognizing effort and creativity
+- Gentle guidance for improvement
+- Building confidence and growth mindset
+
+Evaluate the student's work holistically, considering both correctness and understanding demonstrated."""
+
+            # Use Gemini Flash with structured JSON response
+            if self.client:
+                try:
+                    # Decode the base64 image
+                    image_bytes = base64.b64decode(solution_image_base64)
+                    logger.info(f"Decoded image size: {len(image_bytes)} bytes")
+                    
+                    contents = [
+                        types.Part.from_bytes(
+                            mime_type="image/png",
+                            data=image_bytes
+                        ),
+                        prompt_text  # Direct string, no need for Part.from_text
+                    ]
+                    
+                    logger.info("Sending review request to Gemini Flash with structured JSON...")
+                    
+                    # Generate response with structured JSON schema
+                    response = await self.client.aio.models.generate_content(
+                        model=f'models/{self.model_id}',
+                        contents=contents,
+                        config=GenerateContentConfig(
+                            response_mime_type='application/json',
+                            response_schema=PROBLEM_REVIEW_SCHEMA,
+                            temperature=0.6,
+                            max_output_tokens=2048
+                        )
+                    )
+                    
+                    logger.info("Received structured response from Gemini Flash")
+                    
+                    # Parse the JSON response directly
+                    if response and response.candidates and response.candidates[0].content.parts:
+                        response_text = response.candidates[0].content.parts[0].text.strip()
+                        structured_review = json.loads(response_text)
+                        logger.debug(f"Successfully parsed structured JSON: {json.dumps(structured_review, indent=2)}")
+                    else:
+                        raise Exception("Empty response from Gemini")
+                        
+                except Exception as e:
+                    logger.error(f"Error with Gemini Flash structured review: {str(e)}")
+                    # Fall back to the old AI service approach
+                    return await self._fallback_review(problem, solution_image_base64, skill_id, subskill_id, student_id, subject)
+            else:
+                # Use fallback AI service approach if Gemini client not available
+                return await self._fallback_review(problem, solution_image_base64, skill_id, subskill_id, student_id, subject)
+            
+            # Add required fields for frontend compatibility
+            structured_review.update({
+                "skill_id": skill_id,
+                "subject": subject,
+                "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", ""),
+                "score": structured_review.get("evaluation", {}).get("score", 0),
+                "correct": structured_review.get("evaluation", {}).get("score", 0) >= 7,  # Consider 7+ as correct
+                "accuracy_percentage": structured_review.get("evaluation", {}).get("score", 0) * 10  # Convert to percentage
+            })
+            
+            # Save to CosmosDB if available
+            if self.cosmos_db: 
+                try:
+                    await self.cosmos_db.save_problem_review(
+                        student_id=student_id,
+                        subject=subject,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", ""),
+                        problem_id=problem_id,
+                        review_data=structured_review,
+                        problem_content=problem
+                    )
+                    logger.info(f"Successfully saved review to CosmosDB for problem {problem_id}")
+                except Exception as e:
+                    logger.error(f"Failed to save review to CosmosDB: {str(e)}")
+            
+            return structured_review
+
+        except Exception as e:
+            logger.error(f"Error in review_problem: {str(e)}")
+            return self._create_error_response(e, skill_id, subject, subskill_id, problem)
+    
+    def _create_error_response(self, error: Exception, skill_id: str, subject: str, subskill_id: str, problem: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a standardized error response"""
+        return {
+            "error": f"Error reviewing problem: {str(error)}",
+            "observation": {
+                "canvas_description": "Error occurred during review",
+                "selected_answer": "",
+                "work_shown": ""
+            },
+            "analysis": {
+                "understanding": "Error occurred during review",
+                "approach": "",
+                "accuracy": "",
+                "creativity": ""
+            },
+            "evaluation": {
+                "score": 0,
+                "justification": "Error occurred during processing"
+            },
+            "feedback": {
+                "praise": "",
+                "guidance": "",
+                "encouragement": "I'm sorry, I had trouble reviewing your work. Let's try again!",
+                "next_steps": ""
+            },
+            "skill_id": skill_id,
+            "subject": subject,
+            "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", ""),
+            "score": 0,
+            "correct": False,
+            "accuracy_percentage": 0
         }
-    }"""
+    
+    async def _fallback_review(self, problem: Dict[str, Any], solution_image_base64: str, 
+                              skill_id: str, subskill_id: str, student_id: int, subject: str) -> Dict[str, Any]:
+        """Fallback to the original AI service approach if Gemini fails"""
+        try:
+            logger.info("Using fallback AI service for review")
+            ai_service = self.get_current_ai_service()
             
+            problem_text = problem.get('problem', '')
+            system_instructions = """You are an expert kindergarten teacher skilled at reviewing student work.
+            Focus on positive reinforcement, age-appropriate feedback, and encouraging growth mindset.
+            Respond with valid JSON only."""
+
             prompt_text = f"""Review this {subject} problem and the student's solution:
+Problem: {problem_text}
 
-    Problem: {problem_text}
-
-    Please follow these steps:
-    1. For observation:
-    - If there's a canvas solution, describe what you see in the image.
-    - If there's a multiple-choice answer, state the selected option.
-    2. For analysis:
-    - Compare the student's answer (canvas work and/or multiple-choice selection) to the provided correct answer.
-    - Consider if the student's answer, while different from the provided correct answer, demonstrates a valid conceptual understanding or an alternative correct solution.
-    - If both canvas and multiple-choice are used, analyze if they are consistent with each other.
-    3. For evaluation:
-    - Provide a numerical evaluation from 1 to 10, where 1 is completely incorrect and 10 is perfectly correct.
-    - Consider conceptual understanding and creativity in problem-solving, not just matching the provided answer.
-    4. For feedback:
-    - Provide feedback appropriate for a 5-6 year old student.
-    - Address their answer and any work shown on the canvas.
-    - If their answer differs from the provided correct answer but demonstrates valid understanding, acknowledge and praise this.
-    - If the answer is incorrect, explain why gently and guide them towards understanding.
-    - Offer encouragement and positive reinforcement for their effort, creativity, and any correct aspects of their answer.
-        
-    Return your review in this EXACT JSON format WITHOUT any markdown formatting or code blocks:
-    {json_format_template}"""
+Provide detailed, encouraging feedback in the following JSON format:
+{{
+    "observation": {{
+        "canvas_description": "Describe what you see in the student's work",
+        "selected_answer": "Any answer they selected",
+        "work_shown": "Additional work shown"
+    }},
+    "analysis": {{
+        "understanding": "Their conceptual understanding",
+        "approach": "Their problem-solving approach", 
+        "accuracy": "Comparison to correct answer",
+        "creativity": "Any creative solutions"
+    }},
+    "evaluation": {{
+        "score": 5.0,
+        "justification": "Brief score explanation"
+    }},
+    "feedback": {{
+        "praise": "What they did well",
+        "guidance": "Suggestions for improvement",
+        "encouragement": "Positive message",
+        "next_steps": "What to try next"
+    }}
+}}"""
             
             # Format prompt with image for the AI service
             prompt = [{
@@ -146,131 +272,21 @@ class ReviewService:
                 ]
             }]
 
-            print("Sending review request to AI service...")
-            try:
-                response = await ai_service.generate_response(
-                    prompt=prompt,
-                    system_instructions=system_instructions
-                )
-                print("Received response from AI service")
-            except Exception as e:
-                print(f"Error with AI review: {str(e)}")
-                
-                # Try with a different AI service as fallback
-                try:
-                    # Determine the alternate service type to try
-                    from ..core.config import settings
-                    default_review_service = getattr(settings, "DEFAULT_AI_REVIEW_SERVICE", "anthropic")
-                    current_service = self._current_ai_service_type or default_review_service
-                    
-                    # Choose a different service than the current one
-                    alternate_service_type = "gemini" if current_service in ["anthropic", "claude"] else "anthropic"
-                    print(f"[INFO] Attempting fallback to {alternate_service_type} service for review")
-                    
-                    # Cache the original service type
-                    original_service_type = self._current_ai_service_type
-                    
-                    # Try with the alternate service
-                    self.set_ai_service(alternate_service_type)
-                    
-                    # Attempt the review again
-                    response = await self.ai_service.generate_response(
-                        prompt=prompt,
-                        system_instructions=system_instructions
-                    )
-                    
-                    # If we get here, the fallback worked - restore the original preference
-                    self.set_ai_service(original_service_type)
-                except Exception as fallback_error:
-                    print(f"[ERROR] Fallback also failed for review: {fallback_error}")
-                    raise  # Re-raise to be caught by the outer try/except
+            response = await ai_service.generate_response(
+                prompt=prompt,
+                system_instructions=system_instructions
+            )
             
-            # Parse the response using the robust approach
+            # Parse the response
             structured_review = await self._parse_json_response(response)
-            
             if not structured_review:
-                # Handle parsing failure with default error response
-                error_response = {
-                    "error": "Error parsing review response",
-                    "observation": {
-                        "canvas_description": "Error occurred during review",
-                        "selected_answer": "",
-                        "work_shown": ""
-                    },
-                    "analysis": {
-                        "understanding": "Error occurred during review",
-                        "approach": "",
-                        "accuracy": "",
-                        "creativity": ""
-                    },
-                    "evaluation": {
-                        "score": 0,
-                        "justification": "Error occurred"
-                    },
-                    "feedback": {
-                        "praise": "",
-                        "guidance": "",
-                        "encouragement": "I'm sorry, I had trouble reviewing your work. Let's try again!",
-                        "next_steps": ""
-                    },
-                    "skill_id": skill_id,
-                    "subject": subject,
-                    "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", "")
-                }
-                return error_response
-            
-            print(f"[DEBUG] Parsed JSON structure: {json.dumps(structured_review, indent=2)}")
-
-            # Extract evaluation score and justification
-            evaluation_score = 0
-            evaluation_justification = ""
-            
-            if isinstance(structured_review.get('evaluation'), dict):
-                print("[DEBUG] Found evaluation as dictionary")
-                evaluation_score = float(structured_review['evaluation'].get('score', 0))
-                evaluation_justification = structured_review['evaluation'].get('justification', '')
-            elif isinstance(structured_review.get('evaluation'), (int, float)):
-                print("[DEBUG] Found evaluation as number")
-                evaluation_score = float(structured_review.get('evaluation', 0))
+                return self._create_error_response(Exception("Failed to parse fallback response"), skill_id, subject, subskill_id, problem)
                 
-            # Add required fields for frontend compatibility
-            structured_review.update({
-                "skill_id": skill_id,
-                "subject": subject,
-                "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", "")
-            })
-            
-            # Save to CosmosDB if available
-            if self.cosmos_db: 
-                try:
-                    # Save the full structured review
-                    await self.cosmos_db.save_problem_review(
-                        student_id=student_id,
-                        subject=subject,
-                        skill_id=skill_id,
-                        subskill_id=subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", ""),
-                        problem_id=problem_id,
-                        review_data=structured_review,
-                        problem_content=problem  # Pass the full problem object
-                    )
-                    print(f"[DEBUG] Successfully saved review to CosmosDB for problem {problem_id}")
-                except Exception as e:
-                    print(f"[ERROR] Failed to save review to CosmosDB: {str(e)}")
-            
             return structured_review
-
+            
         except Exception as e:
-            print(f"Error in review_problem: {str(e)}")
-            return {
-                "error": f"Error reviewing problem: {str(e)}",
-                "observation": {"canvas_description": "Error occurred during review", "selected_answer": "", "work_shown": ""},
-                "analysis": {"understanding": "Error occurred during review", "approach": "", "accuracy": "", "creativity": ""},
-                "evaluation": {"score": 0, "justification": "Error occurred"},
-                "feedback": {"praise": "", "guidance": "", "encouragement": "I'm sorry, I had trouble reviewing your work. Let's try again!", "next_steps": ""},
-                "skill_id": skill_id,
-                "subject": subject,
-                "subskill_id": subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", "")
-            }
+            logger.error(f"Fallback review also failed: {str(e)}")
+            return self._create_error_response(e, skill_id, subject, subskill_id, problem)
             
     async def _parse_json_response(self, raw_response: str) -> Optional[Dict[str, Any]]:
         """

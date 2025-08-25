@@ -152,3 +152,89 @@ PRACTICE_PROBLEMS_SCHEMA = Schema(
     },
     required=["problems"]
 )
+
+# Problem Review Schema
+PROBLEM_REVIEW_SCHEMA = Schema(
+    type="object",
+    properties={
+        "observation": Schema(
+            type="object",
+            properties={
+                "canvas_description": Schema(
+                    type="string",
+                    description="Detailed description of what is seen in the student's canvas solution"
+                ),
+                "selected_answer": Schema(
+                    type="string",
+                    description="The multiple-choice answer selected by the student (if applicable)"
+                ),
+                "work_shown": Schema(
+                    type="string",
+                    description="Description of additional work or steps shown by the student"
+                )
+            },
+            required=["canvas_description", "selected_answer", "work_shown"]
+        ),
+        "analysis": Schema(
+            type="object",
+            properties={
+                "understanding": Schema(
+                    type="string",
+                    description="Analysis of the student's conceptual understanding"
+                ),
+                "approach": Schema(
+                    type="string",
+                    description="Description of the problem-solving approach used by the student"
+                ),
+                "accuracy": Schema(
+                    type="string",
+                    description="Comparison of student's answer against the expected answer"
+                ),
+                "creativity": Schema(
+                    type="string",
+                    description="Note any creative or alternative valid solutions"
+                )
+            },
+            required=["understanding", "approach", "accuracy", "creativity"]
+        ),
+        "evaluation": Schema(
+            type="object",
+            properties={
+                "score": Schema(
+                    type="number",
+                    description="Numerical score from 1-10",
+                    minimum=1,
+                    maximum=10
+                ),
+                "justification": Schema(
+                    type="string",
+                    description="Brief explanation of the score given"
+                )
+            },
+            required=["score", "justification"]
+        ),
+        "feedback": Schema(
+            type="object",
+            properties={
+                "praise": Schema(
+                    type="string",
+                    description="Specific praise for what the student did well"
+                ),
+                "guidance": Schema(
+                    type="string",
+                    description="Age-appropriate suggestions for improvement"
+                ),
+                "encouragement": Schema(
+                    type="string",
+                    description="Positive reinforcement message"
+                ),
+                "next_steps": Schema(
+                    type="string",
+                    description="Simple, actionable next steps for the student"
+                )
+            },
+            required=["praise", "guidance", "encouragement", "next_steps"]
+        )
+    },
+    required=["observation", "analysis", "evaluation", "feedback"]
+)

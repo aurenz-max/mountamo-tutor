@@ -96,8 +96,8 @@ const EnhancedLearningDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Mountamo Learning</h1>
-          <p className="text-gray-500">Your personalized learning journey</p>
+          <h1 className="text-2xl font-bold">Welcome back, {studentName}!</h1>
+          <p className="text-gray-500">Your personalized learning hub</p>
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center">

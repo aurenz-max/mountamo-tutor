@@ -79,7 +79,7 @@ const NavHeader = () => {
             {/* Menu Items */}
             <div className="py-1">
               <Link
-                href="/dashboard"
+                href="/"
                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 onClick={() => setShowUserMenu(false)}
               >
@@ -131,7 +131,7 @@ const NavHeader = () => {
         <div className="flex items-center justify-between h-16 px-4">
           {/* Logo/Home */}
           <Link
-            href={user ? "/dashboard" : "/"}
+            href="/"
             className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
           >
             <Brain className="h-8 w-8" />
@@ -140,7 +140,7 @@ const NavHeader = () => {
           {/* Main Navigation - Only show if user is logged in */}
           {user && (
             <div className="hidden md:flex items-center space-x-8">
-              <Link href="/dashboard" className="text-sm hover:opacity-80 transition-opacity">
+              <Link href="/" className="text-sm hover:opacity-80 transition-opacity">
                 Dashboard
               </Link>
               <Link href="/tutoring" className="text-sm hover:opacity-80 transition-opacity">

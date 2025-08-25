@@ -409,7 +409,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 Back to Learning Hub
               </Button>
               <Button 
-                onClick={() => window.location.href = '/dashboard'} 
+                onClick={() => window.location.href = '/'} 
                 className="bg-blue-600 hover:bg-blue-700 flex items-center"
               >
                 <Home className="h-4 w-4 mr-2" />

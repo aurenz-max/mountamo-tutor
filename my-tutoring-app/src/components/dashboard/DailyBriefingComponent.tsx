@@ -91,7 +91,7 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
         router.push('/packages');
       } else {
         // Try the original navigation
-        router.push(option.route || '/dashboard');
+        router.push(option.route || '/');
       }
     } finally {
       setLoadingActivity(null);

@@ -1,6 +1,7 @@
 # backend/app/db/cosmos_db.py
 
 from azure.cosmos import CosmosClient, PartitionKey
+from azure.cosmos.exceptions import CosmosResourceExistsError, CosmosResourceNotFoundError
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 import os
@@ -23,7 +24,7 @@ class CosmosDBService:
         self.competencies = self.database.create_container_if_not_exists(
             id="competencies",
             partition_key=PartitionKey(path="/student_id"),
-            unique_key_policy={'uniqueKeys': [{'paths': ['/subject', '/skill_id', '/subskill_id']}]}
+            unique_key_policy={'uniqueKeys': [{'paths': ['/student_id', '/subject', '/skill_id', '/subskill_id']}]}
         )
         
         self.attempts = self.database.create_container_if_not_exists(
@@ -500,8 +501,8 @@ class CosmosDBService:
             if not has_access:
                 raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
         
-        # Use UUID for competency ID
-        competency_id = str(uuid.uuid4())
+        # Use consistent ID based on student, subject, skill, and subskill for upsert
+        competency_id = f"{student_id}_{subject}_{skill_id}_{subskill_id}"
         
         competency_data = {
             "id": competency_id,
@@ -517,7 +518,26 @@ class CosmosDBService:
             "created_at": datetime.utcnow().isoformat()
         }
         
-        return self.competencies.upsert_item(body=competency_data)
+        # Use upsert for atomic create-or-update
+        try:
+            # First check if document exists to preserve created_at
+            try:
+                existing_competency = self.competencies.read_item(
+                    item=competency_id, 
+                    partition_key=student_id
+                )
+                # Preserve original created_at timestamp
+                competency_data["created_at"] = existing_competency.get("created_at", competency_data["created_at"])
+            except CosmosResourceNotFoundError:
+                # Document doesn't exist, use current timestamp for created_at
+                pass
+            
+            # Upsert (create or replace) the document
+            return self.competencies.upsert_item(body=competency_data)
+            
+        except Exception as e:
+            logger.error(f"Failed to upsert competency {competency_id}: {e}")
+            raise
 
     async def get_subject_competencies(
         self,

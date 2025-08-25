@@ -31,7 +31,11 @@ const DrawingWorkspace = forwardRef(({ onSubmit, loading = false, captureImagesC
     combinedCanvas.width = canvas.width;
     combinedCanvas.height = canvas.height;
     
-    // First, draw the original canvas content
+    // Fill with white background first to ensure Gemini can see content clearly
+    combinedCtx.fillStyle = '#FFFFFF';
+    combinedCtx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+    
+    // Then draw the original canvas content on top
     combinedCtx.drawImage(canvas, 0, 0);
     
     // Check if we have an image capture callback and use it
@@ -72,6 +76,11 @@ const DrawingWorkspace = forwardRef(({ onSubmit, loading = false, captureImagesC
     };
 
     resize();
+    
+    // Fill with white background immediately after resize
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
     window.addEventListener('resize', resize);
     setContext(ctx);
 
