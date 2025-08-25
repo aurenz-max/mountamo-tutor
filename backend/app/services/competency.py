@@ -8,6 +8,7 @@ import logging
 
 # Updated import to handle optional curriculum service
 from app.services.curriculum_service import CurriculumService
+from app.db.firestore_service import FirestoreService
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Ensure we see INFO logs
@@ -28,6 +29,7 @@ class CompetencyService:
         
         self._competencies = {}  # In-memory storage for competency calculations
         self.cosmos_db = None  # Will be set by dependency injection
+        self.firestore_service = None  # Will be set by dependency injection
         self.curriculum_service = curriculum_service
         
         # Competency calculation settings
@@ -279,17 +281,53 @@ class CompetencyService:
             
             logger.info(f"🔍 COMPETENCY_SERVICE: Extracted analysis length: {len(analysis)}")
             
-            # Save the attempt
-            logger.info(f"🔍 COMPETENCY_SERVICE: Saving attempt to cosmos_db...")
-            await self.cosmos_db.save_attempt(
-                student_id=student_id,
-                subject=subject,
-                skill_id=skill_id,
-                subskill_id=subskill_id,
-                score=score,
-                analysis=analysis,
-                feedback=feedback
-            )
+            # Save the attempt to both CosmosDB and Firestore (dual write)
+            logger.info(f"🔍 COMPETENCY_SERVICE: Saving attempt to databases...")
+            cosmos_success = False
+            firestore_success = False
+            
+            # Save to CosmosDB
+            try:
+                await self.cosmos_db.save_attempt(
+                    student_id=student_id,
+                    subject=subject,
+                    skill_id=skill_id,
+                    subskill_id=subskill_id,
+                    score=score,
+                    analysis=analysis,
+                    feedback=feedback
+                )
+                cosmos_success = True
+                logger.info(f"🔍 COMPETENCY_SERVICE: Successfully saved attempt to CosmosDB")
+            except Exception as e:
+                logger.error(f"🔍 COMPETENCY_SERVICE: Failed to save attempt to CosmosDB: {str(e)}")
+            
+            # Save to Firestore
+            if self.firestore_service:
+                try:
+                    await self.firestore_service.save_attempt(
+                        student_id=student_id,
+                        subject=subject,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id,
+                        score=score,
+                        analysis=analysis,
+                        feedback=feedback
+                    )
+                    firestore_success = True
+                    logger.info(f"🔍 COMPETENCY_SERVICE: Successfully saved attempt to Firestore")
+                except Exception as e:
+                    logger.error(f"🔍 COMPETENCY_SERVICE: Failed to save attempt to Firestore: {str(e)}")
+            
+            # Log dual write results
+            if cosmos_success and firestore_success:
+                logger.info(f"🔍 COMPETENCY_SERVICE: Dual write successful for attempt")
+            elif cosmos_success:
+                logger.warning(f"🔍 COMPETENCY_SERVICE: Only CosmosDB write successful for attempt")
+            elif firestore_success:
+                logger.warning(f"🔍 COMPETENCY_SERVICE: Only Firestore write successful for attempt")
+            else:
+                logger.error(f"🔍 COMPETENCY_SERVICE: Both database writes failed for attempt")
             
             # Get all attempts for this skill
             logger.info(f"🔍 COMPETENCY_SERVICE: Getting student attempts...")
@@ -313,17 +351,54 @@ class CompetencyService:
             blended_score, credibility = await to_thread(calculate_scores)
             logger.info(f"🔍 COMPETENCY_SERVICE: Calculated scores - blended: {blended_score}, credibility: {credibility}")
 
-            # Update competency
-            logger.info(f"🔍 COMPETENCY_SERVICE: Updating competency...")
-            result = await self.cosmos_db.update_competency(
-                student_id=student_id,
-                subject=subject,
-                skill_id=skill_id,
-                subskill_id=subskill_id,
-                score=blended_score,
-                credibility=credibility,
-                total_attempts=len(attempts)
-            )
+            # Update competency in both CosmosDB and Firestore (dual write)
+            logger.info(f"🔍 COMPETENCY_SERVICE: Updating competency in databases...")
+            cosmos_comp_success = False
+            firestore_comp_success = False
+            result = None
+            
+            # Update in CosmosDB
+            try:
+                result = await self.cosmos_db.update_competency(
+                    student_id=student_id,
+                    subject=subject,
+                    skill_id=skill_id,
+                    subskill_id=subskill_id,
+                    score=blended_score,
+                    credibility=credibility,
+                    total_attempts=len(attempts)
+                )
+                cosmos_comp_success = True
+                logger.info(f"🔍 COMPETENCY_SERVICE: Successfully updated competency in CosmosDB")
+            except Exception as e:
+                logger.error(f"🔍 COMPETENCY_SERVICE: Failed to update competency in CosmosDB: {str(e)}")
+            
+            # Update in Firestore
+            if self.firestore_service:
+                try:
+                    await self.firestore_service.update_competency(
+                        student_id=student_id,
+                        subject=subject,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id,
+                        score=blended_score,
+                        credibility=credibility,
+                        total_attempts=len(attempts)
+                    )
+                    firestore_comp_success = True
+                    logger.info(f"🔍 COMPETENCY_SERVICE: Successfully updated competency in Firestore")
+                except Exception as e:
+                    logger.error(f"🔍 COMPETENCY_SERVICE: Failed to update competency in Firestore: {str(e)}")
+            
+            # Log dual write results for competency
+            if cosmos_comp_success and firestore_comp_success:
+                logger.info(f"🔍 COMPETENCY_SERVICE: Dual write successful for competency update")
+            elif cosmos_comp_success:
+                logger.warning(f"🔍 COMPETENCY_SERVICE: Only CosmosDB competency update successful")
+            elif firestore_comp_success:
+                logger.warning(f"🔍 COMPETENCY_SERVICE: Only Firestore competency update successful")
+            else:
+                logger.error(f"🔍 COMPETENCY_SERVICE: Both competency database updates failed")
             
             logger.info(f"✅ COMPETENCY_SERVICE: Competency update successful")
             return result

@@ -12,12 +12,14 @@ from .base_ai_service import BaseAIService
 from .ai_service_factory import AIServiceFactory
 from ..generators.content_schemas import PROBLEM_REVIEW_SCHEMA
 from ..core.config import settings
+from ..db.firestore_service import FirestoreService
 
 logger = logging.getLogger(__name__)
 
 class ReviewService:
     def __init__(self):
         self.cosmos_db = None  # Will be set by dependency injection
+        self.firestore_service = None  # Will be set by dependency injection
         # Initialize Gemini client directly (similar to practice problems generator)
         try:
             self.client = genai.Client(
@@ -158,7 +160,11 @@ Evaluate the student's work holistically, considering both correctness and under
                 "accuracy_percentage": structured_review.get("evaluation", {}).get("score", 0) * 10  # Convert to percentage
             })
             
-            # Save to CosmosDB if available
+            # Save to both CosmosDB and Firestore (dual write for migration)
+            cosmos_success = False
+            firestore_success = False
+            
+            # Save to CosmosDB
             if self.cosmos_db: 
                 try:
                     await self.cosmos_db.save_problem_review(
@@ -170,9 +176,37 @@ Evaluate the student's work holistically, considering both correctness and under
                         review_data=structured_review,
                         problem_content=problem
                     )
+                    cosmos_success = True
                     logger.info(f"Successfully saved review to CosmosDB for problem {problem_id}")
                 except Exception as e:
                     logger.error(f"Failed to save review to CosmosDB: {str(e)}")
+            
+            # Save to Firestore
+            if self.firestore_service:
+                try:
+                    await self.firestore_service.save_problem_review(
+                        student_id=student_id,
+                        subject=subject,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id or problem.get("metadata", {}).get("subskill", {}).get("id", ""),
+                        problem_id=problem_id,
+                        review_data=structured_review,
+                        problem_content=problem
+                    )
+                    firestore_success = True
+                    logger.info(f"Successfully saved review to Firestore for problem {problem_id}")
+                except Exception as e:
+                    logger.error(f"Failed to save review to Firestore: {str(e)}")
+            
+            # Log dual write results
+            if cosmos_success and firestore_success:
+                logger.info(f"Dual write successful for review {problem_id}")
+            elif cosmos_success:
+                logger.warning(f"Only CosmosDB write successful for review {problem_id}")
+            elif firestore_success:
+                logger.warning(f"Only Firestore write successful for review {problem_id}")
+            else:
+                logger.error(f"Both writes failed for review {problem_id}")
             
             return structured_review
 
@@ -419,12 +453,39 @@ Provide detailed, encouraging feedback in the following JSON format:
                     "feedback": "Automatically scored attempt"
                 }
                 
+                # Save to both CosmosDB and Firestore (dual write)
+                cosmos_success = False
+                firestore_success = False
+                
                 # Save to CosmosDB
-                await self.cosmos_db.save_attempt(**attempt_data)
-                print(f"[DEBUG] Saved attempt to CosmosDB for student {student_id}")
+                try:
+                    await self.cosmos_db.save_attempt(**attempt_data)
+                    cosmos_success = True
+                    print(f"[DEBUG] Saved attempt to CosmosDB for student {student_id}")
+                except Exception as e:
+                    print(f"[ERROR] Failed to save attempt to CosmosDB: {str(e)}")
+                
+                # Save to Firestore
+                if self.firestore_service:
+                    try:
+                        await self.firestore_service.save_attempt(**attempt_data)
+                        firestore_success = True
+                        print(f"[DEBUG] Saved attempt to Firestore for student {student_id}")
+                    except Exception as e:
+                        print(f"[ERROR] Failed to save attempt to Firestore: {str(e)}")
+                
+                # Log dual write results
+                if cosmos_success and firestore_success:
+                    logger.info(f"Dual write successful for attempt by student {student_id}")
+                elif cosmos_success:
+                    logger.warning(f"Only CosmosDB write successful for attempt by student {student_id}")
+                elif firestore_success:
+                    logger.warning(f"Only Firestore write successful for attempt by student {student_id}")
+                else:
+                    logger.error(f"Both writes failed for attempt by student {student_id}")
                 
             except Exception as e:
-                print(f"[ERROR] Failed to save attempt to CosmosDB: {str(e)}")
+                print(f"[ERROR] Failed to save attempt: {str(e)}")
                 # Fall back to in-memory storage
         
         # Always save to in-memory storage as well

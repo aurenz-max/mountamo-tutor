@@ -27,6 +27,7 @@ from .services.daily_activities import DailyActivitiesService
 from .services.bigquery_analytics import BigQueryAnalyticsService
 
 from .db.cosmos_db import CosmosDBService
+from .db.firestore_service import FirestoreService
 from .db.blob_storage import blob_storage_service
 from .db.problem_optimizer import ProblemOptimizer
 from .core.config import settings
@@ -42,6 +43,7 @@ logger.setLevel(logging.INFO)
 
 # Shared service singletons
 _cosmos_db: Optional[CosmosDBService] = None
+_firestore_service: Optional[FirestoreService] = None
 _curriculum_service: Optional[CurriculumService] = None
 _audio_service: Optional[AudioService] = None 
 _anthropic_service: Optional[AnthropicService] = None
@@ -119,6 +121,21 @@ def get_cosmos_db() -> CosmosDBService:
         logger.info("Initializing CosmosDB service")
         _cosmos_db = CosmosDBService()
     return _cosmos_db
+
+def get_firestore_service() -> FirestoreService:
+    """Get or create Firestore service singleton."""
+    global _firestore_service
+    if _firestore_service is None:
+        logger.info("Initializing Firestore service")
+        try:
+            _firestore_service = FirestoreService()
+            logger.info("Firestore service initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Firestore service: {str(e)}")
+            # For now, return None if Firestore fails to initialize
+            # This allows the system to continue with CosmosDB only
+            _firestore_service = None
+    return _firestore_service
 
 def get_blob_storage_service():
     """Get the blob storage service"""
@@ -223,7 +240,8 @@ async def get_curriculum_service() -> CurriculumService:
     return _curriculum_service
 
 async def get_competency_service(
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db),
+    firestore_service: FirestoreService = Depends(get_firestore_service)
 ) -> CompetencyService:
     """Get Competency service with BigQuery curriculum service - CLEAN ASYNC"""
     global _competency_service
@@ -248,6 +266,13 @@ async def get_competency_service(
             logger.warning("🔄 Creating minimal CompetencyService")
             _competency_service = CompetencyService(None)
             _competency_service.cosmos_db = cosmos_db
+            _competency_service.firestore_service = firestore_service
+    
+    # Always ensure services are set
+    if _competency_service.cosmos_db is None:
+        _competency_service.cosmos_db = cosmos_db
+    if _competency_service.firestore_service is None:
+        _competency_service.firestore_service = firestore_service
     
     return _competency_service
 
@@ -319,7 +344,8 @@ async def get_problem_service(
     return _problem_service
 
 def get_review_service(
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db)
+    cosmos_db: CosmosDBService = Depends(get_cosmos_db),
+    firestore_service: FirestoreService = Depends(get_firestore_service)
 ) -> ReviewService:
     """Get or create ReviewService singleton."""
     global _review_service
@@ -332,10 +358,14 @@ def get_review_service(
         logger.info(f"Setting default AI service to {default_review_service} for ReviewService")
         _review_service.set_ai_service(default_review_service)
     
-    # Make sure the cosmos_db is set
+    # Make sure the database services are set
     if _review_service.cosmos_db is None:
         logger.info("Setting CosmosDB on ReviewService")
         _review_service.cosmos_db = cosmos_db
+    
+    if _review_service.firestore_service is None:
+        logger.info("Setting Firestore service on ReviewService")
+        _review_service.firestore_service = firestore_service
     
     return _review_service
 
@@ -423,7 +453,8 @@ async def initialize_services():
     competency_service = get_competency_service(cosmos_db)
     problem_recommender = get_problem_recommender(competency_service)
     problem_optimizer = get_problem_optimizer(cosmos_db, problem_recommender)
-    review_service = get_review_service(cosmos_db)
+    firestore_service = get_firestore_service()
+    review_service = get_review_service(cosmos_db, firestore_service)
     
     # Initialize learning paths service
     learning_paths_service = await get_learning_paths_service(
