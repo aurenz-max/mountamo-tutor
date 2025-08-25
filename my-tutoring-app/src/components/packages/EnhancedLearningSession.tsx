@@ -22,6 +22,7 @@ import AudioCaptureService from '@/lib/AudioCaptureService';
 // Import the content components
 import { ReadingContent } from './ReadingContent';
 import { VisualContent } from './VisualContent';
+import { VisualExplorerContent } from './VisualExplorerContent';
 import { AudioContent } from './AudioContent';
 import { PracticeContent } from './PracticeContent';
 import { SessionGoalsModal } from './SessionGoalsModal';
@@ -368,7 +369,9 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
   // Define available tabs based on content
   const tabs = [
     { id: 'reading', label: 'Read', icon: BookOpen, color: 'blue' },
-    ...(pkg.content.visual ? [{ id: 'visual', label: 'Explore', icon: Eye, color: 'purple' }] : []),
+    ...(pkg.content.visuals && pkg.content.visuals.length > 0 
+      ? [{ id: 'explore', label: 'Explore', icon: Eye, color: 'purple' }] 
+      : []),
     ...(pkg.content.audio ? [{ id: 'audio', label: 'Listen', icon: Headphones, color: 'green' }] : []),
     ...(pkg.content.practice ? [{ id: 'practice', label: 'Practice', icon: FileText, color: 'orange' }] : [])
   ];
@@ -386,13 +389,11 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
           />
         );
 
-      case 'visual':
-        if (!pkg.content.visual) return null;
+      case 'explore':
+        if (!pkg.content.visuals || pkg.content.visuals.length === 0) return null;
         return (
-          <VisualContent
-            content={pkg.content.visual}
-            isCompleted={completedSections.visual || false}
-            onComplete={() => markComplete('visual')}
+          <VisualExplorerContent
+            visuals={pkg.content.visuals}
             onAskAI={sendInteractionMessage}
           />
         );

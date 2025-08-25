@@ -103,39 +103,66 @@ async def generate_visual_for_section(
         HTML content for interactive visual demonstration
     """
     try:
-        logger.info(f"🎨 User {user_context['email']} generating visual for section: {request.heading[:50]}...")
+        logger.info(f"🎨 User {user_context['email']} requesting visual for section: {request.heading[:50]}...")
+        logger.info(f"📋 Request data: heading='{request.heading}', content_length={len(request.content)}, subskill_id='{request.subskill_id}'")
         
-        # Generate visual content using discovery service
+        # 🚀 EFFICIENCY: Check if concept already exists BEFORE generating
+        existing_concept = None
+        if request.subskill_id and request.subskill_id.strip():
+            logger.info(f"🔍 Checking for existing visual concept...")
+            try:
+                existing_concept = await cosmos_db.get_visualize_concept_by_section(
+                    request.subskill_id, 
+                    request.heading, 
+                    firebase_uid=None  # System-wide
+                )
+                if existing_concept:
+                    logger.info(f"✅ EXISTING CONCEPT FOUND - returning cached visual (ID: {existing_concept.get('id')})")
+                    return {
+                        "status": "success",
+                        "heading": request.heading,
+                        "html_content": existing_concept.get("html_content", ""),
+                        "saved_to_db": True,
+                        "visualization_id": existing_concept.get("id"),
+                        "from_cache": True
+                    }
+                else:
+                    logger.info(f"🔍 No existing concept found - proceeding with generation")
+            except Exception as check_error:
+                logger.warning(f"⚠️ Error checking existing concept: {str(check_error)} - proceeding with generation")
+        
+        # Generate new visual content only if not found
+        logger.info(f"🎨 Generating new visual content for section: {request.heading[:50]}...")
         html_content = await discovery_service.generate_visual_content(
             request.heading,
             request.content
         )
-        
         logger.info(f"✅ Generated visual content for section: {request.heading[:50]}")
         
-        # 🆕 AUTO-SAVE: If subskill_id is provided, automatically save to Cosmos DB
+        # Save the newly generated content
         saved_concept = None
-        if hasattr(request, 'subskill_id') and request.subskill_id:
+        if request.subskill_id and request.subskill_id.strip():
             try:
-                logger.info(f"💾 Auto-saving visualize concept for subskill: {request.subskill_id}")
+                logger.info(f"💾 Saving newly generated concept for subskill: '{request.subskill_id}'")
                 saved_concept = await cosmos_db.save_visualize_concept(
                     subskill_id=request.subskill_id,
                     section_heading=request.heading,
                     section_content=request.content,
                     html_content=html_content,
-                    firebase_uid=user_context.get('uid')
+                    firebase_uid=None  # System-wide, not per user
                 )
-                logger.info(f"✅ Auto-saved visualize concept with ID: {saved_concept['id']}")
+                logger.info(f"✅ SAVE SUCCESS: new concept saved with ID: {saved_concept['id']}")
+                
             except Exception as save_error:
-                # Don't fail the main request if save fails, just log it
-                logger.error(f"⚠️ Failed to auto-save visualize concept: {str(save_error)}")
+                logger.error(f"❌ SAVE FAILED for subskill '{request.subskill_id}': {str(save_error)}")
         
         return {
             "status": "success",
             "heading": request.heading,
             "html_content": html_content,
             "saved_to_db": saved_concept is not None,
-            "visualization_id": saved_concept["id"] if saved_concept else None
+            "visualization_id": saved_concept["id"] if saved_concept else None,
+            "from_cache": False
         }
         
     except Exception as e:

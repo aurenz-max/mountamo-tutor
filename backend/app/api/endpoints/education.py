@@ -678,7 +678,7 @@ async def get_content_package_details(
     package_id: str,
     user_context: dict = Depends(get_user_context)
 ):
-    """Get detailed information about a specific content package"""
+    """Get detailed information about a specific content package with aggregated visuals"""
     try:
         logger.info(f"📦 User {user_context['email']} viewing package {package_id}")
         
@@ -686,6 +686,59 @@ async def get_content_package_details(
         
         if not package:
             raise HTTPException(status_code=404, detail="Content package not found")
+        
+        # Aggregate visuals: combine existing visuals + saved visualize concepts
+        visuals = []
+        
+        # Add existing visuals if they exist (support both single visual and multiple visuals)
+        content = package.get("content", {})
+        
+        # Check if there are multiple visuals already stored in content.visuals
+        if content.get("visuals") and isinstance(content["visuals"], list):
+            logger.info(f"📋 Found {len(content['visuals'])} existing visuals in content.visuals")
+            for existing_visual in content["visuals"]:
+                visuals.append({
+                    "description": existing_visual.get("description", "Interactive Visualization"),
+                    "p5_code": existing_visual.get("p5_code", ""),
+                    "interactive_elements": existing_visual.get("interactive_elements", [])
+                })
+        
+        # Also check for legacy single visual in content.visual (for backward compatibility)
+        elif content.get("visual"):
+            logger.info(f"📋 Found 1 existing visual in content.visual (legacy format)")
+            existing_visual = content["visual"]
+            visuals.append({
+                "description": existing_visual.get("description", "Interactive Visualization"),
+                "p5_code": existing_visual.get("p5_code", ""),
+                "interactive_elements": existing_visual.get("interactive_elements", [])
+            })
+        
+        # Add saved visualize concepts for this subskill
+        if package.get("subskill_id"):
+            try:
+                saved_concepts = await cosmos_db.get_visualize_concepts_by_subskill(
+                    package["subskill_id"], 
+                    firebase_uid=None  # System-wide, not per user
+                )
+                
+                for concept in saved_concepts:
+                    # Use html_content as p5_code for consistency with VisualContent component
+                    visuals.append({
+                        "description": concept.get("section_heading", "Generated Visualization"),
+                        "p5_code": concept.get("html_content", ""),
+                        "interactive_elements": ["interactive_demo", "ai_generated"]
+                    })
+                    
+                logger.info(f"🎨 Added {len(saved_concepts)} saved visualize concepts to package {package_id}")
+            except Exception as e:
+                logger.warning(f"⚠️ Could not fetch saved visualize concepts: {str(e)}")
+        
+        # Add visuals array to package content
+        if visuals:
+            if "content" not in package:
+                package["content"] = {}
+            package["content"]["visuals"] = visuals
+            logger.info(f"✅ Package {package_id} now has {len(visuals)} visuals available")
         
         return {
             "status": "success",

@@ -1714,33 +1714,78 @@ class CosmosDBService:
         html_content: str,
         firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Save a generated visual concept to Cosmos DB"""
+        """Save a generated visual concept to Cosmos DB (upsert if already exists)"""
+        logger.info(f"🔄 COSMOS DB SAVE START - subskill_id: '{subskill_id}', section: '{section_heading[:50]}...'")
+        logger.info(f"📋 Input params - content_length: {len(section_content)}, html_length: {len(html_content)}, firebase_uid: '{firebase_uid}'")
+        
         try:
-            # Generate unique ID for this visualization
-            visualization_id = str(uuid.uuid4())
+            # First check if a visualization already exists for this subskill + section combination
+            logger.info(f"🔍 Checking for existing concept...")
+            existing_concept = await self.get_visualize_concept_by_section(
+                subskill_id, section_heading, firebase_uid=None  # System-wide
+            )
+            logger.info(f"🔍 Existing concept check result: {'Found' if existing_concept else 'Not found'}")
+            
             timestamp = datetime.utcnow().isoformat()
             
-            visualization_data = {
-                "id": visualization_id,
-                "subskill_id": subskill_id,
-                "section_heading": section_heading,
-                "section_content": section_content,
-                "html_content": html_content,
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "created_by": firebase_uid,
-                "document_type": "visualize_concept",
-                "version": 1
-            }
-            
-            # Save to Cosmos DB
-            result = self.visualize_concepts.create_item(body=visualization_data)
-            logger.info(f"Saved visualize concept for subskill {subskill_id}, section: {section_heading[:50]}...")
-            
-            return result
+            if existing_concept:
+                # Check if content has actually changed to avoid unnecessary updates
+                content_changed = (
+                    existing_concept.get("section_content") != section_content or
+                    existing_concept.get("html_content") != html_content
+                )
+                
+                if content_changed:
+                    logger.info(f"🔄 Content changed - updating existing concept with ID: {existing_concept.get('id')}")
+                    existing_concept["section_content"] = section_content
+                    existing_concept["html_content"] = html_content
+                    existing_concept["updated_at"] = timestamp
+                    existing_concept["version"] = existing_concept.get("version", 1) + 1
+                    if firebase_uid:
+                        existing_concept["updated_by"] = firebase_uid
+                    
+                    logger.info(f"💾 Executing upsert_item for updated concept...")
+                    result = self.visualize_concepts.upsert_item(body=existing_concept)
+                    logger.info(f"✅ COSMOS UPDATE SUCCESS - ID: {result.get('id')}, version: {result.get('version')}")
+                    
+                    return result
+                else:
+                    logger.info(f"✅ Content unchanged - returning existing concept with ID: {existing_concept.get('id')}")
+                    return existing_concept
+            else:
+                # Create new concept
+                visualization_id = str(uuid.uuid4())
+                logger.info(f"🆕 Creating new concept with ID: {visualization_id}")
+                
+                visualization_data = {
+                    "id": visualization_id,
+                    "subskill_id": subskill_id,
+                    "section_heading": section_heading,
+                    "section_content": section_content,
+                    "html_content": html_content,
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                    "created_by": firebase_uid,
+                    "document_type": "visualize_concept",
+                    "version": 1
+                }
+                
+                logger.info(f"📤 Cosmos DB upsert payload prepared - document_type: {visualization_data['document_type']}")
+                logger.info(f"💾 Executing upsert_item for new concept...")
+                
+                # Save to Cosmos DB using upsert to avoid conflicts
+                result = self.visualize_concepts.upsert_item(body=visualization_data)
+                logger.info(f"✅ COSMOS CREATE SUCCESS - ID: {result.get('id')}, subskill: {result.get('subskill_id')}")
+                logger.info(f"📊 Result keys: {list(result.keys()) if result else 'None'}")
+                
+                return result
             
         except Exception as e:
-            logger.error(f"Error saving visualize concept: {str(e)}")
+            logger.error(f"❌ COSMOS DB SAVE FAILED - subskill: {subskill_id}, section: {section_heading[:30]}")
+            logger.error(f"💥 Error type: {type(e).__name__}")
+            logger.error(f"📝 Error details: {str(e)}")
+            import traceback
+            logger.error(f"📍 Stack trace: {traceback.format_exc()}")
             raise
 
     async def get_visualize_concepts_by_subskill(
