@@ -2,6 +2,7 @@
 
 from google.cloud import firestore
 from google.cloud.firestore import Client
+from google.oauth2 import service_account
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional, Union
 import logging
@@ -23,11 +24,19 @@ class FirestoreService:
             self.project_id = project_id or settings.FIREBASE_PROJECT_ID
             
             # Initialize Firestore client with Firebase Admin credentials
+            # Use explicit credentials instead of overriding global environment
             if hasattr(settings, 'FIREBASE_ADMIN_CREDENTIALS_PATH'):
                 firebase_creds_path = settings.firebase_admin_credentials_full_path
-                os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = firebase_creds_path
-            
-            self.client = firestore.Client(project=self.project_id)
+                
+                # Load credentials explicitly for Firestore only
+                if os.path.exists(firebase_creds_path):
+                    credentials = service_account.Credentials.from_service_account_file(firebase_creds_path)
+                    self.client = firestore.Client(project=self.project_id, credentials=credentials)
+                else:
+                    logger.warning(f"Firebase credentials file not found: {firebase_creds_path}")
+                    self.client = firestore.Client(project=self.project_id)
+            else:
+                self.client = firestore.Client(project=self.project_id)
             
             # Collection references for analytics data
             self.attempts_collection = self.client.collection('student_attempts')
