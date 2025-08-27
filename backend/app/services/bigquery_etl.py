@@ -173,20 +173,12 @@ class BigQueryETLService:
             # Initialize Cosmos DB service
             cosmos_db = self._initialize_cosmos_service()
             
-            # Determine sync strategy
-            if incremental:
-                last_sync_time = await self._get_last_sync_timestamp("attempts")
-                logger.info(f"Incremental sync from {last_sync_time}")
-            else:
-                last_sync_time = None
-                logger.info("Full sync of all attempts")
-            
-            # Fetch data from Cosmos DB
-            attempts = await self._fetch_attempts_from_cosmos(cosmos_db, last_sync_time, limit)
+            # Fetch all data from Cosmos DB (ignore incremental for limited datasets)
+            attempts = await self._fetch_attempts_from_cosmos(cosmos_db, None, limit)
             
             if not attempts:
-                logger.info("No new attempts to sync")
-                return {"success": True, "records_processed": 0, "message": "No new data"}
+                logger.info("No attempts found in Cosmos DB")
+                return {"success": True, "records_processed": 0, "message": "No data"}
             
             logger.info(f"Fetched {len(attempts)} attempts from Cosmos DB")
             
@@ -200,12 +192,9 @@ class BigQueryETLService:
             # Ensure table exists
             await self._ensure_table_exists("attempts", self._get_attempts_schema())
             
-            # Load to BigQuery
+            # Load to BigQuery using MERGE to handle duplicates
             table_id = f"{self.project_id}.{self.dataset_id}.attempts"
             total_loaded = await self._load_data_to_bigquery(transformed_attempts, table_id, "attempts")
-            
-            # Update sync timestamp
-            await self._update_sync_timestamp("attempts")
             
             logger.info(f"Successfully synced {total_loaded} attempts to BigQuery")
             
@@ -232,18 +221,12 @@ class BigQueryETLService:
             
             cosmos_db = self._initialize_cosmos_service()
             
-            # Similar to attempts sync but for reviews
-            if incremental:
-                last_sync_time = await self._get_last_sync_timestamp("reviews")
-            else:
-                last_sync_time = None
-            
-            # Fetch reviews from Cosmos DB
-            reviews = await self._fetch_reviews_from_cosmos(cosmos_db, last_sync_time, limit)
+            # Fetch all reviews from Cosmos DB
+            reviews = await self._fetch_reviews_from_cosmos(cosmos_db, None, limit)
             
             if not reviews:
-                logger.info("No new reviews to sync")
-                return {"success": True, "records_processed": 0, "message": "No new data"}
+                logger.info("No reviews found in Cosmos DB")
+                return {"success": True, "records_processed": 0, "message": "No data"}
             
             logger.info(f"Fetched {len(reviews)} reviews from Cosmos DB")
             
@@ -257,11 +240,11 @@ class BigQueryETLService:
             # Ensure table exists
             await self._ensure_table_exists("reviews", self._get_reviews_schema())
             
-            # Load to BigQuery
+            # Load to BigQuery - reviews don't have MERGE logic yet, so use simple append
             table_id = f"{self.project_id}.{self.dataset_id}.reviews"
             total_loaded = await self._load_data_to_bigquery(transformed_reviews, table_id, "reviews")
             
-            await self._update_sync_timestamp("reviews")
+            logger.info(f"Successfully synced {total_loaded} reviews to BigQuery")
             
             return {
                 "success": True,
@@ -271,6 +254,62 @@ class BigQueryETLService:
             
         except Exception as e:
             logger.error(f"Error syncing reviews: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def sync_user_profiles_from_cosmos(self, incremental: bool = True, limit: Optional[int] = None) -> Dict[str, Any]:
+        """Sync user profiles data from Cosmos DB to BigQuery to create proper students table"""
+        
+        try:
+            logger.info("Starting user profiles sync from Cosmos DB")
+            
+            # Initialize Cosmos DB connection
+            if not self.cosmos_db:
+                self._initialize_cosmos_service()
+            
+            # Determine since parameter for incremental sync
+            since = None
+            if incremental:
+                # Get last sync timestamp from BigQuery
+                try:
+                    last_sync_query = f"""
+                    SELECT MAX(sync_timestamp) as last_sync 
+                    FROM `{self.project_id}.{self.dataset_id}.students`
+                    WHERE sync_timestamp IS NOT NULL
+                    """
+                    result = list(self.client.query(last_sync_query))
+                    if result and result[0]['last_sync']:
+                        since = result[0]['last_sync']
+                        logger.info(f"Incremental sync since: {since}")
+                except Exception:
+                    logger.info("No previous sync found, doing full sync")
+            
+            # Fetch user profiles data
+            profiles = await self._fetch_user_profiles_from_cosmos(self.cosmos_db, since=since, limit=limit)
+            
+            if not profiles:
+                logger.info("No user profiles to sync")
+                return {"success": True, "records_processed": 0}
+            
+            # Transform data for BigQuery
+            transformed_data = self._transform_user_profiles_data(profiles)
+            
+            # Load to BigQuery
+            records_loaded = await self._load_data_to_bigquery(
+                transformed_data, 
+                f"{self.project_id}.{self.dataset_id}.students",
+                "students"
+            )
+            
+            logger.info(f"Successfully synced {records_loaded} user profiles")
+            
+            return {
+                "success": True,
+                "records_processed": records_loaded,
+                "sync_type": "incremental" if incremental else "full"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error syncing user profiles: {e}")
             return {"success": False, "error": str(e)}
 
     async def sync_curriculum_from_blob(self, subject: Optional[str] = None) -> Dict[str, Any]:
@@ -536,6 +575,54 @@ class BigQueryETLService:
             logger.error(f"Error fetching reviews from Cosmos DB: {e}")
             raise
 
+    async def _fetch_user_profiles_from_cosmos(self, cosmos_db: CosmosDBService, since: Optional[datetime] = None, limit: Optional[int] = None) -> List[Dict]:
+        """Fetch user profiles from Cosmos DB user_profiles container"""
+        
+        try:
+            logger.info("Fetching user profiles from Cosmos DB")
+            
+            # Get the user_profiles container
+            user_profiles_container = cosmos_db.database.get_container_client("user_profiles")
+            
+            # Build query
+            query = "SELECT * FROM c WHERE c.type = 'user_profile'"
+            parameters = []
+            
+            if since:
+                query += " AND c.updated_at > @since"
+                parameters.append({"name": "@since", "value": since.isoformat()})
+            
+            if limit:
+                query += f" ORDER BY c.updated_at DESC OFFSET 0 LIMIT {limit}"
+            else:
+                query += " ORDER BY c.updated_at DESC"
+            
+            profiles = []
+            
+            try:
+                # Try async iteration first
+                items = user_profiles_container.query_items(
+                    query=query,
+                    parameters=parameters,
+                    enable_cross_partition_query=True
+                )
+                async for item in items:
+                    profiles.append(item)
+            except Exception as query_error:
+                logger.warning(f"Async iteration failed, falling back to sync: {query_error}")
+                for item in user_profiles_container.query_items(
+                    query=query,
+                    parameters=parameters,
+                    enable_cross_partition_query=True
+                ):
+                    profiles.append(item)
+            
+            return profiles
+            
+        except Exception as e:
+            logger.error(f"Error fetching user profiles from Cosmos DB: {e}")
+            raise
+
     def _transform_attempts_data(self, attempts: List[Dict]) -> List[Dict]:
         """Transform attempts data for BigQuery"""
         
@@ -690,6 +777,112 @@ class BigQueryETLService:
         logger.info(f"Transformed {len(transformed)}/{len(reviews)} reviews successfully")
         return transformed
 
+    def _transform_user_profiles_data(self, profiles: List[Dict]) -> List[Dict]:
+        """Transform user profiles data for BigQuery students table"""
+        
+        transformed = []
+        
+        for profile in profiles:
+            try:
+                # Validate required fields
+                if not profile.get('student_id'):
+                    logger.warning(f"Skipping profile with missing student_id: {profile.get('id', 'unknown')}")
+                    continue
+                
+                # Extract preferences and onboarding data
+                preferences = profile.get('preferences', {})
+                onboarding = preferences.get('onboarding', {})
+                
+                # Parse timestamps
+                created_at = profile.get('created_at')
+                if isinstance(created_at, str):
+                    try:
+                        created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00')).isoformat()
+                    except:
+                        created_at = datetime.now().isoformat()
+                else:
+                    created_at = datetime.now().isoformat()
+                
+                updated_at = profile.get('updated_at')
+                if isinstance(updated_at, str):
+                    try:
+                        updated_at = datetime.fromisoformat(updated_at.replace('Z', '+00:00')).isoformat()
+                    except:
+                        updated_at = datetime.now().isoformat()
+                else:
+                    updated_at = datetime.now().isoformat()
+                
+                # Parse optional timestamps
+                last_login = profile.get('last_login')
+                if last_login and isinstance(last_login, str):
+                    try:
+                        last_login = datetime.fromisoformat(last_login.replace('Z', '+00:00')).isoformat()
+                    except:
+                        last_login = None
+                
+                last_activity = profile.get('last_activity')
+                if last_activity and isinstance(last_activity, str):
+                    try:
+                        last_activity = datetime.fromisoformat(last_activity.replace('Z', '+00:00')).isoformat()
+                    except:
+                        last_activity = None
+                
+                onboarding_completed_at = profile.get('onboarding_completed_at')
+                if onboarding_completed_at and isinstance(onboarding_completed_at, str):
+                    try:
+                        onboarding_completed_at = datetime.fromisoformat(onboarding_completed_at.replace('Z', '+00:00')).isoformat()
+                    except:
+                        onboarding_completed_at = None
+                
+                # Transform the profile data - ensure ALL schema fields are present
+                transformed_profile = {
+                    # Basic student info - REQUIRED fields
+                    'student_id': int(profile['student_id']),
+                    'name': str(profile.get('display_name', '')),
+                    'email': str(profile.get('email', '')),
+                    'grade': str(profile.get('grade_level', '')),
+                    'firebase_uid': str(profile.get('firebase_uid', profile.get('uid', ''))),
+                    
+                    # Engagement metrics - ensure integers
+                    'total_points': int(profile.get('total_points', 0)),
+                    'current_streak': int(profile.get('current_streak', 0)),
+                    'longest_streak': int(profile.get('longest_streak', 0)),
+                    'level': int(profile.get('level', 1)),
+                    'badges': list(profile.get('badges', [])),
+                    
+                    # Learning preferences - ensure lists
+                    'selected_subjects': list(onboarding.get('selectedSubjects', [])),
+                    'selected_packages': list(onboarding.get('selectedPackages', [])),
+                    'learning_goals': list(onboarding.get('learningGoals', [])),
+                    'preferred_learning_style': list(onboarding.get('preferredLearningStyle', [])),
+                    
+                    # Status flags - ensure booleans
+                    'email_verified': bool(profile.get('email_verified', False)),
+                    'onboarding_completed': bool(profile.get('onboarding_completed', False)),
+                    
+                    # Timestamps - REQUIRED fields with proper ISO format
+                    'last_login': last_login,
+                    'last_activity': last_activity,
+                    'onboarding_completed_at': onboarding_completed_at,
+                    'created_at': created_at,
+                    'updated_at': updated_at,
+                    'sync_timestamp': datetime.now().isoformat()
+                }
+                
+                # Debug log the first transformed record to help with troubleshooting
+                if len(transformed) == 0:
+                    logger.info(f"Sample transformed profile: {transformed_profile}")
+                
+                transformed.append(transformed_profile)
+                
+            except Exception as e:
+                logger.error(f"Error transforming profile {profile.get('id', 'unknown')}: {e}")
+                logger.error(f"Profile data: {profile}")
+                continue
+        
+        logger.info(f"Transformed {len(transformed)}/{len(profiles)} profiles successfully")
+        return transformed
+
     def _transform_curriculum_data(self, curriculum_df: pd.DataFrame, subject: str) -> List[Dict]:
         """Transform curriculum DataFrame to BigQuery format"""
         
@@ -754,8 +947,37 @@ class BigQueryETLService:
         return records
 
     async def _load_data_to_bigquery(self, data: List[Dict], table_id: str, table_name: str) -> int:
-        """Load data to BigQuery in batches"""
+        """Load data to BigQuery with proper upsert logic to prevent duplicates"""
         
+        # Use MERGE for all tables to handle duplicates properly
+        # But if table is empty (after clean), use simple append for performance
+        if table_name == "attempts":
+            # Check if table is empty
+            count_query = f"SELECT COUNT(*) as count FROM `{table_id}`"
+            try:
+                result = list(self.client.query(count_query))
+                table_empty = result[0]['count'] == 0
+                if table_empty:
+                    logger.info("Attempts table is empty, using fast append instead of MERGE")
+                else:
+                    return await self._upsert_attempts_to_bigquery(data, table_id)
+            except:
+                return await self._upsert_attempts_to_bigquery(data, table_id)
+        elif table_name == "reviews":
+            # Check if table is empty
+            count_query = f"SELECT COUNT(*) as count FROM `{table_id}`"
+            try:
+                result = list(self.client.query(count_query))
+                table_empty = result[0]['count'] == 0
+                if table_empty:
+                    logger.info("Reviews table is empty, using fast append instead of MERGE")
+                else:
+                    return await self._upsert_reviews_to_bigquery(data, table_id)
+            except:
+                return await self._upsert_reviews_to_bigquery(data, table_id)
+        
+        # For other tables (curriculum, learning_paths), use regular append
+        # These are typically full-refresh tables that don't accumulate duplicates
         job_config = bigquery.LoadJobConfig(
             write_disposition="WRITE_APPEND",
             schema_update_options=[bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION]
@@ -784,6 +1006,153 @@ class BigQueryETLService:
         
         return total_loaded
 
+    async def _upsert_attempts_to_bigquery(self, data: List[Dict], table_id: str) -> int:
+        """Upsert attempts data to BigQuery to avoid duplicates based on cosmos_id"""
+        
+        if not data:
+            return 0
+        
+        # First, load data to a temporary table
+        temp_table_id = f"{table_id}_temp_{int(datetime.now().timestamp())}"
+        
+        try:
+            # Create temporary table with same schema
+            temp_table = bigquery.Table(temp_table_id)
+            temp_table.schema = self._get_attempts_schema()
+            temp_table = self.client.create_table(temp_table)
+            logger.info(f"Created temporary table: {temp_table_id}")
+            
+            # Load data to temporary table
+            job_config = bigquery.LoadJobConfig(
+                write_disposition="WRITE_TRUNCATE"
+                # No schema update options with WRITE_TRUNCATE
+            )
+            
+            total_loaded = 0
+            for i in range(0, len(data), self.batch_size):
+                batch = data[i:i + self.batch_size]
+                
+                job = self.client.load_table_from_json(
+                    batch, 
+                    temp_table_id,
+                    job_config=job_config
+                )
+                job.result()
+                total_loaded += len(batch)
+                job_config.write_disposition = "WRITE_APPEND"  # Append for subsequent batches
+            
+            logger.info(f"Loaded {total_loaded} records to temporary table")
+            
+            # Now MERGE from temp table to main table
+            merge_query = f"""
+            MERGE `{table_id}` AS target
+            USING `{temp_table_id}` AS source
+            ON target.cosmos_id = source.cosmos_id
+            WHEN MATCHED AND source.sync_timestamp > target.sync_timestamp THEN
+                UPDATE SET
+                    student_id = source.student_id,
+                    subject = source.subject,
+                    skill_id = source.skill_id,
+                    subskill_id = source.subskill_id,
+                    score = source.score,
+                    timestamp = source.timestamp,
+                    sync_timestamp = source.sync_timestamp,
+                    cosmos_ts = source.cosmos_ts
+            WHEN NOT MATCHED THEN
+                INSERT (student_id, subject, skill_id, subskill_id, score, timestamp, sync_timestamp, cosmos_id, cosmos_ts)
+                VALUES (source.student_id, source.subject, source.skill_id, source.subskill_id, 
+                       source.score, source.timestamp, source.sync_timestamp, source.cosmos_id, source.cosmos_ts)
+            """
+            
+            # Execute merge
+            merge_job = self.client.query(merge_query)
+            merge_result = merge_job.result()
+            
+            logger.info(f"MERGE completed - {merge_result.num_dml_affected_rows} rows affected")
+            
+            return total_loaded
+            
+        finally:
+            # Clean up temporary table
+            try:
+                self.client.delete_table(temp_table_id)
+                logger.info(f"Deleted temporary table: {temp_table_id}")
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to cleanup temporary table: {cleanup_error}")
+
+    async def _upsert_reviews_to_bigquery(self, data: List[Dict], table_id: str) -> int:
+        """Upsert reviews data to BigQuery to avoid duplicates based on cosmos_id"""
+        
+        if not data:
+            return 0
+        
+        # First, load data to a temporary table
+        temp_table_id = f"{table_id}_temp_{int(datetime.now().timestamp())}"
+        
+        try:
+            # Create temporary table with same schema
+            temp_table = bigquery.Table(temp_table_id)
+            temp_table.schema = self._get_reviews_schema()
+            temp_table = self.client.create_table(temp_table)
+            logger.info(f"Created temporary table: {temp_table_id}")
+            
+            # Load data to temporary table
+            job_config = bigquery.LoadJobConfig(
+                write_disposition="WRITE_TRUNCATE"
+            )
+            
+            total_loaded = 0
+            for i in range(0, len(data), self.batch_size):
+                batch = data[i:i + self.batch_size]
+                
+                job = self.client.load_table_from_json(
+                    batch, 
+                    temp_table_id,
+                    job_config=job_config
+                )
+                job.result()
+                total_loaded += len(batch)
+                job_config.write_disposition = "WRITE_APPEND"  # Append for subsequent batches
+            
+            logger.info(f"Loaded {total_loaded} records to temporary table")
+            
+            # Now MERGE from temp table to main table - assuming reviews have cosmos_id like attempts
+            merge_query = f"""
+            MERGE `{table_id}` AS target
+            USING `{temp_table_id}` AS source
+            ON target.cosmos_id = source.cosmos_id
+            WHEN MATCHED AND source.sync_timestamp > target.sync_timestamp THEN
+                UPDATE SET
+                    student_id = source.student_id,
+                    subject = source.subject,
+                    skill_id = source.skill_id,
+                    subskill_id = source.subskill_id,
+                    content = source.content,
+                    timestamp = source.timestamp,
+                    sync_timestamp = source.sync_timestamp,
+                    cosmos_ts = source.cosmos_ts
+            WHEN NOT MATCHED THEN
+                INSERT (student_id, subject, skill_id, subskill_id, content, timestamp, sync_timestamp, cosmos_id, cosmos_ts)
+                VALUES (source.student_id, source.subject, source.skill_id, source.subskill_id,
+                       source.content, source.timestamp, source.sync_timestamp, source.cosmos_id, source.cosmos_ts)
+            """
+            
+            # Execute merge
+            merge_job = self.client.query(merge_query)
+            merge_result = merge_job.result()
+            
+            logger.info(f"Reviews MERGE completed - {merge_result.num_dml_affected_rows} rows affected")
+            
+            return total_loaded
+            
+        finally:
+            # Clean up temporary table
+            try:
+                self.client.delete_table(temp_table_id)
+                logger.info(f"Deleted temporary table: {temp_table_id}")
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to cleanup temporary table: {cleanup_error}")
+
     async def _ensure_table_exists(self, table_name: str, schema: List[bigquery.SchemaField]):
         """Ensure BigQuery table exists with proper schema"""
         
@@ -791,8 +1160,25 @@ class BigQueryETLService:
         
         try:
             # Try to get the table
-            self.client.get_table(table_id)
-            logger.info(f"Table {table_name} already exists")
+            existing_table = self.client.get_table(table_id)
+            
+            # For students table specifically, check if schema needs updating
+            if table_name == "students":
+                existing_fields = {field.name for field in existing_table.schema}
+                new_fields = {field.name for field in schema}
+                
+                # If schema is significantly different, recreate the table
+                if not new_fields.issubset(existing_fields):
+                    logger.info(f"Students table schema outdated, recreating...")
+                    self.client.delete_table(table_id)
+                    table = bigquery.Table(table_id, schema=schema)
+                    table = self.client.create_table(table)
+                    logger.info(f"Recreated students table with new schema")
+                else:
+                    logger.info(f"Table {table_name} already exists with compatible schema")
+            else:
+                logger.info(f"Table {table_name} already exists")
+                
         except NotFound:
             # Create the table
             table = bigquery.Table(table_id, schema=schema)
@@ -800,6 +1186,37 @@ class BigQueryETLService:
             logger.info(f"Created table {table_name}")
         except Exception as e:
             logger.error(f"Error ensuring table {table_name} exists: {e}")
+            raise
+
+    async def _execute_query(self, query: str, return_results: bool = False) -> Optional[List[Dict]]:
+        """Execute a BigQuery SQL query
+        
+        Args:
+            query: SQL query to execute
+            return_results: Whether to return query results (for SELECT queries)
+            
+        Returns:
+            List of query results if return_results is True, otherwise None
+        """
+        try:
+            logger.info(f"Executing BigQuery query: {query[:100]}...")
+            
+            # Execute the query
+            job = self.client.query(query)
+            
+            # Wait for completion
+            results = job.result()
+            
+            if return_results:
+                # Convert results to list of dictionaries
+                return [dict(row) for row in results]
+            else:
+                logger.info(f"Query executed successfully. Rows affected: {job.num_dml_affected_rows or 'N/A'}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error executing BigQuery query: {e}")
+            logger.error(f"Query was: {query}")
             raise
 
     async def create_students_table(self) -> Dict[str, Any]:
@@ -1262,13 +1679,39 @@ class BigQueryETLService:
         ]
 
     def _get_students_schema(self) -> List[bigquery.SchemaField]:
-        """Get BigQuery schema for students table"""
+        """Get BigQuery schema for students table with full user profile data"""
         return [
+            # Basic student info
             bigquery.SchemaField("student_id", "INTEGER", mode="REQUIRED"),
             bigquery.SchemaField("name", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("email", "STRING", mode="NULLABLE"),
             bigquery.SchemaField("grade", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("firebase_uid", "STRING", mode="NULLABLE"),
+            
+            # Engagement metrics
+            bigquery.SchemaField("total_points", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("current_streak", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("longest_streak", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("level", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("badges", "STRING", mode="REPEATED"),
+            
+            # Learning preferences (arrays)
+            bigquery.SchemaField("selected_subjects", "STRING", mode="REPEATED"),
+            bigquery.SchemaField("selected_packages", "STRING", mode="REPEATED"),
+            bigquery.SchemaField("learning_goals", "STRING", mode="REPEATED"),
+            bigquery.SchemaField("preferred_learning_style", "STRING", mode="REPEATED"),
+            
+            # Status flags
+            bigquery.SchemaField("email_verified", "BOOLEAN", mode="NULLABLE"),
+            bigquery.SchemaField("onboarding_completed", "BOOLEAN", mode="NULLABLE"),
+            
+            # Timestamps
+            bigquery.SchemaField("last_login", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("last_activity", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("onboarding_completed_at", "TIMESTAMP", mode="NULLABLE"),
             bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED"),
             bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
         ]
 
     async def _upsert_curriculum_data(self, curriculum_records: List[Dict], subject: str):
