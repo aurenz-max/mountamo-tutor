@@ -14,6 +14,7 @@ from ...services.user_profiles import user_profiles_service  # FIXED: Import the
 from ...models.user_profiles import ActivityLog  # FIXED: Import ActivityLog model
 from ...services.bigquery_analytics import BigQueryAnalyticsService
 from ...services.bigquery_etl import BigQueryETLService
+from ...services.ai_recommendations import AIRecommendationService
 from ...core.config import settings
 
 router = APIRouter()
@@ -148,6 +149,23 @@ class RecommendationResponse(BaseModel):
     next_subskill: Optional[str]
     message: str
 
+class AIRecommendationResponse(BaseModel):
+    subject: str
+    skill_description: str
+    subskill_description: str
+    subskill_id: str
+    priority: str
+    priority_rank: int
+    reason: str
+    estimated_time: int
+    difficulty_start: Optional[float]
+    difficulty_end: Optional[float]
+    target_difficulty: Optional[float]
+    grade: Optional[str]
+    unit_title: Optional[str]
+    session_plan: Dict = Field(default_factory=dict)
+    generated_at: str
+
 # ============================================================================
 # DEPENDENCY INJECTION - Simplified
 # ============================================================================
@@ -162,6 +180,13 @@ def get_bigquery_analytics_service() -> BigQueryAnalyticsService:
 def get_bigquery_etl_service() -> BigQueryETLService:
     """Get BigQuery ETL service instance"""
     return BigQueryETLService(
+        project_id=settings.GCP_PROJECT_ID,
+        dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
+    )
+
+def get_ai_recommendation_service() -> AIRecommendationService:
+    """Get AI recommendation service instance"""
+    return AIRecommendationService(
         project_id=settings.GCP_PROJECT_ID,
         dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
     )
@@ -359,6 +384,80 @@ async def get_student_recommendations(
             detail=f"Error generating recommendations: {str(e)}"
         )
 
+@router.get("/student/{student_id}/ai-recommendations", response_model=List[AIRecommendationResponse])
+async def get_ai_recommendations(
+    student_id: int,
+    target_count: Optional[int] = Query(None, ge=1, le=10, description="Target number of recommendations (AI will choose if not specified)"),
+    session_type: str = Query("daily", regex="^(daily|intensive|catch_up|review|challenge)$", description="Type of learning session"),
+    focus_subjects: Optional[str] = Query(None, description="Comma-separated subjects to focus on"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    user_context: dict = Depends(get_user_context),
+    ai_service: AIRecommendationService = Depends(get_ai_recommendation_service)
+):
+    """Get AI-powered personalized recommendations using velocity and mastery data"""
+    
+    user_id = user_context["user_id"]
+    
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} analytics"
+            )
+    
+    # Parse focus subjects if provided
+    focus_subjects_list = None
+    if focus_subjects:
+        focus_subjects_list = [s.strip() for s in focus_subjects.split(",")]
+    
+    # Check cache (3 minute TTL for AI recommendations - shorter due to dynamic nature)
+    cache_key = get_cache_key(
+        "ai_recommendations", 
+        student_id=student_id, 
+        target_count=target_count,
+        session_type=session_type, 
+        focus_subjects=focus_subjects
+    )
+    
+    cached_result = get_from_cache(cache_key, ttl_minutes=3)
+    if cached_result:        
+        return cached_result
+    
+    try:
+        logger.info(f"User {user_context['email']} generating AI recommendations for student {student_id}, session_type={session_type}")
+        
+        # Get AI recommendations
+        recommendations = await ai_service.get_ai_recommendations(
+            student_id=student_id,
+            target_count=target_count,
+            session_type=session_type,
+            focus_subjects=focus_subjects_list
+        )
+        
+        # Convert to response format
+        ai_recommendations = [
+            AIRecommendationResponse(**rec) for rec in recommendations
+        ]
+        
+        # Cache the result
+        set_cache(cache_key, ai_recommendations)
+        
+        # Log success details
+        if ai_recommendations:
+            session_plan = ai_recommendations[0].session_plan
+            total_time = sum(rec.estimated_time for rec in ai_recommendations)
+            logger.info(f"AI recommendations generated: {len(ai_recommendations)} subskills, ~{total_time} minutes, focus: {session_plan.get('session_focus', 'balanced')}")
+        
+        return ai_recommendations
+        
+    except Exception as e:        
+        logger.error(f"AI recommendations error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error generating AI recommendations: {str(e)}"
+        )
+
 # ============================================================================
 # ADMIN ENDPOINTS - Simplified
 # ============================================================================
@@ -458,7 +557,8 @@ async def get_cache_stats(user_context: dict = Depends(get_user_context)):
 async def analytics_health_check(
     user_context: dict = Depends(get_user_context),
     analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service),
-    etl_service: BigQueryETLService = Depends(get_bigquery_etl_service)
+    etl_service: BigQueryETLService = Depends(get_bigquery_etl_service),
+    ai_service: AIRecommendationService = Depends(get_ai_recommendation_service)
 ):
     """Health check with user context"""
     user_id = user_context["user_id"]
@@ -470,15 +570,20 @@ async def analytics_health_check(
         # Check ETL status
         etl_status = await etl_service.get_sync_status()
         
+        # Check AI service
+        ai_health = await ai_service.health_check()
+        
         # Overall health
         overall_healthy = (
             analytics_health.get('status') == 'healthy' and
+            ai_health.get('status') == 'healthy' and
             all(table.get('exists', False) for table in etl_status.get('tables', {}).values())
         )
         
         return {
             "status": "healthy" if overall_healthy else "unhealthy",
             "analytics_service": analytics_health,
+            "ai_recommendation_service": ai_health,
             "etl_status": etl_status,
             "cache_entries": len(analytics_cache),
             "user_context": {
@@ -486,7 +591,7 @@ async def analytics_health_check(
                 "email": user_context.get("email"),
                 "student_id": user_context.get("student_id")
             },
-            "version": "4.0.0",  # Simplified version
+            "version": "5.0.0",  # Updated version with AI recommendations
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:

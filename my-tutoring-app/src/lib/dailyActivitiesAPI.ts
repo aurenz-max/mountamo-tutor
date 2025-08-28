@@ -14,6 +14,30 @@ export interface DailyActivity {
   endpoint: string;
   icon_type: string;
   metadata: Record<string, any>;
+  source_type?: 'ai_recommendations' | 'bigquery_recommendations' | 'fallback';
+  source_details?: {
+    ai_reason?: string;
+    priority_rank?: number;
+    estimated_time_minutes?: number;
+    readiness_status?: string;
+    mastery_level?: number;
+    reason?: string;
+  };
+  curriculum_transparency?: {
+    subject: string;
+    unit: string;
+    skill: string;
+    subskill: string;
+  };
+  curriculum_metadata?: {
+    subject: string;
+    unit: { id: string; title: string; description?: string };
+    skill: { id: string; description: string };
+    subskill: { id: string; description: string };
+  };
+  // New AI recommendation fields
+  activity_type?: 'warm_up' | 'core_challenge' | 'practice' | 'cool_down';
+  reason?: string;
 }
 
 export interface DailyProgress {
@@ -30,8 +54,30 @@ export interface DailyPlan {
   date: string;
   activities: DailyActivity[];
   progress: DailyProgress;
-  personalization_source: string; // 'bigquery_recommendations' | 'fallback'
+  personalization_source: string; // 'ai_recommendations' | 'bigquery_recommendations' | 'fallback'
   total_points: number;
+  summary?: {
+    total_activities: number;
+    total_points: number;
+    personalization_source: string;
+    source_breakdown: {
+      ai_recommendations: number;
+      bigquery_recommendations: number;
+      fallback: number;
+    };
+  };
+  transparency?: {
+    recommendation_engine: string;
+    generation_timestamp: string;
+    ai_enabled: boolean;
+    bigquery_enabled: boolean;
+    session_plan?: {
+      daily_theme?: string;
+      learning_objectives?: string[];
+      session_structure?: any;
+      total_estimated_time?: number;
+    };
+  };
 }
 
 export interface ActivityCompletionResponse {
@@ -182,13 +228,34 @@ export function useDailyActivities({
     }
   }, [getAuthToken]);
 
-  // Fetch daily plan
+  // Fetch daily plan with enhanced transparency data
   const fetchDailyPlan = useCallback(async () => {
     if (!api) return;
     
     try {
       setError(null);
-      const plan = await api.getDailyPlan(studentId, date);
+      // Use the enhanced activities endpoint that includes transparency metadata
+      const enhancedPlan = await api.getDailyActivities(studentId, date);
+      
+      // Convert the enhanced response to the expected DailyPlan format
+      const plan: DailyPlan = {
+        student_id: enhancedPlan.student_id,
+        date: enhancedPlan.date,
+        activities: enhancedPlan.activities,
+        progress: {
+          completed_activities: enhancedPlan.summary?.total_activities || 0,
+          total_activities: enhancedPlan.summary?.total_activities || 0,
+          points_earned_today: 0, // Would need to track this separately
+          daily_goal: 60,
+          current_streak: 1,
+          progress_percentage: 0.0
+        },
+        personalization_source: enhancedPlan.summary?.personalization_source || 'unknown',
+        total_points: enhancedPlan.summary?.total_points || 0,
+        summary: enhancedPlan.summary,
+        transparency: enhancedPlan.transparency
+      };
+      
       setDailyPlan(plan);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch daily plan');

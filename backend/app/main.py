@@ -17,7 +17,8 @@ from .api.endpoints import (
     user_profiles,
     daily_activities,
     daily_briefing_live,
-    packages
+    packages,
+    visual_problems
     
 )
 
@@ -169,6 +170,14 @@ app.include_router(
     dependencies=[Depends(get_user_context)]  # ETL operations are logged to user activity
 )
 
+# 🔥 NEW: Visual Problems API
+app.include_router(
+    visual_problems.router, 
+    prefix="/api/visual-problems", 
+    tags=["visual-problems"],
+    dependencies=[Depends(get_user_context)]
+)
+
 # ============================================================================
 # ROOT ENDPOINTS
 # ============================================================================
@@ -188,6 +197,7 @@ async def root():
         },
         "authenticated_endpoints": {
             "problems": "/api/problems",
+            "visual_problems": "/api/visual-problems",  # 🔥 NEW: Visual Problem Library
             "analytics": "/api/analytics", 
             "curriculum": "/api/curriculum",
             "competency": "/api/competency",

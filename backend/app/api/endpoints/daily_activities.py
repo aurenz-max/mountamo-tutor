@@ -9,19 +9,28 @@ from datetime import datetime
 from ...core.config import settings
 from ...services.daily_activities import DailyActivitiesService, DailyPlan
 from ...services.bigquery_analytics import BigQueryAnalyticsService
+from ...services.ai_recommendations import AIRecommendationService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 def get_daily_activities_service() -> DailyActivitiesService:
-    """Get configured daily activities service with BigQuery integration"""
+    """Get configured daily activities service with BigQuery and AI recommendations integration"""
     analytics_service = BigQueryAnalyticsService(
         project_id=settings.GCP_PROJECT_ID,
         dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
     )
     
-    return DailyActivitiesService(analytics_service=analytics_service)
+    ai_recommendation_service = AIRecommendationService(
+        project_id=settings.GCP_PROJECT_ID,
+        dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
+    )
+    
+    return DailyActivitiesService(
+        analytics_service=analytics_service,
+        ai_recommendation_service=ai_recommendation_service
+    )
 
 @router.get("/daily-plan/{student_id}", response_model=DailyPlan)
 async def get_daily_plan(
@@ -48,19 +57,83 @@ async def get_daily_plan(
 
 @router.get("/daily-plan/{student_id}/activities")
 async def get_daily_activities(student_id: int, date: Optional[str] = Query(None)):
-    """Get just the activities list (simpler response)"""
+    """Get activities list with enhanced transparency metadata"""
     try:
         service = get_daily_activities_service()
         daily_plan = await service.generate_daily_plan(student_id, date)
         
-        return {
+        # Enhanced activity data with full transparency
+        enhanced_activities = []
+        ai_activities_count = 0
+        bigquery_activities_count = 0
+        fallback_activities_count = 0
+        
+        for activity in daily_plan.activities:
+            activity_data = activity.dict()
+            
+            # Add transparency metadata
+            if activity_data.get('metadata', {}).get('from_ai_recommendations'):
+                ai_activities_count += 1
+                activity_data['source_type'] = 'ai_recommendations'
+                activity_data['source_details'] = {
+                    'ai_reason': activity_data.get('metadata', {}).get('ai_reason', 'No reason provided'),
+                    'priority_rank': activity_data.get('metadata', {}).get('priority_rank'),
+                    'estimated_time_minutes': activity_data.get('metadata', {}).get('estimated_time_minutes')
+                }
+            elif activity_data.get('metadata', {}).get('fallback'):
+                fallback_activities_count += 1
+                activity_data['source_type'] = 'fallback'
+                activity_data['source_details'] = {
+                    'reason': 'No personalized recommendations available'
+                }
+            else:
+                bigquery_activities_count += 1
+                activity_data['source_type'] = 'bigquery_recommendations'
+                activity_data['source_details'] = {
+                    'readiness_status': activity_data.get('metadata', {}).get('readiness_status'),
+                    'mastery_level': activity_data.get('metadata', {}).get('mastery_level')
+                }
+            
+            # Add curriculum transparency if available
+            if activity_data.get('curriculum_metadata'):
+                curriculum = activity_data['curriculum_metadata']
+                activity_data['curriculum_transparency'] = {
+                    'subject': curriculum.get('subject'),
+                    'unit': curriculum.get('unit', {}).get('title'),
+                    'skill': curriculum.get('skill', {}).get('description'),
+                    'subskill': curriculum.get('subskill', {}).get('description')
+                }
+            
+            enhanced_activities.append(activity_data)
+        
+        # Enhanced response with full transparency
+        response = {
             "student_id": student_id,
             "date": daily_plan.date,
-            "activities": [activity.dict() for activity in daily_plan.activities],
-            "total_activities": len(daily_plan.activities),
-            "total_points": daily_plan.total_points,
-            "personalization_source": daily_plan.personalization_source
+            "activities": enhanced_activities,
+            "summary": {
+                "total_activities": len(daily_plan.activities),
+                "total_points": daily_plan.total_points,
+                "personalization_source": daily_plan.personalization_source,
+                "source_breakdown": {
+                    "ai_recommendations": ai_activities_count,
+                    "bigquery_recommendations": bigquery_activities_count,
+                    "fallback": fallback_activities_count
+                }
+            },
+            "transparency": {
+                "recommendation_engine": daily_plan.personalization_source,
+                "generation_timestamp": datetime.now().isoformat(),
+                "ai_enabled": service.ai_recommendation_service is not None,
+                "bigquery_enabled": service.analytics_service is not None
+            }
         }
+        
+        # Add session plan details if available from AI
+        if hasattr(daily_plan, 'session_plan') and daily_plan.session_plan:
+            response["transparency"]["session_plan"] = daily_plan.session_plan
+        
+        return response
         
     except Exception as e:
         logger.error(f"Error getting activities for student {student_id}: {str(e)}")

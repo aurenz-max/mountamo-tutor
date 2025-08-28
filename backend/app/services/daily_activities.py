@@ -44,8 +44,9 @@ class DailyPlan(BaseModel):
     date: str
     activities: List[DailyActivity]
     progress: DailyProgress
-    personalization_source: str  # 'bigquery_recommendations' or 'fallback'
+    personalization_source: str  # 'ai_recommendations', 'bigquery_recommendations' or 'fallback'
     total_points: int
+    session_plan: Optional[Dict[str, Any]] = None  # AI session plan information
 
 class CurriculumParser:
     """Parse activity IDs and create curriculum metadata"""
@@ -144,10 +145,45 @@ class CurriculumParser:
             return None
     
     @classmethod
-    def enhance_activity_with_curriculum_data(cls, activity_dict: Dict, title: str = None) -> Dict:
-        """Add curriculum metadata to activity dictionary"""
+    def enhance_activity_with_curriculum_data(cls, activity_dict: Dict, title: str = None, recommendation_data: Dict = None) -> Dict:
+        """Add curriculum metadata to activity dictionary using real curriculum data from AI service if available"""
         
-        curriculum_data = cls.parse_activity_id(activity_dict.get('id', ''))
+        curriculum_data = None
+        
+        # First try to use real curriculum data from AI recommendations
+        if recommendation_data and recommendation_data.get('from_ai_recommendations'):
+            try:
+                # Extract real curriculum metadata from AI recommendation
+                curriculum_data = {
+                    'subject': recommendation_data.get('subject', 'Mathematics'),
+                    'unit': {
+                        'id': recommendation_data.get('subskill_id', '').split('-')[0] if '-' in recommendation_data.get('subskill_id', '') else '',
+                        'title': recommendation_data.get('unit_title', 'Learning Unit'),
+                        'description': recommendation_data.get('unit_title', 'Learning Unit')
+                    },
+                    'skill': {
+                        'id': recommendation_data.get('skill_id', ''),
+                        'description': recommendation_data.get('skill_description', 'Learning Skill')
+                    },
+                    'subskill': {
+                        'id': recommendation_data.get('subskill_id', ''),
+                        'description': recommendation_data.get('subskill_description', 'Learning Activity')
+                    },
+                    'difficulty': {
+                        'start': recommendation_data.get('difficulty_start'),
+                        'end': recommendation_data.get('difficulty_end'),
+                        'target': recommendation_data.get('target_difficulty')
+                    },
+                    'grade': recommendation_data.get('grade')
+                }
+                logger.info(f"Using real curriculum data from AI service for {recommendation_data.get('subskill_id')}")
+            except Exception as e:
+                logger.warning(f"Failed to extract real curriculum data, falling back to parser: {e}")
+                curriculum_data = None
+        
+        # Fall back to parsing activity ID if no real data available
+        if not curriculum_data:
+            curriculum_data = cls.parse_activity_id(activity_dict.get('id', ''))
         
         if curriculum_data:
             # Clean up the title for subskill description
@@ -159,8 +195,9 @@ class CurriculumParser:
             elif clean_title.startswith('Review: '):
                 clean_title = clean_title[8:]  # Remove "Review: " prefix
             
-            # Update subskill description with actual learning objective
-            curriculum_data['subskill']['description'] = clean_title
+            # Update subskill description with actual learning objective if using parsed data
+            if 'subskill' in curriculum_data and not recommendation_data:
+                curriculum_data['subskill']['description'] = clean_title
             
             # Add curriculum metadata
             activity_dict['curriculum_metadata'] = curriculum_data
@@ -174,37 +211,56 @@ class CurriculumParser:
                 'unit_description': curriculum_data['unit']['description'],
                 'skill_description': curriculum_data['skill']['description']
             })
+            
+            # Add difficulty and grade info if available from real data
+            if curriculum_data.get('difficulty'):
+                activity_dict['metadata']['difficulty_range'] = curriculum_data['difficulty']
+            if curriculum_data.get('grade'):
+                activity_dict['metadata']['grade'] = curriculum_data['grade']
         
         return activity_dict
 
 class DailyActivitiesService:
     """Enhanced service with curriculum metadata support"""
     
-    def __init__(self, analytics_service=None):
+    def __init__(self, analytics_service=None, ai_recommendation_service=None, curriculum_service=None):
         self.analytics_service = analytics_service
+        self.ai_recommendation_service = ai_recommendation_service
+        self.curriculum_service = curriculum_service
     
-    async def generate_daily_plan(self, student_id: int, date: Optional[str] = None) -> DailyPlan:
+    async def generate_daily_plan(self, student_id: int, date: Optional[str] = None, session_type: str = 'daily') -> DailyPlan:
         """Main method: Get recommendations → Create activities → Return plan"""
         
         if not date:
             date = datetime.now().strftime("%Y-%m-%d")
         
-        logger.info(f"Generating daily plan for student {student_id}")
+        logger.info(f"Generating daily plan for student {student_id}, session_type={session_type}")
         
-        # Step 1: Try to get BigQuery recommendations
-        recommendations = await self._get_recommendations(student_id)
+        session_plan = None
         
-        # Step 2: Create activities from recommendations (or fallback)
-        if recommendations:
-            activities = self._create_activities_from_recommendations(recommendations)
-            personalization_source = 'bigquery_recommendations'
-            logger.info(f"Created {len(activities)} activities from BigQuery recommendations")
+        # Step 1: Try to get AI recommendations first, then fall back to basic recommendations
+        ai_result = await self._get_ai_recommendations_with_session_plan(student_id, session_type)
+        
+        if ai_result and ai_result.get('recommendations'):
+            activities = self._create_activities_from_recommendations(ai_result['recommendations'])
+            personalization_source = 'ai_recommendations'
+            session_plan = ai_result.get('session_plan')
+            logger.info(f"Created {len(activities)} activities from AI recommendations")
         else:
-            activities = self._create_fallback_activities()
-            personalization_source = 'fallback'
-            logger.info(f"Created {len(activities)} fallback activities")
+            # Step 2: Fall back to basic BigQuery recommendations
+            recommendations = await self._get_recommendations(student_id)
+            
+            if recommendations:
+                activities = self._create_activities_from_recommendations(recommendations)
+                personalization_source = 'bigquery_recommendations'
+                logger.info(f"Created {len(activities)} activities from basic BigQuery recommendations")
+            else:
+                # Step 3: Final fallback to static activities
+                activities = self._create_fallback_activities()
+                personalization_source = 'fallback'
+                logger.info(f"Created {len(activities)} fallback activities")
         
-        # Step 3: Calculate totals and progress
+        # Step 4: Calculate totals and progress
         total_points = sum(a.points for a in activities)
         progress = DailyProgress(
             completed_activities=0,
@@ -221,11 +277,121 @@ class DailyActivitiesService:
             activities=activities,
             progress=progress,
             personalization_source=personalization_source,
-            total_points=total_points
+            total_points=total_points,
+            session_plan=session_plan
         )
     
+    async def _get_ai_recommendations_with_session_plan(self, student_id: int, session_type: str = 'daily') -> Optional[Dict]:
+        """Get AI-powered recommendations with session plan from AI recommendation service using new playlist method"""
+        
+        if not self.ai_recommendation_service:
+            logger.info("No AI recommendation service configured, skipping AI recommendations")
+            return None
+        
+        try:
+            logger.info(f"Calling generate_daily_playlist for student {student_id}")
+            playlist = await self.ai_recommendation_service.generate_daily_playlist(
+                student_id=student_id,
+                target_activities=6  # Standard daily playlist size
+            )
+            
+            if playlist and playlist.get('activities'):
+                activities = playlist.get('activities', [])
+                logger.info(f"Got {len(activities)} activities from daily playlist")
+                
+                # Extract session plan from playlist
+                session_plan = playlist.get('session_plan', {})
+                
+                # Convert playlist activities to basic recommendation format for compatibility
+                converted_recommendations = []
+                for activity in activities:
+                    basic_rec = {
+                        'subskill_id': activity.get('subskill_id', ''),
+                        'subskill_description': activity.get('subskill_description', ''),
+                        'subject': activity.get('subject', 'Mathematics'),
+                        'skill_id': activity.get('subskill_id', ''),  # Use subskill_id as skill_id for compatibility
+                        'skill_description': activity.get('skill_description', ''),
+                        'priority': 'high' if activity.get('activity_type') == 'core_challenge' else 'medium',
+                        'priority_level': activity.get('activity_type', 'practice'),
+                        'mastery': 0.5,  # Default mastery for activity type determination
+                        'readiness_status': 'Ready',
+                        # Add AI-specific metadata
+                        'ai_reason': activity.get('reason', ''),
+                        'priority_rank': 1,  # All playlist activities are high priority
+                        'estimated_time': activity.get('estimated_time', 5),
+                        'from_ai_recommendations': True,
+                        # Add rich curriculum metadata from AI service
+                        'unit_title': activity.get('unit_title', ''),
+                        'difficulty_start': activity.get('difficulty_start'),
+                        'difficulty_end': activity.get('difficulty_end'), 
+                        'target_difficulty': activity.get('target_difficulty'),
+                        'grade': activity.get('grade')
+                    }
+                    converted_recommendations.append(basic_rec)
+                
+                logger.info(f"Converted {len(converted_recommendations)} playlist activities to recommendation format")
+                return {
+                    'recommendations': converted_recommendations,
+                    'session_plan': session_plan
+                }
+            else:
+                logger.info("No playlist activities returned")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Failed to get AI recommendations: {str(e)}")
+            return None
+
+    async def _get_ai_recommendations(self, student_id: int, session_type: str = 'daily') -> Optional[List[Dict]]:
+        """Get AI-powered recommendations from AI recommendation service using new playlist method"""
+        
+        if not self.ai_recommendation_service:
+            logger.info("No AI recommendation service configured, skipping AI recommendations")
+            return None
+        
+        try:
+            logger.info(f"Calling generate_daily_playlist for student {student_id} (legacy method)")
+            playlist = await self.ai_recommendation_service.generate_daily_playlist(
+                student_id=student_id,
+                target_activities=6
+            )
+            
+            if playlist and playlist.get('activities'):
+                activities = playlist.get('activities', [])
+                logger.info(f"Got {len(activities)} activities from daily playlist (legacy)")
+                
+                # Convert playlist activities to basic recommendation format for compatibility
+                converted_recommendations = []
+                for activity in activities:
+                    basic_rec = {
+                        'subskill_id': activity.get('subskill_id', ''),
+                        'subskill_description': activity.get('subskill_description', ''),
+                        'subject': activity.get('subject', 'Mathematics'),
+                        'skill_id': activity.get('subskill_id', ''),  
+                        'skill_description': activity.get('skill_description', ''),
+                        'priority': 'high' if activity.get('activity_type') == 'core_challenge' else 'medium',
+                        'priority_level': activity.get('activity_type', 'practice'),
+                        'mastery': 0.5,
+                        'readiness_status': 'Ready',
+                        # Add AI-specific metadata
+                        'ai_reason': activity.get('reason', ''),
+                        'priority_rank': 1,
+                        'estimated_time': activity.get('estimated_time', 5),
+                        'from_ai_recommendations': True
+                    }
+                    converted_recommendations.append(basic_rec)
+                
+                return converted_recommendations
+            else:
+                logger.info("No playlist activities returned (legacy)")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Failed to get AI recommendations (legacy): {str(e)}")
+            return None
+
     async def _get_recommendations(self, student_id: int) -> Optional[List[Dict]]:
-        """Get recommendations from BigQuery analytics service"""
+        """Get basic recommendations from BigQuery analytics service"""
         
         if not self.analytics_service:
             logger.warning("No analytics service configured")
@@ -238,18 +404,18 @@ class DailyActivitiesService:
             )
             
             if recommendations and len(recommendations) > 0:
-                logger.info(f"Got {len(recommendations)} recommendations from BigQuery")
+                logger.info(f"Got {len(recommendations)} basic recommendations from BigQuery")
                 return recommendations
             else:
                 logger.info("No recommendations returned from BigQuery")
                 return None
                 
         except Exception as e:
-            logger.error(f"Failed to get recommendations: {str(e)}")
+            logger.error(f"Failed to get basic recommendations: {str(e)}")
             return None
     
     def _create_activities_from_recommendations(self, recommendations: List[Dict]) -> List[DailyActivity]:
-        """Convert BigQuery recommendations into daily activities with curriculum metadata"""
+        """Convert basic BigQuery recommendations into daily activities with curriculum metadata"""
         
         activities = []
         
@@ -291,14 +457,20 @@ class DailyActivitiesService:
                     'skill_id': skill_id,
                     'mastery_level': mastery,
                     'priority_level': rec.get('priority_level'),
-                    'readiness_status': rec.get('readiness_status', 'Ready')
+                    'readiness_status': rec.get('readiness_status', 'Ready'),
+                    # Add AI-specific metadata if available
+                    'from_ai_recommendations': rec.get('from_ai_recommendations', False),
+                    'ai_reason': rec.get('ai_reason'),
+                    'priority_rank': rec.get('priority_rank'),
+                    'estimated_time_minutes': rec.get('estimated_time')
                 }
             }
             
-            # Enhance with curriculum metadata
+            # Enhance with curriculum metadata - use real data from recommendations if available
             enhanced_dict = CurriculumParser.enhance_activity_with_curriculum_data(
                 activity_dict, 
-                config['title']
+                config['title'],
+                recommendation_data=rec
             )
             
             # Create DailyActivity from enhanced dictionary

@@ -4,10 +4,15 @@ import {
   Calendar, 
   RefreshCw, 
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Target,
+  Sparkles,
+  Trophy
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import ActivityCard from './ActivityCard'; // Import the clean ActivityCard component
 
 // Import your existing hooks and types
@@ -163,26 +168,96 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
 
   const completedCount = dailyPlan.progress?.completed_activities || 0;
   const totalCount = dailyPlan.activities.length;
+  
+  // Transparency information
+  const sourceBreakdown = dailyPlan.summary?.source_breakdown;
+  const transparency = dailyPlan.transparency;
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Simple header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center text-lg">
-              <Calendar className="h-5 w-5 mr-2 text-blue-600" />
-              Today's Learning
-            </CardTitle>
-            <div className="text-sm text-gray-600">
-              {completedCount}/{totalCount} complete
+      {/* Daily Mission Header */}
+      <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+                <span className="text-sm font-medium text-purple-700">Today's Mission</span>
+              </div>
+              <CardTitle className="text-xl mb-3 text-gray-900">
+                {dailyPlan.transparency?.session_plan?.daily_theme || "Your Learning Adventure"}
+              </CardTitle>
+              
+              {/* Learning Objectives */}
+              {dailyPlan.transparency?.session_plan?.learning_objectives && dailyPlan.transparency.session_plan.learning_objectives.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">Your mission for today:</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {dailyPlan.transparency.session_plan.learning_objectives.map((objective: string, index: number) => (
+                      <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
+                        <CheckCircle className="h-3 w-3 text-green-500" />
+                        {objective}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            
+            <div className="text-right ml-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Trophy className="h-4 w-4 text-yellow-600" />
+                <span className="text-sm font-medium text-gray-700">{completedCount}/{totalCount} complete</span>
+              </div>
+              <Progress 
+                value={(completedCount / totalCount) * 100} 
+                className="w-24 h-2" 
+              />
             </div>
           </div>
+          
+          {/* Enhanced transparency info */}
+          {(sourceBreakdown || transparency) && (
+            <div className="mt-4 pt-3 border-t border-blue-200">
+              <div className="flex flex-wrap items-center gap-3">
+                {sourceBreakdown && (
+                  <>
+                    {sourceBreakdown.ai_recommendations > 0 && (
+                      <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                        <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                        {sourceBreakdown.ai_recommendations} AI recommended
+                      </Badge>
+                    )}
+                    {sourceBreakdown.bigquery_recommendations > 0 && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        {sourceBreakdown.bigquery_recommendations} data-based
+                      </Badge>
+                    )}
+                    {sourceBreakdown.fallback > 0 && (
+                      <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+                        <span className="w-2 h-2 bg-gray-500 rounded-full mr-2"></span>
+                        {sourceBreakdown.fallback} standard
+                      </Badge>
+                    )}
+                  </>
+                )}
+                {transparency?.ai_enabled && (
+                  <Badge variant="default" className="bg-green-600 text-white">
+                    ✓ AI Personalization Active
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
         </CardHeader>
       </Card>
 
-      {/* Clean activity cards grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Activity Playlist - Vertical Layout */}
+      <div className="space-y-4">
         {dailyPlan.activities.map((activity) => {
           // Convert DailyActivity to ActivityCard format
           const activityData = {
@@ -203,7 +278,12 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
               difficulty: activity.metadata?.difficulty,
               completed: activity.metadata?.completed
             },
-            curriculum_metadata: activity.curriculum_metadata
+            curriculum_metadata: activity.curriculum_metadata,
+            source_type: activity.source_type,
+            source_details: activity.source_details,
+            curriculum_transparency: activity.curriculum_transparency,
+            activity_type: activity.activity_type,
+            reason: activity.reason
           };
 
           return (

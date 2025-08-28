@@ -7,7 +7,16 @@ import {
   Wrench,
   Star,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Brain,
+  Database,
+  AlertTriangle,
+  Info,
+  Zap,
+  Target,
+  RotateCcw,
+  PartyPopper,
+  Lightbulb
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,9 +44,28 @@ interface ActivityCardProps {
       skill: { id: string; description: string };
       subskill: { id: string; description: string };
     };
+    source_type?: 'ai_recommendations' | 'bigquery_recommendations' | 'fallback';
+    source_details?: {
+      ai_reason?: string;
+      priority_rank?: number;
+      estimated_time_minutes?: number;
+      readiness_status?: string;
+      mastery_level?: number;
+      reason?: string;
+    };
+    activity_type?: 'warm_up' | 'core_challenge' | 'practice' | 'cool_down';
+    reason?: string;
+    curriculum_transparency?: {
+      subject: string;
+      unit: string;
+      skill: string;
+      subskill: string;
+    };
   };
   onLearningSelect: (option: LearningOption) => void;
   loading?: boolean;
+  expanded?: boolean;
+  onExpand?: () => void;
 }
 
 interface LearningOption {
@@ -51,7 +79,9 @@ interface LearningOption {
 const ActivityCard: React.FC<ActivityCardProps> = ({
   activityData,
   onLearningSelect,
-  loading = false
+  loading = false,
+  expanded = false,
+  onExpand
 }) => {
   // Extract metadata from the properly structured backend data
   const subject = activityData.curriculum_metadata?.subject || 
@@ -70,6 +100,44 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
   const isCompleted = activityData.metadata?.completed || false;
   const aiRecommended = activityData.metadata?.from_recommendations || false;
+  
+  // New transparency data
+  const sourceType = activityData.source_type;
+  const sourceDetails = activityData.source_details;
+  
+  // Get pedagogical tag info
+  const getPedagogicalTag = (activityType?: string) => {
+    switch (activityType) {
+      case 'warm_up':
+        return { icon: Zap, label: '🚀 Warm-Up', color: 'bg-green-100 text-green-800 border-green-200', description: 'Confidence Builder' };
+      case 'core_challenge':
+        return { icon: Brain, label: '🧠 Core Challenge', color: 'bg-purple-100 text-purple-800 border-purple-200', description: 'New Learning' };
+      case 'practice':
+        return { icon: Target, label: '✍️ Practice', color: 'bg-blue-100 text-blue-800 border-blue-200', description: 'Skill Building' };
+      case 'cool_down':
+        return { icon: PartyPopper, label: '🎉 Cool-Down', color: 'bg-orange-100 text-orange-800 border-orange-200', description: 'Engaging Review' };
+      default:
+        return { icon: BookOpen, label: '📚 Learning', color: 'bg-gray-100 text-gray-800 border-gray-200', description: 'Learning Activity' };
+    }
+  };
+  
+  // Get source icon and label
+  const getSourceInfo = (sourceType?: string) => {
+    switch (sourceType) {
+      case 'ai_recommendations':
+        return { icon: Brain, label: 'AI Recommended', color: 'bg-purple-100 text-purple-800' };
+      case 'bigquery_recommendations':
+        return { icon: Database, label: 'Data Recommended', color: 'bg-blue-100 text-blue-800' };
+      case 'fallback':
+        return { icon: AlertTriangle, label: 'Standard Activity', color: 'bg-gray-100 text-gray-800' };
+      default:
+        return { icon: Info, label: 'Activity', color: 'bg-gray-100 text-gray-800' };
+    }
+  };
+  
+  const sourceInfo = getSourceInfo(sourceType);
+  const pedagogicalTag = getPedagogicalTag(activityData.activity_type);
+  const aiReason = activityData.reason || sourceDetails?.ai_reason || sourceDetails?.reason;
 
   // Don't need combined unit-skill text anymore since we're displaying separately
   // const unitSkillText = ...
@@ -117,12 +185,23 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   ];
 
   return (
-    <div className={`bg-white rounded-lg border transition-all ${
+    <div className={`bg-white rounded-lg border-l-4 transition-all ${
       isCompleted 
-        ? 'border-green-200 bg-green-50/50' 
-        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+        ? 'border-l-green-500 border-r border-t border-b border-green-200 bg-green-50/50' 
+        : `${pedagogicalTag.color.includes('green') ? 'border-l-green-500' : 
+             pedagogicalTag.color.includes('purple') ? 'border-l-purple-500' : 
+             pedagogicalTag.color.includes('blue') ? 'border-l-blue-500' : 
+             pedagogicalTag.color.includes('orange') ? 'border-l-orange-500' : 'border-l-gray-500'} border-r border-t border-b border-gray-200 hover:border-gray-300 hover:shadow-sm`
     }`}>
       <div className="p-6">
+        {/* Pedagogical Tag - Most Prominent */}
+        <div className="mb-3">
+          <Badge className={`${pedagogicalTag.color} text-xs font-semibold px-3 py-1 border`}>
+            {pedagogicalTag.label}
+          </Badge>
+          <span className="ml-2 text-xs text-gray-500">{pedagogicalTag.description}</span>
+        </div>
+
         {/* Enhanced Header with proper hierarchy */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
@@ -149,6 +228,16 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             <div className="text-sm text-gray-600 mb-2 leading-relaxed">
               {subskillDescription}
             </div>
+            
+            {/* AI Insight - Direct Display */}
+            {aiReason && (
+              <div className="flex items-start gap-2 mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                <Lightbulb className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-amber-800 italic leading-relaxed">
+                  {aiReason}
+                </p>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center space-x-3 text-sm text-gray-600 ml-4 flex-shrink-0">
@@ -163,18 +252,76 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           </div>
         </div>
 
-        {/* Simple badges */}
-        {(isCompleted || aiRecommended) && (
-          <div className="flex gap-2 mb-4">
-            {isCompleted && (
-              <Badge variant="default" className="bg-green-600 text-white text-xs">
-                ✓ Complete
-              </Badge>
+        {/* Enhanced badges with transparency info */}
+        <div className="flex flex-wrap gap-2 mb-3">
+          {isCompleted && (
+            <Badge variant="default" className="bg-green-600 text-white text-xs">
+              ✓ Complete
+            </Badge>
+          )}
+          
+          {/* Source transparency badge */}
+          {sourceType && (
+            <Badge variant="secondary" className={`text-xs ${sourceInfo.color} flex items-center gap-1`}>
+              <sourceInfo.icon className="h-3 w-3" />
+              {sourceInfo.label}
+            </Badge>
+          )}
+        </div>
+
+        {/* Expandable transparency details - only show if no direct AI reason */}
+        {sourceDetails && onExpand && !aiReason && (
+          <div className="mb-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onExpand}
+              className="text-xs text-gray-600 hover:text-blue-600 p-0 h-auto font-normal"
+            >
+              <Info className="h-3 w-3 mr-1" />
+              {expanded ? 'Hide details' : 'Why this activity?'}
+            </Button>
+          </div>
+        )}
+
+        {/* Expanded transparency section */}
+        {expanded && sourceDetails && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs">
+            <div className="font-medium text-gray-700 mb-2">Recommendation Details:</div>
+            
+            {sourceType === 'ai_recommendations' && (
+              <>
+                {sourceDetails.ai_reason && (
+                  <div className="mb-2">
+                    <span className="font-medium">AI Reasoning:</span>
+                    <p className="text-gray-600 mt-1">{sourceDetails.ai_reason}</p>
+                  </div>
+                )}
+                {sourceDetails.estimated_time_minutes && (
+                  <div className="mb-1">
+                    <span className="font-medium">Estimated Time:</span> {sourceDetails.estimated_time_minutes} min
+                  </div>
+                )}
+              </>
             )}
-            {aiRecommended && !isCompleted && (
-              <Badge variant="secondary" className="bg-purple-100 text-purple-800 text-xs">
-                AI Pick
-              </Badge>
+            
+            {sourceType === 'bigquery_recommendations' && (
+              <>
+                {sourceDetails.readiness_status && (
+                  <div className="mb-1">
+                    <span className="font-medium">Readiness:</span> {sourceDetails.readiness_status}
+                  </div>
+                )}
+                {sourceDetails.mastery_level !== undefined && (
+                  <div className="mb-1">
+                    <span className="font-medium">Current Mastery:</span> {Math.round(sourceDetails.mastery_level * 100)}%
+                  </div>
+                )}
+              </>
+            )}
+            
+            {sourceType === 'fallback' && sourceDetails.reason && (
+              <div className="text-gray-600">{sourceDetails.reason}</div>
             )}
           </div>
         )}

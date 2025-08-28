@@ -27,6 +27,10 @@ interface PracticeContentProps {
         teaching_note?: string;
         grade_level?: string;
         metadata?: any;
+        // New visual problem fields
+        template?: ProblemTemplateType;
+        primitive_config?: any;
+        visual_type?: string;
       };
     }>;
     problem_count: number;
@@ -41,6 +45,8 @@ interface PracticeContentProps {
 
 // Import your existing DrawingCanvas
 import DrawingCanvas from '@/components/packages/ui/DrawingCanvas'; // Adjust path as needed
+import { ProblemTemplate } from '@/components/templates/ProblemTemplate';
+import { ProblemTemplate as ProblemTemplateType, PrimitiveAnswer } from '@/components/primitives/core/PrimitiveTypes';
 
 export function PracticeContent({ 
   content, 
@@ -55,8 +61,9 @@ export function PracticeContent({
   const [textAnswer, setTextAnswer] = useState('');
   const [showExplanation, setShowExplanation] = useState(false);
   const [questionAnswers, setQuestionAnswers] = useState<Record<number, {
-    type: 'option' | 'text' | 'canvas';
+    type: 'option' | 'text' | 'canvas' | 'visual';
     value: number | string | null;
+    primitiveAnswer?: PrimitiveAnswer; // For visual problems
     feedback?: any;
     isSubmitted?: boolean;
     attempts?: number;
@@ -266,9 +273,10 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
   };
 
   const submitProblemToBackend = async (answerData: {
-    type: 'option' | 'text' | 'canvas';
+    type: 'option' | 'text' | 'canvas' | 'visual';
     value: number | string | null;
     canvasData?: string;
+    primitiveAnswer?: PrimitiveAnswer;
   }) => {
     if (!currentProblem) return;
 
@@ -284,6 +292,8 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
         studentAnswer = answerData.value as string;
       } else if (answerData.type === 'canvas') {
         studentAnswer = 'Canvas submission';
+      } else if (answerData.type === 'visual' && answerData.primitiveAnswer) {
+        studentAnswer = JSON.stringify(answerData.primitiveAnswer.value);
       }
 
       const submissionPayload = {
@@ -294,7 +304,8 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
         skill_id: currentProblem.skill_id || currentProblem.problem_data.metadata?.skill?.id || '',
         subskill_id: currentProblem.subskill_id || currentProblem.problem_data.metadata?.subskill?.id || '',
         student_answer: studentAnswer,
-        canvas_used: answerData.type === 'canvas'
+        canvas_used: answerData.type === 'canvas',
+        visual_answer: answerData.type === 'visual' ? answerData.primitiveAnswer : null
       };
 
       const response = await authApi.submitProblem(submissionPayload);
@@ -488,11 +499,23 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
       : review.feedback?.praise || 'Good effort!';
   };
 
-  // Single submit function for all work (canvas + multiple choice selection)
+  // Single submit function for all work (canvas + multiple choice selection + visual)
   const handleSubmitWork = async () => {
     if (currentAnswer?.isSubmitted) return;
 
     const canvasData = canvasRef.current?.getCanvasData();
+
+    // For visual problems, submit the primitive answer
+    if (currentProblem.problem_data.template && currentAnswer?.primitiveAnswer) {
+      const answerData = {
+        type: 'visual' as const,
+        value: 'visual_response',
+        primitiveAnswer: currentAnswer.primitiveAnswer,
+        canvasData: canvasData || undefined
+      };
+      await submitProblemToBackend(answerData);
+      return;
+    }
 
     // For multiple choice, submit the selected option (with optional canvas work)
     if (currentProblem.problem_data.options) {
@@ -532,6 +555,10 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
 
   // Check if user has provided any answer or work
   const hasAnswer = () => {
+    // For visual problems, check if primitive answer exists
+    if (currentProblem.problem_data.template) {
+      return currentAnswer?.primitiveAnswer?.value != null;
+    }
     // For multiple choice, check if option is selected
     if (currentProblem.problem_data.options) {
       return selectedAnswer !== null;
@@ -546,6 +573,33 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
   };
 
   const renderAnswerInterface = () => {
+    // Visual problems using primitives
+    if (currentProblem.problem_data.template) {
+      return (
+        <div className="space-y-4">
+          <ProblemTemplate
+            template={currentProblem.problem_data.template}
+            disabled={currentAnswer?.isSubmitted}
+            initialAnswer={currentAnswer?.primitiveAnswer}
+            onChange={(answer) => {
+              // Store the primitive answer for submission
+              setQuestionAnswers(prev => ({
+                ...prev,
+                [currentQuestion]: {
+                  type: 'visual' as const,
+                  value: 'visual_response',
+                  primitiveAnswer: answer,
+                  isSubmitted: false,
+                  attempts: prev[currentQuestion]?.attempts || 0
+                }
+              }));
+            }}
+            showValidation={false} // We'll handle validation in the main component
+          />
+        </div>
+      );
+    }
+    
     // Multiple Choice - show options for selection only
     if (currentProblem.problem_data.options) {
       return (
@@ -720,7 +774,9 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
               
               {/* Work Area - Always show in main column */}
               <div className="mt-6">
-                <h4 className="font-medium text-gray-800 mb-3">Work Area</h4>
+                <h4 className="font-medium text-gray-800 mb-3">
+                  {currentProblem.problem_data.template ? 'Additional Work Area' : 'Work Area'}
+                </h4>
                 <div className="bg-gray-50 rounded-lg p-4" style={{ height: '500px' }}>
                   <DrawingCanvas
                     ref={canvasRef}
@@ -728,7 +784,10 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  Use the work area above to show your thinking, draw diagrams, or work through the problem
+                  {currentProblem.problem_data.template 
+                    ? 'Use this area for additional work, notes, or scratch calculations'
+                    : 'Use the work area above to show your thinking, draw diagrams, or work through the problem'
+                  }
                 </p>
               </div>
               
