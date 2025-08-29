@@ -295,7 +295,7 @@ Select specific subskill_ids for each activity type. Provide brief, student-frie
                     response_mime_type='application/json',
                     response_schema=playlist_schema,
                     temperature=0.4,
-                    max_output_tokens=2000  # Much smaller limit
+                    max_output_tokens=5000  # Much smaller limit
                 )
             )
             

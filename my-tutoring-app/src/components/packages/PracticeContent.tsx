@@ -27,9 +27,7 @@ interface PracticeContentProps {
         teaching_note?: string;
         grade_level?: string;
         metadata?: any;
-        // New visual problem fields
-        template?: ProblemTemplateType;
-        primitive_config?: any;
+        // Simplified problem fields
         visual_type?: string;
       };
     }>;
@@ -45,8 +43,6 @@ interface PracticeContentProps {
 
 // Import your existing DrawingCanvas
 import DrawingCanvas from '@/components/packages/ui/DrawingCanvas'; // Adjust path as needed
-import { ProblemTemplate } from '@/components/templates/ProblemTemplate';
-import { ProblemTemplate as ProblemTemplateType, PrimitiveAnswer } from '@/components/primitives/core/PrimitiveTypes';
 
 export function PracticeContent({ 
   content, 
@@ -61,9 +57,8 @@ export function PracticeContent({
   const [textAnswer, setTextAnswer] = useState('');
   const [showExplanation, setShowExplanation] = useState(false);
   const [questionAnswers, setQuestionAnswers] = useState<Record<number, {
-    type: 'option' | 'text' | 'canvas' | 'visual';
+    type: 'option' | 'text' | 'canvas';
     value: number | string | null;
-    primitiveAnswer?: PrimitiveAnswer; // For visual problems
     feedback?: any;
     isSubmitted?: boolean;
     attempts?: number;
@@ -273,10 +268,9 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
   };
 
   const submitProblemToBackend = async (answerData: {
-    type: 'option' | 'text' | 'canvas' | 'visual';
+    type: 'option' | 'text' | 'canvas';
     value: number | string | null;
     canvasData?: string;
-    primitiveAnswer?: PrimitiveAnswer;
   }) => {
     if (!currentProblem) return;
 
@@ -292,8 +286,6 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
         studentAnswer = answerData.value as string;
       } else if (answerData.type === 'canvas') {
         studentAnswer = 'Canvas submission';
-      } else if (answerData.type === 'visual' && answerData.primitiveAnswer) {
-        studentAnswer = JSON.stringify(answerData.primitiveAnswer.value);
       }
 
       const submissionPayload = {
