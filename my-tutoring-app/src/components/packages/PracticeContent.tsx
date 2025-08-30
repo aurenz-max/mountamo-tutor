@@ -292,12 +292,12 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
         student_id: studentId,
         subject: currentProblem.subject,
         problem: currentProblem,
-        solution_image: answerData.canvasData || null,
+        solution_image: answerData.canvasData || 'data:image/png;base64,', // Provide empty canvas if no drawing
         skill_id: currentProblem.skill_id || currentProblem.problem_data.metadata?.skill?.id || '',
         subskill_id: currentProblem.subskill_id || currentProblem.problem_data.metadata?.subskill?.id || '',
         student_answer: studentAnswer,
         canvas_used: answerData.type === 'canvas',
-        visual_answer: answerData.type === 'visual' ? answerData.primitiveAnswer : null
+        primitive_responses: answerData.type === 'visual' ? answerData.primitiveAnswer : undefined
       };
 
       const response = await authApi.submitProblem(submissionPayload);

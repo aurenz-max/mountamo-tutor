@@ -4,18 +4,25 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, Lightbulb, ArrowRight, RefreshCw, Sparkles, Home, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, Lightbulb, ArrowRight, RefreshCw, Sparkles, Home, BookOpen, HelpCircle } from 'lucide-react';
 import { authApi } from '@/lib/authApiClient';
 import DrawingWorkspace from './DrawingWorkspace';
 import LoadingOverlay from './LoadingOverlay';
+import DynamicPrimitiveRenderer from '../primitives/DynamicPrimitiveRenderer';
 
 interface Problem {
-  problem_id: string;
-  problem_type: string;
-  problem: string;
-  answer: string;
-  success_criteria: string[];
-  teaching_note: string;
+  problem_id?: string;
+  problem_type?: string;
+  prompt?: string;          // New simplified structure
+  problem?: string;         // Keep for backward compatibility
+  answer?: string;          // Keep for backward compatibility
+  interaction?: {           // New interactive structure
+    type: string;
+    parameters: any;
+  };
+  success_criteria?: string[];
+  teaching_note?: string;
+  learning_objective?: string;
   metadata?: {
     skill?: {
       id?: string;
@@ -28,6 +35,20 @@ interface Problem {
     difficulty?: number;
     concept_group?: string;
   };
+  // MCQ fields
+  id?: string;
+  subject?: string;
+  unit_id?: string;
+  skill_id?: string;
+  subskill_id?: string;
+  difficulty?: string;
+  question?: string;
+  options?: Array<{
+    id: string;
+    text: string;
+  }>;
+  correct_option_id?: string;
+  rationale?: string;
 }
 
 interface ProblemSetProps {
@@ -114,7 +135,7 @@ const getFeedbackContent = (feedback: any) => {
 const ProblemSet: React.FC<ProblemSetProps> = ({ 
   currentTopic, 
   studentId = 1, 
-  numProblems = 5,
+  numProblems = 1,
   autoStart = false,
   fromDashboard = false
 }) => {
@@ -127,7 +148,9 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [feedback, setFeedback] = useState<any>(null);
   const [problemAttempted, setProblemAttempted] = useState<boolean[]>([]);
   const [problemFeedback, setProblemFeedback] = useState<any[]>([]);
+  const [primitiveResponses, setPrimitiveResponses] = useState<any[]>([]);
   const [usingRecommendations, setUsingRecommendations] = useState(false);
+  const [usingMCQ, setUsingMCQ] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const drawingRef = useRef<any>(null);
 
@@ -210,6 +233,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       setProblems(problemsArray);
       setProblemAttempted(new Array(problemsArray.length).fill(false));
       setProblemFeedback(new Array(problemsArray.length).fill(null));
+      setPrimitiveResponses(new Array(problemsArray.length).fill(null));
       setCurrentIndex(0);
       
     } catch (error: any) {
@@ -264,20 +288,99 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setShowLoadingOverlay(false);
   };
 
+  // Generate MCQ problems using MCQ API
+  const generateMCQProblems = async () => {
+    setLoadingSet(true);
+    setError(null);
+    setFeedback(null);
+    setUsingMCQ(true);
+    setUsingRecommendations(false);
+    
+    try {
+      // Parse IDs from the current topic
+      let skillId, subskillId, unitId;
+      
+      if (currentTopic.selection) {
+        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
+        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
+        
+        unitId = subskillParsed.unit;
+        subskillId = subskillParsed.subskill;
+        
+        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
+          skillId = subskillParsed.skill;
+        } else {
+          skillId = skillParsed.skill || skillParsed.cleanId;
+        }
+      } else if (currentTopic.id) {
+        const parsed = parseActivityId(currentTopic.id);
+        unitId = parsed.unit;
+        skillId = parsed.skill;
+        subskillId = parsed.subskill;
+      } else {
+        throw new Error('No valid skill/subskill identifiers found in currentTopic');
+      }
+      
+      console.log('=== MCQ GENERATION REQUEST ===');
+      console.log('Parsed IDs:', { unitId, skillId, subskillId });
+      
+      // Validate required IDs
+      if (!skillId || !subskillId) {
+        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
+      }
+      
+      // Generate multiple MCQ problems
+      const mcqProblems = [];
+      for (let i = 0; i < numProblems; i++) {
+        const mcqRequest = {
+          subject: currentTopic.subject || 'mathematics',
+          unit_id: unitId,
+          skill_id: skillId,
+          subskill_id: subskillId,
+          difficulty: 'medium',
+          distractor_style: 'plausible'
+        };
+        
+        console.log(`Generating MCQ ${i + 1}/${numProblems}:`, mcqRequest);
+        
+        const mcq = await authApi.generateMCQ(mcqRequest);
+        if (mcq) {
+          mcqProblems.push(mcq);
+        }
+      }
+      
+      if (mcqProblems.length === 0) {
+        throw new Error('Failed to generate any MCQ problems');
+      }
+      
+      console.log('=== MCQ PROBLEMS GENERATED ===');
+      console.log('MCQ problems received:', mcqProblems);
+      
+      setProblems(mcqProblems);
+      setProblemAttempted(new Array(mcqProblems.length).fill(false));
+      setProblemFeedback(new Array(mcqProblems.length).fill(null));
+      setPrimitiveResponses(new Array(mcqProblems.length).fill(null));
+      setCurrentIndex(0);
+      
+    } catch (error: any) {
+      console.error('=== MCQ GENERATION ERROR ===');
+      console.error('Error generating MCQ problems:', error);
+      setError(`Failed to generate MCQ problems: ${error.message || 'Unknown error'}`);
+      setUsingMCQ(false);
+    }
+    
+    setLoadingSet(false);
+    setShowLoadingOverlay(false);
+  };
+
   // Handle submission of the current problem
   const handleSubmit = async () => {
-    if (!drawingRef.current || !problems[currentIndex]) return;
+    if (!problems[currentIndex]) return;
    
     setSubmitting(true);
     setError(null);
    
     try {
-      const canvasData = await drawingRef.current.getCanvasData();
-     
-      if (!canvasData) {
-        throw new Error('No drawing found. Please draw your answer before submitting.');
-      }
-     
       const currentProblem = problems[currentIndex];
       
       // Parse IDs for submission
@@ -287,16 +390,93 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
         currentTopic.id || 
         ''
       );
+
+      let submission;
       
-      const submission = {
-        subject: currentTopic.subject || 'mathematics',
-        problem: currentProblem,
-        solution_image: canvasData,
-        skill_id: parsed.skill,
-        subskill_id: parsed.subskill,
-        student_answer: '',
-        canvas_used: true
-      };
+      // Handle MCQ problems
+      if (currentProblem.question && currentProblem.options) {
+        const primitiveResponse = primitiveResponses[currentIndex];
+        
+        if (!primitiveResponse || !primitiveResponse.selected_option_id) {
+          throw new Error('Please select an answer before submitting.');
+        }
+        
+        const mcqSubmission = {
+          mcq: currentProblem,
+          selected_option_id: primitiveResponse.selected_option_id
+        };
+        
+        console.log('=== MCQ SUBMISSION ===');
+        console.log('Submitting MCQ:', mcqSubmission);
+        
+        const mcqReview = await authApi.submitMCQ(mcqSubmission);
+        
+        // Convert MCQ review to standard feedback format
+        const review = {
+          evaluation: { score: mcqReview.is_correct ? 10 : 0 },
+          feedback: {
+            praise: mcqReview.is_correct ? "Correct! Well done!" : "Not quite right, but good try!",
+            guidance: mcqReview.explanation || currentProblem.rationale,
+            encouragement: mcqReview.is_correct ? "Keep up the great work!" : "Review the explanation and try similar problems."
+          },
+          correct: mcqReview.is_correct,
+          score: mcqReview.is_correct ? 10 : 0,
+          accuracy_percentage: mcqReview.is_correct ? 100 : 0
+        };
+        
+        // Update states for this problem
+        const newAttempted = [...problemAttempted];
+        newAttempted[currentIndex] = true;
+        setProblemAttempted(newAttempted);
+        
+        const newFeedback = [...problemFeedback];
+        newFeedback[currentIndex] = { review, mcqReview };
+        setProblemFeedback(newFeedback);
+        
+        setFeedback({ review, mcqReview });
+        setSubmitting(false);
+        return;
+      }
+      
+      // Handle new interactive problems
+      else if (currentProblem.interaction) {
+        const primitiveResponse = primitiveResponses[currentIndex];
+        
+        if (!primitiveResponse) {
+          throw new Error('Please complete the interactive question before submitting.');
+        }
+        
+        submission = {
+          subject: currentTopic.subject || 'mathematics',
+          problem: currentProblem,
+          student_answer: JSON.stringify(primitiveResponse),
+          skill_id: parsed.skill,
+          subskill_id: parsed.subskill,
+          canvas_used: false,
+          primitive_response: primitiveResponse
+        };
+      } else {
+        // Handle legacy drawing-based problems
+        if (!drawingRef.current) {
+          throw new Error('Drawing workspace not available.');
+        }
+        
+        const canvasData = await drawingRef.current.getCanvasData();
+       
+        if (!canvasData) {
+          throw new Error('No drawing found. Please draw your answer before submitting.');
+        }
+        
+        submission = {
+          subject: currentTopic.subject || 'mathematics',
+          problem: currentProblem,
+          solution_image: canvasData,
+          skill_id: parsed.skill,
+          subskill_id: parsed.subskill,
+          student_answer: '',
+          canvas_used: true
+        };
+      }
      
       console.log('=== SUBMISSION ===');
       console.log('Submitting problem:', {
@@ -344,6 +524,13 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       setCurrentIndex(currentIndex - 1);
       setFeedback(problemFeedback[currentIndex - 1]);
     }
+  };
+
+  // Handle primitive response updates
+  const handlePrimitiveUpdate = (value: any) => {
+    const newResponses = [...primitiveResponses];
+    newResponses[currentIndex] = value;
+    setPrimitiveResponses(newResponses);
   };
 
   // Calculation functions
@@ -425,7 +612,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
             <p className="text-green-700 mb-4">
               You've completed all problems with a total score of {calculateTotalScore()} out of {problems.length * 10}.
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <Button 
                 onClick={() => {
                   setShowLoadingOverlay(true);
@@ -444,6 +631,17 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Get Recommendations
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowLoadingOverlay(true);
+                  generateMCQProblems();
+                }}
+                variant="outline"
+                className="flex items-center justify-center"
+              >
+                <HelpCircle className="w-4 h-4 mr-2" />
+                Try Multiple Choice
               </Button>
             </div>
           </div>
@@ -526,6 +724,29 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   </>
                 )}
               </Button>
+              
+              <Button 
+                onClick={() => {
+                  setShowLoadingOverlay(true);
+                  generateMCQProblems();
+                }}
+                disabled={loadingSet}
+                size="lg"
+                variant="outline"
+                className="w-64"
+              >
+                {loadingSet ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Generating MCQ...
+                  </>
+                ) : (
+                  <>
+                    <HelpCircle className="w-4 h-4 mr-2" />
+                    Generate Multiple Choice
+                  </>
+                )}
+              </Button>
             </div>
           ) : (
             <div className="space-y-6">
@@ -533,11 +754,19 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-medium">
-                    {usingRecommendations || fromDashboard
-                      ? 'Recommended Problems' 
-                      : `Problem Set: ${currentTopic.skill?.description || 'Mathematics'}`}
+                    {usingMCQ
+                      ? 'Multiple Choice Questions'
+                      : usingRecommendations || fromDashboard
+                        ? 'Recommended Problems' 
+                        : `Problem Set: ${currentTopic.skill?.description || 'Mathematics'}`}
                   </h2>
-                  {(usingRecommendations || fromDashboard) && (
+                  {usingMCQ && (
+                    <p className="text-sm text-purple-600 flex items-center">
+                      <HelpCircle className="w-3 h-3 mr-1" />
+                      Multiple choice practice questions
+                    </p>
+                  )}
+                  {(usingRecommendations || fromDashboard) && !usingMCQ && (
                     <p className="text-sm text-blue-600 flex items-center">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Personalized based on your learning analytics
@@ -611,14 +840,93 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   </div>
                 </div>
                 <div className="mt-2">
-                  {problems[currentIndex]?.problem}
+                  {/* Display question for MCQ or prompt/problem for other types */}
+                  {problems[currentIndex]?.question || problems[currentIndex]?.prompt || problems[currentIndex]?.problem}
                 </div>
               </div>
               
-              <DrawingWorkspace 
-                ref={drawingRef}
-                loading={submitting}
-              />
+              {/* Render MCQ component, interactive component, or fallback to drawing workspace */}
+              {problems[currentIndex]?.question && problems[currentIndex]?.options ? (
+                <div className="space-y-4">
+                  {/* MCQ Options */}
+                  <div className="space-y-3">
+                    {problems[currentIndex].options?.map((option, index) => {
+                      const isSelected = primitiveResponses[currentIndex]?.selected_option_id === option.id;
+                      const isCorrect = problemAttempted[currentIndex] && option.id === problems[currentIndex].correct_option_id;
+                      const isIncorrectSelection = problemAttempted[currentIndex] && 
+                                                 isSelected && 
+                                                 option.id !== problems[currentIndex].correct_option_id;
+                      
+                      return (
+                        <div key={option.id} className="flex items-center space-x-3">
+                          <input
+                            type="radio"
+                            id={option.id}
+                            name="mcq-option"
+                            value={option.id}
+                            checked={isSelected}
+                            disabled={problemAttempted[currentIndex]}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handlePrimitiveUpdate({ selected_option_id: option.id });
+                              }
+                            }}
+                            className={`w-4 h-4 ${
+                              isCorrect
+                                ? 'text-green-600'
+                                : isIncorrectSelection
+                                  ? 'text-red-600'
+                                  : 'text-blue-600'
+                            }`}
+                          />
+                          <label
+                            htmlFor={option.id}
+                            className={`flex-1 cursor-pointer text-base leading-relaxed p-3 rounded border ${
+                              isCorrect
+                                ? 'text-green-700 bg-green-50 border-green-200'
+                                : isIncorrectSelection
+                                  ? 'text-red-700 bg-red-50 border-red-200'
+                                  : problemAttempted[currentIndex]
+                                    ? 'text-gray-600 bg-gray-50 border-gray-200'
+                                    : 'hover:bg-gray-50 border-gray-300'
+                            }`}
+                          >
+                            <span className="font-semibold mr-2">{String.fromCharCode(65 + index)}.</span>
+                            {option.text}
+                            {problemAttempted[currentIndex] && (
+                              <span className="ml-2">
+                                {isCorrect && <CheckCircle2 className="inline w-5 h-5 text-green-600" />}
+                                {isIncorrectSelection && <span className="text-red-600">✗</span>}
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Show rationale after submission */}
+                  {problemAttempted[currentIndex] && problems[currentIndex].rationale && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-medium text-blue-800 mb-2">Explanation:</h4>
+                      <p className="text-blue-700">{problems[currentIndex].rationale}</p>
+                    </div>
+                  )}
+                </div>
+              ) : problems[currentIndex]?.interaction ? (
+                <DynamicPrimitiveRenderer
+                  interaction={problems[currentIndex].interaction}
+                  disabled={problemAttempted[currentIndex]}
+                  onUpdate={handlePrimitiveUpdate}
+                  showValidation={problemAttempted[currentIndex]}
+                  initialValue={primitiveResponses[currentIndex]}
+                />
+              ) : (
+                <DrawingWorkspace 
+                  ref={drawingRef}
+                  loading={submitting}
+                />
+              )}
 
               {/* Feedback or submit button */}
               {!problemFeedback[currentIndex] ? (

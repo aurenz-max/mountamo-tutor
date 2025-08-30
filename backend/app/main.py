@@ -29,6 +29,15 @@ from .core.middleware import get_user_context
 
 import logging
 
+# Configure root logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Console output
+    ]
+)
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(

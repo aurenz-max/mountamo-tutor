@@ -641,6 +641,28 @@ private async getAuthToken(): Promise<string> {
     return this.get('/api/problems/health');
   }
 
+  // ============================================================================
+  // MCQ ENDPOINTS
+  // ============================================================================
+
+  async generateMCQ(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    distractor_style?: string;
+  }) {
+    return this.post('/api/problems/mcq/generate', data);
+  }
+
+  async submitMCQ(data: {
+    mcq: any; // Complete MCQ object
+    selected_option_id: string;
+  }) {
+    return this.post('/api/problems/mcq/submit', data);
+  }
+
   // AI Tutor endpoints
   async sendTutorMessage(message: string, context?: any) {
     return this.post('/api/gemini/chat', { message, context });

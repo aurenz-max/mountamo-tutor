@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SyllabusSelector from '@/components/tutoring/SyllabusSelector';
-import ProblemSet from '@/components/tutoring/ProblemSet';
+import ProblemSet from '@/components/practice/ProblemSet';
 import { Button } from "@/components/ui/button"; // Fixed import - should be from ui/button
 import { ChevronLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';

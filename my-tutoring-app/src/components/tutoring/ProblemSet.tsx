@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, Lightbulb, ArrowRight, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
+import { authApi } from '@/lib/authApiClient';
 import DrawingWorkspace from './DrawingWorkspace';
 import LoadingOverlay from './LoadingOverlay';
 
@@ -101,6 +102,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [problemFeedback, setProblemFeedback] = useState<any[]>([]);
   const [usingRecommendations, setUsingRecommendations] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+  const [useComposableProblems, setUseComposableProblems] = useState(false);
   const drawingRef = useRef<any>(null);
 
   // Auto-start problem generation if specified - MODIFIED to never use recommendations by default
@@ -189,6 +191,63 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setProblemAttempted(new Array(problemsArray.length).fill(false));
     setProblemFeedback(new Array(problemsArray.length).fill(null));
     setCurrentIndex(0);
+  };
+
+  // Generate composable problems using the new primitives system
+  const generateComposableProblems = async () => {
+    setLoadingSet(true);
+    setError(null);
+    setFeedback(null);
+    setUsingRecommendations(false);
+    
+    try {
+      const problemsArray = [];
+      
+      // Generate multiple composable problems
+      for (let i = 0; i < numProblems; i++) {
+        const problemRequest = {
+          subject: currentTopic.subject,
+          unit_id: currentTopic.selection.unit,
+          skill_id: currentTopic.selection.skill,
+          subskill_id: currentTopic.selection.subskill,
+          difficulty: currentTopic.difficulty_range?.target || 3.0
+        };
+        
+        console.log('Requesting composable problem:', problemRequest);
+        
+        const response = await authApi.generateComposableProblem(problemRequest);
+        
+        // The response should include composable_template field
+        if (response.composable_template) {
+          // Add the composable template to the problem data
+          const problemWithTemplate = {
+            ...response,
+            problem_data: {
+              ...response,
+              template: response.composable_template
+            }
+          };
+          problemsArray.push(problemWithTemplate);
+        } else {
+          console.warn('Composable problem missing template:', response);
+          problemsArray.push(response);
+        }
+      }
+      
+      setProblems(problemsArray);
+      setProblemAttempted(new Array(problemsArray.length).fill(false));
+      setProblemFeedback(new Array(problemsArray.length).fill(null));
+      setCurrentIndex(0);
+      
+      console.log('Generated composable problems:', problemsArray);
+      
+    } catch (error: any) {
+      console.error('Error generating composable problems:', error);
+      setError(error.message || 'Failed to generate composable problems. Try regular problems instead.');
+    }
+    
+    setLoadingSet(false);
+    setShowLoadingOverlay(false);
   };
 
   // Generate recommended problems based on student analytics - kept for manual use
@@ -422,6 +481,33 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   </>
                 )}
               </Button>
+              
+              <Button 
+                onClick={() => {
+                  setUseComposableProblems(true);
+                  setShowLoadingOverlay(true);
+                  generateComposableProblems();
+                }}
+                disabled={loadingSet}
+                size="lg"
+                className="w-64 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {loadingSet ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Creating Interactive Problems...
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-2">🎯</span>
+                    Try Interactive Problems!
+                  </>
+                )}
+              </Button>
+              
+              <div className="text-center text-sm text-gray-500 max-w-lg">
+                <p><strong>Interactive Problems:</strong> Step-by-step guided activities with drag-and-drop, number tracing, and visual interactions!</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">
@@ -432,11 +518,22 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                     {usingRecommendations || fromDashboard
                       ? 'Recommended Problems' 
                       : `Problem Set: ${currentTopic.skill?.description || 'Mathematics'}`}
+                    {useComposableProblems && (
+                      <span className="ml-2 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white px-2 py-1 rounded-full">
+                        Interactive
+                      </span>
+                    )}
                   </h2>
                   {(usingRecommendations || fromDashboard) && (
                     <p className="text-sm text-blue-600 flex items-center">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Personalized based on your learning analytics
+                    </p>
+                  )}
+                  {useComposableProblems && (
+                    <p className="text-sm text-purple-600 flex items-center">
+                      <span className="mr-1">🎯</span>
+                      Interactive step-by-step problems
                     </p>
                   )}
                 </div>
@@ -623,25 +720,38 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   <p className="text-green-700">
                     You've completed all problems in this set with a total score of {calculateTotalScore()} out of {problems.length * 10}.
                   </p>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
                     <Button 
                       onClick={() => {
+                        setUseComposableProblems(false);
                         setShowLoadingOverlay(true);
                         generateProblemSet();
                       }}
                       variant="outline"
                     >
-                      Start New Standard Set
+                      📝 New Regular Set
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setUseComposableProblems(true);
+                        setShowLoadingOverlay(true);
+                        generateComposableProblems();
+                      }}
+                      className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      <span className="mr-2">🎯</span>
+                      Try Interactive!
                     </Button>
                     <Button 
                       onClick={() => {
                         setShowLoadingOverlay(true);
                         generateRecommendedProblems();
                       }}
+                      variant="outline"
                       className="flex items-center justify-center"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Get New Recommendations
+                      Get Recommendations
                     </Button>
                   </div>
                 </div>

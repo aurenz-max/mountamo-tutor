@@ -451,6 +451,32 @@ Return your response EXACTLY in this JSON format:
                 # The fallback is handled at higher level methods
                 return None
 
+    async def generate_and_parse_problem(
+            self,
+            subject: str,
+            recommendation: Dict[str, Any]
+        ) -> Optional[Dict[str, Any]]:
+        """
+        Generate a problem using AI model and parse it into a structured format.
+        This is the recommended public method for composable problem generation services.
+        
+        Returns:
+            Dict containing parsed problem data or None if generation/parsing fails
+        """
+        try:
+            # Generate the raw problem
+            raw_problem = await self.generate_problem(subject, recommendation)
+            if not raw_problem:
+                return None
+            
+            # Parse the problem into structured format
+            parsed_problem = await self._parse_problem(raw_problem)
+            return parsed_problem
+            
+        except Exception as e:
+            logger.error(f"Error in generate_and_parse_problem: {e}")
+            return None
+
     async def _parse_problem(self, raw_problem: str) -> Dict[str, Any]:
         """
         Parse the AI response, handling both raw JSON and Markdown-wrapped JSON,
