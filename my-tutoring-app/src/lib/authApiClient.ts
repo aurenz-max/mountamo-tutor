@@ -663,6 +663,31 @@ private async getAuthToken(): Promise<string> {
     return this.post('/api/problems/mcq/submit', data);
   }
 
+  // ============================================================================
+  // FILL-IN-THE-BLANK ENDPOINTS
+  // ============================================================================
+
+  async generateFillInBlank(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    blank_style?: string;
+  }) {
+    return this.post('/api/problems/fill-in-blank/generate', data);
+  }
+
+  async submitFillInBlank(data: {
+    fill_in_blank: any; // Complete fill-in-the-blank object
+    student_answers: Array<{
+      blank_id: string;
+      answer: string;
+    }>;
+  }) {
+    return this.post('/api/problems/fill-in-blank/submit', data);
+  }
+
   // AI Tutor endpoints
   async sendTutorMessage(message: string, context?: any) {
     return this.post('/api/gemini/chat', { message, context });

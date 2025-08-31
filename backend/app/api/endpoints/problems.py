@@ -7,6 +7,7 @@ from datetime import datetime
 import logging
 import re
 import json
+import base64
 
 # FIXED: Import from service layer instead of endpoint
 from ...core.middleware import get_user_context
@@ -21,6 +22,8 @@ from ...services.composable_problem_generation import ComposableProblemGeneratio
 from ...services.mcq_service import MCQService
 from ...schemas.composable_problems import ProblemGenerationRequest, ComposableProblem, InteractiveProblem
 from ...schemas.mcq_problems import MCQPayload, MCQResponse, MCQSubmission, MCQReview
+from ...schemas.fill_in_blank_problems import FillInBlankPayload, FillInBlankResponse, FillInBlankSubmission, FillInBlankReview
+from ...services.fill_in_blank_service import FillInBlankService
 from ...core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -135,6 +138,15 @@ async def get_mcq_service() -> MCQService:
         logger.error(f"Failed to initialize MCQ service: {str(e)}")
         raise
 
+async def get_fill_in_blank_service() -> FillInBlankService:
+    """Get FillInBlankService instance with recommender dependency"""
+    try:
+        recommender = await get_problem_recommender(await get_competency_service())
+        return FillInBlankService(recommender)
+    except Exception as e:
+        logger.error(f"Failed to initialize Fill-in-the-blank service: {str(e)}")
+        raise
+
 
 def _build_mcq_analytics_docs(student_id: int, mcq: MCQResponse, submission: MCQSubmission, 
                              is_correct: bool, score: float, selected_option, correct_option, firebase_uid: str):
@@ -200,6 +212,81 @@ def _build_mcq_analytics_docs(student_id: int, mcq: MCQResponse, submission: MCQ
                    f"({'✓' if is_correct else '✗ should be'}) '{correct_option.text if correct_option else mcq.correct_option_id}'.",
         "feedback": mcq.rationale,  # Always include the rationale for learning
         "firebase_uid": firebase_uid,  # Include firebase_uid for proper user association
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    return review_doc, attempt_doc
+
+def _build_fill_in_blank_analytics_docs(student_id: int, fill_in_blank: FillInBlankResponse, submission: FillInBlankSubmission, 
+                                       review: FillInBlankReview, firebase_uid: str):
+    """
+    Helper function to create standardized review and attempt documents for Fill-in-the-blank
+    that match the existing analytics schema structure.
+    """
+    
+    # Build contextual feedback messages
+    if review.overall_correct:
+        feedback = {
+            "praise": "Excellent! You got all the blanks correct!",
+            "guidance": review.explanation,
+            "encouragement": "Keep up the fantastic work!",
+            "next_steps": "Try another problem to solidify your knowledge."
+        }
+        understanding_analysis = f"Student correctly filled all blanks. Shows good understanding of {fill_in_blank.skill_id}."
+    else:
+        correct_count = sum(1 for eval in review.blank_evaluations if eval.is_correct)
+        total_count = len(review.blank_evaluations)
+        feedback = {
+            "praise": "Good effort! Every attempt helps you learn.",
+            "guidance": review.explanation,
+            "encouragement": f"You got {correct_count} out of {total_count} blanks right. Keep practicing!",
+            "next_steps": "Review the concepts and try similar problems."
+        }
+        understanding_analysis = f"Student got {correct_count}/{total_count} blanks correct. {review.explanation}"
+    
+    # Build answers summary for the review
+    answers_summary = []
+    for eval in review.blank_evaluations:
+        status = "✓" if eval.is_correct else "✗"
+        answers_summary.append(f"{eval.blank_id}: '{eval.student_answer}' {status}")
+    
+    # Build the full review document that matches existing schema
+    review_doc = {
+        "observation": {
+            "canvas_description": None,  # Not applicable for fill-in-the-blank
+            "selected_answer_id": None,
+            "selected_answer_text": "; ".join(answers_summary),
+            "work_shown": "Fill-in-the-blank completion"
+        },
+        "analysis": {
+            "understanding": understanding_analysis,
+            "approach": f"Student completed a fill-in-the-blank exercise with {len(review.blank_evaluations)} blanks.",
+            "accuracy": "Correct" if review.overall_correct else f"Partially Correct ({review.percentage_correct:.1f}%)",
+            "creativity": None  # Not applicable for fill-in-the-blank
+        },
+        "evaluation": {
+            "score": review.total_score,
+            "justification": f"Student scored {review.total_score:.1f}/10 on fill-in-the-blank exercise."
+        },
+        "feedback": feedback,
+        "skill_id": fill_in_blank.skill_id,
+        "subject": fill_in_blank.subject,
+        "subskill_id": fill_in_blank.subskill_id,
+        "score": review.total_score,
+        "correct": review.overall_correct,
+        "accuracy_percentage": review.percentage_correct
+    }
+
+    # Build the attempt document that matches existing schema
+    attempt_doc = {
+        "student_id": student_id,
+        "subject": fill_in_blank.subject,
+        "skill_id": fill_in_blank.skill_id,
+        "subskill_id": fill_in_blank.subskill_id,
+        "score": review.total_score,
+        "analysis": f"Fill-in-blank Attempt: {review.percentage_correct:.1f}% correct. " + understanding_analysis,
+        "feedback": review.explanation,
+        "firebase_uid": firebase_uid,
         "timestamp": datetime.utcnow().isoformat()
     }
     
@@ -1180,6 +1267,298 @@ async def submit_mcq(
         raise HTTPException(status_code=500, detail=f"Error processing MCQ submission: {str(e)}")
 
 # ============================================================================
+# FILL-IN-THE-BLANK ENDPOINTS
+# ============================================================================
+
+@router.post("/fill-in-blank/generate", response_model=FillInBlankResponse)
+async def generate_fill_in_blank(
+    request: FillInBlankPayload,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
+    fill_in_blank_service: FillInBlankService = Depends(get_fill_in_blank_service)
+) -> FillInBlankResponse:
+    """
+    Generate a fill-in-the-blank question using Gemini 2.5 Flash.
+    Uses recommender to get optimal subject/unit/skill/subskill and retrieve
+    description and concept group for enhanced generation.
+    """
+
+    firebase_uid = user_context["firebase_uid"]
+    student_id = user_context["student_id"]
+
+    try:
+        logger.info(f"User {user_context['email']} generating fill-in-the-blank for student {student_id}")
+
+        if not request.subject:
+            raise HTTPException(status_code=400, detail="Subject is required")
+
+        # Generate fill-in-the-blank using recommender to determine optimal context
+        fill_in_blank = await fill_in_blank_service.get_fill_in_blank_from_recommender(
+            student_id=student_id,
+            subject=request.subject,
+            unit_id=request.unit_id,
+            skill_id=request.skill_id,
+            subskill_id=request.subskill_id,
+            difficulty=request.difficulty,
+            blank_style=request.blank_style
+        )
+
+        if not fill_in_blank:
+            # Log failure
+            background_tasks.add_task(
+                log_activity_helper,
+                user_id=firebase_uid,
+                student_id=student_id,
+                activity_type="fill_in_blank_generation_failed",
+                activity_name=f"Failed to generate {request.subject} fill-in-the-blank",
+                points=0,
+                metadata={
+                    "subject": request.subject,
+                    "student_id": student_id,
+                    "blank_style": request.blank_style,
+                    "difficulty": request.difficulty
+                }
+            )
+            raise HTTPException(status_code=500, detail="Failed to generate fill-in-the-blank question")
+
+        # Log success
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="fill_in_blank_generated",
+            activity_name=f"Generated {request.subject} fill-in-the-blank question",
+            points=8,
+            metadata={
+                "subject": request.subject,
+                "skill_id": fill_in_blank.skill_id,
+                "subskill_id": fill_in_blank.subskill_id,
+                "student_id": student_id,
+                "question_id": fill_in_blank.id,
+                "difficulty": fill_in_blank.difficulty,
+                "blank_style": request.blank_style,
+                "blank_count": len(fill_in_blank.blanks)
+            }
+        )
+
+        logger.info(f"Successfully generated fill-in-the-blank with ID: {fill_in_blank.id}")
+        return fill_in_blank
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating fill-in-the-blank: {str(e)}")
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="fill_in_blank_generation_error",
+            activity_name="Fill-in-the-blank generation error",
+            points=0,
+            metadata={"error": str(e), "student_id": student_id}
+        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.post("/fill-in-blank/submit", response_model=FillInBlankReview)
+async def submit_fill_in_blank(
+    submission: FillInBlankSubmission,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
+    fill_in_blank_service: FillInBlankService = Depends(get_fill_in_blank_service),
+    competency_service: CompetencyService = Depends(get_competency_service),
+    review_service: ReviewService = Depends(get_review_service),
+    cosmos_db = Depends(get_cosmos_db)
+) -> FillInBlankReview:
+    """
+    Submit fill-in-the-blank answer, get review using LLM evaluation, and save to analytics pipeline.
+    Uses the review service LLM pipeline for flexible answer evaluation instead of exact matching.
+    """
+
+    firebase_uid = user_context["firebase_uid"]
+    student_id = user_context["student_id"]
+
+    try:
+        logger.info(f"User {user_context['email']} submitting fill-in-the-blank {submission.fill_in_blank.id} for student {student_id}")
+
+        fill_in_blank = submission.fill_in_blank
+        
+        logger.info(f"Processing fill-in-the-blank submission: id={fill_in_blank.id}, subject={fill_in_blank.subject}, skill={fill_in_blank.skill_id}")
+
+        # Build student answers summary for LLM review
+        student_answers_text = []
+        for student_answer in submission.student_answers:
+            # Find the expected answer for this blank
+            expected_answer = None
+            for blank in fill_in_blank.blanks:
+                if blank.id == student_answer.blank_id:
+                    expected_answer = blank.correct_answers[0] if blank.correct_answers else "Unknown"
+                    break
+            
+            student_answers_text.append(f"{student_answer.blank_id}: Student wrote '{student_answer.answer}' (Expected: '{expected_answer}')")
+        
+        answers_summary = "; ".join(student_answers_text)
+        
+        # Use the review service LLM pipeline to evaluate the answers
+        # Create a synthetic problem object for the review service
+        synthetic_problem = {
+            "id": fill_in_blank.id,
+            "problem": fill_in_blank.text_with_blanks,
+            "answer": fill_in_blank.rationale,
+            "skill_id": fill_in_blank.skill_id
+        }
+        
+        # Create a simple base64 encoded text "image" since review service expects image data
+        # This is a workaround to use the LLM evaluation without an actual image
+        text_content = f"Fill-in-the-blank answers: {answers_summary}"
+        text_b64 = base64.b64encode(text_content.encode()).decode()
+        
+        # Get LLM review of the answers
+        llm_review = await review_service.review_problem(
+            student_id=student_id,
+            subject=fill_in_blank.subject,
+            problem=synthetic_problem,
+            solution_image_base64=text_b64,
+            skill_id=fill_in_blank.skill_id,
+            subskill_id=fill_in_blank.subskill_id,
+            student_answer=answers_summary,
+            canvas_used=False
+        )
+        
+        if "error" in llm_review:
+            logger.warning(f"LLM review failed, falling back to basic evaluation: {llm_review['error']}")
+            # Fallback to service-based evaluation if LLM review fails
+            review = await fill_in_blank_service.evaluate_submission(submission)
+        else:
+            # Convert LLM review to our FillInBlankReview format
+            llm_score = llm_review.get("score", 5.0)
+            llm_correct = llm_review.get("correct", False)
+            llm_accuracy = llm_review.get("accuracy_percentage", 50.0)
+            
+            # Create blank evaluations based on LLM feedback
+            blank_evaluations = []
+            for student_answer in submission.student_answers:
+                # Simple heuristic: if overall correct, mark individual blanks as correct
+                # In a more sophisticated implementation, you might parse the LLM feedback for per-blank results
+                is_blank_correct = llm_correct or (llm_accuracy > 70)  # Consider partially correct if accuracy > 70%
+                
+                blank_evaluations.append(BlankEvaluation(
+                    blank_id=student_answer.blank_id,
+                    student_answer=student_answer.answer,
+                    correct_answers=[blank.correct_answers[0] for blank in fill_in_blank.blanks if blank.id == student_answer.blank_id][0],
+                    is_correct=is_blank_correct,
+                    partial_credit=1.0 if is_blank_correct else 0.0,
+                    feedback=f"LLM evaluation: {'Correct' if is_blank_correct else 'Needs improvement'}"
+                ))
+            
+            review = FillInBlankReview(
+                overall_correct=llm_correct,
+                total_score=llm_score,
+                blank_evaluations=blank_evaluations,
+                explanation=llm_review.get("feedback", {}).get("guidance", "LLM provided evaluation"),
+                percentage_correct=llm_accuracy,
+                metadata={
+                    "question_id": fill_in_blank.id,
+                    "evaluation_method": "llm_review_service",
+                    "llm_score": llm_score,
+                    "submitted_at": submission.submitted_at.isoformat()
+                }
+            )
+
+        # Save analytics data
+        try:
+            review_doc, attempt_doc = _build_fill_in_blank_analytics_docs(
+                student_id, fill_in_blank, submission, review, firebase_uid
+            )
+            
+            # Save to Cosmos DB for analytics pipeline
+            await cosmos_db.save_problem_review(
+                student_id=student_id,
+                subject=fill_in_blank.subject,
+                skill_id=fill_in_blank.skill_id,
+                subskill_id=fill_in_blank.subskill_id,
+                problem_id=fill_in_blank.id,
+                review_data=review_doc,
+                problem_content=fill_in_blank.dict(),
+                firebase_uid=firebase_uid
+            )
+            
+            await cosmos_db.save_attempt(
+                student_id=attempt_doc["student_id"],
+                subject=attempt_doc["subject"],
+                skill_id=attempt_doc["skill_id"],
+                subskill_id=attempt_doc["subskill_id"],
+                score=attempt_doc["score"],
+                analysis=attempt_doc["analysis"],
+                feedback=attempt_doc["feedback"],
+                firebase_uid=attempt_doc["firebase_uid"]
+            )
+            
+            logger.info(f"Successfully saved fill-in-the-blank analytics data for student {student_id}")
+            
+        except Exception as e:
+            logger.error(f"Error saving fill-in-the-blank analytics data: {str(e)}")
+            # Continue processing even if analytics save fails
+
+        # Update competency
+        await competency_service.update_competency_from_problem(
+            student_id=student_id,
+            subject=fill_in_blank.subject,
+            skill_id=fill_in_blank.skill_id,
+            subskill_id=fill_in_blank.subskill_id,
+            evaluation={
+                "correct": review.overall_correct,
+                "score": review.total_score,
+                "accuracy_percentage": review.percentage_correct
+            }
+        )
+
+        # Calculate points
+        points = 30 if review.overall_correct else 10
+        if review.percentage_correct > 80:
+            points += 10
+
+        # Log activity
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="fill_in_blank_submitted",
+            activity_name=f"Submitted {fill_in_blank.subject} fill-in-the-blank question",
+            points=points,
+            metadata={
+                "question_id": fill_in_blank.id,
+                "correct": review.overall_correct,
+                "subject": fill_in_blank.subject,
+                "skill_id": fill_in_blank.skill_id,
+                "subskill_id": fill_in_blank.subskill_id,
+                "student_id": student_id,
+                "score": review.total_score,
+                "percentage_correct": review.percentage_correct,
+                "blank_count": len(fill_in_blank.blanks),
+                "points_earned": points
+            }
+        )
+
+        logger.info(f"Fill-in-the-blank submission completed: student={student_id}, question={fill_in_blank.id}, correct={review.overall_correct}, score={review.total_score}")
+        return review
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting fill-in-the-blank: {str(e)}")
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="fill_in_blank_submission_error",
+            activity_name="Fill-in-the-blank submission error",
+            points=0,
+            metadata={"error": str(e), "question_id": getattr(submission.fill_in_blank, 'id', 'unknown'), "student_id": student_id}
+        )
+        raise HTTPException(status_code=500, detail=f"Error processing fill-in-the-blank submission: {str(e)}")
+
+# ============================================================================
 # UTILITY ENDPOINTS
 # ============================================================================
 
@@ -1221,7 +1600,8 @@ async def problems_health_check(
             "service_layer_integration": True,  # NEW: Service layer integration
             "activity_logging": True,  # NEW: Proper activity logging
             "composable_problems": True,  # NEW: Composable problem generation
-            "mcq_generation": True  # NEW: Multiple choice question generation
+            "mcq_generation": True,  # NEW: Multiple choice question generation
+            "fill_in_blank_generation": True  # NEW: Fill-in-the-blank question generation
         },
         "timestamp": datetime.utcnow().isoformat()
     }

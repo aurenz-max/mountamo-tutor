@@ -4,11 +4,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, Lightbulb, ArrowRight, RefreshCw, Sparkles, Home, BookOpen, HelpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, Sparkles, Home, BookOpen, HelpCircle, Edit3 } from 'lucide-react';
 import { authApi } from '@/lib/authApiClient';
-import DrawingWorkspace from './DrawingWorkspace';
 import LoadingOverlay from './LoadingOverlay';
-import DynamicPrimitiveRenderer from '../primitives/DynamicPrimitiveRenderer';
+import ProblemRenderer, { type ProblemRendererRef } from './ProblemRenderer';
 
 interface Problem {
   problem_id?: string;
@@ -87,50 +86,6 @@ const parseActivityId = (activityId: string) => {
   };
 };
 
-// Helper function to extract feedback content
-const getFeedbackContent = (feedback: any) => {
-  if (!feedback || !feedback.review) return null;
-  
-  const reviewData = feedback.review;
-  
-  // Extract praise
-  let praise = "";
-  if (typeof reviewData.feedback === 'object' && reviewData.feedback.praise) {
-    praise = reviewData.feedback.praise;
-  } else if (typeof reviewData.feedback === 'string') {
-    praise = reviewData.feedback;
-  }
-  
-  // Extract guidance
-  let guidance = "";
-  if (typeof reviewData.feedback === 'object' && reviewData.feedback.guidance) {
-    guidance = reviewData.feedback.guidance;
-  }
-  
-  // Extract encouragement
-  let encouragement = "";
-  if (typeof reviewData.feedback === 'object' && reviewData.feedback.encouragement) {
-    encouragement = reviewData.feedback.encouragement;
-  }
-  
-  // Extract next steps
-  let nextSteps = "";
-  if (typeof reviewData.feedback === 'object' && reviewData.feedback.next_steps) {
-    nextSteps = reviewData.feedback.next_steps;
-  }
-  
-  // Extract score
-  let score = 0;
-  if (typeof reviewData.evaluation === 'object' && reviewData.evaluation.score) {
-    score = reviewData.evaluation.score;
-  } else if (typeof reviewData.evaluation === 'number') {
-    score = reviewData.evaluation;
-  } else if (typeof reviewData.evaluation === 'string') {
-    score = parseFloat(reviewData.evaluation);
-  }
-  
-  return { praise, guidance, encouragement, nextSteps, score };
-};
 
 const ProblemSet: React.FC<ProblemSetProps> = ({ 
   currentTopic, 
@@ -151,8 +106,9 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [primitiveResponses, setPrimitiveResponses] = useState<any[]>([]);
   const [usingRecommendations, setUsingRecommendations] = useState(false);
   const [usingMCQ, setUsingMCQ] = useState(false);
+  const [usingFillInBlank, setUsingFillInBlank] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
-  const drawingRef = useRef<any>(null);
+  const problemRendererRef = useRef<ProblemRendererRef>(null);
 
   // Auto-start problem generation if specified
   useEffect(() => {
@@ -168,6 +124,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setError(null);
     setFeedback(null);
     setUsingRecommendations(false);
+    setUsingMCQ(false);
+    setUsingFillInBlank(false);
     
     try {
       // Parse IDs from the current topic
@@ -258,6 +216,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setError(null);
     setFeedback(null);
     setUsingRecommendations(true);
+    setUsingMCQ(false);
+    setUsingFillInBlank(false);
     
     try {
       console.log('=== RECOMMENDATIONS REQUEST ===');
@@ -295,6 +255,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setFeedback(null);
     setUsingMCQ(true);
     setUsingRecommendations(false);
+    setUsingFillInBlank(false);
     
     try {
       // Parse IDs from the current topic
@@ -373,8 +334,94 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setShowLoadingOverlay(false);
   };
 
+  // Generate Fill-in-the-Blank problems using FillInBlank API
+  const generateFillInBlankProblems = async () => {
+    setLoadingSet(true);
+    setError(null);
+    setFeedback(null);
+    setUsingFillInBlank(true);
+    setUsingMCQ(false);
+    setUsingRecommendations(false);
+    
+    try {
+      // Parse IDs from the current topic
+      let skillId, subskillId, unitId;
+      
+      if (currentTopic.selection) {
+        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
+        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
+        
+        unitId = subskillParsed.unit;
+        subskillId = subskillParsed.subskill;
+        
+        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
+          skillId = subskillParsed.skill;
+        } else {
+          skillId = skillParsed.skill || skillParsed.cleanId;
+        }
+      } else if (currentTopic.id) {
+        const parsed = parseActivityId(currentTopic.id);
+        unitId = parsed.unit;
+        skillId = parsed.skill;
+        subskillId = parsed.subskill;
+      } else {
+        throw new Error('No valid skill/subskill identifiers found in currentTopic');
+      }
+      
+      console.log('=== FILL-IN-THE-BLANK GENERATION REQUEST ===');
+      console.log('Parsed IDs:', { unitId, skillId, subskillId });
+      
+      // Validate required IDs
+      if (!skillId || !subskillId) {
+        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
+      }
+      
+      // Generate multiple Fill-in-the-Blank problems
+      const fillInBlankProblems = [];
+      for (let i = 0; i < numProblems; i++) {
+        const fibRequest = {
+          subject: currentTopic.subject || 'mathematics',
+          unit_id: unitId,
+          skill_id: skillId,
+          subskill_id: subskillId,
+          difficulty: 'medium',
+          blank_style: 'standard'
+        };
+        
+        console.log(`Generating Fill-in-the-Blank ${i + 1}/${numProblems}:`, fibRequest);
+        
+        const fib = await authApi.generateFillInBlank(fibRequest);
+        if (fib) {
+          fillInBlankProblems.push(fib);
+        }
+      }
+      
+      if (fillInBlankProblems.length === 0) {
+        throw new Error('Failed to generate any Fill-in-the-Blank problems');
+      }
+      
+      console.log('=== FILL-IN-THE-BLANK PROBLEMS GENERATED ===');
+      console.log('Fill-in-the-Blank problems received:', fillInBlankProblems);
+      
+      setProblems(fillInBlankProblems);
+      setProblemAttempted(new Array(fillInBlankProblems.length).fill(false));
+      setProblemFeedback(new Array(fillInBlankProblems.length).fill(null));
+      setPrimitiveResponses(new Array(fillInBlankProblems.length).fill(null));
+      setCurrentIndex(0);
+      
+    } catch (error: any) {
+      console.error('=== FILL-IN-THE-BLANK GENERATION ERROR ===');
+      console.error('Error generating Fill-in-the-Blank problems:', error);
+      setError(`Failed to generate Fill-in-the-Blank problems: ${error.message || 'Unknown error'}`);
+      setUsingFillInBlank(false);
+    }
+    
+    setLoadingSet(false);
+    setShowLoadingOverlay(false);
+  };
+
   // Handle submission of the current problem
-  const handleSubmit = async () => {
+  const handleSubmit = async (submissionData: any) => {
     if (!problems[currentIndex]) return;
    
     setSubmitting(true);
@@ -391,103 +438,32 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
         ''
       );
 
-      let submission;
+      let response;
       
-      // Handle MCQ problems
-      if (currentProblem.question && currentProblem.options) {
-        const primitiveResponse = primitiveResponses[currentIndex];
-        
-        if (!primitiveResponse || !primitiveResponse.selected_option_id) {
-          throw new Error('Please select an answer before submitting.');
-        }
-        
-        const mcqSubmission = {
-          mcq: currentProblem,
-          selected_option_id: primitiveResponse.selected_option_id
-        };
-        
-        console.log('=== MCQ SUBMISSION ===');
-        console.log('Submitting MCQ:', mcqSubmission);
-        
-        const mcqReview = await authApi.submitMCQ(mcqSubmission);
-        
-        // Convert MCQ review to standard feedback format
-        const review = {
-          evaluation: { score: mcqReview.is_correct ? 10 : 0 },
-          feedback: {
-            praise: mcqReview.is_correct ? "Correct! Well done!" : "Not quite right, but good try!",
-            guidance: mcqReview.explanation || currentProblem.rationale,
-            encouragement: mcqReview.is_correct ? "Keep up the great work!" : "Review the explanation and try similar problems."
-          },
-          correct: mcqReview.is_correct,
-          score: mcqReview.is_correct ? 10 : 0,
-          accuracy_percentage: mcqReview.is_correct ? 100 : 0
-        };
-        
-        // Update states for this problem
-        const newAttempted = [...problemAttempted];
-        newAttempted[currentIndex] = true;
-        setProblemAttempted(newAttempted);
-        
-        const newFeedback = [...problemFeedback];
-        newFeedback[currentIndex] = { review, mcqReview };
-        setProblemFeedback(newFeedback);
-        
-        setFeedback({ review, mcqReview });
-        setSubmitting(false);
-        return;
-      }
-      
-      // Handle new interactive problems
-      else if (currentProblem.interaction) {
-        const primitiveResponse = primitiveResponses[currentIndex];
-        
-        if (!primitiveResponse) {
-          throw new Error('Please complete the interactive question before submitting.');
-        }
-        
-        submission = {
-          subject: currentTopic.subject || 'mathematics',
-          problem: currentProblem,
-          student_answer: JSON.stringify(primitiveResponse),
-          skill_id: parsed.skill,
-          subskill_id: parsed.subskill,
-          canvas_used: false,
-          primitive_response: primitiveResponse
-        };
+      // If this is already a processed review (from MCQ/FIB components), use it directly
+      if (submissionData.review || submissionData.originalReview) {
+        response = submissionData;
       } else {
-        // Handle legacy drawing-based problems
-        if (!drawingRef.current) {
-          throw new Error('Drawing workspace not available.');
-        }
-        
-        const canvasData = await drawingRef.current.getCanvasData();
-       
-        if (!canvasData) {
-          throw new Error('No drawing found. Please draw your answer before submitting.');
-        }
-        
-        submission = {
+        // For composable/drawing problems, submit to backend
+        const submission = {
           subject: currentTopic.subject || 'mathematics',
           problem: currentProblem,
-          solution_image: canvasData,
           skill_id: parsed.skill,
           subskill_id: parsed.subskill,
-          student_answer: '',
-          canvas_used: true
+          ...submissionData
         };
+        
+        console.log('=== SUBMISSION ===');
+        console.log('Submitting problem:', {
+          parsed_ids: parsed,
+          submission_ids: {
+            skill_id: parsed.skill,
+            subskill_id: parsed.subskill
+          }
+        });
+       
+        response = await authApi.submitProblem(submission);
       }
-     
-      console.log('=== SUBMISSION ===');
-      console.log('Submitting problem:', {
-        parsed_ids: parsed,
-        submission_ids: {
-          skill_id: parsed.skill,
-          subskill_id: parsed.subskill
-        }
-      });
-     
-      const response = await authApi.submitProblem(submission);
       
       // Update the attempted and feedback states for this problem
       const newAttempted = [...problemAttempted];
@@ -512,10 +488,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     if (currentIndex < problems.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setFeedback(problemFeedback[currentIndex + 1]);
-      
-      if (!problemAttempted[currentIndex + 1] && drawingRef.current) {
-        drawingRef.current.clearCanvas();
-      }
     }
   };
 
@@ -612,7 +584,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
             <p className="text-green-700 mb-4">
               You've completed all problems with a total score of {calculateTotalScore()} out of {problems.length * 10}.
             </p>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Button 
                 onClick={() => {
                   setShowLoadingOverlay(true);
@@ -642,6 +614,17 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
               >
                 <HelpCircle className="w-4 h-4 mr-2" />
                 Try Multiple Choice
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowLoadingOverlay(true);
+                  generateFillInBlankProblems();
+                }}
+                variant="outline"
+                className="flex items-center justify-center"
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                Try Fill-in-the-Blank
               </Button>
             </div>
           </div>
@@ -747,6 +730,29 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   </>
                 )}
               </Button>
+              
+              <Button 
+                onClick={() => {
+                  setShowLoadingOverlay(true);
+                  generateFillInBlankProblems();
+                }}
+                disabled={loadingSet}
+                size="lg"
+                variant="outline"
+                className="w-64"
+              >
+                {loadingSet ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Generating Fill-in-the-Blank...
+                  </>
+                ) : (
+                  <>
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    Generate Fill-in-the-Blank
+                  </>
+                )}
+              </Button>
             </div>
           ) : (
             <div className="space-y-6">
@@ -756,9 +762,11 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   <h2 className="text-xl font-medium">
                     {usingMCQ
                       ? 'Multiple Choice Questions'
-                      : usingRecommendations || fromDashboard
-                        ? 'Recommended Problems' 
-                        : `Problem Set: ${currentTopic.skill?.description || 'Mathematics'}`}
+                      : usingFillInBlank
+                        ? 'Fill-in-the-Blank Questions'
+                        : usingRecommendations || fromDashboard
+                          ? 'Recommended Problems' 
+                          : `Problem Set: ${currentTopic.skill?.description || 'Mathematics'}`}
                   </h2>
                   {usingMCQ && (
                     <p className="text-sm text-purple-600 flex items-center">
@@ -766,7 +774,13 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                       Multiple choice practice questions
                     </p>
                   )}
-                  {(usingRecommendations || fromDashboard) && !usingMCQ && (
+                  {usingFillInBlank && (
+                    <p className="text-sm text-orange-600 flex items-center">
+                      <Edit3 className="w-3 h-3 mr-1" />
+                      Fill-in-the-blank practice questions
+                    </p>
+                  )}
+                  {(usingRecommendations || fromDashboard) && !usingMCQ && !usingFillInBlank && (
                     <p className="text-sm text-blue-600 flex items-center">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Personalized based on your learning analytics
@@ -840,98 +854,39 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   </div>
                 </div>
                 <div className="mt-2">
-                  {/* Display question for MCQ or prompt/problem for other types */}
-                  {problems[currentIndex]?.question || problems[currentIndex]?.prompt || problems[currentIndex]?.problem}
+                  {/* Display question for MCQ, text_with_blanks for Fill-in-the-Blank, or prompt/problem for other types */}
+                  {problems[currentIndex]?.question || 
+                   problems[currentIndex]?.text_with_blanks || 
+                   problems[currentIndex]?.prompt || 
+                   problems[currentIndex]?.problem}
                 </div>
               </div>
               
-              {/* Render MCQ component, interactive component, or fallback to drawing workspace */}
-              {problems[currentIndex]?.question && problems[currentIndex]?.options ? (
-                <div className="space-y-4">
-                  {/* MCQ Options */}
-                  <div className="space-y-3">
-                    {problems[currentIndex].options?.map((option, index) => {
-                      const isSelected = primitiveResponses[currentIndex]?.selected_option_id === option.id;
-                      const isCorrect = problemAttempted[currentIndex] && option.id === problems[currentIndex].correct_option_id;
-                      const isIncorrectSelection = problemAttempted[currentIndex] && 
-                                                 isSelected && 
-                                                 option.id !== problems[currentIndex].correct_option_id;
-                      
-                      return (
-                        <div key={option.id} className="flex items-center space-x-3">
-                          <input
-                            type="radio"
-                            id={option.id}
-                            name="mcq-option"
-                            value={option.id}
-                            checked={isSelected}
-                            disabled={problemAttempted[currentIndex]}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                handlePrimitiveUpdate({ selected_option_id: option.id });
-                              }
-                            }}
-                            className={`w-4 h-4 ${
-                              isCorrect
-                                ? 'text-green-600'
-                                : isIncorrectSelection
-                                  ? 'text-red-600'
-                                  : 'text-blue-600'
-                            }`}
-                          />
-                          <label
-                            htmlFor={option.id}
-                            className={`flex-1 cursor-pointer text-base leading-relaxed p-3 rounded border ${
-                              isCorrect
-                                ? 'text-green-700 bg-green-50 border-green-200'
-                                : isIncorrectSelection
-                                  ? 'text-red-700 bg-red-50 border-red-200'
-                                  : problemAttempted[currentIndex]
-                                    ? 'text-gray-600 bg-gray-50 border-gray-200'
-                                    : 'hover:bg-gray-50 border-gray-300'
-                            }`}
-                          >
-                            <span className="font-semibold mr-2">{String.fromCharCode(65 + index)}.</span>
-                            {option.text}
-                            {problemAttempted[currentIndex] && (
-                              <span className="ml-2">
-                                {isCorrect && <CheckCircle2 className="inline w-5 h-5 text-green-600" />}
-                                {isIncorrectSelection && <span className="text-red-600">✗</span>}
-                              </span>
-                            )}
-                          </label>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* Show rationale after submission */}
-                  {problemAttempted[currentIndex] && problems[currentIndex].rationale && (
-                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-2">Explanation:</h4>
-                      <p className="text-blue-700">{problems[currentIndex].rationale}</p>
-                    </div>
-                  )}
-                </div>
-              ) : problems[currentIndex]?.interaction ? (
-                <DynamicPrimitiveRenderer
-                  interaction={problems[currentIndex].interaction}
-                  disabled={problemAttempted[currentIndex]}
-                  onUpdate={handlePrimitiveUpdate}
-                  showValidation={problemAttempted[currentIndex]}
-                  initialValue={primitiveResponses[currentIndex]}
-                />
-              ) : (
-                <DrawingWorkspace 
-                  ref={drawingRef}
-                  loading={submitting}
-                />
-              )}
+              {/* Use ProblemRenderer to delegate to appropriate component */}
+              <ProblemRenderer
+                ref={problemRendererRef}
+                problem={problems[currentIndex]}
+                isSubmitted={problemAttempted[currentIndex]}
+                onSubmit={handleSubmit}
+                onUpdate={handlePrimitiveUpdate}
+                currentResponse={primitiveResponses[currentIndex]}
+                feedback={problemFeedback[currentIndex]}
+                submitting={submitting}
+              />
 
-              {/* Feedback or submit button */}
-              {!problemFeedback[currentIndex] ? (
+              {/* Submit button */}
+              {!problemAttempted[currentIndex] && (
                 <Button 
-                  onClick={handleSubmit}
+                  onClick={async () => {
+                    if (problemRendererRef.current) {
+                      try {
+                        await problemRendererRef.current.submitProblem();
+                      } catch (error: any) {
+                        console.error('Submission error:', error);
+                        setError(error.message || 'Failed to submit answer. Please try again.');
+                      }
+                    }
+                  }}
                   disabled={submitting}
                   size="lg"
                   className="w-full"
@@ -943,67 +898,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                     </>
                   ) : 'Submit Answer'}
                 </Button>
-              ) : (
-                <div className="space-y-4">
-                  {/* Custom feedback display */}
-                  {(() => {
-                    const feedback = problemFeedback[currentIndex];
-                    const feedbackContent = getFeedbackContent(feedback);
-                    if (!feedbackContent) return null;
-                    
-                    return (
-                      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden">
-                        <div className="px-4 py-3 bg-slate-100 border-b border-slate-200">
-                          <h3 className="text-sm font-medium flex items-center">
-                            <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
-                            Feedback
-                          </h3>
-                        </div>
-                        <div className="p-4 space-y-3 text-sm">
-                          {feedbackContent.praise && (
-                            <div className="flex items-start">
-                              <ThumbsUp className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
-                              <p className="text-green-700">{feedbackContent.praise}</p>
-                            </div>
-                          )}
-                          
-                          {feedbackContent.guidance && (
-                            <div className="flex items-start">
-                              <Lightbulb className="w-4 h-4 mr-2 text-blue-500 mt-0.5" />
-                              <p className="text-blue-700">{feedbackContent.guidance}</p>
-                            </div>
-                          )}
-                          
-                          {feedbackContent.encouragement && (
-                            <div className="flex items-start">
-                              <ArrowRight className="w-4 h-4 mr-2 text-purple-500 mt-0.5" />
-                              <p className="text-purple-700">{feedbackContent.encouragement}</p>
-                            </div>
-                          )}
-                          
-                          {feedbackContent.nextSteps && (
-                            <div className="mt-2 pt-2 border-t border-slate-200">
-                              <p className="text-sm text-slate-600">
-                                {feedbackContent.nextSteps}
-                              </p>
-                            </div>
-                          )}
-                          
-                          {feedbackContent.score > 0 && (
-                            <div className="mt-2 pt-2 border-t border-slate-200">
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium">Score:</span>
-                                <span className="text-sm font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                                  {feedbackContent.score}/10
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
               )}
 
               {/* Navigation buttons */}
