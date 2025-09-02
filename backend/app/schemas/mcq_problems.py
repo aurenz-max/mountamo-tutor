@@ -26,6 +26,12 @@ class MCQPayload(BaseModel):
         default="plausible",
         description="plausible | humorous-but-educational | common-misconception"
     )
+    count: int = Field(
+        default=1, 
+        ge=1, 
+        le=10, 
+        description="Number of questions to generate. Defaults to 1."
+    )
 
     @validator("difficulty")
     def validate_difficulty(cls, v):
@@ -92,3 +98,9 @@ class MCQGenerationRequest(BaseModel):
     description: str
     concept_group: str
     detailed_objective: str
+
+
+class MCQResponseBatch(BaseModel):
+    """Complete MCQ batch response model"""
+    questions: List[MCQResponse] = Field(..., description="A list of generated multiple-choice questions.")
+    metadata: Dict = Field(default_factory=dict, description="Shared metadata for the batch, e.g., request parameters.")

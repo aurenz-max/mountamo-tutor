@@ -228,17 +228,20 @@ class CompetencyService:
                     "subskill_id": subskill_id
                 }
                     
-            # Extract score from evaluation, handling both dictionary and scalar formats
+            # Extract score from evaluation, handling multiple formats
             score = 0.0
             if isinstance(evaluation.get('evaluation'), dict):
-                # New structured format (dictionary with score and justification)
+                # Nested structured format (dictionary with score and justification)
                 score_value = evaluation['evaluation'].get('score')
                 if isinstance(score_value, str):
                     score = float(score_value)
                 else:
                     score = float(score_value or 0)
+            elif 'score' in evaluation:
+                # Direct score format (current MCQ/True-False format)
+                score = float(evaluation.get('score', 0))
             else:
-                # Old format (directly as number or string)
+                # Legacy format (directly as number or string)
                 score = float(evaluation.get('evaluation', 0))
                 
             logger.info(f"🔍 COMPETENCY_SERVICE: Extracted score: {score}")

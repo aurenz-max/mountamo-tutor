@@ -70,6 +70,111 @@ READING_CONTENT_SCHEMA = Schema(
                         type="array",
                         items=Schema(type="string"),
                         description="Core concepts covered in this section"
+                    ),
+                    # Interactive Primitives (all optional)
+                    "alerts": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "type": Schema(type="string", enum=["alert"], description="Primitive type identifier"),
+                                "style": Schema(type="string", enum=["info", "warning", "success", "tip"], description="Alert visual style"),
+                                "title": Schema(type="string", description="Alert title/heading"),
+                                "content": Schema(type="string", description="Alert body content")
+                            },
+                            required=["type", "style", "title", "content"]
+                        ),
+                        description="Alert/callout boxes for important information"
+                    ),
+                    "expandables": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "type": Schema(type="string", enum=["expandable"], description="Primitive type identifier"),
+                                "title": Schema(type="string", description="Expandable section title"),
+                                "content": Schema(type="string", description="Hidden content revealed on expansion")
+                            },
+                            required=["type", "title", "content"]
+                        ),
+                        description="Expandable sections for optional deeper information"
+                    ),
+                    "quizzes": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "type": Schema(type="string", enum=["quiz"], description="Primitive type identifier"),
+                                "question": Schema(type="string", description="Quiz question text"),
+                                "answer": Schema(type="string", description="Correct answer"),
+                                "explanation": Schema(type="string", description="Optional explanation of the answer")
+                            },
+                            required=["type", "question", "answer"]
+                        ),
+                        description="Quick knowledge check questions"
+                    ),
+                    "definitions": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "type": Schema(type="string", enum=["definition"], description="Primitive type identifier"),
+                                "term": Schema(type="string", description="Term to be defined"),
+                                "definition": Schema(type="string", description="Definition of the term")
+                            },
+                            required=["type", "term", "definition"]
+                        ),
+                        description="Inline term definitions for contextual learning"
+                    ),
+                    "checklists": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "type": Schema(type="string", enum=["checklist"], description="Primitive type identifier"),
+                                "text": Schema(type="string", description="Checklist item text"),
+                                "completed": Schema(type="boolean", default=False, description="Initial completion state")
+                            },
+                            required=["type", "text"]
+                        ),
+                        description="Progress tracking checklist items"
+                    ),
+                    "tables": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "type": Schema(type="string", enum=["table"], description="Primitive type identifier"),
+                                "headers": Schema(
+                                    type="array",
+                                    items=Schema(type="string"),
+                                    description="Table column headers"
+                                ),
+                                "rows": Schema(
+                                    type="array",
+                                    items=Schema(
+                                        type="array",
+                                        items=Schema(type="string")
+                                    ),
+                                    description="Table row data (array of arrays)"
+                                )
+                            },
+                            required=["type", "headers", "rows"]
+                        ),
+                        description="Structured data tables"
+                    ),
+                    "keyvalues": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "type": Schema(type="string", enum=["keyvalue"], description="Primitive type identifier"),
+                                "key": Schema(type="string", description="Fact or statistic label"),
+                                "value": Schema(type="string", description="Corresponding value or data")
+                            },
+                            required=["type", "key", "value"]
+                        ),
+                        description="Key-value pairs for important facts and statistics"
                     )
                 },
                 required=["heading", "content", "key_terms_used", "concepts_covered"]

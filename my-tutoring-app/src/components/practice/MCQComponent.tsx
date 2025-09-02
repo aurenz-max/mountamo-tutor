@@ -51,6 +51,14 @@ interface MCQReview {
   };
 }
 
+interface MCQResponseBatch {
+  questions: MCQQuestion[];
+  metadata: {
+    request_count: number;
+    returned_count: number;
+  };
+}
+
 interface MCQComponentProps {
   mcq: MCQQuestion;
   onNext?: () => void;

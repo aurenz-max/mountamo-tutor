@@ -5,15 +5,31 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CheckCircle, BookOpen, Lightbulb, Loader2, Eye, Sparkles, MessageCircle, X, Maximize } from 'lucide-react';
 import { authApi } from '@/lib/authApiClient';
+import { ReadingContentRenderer } from '@/components/content/ReadingContentRenderer';
+
+// Updated interface to support interactive primitives
+interface ReadingSection {
+  heading: string;
+  content: string;
+  key_terms_used: string[];
+  concepts_covered: string[];
+  // Interactive primitives (optional)
+  alerts?: Array<{ type: 'alert'; style: 'info' | 'warning' | 'success' | 'tip'; title: string; content: string; }>;
+  expandables?: Array<{ type: 'expandable'; title: string; content: string; }>;
+  quizzes?: Array<{ type: 'quiz'; question: string; answer: string; explanation?: string; }>;
+  definitions?: Array<{ type: 'definition'; term: string; definition: string; }>;
+  checklists?: Array<{ type: 'checklist'; text: string; completed?: boolean; }>;
+  tables?: Array<{ type: 'table'; headers: string[]; rows: string[][]; }>;
+  keyvalues?: Array<{ type: 'keyvalue'; key: string; value: string; }>;
+}
 
 interface ReadingContentProps {
   content: {
     title: string;
-    sections: Array<{
-      heading: string;
-      content: string;
-    }>;
+    sections: ReadingSection[];
     word_count: number;
+    reading_level?: string;
+    grade_appropriate_features?: string[];
   };
   isCompleted: boolean;
   onComplete: () => void;
@@ -534,209 +550,46 @@ export function ReadingContent({ content, isCompleted, onComplete, onAskAI, subs
     return null;
   };
 
-  return (
-    <div className="max-w-4xl mx-auto">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <BookOpen className="w-6 h-6 text-blue-600" />
-            <div>
-              <CardTitle className="text-2xl">{content.title}</CardTitle>
-              <p className="text-muted-foreground">
-                {content.word_count} words • {content.sections.length} sections
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {content.sections.map((section, index) => (
-            <div key={index} className="border-b border-gray-100 pb-6 last:border-b-0">
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">{section.heading}</h3>
-              <div className="prose prose-lg max-w-none">
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {section.content}
-                </p>
-              </div>
-              {/* Main Action Buttons */}
-              <div className="mt-4 flex gap-3 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mb-3"
-                  onClick={() => onAskAI(`Tell me more about "${section.heading}"`)}
-                >
-                  Ask AI about this section
-                </Button>
-                
-                <Dialog 
-                  open={visualContent[index]?.isOpen || false}
-                  onOpenChange={(open) => {
-                    if (!open) closeVisualModal(index);
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mb-3 border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300"
-                      onClick={() => handleVisualizeClick(index, section.heading, section.content)}
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      ✨ Visualize Concept
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2">
-                        <Eye className="w-5 h-5" />
-                        Interactive Demo: {section.heading}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="mt-4">
-                      {visualContent[index]?.loading && (
-                        <div className="flex flex-col items-center justify-center py-12">
-                          <Loader2 className="w-8 h-8 mb-4 animate-spin text-purple-600" />
-                          <p className="text-sm text-muted-foreground">Generating interactive demonstration...</p>
-                        </div>
-                      )}
-                      
-                      {visualContent[index]?.error && (
-                        <div className="text-center py-12">
-                          <div className="text-red-600 mb-4">{visualContent[index]?.error}</div>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => handleVisualizeClick(index, section.heading, section.content)}
-                          >
-                            Try Again
-                          </Button>
-                        </div>
-                      )}
-                      
-                      {visualContent[index]?.htmlContent && (
-                        <div className="space-y-4">
-                          <iframe
-                            srcDoc={visualContent[index]?.htmlContent || ''}
-                            sandbox="allow-scripts"
-                            className="w-full h-[500px] border border-gray-200 rounded-lg"
-                            title={`Interactive Demo for ${section.heading}`}
-                          />
-                          
-                          {/* AI Walkthrough Threads */}
-                          <div className="border-t pt-4">
-                            <h4 className="text-sm font-medium text-gray-700 flex items-center mb-3">
-                              <MessageCircle className="w-4 h-4 mr-2" />
-                              Ask AI to walk you through this visual:
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              <Button
-                                variant="ghost"
-                                className="justify-start text-left h-auto py-3 px-3 border border-purple-100 hover:border-purple-200 hover:bg-purple-50 transition-colors"
-                                onClick={() => onAskAI(`Walk me through this visual demonstration of "${section.heading}" step by step`)}
-                              >
-                                <span className="whitespace-normal text-sm">Walk me through this step by step</span>
-                              </Button>
-                              
-                              <Button
-                                variant="ghost"
-                                className="justify-start text-left h-auto py-3 px-3 border border-purple-100 hover:border-purple-200 hover:bg-purple-50 transition-colors"
-                                onClick={() => onAskAI(`Explain what I should focus on in this visual demonstration of "${section.heading}"`)}
-                              >
-                                <span className="whitespace-normal text-sm">What should I focus on here?</span>
-                              </Button>
-                              
-                              <Button
-                                variant="ghost"
-                                className="justify-start text-left h-auto py-3 px-3 border border-purple-100 hover:border-purple-200 hover:bg-purple-50 transition-colors"
-                                onClick={() => onAskAI(`How does this visual help me understand the concept of "${section.heading}"?`)}
-                              >
-                                <span className="whitespace-normal text-sm">How does this help me understand?</span>
-                              </Button>
-                              
-                              <Button
-                                variant="ghost"
-                                className="justify-start text-left h-auto py-3 px-3 border border-purple-100 hover:border-purple-200 hover:bg-purple-50 transition-colors"
-                                onClick={() => onAskAI(`Can you guide me through interacting with this visual demonstration of "${section.heading}"?`)}
-                              >
-                                <span className="whitespace-normal text-sm">Guide me through the interaction</span>
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
+  // Prepare content for ReadingContentRenderer with fallbacks
+  const rendererContent = {
+    title: content.title,
+    sections: content.sections,
+    word_count: content.word_count,
+    reading_level: content.reading_level || 'Not specified',
+    grade_appropriate_features: content.grade_appropriate_features || []
+  };
 
-              {/* Discovery Threads Section */}
-              <div className="space-y-3">
-                {discoveryThreads[index]?.loading && !discoveryThreads[index]?.threads.length ? (
-                  <div className="flex items-center py-2">
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Generating discovery questions...</span>
-                  </div>
-                ) : discoveryThreads[index]?.threads.length > 0 ? (
-                  <>
-                    <h4 className="text-sm font-medium text-gray-700 flex items-center">
-                      <Lightbulb className="w-4 h-4 mr-2" />
-                      Discover More:
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {discoveryThreads[index].threads.map((thread, threadIndex) => (
-                        <Button
-                          key={`${index}-${threadIndex}-${thread.substring(0, 20)}`}
-                          variant="ghost"
-                          className="justify-start text-left h-auto py-3 px-3 border border-blue-100 hover:border-blue-200 hover:bg-blue-50 transition-colors"
-                          onClick={() => handleThreadClick(index, threadIndex, thread)}
-                          disabled={discoveryThreads[index]?.loading}
-                        >
-                          {discoveryThreads[index]?.loading ? (
-                            <div className="flex items-center">
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              <span className="whitespace-normal text-sm opacity-50">{thread}</span>
-                            </div>
-                          ) : (
-                            <span className="whitespace-normal text-sm">{thread}</span>
-                          )}
-                        </Button>
-                      ))}
-                    </div>
-                    {discoveryThreads[index]?.loading && (
-                      <p className="text-xs text-gray-500 italic">Click a question to ask the AI tutor and get a new question...</p>
-                    )}
-                  </>
-                ) : discoveryThreads[index]?.error ? (
-                  <div className="space-y-2 p-3 bg-red-50 border border-red-200 rounded">
-                    <p className="text-sm text-red-600">{discoveryThreads[index]?.error}</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => fetchDiscoveryThreads(index, section.heading, section.content)}
-                    >
-                      Try Again
-                    </Button>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ))}
-          
-          <div className="pt-6 border-t">
-            <Button 
-              onClick={onComplete}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={isCompleted}
-            >
-              {isCompleted ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Completed
-                </>
-              ) : (
-                'Mark as Complete'
-              )}
-            </Button>
-          </div>
+  return (
+    <div className="max-w-5xl mx-auto space-y-6 bg-gray-50 min-h-screen p-6">
+      {/* Enhanced Content Renderer with Inline AI Features */}
+      <ReadingContentRenderer 
+        content={rendererContent} 
+        onAskAI={onAskAI}
+        discoveryThreads={discoveryThreads}
+        visualContent={visualContent}
+        onDiscoveryThreadClick={handleThreadClick}
+        onVisualizeClick={handleVisualizeClick}
+        onCloseVisualModal={closeVisualModal}
+        subskillId={subskillId}
+      />
+      
+      {/* Completion Section */}
+      <Card className="border-2 border-blue-100 bg-blue-50/30">
+        <CardContent className="pt-6">
+          <Button 
+            onClick={onComplete}
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+            disabled={isCompleted}
+          >
+            {isCompleted ? (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Completed
+              </>
+            ) : (
+              'Mark as Complete'
+            )}
+          </Button>
         </CardContent>
       </Card>
     </div>

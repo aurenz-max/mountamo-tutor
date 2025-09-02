@@ -25,6 +25,7 @@ from .services.review import ReviewService
 
 from .services.daily_activities import DailyActivitiesService
 from .services.bigquery_analytics import BigQueryAnalyticsService
+from .services.mcq_service import MCQService
 
 from .db.cosmos_db import CosmosDBService
 from .db.firestore_service import FirestoreService
@@ -59,6 +60,7 @@ _problem_service: Optional[ProblemService] = None
 _learning_paths_service: Optional[LearningPathsService] = None
 _problem_optimizer: Optional[ProblemOptimizer] = None
 _review_service: Optional[ReviewService] = None
+_mcq_service: Optional[MCQService] = None
 
 # 🔥 UPDATED: Authentication dependency functions using service layer
 async def get_authenticated_user(firebase_user: dict = Depends(verify_firebase_token)) -> dict:
@@ -239,10 +241,7 @@ async def get_curriculum_service() -> CurriculumService:
     
     return _curriculum_service
 
-async def get_competency_service(
-    cosmos_db: CosmosDBService = Depends(get_cosmos_db),
-    firestore_service: FirestoreService = Depends(get_firestore_service)
-) -> CompetencyService:
+async def get_competency_service() -> CompetencyService:
     """Get Competency service with BigQuery curriculum service - CLEAN ASYNC"""
     global _competency_service
     if _competency_service is None:
@@ -253,9 +252,14 @@ async def get_competency_service(
             curriculum_service = await get_curriculum_service()
             logger.info("✅ Got curriculum service for competency service")
             
+            # Get the actual service instances directly
+            cosmos_db = get_cosmos_db()
+            firestore_service = get_firestore_service()
+            
             # Create competency service WITH curriculum service
             _competency_service = CompetencyService(curriculum_service)
             _competency_service.cosmos_db = cosmos_db
+            _competency_service.firestore_service = firestore_service
             
             # Initialize - clean and simple
             await _competency_service.initialize()
@@ -368,6 +372,16 @@ def get_review_service(
         _review_service.firestore_service = firestore_service
     
     return _review_service
+
+async def get_mcq_service(
+    recommender: ProblemRecommender = Depends(get_problem_recommender)
+) -> MCQService:
+    """Get or create MCQService singleton."""
+    global _mcq_service
+    if _mcq_service is None:
+        logger.info("Initializing MCQService")
+        _mcq_service = MCQService(recommender)
+    return _mcq_service
 
 # Keep other functions that don't need curriculum/competency services as sync
 async def get_learning_paths_service(

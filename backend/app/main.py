@@ -17,7 +17,8 @@ from .api.endpoints import (
     user_profiles,
     daily_activities,
     daily_briefing_live,
-    packages
+    packages,
+    practice_tutor
     
 )
 
@@ -168,6 +169,13 @@ app.include_router(
     daily_briefing_live.router, 
     prefix="/api", 
     tags=["daily-briefing"]
+)
+
+# Practice Tutor WebSocket Router (no auth dependency - handled in websocket)
+app.include_router(
+    practice_tutor.router, 
+    prefix="/api", 
+    tags=["practice-tutor"]
 )
 
 # ETL Management Router (requires auth now)

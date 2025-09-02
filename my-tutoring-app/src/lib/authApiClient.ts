@@ -397,6 +397,78 @@ async getContentPackageDetail(packageId: string): Promise<any> {
 }
 
 /**
+ * Create WebSocket connection for practice tutor sessions
+ */
+async createPracticeTutorWebSocket(topicContext: any): Promise<WebSocket> {
+  const token = await this.getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required for Practice Tutor WebSocket connection');
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//localhost:8000/api/ws/practice-tutor`;
+  
+  console.log('🎯 Creating Practice Tutor WebSocket connection to:', wsUrl);
+  
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(wsUrl);
+    let authSent = false;
+    
+    const connectionTimeout = setTimeout(() => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        ws.close();
+        reject(new Error('Practice Tutor WebSocket connection timeout'));
+      }
+    }, 8000);
+    
+    ws.onopen = () => {
+      console.log('🎯 Practice Tutor WebSocket opened, sending authentication with topic context');
+      clearTimeout(connectionTimeout);
+      
+      try {
+        ws.send(JSON.stringify({
+          type: 'authenticate',
+          token: token,
+          topic_context: topicContext
+        }));
+        authSent = true;
+        console.log('✅ Practice Tutor authentication message sent');
+      } catch (error) {
+        console.error('❌ Failed to send Practice Tutor authentication:', error);
+        reject(error);
+        return;
+      }
+    };
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'auth_success') {
+          console.log('✅ Practice Tutor authentication successful');
+          resolve(ws);
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing Practice Tutor auth response:', error);
+      }
+    };
+    
+    ws.onerror = (error) => {
+      console.error('🎯 Practice Tutor WebSocket error:', error);
+      clearTimeout(connectionTimeout);
+      reject(error);
+    };
+    
+    ws.onclose = (event) => {
+      clearTimeout(connectionTimeout);
+      if (!authSent) {
+        reject(new Error(`Practice Tutor WebSocket closed before authentication: ${event.code} ${event.reason}`));
+      }
+    };
+  });
+}
+
+/**
  * Create WebSocket connection for learning sessions with proper authentication flow
  */
 async createLearningSessionWebSocket(packageId: string, studentId?: number): Promise<WebSocket> {
@@ -652,8 +724,22 @@ private async getAuthToken(): Promise<string> {
     subskill_id?: string;
     difficulty?: string;
     distractor_style?: string;
+    count?: number;
   }) {
     return this.post('/api/problems/mcq/generate', data);
+  }
+
+  async generateMCQBatch(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    distractor_style?: string;
+    count?: number;
+  }) {
+    const payload = { ...data, count: data.count || 5 };
+    return this.post('/api/problems/mcq/generate', payload);
   }
 
   async submitMCQ(data: {
@@ -686,6 +772,68 @@ private async getAuthToken(): Promise<string> {
     }>;
   }) {
     return this.post('/api/problems/fill-in-blank/submit', data);
+  }
+
+  // ============================================================================
+  // CONCEPT MATCHING ENDPOINTS
+  // ============================================================================
+
+  async generateMatching(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    matching_style?: string;
+  }) {
+    return this.post('/api/problems/matching/generate', data);
+  }
+
+  async generateMatchingBatch(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    matching_style?: string;
+    count?: number;
+  }) {
+    const payload = { ...data, count: data.count || 5 };
+    return this.post('/api/problems/matching/generate', payload);
+  }
+
+  async submitMatching(data: {
+    matching: any; // Complete matching object
+    student_matches: Array<{
+      left_id: string;
+      right_id: string;
+    }>;
+  }) {
+    return this.post('/api/problems/matching/submit', data);
+  }
+
+  // ============================================================================
+  // TRUE/FALSE ENDPOINTS
+  // ============================================================================
+
+  async generateTrueFalse(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    allow_explain_why?: boolean;
+    trickiness?: string;
+  }) {
+    return this.post('/api/problems/true-false/generate', data);
+  }
+
+  async submitTrueFalse(data: {
+    true_false: any; // Complete true/false object
+    selected_answer: boolean;
+    explanation?: string;
+  }) {
+    return this.post('/api/problems/true-false/submit', data);
   }
 
   // AI Tutor endpoints

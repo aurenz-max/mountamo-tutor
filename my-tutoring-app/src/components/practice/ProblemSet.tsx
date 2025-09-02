@@ -4,10 +4,27 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ChevronLeft, ChevronRight, RefreshCw, Sparkles, Home, BookOpen, HelpCircle, Edit3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, Sparkles, Home, BookOpen, HelpCircle, Edit3, CheckCircle2, MessageCircle } from 'lucide-react';
 import { authApi } from '@/lib/authApiClient';
 import LoadingOverlay from './LoadingOverlay';
 import ProblemRenderer, { type ProblemRendererRef } from './ProblemRenderer';
+import { AITutorController, type AITutorControllerRef } from './AITutorController';
+
+interface MCQResponseBatch {
+  questions: any[];
+  metadata: {
+    request_count: number;
+    returned_count: number;
+  };
+}
+
+interface MatchingResponseBatch {
+  problems: any[];
+  metadata: {
+    request_count: number;
+    returned_count: number;
+  };
+}
 
 interface Problem {
   problem_id?: string;
@@ -90,7 +107,7 @@ const parseActivityId = (activityId: string) => {
 const ProblemSet: React.FC<ProblemSetProps> = ({ 
   currentTopic, 
   studentId = 1, 
-  numProblems = 1,
+  numProblems = 5,
   autoStart = false,
   fromDashboard = false
 }) => {
@@ -107,8 +124,14 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [usingRecommendations, setUsingRecommendations] = useState(false);
   const [usingMCQ, setUsingMCQ] = useState(false);
   const [usingFillInBlank, setUsingFillInBlank] = useState(false);
+  const [usingMatching, setUsingMatching] = useState(false);
+  const [usingTrueFalse, setUsingTrueFalse] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const problemRendererRef = useRef<ProblemRendererRef>(null);
+  
+  // AI Tutor state - now always active
+  const [isTutorActive, setIsTutorActive] = useState(true);
+  const tutorRef = useRef<AITutorControllerRef>(null);
 
   // Auto-start problem generation if specified
   useEffect(() => {
@@ -118,6 +141,26 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     }
   }, [currentTopic, autoStart]);
 
+  // When the current problem changes, notify the tutor controller
+  useEffect(() => {
+    if (isTutorActive && problems.length > 0 && tutorRef.current) {
+      tutorRef.current.setCurrentProblem(problems[currentIndex]);
+    }
+  }, [currentIndex, isTutorActive, problems]);
+
+  // Notify AI tutor of answer results
+  const notifyTutorOfResult = (isCorrect: boolean, score: number, feedback: any) => {
+    if (tutorRef.current) {
+      const resultMessage = isCorrect 
+        ? `Great work! You got it right with a score of ${score}. Well done!`
+        : `Not quite right this time, but that's okay! You scored ${score}. Let's learn from this and keep trying.`;
+      
+      tutorRef.current.sendResultFeedback(isCorrect, score, resultMessage, feedback);
+    }
+  };
+
+  // Remove the manual start tutor function since it's now always active
+
   // Generate a set of problems using the skill-based problems API
   const generateProblemSet = async () => {
     setLoadingSet(true);
@@ -126,6 +169,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setUsingRecommendations(false);
     setUsingMCQ(false);
     setUsingFillInBlank(false);
+    setUsingMatching(false);
+    setUsingTrueFalse(false);
     
     try {
       // Parse IDs from the current topic
@@ -218,6 +263,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setUsingRecommendations(true);
     setUsingMCQ(false);
     setUsingFillInBlank(false);
+    setUsingMatching(false);
+    setUsingTrueFalse(false);
     
     try {
       console.log('=== RECOMMENDATIONS REQUEST ===');
@@ -256,6 +303,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setUsingMCQ(true);
     setUsingRecommendations(false);
     setUsingFillInBlank(false);
+    setUsingMatching(false);
+    setUsingTrueFalse(false);
     
     try {
       // Parse IDs from the current topic
@@ -290,29 +339,26 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
         throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
       }
       
-      // Generate multiple MCQ problems
-      const mcqProblems = [];
-      for (let i = 0; i < numProblems; i++) {
-        const mcqRequest = {
-          subject: currentTopic.subject || 'mathematics',
-          unit_id: unitId,
-          skill_id: skillId,
-          subskill_id: subskillId,
-          difficulty: 'medium',
-          distractor_style: 'plausible'
-        };
-        
-        console.log(`Generating MCQ ${i + 1}/${numProblems}:`, mcqRequest);
-        
-        const mcq = await authApi.generateMCQ(mcqRequest);
-        if (mcq) {
-          mcqProblems.push(mcq);
-        }
-      }
+      // Generate batch of MCQ problems (default 5)
+      const mcqRequest = {
+        subject: currentTopic.subject || 'mathematics',
+        unit_id: unitId,
+        skill_id: skillId,
+        subskill_id: subskillId,
+        difficulty: 'medium',
+        distractor_style: 'plausible',
+        count: numProblems || 5
+      };
       
-      if (mcqProblems.length === 0) {
+      console.log(`Generating ${numProblems || 5} MCQ problems in batch:`, mcqRequest);
+      
+      const mcqBatch = await authApi.generateMCQBatch(mcqRequest);
+      
+      if (!mcqBatch || !mcqBatch.questions || mcqBatch.questions.length === 0) {
         throw new Error('Failed to generate any MCQ problems');
       }
+      
+      const mcqProblems = mcqBatch.questions;
       
       console.log('=== MCQ PROBLEMS GENERATED ===');
       console.log('MCQ problems received:', mcqProblems);
@@ -342,6 +388,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setUsingFillInBlank(true);
     setUsingMCQ(false);
     setUsingRecommendations(false);
+    setUsingMatching(false);
     
     try {
       // Parse IDs from the current topic
@@ -420,6 +467,179 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setShowLoadingOverlay(false);
   };
 
+  // Generate Matching problems using Matching API
+  const generateMatchingProblems = async () => {
+    setLoadingSet(true);
+    setError(null);
+    setFeedback(null);
+    setUsingMatching(true);
+    setUsingFillInBlank(false);
+    setUsingMCQ(false);
+    setUsingRecommendations(false);
+    
+    try {
+      // Parse IDs from the current topic
+      let skillId, subskillId, unitId;
+      
+      if (currentTopic.selection) {
+        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
+        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
+        
+        unitId = subskillParsed.unit;
+        subskillId = subskillParsed.subskill;
+        
+        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
+          skillId = subskillParsed.skill;
+        } else {
+          skillId = skillParsed.skill || skillParsed.cleanId;
+        }
+      } else if (currentTopic.id) {
+        const parsed = parseActivityId(currentTopic.id);
+        unitId = parsed.unit;
+        skillId = parsed.skill;
+        subskillId = parsed.subskill;
+      } else {
+        throw new Error('No valid skill/subskill identifiers found in currentTopic');
+      }
+      
+      console.log('=== MATCHING GENERATION REQUEST ===');
+      console.log('Parsed IDs:', { unitId, skillId, subskillId });
+      
+      // Validate required IDs
+      if (!skillId || !subskillId) {
+        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
+      }
+      
+      // Generate batch of Matching problems (default 5)
+      const matchingRequest = {
+        subject: currentTopic.subject || 'mathematics',
+        unit_id: unitId,
+        skill_id: skillId,
+        subskill_id: subskillId,
+        difficulty: 'medium',
+        matching_style: 'one_to_one',
+        count: numProblems || 5
+      };
+      
+      console.log(`Generating ${numProblems || 5} Matching problems in batch:`, matchingRequest);
+      
+      const matchingBatch = await authApi.generateMatchingBatch(matchingRequest);
+      
+      if (!matchingBatch || !matchingBatch.problems || matchingBatch.problems.length === 0) {
+        throw new Error('Failed to generate any Matching problems');
+      }
+      
+      const matchingProblems = matchingBatch.problems;
+      
+      console.log('=== MATCHING PROBLEMS GENERATED ===');
+      console.log('Matching problems received:', matchingProblems);
+      
+      setProblems(matchingProblems);
+      setProblemAttempted(new Array(matchingProblems.length).fill(false));
+      setProblemFeedback(new Array(matchingProblems.length).fill(null));
+      setPrimitiveResponses(new Array(matchingProblems.length).fill(null));
+      setCurrentIndex(0);
+      
+    } catch (error: any) {
+      console.error('=== MATCHING GENERATION ERROR ===');
+      console.error('Error generating Matching problems:', error);
+      setError(`Failed to generate Matching problems: ${error.message || 'Unknown error'}`);
+      setUsingMatching(false);
+    }
+    
+    setLoadingSet(false);
+    setShowLoadingOverlay(false);
+  };
+
+  // Generate True/False problems using True/False API
+  const generateTrueFalseProblems = async () => {
+    setLoadingSet(true);
+    setError(null);
+    setFeedback(null);
+    setUsingTrueFalse(true);
+    setUsingMatching(false);
+    setUsingFillInBlank(false);
+    setUsingMCQ(false);
+    setUsingRecommendations(false);
+    
+    try {
+      // Parse IDs from the current topic
+      let skillId, subskillId, unitId;
+      
+      if (currentTopic.selection) {
+        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
+        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
+        
+        unitId = subskillParsed.unit;
+        subskillId = subskillParsed.subskill;
+        
+        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
+          skillId = subskillParsed.skill;
+        } else {
+          skillId = skillParsed.skill || skillParsed.cleanId;
+        }
+      } else if (currentTopic.id) {
+        const parsed = parseActivityId(currentTopic.id);
+        unitId = parsed.unit;
+        skillId = parsed.skill;
+        subskillId = parsed.subskill;
+      } else {
+        throw new Error('No valid skill/subskill identifiers found in currentTopic');
+      }
+      
+      console.log('=== TRUE/FALSE GENERATION REQUEST ===');
+      console.log('Parsed IDs:', { unitId, skillId, subskillId });
+      
+      // Validate required IDs
+      if (!skillId || !subskillId) {
+        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
+      }
+      
+      // Generate multiple True/False problems
+      const trueFalseProblems = [];
+      for (let i = 0; i < numProblems; i++) {
+        const trueFalseRequest = {
+          subject: currentTopic.subject || 'mathematics',
+          unit_id: unitId,
+          skill_id: skillId,
+          subskill_id: subskillId,
+          difficulty: 'medium',
+          allow_explain_why: false,
+          trickiness: 'none'
+        };
+        
+        console.log(`Generating True/False ${i + 1}/${numProblems}:`, trueFalseRequest);
+        
+        const trueFalse = await authApi.generateTrueFalse(trueFalseRequest);
+        if (trueFalse) {
+          trueFalseProblems.push(trueFalse);
+        }
+      }
+      
+      if (trueFalseProblems.length === 0) {
+        throw new Error('Failed to generate any True/False problems');
+      }
+      
+      console.log('=== TRUE/FALSE PROBLEMS GENERATED ===');
+      console.log('True/False problems received:', trueFalseProblems);
+      
+      setProblems(trueFalseProblems);
+      setProblemAttempted(new Array(trueFalseProblems.length).fill(false));
+      setProblemFeedback(new Array(trueFalseProblems.length).fill(null));
+      setPrimitiveResponses(new Array(trueFalseProblems.length).fill(null));
+      setCurrentIndex(0);
+      
+    } catch (error: any) {
+      console.error('=== TRUE/FALSE GENERATION ERROR ===');
+      console.error('Error generating True/False problems:', error);
+      setError(`Failed to generate True/False problems: ${error.message || 'Unknown error'}`);
+      setUsingTrueFalse(false);
+    }
+    
+    setLoadingSet(false);
+    setShowLoadingOverlay(false);
+  };
+
   // Handle submission of the current problem
   const handleSubmit = async (submissionData: any) => {
     if (!problems[currentIndex]) return;
@@ -475,6 +695,24 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       setProblemFeedback(newFeedback);
       
       setFeedback(response);
+      
+      // Notify AI tutor of the result
+      if (response && response.review) {
+        const evaluation = response.review.evaluation;
+        let score = 0;
+        let isCorrect = false;
+        
+        if (typeof evaluation === 'object' && evaluation.score !== undefined) {
+          score = evaluation.score;
+          isCorrect = score >= 8; // Consider 8+ out of 10 as correct
+        } else if (typeof evaluation === 'number') {
+          score = evaluation;
+          isCorrect = score >= 8;
+        }
+        
+        notifyTutorOfResult(isCorrect, score, response.review);
+      }
+      
     } catch (error: any) {
       console.error('Error submitting problem:', error);
       setError(error.message || 'Failed to submit answer. Please try again.');
@@ -584,48 +822,84 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
             <p className="text-green-700 mb-4">
               You've completed all problems with a total score of {calculateTotalScore()} out of {problems.length * 10}.
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-4">
+              {/* AI Tutor is always active now */}
               <Button 
                 onClick={() => {
                   setShowLoadingOverlay(true);
                   generateProblemSet();
                 }}
-                variant="outline"
+                size="lg"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
-                Start New Set
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Start New Set with AI Tutor
               </Button>
-              <Button 
-                onClick={() => {
-                  setShowLoadingOverlay(true);
-                  generateRecommendedProblems();
-                }}
-                className="flex items-center justify-center"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Get Recommendations
-              </Button>
-              <Button 
-                onClick={() => {
-                  setShowLoadingOverlay(true);
-                  generateMCQProblems();
-                }}
-                variant="outline"
-                className="flex items-center justify-center"
-              >
-                <HelpCircle className="w-4 h-4 mr-2" />
-                Try Multiple Choice
-              </Button>
-              <Button 
-                onClick={() => {
-                  setShowLoadingOverlay(true);
-                  generateFillInBlankProblems();
-                }}
-                variant="outline"
-                className="flex items-center justify-center"
-              >
-                <Edit3 className="w-4 h-4 mr-2" />
-                Try Fill-in-the-Blank
-              </Button>
+              
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                <Button 
+                  onClick={() => {
+                    setShowLoadingOverlay(true);
+                    generateProblemSet();
+                  }}
+                  variant="outline"
+                >
+                  Start New Set
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowLoadingOverlay(true);
+                    generateRecommendedProblems();
+                  }}
+                  className="flex items-center justify-center"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Get Recommendations
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowLoadingOverlay(true);
+                    generateMCQProblems();
+                  }}
+                  variant="outline"
+                  className="flex items-center justify-center"
+                >
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  Try Multiple Choice
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowLoadingOverlay(true);
+                    generateFillInBlankProblems();
+                  }}
+                  variant="outline"
+                  className="flex items-center justify-center"
+                >
+                  <Edit3 className="w-4 h-4 mr-2" />
+                  Try Fill-in-the-Blank
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowLoadingOverlay(true);
+                    generateMatchingProblems();
+                  }}
+                  variant="outline"
+                  className="flex items-center justify-center"
+                >
+                  🔗 Concept Matching
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowLoadingOverlay(true);
+                    generateTrueFalseProblems();
+                  }}
+                  variant="outline"
+                  className="flex items-center justify-center"
+                >
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  Try True/False
+                </Button>
+              </div>
             </div>
           </div>
         );
@@ -645,7 +919,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
         />
       )}
       
-      <Card className="w-full max-w-4xl mx-auto">
+      <div className={`flex gap-6 w-full ${isTutorActive ? 'max-w-6xl' : 'max-w-4xl'} mx-auto`}>
+        <Card className={`${isTutorActive ? 'flex-1' : 'w-full'}`}>
         <CardContent className="p-6">
           {error && (
             <Alert variant="destructive" className="mb-4">
@@ -667,92 +942,156 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
           )}
 
           {problems.length === 0 ? (
-            <div className="flex flex-col gap-4 items-center">
-              <Button 
-                onClick={() => {
-                  setShowLoadingOverlay(true);
-                  generateProblemSet();
-                }}
-                disabled={loadingSet}
-                size="lg"
-                className="w-64"
-              >
-                {loadingSet ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Creating Problem Set...
-                  </>
-                ) : 'Start Standard Problem Set'}
-              </Button>
+            <div className="flex flex-col gap-6 items-center">
+              {/* AI Tutor is always active */}
+              <div className="text-center mb-4">
+                <div className="flex items-center justify-center space-x-2 text-blue-600 mb-3">
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="text-lg font-medium">AI Tutor Ready to Guide You</span>
+                </div>
+                <p className="text-sm text-gray-600">Your AI tutor will automatically help you with each problem</p>
+              </div>
               
-              <Button 
-                onClick={() => {
-                  setShowLoadingOverlay(true);
-                  generateRecommendedProblems();
-                }}
-                disabled={loadingSet}
-                size="lg"
-                variant="outline"
-                className="w-64"
-              >
-                {loadingSet ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Loading Recommendations...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Get Recommended Problems
-                  </>
-                )}
-              </Button>
+              <div className="text-center">
+                <p className="text-sm text-gray-500 mb-4">Or choose a specific problem type:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    onClick={() => {
+                      setShowLoadingOverlay(true);
+                      generateProblemSet();
+                    }}
+                    disabled={loadingSet}
+                    size="lg"
+                    variant="outline"
+                    className="w-56"
+                  >
+                    {loadingSet ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : 'Standard Problems'}
+                  </Button>
               
-              <Button 
-                onClick={() => {
-                  setShowLoadingOverlay(true);
-                  generateMCQProblems();
-                }}
-                disabled={loadingSet}
-                size="lg"
-                variant="outline"
-                className="w-64"
-              >
-                {loadingSet ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Generating MCQ...
-                  </>
-                ) : (
-                  <>
-                    <HelpCircle className="w-4 h-4 mr-2" />
-                    Generate Multiple Choice
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                onClick={() => {
-                  setShowLoadingOverlay(true);
-                  generateFillInBlankProblems();
-                }}
-                disabled={loadingSet}
-                size="lg"
-                variant="outline"
-                className="w-64"
-              >
-                {loadingSet ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Generating Fill-in-the-Blank...
-                  </>
-                ) : (
-                  <>
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    Generate Fill-in-the-Blank
-                  </>
-                )}
-              </Button>
+                  <Button 
+                    onClick={() => {
+                      setShowLoadingOverlay(true);
+                      generateRecommendedProblems();
+                    }}
+                    disabled={loadingSet}
+                    size="lg"
+                    variant="outline"
+                    className="w-56"
+                  >
+                    {loadingSet ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Recommended
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <Button 
+                    onClick={() => {
+                      setShowLoadingOverlay(true);
+                      generateMCQProblems();
+                    }}
+                    disabled={loadingSet}
+                    size="lg"
+                    variant="outline"
+                    className="w-56"
+                  >
+                    {loadingSet ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <HelpCircle className="w-4 h-4 mr-2" />
+                        Multiple Choice
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      setShowLoadingOverlay(true);
+                      generateFillInBlankProblems();
+                    }}
+                    disabled={loadingSet}
+                    size="lg"
+                    variant="outline"
+                    className="w-56"
+                  >
+                    {loadingSet ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        Fill-in-the-Blank
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <Button 
+                    onClick={() => {
+                      setShowLoadingOverlay(true);
+                      generateMatchingProblems();
+                    }}
+                    disabled={loadingSet}
+                    size="lg"
+                    variant="outline"
+                    className="w-56"
+                  >
+                    {loadingSet ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        🔗 Matching
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      setShowLoadingOverlay(true);
+                      generateTrueFalseProblems();
+                    }}
+                    disabled={loadingSet}
+                    size="lg"
+                    variant="outline"
+                    className="w-56"
+                  >
+                    {loadingSet ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <HelpCircle className="w-4 h-4 mr-2" />
+                        True/False
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">
@@ -764,9 +1103,13 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                       ? 'Multiple Choice Questions'
                       : usingFillInBlank
                         ? 'Fill-in-the-Blank Questions'
-                        : usingRecommendations || fromDashboard
-                          ? 'Recommended Problems' 
-                          : `Problem Set: ${currentTopic.skill?.description || 'Mathematics'}`}
+                        : usingMatching
+                          ? 'Concept Matching Problems'
+                          : usingTrueFalse
+                            ? 'True or False Questions'
+                            : usingRecommendations || fromDashboard
+                              ? 'Recommended Problems' 
+                              : `Problem Set: ${currentTopic.skill?.description || 'Mathematics'}`}
                   </h2>
                   {usingMCQ && (
                     <p className="text-sm text-purple-600 flex items-center">
@@ -780,7 +1123,18 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                       Fill-in-the-blank practice questions
                     </p>
                   )}
-                  {(usingRecommendations || fromDashboard) && !usingMCQ && !usingFillInBlank && (
+                  {usingMatching && (
+                    <p className="text-sm text-green-600 flex items-center">
+                      🔗 Concept matching practice questions
+                    </p>
+                  )}
+                  {usingTrueFalse && (
+                    <p className="text-sm text-blue-600 flex items-center">
+                      <HelpCircle className="w-3 h-3 mr-1" />
+                      True or false practice questions
+                    </p>
+                  )}
+                  {(usingRecommendations || fromDashboard) && !usingMCQ && !usingFillInBlank && !usingMatching && !usingTrueFalse && (
                     <p className="text-sm text-blue-600 flex items-center">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Personalized based on your learning analytics
@@ -792,13 +1146,21 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                     </p>
                   )}
                 </div>
-                {problemAttempted.some(Boolean) && (
-                  <div className="text-right">
-                    <p className="text-sm text-gray-500">
-                      Score: {calculateTotalScore()} / {problems.length * 10}
-                    </p>
+                <div className="flex items-center gap-4">
+                  {/* AI Tutor Status - always active */}
+                  <div className="flex items-center gap-2 text-green-600">
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">AI Tutor Active</span>
                   </div>
-                )}
+                  
+                  {problemAttempted.some(Boolean) && (
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">
+                        Score: {calculateTotalScore()} / {problems.length * 10}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Progress indicator */}
@@ -854,9 +1216,10 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   </div>
                 </div>
                 <div className="mt-2">
-                  {/* Display question for MCQ, text_with_blanks for Fill-in-the-Blank, or prompt/problem for other types */}
+                  {/* Display question for MCQ, text_with_blanks for Fill-in-the-Blank, statement for True/False, or prompt/problem for other types */}
                   {problems[currentIndex]?.question || 
                    problems[currentIndex]?.text_with_blanks || 
+                   problems[currentIndex]?.statement || 
                    problems[currentIndex]?.prompt || 
                    problems[currentIndex]?.problem}
                 </div>
@@ -926,7 +1289,24 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+        
+        {/* AI Tutor Controller - Show when tutor is active */}
+        {isTutorActive && (
+          <div className="w-80 flex-shrink-0">
+            <AITutorController
+              ref={tutorRef}
+              topicContext={{
+                subject: currentTopic.subject,
+                skill_description: currentTopic.skill?.description,
+                subskill_description: currentTopic.subskill?.description,
+                skill_id: currentTopic.selection?.skill || currentTopic.id,
+                subskill_id: currentTopic.selection?.subskill || currentTopic.id,
+              }}
+            />
+          </div>
+        )}
+      </div>
     </>
   );
 };

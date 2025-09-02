@@ -13,7 +13,7 @@ import base64
 from ...core.middleware import get_user_context
 from ...services.user_profiles import user_profiles_service
 from ...models.user_profiles import ActivityLog
-from ...dependencies import get_problem_service, get_competency_service, get_review_service, get_problem_recommender, get_cosmos_db, get_problem_optimizer
+from ...dependencies import get_problem_service, get_competency_service, get_review_service, get_problem_recommender, get_cosmos_db, get_problem_optimizer, get_mcq_service
 from ...services.problems import ProblemService
 from ...services.competency import CompetencyService
 from ...services.review import ReviewService
@@ -21,9 +21,13 @@ from ...services.bigquery_analytics import BigQueryAnalyticsService
 from ...services.composable_problem_generation import ComposableProblemGenerationService
 from ...services.mcq_service import MCQService
 from ...schemas.composable_problems import ProblemGenerationRequest, ComposableProblem, InteractiveProblem
-from ...schemas.mcq_problems import MCQPayload, MCQResponse, MCQSubmission, MCQReview
+from ...schemas.mcq_problems import MCQPayload, MCQResponse, MCQSubmission, MCQReview, MCQResponseBatch
 from ...schemas.fill_in_blank_problems import FillInBlankPayload, FillInBlankResponse, FillInBlankSubmission, FillInBlankReview
 from ...services.fill_in_blank_service import FillInBlankService
+from ...schemas.matching_problems import MatchingPayload, MatchingResponse, MatchingSubmission, MatchingReview, MatchingEvaluation, MatchingResponseBatch
+from ...services.matching_service import MatchingService
+from ...schemas.true_false_problems import TrueFalsePayload, TrueFalseResponse, TrueFalseSubmission, TrueFalseReview
+from ...services.true_false_service import TrueFalseService
 from ...core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -147,8 +151,26 @@ async def get_fill_in_blank_service() -> FillInBlankService:
         logger.error(f"Failed to initialize Fill-in-the-blank service: {str(e)}")
         raise
 
+async def get_matching_service() -> MatchingService:
+    """Get MatchingService instance with recommender dependency"""
+    try:
+        recommender = await get_problem_recommender(await get_competency_service())
+        return MatchingService(recommender)
+    except Exception as e:
+        logger.error(f"Failed to initialize Matching service: {str(e)}")
+        raise
 
-def _build_mcq_analytics_docs(student_id: int, mcq: MCQResponse, submission: MCQSubmission, 
+async def get_true_false_service() -> TrueFalseService:
+    """Get TrueFalseService instance with recommender dependency"""
+    try:
+        recommender = await get_problem_recommender(await get_competency_service())
+        return TrueFalseService(recommender)
+    except Exception as e:
+        logger.error(f"Failed to initialize True/False service: {str(e)}")
+        raise
+
+
+async def _build_mcq_analytics_docs(student_id: int, mcq: MCQResponse, submission: MCQSubmission, 
                              is_correct: bool, score: float, selected_option, correct_option, firebase_uid: str):
     """
     Helper function to create standardized review and attempt documents for MCQs
@@ -217,7 +239,7 @@ def _build_mcq_analytics_docs(student_id: int, mcq: MCQResponse, submission: MCQ
     
     return review_doc, attempt_doc
 
-def _build_fill_in_blank_analytics_docs(student_id: int, fill_in_blank: FillInBlankResponse, submission: FillInBlankSubmission, 
+async def _build_fill_in_blank_analytics_docs(student_id: int, fill_in_blank: FillInBlankResponse, submission: FillInBlankSubmission, 
                                        review: FillInBlankReview, firebase_uid: str):
     """
     Helper function to create standardized review and attempt documents for Fill-in-the-blank
@@ -287,6 +309,156 @@ def _build_fill_in_blank_analytics_docs(student_id: int, fill_in_blank: FillInBl
         "analysis": f"Fill-in-blank Attempt: {review.percentage_correct:.1f}% correct. " + understanding_analysis,
         "feedback": review.explanation,
         "firebase_uid": firebase_uid,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    return review_doc, attempt_doc
+
+async def _build_matching_analytics_docs(student_id: int, matching: MatchingResponse, submission: MatchingSubmission, 
+                                        review: MatchingReview, firebase_uid: str):
+    """
+    Helper function to create standardized review and attempt documents for matching problems
+    that match the existing analytics schema structure.
+    """
+    
+    # Build contextual feedback messages
+    if review.overall_correct:
+        feedback = {
+            "praise": "Excellent! You matched everything perfectly!",
+            "guidance": review.explanation,
+            "encouragement": "Keep up the fantastic work!",
+            "next_steps": "Try another matching problem to solidify your knowledge."
+        }
+        understanding_analysis = f"Student correctly matched all items. Shows good understanding of {matching.skill_id}."
+    else:
+        correct_count = sum(1 for eval in review.match_evaluations if eval.is_correct)
+        total_count = len(review.match_evaluations)
+        feedback = {
+            "praise": "Good effort! Every attempt helps you learn.",
+            "guidance": review.explanation,
+            "encouragement": f"You got {correct_count} out of {total_count} matches right. Keep practicing!",
+            "next_steps": "Review the concepts and try similar matching problems."
+        }
+        understanding_analysis = f"Student got {correct_count}/{total_count} matches correct. {review.explanation}"
+    
+    # Build matches summary for the review
+    matches_summary = []
+    for eval in review.match_evaluations:
+        status = "✓" if eval.is_correct else "✗"
+        matches_summary.append(f"{eval.left_id}→{eval.right_id} {status}")
+    
+    # Build the full review document that matches existing schema
+    review_doc = {
+        "observation": {
+            "canvas_description": None,  # Not applicable for matching
+            "selected_answer_id": None,
+            "selected_answer_text": "; ".join(matches_summary),
+            "work_shown": "Concept matching activity"
+        },
+        "analysis": {
+            "understanding": understanding_analysis,
+            "approach": f"Student completed a concept matching exercise with {len(review.match_evaluations)} pairs.",
+            "accuracy": "Correct" if review.overall_correct else f"Partially Correct ({review.percentage_correct:.1f}%)",
+            "creativity": None  # Not applicable for matching
+        },
+        "evaluation": {
+            "score": review.total_score,
+            "justification": f"Student scored {review.total_score:.1f}/10 on concept matching exercise."
+        },
+        "feedback": feedback,
+        "skill_id": matching.skill_id,
+        "subject": matching.subject,
+        "subskill_id": matching.subskill_id,
+        "score": review.total_score,
+        "correct": review.overall_correct,
+        "accuracy_percentage": review.percentage_correct
+    }
+
+    # Build the attempt document that matches existing schema
+    attempt_doc = {
+        "student_id": student_id,
+        "subject": matching.subject,
+        "skill_id": matching.skill_id,
+        "subskill_id": matching.subskill_id,
+        "score": review.total_score,
+        "analysis": f"Matching Attempt: {review.percentage_correct:.1f}% correct. " + understanding_analysis,
+        "feedback": review.explanation,
+        "firebase_uid": firebase_uid,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    return review_doc, attempt_doc
+
+async def _build_true_false_analytics_docs(student_id: int, true_false: TrueFalseResponse, submission: TrueFalseSubmission, 
+                                         review: TrueFalseReview, firebase_uid: str):
+    """
+    Helper function to create standardized review and attempt documents for true/false
+    that match the existing analytics schema structure.
+    """
+    
+    # Build contextual feedback messages
+    if review.is_correct:
+        feedback = {
+            "praise": "Excellent! You got the correct answer!",
+            "guidance": review.explanation,
+            "encouragement": "Keep up the fantastic work!",
+            "next_steps": "Try another true/false question to test your knowledge."
+        }
+        understanding_analysis = f"Student correctly identified the statement as {'True' if true_false.correct else 'False'}. Shows good understanding of {true_false.skill_id}."
+    else:
+        feedback = {
+            "praise": "Good try! Learning from mistakes is part of the process.",
+            "guidance": f"The correct answer was {'True' if true_false.correct else 'False'}. Here's why: {review.explanation}",
+            "encouragement": "Don't worry, every attempt makes you smarter. You've got this!",
+            "next_steps": "Let's review the concepts related to this question."
+        }
+        understanding_analysis = f"Student selected {'True' if submission.selected_answer else 'False'} instead of {'True' if true_false.correct else 'False'}. This suggests a misunderstanding of the key concept."
+    
+    # Add explanation feedback if student provided one
+    explanation_note = ""
+    if submission.explanation and review.explanation_feedback:
+        explanation_note = f" Student explanation: '{submission.explanation}' - {review.explanation_feedback}"
+    
+    # Build the full review document that matches existing schema
+    review_doc = {
+        "observation": {
+            "canvas_description": None,  # Not applicable for true/false
+            "selected_answer_id": str(submission.selected_answer),
+            "selected_answer_text": "True" if submission.selected_answer else "False",
+            "work_shown": "True/False Selection" + explanation_note
+        },
+        "analysis": {
+            "understanding": understanding_analysis,
+            "approach": "Student selected true or false for the given statement.",
+            "accuracy": "Correct" if review.is_correct else "Incorrect",
+            "creativity": None  # Not applicable for true/false
+        },
+        "evaluation": {
+            "score": 10.0 if review.is_correct else 2.0,
+            "justification": f"Student selected the {'correct' if review.is_correct else 'incorrect'} answer for the true/false question."
+        },
+        "feedback": feedback,
+        "skill_id": true_false.skill_id,
+        "subject": true_false.subject,
+        "subskill_id": true_false.subskill_id,
+        "score": 10.0 if review.is_correct else 2.0,
+        "correct": review.is_correct,
+        "accuracy_percentage": 100.0 if review.is_correct else 0.0
+    }
+
+    # Build the attempt document that matches existing schema
+    attempt_doc = {
+        "student_id": student_id,
+        "subject": true_false.subject,
+        "skill_id": true_false.skill_id,
+        "subskill_id": true_false.subskill_id,
+        "score": 10.0 if review.is_correct else 2.0,
+        "analysis": f"True/False Attempt: {'Correct' if review.is_correct else 'Incorrect'}. " + \
+                   f"Selected '{'True' if submission.selected_answer else 'False'}' " + \
+                   f"({'✓' if review.is_correct else '✗ should be'}) '{'True' if true_false.correct else 'False'}'." + \
+                   explanation_note,
+        "feedback": true_false.rationale,  # Always include the rationale for learning
+        "firebase_uid": firebase_uid,  # Include firebase_uid for proper user association
         "timestamp": datetime.utcnow().isoformat()
     }
     
@@ -1016,33 +1188,31 @@ async def get_primitive_manifest(
 # MULTIPLE CHOICE QUESTION ENDPOINTS
 # ============================================================================
 
-@router.post("/mcq/generate", response_model=MCQResponse)
+@router.post("/mcq/generate", response_model=MCQResponseBatch)
 async def generate_mcq(
     request: MCQPayload,
     background_tasks: BackgroundTasks,
     user_context: dict = Depends(get_user_context),
     mcq_service: MCQService = Depends(get_mcq_service)
-) -> MCQResponse:
+) -> MCQResponseBatch:
     """
-    Generate a multiple-choice question using Gemini 2.5 Flash.
-    Uses recommender to get optimal subject/unit/skill/subskill and retrieve
-    description and concept group for enhanced MCQ generation.
-    Stores generated MCQ in cache for submission evaluation.
+    Generate a batch of multiple-choice questions. 
+    The number of questions is determined by the 'count' field in the request.
     """
-
     firebase_uid = user_context["firebase_uid"]
     student_id = user_context["student_id"]
 
     try:
-        logger.info(f"User {user_context['email']} generating MCQ for student {student_id}")
+        logger.info(f"User {user_context['email']} generating batch of {request.count} MCQs for student {student_id}")
 
         if not request.subject:
             raise HTTPException(status_code=400, detail="Subject is required")
 
-        # Generate MCQ using recommender to determine optimal context
-        mcq = await mcq_service.get_mcq_from_recommender(
+        # Call the refactored service method
+        mcqs = await mcq_service.get_mcq_from_recommender(
             student_id=student_id,
             subject=request.subject,
+            count=request.count,
             unit_id=request.unit_id,
             skill_id=request.skill_id,
             subskill_id=request.subskill_id,
@@ -1050,61 +1220,36 @@ async def generate_mcq(
             distractor_style=request.distractor_style
         )
 
-        if not mcq:
-            # Log failure
-            background_tasks.add_task(
-                log_activity_helper,
-                user_id=firebase_uid,
-                student_id=student_id,
-                activity_type="mcq_generation_failed",
-                activity_name=f"Failed to generate {request.subject} MCQ",
-                points=0,
-                metadata={
-                    "subject": request.subject,
-                    "student_id": student_id,
-                    "distractor_style": request.distractor_style,
-                    "difficulty": request.difficulty
-                }
-            )
-            raise HTTPException(status_code=500, detail="Failed to generate MCQ")
+        if not mcqs:
+            # Update logging for batch failure
+            background_tasks.add_task(log_activity_helper, user_id=firebase_uid, student_id=student_id,
+                activity_type="mcq_batch_generation_failed", activity_name=f"Failed to generate {request.subject} MCQ batch",
+                points=0, metadata={"subject": request.subject, "requested_count": request.count})
+            raise HTTPException(status_code=500, detail="Failed to generate MCQ batch")
 
-        # Cache no longer needed - MCQ will be sent back with submission
+        # Log success for the batch
+        background_tasks.add_task(log_activity_helper, user_id=firebase_uid, student_id=student_id,
+            activity_type="mcq_batch_generated", activity_name=f"Generated {len(mcqs)} {request.subject} MCQs",
+            points=5 * len(mcqs), metadata={"subject": request.subject, "returned_count": len(mcqs)})
 
-        # Log success
-        background_tasks.add_task(
-            log_activity_helper,
-            user_id=firebase_uid,
-            student_id=student_id,
-            activity_type="mcq_generated",
-            activity_name=f"Generated {request.subject} multiple choice question",
-            points=8,
+        logger.info(f"Successfully generated batch of {len(mcqs)} MCQs.")
+        
+        # Return the response wrapped in the MCQResponseBatch model
+        return MCQResponseBatch(
+            questions=mcqs,
             metadata={
-                "subject": request.subject,
-                "skill_id": mcq.skill_id,
-                "subskill_id": mcq.subskill_id,
-                "student_id": student_id,
-                "mcq_id": mcq.id,
-                "difficulty": mcq.difficulty,
-                "distractor_style": request.distractor_style
+                "request_count": request.count,
+                "returned_count": len(mcqs)
             }
         )
-
-        logger.info(f"Successfully generated MCQ with ID: {mcq.id}")
-        return mcq
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error generating MCQ: {str(e)}")
-        background_tasks.add_task(
-            log_activity_helper,
-            user_id=firebase_uid,
-            student_id=student_id,
-            activity_type="mcq_generation_error",
-            activity_name="MCQ generation error",
-            points=0,
-            metadata={"error": str(e), "student_id": student_id}
-        )
+        logger.error(f"Error in /mcq/generate endpoint: {str(e)}")
+        background_tasks.add_task(log_activity_helper, user_id=firebase_uid, student_id=student_id,
+            activity_type="mcq_generation_error", activity_name="MCQ generation error",
+            points=0, metadata={"error": str(e)})
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
@@ -1149,7 +1294,7 @@ async def submit_mcq(
         logger.info(f"MCQ evaluation: correct={is_correct}, selected='{selected_option.text if selected_option else 'Unknown'}', correct='{correct_option.text if correct_option else 'Unknown'}'")
 
         # STEP 3: Build standardized review and attempt documents for analytics
-        review_doc, attempt_doc = _build_mcq_analytics_docs(
+        review_doc, attempt_doc = await _build_mcq_analytics_docs(
             student_id, mcq, submission, is_correct, score, selected_option, correct_option, firebase_uid
         )
         
@@ -1467,7 +1612,7 @@ async def submit_fill_in_blank(
 
         # Save analytics data
         try:
-            review_doc, attempt_doc = _build_fill_in_blank_analytics_docs(
+            review_doc, attempt_doc = await _build_fill_in_blank_analytics_docs(
                 student_id, fill_in_blank, submission, review, firebase_uid
             )
             
@@ -1559,6 +1704,569 @@ async def submit_fill_in_blank(
         raise HTTPException(status_code=500, detail=f"Error processing fill-in-the-blank submission: {str(e)}")
 
 # ============================================================================
+# CONCEPT MATCHING ENDPOINTS
+# ============================================================================
+
+@router.post("/matching/generate", response_model=MatchingResponseBatch)
+async def generate_matching(
+    request: MatchingPayload,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
+    matching_service: MatchingService = Depends(get_matching_service)
+) -> MatchingResponseBatch:
+    """
+    Generate a batch of concept matching problems using Gemini 2.5 Flash.
+    Uses recommender to get optimal subject/unit/skill/subskill and retrieve
+    description and concept group for enhanced matching generation.
+    
+    Returns a batch response with multiple matching problems when count > 1.
+    """
+
+    firebase_uid = user_context["firebase_uid"]
+    student_id = user_context["student_id"]
+
+    try:
+        logger.info(f"User {user_context['email']} generating matching problem for student {student_id}")
+
+        if not request.subject:
+            raise HTTPException(status_code=400, detail="Subject is required")
+
+        # Generate matching problem batch using recommender to determine optimal context
+        matching_list = await matching_service.get_matching_from_recommender(
+            student_id=student_id,
+            subject=request.subject,
+            count=request.count,
+            unit_id=request.unit_id,
+            skill_id=request.skill_id,
+            subskill_id=request.subskill_id,
+            difficulty=request.difficulty,
+            matching_style=request.matching_style
+        )
+
+        if not matching_list or len(matching_list) == 0:
+            # Log failure
+            background_tasks.add_task(
+                log_activity_helper,
+                user_id=firebase_uid,
+                student_id=student_id,
+                activity_type="matching_generation_failed",
+                activity_name=f"Failed to generate {request.subject} matching problem",
+                points=0,
+                metadata={
+                    "subject": request.subject,
+                    "student_id": student_id,
+                    "matching_style": request.matching_style,
+                    "difficulty": request.difficulty
+                }
+            )
+            raise HTTPException(status_code=500, detail="Failed to generate matching problems")
+
+        # Log success for each matching problem generated
+        for matching in matching_list:
+            background_tasks.add_task(
+                log_activity_helper,
+                user_id=firebase_uid,
+                student_id=student_id,
+                activity_type="matching_generated",
+                activity_name=f"Generated {request.subject} concept matching problem",
+                points=8,
+                metadata={
+                    "subject": request.subject,
+                    "skill_id": matching.skill_id,
+                    "subskill_id": matching.subskill_id,
+                    "student_id": student_id,
+                    "matching_id": matching.id,
+                    "difficulty": matching.difficulty,
+                    "matching_style": request.matching_style,
+                    "left_items_count": len(matching.left_items),
+                    "right_items_count": len(matching.right_items)
+                }
+            )
+
+        logger.info(f"Successfully generated {len(matching_list)} matching problems")
+        
+        # Return batch response
+        return MatchingResponseBatch(
+            problems=matching_list,
+            metadata={
+                "request_count": request.count,
+                "returned_count": len(matching_list),
+                "subject": request.subject,
+                "difficulty": request.difficulty,
+                "matching_style": request.matching_style
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating matching problem: {str(e)}")
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="matching_generation_error",
+            activity_name="Matching problem generation error",
+            points=0,
+            metadata={"error": str(e), "student_id": student_id}
+        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.post("/matching/submit", response_model=MatchingReview)
+async def submit_matching(
+    submission: MatchingSubmission,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
+    matching_service: MatchingService = Depends(get_matching_service),
+    competency_service: CompetencyService = Depends(get_competency_service),
+    review_service: ReviewService = Depends(get_review_service),
+    cosmos_db = Depends(get_cosmos_db)
+) -> MatchingReview:
+    """
+    Submit concept matching answer, get review using LLM evaluation, and save to analytics pipeline.
+    Uses the review service LLM pipeline for nuanced evaluation instead of exact matching only.
+    """
+
+    firebase_uid = user_context["firebase_uid"]
+    student_id = user_context["student_id"]
+
+    try:
+        logger.info(f"User {user_context['email']} submitting matching problem {submission.matching.id} for student {student_id}")
+
+        matching = submission.matching
+        
+        logger.info(f"Processing matching submission: id={matching.id}, subject={matching.subject}, skill={matching.skill_id}")
+
+        # Build student matches summary for LLM review
+        student_matches_text = []
+        for student_match in submission.student_matches:
+            # Find the text for left and right items
+            left_text = next((item.text for item in matching.left_items if item.id == student_match.left_id), "Unknown")
+            right_text = next((item.text for item in matching.right_items if item.id == student_match.right_id), "Unknown")
+            
+            # Find expected answers for this left item
+            expected_answers = []
+            for mapping in matching.mappings:
+                if mapping.left_id == student_match.left_id:
+                    for right_id in mapping.right_ids:
+                        right_item_text = next((item.text for item in matching.right_items if item.id == right_id), right_id)
+                        expected_answers.append(right_item_text)
+                    break
+            
+            expected_text = ", ".join(expected_answers) if expected_answers else "Unknown"
+            student_matches_text.append(f"'{left_text}' → '{right_text}' (Expected: {expected_text})")
+        
+        matches_summary = "; ".join(student_matches_text)
+        
+        # Use the review service LLM pipeline to evaluate the matches
+        # Create a synthetic problem object for the review service
+        synthetic_problem = {
+            "id": matching.id,
+            "problem": matching.prompt,
+            "answer": matching.rationale_global or "See individual match explanations",
+            "skill_id": matching.skill_id
+        }
+        
+        # Create a simple base64 encoded text "image" since review service expects image data
+        # This is a workaround to use the LLM evaluation without an actual image
+        text_content = f"Concept matching results: {matches_summary}"
+        text_b64 = base64.b64encode(text_content.encode()).decode()
+        
+        # Get LLM review of the matches
+        llm_review = await review_service.review_problem(
+            student_id=student_id,
+            subject=matching.subject,
+            problem=synthetic_problem,
+            solution_image_base64=text_b64,
+            skill_id=matching.skill_id,
+            subskill_id=matching.subskill_id,
+            student_answer=matches_summary,
+            canvas_used=False
+        )
+        
+        if "error" in llm_review:
+            logger.warning(f"LLM review failed, falling back to basic evaluation: {llm_review['error']}")
+            # Fallback to service-based evaluation if LLM review fails
+            review = await matching_service.evaluate_submission(submission)
+        else:
+            # Convert LLM review to our MatchingReview format
+            llm_score = llm_review.get("score", 5.0)
+            llm_correct = llm_review.get("correct", False)
+            llm_accuracy = llm_review.get("accuracy_percentage", 50.0)
+            
+            # Create match evaluations based on LLM feedback and actual correctness
+            match_evaluations = []
+            student_matches = {match.left_id: match.right_id for match in submission.student_matches}
+            correct_mappings = {}
+            for mapping in matching.mappings:
+                correct_mappings[mapping.left_id] = mapping.right_ids
+            
+            correct_count = 0
+            for student_match in submission.student_matches:
+                expected_right_ids = correct_mappings.get(student_match.left_id, [])
+                is_match_correct = student_match.right_id in expected_right_ids
+                if is_match_correct:
+                    correct_count += 1
+                
+                match_evaluations.append(MatchingEvaluation(
+                    left_id=student_match.left_id,
+                    right_id=student_match.right_id,
+                    is_correct=is_match_correct,
+                    expected_right_ids=expected_right_ids,
+                    feedback=f"LLM evaluation: {'Correct' if is_match_correct else 'Needs improvement'}"
+                ))
+            
+            review = MatchingReview(
+                overall_correct=llm_correct,
+                total_score=llm_score,
+                match_evaluations=match_evaluations,
+                explanation=llm_review.get("feedback", {}).get("guidance", "LLM provided evaluation"),
+                percentage_correct=llm_accuracy,
+                metadata={
+                    "matching_id": matching.id,
+                    "evaluation_method": "llm_review_service",
+                    "llm_score": llm_score,
+                    "submitted_at": submission.submitted_at.isoformat()
+                }
+            )
+
+        # Save analytics data
+        try:
+            review_doc, attempt_doc = await _build_matching_analytics_docs(
+                student_id, matching, submission, review, firebase_uid
+            )
+            
+            # Save to Cosmos DB for analytics pipeline
+            await cosmos_db.save_problem_review(
+                student_id=student_id,
+                subject=matching.subject,
+                skill_id=matching.skill_id,
+                subskill_id=matching.subskill_id,
+                problem_id=matching.id,
+                review_data=review_doc,
+                problem_content=matching.dict(),
+                firebase_uid=firebase_uid
+            )
+            
+            await cosmos_db.save_attempt(
+                student_id=attempt_doc["student_id"],
+                subject=attempt_doc["subject"],
+                skill_id=attempt_doc["skill_id"],
+                subskill_id=attempt_doc["subskill_id"],
+                score=attempt_doc["score"],
+                analysis=attempt_doc["analysis"],
+                feedback=attempt_doc["feedback"],
+                firebase_uid=attempt_doc["firebase_uid"]
+            )
+            
+            logger.info(f"Successfully saved matching analytics data for student {student_id}")
+            
+        except Exception as e:
+            logger.error(f"Error saving matching analytics data: {str(e)}")
+            # Continue processing even if analytics save fails
+
+        # Update competency
+        await competency_service.update_competency_from_problem(
+            student_id=student_id,
+            subject=matching.subject,
+            skill_id=matching.skill_id,
+            subskill_id=matching.subskill_id,
+            evaluation={
+                "correct": review.overall_correct,
+                "score": review.total_score,
+                "accuracy_percentage": review.percentage_correct
+            }
+        )
+
+        # Calculate points
+        points = 35 if review.overall_correct else 12
+        if review.percentage_correct > 80:
+            points += 15
+
+        # Log activity
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="matching_submitted",
+            activity_name=f"Submitted {matching.subject} concept matching problem",
+            points=points,
+            metadata={
+                "matching_id": matching.id,
+                "correct": review.overall_correct,
+                "subject": matching.subject,
+                "skill_id": matching.skill_id,
+                "subskill_id": matching.subskill_id,
+                "student_id": student_id,
+                "score": review.total_score,
+                "percentage_correct": review.percentage_correct,
+                "match_count": len(submission.student_matches),
+                "points_earned": points
+            }
+        )
+
+        logger.info(f"Matching submission completed: student={student_id}, problem={matching.id}, correct={review.overall_correct}, score={review.total_score}")
+        return review
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting matching problem: {str(e)}")
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="matching_submission_error",
+            activity_name="Matching problem submission error",
+            points=0,
+            metadata={"error": str(e), "matching_id": getattr(submission.matching, 'id', 'unknown'), "student_id": student_id}
+        )
+        raise HTTPException(status_code=500, detail=f"Error processing matching submission: {str(e)}")
+
+# ============================================================================
+# TRUE/FALSE QUESTION ENDPOINTS
+# ============================================================================
+
+@router.post("/true-false/generate", response_model=TrueFalseResponse)
+async def generate_true_false(
+    request: TrueFalsePayload,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
+    true_false_service: TrueFalseService = Depends(get_true_false_service)
+) -> TrueFalseResponse:
+    """
+    Generate a true/false question using Gemini 2.5 Flash.
+    Uses recommender to get optimal subject/unit/skill/subskill and retrieve
+    description and concept group for enhanced true/false generation.
+    """
+
+    firebase_uid = user_context["firebase_uid"]
+    student_id = user_context["student_id"]
+
+    try:
+        logger.info(f"User {user_context['email']} generating true/false for student {student_id}")
+
+        if not request.subject:
+            raise HTTPException(status_code=400, detail="Subject is required")
+
+        # Generate true/false using recommender to determine optimal context
+        true_false = await true_false_service.get_true_false_from_recommender(
+            student_id=student_id,
+            subject=request.subject,
+            unit_id=request.unit_id,
+            skill_id=request.skill_id,
+            subskill_id=request.subskill_id,
+            difficulty=request.difficulty,
+            allow_explain_why=request.allow_explain_why,
+            trickiness=request.trickiness
+        )
+
+        if not true_false:
+            # Log failure
+            background_tasks.add_task(
+                log_activity_helper,
+                user_id=firebase_uid,
+                student_id=student_id,
+                activity_type="true_false_generation_failed",
+                activity_name=f"Failed to generate {request.subject} true/false question",
+                points=0,
+                metadata={
+                    "subject": request.subject,
+                    "student_id": student_id,
+                    "trickiness": request.trickiness,
+                    "difficulty": request.difficulty
+                }
+            )
+            raise HTTPException(status_code=500, detail="Failed to generate true/false question")
+
+        # Log success
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="true_false_generated",
+            activity_name=f"Generated {request.subject} true/false question",
+            points=8,
+            metadata={
+                "subject": request.subject,
+                "skill_id": true_false.skill_id,
+                "subskill_id": true_false.subskill_id,
+                "student_id": student_id,
+                "question_id": true_false.id,
+                "difficulty": true_false.difficulty,
+                "trickiness": request.trickiness,
+                "allow_explain_why": str(request.allow_explain_why)
+            }
+        )
+
+        logger.info(f"Successfully generated true/false question with ID: {true_false.id}")
+        return true_false
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating true/false question: {str(e)}")
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="true_false_generation_error",
+            activity_name="True/false generation error",
+            points=0,
+            metadata={"error": str(e), "student_id": student_id}
+        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.post("/true-false/submit", response_model=TrueFalseReview)
+async def submit_true_false(
+    submission: TrueFalseSubmission,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
+    true_false_service: TrueFalseService = Depends(get_true_false_service),
+    competency_service: CompetencyService = Depends(get_competency_service),
+    review_service: ReviewService = Depends(get_review_service),
+    cosmos_db = Depends(get_cosmos_db)
+) -> TrueFalseReview:
+    """
+    Submit true/false answer, get review, and save to analytics pipeline.
+    Implements comprehensive evaluation with analytics integration.
+    """
+
+    firebase_uid = user_context["firebase_uid"]
+    student_id = user_context["student_id"]
+
+    try:
+        logger.info(f"User {user_context['email']} submitting true/false {submission.true_false.id} for student {student_id}")
+
+        # Use the true/false object directly from the submission
+        true_false = submission.true_false
+        
+        logger.info(f"Processing true/false submission: id={true_false.id}, subject={true_false.subject}, skill={true_false.skill_id}")
+
+        # Evaluate the answer
+        is_correct = submission.selected_answer == true_false.correct
+        
+        # Create review using service evaluation
+        review = TrueFalseReview(
+            is_correct=is_correct,
+            selected_answer=submission.selected_answer,
+            correct_answer=true_false.correct,
+            explanation=true_false.rationale,
+            student_explanation=submission.explanation,
+            metadata={
+                "question_id": true_false.id,
+                "submitted_at": submission.submitted_at.isoformat(),
+                "subject": true_false.subject,
+                "skill_id": true_false.skill_id,
+                "subskill_id": true_false.subskill_id,
+                "difficulty": true_false.difficulty,
+                "trickiness": true_false.trickiness,
+                "allow_explain_why": str(true_false.allow_explain_why),
+                "evaluation_method": "comprehensive_with_analytics"
+            }
+        )
+
+        logger.info(f"True/false evaluation: correct={is_correct}, selected={submission.selected_answer}, correct_answer={true_false.correct}")
+
+        # Build standardized review and attempt documents for analytics
+        review_doc, attempt_doc = await _build_true_false_analytics_docs(
+            student_id, true_false, submission, review, firebase_uid
+        )
+        
+        # Save to Cosmos DB for analytics pipeline
+        try:
+            # Save the review document (matches existing review schema)
+            await cosmos_db.save_problem_review(
+                student_id=student_id,
+                subject=true_false.subject,
+                skill_id=true_false.skill_id,
+                subskill_id=true_false.subskill_id,
+                problem_id=true_false.id,
+                review_data=review_doc,
+                problem_content=true_false.dict(),
+                firebase_uid=firebase_uid
+            )
+            
+            # Save the attempt document with correct parameters
+            await cosmos_db.save_attempt(
+                student_id=attempt_doc["student_id"],
+                subject=attempt_doc["subject"],
+                skill_id=attempt_doc["skill_id"],
+                subskill_id=attempt_doc["subskill_id"],
+                score=attempt_doc["score"],
+                analysis=attempt_doc["analysis"],
+                feedback=attempt_doc["feedback"],
+                firebase_uid=attempt_doc["firebase_uid"]
+            )
+            
+            logger.info(f"Successfully saved true/false analytics data for student {student_id}")
+            
+        except Exception as e:
+            logger.error(f"Error saving true/false analytics data: {str(e)}")
+            # Continue processing even if analytics save fails
+
+        # Update competency using the standardized evaluation format
+        await competency_service.update_competency_from_problem(
+            student_id=student_id,
+            subject=true_false.subject,
+            skill_id=true_false.skill_id,
+            subskill_id=true_false.subskill_id,
+            evaluation={
+                "correct": is_correct,
+                "score": 10.0 if is_correct else 2.0,
+                "accuracy_percentage": 100.0 if is_correct else 0.0
+            }
+        )
+
+        # Calculate points and prepare response
+        points = 20 if is_correct else 5
+        
+        # Log activity
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="true_false_submitted",
+            activity_name=f"Submitted {true_false.subject} true/false question",
+            points=points,
+            metadata={
+                "question_id": true_false.id,
+                "selected_answer": str(submission.selected_answer),
+                "correct_answer": str(true_false.correct),
+                "correct": str(is_correct),
+                "subject": true_false.subject,
+                "skill_id": true_false.skill_id,
+                "subskill_id": true_false.subskill_id,
+                "student_id": student_id,
+                "score": 10.0 if is_correct else 2.0,
+                "points_earned": points,
+                "difficulty": true_false.difficulty,
+                "trickiness": true_false.trickiness,
+                "has_explanation": str(bool(submission.explanation))
+            }
+        )
+
+        logger.info(f"True/false submission completed: student={student_id}, question={true_false.id}, correct={is_correct}")
+        return review
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting true/false: {str(e)}")
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="true_false_submission_error",
+            activity_name="True/false submission error",
+            points=0,
+            metadata={"error": str(e), "question_id": getattr(submission.true_false, 'id', 'unknown'), "student_id": student_id}
+        )
+        raise HTTPException(status_code=500, detail=f"Error processing true/false submission: {str(e)}")
+
+# ============================================================================
 # UTILITY ENDPOINTS
 # ============================================================================
 
@@ -1601,7 +2309,9 @@ async def problems_health_check(
             "activity_logging": True,  # NEW: Proper activity logging
             "composable_problems": True,  # NEW: Composable problem generation
             "mcq_generation": True,  # NEW: Multiple choice question generation
-            "fill_in_blank_generation": True  # NEW: Fill-in-the-blank question generation
+            "fill_in_blank_generation": True,  # NEW: Fill-in-the-blank question generation
+            "matching_generation": True,  # NEW: Concept matching problem generation
+            "true_false_generation": True  # NEW: True/false question generation
         },
         "timestamp": datetime.utcnow().isoformat()
     }
