@@ -7,6 +7,16 @@ import {
   ChecklistPrimitive,
   TablePrimitive,
   KeyValuePrimitive,
+  InteractiveTimelinePrimitive,
+  CarouselPrimitive,
+  FlipCardPrimitive,
+  CategorizationPrimitive,
+  FillInTheBlankPrimitive,
+  ScenarioQuestionPrimitive,
+  TabbedContentPrimitive,
+  MatchingActivityPrimitive,
+  SequencingActivityPrimitive,
+  AccordionPrimitive,
   PrimitivesContainer,
   PrimitiveData
 } from './InteractiveContentPrimitives';
@@ -14,13 +24,13 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { MessageCircle, Sparkles, Eye, Lightbulb, Loader2, X } from 'lucide-react';
 
-// Types for reading content structure
+// Types for reading content structure - Updated with enhanced primitives
 export interface ReadingSection {
   heading: string;
   content: string;
   key_terms_used: string[];
   concepts_covered: string[];
-  // Interactive primitives (optional)
+  // Basic Interactive primitives (optional)
   alerts?: Array<{ type: 'alert'; style: 'info' | 'warning' | 'success' | 'tip'; title: string; content: string; }>;
   expandables?: Array<{ type: 'expandable'; title: string; content: string; }>;
   quizzes?: Array<{ type: 'quiz'; question: string; answer: string; explanation?: string; }>;
@@ -28,6 +38,18 @@ export interface ReadingSection {
   checklists?: Array<{ type: 'checklist'; text: string; completed?: boolean; }>;
   tables?: Array<{ type: 'table'; headers: string[]; rows: string[][]; }>;
   keyvalues?: Array<{ type: 'keyvalue'; key: string; value: string; }>;
+  // New Enhanced Interactive Primitives
+  interactive_timelines?: Array<{ type: 'interactive_timeline'; title: string; events: Array<{date: string; title: string; description: string;}> }>;
+  carousels?: Array<{ type: 'carousel'; title?: string; items: Array<{image_url: string; alt_text: string; caption?: string; description?: string;}> }>;
+  flip_cards?: Array<{ type: 'flip_card'; front_content: string; back_content: string; }>;
+  categorization_activities?: Array<{ type: 'categorization'; instruction: string; categories: string[]; items: Array<{item_text: string; correct_category: string;}> }>;
+  fill_in_the_blanks?: Array<{ type: 'fill_in_the_blank'; sentence: string; correct_answer: string; hint?: string; }>;
+  scenario_questions?: Array<{ type: 'scenario_question'; scenario: string; question: string; answer_options?: string[]; correct_answer: string; explanation: string; }>;
+  // New Primitives
+  tabbed_content?: Array<{ type: 'tabbed_content'; tabs: Array<{title: string; content: string;}> }>;
+  matching_activities?: Array<{ type: 'matching_activity'; instruction: string; pairs: Array<{prompt: string; answer: string;}> }>;
+  sequencing_activities?: Array<{ type: 'sequencing_activity'; instruction: string; items: string[]; }>;
+  accordions?: Array<{ type: 'accordion'; title?: string; items: Array<{question: string; answer: string;}> }>;
 }
 
 export interface ReadingContent {
@@ -211,6 +233,101 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
                       <KeyValuePrimitive key={`keyvalue-${index}`} data={keyvalue} />
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* NEW ENHANCED PRIMITIVES */}
+
+              {/* Interactive Timelines */}
+              {section.interactive_timelines && section.interactive_timelines.length > 0 && (
+                <div className="space-y-3">
+                  {section.interactive_timelines.map((timeline, index) => (
+                    <InteractiveTimelinePrimitive key={`timeline-${index}`} data={timeline} />
+                  ))}
+                </div>
+              )}
+
+
+              {/* Carousels */}
+              {section.carousels && section.carousels.length > 0 && (
+                <div className="space-y-3">
+                  {section.carousels.map((carousel, index) => (
+                    <CarouselPrimitive key={`carousel-${index}`} data={carousel} />
+                  ))}
+                </div>
+              )}
+
+              {/* Flip Cards */}
+              {section.flip_cards && section.flip_cards.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {section.flip_cards.map((flipcard, index) => (
+                    <FlipCardPrimitive key={`flipcard-${index}`} data={flipcard} />
+                  ))}
+                </div>
+              )}
+
+              {/* Categorization Activities */}
+              {section.categorization_activities && section.categorization_activities.length > 0 && (
+                <div className="space-y-3">
+                  {section.categorization_activities.map((categorization, index) => (
+                    <CategorizationPrimitive key={`categorization-${index}`} data={categorization} />
+                  ))}
+                </div>
+              )}
+
+              {/* Fill in the Blanks */}
+              {section.fill_in_the_blanks && section.fill_in_the_blanks.length > 0 && (
+                <div className="space-y-3">
+                  {section.fill_in_the_blanks.map((fillBlank, index) => (
+                    <FillInTheBlankPrimitive key={`fillblank-${index}`} data={fillBlank} />
+                  ))}
+                </div>
+              )}
+
+              {/* Scenario Questions */}
+              {section.scenario_questions && section.scenario_questions.length > 0 && (
+                <div className="space-y-3">
+                  {section.scenario_questions.map((scenario, index) => (
+                    <ScenarioQuestionPrimitive key={`scenario-${index}`} data={scenario} />
+                  ))}
+                </div>
+              )}
+
+              {/* NEW PRIMITIVES */}
+
+              {/* Tabbed Content */}
+              {section.tabbed_content && section.tabbed_content.length > 0 && (
+                <div className="space-y-3">
+                  {section.tabbed_content.map((tabbedContent, index) => (
+                    <TabbedContentPrimitive key={`tabbed-${index}`} data={tabbedContent} />
+                  ))}
+                </div>
+              )}
+
+              {/* Matching Activities */}
+              {section.matching_activities && section.matching_activities.length > 0 && (
+                <div className="space-y-3">
+                  {section.matching_activities.map((matchingActivity, index) => (
+                    <MatchingActivityPrimitive key={`matching-${index}`} data={matchingActivity} />
+                  ))}
+                </div>
+              )}
+
+              {/* Sequencing Activities */}
+              {section.sequencing_activities && section.sequencing_activities.length > 0 && (
+                <div className="space-y-3">
+                  {section.sequencing_activities.map((sequencingActivity, index) => (
+                    <SequencingActivityPrimitive key={`sequencing-${index}`} data={sequencingActivity} />
+                  ))}
+                </div>
+              )}
+
+              {/* Accordions */}
+              {section.accordions && section.accordions.length > 0 && (
+                <div className="space-y-3">
+                  {section.accordions.map((accordion, index) => (
+                    <AccordionPrimitive key={`accordion-${index}`} data={accordion} />
+                  ))}
                 </div>
               )}
             </div>

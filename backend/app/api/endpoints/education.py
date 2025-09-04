@@ -691,64 +691,69 @@ async def get_content_package_details(
             raise HTTPException(status_code=404, detail="Content package not found")
         
         # ============================================================================
-        # DYNAMIC PROBLEM HYDRATION - Product Spec Implementation (Phase 1)
+        # DYNAMIC PROBLEM HYDRATION - TEMPORARILY DISABLED
         # ============================================================================
+        # 
+        # DISABLED: This section was overriding stored problems from Cosmos DB with dynamic ones.
+        # The frontend will now receive the actual cached problems stored in the database.
+        # 
+        # # Check if package has practice problems to hydrate
+        # if package.get("content", {}).get("practice", {}).get("problems"):
+        #     try:
+        #         logger.info(f"💧 Hydrating practice problems for package: {package_id}")
+        #         
+        #         practice_blueprint = package["content"]["practice"]
+        #         subskill_id = package.get("subskill_id")
+        #         subject = package.get("subject")
+        #         problem_count = practice_blueprint.get("problem_count", 8)
+        #         
+        #         # Get user's student_id for personalized problem generation
+        #         firebase_uid = user_context.get('uid')
+        #         student_mapping = await cosmos_db.get_student_mapping(firebase_uid) if firebase_uid else None
+        #         student_id = student_mapping["student_id"] if student_mapping else 1  # Default fallback
+        #         
+        #         if subskill_id and subject:
+        #             # Call ProblemService to get fresh set of problems
+        #             new_problems = await problem_service.get_skill_problems(
+        #                 student_id=student_id,
+        #                 subject=subject,
+        #                 skill_id=package.get("skill_id", ""),
+        #                 subskill_id=subskill_id,
+        #                 count=problem_count
+        #             )
+        #             
+        #             if new_problems:
+        #                 # Transform problems to match the expected format
+        #                 formatted_problems = []
+        #                 for i, problem_data in enumerate(new_problems):
+        #                     formatted_problem = {
+        #                         "id": f"{package_id}_dynamic_{i+1}",
+        #                         "problem_id": f"dyn_{subskill_id}_{i+1}",
+        #                         "type": "dynamic",
+        #                         "subject": subject,
+        #                         "skill_id": package.get("skill_id", ""),
+        #                         "subskill_id": subskill_id,
+        #                         "difficulty": problem_data.get("metadata", {}).get("difficulty", 5),
+        #                         "timestamp": package.get("created_at", ""),
+        #                         "problem_data": problem_data
+        #                     }
+        #                     formatted_problems.append(formatted_problem)
+        #                 
+        #                 # Replace static problems with dynamic ones
+        #                 package["content"]["practice"]["problems"] = formatted_problems
+        #                 package["content"]["practice"]["problem_count"] = len(formatted_problems)
+        #                 
+        #                 logger.info(f"✅ Successfully replaced static problems with {len(formatted_problems)} dynamic problems")
+        #             else:
+        #                 logger.warning(f"⚠️ ProblemService returned no problems for {subskill_id}. Keeping static problems.")
+        #         else:
+        #             logger.warning(f"⚠️ Missing subskill_id or subject for dynamic hydration. Keeping static problems.")
+        #             
+        #     except Exception as e:
+        #         logger.error(f"❌ Error hydrating dynamic problems for {package_id}: {e}. Falling back to static problems.")
+        #         # Continue with static problems on error
         
-        # Check if package has practice problems to hydrate
-        if package.get("content", {}).get("practice", {}).get("problems"):
-            try:
-                logger.info(f"💧 Hydrating practice problems for package: {package_id}")
-                
-                practice_blueprint = package["content"]["practice"]
-                subskill_id = package.get("subskill_id")
-                subject = package.get("subject")
-                problem_count = practice_blueprint.get("problem_count", 8)
-                
-                # Get user's student_id for personalized problem generation
-                firebase_uid = user_context.get('uid')
-                student_mapping = await cosmos_db.get_student_mapping(firebase_uid) if firebase_uid else None
-                student_id = student_mapping["student_id"] if student_mapping else 1  # Default fallback
-                
-                if subskill_id and subject:
-                    # Call ProblemService to get fresh set of problems
-                    new_problems = await problem_service.get_skill_problems(
-                        student_id=student_id,
-                        subject=subject,
-                        skill_id=package.get("skill_id", ""),
-                        subskill_id=subskill_id,
-                        count=problem_count
-                    )
-                    
-                    if new_problems:
-                        # Transform problems to match the expected format
-                        formatted_problems = []
-                        for i, problem_data in enumerate(new_problems):
-                            formatted_problem = {
-                                "id": f"{package_id}_dynamic_{i+1}",
-                                "problem_id": f"dyn_{subskill_id}_{i+1}",
-                                "type": "dynamic",
-                                "subject": subject,
-                                "skill_id": package.get("skill_id", ""),
-                                "subskill_id": subskill_id,
-                                "difficulty": problem_data.get("metadata", {}).get("difficulty", 5),
-                                "timestamp": package.get("created_at", ""),
-                                "problem_data": problem_data
-                            }
-                            formatted_problems.append(formatted_problem)
-                        
-                        # Replace static problems with dynamic ones
-                        package["content"]["practice"]["problems"] = formatted_problems
-                        package["content"]["practice"]["problem_count"] = len(formatted_problems)
-                        
-                        logger.info(f"✅ Successfully replaced static problems with {len(formatted_problems)} dynamic problems")
-                    else:
-                        logger.warning(f"⚠️ ProblemService returned no problems for {subskill_id}. Keeping static problems.")
-                else:
-                    logger.warning(f"⚠️ Missing subskill_id or subject for dynamic hydration. Keeping static problems.")
-                    
-            except Exception as e:
-                logger.error(f"❌ Error hydrating dynamic problems for {package_id}: {e}. Falling back to static problems.")
-                # Continue with static problems on error
+        logger.info(f"📦 Using stored problems from Cosmos DB for package: {package_id}")
         
         # ============================================================================
         # VISUAL AGGREGATION (Existing Logic)

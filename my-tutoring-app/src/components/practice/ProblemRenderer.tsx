@@ -3,8 +3,19 @@
 import React, { useImperativeHandle, forwardRef } from 'react';
 import ComposableProblemComponent from './ComposableProblemComponent';
 import DrawingProblemComponent from './DrawingProblemComponent';
-import MatchingComponent from './MatchingComponent';
 import { authApi } from '@/lib/authApiClient';
+
+// Import the unified primitives
+import {
+  MCQPrimitive,
+  MatchingPrimitive,
+  TrueFalsePrimitive,
+  FillInBlankPrimitive,
+  SequencingPrimitive,
+  CategorizationPrimitive,
+  ScenarioQuestionPrimitive,
+  ShortAnswerPrimitive
+} from './primitives';
 
 interface Problem {
   problem_id?: string;
@@ -81,9 +92,23 @@ interface Problem {
   correct?: boolean;
   allow_explain_why?: boolean;
   trickiness?: string;
+  // Sequencing fields
+  instruction?: string;
+  items?: string[];
+  // Categorization fields
+  categories?: string[];
+  categorization_items?: Array<{
+    item_text: string;
+    correct_category: string;
+  }>;
+  // Scenario question fields
+  scenario?: string;
+  scenario_question?: string;
+  scenario_answer?: string;
+  // Short answer fields - question field already exists above
 }
 
-type ProblemType = 'mcq' | 'fillInBlank' | 'matching' | 'trueFalse' | 'composable' | 'drawing';
+type ProblemType = 'mcq' | 'fillInBlank' | 'matching' | 'trueFalse' | 'sequencing' | 'categorization' | 'scenarioQuestion' | 'shortAnswer' | 'composable' | 'drawing';
 
 interface ProblemRendererProps {
   problem: Problem;
@@ -105,6 +130,10 @@ const getProblemType = (problem: Problem): ProblemType => {
   if (problem.text_with_blanks && problem.blanks) return 'fillInBlank';
   if (problem.prompt && problem.left_items && problem.right_items) return 'matching';
   if (problem.statement && problem.correct !== undefined) return 'trueFalse';
+  if (problem.instruction && problem.items) return 'sequencing';
+  if (problem.categories && problem.categorization_items) return 'categorization';
+  if (problem.scenario && problem.scenario_question) return 'scenarioQuestion';
+  if (problem.question && !problem.options && !problem.text_with_blanks) return 'shortAnswer';
   if (problem.interaction) return 'composable';
   return 'drawing'; // fallback
 };
@@ -241,6 +270,122 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>((
       return;
     }
     
+    // For Sequencing problems
+    if (problemType === 'sequencing' && currentResponse?.student_sequence) {
+      const sequencingSubmission = {
+        sequencing: problem,
+        student_sequence: currentResponse.student_sequence
+      };
+      
+      console.log('=== SEQUENCING SUBMISSION ===');
+      console.log('Submitting Sequencing:', sequencingSubmission);
+      
+      const sequencingReview = await authApi.submitSequencing(sequencingSubmission);
+      
+      // Convert Sequencing review to standard feedback format
+      const review = {
+        evaluation: { score: sequencingReview.total_score },
+        feedback: {
+          praise: sequencingReview.is_correct ? "Perfect Sequence!" : "Good effort! Some ordering needs work.",
+          guidance: sequencingReview.explanation,
+          encouragement: sequencingReview.is_correct ? "Keep up the fantastic work!" : "Review the explanations and try similar sequencing problems."
+        },
+        correct: sequencingReview.is_correct,
+        score: sequencingReview.total_score,
+        accuracy_percentage: sequencingReview.percentage_correct
+      };
+      
+      await onSubmit({ review, sequencingReview });
+      return;
+    }
+    
+    // For Categorization problems
+    if (problemType === 'categorization' && currentResponse?.student_categorization) {
+      const categorizationSubmission = {
+        categorization: problem,
+        student_categorization: currentResponse.student_categorization
+      };
+      
+      console.log('=== CATEGORIZATION SUBMISSION ===');
+      console.log('Submitting Categorization:', categorizationSubmission);
+      
+      const categorizationReview = await authApi.submitCategorization(categorizationSubmission);
+      
+      // Convert Categorization review to standard feedback format
+      const review = {
+        evaluation: { score: categorizationReview.total_score },
+        feedback: {
+          praise: categorizationReview.is_correct ? "Perfect Categorization!" : "Good effort! Some categories need work.",
+          guidance: categorizationReview.explanation,
+          encouragement: categorizationReview.is_correct ? "Keep up the fantastic work!" : "Review the explanations and try similar categorization problems."
+        },
+        correct: categorizationReview.is_correct,
+        score: categorizationReview.total_score,
+        accuracy_percentage: categorizationReview.percentage_correct
+      };
+      
+      await onSubmit({ review, categorizationReview });
+      return;
+    }
+    
+    // For Scenario Question problems
+    if (problemType === 'scenarioQuestion' && currentResponse?.student_answer) {
+      const scenarioSubmission = {
+        scenario_question: problem,
+        student_answer: currentResponse.student_answer
+      };
+      
+      console.log('=== SCENARIO QUESTION SUBMISSION ===');
+      console.log('Submitting Scenario Question:', scenarioSubmission);
+      
+      const scenarioReview = await authApi.submitScenarioQuestion(scenarioSubmission);
+      
+      // Convert Scenario review to standard feedback format
+      const review = {
+        evaluation: { score: scenarioReview.score },
+        feedback: {
+          praise: scenarioReview.is_correct ? "Excellent Answer!" : "Good effort!",
+          guidance: scenarioReview.explanation,
+          encouragement: scenarioReview.is_correct ? "Keep up the fantastic work!" : "Review the feedback and try similar scenario problems."
+        },
+        correct: scenarioReview.is_correct,
+        score: scenarioReview.score,
+        accuracy_percentage: scenarioReview.similarity_score
+      };
+      
+      await onSubmit({ review, scenarioReview });
+      return;
+    }
+    
+    // For Short Answer problems
+    if (problemType === 'shortAnswer' && currentResponse?.student_answer) {
+      const shortAnswerSubmission = {
+        short_answer: problem,
+        student_answer: currentResponse.student_answer
+      };
+      
+      console.log('=== SHORT ANSWER SUBMISSION ===');
+      console.log('Submitting Short Answer:', shortAnswerSubmission);
+      
+      const shortAnswerReview = await authApi.submitShortAnswer(shortAnswerSubmission);
+      
+      // Convert Short Answer review to standard feedback format
+      const review = {
+        evaluation: { score: shortAnswerReview.score },
+        feedback: {
+          praise: shortAnswerReview.score >= 7 ? "Great Answer!" : "Good effort!",
+          guidance: shortAnswerReview.explanation,
+          encouragement: shortAnswerReview.score >= 7 ? "Keep up the fantastic work!" : "Review the feedback and try similar problems."
+        },
+        correct: shortAnswerReview.is_correct,
+        score: shortAnswerReview.score,
+        accuracy_percentage: shortAnswerReview.score * 10
+      };
+      
+      await onSubmit({ review, shortAnswerReview });
+      return;
+    }
+    
     // For other problem types (composable, drawing)
     await onSubmit({
       primitive_response: currentResponse,
@@ -256,538 +401,98 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>((
   switch (problemType) {
     case 'mcq':
       return (
-        <div className="space-y-4">
-          {/* MCQ Options */}
-          <div className="space-y-3">
-            {problem.options?.map((option, index) => {
-              const isSelected = currentResponse?.selected_option_id === option.id;
-              const isCorrect = isSubmitted && option.id === problem.correct_option_id;
-              const isIncorrectSelection = isSubmitted && isSelected && option.id !== problem.correct_option_id;
-              
-              return (
-                <div key={option.id} className="flex items-center space-x-3">
-                  <input
-                    type="radio"
-                    id={option.id}
-                    name="mcq-option"
-                    value={option.id}
-                    checked={isSelected}
-                    disabled={isSubmitted}
-                    onChange={(e) => {
-                      if (e.target.checked && onUpdate) {
-                        onUpdate({ selected_option_id: option.id });
-                      }
-                    }}
-                    className={`w-4 h-4 ${
-                      isCorrect
-                        ? 'text-green-600'
-                        : isIncorrectSelection
-                          ? 'text-red-600'
-                          : 'text-blue-600'
-                    }`}
-                  />
-                  <label
-                    htmlFor={option.id}
-                    className={`flex-1 cursor-pointer text-base leading-relaxed p-3 rounded border ${
-                      isCorrect
-                        ? 'text-green-700 bg-green-50 border-green-200'
-                        : isIncorrectSelection
-                          ? 'text-red-700 bg-red-50 border-red-200'
-                          : isSubmitted
-                            ? 'text-gray-600 bg-gray-50 border-gray-200'
-                            : 'hover:bg-gray-50 border-gray-300'
-                    }`}
-                  >
-                    <span className="font-semibold mr-2">{String.fromCharCode(65 + index)}.</span>
-                    {option.text}
-                    {isSubmitted && (
-                      <span className="ml-2">
-                        {isCorrect && <span className="text-green-600">✓</span>}
-                        {isIncorrectSelection && <span className="text-red-600">✗</span>}
-                      </span>
-                    )}
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-          
-          {/* Show rationale after submission */}
-          {isSubmitted && problem.rationale && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-medium text-blue-800 mb-2">Explanation:</h4>
-              <p className="text-blue-700">{problem.rationale}</p>
-            </div>
-          )}
-          
-          {/* Show general feedback after submission */}
-          {isSubmitted && feedback?.review && (
-            <div className="mt-4 space-y-3">
-              {feedback.review.feedback?.praise && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 font-medium">{feedback.review.feedback.praise}</p>
-                </div>
-              )}
-              {feedback.review.feedback?.guidance && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-1">Guidance:</h4>
-                  <p className="text-blue-700">{feedback.review.feedback.guidance}</p>
-                </div>
-              )}
-              {feedback.review.feedback?.encouragement && (
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <p className="text-purple-800 font-medium">{feedback.review.feedback.encouragement}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <MCQPrimitive
+          problem={problem}
+          isSubmitted={isSubmitted}
+          currentResponse={currentResponse}
+          feedback={feedback}
+          onUpdate={onUpdate}
+          disabled={submitting}
+        />
       );
 
     case 'fillInBlank':
       return (
-        <div className="space-y-4">
-          {/* Fill-in-the-Blank interactive text */}
-          <div className="text-lg font-medium p-4 bg-white rounded-lg border border-gray-200">
-            {(() => {
-              const text = problem.text_with_blanks;
-              const parts = text.split(/(\{\{[^}]+\}\})/);
-              
-              return parts.map((part, partIndex) => {
-                const blankMatch = part.match(/\{\{([^}]+)\}\}/);
-                if (blankMatch) {
-                  const blankId = blankMatch[1];
-                  const studentAnswersArray = currentResponse?.student_answers || [];
-                  const currentAnswers = studentAnswersArray.reduce((acc, item) => {
-                    acc[item.blank_id] = item.answer;
-                    return acc;
-                  }, {});
-                  const evaluation = isSubmitted && feedback?.fibReview?.blank_evaluations?.find(e => e.blank_id === blankId);
-                  const isCorrect = evaluation?.is_correct;
-                  const isIncorrect = evaluation && !evaluation.is_correct;
-                  
-                  return (
-                    <span key={partIndex} className="inline-flex items-center mx-1">
-                      <input
-                        type="text"
-                        value={currentAnswers[blankId] || ''}
-                        onChange={(e) => {
-                          const newAnswers = { ...currentAnswers, [blankId]: e.target.value };
-                          const studentAnswers = Object.entries(newAnswers).map(([blank_id, answer]) => ({
-                            blank_id,
-                            answer: answer || ''
-                          }));
-                          if (onUpdate) {
-                            onUpdate({ student_answers: studentAnswers });
-                          }
-                        }}
-                        disabled={isSubmitted}
-                        placeholder={`___`}
-                        className={`inline-block w-20 h-8 text-center text-sm border rounded px-2 ${
-                          isCorrect 
-                            ? 'border-green-500 bg-green-50 text-green-800'
-                            : isIncorrect
-                              ? 'border-red-500 bg-red-50 text-red-800'
-                              : 'border-gray-300'
-                        }`}
-                      />
-                      {isSubmitted && (
-                        <span className="ml-1">
-                          {isCorrect && <span className="w-4 h-4 text-green-600">✓</span>}
-                          {isIncorrect && <span className="text-red-600 text-sm">✗</span>}
-                        </span>
-                      )}
-                    </span>
-                  );
-                }
-                return <span key={partIndex}>{part}</span>;
-              });
-            })()} 
-          </div>
-          
-          {/* Show detailed feedback after submission */}
-          {isSubmitted && feedback?.fibReview && (
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-800">Answer Details:</h4>
-              {feedback.fibReview.blank_evaluations.map(evaluation => (
-                <div key={evaluation.blank_id} className={`p-3 rounded-lg border ${
-                  evaluation.is_correct 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-start">
-                    {evaluation.is_correct ? (
-                      <span className="w-4 h-4 text-green-600 mr-2 mt-0.5">✓</span>
-                    ) : (
-                      <span className="w-4 h-4 text-red-600 mr-2 mt-0.5">✗</span>
-                    )}
-                    <div>
-                      <p className={`font-semibold ${evaluation.is_correct ? 'text-green-800' : 'text-red-800'}`}>
-                        Blank {evaluation.blank_id}: 
-                        <span className="font-normal ml-1">"{evaluation.student_answer}"</span>
-                      </p>
-                      <p className={`text-sm ${evaluation.is_correct ? 'text-green-700' : 'text-red-700'}`}>
-                        {evaluation.feedback}
-                      </p>
-                      {!evaluation.is_correct && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          Expected: {evaluation.correct_answers.join(' or ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Show rationale after submission */}
-              {problem.rationale && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">Explanation:</h4>
-                  <p className="text-blue-700">{problem.rationale}</p>
-                </div>
-              )}
-              
-              {/* Show general feedback after submission */}
-              {feedback?.review && (
-                <div className="mt-4 space-y-3">
-                  {feedback.review.feedback?.praise && (
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-green-800 font-medium">{feedback.review.feedback.praise}</p>
-                    </div>
-                  )}
-                  {feedback.review.feedback?.guidance && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-1">Guidance:</h4>
-                      <p className="text-blue-700">{feedback.review.feedback.guidance}</p>
-                    </div>
-                  )}
-                  {feedback.review.feedback?.encouragement && (
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <p className="text-purple-800 font-medium">{feedback.review.feedback.encouragement}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <FillInBlankPrimitive
+          problem={problem}
+          isSubmitted={isSubmitted}
+          currentResponse={currentResponse}
+          feedback={feedback}
+          onUpdate={onUpdate}
+          disabled={submitting}
+        />
       );
 
     case 'trueFalse':
       return (
-        <div className="space-y-4">
-          {/* True/False Statement */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-800 mb-2">Statement:</h4>
-            <p className="text-gray-900 text-lg">{problem.statement}</p>
-          </div>
-          
-          {/* True/False Options */}
-          <div className="space-y-3">
-            {[{value: true, label: 'True'}, {value: false, label: 'False'}].map((option) => {
-              const isSelected = currentResponse?.selected_answer === option.value;
-              const isCorrect = isSubmitted && option.value === problem.correct;
-              const isIncorrectSelection = isSubmitted && isSelected && option.value !== problem.correct;
-              
-              return (
-                <div key={option.label} className="flex items-center space-x-3">
-                  <input
-                    type="radio"
-                    id={option.label.toLowerCase()}
-                    name="true-false-option"
-                    value={option.label.toLowerCase()}
-                    checked={isSelected}
-                    disabled={isSubmitted}
-                    onChange={(e) => {
-                      if (e.target.checked && onUpdate) {
-                        onUpdate({ 
-                          selected_answer: option.value,
-                          explanation: currentResponse?.explanation || ''
-                        });
-                      }
-                    }}
-                    className={`w-4 h-4 ${
-                      isCorrect
-                        ? 'text-green-600'
-                        : isIncorrectSelection
-                          ? 'text-red-600'
-                          : 'text-blue-600'
-                    }`}
-                  />
-                  <label
-                    htmlFor={option.label.toLowerCase()}
-                    className={`flex-1 cursor-pointer text-lg font-medium p-3 rounded border ${
-                      isCorrect
-                        ? 'text-green-700 bg-green-50 border-green-200'
-                        : isIncorrectSelection
-                          ? 'text-red-700 bg-red-50 border-red-200'
-                          : isSubmitted
-                            ? 'text-gray-600 bg-gray-50 border-gray-200'
-                            : 'hover:bg-gray-50 border-gray-300'
-                    }`}
-                  >
-                    {option.label}
-                    {isCorrect && <span className="ml-2 text-green-600">✓</span>}
-                    {isIncorrectSelection && <span className="ml-2 text-red-600">✗</span>}
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Explanation input if required */}
-          {problem.allow_explain_why && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Explain your reasoning:
-              </label>
-              <textarea
-                value={currentResponse?.explanation || ''}
-                onChange={(e) => {
-                  if (onUpdate) {
-                    onUpdate({
-                      selected_answer: currentResponse?.selected_answer,
-                      explanation: e.target.value
-                    });
-                  }
-                }}
-                disabled={isSubmitted}
-                placeholder="Why did you choose this answer?"
-                className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
-              />
-            </div>
-          )}
-
-          {isSubmitted && (
-            <div className="space-y-4">
-              {/* Show rationale after submission */}
-              {problem.rationale && (
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <h4 className="font-medium text-gray-800 mb-2">Explanation:</h4>
-                  <p className="text-gray-700">{problem.rationale}</p>
-                </div>
-              )}
-              
-              {/* Show general feedback after submission */}
-              {feedback?.review && (
-                <div className="mt-4 space-y-3">
-                  {feedback.review.feedback?.praise && (
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-green-800 font-medium">{feedback.review.feedback.praise}</p>
-                    </div>
-                  )}
-                  {feedback.review.feedback?.guidance && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-1">Guidance:</h4>
-                      <p className="text-blue-700">{feedback.review.feedback.guidance}</p>
-                    </div>
-                  )}
-                  {feedback.review.feedback?.encouragement && (
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <p className="text-purple-800 font-medium">{feedback.review.feedback.encouragement}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <TrueFalsePrimitive
+          problem={problem}
+          isSubmitted={isSubmitted}
+          currentResponse={currentResponse}
+          feedback={feedback}
+          onUpdate={onUpdate}
+          disabled={submitting}
+        />
       );
 
     case 'matching':
       return (
-        <div className="space-y-4">
-          {/* Matching interactive area */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Items */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-800 mb-3">Items to Match</h4>
-              {problem.left_items?.map((leftItem) => {
-                const matchedRightId = currentResponse?.student_matches?.find(m => m.left_id === leftItem.id)?.right_id;
-                const evaluation = isSubmitted && feedback?.matchingReview?.match_evaluations?.find(e => e.left_id === leftItem.id);
-                const isCorrect = evaluation?.is_correct;
-                const isIncorrect = evaluation && !evaluation.is_correct;
+        <MatchingPrimitive
+          problem={problem}
+          isSubmitted={isSubmitted}
+          currentResponse={currentResponse}
+          feedback={feedback}
+          onUpdate={onUpdate}
+          disabled={submitting}
+        />
+      );
 
-                return (
-                  <div
-                    key={leftItem.id}
-                    className={`p-4 rounded-lg border-2 border-dashed transition-colors ${
-                      isCorrect
-                        ? 'border-green-300 bg-green-50'
-                        : isIncorrect
-                          ? 'border-red-300 bg-red-50'
-                          : 'border-gray-300 bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{leftItem.text}</p>
-                        {matchedRightId && (
-                          <div className="mt-2 flex items-center text-sm">
-                            <span className="mr-2">→</span>
-                            <span className={
-                              isCorrect 
-                                ? 'text-green-700' 
-                                : isIncorrect 
-                                  ? 'text-red-700' 
-                                  : 'text-gray-700'
-                            }>
-                              {problem.right_items?.find(r => r.id === matchedRightId)?.text || matchedRightId}
-                            </span>
-                            {isSubmitted && (
-                              <span className="ml-2">
-                                {isCorrect && <span className="text-green-600">✓</span>}
-                                {isIncorrect && <span className="text-red-600">✗</span>}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {isSubmitted && isIncorrect && evaluation?.expected_right_ids && (
-                          <div className="mt-2 text-xs text-green-600">
-                            Expected: {evaluation.expected_right_ids.map(rightId => 
-                              problem.right_items?.find(r => r.id === rightId)?.text || rightId
-                            ).join(' or ')}
-                          </div>
-                        )}
-                      </div>
-                      {matchedRightId && !isSubmitted && (
-                        <button
-                          onClick={() => {
-                            const newMatches = (currentResponse?.student_matches || []).filter(m => m.left_id !== leftItem.id);
-                            if (onUpdate) {
-                              onUpdate({ student_matches: newMatches });
-                            }
-                          }}
-                          className="text-red-600 hover:text-red-700 text-sm"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+    case 'sequencing':
+      return (
+        <SequencingPrimitive
+          problem={problem}
+          isSubmitted={isSubmitted}
+          currentResponse={currentResponse}
+          feedback={feedback}
+          onUpdate={onUpdate}
+          disabled={submitting}
+        />
+      );
 
-            {/* Right Items */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-800 mb-3">Options</h4>
-              {problem.right_items?.map((rightItem) => {
-                const isUsed = (currentResponse?.student_matches || []).some(m => m.right_id === rightItem.id);
-                
-                return (
-                  <div
-                    key={rightItem.id}
-                    onClick={() => {
-                      if (isSubmitted) return;
-                      
-                      // Simple click-to-match: find first unmatched left item
-                      const unmatchedLeftItem = problem.left_items?.find(leftItem => 
-                        !(currentResponse?.student_matches || []).some(m => m.left_id === leftItem.id)
-                      );
-                      
-                      if (unmatchedLeftItem) {
-                        const newMatches = [
-                          ...(currentResponse?.student_matches || []).filter(m => m.right_id !== rightItem.id),
-                          { left_id: unmatchedLeftItem.id, right_id: rightItem.id }
-                        ];
-                        if (onUpdate) {
-                          onUpdate({ student_matches: newMatches });
-                        }
-                      }
-                    }}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                      isSubmitted
-                        ? 'border-gray-300 bg-gray-50 cursor-default'
-                        : isUsed
-                          ? 'border-blue-300 bg-blue-50 text-blue-700'
-                          : 'border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50'
-                    }`}
-                  >
-                    <p className="font-medium">{rightItem.text}</p>
-                    {rightItem.image_url && (
-                      <img 
-                        src={rightItem.image_url} 
-                        alt={rightItem.text}
-                        className="mt-2 max-w-full h-auto max-h-20 object-contain"
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+    case 'categorization':
+      return (
+        <CategorizationPrimitive
+          problem={problem}
+          isSubmitted={isSubmitted}
+          currentResponse={currentResponse}
+          feedback={feedback}
+          onUpdate={onUpdate}
+          disabled={submitting}
+        />
+      );
 
-          {/* Show detailed feedback after submission */}
-          {isSubmitted && feedback?.matchingReview && (
-            <div className="space-y-2 mt-6">
-              <h4 className="font-medium text-gray-800">Match Details:</h4>
-              {feedback.matchingReview.match_evaluations.map(evaluation => (
-                <div key={evaluation.left_id} className={`p-3 rounded-lg border ${
-                  evaluation.is_correct 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-start">
-                    {evaluation.is_correct ? (
-                      <span className="w-4 h-4 text-green-600 mr-2 mt-0.5">✓</span>
-                    ) : (
-                      <span className="w-4 h-4 text-red-600 mr-2 mt-0.5">✗</span>
-                    )}
-                    <div>
-                      <p className={`font-semibold ${evaluation.is_correct ? 'text-green-800' : 'text-red-800'}`}>
-                        {problem.left_items?.find(l => l.id === evaluation.left_id)?.text || evaluation.left_id} → {problem.right_items?.find(r => r.id === evaluation.right_id)?.text || evaluation.right_id}
-                      </p>
-                      <p className={`text-sm ${evaluation.is_correct ? 'text-green-700' : 'text-red-700'}`}>
-                        {evaluation.feedback}
-                      </p>
-                      {!evaluation.is_correct && evaluation.expected_right_ids?.length > 0 && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          Expected: {evaluation.expected_right_ids.map(rightId => 
-                            problem.right_items?.find(r => r.id === rightId)?.text || rightId
-                          ).join(' or ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Show rationale after submission */}
-              {(problem.rationale_global || feedback?.matchingReview?.explanation) && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">Explanation:</h4>
-                  <p className="text-blue-700">{feedback.matchingReview.explanation}</p>
-                  {problem.rationale_global && (
-                    <p className="text-blue-700 mt-2">{problem.rationale_global}</p>
-                  )}
-                </div>
-              )}
-              
-              {/* Show general feedback after submission */}
-              {feedback?.review && (
-                <div className="mt-4 space-y-3">
-                  {feedback.review.feedback?.praise && (
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-green-800 font-medium">{feedback.review.feedback.praise}</p>
-                    </div>
-                  )}
-                  {feedback.review.feedback?.guidance && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-1">Guidance:</h4>
-                      <p className="text-blue-700">{feedback.review.feedback.guidance}</p>
-                    </div>
-                  )}
-                  {feedback.review.feedback?.encouragement && (
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <p className="text-purple-800 font-medium">{feedback.review.feedback.encouragement}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+    case 'scenarioQuestion':
+      return (
+        <ScenarioQuestionPrimitive
+          problem={problem}
+          isSubmitted={isSubmitted}
+          currentResponse={currentResponse}
+          feedback={feedback}
+          onUpdate={onUpdate}
+          disabled={submitting}
+        />
+      );
+
+    case 'shortAnswer':
+      return (
+        <ShortAnswerPrimitive
+          problem={problem}
+          isSubmitted={isSubmitted}
+          currentResponse={currentResponse}
+          feedback={feedback}
+          onUpdate={onUpdate}
+          disabled={submitting}
+        />
       );
 
     case 'composable':

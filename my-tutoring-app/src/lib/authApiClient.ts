@@ -836,6 +836,96 @@ private async getAuthToken(): Promise<string> {
     return this.post('/api/problems/true-false/submit', data);
   }
 
+  // ============================================================================
+  // SEQUENCING ENDPOINTS
+  // ============================================================================
+
+  async generateSequencing(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    sequence_type?: string;
+  }) {
+    return this.post('/api/problems/sequencing/generate', data);
+  }
+
+  async submitSequencing(data: {
+    sequencing: any; // Complete sequencing object
+    student_sequence: string[];
+  }) {
+    return this.post('/api/problems/sequencing/submit', data);
+  }
+
+  // ============================================================================
+  // CATEGORIZATION ENDPOINTS
+  // ============================================================================
+
+  async generateCategorization(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    category_type?: string;
+  }) {
+    return this.post('/api/problems/categorization/generate', data);
+  }
+
+  async submitCategorization(data: {
+    categorization: any; // Complete categorization object
+    student_categorization: {
+      [item_text: string]: string;
+    };
+  }) {
+    return this.post('/api/problems/categorization/submit', data);
+  }
+
+  // ============================================================================
+  // SCENARIO QUESTION ENDPOINTS
+  // ============================================================================
+
+  async generateScenarioQuestion(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    scenario_type?: string;
+  }) {
+    return this.post('/api/problems/scenario-question/generate', data);
+  }
+
+  async submitScenarioQuestion(data: {
+    scenario_question: any; // Complete scenario question object
+    student_answer: string;
+  }) {
+    return this.post('/api/problems/scenario-question/submit', data);
+  }
+
+  // ============================================================================
+  // SHORT ANSWER ENDPOINTS
+  // ============================================================================
+
+  async generateShortAnswer(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: string;
+    answer_type?: string;
+  }) {
+    return this.post('/api/problems/short-answer/generate', data);
+  }
+
+  async submitShortAnswer(data: {
+    short_answer: any; // Complete short answer object
+    student_answer: string;
+  }) {
+    return this.post('/api/problems/short-answer/submit', data);
+  }
+
   // AI Tutor endpoints
   async sendTutorMessage(message: string, context?: any) {
     return this.post('/api/gemini/chat', { message, context });

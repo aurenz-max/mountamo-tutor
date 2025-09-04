@@ -7,13 +7,13 @@ import { CheckCircle, BookOpen, Lightbulb, Loader2, Eye, Sparkles, MessageCircle
 import { authApi } from '@/lib/authApiClient';
 import { ReadingContentRenderer } from '@/components/content/ReadingContentRenderer';
 
-// Updated interface to support interactive primitives
+// Updated interface to support interactive primitives - Enhanced with new primitives
 interface ReadingSection {
   heading: string;
   content: string;
   key_terms_used: string[];
   concepts_covered: string[];
-  // Interactive primitives (optional)
+  // Basic Interactive primitives (optional)
   alerts?: Array<{ type: 'alert'; style: 'info' | 'warning' | 'success' | 'tip'; title: string; content: string; }>;
   expandables?: Array<{ type: 'expandable'; title: string; content: string; }>;
   quizzes?: Array<{ type: 'quiz'; question: string; answer: string; explanation?: string; }>;
@@ -21,6 +21,13 @@ interface ReadingSection {
   checklists?: Array<{ type: 'checklist'; text: string; completed?: boolean; }>;
   tables?: Array<{ type: 'table'; headers: string[]; rows: string[][]; }>;
   keyvalues?: Array<{ type: 'keyvalue'; key: string; value: string; }>;
+  // New Enhanced Interactive Primitives
+  interactive_timelines?: Array<{ type: 'interactive_timeline'; title: string; events: Array<{date: string; title: string; description: string;}> }>;
+  carousels?: Array<{ type: 'carousel'; title?: string; items: Array<{image_url: string; alt_text: string; caption?: string; description?: string;}> }>;
+  flip_cards?: Array<{ type: 'flip_card'; front_content: string; back_content: string; }>;
+  categorization_activities?: Array<{ type: 'categorization'; instruction: string; categories: string[]; items: Array<{item_text: string; correct_category: string;}> }>;
+  fill_in_the_blanks?: Array<{ type: 'fill_in_the_blank'; sentence: string; correct_answer: string; hint?: string; }>;
+  scenario_questions?: Array<{ type: 'scenario_question'; scenario: string; question: string; answer_options?: string[]; correct_answer: string; explanation: string; }>;
 }
 
 interface ReadingContentProps {

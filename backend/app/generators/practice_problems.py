@@ -31,7 +31,7 @@ class PracticeProblemsGenerator(BaseContentGenerator):
         grade_info = self._extract_grade_info(request)
         
         prompt = f"""
-        Create practice problems for {grade_info} students learning {request.subskill} that integrate multiple learning modes.
+        Create a diverse set of high-quality practice problems for {grade_info} students learning {request.subskill} that integrate multiple learning modes.
 
         Target Audience: {grade_info} students
         Subject: {request.subject}
@@ -43,29 +43,51 @@ class PracticeProblemsGenerator(BaseContentGenerator):
         Content Integration:
         Reading covered: {', '.join(reading_concepts)}        
 
+        ### PRACTICE PROBLEM PRIMITIVES (Choose the best types for your material):
+        
+        **PRIORITIZE THESE for comprehensive assessment and engagement:**
+        - **multiple_choice**: 4-6 option questions - excellent for testing comprehension of facts, concepts, and procedures. Great for quick assessment of knowledge retention
+        - **true_false**: Statement evaluation with rationale - perfect for testing understanding of key principles, identifying misconceptions, and reinforcing correct understanding
+        - **fill_in_blanks**: Interactive sentences with missing key terms - ideal for vocabulary reinforcement, concept application, and testing specific knowledge points
+        - **matching_activity**: Connect related items (terms-definitions, causes-effects, examples-concepts) - great for building relationships between ideas and testing comprehension
+        - **sequencing_activity**: Arrange items in correct chronological or logical order - perfect for processes, procedures, timelines, or step-by-step understanding
+        - **categorization_activity**: Sort items into appropriate groups - excellent for classification skills, understanding relationships, and organizing knowledge
+        - **scenario_question**: Real-world application problems with detailed scenarios - ideal for connecting theory to practice, critical thinking, and demonstrating practical understanding
+        - **short_answer**: Open-ended questions requiring brief explanations - great for testing deeper understanding and application of concepts
+
+        ### PROBLEM SELECTION STRATEGY:
+        Choose problem types based on your material:
+        - **Factual content**: Use multiple_choice, true_false, fill_in_blanks
+        - **Conceptual relationships**: Use matching_activity, categorization_activity
+        - **Procedures/processes**: Use sequencing_activity, fill_in_blanks, scenario_question
+        - **Application/critical thinking**: Use scenario_question, short_answer
+        - **Vocabulary/terminology**: Use fill_in_blanks, matching_activity, true_false
+
         Generate 8-10 problems that:
-        1. Test understanding of key terms using {grade_info} appropriate language
-        2. Reference the visual demonstration in ways {grade_info} students understand
-        3. Progress from basic to applied difficulty suitable for {grade_info}
+        1. Use a MIX of problem types appropriate for the content and {grade_info} level
+        2. Progress from basic knowledge to application suitable for {grade_info}
+        3. Test understanding of key terms using {grade_info} appropriate language
         4. Include real-world applications relevant to {grade_info} experience
-        5. Require integrated understanding at {grade_info} cognitive level
-        6. Use problem formats familiar to {grade_info} students
-        7. Include encouraging, positive language
-        8. Have clear, simple instructions
+        5. Reference content from reading and visual materials appropriately
+        6. Have clear, age-appropriate instructions and language
+        7. Include encouraging, positive success criteria
+        8. Provide educational value beyond just assessment
 
         Grade-specific considerations for {grade_info}:
         - Use vocabulary and sentence structures appropriate for {grade_info}
         - Include visual or concrete examples when possible
         - Make instructions clear and step-by-step
         - Use familiar contexts and scenarios
+        - Choose problem types that match cognitive development level
         - Provide positive, encouraging feedback criteria
 
-        For each problem, provide:
-        - problem_type: (e.g., "Multiple Choice", "Problem Solving", "Drawing/Visual", "Real-World Application")
-        - problem: The actual question/problem statement (written for {grade_info})
-        - answer: The correct answer or solution
-        - success_criteria: Array of 2-3 criteria that define successful completion for {grade_info}
-        - teaching_note: Helpful note for educators about teaching this concept to {grade_info}
+        ### OUTPUT REQUIREMENTS:
+        - Choose appropriate problem types from the available primitives
+        - Include all required fields for chosen problem types  
+        - Provide comprehensive rationale and teaching notes for each problem
+        - Ensure variety in problem types to maintain engagement
+        - Make each problem educationally meaningful and aligned with learning objectives
+        - Generate problems as separate arrays by type (e.g., "multiple_choice": [...], "true_false": [...])
         """
         
         try:
@@ -86,56 +108,69 @@ class PracticeProblemsGenerator(BaseContentGenerator):
             formatted_problems = []
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
             
-            for i, problem in enumerate(problems_data.get('problems', [])):
-                problem_uuid = __import__('uuid').uuid4()
-                
-                problem_id = f"{request.subject}_SKILL-{i+1:02d}_SUBSKILL-{i+1:02d}-A_{timestamp}_{problem_uuid}"
-                difficulty = round(3.0 + (i * 0.8), 1)
-                
-                formatted_problem = {
-                    "id": problem_id,
-                    "problem_id": problem_id,
-                    "type": "cached_problem",
-                    "subject": request.subject,
-                    "skill_id": request.skill_id or "",
-                    "subskill_id": request.subskill_id or "",
-                    "difficulty": difficulty,
-                    "timestamp": timestamp,
-                    "problem_data": {
-                        "problem_type": problem.get("problem_type", "Problem Solving"),
-                        "problem": problem.get("problem", ""),
-                        "answer": problem.get("answer", ""),
-                        "success_criteria": problem.get("success_criteria", []),
-                        "teaching_note": problem.get("teaching_note", ""),
-                        "grade_level": grade_info,  # Add grade level
-                        "metadata": {
+            # Handle new schema structure with separate arrays for each problem type
+            problem_counter = 0
+            problem_types = ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity", 
+                           "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"]
+            
+            for problem_type in problem_types:
+                if problem_type in problems_data:
+                    for problem in problems_data[problem_type]:
+                        problem_uuid = __import__('uuid').uuid4()
+                        
+                        problem_id = f"{request.subject}_SKILL-{problem_counter+1:02d}_SUBSKILL-{problem_counter+1:02d}-A_{timestamp}_{problem_uuid}"
+                        difficulty = round(3.0 + (problem_counter * 0.8), 1)
+                        
+                        # Extract the relevant problem content based on type
+                        problem_content = self._extract_problem_content(problem, problem_type)
+                        
+                        formatted_problem = {
+                            "id": problem_id,
+                            "problem_id": problem_id,
+                            "type": "cached_problem",
                             "subject": request.subject,
-                            "grade_level": grade_info,  # Add grade level to metadata
-                            "unit": {
-                                "id": request.unit_id or f"{request.unit.upper().replace(' ', '')}001",
-                                "title": request.unit
-                            },
-                            "skill": {
-                                "id": request.skill_id or f"{request.unit.upper().replace(' ', '')}001-01",
-                                "description": request.skill
-                            },
-                            "subskill": {
-                                "id": request.subskill_id or f"{request.unit.upper().replace(' ', '')}001-01-{chr(65+i)}",
-                                "description": request.subskill
-                            },
+                            "skill_id": request.skill_id or "",
+                            "subskill_id": request.subskill_id or "",
                             "difficulty": difficulty,
-                            "objectives": {
-                                "ConceptGroup": "Educational Content Integration",
-                                "DetailedObjective": f"Apply understanding of {request.subskill} through multi-modal learning at {grade_info} level",
-                                "SubskillDescription": request.subskill
+                            "timestamp": timestamp,
+                            "problem_data": {
+                                "problem_type": problem_type,
+                                "problem": problem_content.get("problem", ""),
+                                "answer": problem_content.get("answer", ""),
+                                "success_criteria": problem.get("success_criteria", []),
+                                "teaching_note": problem.get("teaching_note", ""),
+                                "grade_level": grade_info,
+                                # Include the full problem structure for frontend rendering
+                                "full_problem_data": problem,
+                                "metadata": {
+                                    "subject": request.subject,
+                                    "grade_level": grade_info,
+                                    "unit": {
+                                        "id": request.unit_id or f"{request.unit.upper().replace(' ', '')}001",
+                                        "title": request.unit
+                                    },
+                                    "skill": {
+                                        "id": request.skill_id or f"{request.unit.upper().replace(' ', '')}001-01",
+                                        "description": request.skill
+                                    },
+                                    "subskill": {
+                                        "id": request.subskill_id or f"{request.unit.upper().replace(' ', '')}001-01-{chr(65+problem_counter)}",
+                                        "description": request.subskill
+                                    },
+                                    "difficulty": difficulty,
+                                    "objectives": {
+                                        "ConceptGroup": "Educational Content Integration",
+                                        "DetailedObjective": f"Apply understanding of {request.subskill} through multi-modal learning at {grade_info} level",
+                                        "SubskillDescription": request.subskill
+                                    }
+                                },
+                                "problem_id": problem_id,
+                                "id": problem_id
                             }
-                        },
-                        "problem_id": problem_id,
-                        "id": problem_id
-                    }
-                }
-                
-                formatted_problems.append(formatted_problem)
+                        }
+                        
+                        formatted_problems.append(formatted_problem)
+                        problem_counter += 1
             
             return ContentComponent(
                 package_id=package_id,
@@ -200,3 +235,52 @@ class PracticeProblemsGenerator(BaseContentGenerator):
             
         except Exception as e:
             self._handle_generation_error("Practice problems revision", e)
+
+    def _extract_problem_content(self, problem: Dict[str, Any], problem_type: str) -> Dict[str, str]:
+        """Extract problem and answer content based on problem type"""
+        
+        if problem_type == "multiple_choice":
+            return {
+                "problem": problem.get("question", ""),
+                "answer": problem.get("correct_option_id", "")
+            }
+        elif problem_type == "true_false":
+            return {
+                "problem": problem.get("statement", ""),
+                "answer": str(problem.get("correct", False))
+            }
+        elif problem_type == "fill_in_blanks":
+            return {
+                "problem": problem.get("text_with_blanks", ""),
+                "answer": ", ".join([", ".join(blank.get("correct_answers", [])) for blank in problem.get("blanks", [])])
+            }
+        elif problem_type == "matching_activity":
+            return {
+                "problem": problem.get("prompt", ""),
+                "answer": "See mappings in full_problem_data"
+            }
+        elif problem_type == "sequencing_activity":
+            return {
+                "problem": problem.get("instruction", ""),
+                "answer": ", ".join(problem.get("items", []))
+            }
+        elif problem_type == "categorization_activity":
+            return {
+                "problem": problem.get("instruction", ""),
+                "answer": "See categorization_items in full_problem_data"
+            }
+        elif problem_type == "scenario_question":
+            return {
+                "problem": f"{problem.get('scenario', '')} {problem.get('scenario_question', '')}",
+                "answer": problem.get("scenario_answer", "")
+            }
+        elif problem_type == "short_answer":
+            return {
+                "problem": problem.get("question", ""),
+                "answer": "Open-ended response expected"
+            }
+        else:
+            return {
+                "problem": "",
+                "answer": ""
+            }
