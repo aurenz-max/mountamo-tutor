@@ -16,7 +16,8 @@ import {
   Target,
   RotateCcw,
   PartyPopper,
-  Lightbulb
+  Lightbulb,
+  Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,7 @@ interface ActivityCardProps {
   };
   onLearningSelect: (option: LearningOption) => void;
   loading?: boolean;
+  loadingAction?: string;
   expanded?: boolean;
   onExpand?: () => void;
 }
@@ -80,6 +82,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   activityData,
   onLearningSelect,
   loading = false,
+  loadingAction = null,
   expanded = false,
   onExpand
 }) => {
@@ -166,7 +169,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       title: 'Practice',
       icon: PenTool,
       color: 'bg-green-500',
-      route: `/practice/${activityData.id}`
+      route: `/practice/${activityData.id}?subject=${encodeURIComponent(subject)}`
     },
     {
       id: 'educational-content',
@@ -335,20 +338,39 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           <div className="grid grid-cols-4 gap-2">
             {learningOptions.map((option) => {
               const IconComponent = option.icon;
+              const isButtonLoading = loading && loadingAction === option.id;
+              const isOtherButtonLoading = loading && loadingAction !== option.id;
+              
               return (
                 <motion.button
                   key={option.id}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex flex-col items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all group"
+                  whileHover={{ scale: isButtonLoading ? 1 : 1.05 }}
+                  whileTap={{ scale: isButtonLoading ? 1 : 0.95 }}
+                  className={`flex flex-col items-center p-3 rounded-lg border transition-all group ${
+                    isOtherButtonLoading 
+                      ? 'border-gray-200 opacity-50' 
+                      : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                  }`}
                   onClick={() => onLearningSelect(option)}
                   disabled={loading}
                 >
-                  <div className={`w-8 h-8 rounded-lg mb-2 flex items-center justify-center ${option.color} text-white group-hover:scale-110 transition-transform`}>
-                    <IconComponent className="h-4 w-4" />
+                  <div className={`w-8 h-8 rounded-lg mb-2 flex items-center justify-center ${option.color} text-white ${
+                    isOtherButtonLoading ? '' : 'group-hover:scale-110'
+                  } transition-transform`}>
+                    {isButtonLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <IconComponent className="h-4 w-4" />
+                    )}
                   </div>
-                  <span className="text-xs font-medium text-gray-700 group-hover:text-blue-600">
-                    {option.title}
+                  <span className={`text-xs font-medium transition-colors ${
+                    isOtherButtonLoading 
+                      ? 'text-gray-400' 
+                      : isButtonLoading 
+                      ? 'text-blue-600'
+                      : 'text-gray-700 group-hover:text-blue-600'
+                  }`}>
+                    {isButtonLoading && option.id === 'educational-content' ? 'Generating...' : option.title}
                   </span>
                 </motion.button>
               );

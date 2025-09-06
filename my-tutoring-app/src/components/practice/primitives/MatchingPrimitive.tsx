@@ -326,6 +326,8 @@ const MatchingPrimitive: React.FC<MatchingPrimitiveProps> = ({
           )}
         </div>
       )}
+      </CardContent>
+    </Card>
     </div>
   );
 };

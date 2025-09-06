@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/lib/authApiClient';
 import SyllabusSelector from '@/components/practice/SyllabusSelector';
@@ -19,6 +19,7 @@ interface PracticeSubskillPageProps {
 
 const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { userProfile } = useAuth();
   const { subskillId } = params;
   const [selectedTopic, setSelectedTopic] = useState(null);
@@ -95,9 +96,13 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
     let skill = parts[0] || 'COUNT001';
     let subskill = parts.slice(1).join('-') || '01-A';
     
+    // Get subject from URL parameter (passed from ActivityCard) or activity metadata
+    const subjectFromUrl = searchParams?.get('subject');
+    const detectedSubject = subjectFromUrl || activity?.metadata?.subject || 'mathematics';
+    
     // Create a structured topic selection that matches your existing format
     const topicSelection = {
-      subject: activity?.metadata?.subject || 'mathematics',
+      subject: detectedSubject,
       selection: {
         unit: activity?.metadata?.unit_id || skill.substring(0, 5), // e.g., COUNT
         skill: skill, // e.g., COUNT001

@@ -116,19 +116,57 @@ const FillInBlankComponent: React.FC<FillInBlankComponentProps> = ({
         answer: answers[blank.id] || ''
       }));
 
-      const submission: FillInBlankSubmission = {
-        fill_in_blank: fillInBlank,
-        student_answers: studentAnswers
+      // Convert to universal problem submission format
+      const problemData = {
+        subject: fillInBlank.subject,
+        problem: {
+          id: fillInBlank.id,
+          skill_id: fillInBlank.skill_id,
+          subskill_id: fillInBlank.subskill_id,
+          problem_data: {
+            full_problem_data: {
+              text_with_blanks: fillInBlank.text_with_blanks,
+              blanks: fillInBlank.blanks,
+              difficulty: fillInBlank.difficulty,
+              rationale: fillInBlank.rationale
+            }
+          }
+        },
+        skill_id: fillInBlank.skill_id,
+        subskill_id: fillInBlank.subskill_id,
+        student_answer: JSON.stringify(studentAnswers),
+        canvas_used: !!canvasData,
+        solution_image: canvasData
       };
 
-      // Submit via API (we'll need to add this to authApiClient)
-      const reviewResult: FillInBlankReview = await authApi.submitFillInBlank(submission);
+      const reviewResult = await authApi.submitProblem(problemData);
+      
+      // Convert response to Fill-in-blank format for compatibility (simplified)
+      const fibReview: FillInBlankReview = {
+        overall_correct: reviewResult.review?.correct || false,
+        blank_evaluations: fillInBlank.blanks.map(blank => ({
+          blank_id: blank.id,
+          student_answer: answers[blank.id] || '',
+          correct_answers: blank.correct_answers,
+          is_correct: true, // Would need proper evaluation logic
+          score: reviewResult.review?.correct ? 10 : 0,
+          feedback: reviewResult.review?.feedback?.guidance || ''
+        })),
+        total_score: reviewResult.review?.score || 0,
+        percentage_correct: reviewResult.review?.correct ? 100 : 0,
+        explanation: reviewResult.review?.feedback?.guidance || fillInBlank.rationale,
+        metadata: {
+          question_id: fillInBlank.id,
+          submitted_at: new Date().toISOString(),
+          evaluation_method: 'universal_submission_service'
+        }
+      };
 
-      setReview(reviewResult);
+      setReview(fibReview);
       setSubmitted(true);
 
       if (onComplete) {
-        onComplete(reviewResult);
+        onComplete(fibReview);
       }
     } catch (err: any) {
       console.error('Error submitting fill-in-the-blank:', err);

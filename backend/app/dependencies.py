@@ -25,7 +25,6 @@ from .services.review import ReviewService
 
 from .services.daily_activities import DailyActivitiesService
 from .services.bigquery_analytics import BigQueryAnalyticsService
-from .services.mcq_service import MCQService
 
 from .db.cosmos_db import CosmosDBService
 from .db.firestore_service import FirestoreService
@@ -60,7 +59,6 @@ _problem_service: Optional[ProblemService] = None
 _learning_paths_service: Optional[LearningPathsService] = None
 _problem_optimizer: Optional[ProblemOptimizer] = None
 _review_service: Optional[ReviewService] = None
-_mcq_service: Optional[MCQService] = None
 
 # 🔥 UPDATED: Authentication dependency functions using service layer
 async def get_authenticated_user(firebase_user: dict = Depends(verify_firebase_token)) -> dict:
@@ -373,15 +371,6 @@ def get_review_service(
     
     return _review_service
 
-async def get_mcq_service(
-    recommender: ProblemRecommender = Depends(get_problem_recommender)
-) -> MCQService:
-    """Get or create MCQService singleton."""
-    global _mcq_service
-    if _mcq_service is None:
-        logger.info("Initializing MCQService")
-        _mcq_service = MCQService(recommender)
-    return _mcq_service
 
 # Keep other functions that don't need curriculum/competency services as sync
 async def get_learning_paths_service(
@@ -458,13 +447,8 @@ async def initialize_services():
     # Initialize curriculum service
     curriculum_service = await get_curriculum_service()
 
-    # Initialize competency service and connect curriculum service
-    competency_service = get_competency_service(cosmos_db)
-    competency_service.curriculum_service = curriculum_service  # <-- ADD THIS LINE!
-    await competency_service.initialize()
-    
-    # Initialize dependent services
-    competency_service = get_competency_service(cosmos_db)
+    # Initialize competency service
+    competency_service = await get_competency_service()
     problem_recommender = get_problem_recommender(competency_service)
     problem_optimizer = get_problem_optimizer(cosmos_db, problem_recommender)
     firestore_service = get_firestore_service()

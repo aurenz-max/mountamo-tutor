@@ -80,19 +80,50 @@ const TrueFalseComponent: React.FC<TrueFalseComponentProps> = ({
     setError(null);
 
     try {
-      const submission: TrueFalseSubmission = {
-        true_false: trueFalse,
-        selected_answer: selectedAnswer === 'true',
-        ...(trueFalse.allow_explain_why && { explanation: explanation.trim() })
+      // Convert to universal problem submission format
+      const problemData = {
+        subject: trueFalse.subject,
+        problem: {
+          id: trueFalse.id,
+          skill_id: trueFalse.skill_id,
+          subskill_id: trueFalse.subskill_id,
+          problem_data: {
+            full_problem_data: {
+              statement: trueFalse.statement,
+              correct: trueFalse.correct,
+              difficulty: trueFalse.difficulty,
+              rationale: trueFalse.rationale
+            }
+          }
+        },
+        skill_id: trueFalse.skill_id,
+        subskill_id: trueFalse.subskill_id,
+        student_answer: JSON.stringify({
+          selected_answer: selectedAnswer === 'true',
+          explanation: trueFalse.allow_explain_why ? explanation.trim() : undefined
+        }),
+        canvas_used: false
       };
 
-      const reviewResult: TrueFalseReview = await authApi.submitTrueFalse(submission);
+      const reviewResult = await authApi.submitProblem(problemData);
+      
+      // Convert response to True/False format for compatibility
+      const tfReview: TrueFalseReview = {
+        is_correct: reviewResult.review?.correct || false,
+        explanation: reviewResult.review?.feedback?.guidance || trueFalse.rationale,
+        explanation_feedback: trueFalse.allow_explain_why && explanation ? 'Explanation provided' : undefined,
+        metadata: {
+          question_id: trueFalse.id,
+          submitted_at: new Date().toISOString(),
+          evaluation_method: 'universal_submission_service'
+        }
+      };
 
-      setReview(reviewResult);
+      setReview(tfReview);
       setSubmitted(true);
 
       if (onComplete) {
-        onComplete(reviewResult);
+        onComplete(tfReview);
       }
     } catch (err: any) {
       console.error('Error submitting True/False:', err);

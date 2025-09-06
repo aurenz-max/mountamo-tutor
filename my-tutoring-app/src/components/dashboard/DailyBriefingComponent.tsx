@@ -34,6 +34,7 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
   const { getAuthToken, userProfile } = useAuth();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const finalStudentId = studentId || userProfile?.student_id;
   
@@ -57,27 +58,37 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
 
   // Handle learning option selection
   const handleLearningSelect = async (option: any) => {
-    setLoadingActivity(option.id);
+    setLoadingActivity(option.activityId || option.id);
+    setLoadingAction(option.id);
     
     try {
-      // Check if this is a curriculum-to-package mapping request
+      // Check if this is a curriculum-to-package mapping request (Learn button)
       if (option.route && option.route.startsWith('packages-curriculum-')) {
-        const curriculumId = option.route.replace('packages-curriculum-', '');
+        const activityId = option.route.replace('packages-curriculum-', '');
         
         // Import the auth API client dynamically to avoid SSR issues
         const { authApi } = await import('@/lib/authApiClient');
         
-        console.log('🔍 Looking up package for curriculum ID:', curriculumId);
+        // Find the activity to get its subskill ID
+        const activity = dailyPlan?.activities?.find(a => a.id === activityId);
+        const subskillId = activity?.curriculum_metadata?.subskill?.id;
         
-        // Find the corresponding package ID
-        const packageMapping = await authApi.findPackageByCurriculumId(curriculumId);
-        
-        if (packageMapping.package_id) {
-          console.log('✅ Found package:', packageMapping.package_id);
-          // Navigate to the actual package learn page
-          router.push(`/packages/${packageMapping.package_id}/learn`);
+        if (subskillId) {
+          console.log('🚀 Starting learning session for subskill:', subskillId);
+          
+          // Use the same logic as curriculum page: get or create content package
+          const response = await authApi.getContentPackageForSubskill(subskillId);
+          console.log('✅ Content package response:', response);
+          
+          if (response.packageId) {
+            // Navigate to the learning session
+            console.log('🎯 Navigating to packages session:', response.packageId);
+            router.push(`/packages/${response.packageId}/learn`);
+          } else {
+            throw new Error('No package ID returned from server');
+          }
         } else {
-          console.error('❌ No package found for curriculum ID:', curriculumId);
+          console.error('❌ No subskill ID found in activity:', activityId);
           // Fallback to packages list
           router.push('/packages');
         }
@@ -100,6 +111,7 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
       }
     } finally {
       setLoadingActivity(null);
+      setLoadingAction(null);
     }
   };
 
@@ -297,17 +309,28 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
                 activityId: activity.id
               })}
               loading={loadingActivity === activity.id}
+              loadingAction={loadingActivity === activity.id ? loadingAction : undefined}
             />
           );
         })}
       </div>
 
-      {/* Simple loading indicator */}
+      {/* Enhanced loading indicator */}
       {loadingActivity && (
         <div className="text-center py-4">
           <div className="flex items-center justify-center space-x-2 text-blue-600">
             <RefreshCw className="h-4 w-4 animate-spin" />
-            <span>Starting learning session...</span>
+            <span>
+              {loadingAction === 'educational-content' 
+                ? 'Finding or creating your learning content...'
+                : loadingAction === 'practice-problems'
+                ? 'Setting up practice session...'
+                : loadingAction === 'live-tutoring'
+                ? 'Connecting to your tutor...'
+                : loadingAction === 'projects'
+                ? 'Loading creative projects...'
+                : 'Starting learning session...'}
+            </span>
           </div>
         </div>
       )}

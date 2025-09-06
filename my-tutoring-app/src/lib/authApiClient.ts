@@ -98,6 +98,21 @@ export interface AnalyticsRecommendation {
   message: string;
 }
 
+// Define a type for a single problem for better type safety
+export interface Problem {
+  id?: string;
+  problem_id?: string;
+  problem_type: string;
+  question?: string;
+  statement?: string;
+  prompt?: string;
+  student_id?: number;
+  user_id?: string;
+  generated_at?: string;
+  // Allow for flexible structure with all the specific problem type fields
+  [key: string]: any;
+}
+
 class AuthenticatedApiClient {
   private baseURL: string;
 
@@ -126,13 +141,32 @@ class AuthenticatedApiClient {
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
+      let errorDetails = null;
       
       try {
         const errorData = await response.json();
         errorMessage = errorData.detail || errorData.message || errorMessage;
+        errorDetails = errorData;
+        
+        // For validation errors (422), try to provide more specific error information
+        if (response.status === 422 && errorData.detail) {
+          if (Array.isArray(errorData.detail)) {
+            const validationErrors = errorData.detail.map((err: any) => 
+              `${err.loc?.join('.')}: ${err.msg}`
+            ).join(', ');
+            errorMessage = `Validation error: ${validationErrors}`;
+          }
+        }
       } catch {
         // If we can't parse error as JSON, use default message
       }
+      
+      console.error('API Error:', {
+        status: response.status,
+        message: errorMessage,
+        details: errorDetails,
+        url: response.url
+      });
       
       const error = new Error(errorMessage) as AuthApiError;
       error.status = response.status;
@@ -636,47 +670,91 @@ private async getAuthToken(): Promise<string> {
     return this.post(`/api/learning-paths/${pathId}/start`);
   }
 
-  // Problem endpoints
+  // ============================================================================
+  // UNIVERSAL PROBLEM ENDPOINTS - Handles all problem types
+  // ============================================================================
+
   async getProblems(params?: Record<string, any>) {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
     return this.get(`/api/problems${queryString}`);
   }
 
+  /**
+   * Universal problem generation for practice sets.
+   * Generates one or more problems of various types.
+   * 
+   * @param data - The request payload.
+   * @param data.count - The number of problems to generate. Defaults to 1.
+   * @returns A promise that resolves to a single problem object (if count=1) or an array of problem objects (if count>1).
+   */
   async generateProblem(data: {
     subject: string;
     unit_id?: string;
     skill_id?: string;
     subskill_id?: string;
     difficulty?: number;
-  }) {
+    count?: number;
+  }): Promise<Problem | Problem[]> {
     return this.post('/api/problems/generate', data);
   }
 
+  /**
+   * Generate multiple problems for a practice session.
+   * Convenience method that always returns an array.
+   * 
+   * @param data - The request payload. Defaults to 5 problems if count not specified.
+   * @returns A promise that resolves to an array of problem objects.
+   */
+  async generateProblemSet(data: {
+    subject: string;
+    unit_id?: string;
+    skill_id?: string;
+    subskill_id?: string;
+    difficulty?: number;
+    count?: number;
+  }): Promise<Problem[]> {
+    const count = data.count || 5; // Default to 5 problems for practice sets
+    const result = await this.post('/api/problems/generate', { ...data, count });
+    // Ensure we always return an array for problem sets
+    return Array.isArray(result) ? result : [result];
+  }
+
+  /**
+   * Universal problem submission - handles all problem types:
+   * - Auto-detects problem type and routes to appropriate handler
+   * - Supports canvas images, structured data, and interactive responses
+   * - Uses unified SubmissionService on backend
+   */
   async submitProblem(data: {
     subject: string;
     problem: any;
-    solution_image: string;
+    solution_image?: string;
     skill_id: string;
     student_answer?: string;
     canvas_used?: boolean;
     subskill_id?: string;
+    primitive_response?: any; // For structured problem responses (MCQ, FIB, etc.)
   }) {
     return this.post('/api/problems/submit', data);
   }
 
+  /**
+   * DEPRECATED: Use generatePracticeSet instead
+   * Kept for backward compatibility during migration
+   */
   async getSkillProblems(params: {
     subject: string;
     skill_id: string;
     subskill_id: string;
     count?: number;
   }) {
-    const queryParams = new URLSearchParams();
-    queryParams.append('subject', params.subject);
-    queryParams.append('skill_id', params.skill_id);
-    queryParams.append('subskill_id', params.subskill_id);
-    if (params.count) queryParams.append('count', params.count.toString());
-    
-    return this.get(`/api/problems/skill-problems?${queryParams.toString()}`);
+    console.warn('getSkillProblems is deprecated. Use generatePracticeSet instead.');
+    return this.generatePracticeSet({
+      subject: params.subject,
+      skill_id: params.skill_id,
+      subskill_id: params.subskill_id,
+      count: params.count
+    });
   }
 
   async getRecommendedProblems(params?: {
@@ -686,9 +764,34 @@ private async getAuthToken(): Promise<string> {
     const queryParams = new URLSearchParams();
     if (params?.subject) queryParams.append('subject', params.subject);
     if (params?.count) queryParams.append('count', params.count.toString());
-    
+
     const queryString = queryParams.toString();
     return this.get(`/api/problems/recommended-problems${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // ============================================================================
+  // UNIFIED PRACTICE SET ENDPOINT
+  // ============================================================================
+
+  async generatePracticeSet(data: {
+    subject: string;
+    skill_id: string;
+    subskill_id: string;
+    count?: number;
+    problem_types?: string[];
+  }) {
+    // Use the generate endpoint and pass the count parameter
+    const problem = await this.post('/api/problems/generate', {
+      subject: data.subject,
+      skill_id: data.skill_id,
+      subskill_id: data.subskill_id,
+      unit_id: data.skill_id.split('-')[0], // Extract unit from skill_id if needed
+      count: data.count || 5, // Pass the count parameter, default to 5 if not provided
+    });
+    
+    // The backend may return a single problem or multiple problems based on the schema
+    // Wrap single problem in array for consistent frontend handling
+    return Array.isArray(problem) ? problem : [problem];
   }
 
   async getMyStudentInfo() {
@@ -714,216 +817,17 @@ private async getAuthToken(): Promise<string> {
   }
 
   // ============================================================================
-  // MCQ ENDPOINTS
+  // COMPOSABLE PROBLEMS ENDPOINTS
   // ============================================================================
 
-  async generateMCQ(data: {
+  async generateComposableProblem(data: {
     subject: string;
     unit_id?: string;
     skill_id?: string;
     subskill_id?: string;
-    difficulty?: string;
-    distractor_style?: string;
-    count?: number;
+    difficulty?: number;
   }) {
-    return this.post('/api/problems/mcq/generate', data);
-  }
-
-  async generateMCQBatch(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: string;
-    distractor_style?: string;
-    count?: number;
-  }) {
-    const payload = { ...data, count: data.count || 5 };
-    return this.post('/api/problems/mcq/generate', payload);
-  }
-
-  async submitMCQ(data: {
-    mcq: any; // Complete MCQ object
-    selected_option_id: string;
-  }) {
-    return this.post('/api/problems/mcq/submit', data);
-  }
-
-  // ============================================================================
-  // FILL-IN-THE-BLANK ENDPOINTS
-  // ============================================================================
-
-  async generateFillInBlank(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: string;
-    blank_style?: string;
-  }) {
-    return this.post('/api/problems/fill-in-blank/generate', data);
-  }
-
-  async submitFillInBlank(data: {
-    fill_in_blank: any; // Complete fill-in-the-blank object
-    student_answers: Array<{
-      blank_id: string;
-      answer: string;
-    }>;
-  }) {
-    return this.post('/api/problems/fill-in-blank/submit', data);
-  }
-
-  // ============================================================================
-  // CONCEPT MATCHING ENDPOINTS
-  // ============================================================================
-
-  async generateMatching(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: string;
-    matching_style?: string;
-  }) {
-    return this.post('/api/problems/matching/generate', data);
-  }
-
-  async generateMatchingBatch(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: string;
-    matching_style?: string;
-    count?: number;
-  }) {
-    const payload = { ...data, count: data.count || 5 };
-    return this.post('/api/problems/matching/generate', payload);
-  }
-
-  async submitMatching(data: {
-    matching: any; // Complete matching object
-    student_matches: Array<{
-      left_id: string;
-      right_id: string;
-    }>;
-  }) {
-    return this.post('/api/problems/matching/submit', data);
-  }
-
-  // ============================================================================
-  // TRUE/FALSE ENDPOINTS
-  // ============================================================================
-
-  async generateTrueFalse(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: string;
-    allow_explain_why?: boolean;
-    trickiness?: string;
-  }) {
-    return this.post('/api/problems/true-false/generate', data);
-  }
-
-  async submitTrueFalse(data: {
-    true_false: any; // Complete true/false object
-    selected_answer: boolean;
-    explanation?: string;
-  }) {
-    return this.post('/api/problems/true-false/submit', data);
-  }
-
-  // ============================================================================
-  // SEQUENCING ENDPOINTS
-  // ============================================================================
-
-  async generateSequencing(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: string;
-    sequence_type?: string;
-  }) {
-    return this.post('/api/problems/sequencing/generate', data);
-  }
-
-  async submitSequencing(data: {
-    sequencing: any; // Complete sequencing object
-    student_sequence: string[];
-  }) {
-    return this.post('/api/problems/sequencing/submit', data);
-  }
-
-  // ============================================================================
-  // CATEGORIZATION ENDPOINTS
-  // ============================================================================
-
-  async generateCategorization(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: string;
-    category_type?: string;
-  }) {
-    return this.post('/api/problems/categorization/generate', data);
-  }
-
-  async submitCategorization(data: {
-    categorization: any; // Complete categorization object
-    student_categorization: {
-      [item_text: string]: string;
-    };
-  }) {
-    return this.post('/api/problems/categorization/submit', data);
-  }
-
-  // ============================================================================
-  // SCENARIO QUESTION ENDPOINTS
-  // ============================================================================
-
-  async generateScenarioQuestion(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: string;
-    scenario_type?: string;
-  }) {
-    return this.post('/api/problems/scenario-question/generate', data);
-  }
-
-  async submitScenarioQuestion(data: {
-    scenario_question: any; // Complete scenario question object
-    student_answer: string;
-  }) {
-    return this.post('/api/problems/scenario-question/submit', data);
-  }
-
-  // ============================================================================
-  // SHORT ANSWER ENDPOINTS
-  // ============================================================================
-
-  async generateShortAnswer(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: string;
-    answer_type?: string;
-  }) {
-    return this.post('/api/problems/short-answer/generate', data);
-  }
-
-  async submitShortAnswer(data: {
-    short_answer: any; // Complete short answer object
-    student_answer: string;
-  }) {
-    return this.post('/api/problems/short-answer/submit', data);
+    return this.post('/api/problems/generate-composable', data);
   }
 
   // AI Tutor endpoints

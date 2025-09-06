@@ -78,7 +78,7 @@ const TrueFalsePrimitive: React.FC<TrueFalsePrimitiveProps> = ({
             {[{value: true, label: 'True'}, {value: false, label: 'False'}].map((option) => {
               const isSelected = currentResponse?.selected_answer === option.value;
               const isCorrect = isCorrectAnswer(option.value);
-              const isIncorrectSelection = isIncorrectSelection(option.value);
+              const isIncorrect = isIncorrectSelection(option.value);
               
               return (
                 <div 
@@ -183,6 +183,8 @@ const TrueFalsePrimitive: React.FC<TrueFalsePrimitiveProps> = ({
           )}
         </div>
       )}
+      </CardContent>
+    </Card>
     </div>
   );
 };

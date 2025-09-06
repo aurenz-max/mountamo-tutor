@@ -122,10 +122,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [problemFeedback, setProblemFeedback] = useState<any[]>([]);
   const [primitiveResponses, setPrimitiveResponses] = useState<any[]>([]);
   const [usingRecommendations, setUsingRecommendations] = useState(false);
-  const [usingMCQ, setUsingMCQ] = useState(false);
-  const [usingFillInBlank, setUsingFillInBlank] = useState(false);
-  const [usingMatching, setUsingMatching] = useState(false);
-  const [usingTrueFalse, setUsingTrueFalse] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const problemRendererRef = useRef<ProblemRendererRef>(null);
   
@@ -161,16 +157,12 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
 
   // Remove the manual start tutor function since it's now always active
 
-  // Generate a set of problems using the skill-based problems API
+  // Generate a set of problems using the unified problems API
   const generateProblemSet = async () => {
     setLoadingSet(true);
     setError(null);
     setFeedback(null);
     setUsingRecommendations(false);
-    setUsingMCQ(false);
-    setUsingFillInBlank(false);
-    setUsingMatching(false);
-    setUsingTrueFalse(false);
     
     try {
       // Parse IDs from the current topic
@@ -212,8 +204,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
         throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
       }
       
-      // Use the skill-based problem generation API
-      const skillProblemsRequest = {
+      // Use the unified practice set generation API
+      const practiceSetRequest = {
         subject: currentTopic.subject || 'mathematics',
         skill_id: skillId,
         subskill_id: subskillId,
@@ -221,16 +213,16 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       };
       
       console.log('=== API REQUEST ===');
-      console.log('Requesting skill-based problems:', skillProblemsRequest);
+      console.log('Requesting practice set:', practiceSetRequest);
       
-      // Call the skill-problems API endpoint
-      const problemsArray = await authApi.getSkillProblems(skillProblemsRequest);
+      // Call the unified practice set API endpoint
+      const problemsArray = await authApi.generatePracticeSet(practiceSetRequest);
       
       console.log('=== API RESPONSE ===');
       console.log('Problems received:', problemsArray);
       
       if (!problemsArray || problemsArray.length === 0) {
-        throw new Error('No problems returned from skill-problems API');
+        throw new Error('No problems returned from practice set API');
       }
       
       setProblems(problemsArray);
@@ -255,39 +247,43 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setShowLoadingOverlay(false);
   };
 
-  // Generate recommended problems using recommendations API
+  // Generate problems using generic recommendations (no specific skill targeting)
   const generateRecommendedProblems = async () => {
     setLoadingSet(true);
     setError(null);
     setFeedback(null);
     setUsingRecommendations(true);
-    setUsingMCQ(false);
-    setUsingFillInBlank(false);
-    setUsingMatching(false);
-    setUsingTrueFalse(false);
     
     try {
-      console.log('=== RECOMMENDATIONS REQUEST ===');
+      console.log('=== GENERATING PROBLEMS WITHOUT SPECIFIC SKILL TARGETING ===');
       
-      const recommendedProblems = await authApi.getRecommendedProblems({
+      // Use the same generate endpoint but without specific skill/subskill filters
+      // This will let the backend use its recommendation system
+      const practiceSetRequest = {
         subject: currentTopic.subject || 'mathematics',
         count: numProblems
-      });
+        // No skill_id or subskill_id - let backend recommend
+      };
       
-      console.log('Recommended problems received:', recommendedProblems);
+      console.log('Generic practice request:', practiceSetRequest);
       
-      if (!recommendedProblems || recommendedProblems.length === 0) {
-        throw new Error('No recommended problems returned');
+      const problemsArray = await authApi.generatePracticeSet(practiceSetRequest);
+      
+      console.log('Generic problems received:', problemsArray);
+      
+      if (!problemsArray || problemsArray.length === 0) {
+        throw new Error('No problems returned from generic practice set API');
       }
       
-      setProblems(recommendedProblems);
-      setProblemAttempted(new Array(recommendedProblems.length).fill(false));
-      setProblemFeedback(new Array(recommendedProblems.length).fill(null));
+      setProblems(problemsArray);
+      setProblemAttempted(new Array(problemsArray.length).fill(false));
+      setProblemFeedback(new Array(problemsArray.length).fill(null));
+      setPrimitiveResponses(new Array(problemsArray.length).fill(null));
       setCurrentIndex(0);
       
     } catch (error: any) {
-      console.error('Error generating recommended problems:', error);
-      setError(`Failed to generate recommended problems: ${error.message}`);
+      console.error('Error generating problems:', error);
+      setError(`Failed to generate problems: ${error.message}`);
       setUsingRecommendations(false);
     }
     
@@ -295,352 +291,11 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setShowLoadingOverlay(false);
   };
 
-  // Generate MCQ problems using MCQ API
-  const generateMCQProblems = async () => {
-    setLoadingSet(true);
-    setError(null);
-    setFeedback(null);
-    setUsingMCQ(true);
-    setUsingRecommendations(false);
-    setUsingFillInBlank(false);
-    setUsingMatching(false);
-    setUsingTrueFalse(false);
-    
-    try {
-      // Parse IDs from the current topic
-      let skillId, subskillId, unitId;
-      
-      if (currentTopic.selection) {
-        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
-        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
-        
-        unitId = subskillParsed.unit;
-        subskillId = subskillParsed.subskill;
-        
-        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
-          skillId = subskillParsed.skill;
-        } else {
-          skillId = skillParsed.skill || skillParsed.cleanId;
-        }
-      } else if (currentTopic.id) {
-        const parsed = parseActivityId(currentTopic.id);
-        unitId = parsed.unit;
-        skillId = parsed.skill;
-        subskillId = parsed.subskill;
-      } else {
-        throw new Error('No valid skill/subskill identifiers found in currentTopic');
-      }
-      
-      console.log('=== MCQ GENERATION REQUEST ===');
-      console.log('Parsed IDs:', { unitId, skillId, subskillId });
-      
-      // Validate required IDs
-      if (!skillId || !subskillId) {
-        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
-      }
-      
-      // Generate batch of MCQ problems (default 5)
-      const mcqRequest = {
-        subject: currentTopic.subject || 'mathematics',
-        unit_id: unitId,
-        skill_id: skillId,
-        subskill_id: subskillId,
-        difficulty: 'medium',
-        distractor_style: 'plausible',
-        count: numProblems || 5
-      };
-      
-      console.log(`Generating ${numProblems || 5} MCQ problems in batch:`, mcqRequest);
-      
-      const mcqBatch = await authApi.generateMCQBatch(mcqRequest);
-      
-      if (!mcqBatch || !mcqBatch.questions || mcqBatch.questions.length === 0) {
-        throw new Error('Failed to generate any MCQ problems');
-      }
-      
-      const mcqProblems = mcqBatch.questions;
-      
-      console.log('=== MCQ PROBLEMS GENERATED ===');
-      console.log('MCQ problems received:', mcqProblems);
-      
-      setProblems(mcqProblems);
-      setProblemAttempted(new Array(mcqProblems.length).fill(false));
-      setProblemFeedback(new Array(mcqProblems.length).fill(null));
-      setPrimitiveResponses(new Array(mcqProblems.length).fill(null));
-      setCurrentIndex(0);
-      
-    } catch (error: any) {
-      console.error('=== MCQ GENERATION ERROR ===');
-      console.error('Error generating MCQ problems:', error);
-      setError(`Failed to generate MCQ problems: ${error.message || 'Unknown error'}`);
-      setUsingMCQ(false);
-    }
-    
-    setLoadingSet(false);
-    setShowLoadingOverlay(false);
-  };
 
-  // Generate Fill-in-the-Blank problems using FillInBlank API
-  const generateFillInBlankProblems = async () => {
-    setLoadingSet(true);
-    setError(null);
-    setFeedback(null);
-    setUsingFillInBlank(true);
-    setUsingMCQ(false);
-    setUsingRecommendations(false);
-    setUsingMatching(false);
-    
-    try {
-      // Parse IDs from the current topic
-      let skillId, subskillId, unitId;
-      
-      if (currentTopic.selection) {
-        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
-        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
-        
-        unitId = subskillParsed.unit;
-        subskillId = subskillParsed.subskill;
-        
-        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
-          skillId = subskillParsed.skill;
-        } else {
-          skillId = skillParsed.skill || skillParsed.cleanId;
-        }
-      } else if (currentTopic.id) {
-        const parsed = parseActivityId(currentTopic.id);
-        unitId = parsed.unit;
-        skillId = parsed.skill;
-        subskillId = parsed.subskill;
-      } else {
-        throw new Error('No valid skill/subskill identifiers found in currentTopic');
-      }
-      
-      console.log('=== FILL-IN-THE-BLANK GENERATION REQUEST ===');
-      console.log('Parsed IDs:', { unitId, skillId, subskillId });
-      
-      // Validate required IDs
-      if (!skillId || !subskillId) {
-        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
-      }
-      
-      // Generate multiple Fill-in-the-Blank problems
-      const fillInBlankProblems = [];
-      for (let i = 0; i < numProblems; i++) {
-        const fibRequest = {
-          subject: currentTopic.subject || 'mathematics',
-          unit_id: unitId,
-          skill_id: skillId,
-          subskill_id: subskillId,
-          difficulty: 'medium',
-          blank_style: 'standard'
-        };
-        
-        console.log(`Generating Fill-in-the-Blank ${i + 1}/${numProblems}:`, fibRequest);
-        
-        const fib = await authApi.generateFillInBlank(fibRequest);
-        if (fib) {
-          fillInBlankProblems.push(fib);
-        }
-      }
-      
-      if (fillInBlankProblems.length === 0) {
-        throw new Error('Failed to generate any Fill-in-the-Blank problems');
-      }
-      
-      console.log('=== FILL-IN-THE-BLANK PROBLEMS GENERATED ===');
-      console.log('Fill-in-the-Blank problems received:', fillInBlankProblems);
-      
-      setProblems(fillInBlankProblems);
-      setProblemAttempted(new Array(fillInBlankProblems.length).fill(false));
-      setProblemFeedback(new Array(fillInBlankProblems.length).fill(null));
-      setPrimitiveResponses(new Array(fillInBlankProblems.length).fill(null));
-      setCurrentIndex(0);
-      
-    } catch (error: any) {
-      console.error('=== FILL-IN-THE-BLANK GENERATION ERROR ===');
-      console.error('Error generating Fill-in-the-Blank problems:', error);
-      setError(`Failed to generate Fill-in-the-Blank problems: ${error.message || 'Unknown error'}`);
-      setUsingFillInBlank(false);
-    }
-    
-    setLoadingSet(false);
-    setShowLoadingOverlay(false);
-  };
 
-  // Generate Matching problems using Matching API
-  const generateMatchingProblems = async () => {
-    setLoadingSet(true);
-    setError(null);
-    setFeedback(null);
-    setUsingMatching(true);
-    setUsingFillInBlank(false);
-    setUsingMCQ(false);
-    setUsingRecommendations(false);
-    
-    try {
-      // Parse IDs from the current topic
-      let skillId, subskillId, unitId;
-      
-      if (currentTopic.selection) {
-        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
-        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
-        
-        unitId = subskillParsed.unit;
-        subskillId = subskillParsed.subskill;
-        
-        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
-          skillId = subskillParsed.skill;
-        } else {
-          skillId = skillParsed.skill || skillParsed.cleanId;
-        }
-      } else if (currentTopic.id) {
-        const parsed = parseActivityId(currentTopic.id);
-        unitId = parsed.unit;
-        skillId = parsed.skill;
-        subskillId = parsed.subskill;
-      } else {
-        throw new Error('No valid skill/subskill identifiers found in currentTopic');
-      }
-      
-      console.log('=== MATCHING GENERATION REQUEST ===');
-      console.log('Parsed IDs:', { unitId, skillId, subskillId });
-      
-      // Validate required IDs
-      if (!skillId || !subskillId) {
-        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
-      }
-      
-      // Generate batch of Matching problems (default 5)
-      const matchingRequest = {
-        subject: currentTopic.subject || 'mathematics',
-        unit_id: unitId,
-        skill_id: skillId,
-        subskill_id: subskillId,
-        difficulty: 'medium',
-        matching_style: 'one_to_one',
-        count: numProblems || 5
-      };
-      
-      console.log(`Generating ${numProblems || 5} Matching problems in batch:`, matchingRequest);
-      
-      const matchingBatch = await authApi.generateMatchingBatch(matchingRequest);
-      
-      if (!matchingBatch || !matchingBatch.problems || matchingBatch.problems.length === 0) {
-        throw new Error('Failed to generate any Matching problems');
-      }
-      
-      const matchingProblems = matchingBatch.problems;
-      
-      console.log('=== MATCHING PROBLEMS GENERATED ===');
-      console.log('Matching problems received:', matchingProblems);
-      
-      setProblems(matchingProblems);
-      setProblemAttempted(new Array(matchingProblems.length).fill(false));
-      setProblemFeedback(new Array(matchingProblems.length).fill(null));
-      setPrimitiveResponses(new Array(matchingProblems.length).fill(null));
-      setCurrentIndex(0);
-      
-    } catch (error: any) {
-      console.error('=== MATCHING GENERATION ERROR ===');
-      console.error('Error generating Matching problems:', error);
-      setError(`Failed to generate Matching problems: ${error.message || 'Unknown error'}`);
-      setUsingMatching(false);
-    }
-    
-    setLoadingSet(false);
-    setShowLoadingOverlay(false);
-  };
 
-  // Generate True/False problems using True/False API
-  const generateTrueFalseProblems = async () => {
-    setLoadingSet(true);
-    setError(null);
-    setFeedback(null);
-    setUsingTrueFalse(true);
-    setUsingMatching(false);
-    setUsingFillInBlank(false);
-    setUsingMCQ(false);
-    setUsingRecommendations(false);
-    
-    try {
-      // Parse IDs from the current topic
-      let skillId, subskillId, unitId;
-      
-      if (currentTopic.selection) {
-        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
-        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
-        
-        unitId = subskillParsed.unit;
-        subskillId = subskillParsed.subskill;
-        
-        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
-          skillId = subskillParsed.skill;
-        } else {
-          skillId = skillParsed.skill || skillParsed.cleanId;
-        }
-      } else if (currentTopic.id) {
-        const parsed = parseActivityId(currentTopic.id);
-        unitId = parsed.unit;
-        skillId = parsed.skill;
-        subskillId = parsed.subskill;
-      } else {
-        throw new Error('No valid skill/subskill identifiers found in currentTopic');
-      }
-      
-      console.log('=== TRUE/FALSE GENERATION REQUEST ===');
-      console.log('Parsed IDs:', { unitId, skillId, subskillId });
-      
-      // Validate required IDs
-      if (!skillId || !subskillId) {
-        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
-      }
-      
-      // Generate multiple True/False problems
-      const trueFalseProblems = [];
-      for (let i = 0; i < numProblems; i++) {
-        const trueFalseRequest = {
-          subject: currentTopic.subject || 'mathematics',
-          unit_id: unitId,
-          skill_id: skillId,
-          subskill_id: subskillId,
-          difficulty: 'medium',
-          allow_explain_why: false,
-          trickiness: 'none'
-        };
-        
-        console.log(`Generating True/False ${i + 1}/${numProblems}:`, trueFalseRequest);
-        
-        const trueFalse = await authApi.generateTrueFalse(trueFalseRequest);
-        if (trueFalse) {
-          trueFalseProblems.push(trueFalse);
-        }
-      }
-      
-      if (trueFalseProblems.length === 0) {
-        throw new Error('Failed to generate any True/False problems');
-      }
-      
-      console.log('=== TRUE/FALSE PROBLEMS GENERATED ===');
-      console.log('True/False problems received:', trueFalseProblems);
-      
-      setProblems(trueFalseProblems);
-      setProblemAttempted(new Array(trueFalseProblems.length).fill(false));
-      setProblemFeedback(new Array(trueFalseProblems.length).fill(null));
-      setPrimitiveResponses(new Array(trueFalseProblems.length).fill(null));
-      setCurrentIndex(0);
-      
-    } catch (error: any) {
-      console.error('=== TRUE/FALSE GENERATION ERROR ===');
-      console.error('Error generating True/False problems:', error);
-      setError(`Failed to generate True/False problems: ${error.message || 'Unknown error'}`);
-      setUsingTrueFalse(false);
-    }
-    
-    setLoadingSet(false);
-    setShowLoadingOverlay(false);
-  };
 
-  // Handle submission of the current problem
+  // Handle submission using the unified submission endpoint
   const handleSubmit = async (submissionData: any) => {
     if (!problems[currentIndex]) return;
    
@@ -660,28 +315,30 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
 
       let response;
       
-      // If this is already a processed review (from MCQ/FIB components), use it directly
+      // If this is already a processed review (from primitive components), use it directly
       if (submissionData.review || submissionData.originalReview) {
         response = submissionData;
       } else {
-        // For composable/drawing problems, submit to backend
+        // For all other problems, submit to unified backend endpoint
         const submission = {
           subject: currentTopic.subject || 'mathematics',
           problem: currentProblem,
           skill_id: parsed.skill,
           subskill_id: parsed.subskill,
+          // Include primitive_response for structured problems
+          primitive_response: submissionData.primitive_response || null,
           ...submissionData
         };
         
-        console.log('=== SUBMISSION ===');
-        console.log('Submitting problem:', {
+        console.log('=== UNIFIED SUBMISSION ===');
+        console.log('Submitting to unified endpoint:', {
+          problem_type: currentProblem.problem_type,
           parsed_ids: parsed,
-          submission_ids: {
-            skill_id: parsed.skill,
-            subskill_id: parsed.subskill
-          }
+          has_primitive_response: !!submission.primitive_response,
+          submission_keys: Object.keys(submission)
         });
        
+        // Use the unified submission endpoint
         response = await authApi.submitProblem(submission);
       }
       
@@ -836,7 +493,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 Start New Set with AI Tutor
               </Button>
               
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <Button 
                   onClick={() => {
                     setShowLoadingOverlay(true);
@@ -855,49 +512,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
                   Get Recommendations
-                </Button>
-                <Button 
-                  onClick={() => {
-                    setShowLoadingOverlay(true);
-                    generateMCQProblems();
-                  }}
-                  variant="outline"
-                  className="flex items-center justify-center"
-                >
-                  <HelpCircle className="w-4 h-4 mr-2" />
-                  Try Multiple Choice
-                </Button>
-                <Button 
-                  onClick={() => {
-                    setShowLoadingOverlay(true);
-                    generateFillInBlankProblems();
-                  }}
-                  variant="outline"
-                  className="flex items-center justify-center"
-                >
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Try Fill-in-the-Blank
-                </Button>
-                <Button 
-                  onClick={() => {
-                    setShowLoadingOverlay(true);
-                    generateMatchingProblems();
-                  }}
-                  variant="outline"
-                  className="flex items-center justify-center"
-                >
-                  🔗 Concept Matching
-                </Button>
-                <Button 
-                  onClick={() => {
-                    setShowLoadingOverlay(true);
-                    generateTrueFalseProblems();
-                  }}
-                  variant="outline"
-                  className="flex items-center justify-center"
-                >
-                  <HelpCircle className="w-4 h-4 mr-2" />
-                  Try True/False
                 </Button>
               </div>
             </div>
@@ -997,100 +611,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  <Button 
-                    onClick={() => {
-                      setShowLoadingOverlay(true);
-                      generateMCQProblems();
-                    }}
-                    disabled={loadingSet}
-                    size="lg"
-                    variant="outline"
-                    className="w-56"
-                  >
-                    {loadingSet ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <HelpCircle className="w-4 h-4 mr-2" />
-                        Multiple Choice
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => {
-                      setShowLoadingOverlay(true);
-                      generateFillInBlankProblems();
-                    }}
-                    disabled={loadingSet}
-                    size="lg"
-                    variant="outline"
-                    className="w-56"
-                  >
-                    {loadingSet ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Edit3 className="w-4 h-4 mr-2" />
-                        Fill-in-the-Blank
-                      </>
-                    )}
-                  </Button>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  <Button 
-                    onClick={() => {
-                      setShowLoadingOverlay(true);
-                      generateMatchingProblems();
-                    }}
-                    disabled={loadingSet}
-                    size="lg"
-                    variant="outline"
-                    className="w-56"
-                  >
-                    {loadingSet ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        🔗 Matching
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => {
-                      setShowLoadingOverlay(true);
-                      generateTrueFalseProblems();
-                    }}
-                    disabled={loadingSet}
-                    size="lg"
-                    variant="outline"
-                    className="w-56"
-                  >
-                    {loadingSet ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <HelpCircle className="w-4 h-4 mr-2" />
-                        True/False
-                      </>
-                    )}
-                  </Button>
-                </div>
               </div>
             </div>
           ) : (
@@ -1099,42 +619,11 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-medium">
-                    {usingMCQ
-                      ? 'Multiple Choice Questions'
-                      : usingFillInBlank
-                        ? 'Fill-in-the-Blank Questions'
-                        : usingMatching
-                          ? 'Concept Matching Problems'
-                          : usingTrueFalse
-                            ? 'True or False Questions'
-                            : usingRecommendations || fromDashboard
-                              ? 'Recommended Problems' 
-                              : `Problem Set: ${currentTopic.skill?.description || 'Mathematics'}`}
+                    {usingRecommendations || fromDashboard
+                      ? 'Recommended Problems' 
+                      : `Problem Set: ${currentTopic.skill?.description || 'Mathematics'}`}
                   </h2>
-                  {usingMCQ && (
-                    <p className="text-sm text-purple-600 flex items-center">
-                      <HelpCircle className="w-3 h-3 mr-1" />
-                      Multiple choice practice questions
-                    </p>
-                  )}
-                  {usingFillInBlank && (
-                    <p className="text-sm text-orange-600 flex items-center">
-                      <Edit3 className="w-3 h-3 mr-1" />
-                      Fill-in-the-blank practice questions
-                    </p>
-                  )}
-                  {usingMatching && (
-                    <p className="text-sm text-green-600 flex items-center">
-                      🔗 Concept matching practice questions
-                    </p>
-                  )}
-                  {usingTrueFalse && (
-                    <p className="text-sm text-blue-600 flex items-center">
-                      <HelpCircle className="w-3 h-3 mr-1" />
-                      True or false practice questions
-                    </p>
-                  )}
-                  {(usingRecommendations || fromDashboard) && !usingMCQ && !usingFillInBlank && !usingMatching && !usingTrueFalse && (
+                  {(usingRecommendations || fromDashboard) && (
                     <p className="text-sm text-blue-600 flex items-center">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Personalized based on your learning analytics

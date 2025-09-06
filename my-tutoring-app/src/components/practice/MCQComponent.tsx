@@ -88,18 +88,51 @@ const MCQComponent: React.FC<MCQComponentProps> = ({
     setError(null);
 
     try {
-      const submission: MCQSubmission = {
-        mcq: mcq,
-        selected_option_id: selectedOption
+      // Convert to universal problem submission format
+      const problemData = {
+        subject: mcq.subject,
+        problem: {
+          id: mcq.id,
+          skill_id: mcq.skill_id,
+          subskill_id: mcq.subskill_id,
+          problem_data: {
+            full_problem_data: {
+              question: mcq.question,
+              options: mcq.options,
+              correct_option_id: mcq.correct_option_id,
+              rationale: mcq.rationale,
+              difficulty: mcq.difficulty
+            }
+          }
+        },
+        skill_id: mcq.skill_id,
+        subskill_id: mcq.subskill_id,
+        student_answer: selectedOption,
+        canvas_used: false
       };
 
-      const reviewResult: MCQReview = await authApi.submitMCQ(submission);
+      const reviewResult = await authApi.submitProblem(problemData);
+      
+      // Convert response to MCQ format for compatibility
+      const mcqReview: MCQReview = {
+        is_correct: reviewResult.review?.correct || false,
+        selected_option_id: selectedOption,
+        correct_option_id: mcq.correct_option_id,
+        explanation: reviewResult.review?.feedback?.guidance || mcq.rationale,
+        selected_option_text: mcq.options.find(opt => opt.id === selectedOption)?.text || '',
+        correct_option_text: mcq.options.find(opt => opt.id === mcq.correct_option_id)?.text || '',
+        metadata: {
+          question_id: mcq.id,
+          submitted_at: new Date().toISOString(),
+          evaluation_method: 'universal_submission_service'
+        }
+      };
 
-      setReview(reviewResult);
+      setReview(mcqReview);
       setSubmitted(true);
 
       if (onComplete) {
-        onComplete(reviewResult);
+        onComplete(mcqReview);
       }
     } catch (err: any) {
       console.error('Error submitting MCQ:', err);

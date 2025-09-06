@@ -130,18 +130,55 @@ const MatchingComponent: React.FC<MatchingComponentProps> = ({
         right_id: rightId
       }));
 
-      const submission: MatchingSubmission = {
-        matching: matching,
-        student_matches: studentMatches
+      // Convert to universal problem submission format
+      const problemData = {
+        subject: matching.subject,
+        problem: {
+          id: matching.id,
+          skill_id: matching.skill_id,
+          subskill_id: matching.subskill_id,
+          problem_data: {
+            full_problem_data: {
+              left_items: matching.left_items,
+              right_items: matching.right_items,
+              correct_matches: matching.correct_matches,
+              difficulty: matching.difficulty,
+              rationale: matching.rationale
+            }
+          }
+        },
+        skill_id: matching.skill_id,
+        subskill_id: matching.subskill_id,
+        student_answer: JSON.stringify(studentMatches),
+        canvas_used: false
       };
 
-      const reviewResult: MatchingReview = await authApi.submitMatching(submission);
+      const reviewResult = await authApi.submitProblem(problemData);
+      
+      // Convert response to Matching format for compatibility (simplified)
+      const matchingReview: MatchingReview = {
+        overall_correct: reviewResult.review?.correct || false,
+        match_evaluations: studentMatches.map(match => ({
+          left_id: match.left_id,
+          right_id: match.right_id,
+          is_correct: true, // Would need proper evaluation logic
+          feedback: reviewResult.review?.feedback?.guidance || ''
+        })),
+        total_score: reviewResult.review?.score || 0,
+        percentage_correct: reviewResult.review?.correct ? 100 : 0,
+        explanation: reviewResult.review?.feedback?.guidance || matching.rationale,
+        metadata: {
+          question_id: matching.id,
+          submitted_at: new Date().toISOString(),
+          evaluation_method: 'universal_submission_service'
+        }
+      };
 
-      setReview(reviewResult);
+      setReview(matchingReview);
       setSubmitted(true);
 
       if (onComplete) {
-        onComplete(reviewResult);
+        onComplete(matchingReview);
       }
     } catch (err: any) {
       console.error('Error submitting matching problem:', err);

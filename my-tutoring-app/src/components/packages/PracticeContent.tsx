@@ -41,8 +41,9 @@ interface PracticeContentProps {
   studentId?: number;
 }
 
-// Import your existing DrawingCanvas
+// Import your existing DrawingCanvas and ProblemRenderer
 import DrawingCanvas from '@/components/packages/ui/DrawingCanvas'; // Adjust path as needed
+import ProblemRenderer, { type ProblemRendererRef } from '@/components/practice/ProblemRenderer';
 
 export function PracticeContent({ 
   content, 
@@ -71,6 +72,152 @@ export function PracticeContent({
   const [isLoadingHint, setIsLoadingHint] = useState(false);
   
   const canvasRef = useRef<any>(null);
+  const problemRendererRef = useRef<ProblemRendererRef>(null);
+
+  // Helper function to determine if problem needs ProblemRenderer
+  const needsProblemRenderer = (problem: any) => {
+    const problemData = problem.problem_data;
+    const fullProblemData = problemData.full_problem_data || {};
+    
+    // Check for structured problem types that ProblemRenderer handles
+    return !!(
+      problemData.template || // Visual/composable problems
+      (fullProblemData.question && fullProblemData.options && Array.isArray(fullProblemData.options)) || // MCQ with structured options
+      fullProblemData.text_with_blanks || // Fill-in-the-blank
+      (fullProblemData.left_items && fullProblemData.right_items) || // Matching
+      (fullProblemData.statement && fullProblemData.correct !== undefined) || // True/False
+      fullProblemData.items || // Sequencing
+      fullProblemData.categories || // Categorization
+      fullProblemData.scenario // Scenario questions
+    );
+  };
+
+  // Helper function to transform package problem data to ProblemRenderer format
+  const transformProblemData = (problem: any) => {
+    const problemData = problem.problem_data;
+    const fullProblemData = problemData.full_problem_data || {};
+    
+    // For multiple choice problems - check full_problem_data first
+    if (fullProblemData.options && Array.isArray(fullProblemData.options)) {
+      return {
+        ...fullProblemData,
+        question: fullProblemData.question || problemData.problem,
+        rationale: fullProblemData.rationale || problemData.teaching_note,
+        // Include required fields from the parent problem
+        subject: problem.subject || problemData.subject || 'Unknown',
+        unit_id: problem.unit_id || problemData.unit_id || 'default_unit',
+        skill_id: problem.skill_id || problemData.skill_id || problemData.metadata?.skill?.id || 'default_skill',
+        subskill_id: problem.subskill_id || problemData.subskill_id || problemData.metadata?.subskill?.id || 'default_subskill'
+      };
+    }
+    
+    // For fill-in-the-blank problems
+    if (fullProblemData.text_with_blanks && fullProblemData.blanks) {
+      return {
+        ...fullProblemData,
+        question: fullProblemData.text_with_blanks,
+        // Include required fields from the parent problem
+        subject: problem.subject || problemData.subject || 'Unknown',
+        unit_id: problem.unit_id || problemData.unit_id || 'default_unit',
+        skill_id: problem.skill_id || problemData.skill_id || problemData.metadata?.skill?.id || 'default_skill',
+        subskill_id: problem.subskill_id || problemData.subskill_id || problemData.metadata?.subskill?.id || 'default_subskill'
+      };
+    }
+    
+    // For true/false problems
+    if (fullProblemData.statement && fullProblemData.correct !== undefined) {
+      return {
+        ...fullProblemData,
+        // Include required fields from the parent problem
+        subject: problem.subject || problemData.subject || 'Unknown',
+        unit_id: problem.unit_id || problemData.unit_id || 'default_unit',
+        skill_id: problem.skill_id || problemData.skill_id || problemData.metadata?.skill?.id || 'default_skill',
+        subskill_id: problem.subskill_id || problemData.subskill_id || problemData.metadata?.subskill?.id || 'default_subskill'
+      };
+    }
+    
+    // For matching problems
+    if (fullProblemData.left_items && fullProblemData.right_items) {
+      return {
+        ...fullProblemData,
+        // Include required fields from the parent problem
+        subject: problem.subject || problemData.subject || 'Unknown',
+        unit_id: problem.unit_id || problemData.unit_id || 'default_unit',
+        skill_id: problem.skill_id || problemData.skill_id || problemData.metadata?.skill?.id || 'default_skill',
+        subskill_id: problem.subskill_id || problemData.subskill_id || problemData.metadata?.subskill?.id || 'default_subskill'
+      };
+    }
+    
+    // For categorization problems
+    if (fullProblemData.categories && fullProblemData.categorization_items) {
+      return {
+        ...fullProblemData,
+        // Include required fields from the parent problem
+        subject: problem.subject || problemData.subject || 'Unknown',
+        unit_id: problem.unit_id || problemData.unit_id || 'default_unit',
+        skill_id: problem.skill_id || problemData.skill_id || problemData.metadata?.skill?.id || 'default_skill',
+        subskill_id: problem.subskill_id || problemData.subskill_id || problemData.metadata?.subskill?.id || 'default_subskill'
+      };
+    }
+    
+    // For scenario questions
+    if (fullProblemData.scenario && fullProblemData.scenario_question) {
+      return {
+        ...fullProblemData,
+        // Include required fields from the parent problem
+        subject: problem.subject || problemData.subject || 'Unknown',
+        unit_id: problem.unit_id || problemData.unit_id || 'default_unit',
+        skill_id: problem.skill_id || problemData.skill_id || problemData.metadata?.skill?.id || 'default_skill',
+        subskill_id: problem.subskill_id || problemData.subskill_id || problemData.metadata?.subskill?.id || 'default_subskill'
+      };
+    }
+    
+    // For sequencing problems
+    if (fullProblemData.items && Array.isArray(fullProblemData.items)) {
+      return {
+        ...fullProblemData,
+        // Include required fields from the parent problem
+        subject: problem.subject || problemData.subject || 'Unknown',
+        unit_id: problem.unit_id || problemData.unit_id || 'default_unit',
+        skill_id: problem.skill_id || problemData.skill_id || problemData.metadata?.skill?.id || 'default_skill',
+        subskill_id: problem.subskill_id || problemData.subskill_id || problemData.metadata?.subskill?.id || 'default_subskill'
+      };
+    }
+    
+    // Fallback - check old format at top level
+    if (problemData.options && Array.isArray(problemData.options)) {
+      // If options are strings (old format), create object structure
+      const correctAnswer = problemData.correct_answer || problemData.answer;
+      const correctOptionId = problemData.options.findIndex((opt: string) => opt === correctAnswer);
+      
+      return {
+        ...problemData,
+        question: problemData.problem,
+        options: problemData.options.map((opt: string, idx: number) => ({
+          id: String.fromCharCode(65 + idx), // A, B, C, D...
+          text: opt
+        })),
+        correct_option_id: correctOptionId >= 0 ? String.fromCharCode(65 + correctOptionId) : undefined,
+        rationale: problemData.teaching_note,
+        // Include required fields from the parent problem
+        subject: problem.subject || problemData.subject || 'Unknown',
+        unit_id: problem.unit_id || problemData.unit_id || 'default_unit',
+        skill_id: problem.skill_id || problemData.skill_id || problemData.metadata?.skill?.id || 'default_skill',
+        subskill_id: problem.subskill_id || problemData.subskill_id || problemData.metadata?.subskill?.id || 'default_subskill'
+      };
+    }
+    
+    // For other types, return as-is with problem mapped to question
+    return {
+      ...problemData,
+      question: problemData.problem,
+      // Include required fields from the parent problem
+      subject: problem.subject || problemData.subject || 'Unknown',
+      unit_id: problem.unit_id || problemData.unit_id || 'default_unit',
+      skill_id: problem.skill_id || problemData.skill_id || problemData.metadata?.skill?.id || 'default_skill',
+      subskill_id: problem.subskill_id || problemData.subskill_id || problemData.metadata?.subskill?.id || 'default_subskill'
+    };
+  };
 
   if (!content.problems || content.problems.length === 0) {
     return (
@@ -268,9 +415,10 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
   };
 
   const submitProblemToBackend = async (answerData: {
-    type: 'option' | 'text' | 'canvas';
+    type: 'option' | 'text' | 'canvas' | 'visual';
     value: number | string | null;
     canvasData?: string;
+    primitiveAnswer?: any;
   }) => {
     if (!currentProblem) return;
 
@@ -280,26 +428,34 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
     try {
       // Prepare student answer based on type
       let studentAnswer = '';
-      if (answerData.type === 'option' && currentProblem.problem_data.options && answerData.value !== null) {
-        studentAnswer = currentProblem.problem_data.options[answerData.value as number];
+      if (answerData.type === 'option' && answerData.value !== null) {
+        const options = currentProblem.problem_data.full_problem_data?.options || currentProblem.problem_data.options;
+        if (options && Array.isArray(options)) {
+          const selectedOption = options[answerData.value as number];
+          studentAnswer = typeof selectedOption === 'string' ? selectedOption : selectedOption.text;
+        }
       } else if (answerData.type === 'text') {
         studentAnswer = answerData.value as string;
       } else if (answerData.type === 'canvas') {
         studentAnswer = 'Canvas submission';
+      } else if (answerData.type === 'visual') {
+        studentAnswer = 'Visual/primitive response';
       }
 
+      // Unified submission payload for all problem types - let backend handle the complexity
       const submissionPayload = {
         student_id: studentId,
         subject: currentProblem.subject,
         problem: currentProblem,
-        solution_image: answerData.canvasData || 'data:image/png;base64,', // Provide empty canvas if no drawing
+        solution_image: answerData.canvasData || 'data:image/png;base64,', 
         skill_id: currentProblem.skill_id || currentProblem.problem_data.metadata?.skill?.id || '',
         subskill_id: currentProblem.subskill_id || currentProblem.problem_data.metadata?.subskill?.id || '',
         student_answer: studentAnswer,
         canvas_used: answerData.type === 'canvas',
-        primitive_responses: answerData.type === 'visual' ? answerData.primitiveAnswer : undefined
+        primitive_response: answerData.primitiveAnswer
       };
 
+      // Always use the unified submitProblem endpoint - backend will route appropriately
       const response = await authApi.submitProblem(submissionPayload);
 
       // Get the score to determine next steps
@@ -472,8 +628,22 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
   };
 
   const isCorrectAnswer = (optionIndex: number) => {
-    if (!currentProblem.problem_data.options) return false;
-    return currentProblem.problem_data.options[optionIndex] === getCorrectAnswer();
+    const options = currentProblem.problem_data.full_problem_data?.options || currentProblem.problem_data.options;
+    if (!options || !Array.isArray(options)) return false;
+    
+    const fullProblemData = currentProblem.problem_data.full_problem_data;
+    
+    // If using structured data with correct_option_id
+    if (fullProblemData && fullProblemData.correct_option_id) {
+      const option = options[optionIndex];
+      return typeof option === 'object' ? option.id === fullProblemData.correct_option_id : false;
+    }
+    
+    // Fallback to string comparison
+    const correctAnswer = getCorrectAnswer();
+    const option = options[optionIndex];
+    const optionText = typeof option === 'string' ? option : option.text;
+    return optionText === correctAnswer;
   };
 
   // Helper functions for feedback (borrowed from ProblemPanel)
@@ -497,12 +667,19 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
 
     const canvasData = canvasRef.current?.getCanvasData();
 
-    // For visual problems, submit the primitive answer
-    if (currentProblem.problem_data.template && currentAnswer?.primitiveAnswer) {
+    // For problems that use ProblemRenderer, get their answer and submit via unified path
+    if (needsProblemRenderer(currentProblem) && problemRendererRef.current) {
+      // Get the primitive answer
+      const primitiveAnswer = currentAnswer?.primitiveAnswer;
+      if (!primitiveAnswer) {
+        alert('Please provide an answer before submitting.');
+        return;
+      }
+      
       const answerData = {
         type: 'visual' as const,
-        value: 'visual_response',
-        primitiveAnswer: currentAnswer.primitiveAnswer,
+        value: 'primitive_response',
+        primitiveAnswer: primitiveAnswer,
         canvasData: canvasData || undefined
       };
       await submitProblemToBackend(answerData);
@@ -510,7 +687,8 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
     }
 
     // For multiple choice, submit the selected option (with optional canvas work)
-    if (currentProblem.problem_data.options) {
+    const options = currentProblem.problem_data.full_problem_data?.options || currentProblem.problem_data.options;
+    if (options && Array.isArray(options)) {
       if (selectedAnswer === null) {
         alert('Please select an answer before submitting.');
         return;
@@ -547,12 +725,13 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
 
   // Check if user has provided any answer or work
   const hasAnswer = () => {
-    // For visual problems, check if primitive answer exists
-    if (currentProblem.problem_data.template) {
-      return currentAnswer?.primitiveAnswer?.value != null;
+    // For problems that use ProblemRenderer, check if primitive answer exists
+    if (needsProblemRenderer(currentProblem)) {
+      return currentAnswer?.primitiveAnswer != null;
     }
     // For multiple choice, check if option is selected
-    if (currentProblem.problem_data.options) {
+    const options = currentProblem.problem_data.full_problem_data?.options || currentProblem.problem_data.options;
+    if (options && Array.isArray(options)) {
       return selectedAnswer !== null;
     }
     // For other types, always allow submission (they can use canvas or not)
@@ -565,39 +744,55 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
   };
 
   const renderAnswerInterface = () => {
-    // Visual problems using primitives
-    if (currentProblem.problem_data.template) {
+    // Check if this is a specialized problem type that should use ProblemRenderer
+    if (needsProblemRenderer(currentProblem)) {
       return (
         <div className="space-y-4">
-          <ProblemTemplate
-            template={currentProblem.problem_data.template}
-            disabled={currentAnswer?.isSubmitted}
-            initialAnswer={currentAnswer?.primitiveAnswer}
-            onChange={(answer) => {
+          <ProblemRenderer
+            ref={problemRendererRef}
+            problem={transformProblemData(currentProblem)}
+            isSubmitted={currentAnswer?.isSubmitted || false}
+            currentResponse={currentAnswer?.primitiveAnswer}
+            feedback={currentAnswer?.feedback}
+            onSubmit={async (submission) => {
+              // Handle submission from ProblemRenderer
+              const answerData = {
+                type: 'visual' as const,
+                value: 'visual_response',
+                primitiveAnswer: submission,
+                isSubmitted: false,
+                attempts: (questionAnswers[currentQuestion]?.attempts || 0)
+              };
+              await submitProblemToBackend(answerData);
+            }}
+            onUpdate={(value) => {
               // Store the primitive answer for submission
               setQuestionAnswers(prev => ({
                 ...prev,
                 [currentQuestion]: {
                   type: 'visual' as const,
                   value: 'visual_response',
-                  primitiveAnswer: answer,
+                  primitiveAnswer: value,
                   isSubmitted: false,
                   attempts: prev[currentQuestion]?.attempts || 0
                 }
               }));
             }}
-            showValidation={false} // We'll handle validation in the main component
+            submitting={isSubmitting}
           />
         </div>
       );
     }
     
-    // Multiple Choice - show options for selection only
-    if (currentProblem.problem_data.options) {
+    // Multiple Choice - show options for selection only (fallback for simple string options)
+    const options = currentProblem.problem_data.full_problem_data?.options || currentProblem.problem_data.options;
+    if (options && Array.isArray(options)) {
       return (
         <div className="space-y-3">
           <h4 className="font-medium text-gray-700 text-sm">Select your answer:</h4>
-          {currentProblem.problem_data.options.map((option, idx) => (
+          {options.map((option, idx) => {
+            const optionText = typeof option === 'string' ? option : option.text;
+            return (
             <Button
               key={idx}
               onClick={() => setSelectedAnswer(idx)}
@@ -625,10 +820,11 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
                 }`}>
                   {String.fromCharCode(65 + idx)}
                 </div>
-                <span className="font-medium">{option}</span>
+                <span className="font-medium">{optionText}</span>
               </div>
             </Button>
-          ))}
+            );
+          })}
         </div>
       );
     }
@@ -767,7 +963,7 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
               {/* Work Area - Always show in main column */}
               <div className="mt-6">
                 <h4 className="font-medium text-gray-800 mb-3">
-                  {currentProblem.problem_data.template ? 'Additional Work Area' : 'Work Area'}
+                  {needsProblemRenderer(currentProblem) ? 'Additional Work Area' : 'Work Area'}
                 </h4>
                 <div className="bg-gray-50 rounded-lg p-4" style={{ height: '500px' }}>
                   <DrawingCanvas
@@ -776,7 +972,7 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  {currentProblem.problem_data.template 
+                  {needsProblemRenderer(currentProblem) 
                     ? 'Use this area for additional work, notes, or scratch calculations'
                     : 'Use the work area above to show your thinking, draw diagrams, or work through the problem'
                   }

@@ -168,6 +168,8 @@ const FillInBlankPrimitive: React.FC<FillInBlankPrimitiveProps> = ({
           )}
         </div>
       )}
+      </CardContent>
+    </Card>
     </div>
   );
 };

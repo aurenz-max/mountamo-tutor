@@ -69,14 +69,14 @@ const MCQPrimitive: React.FC<MCQPrimitiveProps> = ({
 
           {/* MCQ Options */}
           <div className="space-y-3">
-            {problem.options.map((option, index) => {
+            {problem.options && problem.options.length > 0 ? problem.options.map((option, index) => {
               const isSelected = currentResponse?.selected_option_id === option.id;
               const isCorrect = isOptionCorrect(option.id);
               const isIncorrectSelection = isOptionIncorrectlySelected(option.id);
 
               return (
-                <div 
-                  key={option.id} 
+                <div
+                  key={option.id}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     isCorrect
                       ? 'bg-green-50 border-green-300'
@@ -122,7 +122,11 @@ const MCQPrimitive: React.FC<MCQPrimitiveProps> = ({
                   </div>
                 </div>
               );
-            })}
+            }) : (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800">No options available for this question.</p>
+              </div>
+            )}
           </div>
 
           {/* Show rationale after submission */}
