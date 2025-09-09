@@ -2,22 +2,27 @@
 
 import React, { createContext, useContext, useRef, useState, useCallback, useEffect } from 'react';
 import AudioCaptureService from '@/lib/AudioCaptureService';
+import { authApi } from '@/lib/authApiClient';
+
+type EndpointType = 'daily-planning' | 'practice-tutor';
 
 interface AICoachConnection {
   socket: WebSocket | null;
   audioService: AudioCaptureService | null;
   isConnected: boolean;
   studentId: number | null;
-  lastContext: any; // Store the last context sent
+  lastContext: any;
+  endpointType: EndpointType;
 }
 
 interface AICoachContextType {
   connection: AICoachConnection;
-  connectToAI: (studentId: number, getAuthToken: () => Promise<string | null>) => Promise<void>;
+  connectToAI: (studentId: number, getAuthToken: () => Promise<string | null>, endpointType?: EndpointType, endpointContext?: any) => Promise<void>;
   disconnectFromAI: () => void;
   sendMessage: (message: any) => void;
   isAIConnected: boolean;
-  setContext: (context: any) => void; // Method to update context
+  setContext: (context: any) => void;
+  switchEndpoint: (endpointType: EndpointType, studentId: number, getAuthToken: () => Promise<string | null>, endpointContext?: any) => Promise<void>;
 }
 
 const AICoachContext = createContext<AICoachContextType | null>(null);
@@ -28,25 +33,26 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isConnected, setIsConnected] = useState(false);
   const [studentId, setStudentId] = useState<number | null>(null);
   const [lastContext, setLastContext] = useState<any>(null);
+  const [currentEndpoint, setCurrentEndpoint] = useState<EndpointType>('daily-planning');
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isReconnectingRef = useRef(false);
 
   // Auto-reconnect function
-  const attemptReconnect = useCallback(async (studentId: number, getAuthToken: () => Promise<string | null>) => {
+  const attemptReconnect = useCallback(async (endpointType: EndpointType, studentId: number, getAuthToken: () => Promise<string | null>) => {
     if (isReconnectingRef.current) return;
     
     isReconnectingRef.current = true;
-    console.log('Attempting to reconnect AI Coach...');
+    console.log(`Attempting to reconnect AI Coach to ${endpointType}...`);
     
     // Wait a bit before reconnecting
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     try {
-      await connectToAI(studentId, getAuthToken);
+      await connectToAI(studentId, getAuthToken, endpointType);
       
       // Restore last context if available
       if (lastContext && socketRef.current?.readyState === WebSocket.OPEN) {
-        console.log('Restoring AI Coach context after reconnect');
+        console.log(`Restoring AI Coach context after reconnect for ${endpointType}`);
         sendMessage({
           type: 'context',
           context_type: lastContext.type,
@@ -57,16 +63,18 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
         });
       }
     } catch (error) {
-      console.error('Failed to reconnect AI Coach:', error);
+      console.error(`Failed to reconnect AI Coach to ${endpointType}:`, error);
     } finally {
       isReconnectingRef.current = false;
     }
-  }, []);
+  }, [lastContext]);
 
-  const connectToAI = useCallback(async (studentId: number, getAuthToken: () => Promise<string | null>) => {
-    // If already connected to the same student, don't reconnect
-    if (socketRef.current?.readyState === WebSocket.OPEN && studentId === studentId) {
-      console.log('AI Coach already connected to this student');
+  const connectToAI = useCallback(async (studentId: number, getAuthToken: () => Promise<string | null>, endpointType: EndpointType = 'daily-planning', endpointContext?: any) => {
+    // If already connected to the same endpoint and student, don't reconnect
+    if (socketRef.current?.readyState === WebSocket.OPEN && 
+        studentId === studentId && 
+        currentEndpoint === endpointType) {
+      console.log(`AI Coach already connected to ${endpointType} for student ${studentId}`);
       return;
     }
 
@@ -74,69 +82,98 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (socketRef.current) {
       socketRef.current.close();
     }
+    if (audioServiceRef.current) {
+      audioServiceRef.current.destroy();
+      audioServiceRef.current = null;
+    }
 
     try {
-      const wsUrl = `ws://localhost:8000/api/daily-briefing?student_id=${studentId}`;
-      console.log(`AI Coach connecting to WebSocket at ${wsUrl}`);
-      
-      socketRef.current = new WebSocket(wsUrl);
+      // Initialize audio service for all endpoints that need audio
+      audioServiceRef.current = new AudioCaptureService();
+      audioServiceRef.current.setCallbacks({
+        onStateChange: (state) => {},
+        onError: (error) => console.error('Audio capture error:', error)
+      });
 
-      socketRef.current.onopen = async () => {
-        console.log('AI Coach WebSocket connection established globally');
+      let socket: WebSocket;
+      
+      if (endpointType === 'practice-tutor') {
+        // Use direct WebSocket connection like daily planning (FIXED)
+        const wsUrl = `ws://localhost:8000/api/practice-tutor`;
+        console.log(`AI Coach connecting to practice tutor: ${wsUrl}`);
+        
+        socket = new WebSocket(wsUrl);
+      } else {
+        // Daily planning connection
+        const wsUrl = `ws://localhost:8000/api/daily-briefing?student_id=${studentId}`;
+        console.log(`AI Coach connecting to ${wsUrl}`);
+        
+        socket = new WebSocket(wsUrl);
+      }
+
+      socketRef.current = socket;
+
+      socket.onopen = async () => {
+        console.log(`AI Coach WebSocket connection established for ${endpointType}`);
         setIsConnected(true);
         setStudentId(studentId);
+        setCurrentEndpoint(endpointType);
         
-        // Initialize audio service
-        if (!audioServiceRef.current) {
-          audioServiceRef.current = new AudioCaptureService();
-          audioServiceRef.current.setCallbacks({
-            onStateChange: (state) => {},
-            onError: (error) => console.error('Audio capture error:', error)
-          });
-        }
-        
-        if (audioServiceRef.current && socketRef.current) {
-          audioServiceRef.current.setWebSocket(socketRef.current);
+        // Set up audio service connection for all endpoints
+        if (audioServiceRef.current) {
+          audioServiceRef.current.setWebSocket(socket);
         }
 
-        // Send authentication
+        // Send authentication for both endpoints
         try {
           const token = await getAuthToken();
           if (!token) throw new Error('No authentication token available');
           
-          socketRef.current!.send(JSON.stringify({
-            type: 'authenticate',
-            token: token
-          }));
+          if (endpointType === 'daily-planning') {
+            socket.send(JSON.stringify({
+              type: 'authenticate',
+              token: token
+            }));
+          } else if (endpointType === 'practice-tutor') {
+            socket.send(JSON.stringify({
+              type: 'authenticate',
+              token: token,
+              topic_context: endpointContext || {
+                subject: 'mathematics',
+                skill_id: '',
+                subskill_id: ''
+              }
+            }));
+          }
         } catch (error) {
           console.error('Error getting auth token for WebSocket:', error);
           setIsConnected(false);
         }
       };
 
-      socketRef.current.onclose = (event) => {
-        console.log(`AI Coach WebSocket connection closed: ${event.code} - ${event.reason}`);
+      socket.onclose = (event) => {
+        console.log(`AI Coach WebSocket connection closed for ${endpointType}: ${event.code} - ${event.reason}`);
         setIsConnected(false);
         
-        // Only attempt reconnection if it wasn't a manual close and we have student info
+        // Only attempt reconnection if it wasn't a manual close
         if (event.code !== 1000 && studentId && !isReconnectingRef.current) {
-          console.log('Connection lost, scheduling reconnect...');
+          console.log(`Connection lost for ${endpointType}, scheduling reconnect...`);
           reconnectTimeoutRef.current = setTimeout(() => {
-            attemptReconnect(studentId, getAuthToken);
+            attemptReconnect(endpointType, studentId, getAuthToken);
           }, 3000);
         }
       };
 
-      socketRef.current.onerror = (error) => {
-        console.error('AI Coach WebSocket error:', error);
+      socket.onerror = (error) => {
+        console.error(`AI Coach WebSocket error for ${endpointType}:`, error);
         setIsConnected(false);
       };
 
     } catch (error) {
-      console.error('Error connecting to AI Coach globally:', error);
+      console.error(`Error connecting to AI Coach ${endpointType}:`, error);
       setIsConnected(false);
     }
-  }, [attemptReconnect]);
+  }, [attemptReconnect, currentEndpoint]);
 
   const disconnectFromAI = useCallback(() => {
     // Clear reconnection attempts
@@ -148,7 +185,7 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
     isReconnectingRef.current = false;
     
     if (socketRef.current) {
-      socketRef.current.close(1000, 'Manual disconnect'); // Normal closure
+      socketRef.current.close(1000, 'Manual disconnect');
       socketRef.current = null;
     }
     
@@ -186,6 +223,14 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [sendMessage, studentId]);
 
+  // Switch endpoint method
+  const switchEndpoint = useCallback(async (endpointType: EndpointType, studentId: number, getAuthToken: () => Promise<string | null>, endpointContext?: any) => {
+    console.log(`Switching AI Coach to ${endpointType}`);
+    
+    // Connect to the new endpoint (will automatically disconnect from current)
+    await connectToAI(studentId, getAuthToken, endpointType, endpointContext);
+  }, [connectToAI]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -209,13 +254,15 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
       audioService: audioServiceRef.current,
       isConnected,
       studentId,
-      lastContext
+      lastContext,
+      endpointType: currentEndpoint
     },
     connectToAI,
     disconnectFromAI,
     sendMessage,
     isAIConnected: isConnected,
-    setContext
+    setContext,
+    switchEndpoint
   };
 
   return (

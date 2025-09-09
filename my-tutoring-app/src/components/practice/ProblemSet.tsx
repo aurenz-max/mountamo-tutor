@@ -8,7 +8,6 @@ import { ChevronLeft, ChevronRight, RefreshCw, Sparkles, Home, BookOpen, HelpCir
 import { authApi } from '@/lib/authApiClient';
 import LoadingOverlay from './LoadingOverlay';
 import ProblemRenderer, { type ProblemRendererRef } from './ProblemRenderer';
-import { AITutorController, type AITutorControllerRef } from './AITutorController';
 
 interface MCQResponseBatch {
   questions: any[];
@@ -73,6 +72,8 @@ interface ProblemSetProps {
   numProblems?: number;
   autoStart?: boolean;
   fromDashboard?: boolean;
+  onProblemChange?: (problem: any, index: number, isSubmitted: boolean) => void;
+  onSubmissionResult?: (result: any) => void;
 }
 
 // Enhanced helper function to clean IDs and extract components
@@ -109,7 +110,9 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   studentId = 1, 
   numProblems = 5,
   autoStart = false,
-  fromDashboard = false
+  fromDashboard = false,
+  onProblemChange,
+  onSubmissionResult
 }) => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -124,10 +127,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [usingRecommendations, setUsingRecommendations] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const problemRendererRef = useRef<ProblemRendererRef>(null);
-  
-  // AI Tutor state - now always active
-  const [isTutorActive, setIsTutorActive] = useState(true);
-  const tutorRef = useRef<AITutorControllerRef>(null);
 
   // Auto-start problem generation if specified
   useEffect(() => {
@@ -137,23 +136,10 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     }
   }, [currentTopic, autoStart]);
 
-  // When the current problem changes, notify the tutor controller
-  useEffect(() => {
-    if (isTutorActive && problems.length > 0 && tutorRef.current) {
-      tutorRef.current.setCurrentProblem(problems[currentIndex]);
-    }
-  }, [currentIndex, isTutorActive, problems]);
+  // When the current problem changes, we'll handle this through the practice mode actions
+  // The new problem will be communicated via context
+  const currentProblem = problems.length > 0 ? problems[currentIndex] : null;
 
-  // Notify AI tutor of answer results
-  const notifyTutorOfResult = (isCorrect: boolean, score: number, feedback: any) => {
-    if (tutorRef.current) {
-      const resultMessage = isCorrect 
-        ? `Great work! You got it right with a score of ${score}. Well done!`
-        : `Not quite right this time, but that's okay! You scored ${score}. Let's learn from this and keep trying.`;
-      
-      tutorRef.current.sendResultFeedback(isCorrect, score, resultMessage, feedback);
-    }
-  };
 
   // Remove the manual start tutor function since it's now always active
 
@@ -231,6 +217,11 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       setPrimitiveResponses(new Array(problemsArray.length).fill(null));
       setCurrentIndex(0);
       
+      // Notify parent of initial problem
+      if (onProblemChange && problemsArray.length > 0) {
+        onProblemChange(problemsArray[0], 0, false);
+      }
+      
     } catch (error: any) {
       console.error('=== ERROR ===');
       console.error('Error generating problem set:', error);
@@ -280,6 +271,11 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       setProblemFeedback(new Array(problemsArray.length).fill(null));
       setPrimitiveResponses(new Array(problemsArray.length).fill(null));
       setCurrentIndex(0);
+      
+      // Notify parent of initial problem
+      if (onProblemChange && problemsArray.length > 0) {
+        onProblemChange(problemsArray[0], 0, false);
+      }
       
     } catch (error: any) {
       console.error('Error generating problems:', error);
@@ -353,8 +349,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       
       setFeedback(response);
       
-      // Notify AI tutor of the result
-      if (response && response.review) {
+      // Notify parent component of submission result
+      if (response && response.review && onSubmissionResult) {
         const evaluation = response.review.evaluation;
         let score = 0;
         let isCorrect = false;
@@ -367,7 +363,11 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
           isCorrect = score >= 8;
         }
         
-        notifyTutorOfResult(isCorrect, score, response.review);
+        onSubmissionResult({
+          is_correct: isCorrect,
+          score: score,
+          feedback: response.review
+        });
       }
       
     } catch (error: any) {
@@ -381,15 +381,27 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   // Navigation functions
   const handleNext = () => {
     if (currentIndex < problems.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setFeedback(problemFeedback[currentIndex + 1]);
+      const newIndex = currentIndex + 1;
+      setCurrentIndex(newIndex);
+      setFeedback(problemFeedback[newIndex]);
+      
+      // Notify parent of problem change
+      if (onProblemChange) {
+        onProblemChange(problems[newIndex], newIndex, problemAttempted[newIndex]);
+      }
     }
   };
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setFeedback(problemFeedback[currentIndex - 1]);
+      const newIndex = currentIndex - 1;
+      setCurrentIndex(newIndex);
+      setFeedback(problemFeedback[newIndex]);
+      
+      // Notify parent of problem change
+      if (onProblemChange) {
+        onProblemChange(problems[newIndex], newIndex, problemAttempted[newIndex]);
+      }
     }
   };
 
@@ -480,7 +492,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
               You've completed all problems with a total score of {calculateTotalScore()} out of {problems.length * 10}.
             </p>
             <div className="space-y-4">
-              {/* AI Tutor is always active now */}
               <Button 
                 onClick={() => {
                   setShowLoadingOverlay(true);
@@ -490,7 +501,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Start New Set with AI Tutor
+                Start New Practice Set
               </Button>
               
               <div className="grid grid-cols-2 gap-4">
@@ -533,8 +544,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
         />
       )}
       
-      <div className={`flex gap-6 w-full ${isTutorActive ? 'max-w-6xl' : 'max-w-4xl'} mx-auto`}>
-        <Card className={`${isTutorActive ? 'flex-1' : 'w-full'}`}>
+      <div className="w-full max-w-4xl mx-auto">
+        <Card className="w-full">
         <CardContent className="p-6">
           {error && (
             <Alert variant="destructive" className="mb-4">
@@ -557,14 +568,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
 
           {problems.length === 0 ? (
             <div className="flex flex-col gap-6 items-center">
-              {/* AI Tutor is always active */}
-              <div className="text-center mb-4">
-                <div className="flex items-center justify-center space-x-2 text-blue-600 mb-3">
-                  <MessageCircle className="h-5 w-5" />
-                  <span className="text-lg font-medium">AI Tutor Ready to Guide You</span>
-                </div>
-                <p className="text-sm text-gray-600">Your AI tutor will automatically help you with each problem</p>
-              </div>
               
               <div className="text-center">
                 <p className="text-sm text-gray-500 mb-4">Or choose a specific problem type:</p>
@@ -636,11 +639,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                   )}
                 </div>
                 <div className="flex items-center gap-4">
-                  {/* AI Tutor Status - always active */}
-                  <div className="flex items-center gap-2 text-green-600">
-                    <MessageCircle className="w-4 h-4" />
-                    <span className="text-sm font-medium">AI Tutor Active</span>
-                  </div>
                   
                   {problemAttempted.some(Boolean) && (
                     <div className="text-right">
@@ -674,6 +672,11 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                     onClick={() => {
                       setCurrentIndex(index);
                       setFeedback(problemFeedback[index]);
+                      
+                      // Notify parent of problem change
+                      if (onProblemChange) {
+                        onProblemChange(problems[index], index, problemAttempted[index]);
+                      }
                     }}
                     className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all 
                       ${currentIndex === index 
@@ -779,22 +782,6 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
           )}
         </CardContent>
         </Card>
-        
-        {/* AI Tutor Controller - Show when tutor is active */}
-        {isTutorActive && (
-          <div className="w-80 flex-shrink-0">
-            <AITutorController
-              ref={tutorRef}
-              topicContext={{
-                subject: currentTopic.subject,
-                skill_description: currentTopic.skill?.description,
-                subskill_description: currentTopic.subskill?.description,
-                skill_id: currentTopic.selection?.skill || currentTopic.id,
-                subskill_id: currentTopic.selection?.subskill || currentTopic.id,
-              }}
-            />
-          </div>
-        )}
       </div>
     </>
   );

@@ -1,13 +1,13 @@
 // app/practice/[subskillId]/page.tsx - Updated with persistent AI Coach
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/lib/authApiClient';
 import SyllabusSelector from '@/components/practice/SyllabusSelector';
 import ProblemSet from '@/components/practice/ProblemSet';
-import AICoach from '@/components/dashboard/AICoach'; // Import your AICoach
+import PracticeAICoach from '@/components/practice/PracticeAICoach'; // Import specialized practice AI coach
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, RefreshCw, ArrowLeft, Home, MessageCircle, X } from 'lucide-react';
 
@@ -28,6 +28,10 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
   
   // AI Coach state
   const [showAICoach, setShowAICoach] = useState(false);
+  
+  // Communication state between ProblemSet and PracticeAICoach
+  const [currentProblemContext, setCurrentProblemContext] = useState(null);
+  const practiceAICoachRef = useRef(null);
   
   useEffect(() => {
     const initializePracticeSession = async () => {
@@ -145,6 +149,27 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
   // Quick access to other learning methods for this activity
   const handleSwitchLearningMethod = () => {
     router.push('/dashboard');
+  };
+
+  // Communication handlers between ProblemSet and PracticeAICoach
+  const handleProblemChange = (problem: any, index: number, isSubmitted: boolean) => {
+    setCurrentProblemContext({
+      currentProblem: problem,
+      currentIndex: index,
+      totalProblems: problem ? 1 : 0, // This will be updated when we know the total
+      isSubmitted
+    });
+  };
+
+  const handleSubmissionResult = (result: any) => {
+    // Send result to PracticeAICoach if it's active
+    if (showAICoach && practiceAICoachRef.current && result) {
+      try {
+        (practiceAICoachRef.current as any).sendSubmissionResult(result);
+      } catch (error) {
+        console.error('Error sending submission result to PracticeAICoach:', error);
+      }
+    }
   };
 
   if (!userProfile) {
@@ -310,6 +335,8 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
                     autoStart={selectedTopic.autoStart}
                     fromDashboard={selectedTopic.fromCardInterface}
                     studentId={userProfile.student_id}
+                    onProblemChange={handleProblemChange}
+                    onSubmissionResult={handleSubmissionResult}
                   />
                 </div>
               )}
@@ -318,16 +345,22 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
         </div>
       </div>
 
-      {/* AI Coach Sidebar */}
+      {/* Practice AI Coach Sidebar */}
       {showAICoach && (
         <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-xl z-50">
-          <AICoach
+          <PracticeAICoach
+            ref={practiceAICoachRef}
             studentId={userProfile.student_id}
-            mode="sidebar"
-            context={practiceContext}
+            practiceContext={{
+              subject: activityData?.metadata?.subject || selectedTopic?.subject || 'mathematics',
+              skill_description: activityData?.title || selectedTopic?.skill?.description,
+              subskill_description: activityData?.description || selectedTopic?.subskill?.description,
+              skill_id: selectedTopic?.selection?.skill || selectedTopic?.id,
+              subskill_id: selectedTopic?.selection?.subskill || selectedTopic?.id || subskillId,
+            }}
+            problemContext={currentProblemContext}
             onClose={() => setShowAICoach(false)}
             className="h-full"
-            persistConnection={true}
           />
         </div>
       )}

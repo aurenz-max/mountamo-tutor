@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional, List
 import traceback
 
 from google import genai
+from google.genai import types  # Add this import for types module
 from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, PrebuiltVoiceConfig, Content
 
 from ...core.config import settings
@@ -129,11 +130,9 @@ Remember: You are here to guide learning, not to solve problems for the student.
 async def practice_tutor_session(websocket: WebSocket):
     """
     WebSocket endpoint for AI Practice Tutor sessions.
-    Handles session-level context and problem-level interactions.
+    Uses same authentication flow as daily briefing for consistent audio support.
     """
-    logger.info(f"🔗 WebSocket connection attempt from: {websocket.client}")
-    logger.info(f"🔗 WebSocket headers: {dict(websocket.headers)}")
-    logger.info(f"🔗 WebSocket query params: {websocket.query_params}")
+    logger.info(f"🔗 Practice Tutor WebSocket connection attempt from: {websocket.client}")
     
     await websocket.accept()
     logger.info("🎯 Practice Tutor WebSocket connection accepted")
@@ -142,58 +141,57 @@ async def practice_tutor_session(websocket: WebSocket):
     user_context = None
     
     try:
-        # 1. AUTHENTICATION & SESSION CONTEXT
-        logger.info("⏳ Waiting for authentication message...")
-        init_message = await asyncio.wait_for(websocket.receive_json(), timeout=15.0)
-        logger.info(f"📨 Received init message type: {init_message.get('type')}")
+        # Step 1: Authenticate user (same as daily briefing)
+        logger.info("🔐 Waiting for authentication...")
+        auth_message = await asyncio.wait_for(websocket.receive(), timeout=10.0)
+        auth_data = json.loads(auth_message["text"])
         
-        if init_message.get("type") != "authenticate":
-            logger.error(f"❌ Invalid first message type: {init_message.get('type')}, expected 'authenticate'")
-            await websocket.close(code=4001, reason="First message must be authentication")
+        if auth_data.get("type") != "authenticate":
+            logger.error("❌ Authentication type mismatch")
+            await websocket.close(code=4001, reason="Authentication required")
             return
-            
-        # Authenticate the user
-        token = init_message.get("token")
-        if not token:
-            logger.error("❌ No authentication token provided")
-            await websocket.close(code=4002, reason="Authentication token required")
-            return
-            
-        logger.info(f"🔐 Attempting to authenticate token: {token[:20]}...")
-        try:
-            user_context = await authenticate_websocket_token(token)
-            logger.info(f"✅ User authenticated: {user_context.get('email')}")
-        except Exception as e:
-            logger.error(f"❌ Authentication failed: {str(e)}")
-            await websocket.close(code=4003, reason=f"Authentication failed: {str(e)}")
-            return
-
+        
+        # Authenticate using Firebase (same as daily briefing)
+        from firebase_admin import auth
+        token = auth_data.get("token", "").replace('Bearer ', '')
+        decoded_token = auth.verify_id_token(token)
+        user_id = decoded_token['uid']
+        user_email = decoded_token.get('email', 'Unknown')
+        logger.info(f"✅ Authentication successful for user {user_id} ({user_email})")
+        
         # Get topic context from the authentication message
-        topic_context = init_message.get("topic_context")
-        if not topic_context:
-            await websocket.close(code=4004, reason="Topic context is required")
-            return
-
+        topic_context = auth_data.get("topic_context", {
+            "subject": "mathematics",
+            "skill_id": "",
+            "subskill_id": ""
+        })
+        
         await websocket.send_json({
-            "type": "auth_success", 
+            "type": "auth_success",
             "message": "Practice Tutor connected and ready for the session."
         })
+        logger.info("✅ Authentication complete for practice tutor")
 
-        # 2. BUILD MAIN SYSTEM PROMPT
+        # Step 2: Build system instruction  
         system_instruction = await build_topic_tutor_instruction(topic_context)
         logger.info(f"📋 System instruction built for {topic_context.get('subject', 'unknown')} - {topic_context.get('skill_description', 'unknown skill')}")
 
-        # 3. CONFIGURE AND START GEMINI SESSION
+        # Step 3: Configure Gemini session
         speech_config = SpeechConfig(
             voice_config=VoiceConfig(
                 prebuilt_voice_config=PrebuiltVoiceConfig(voice_name=DEFAULT_VOICE)
             )
         )
         
-        # Fixed: Use only AUDIO response modality
+        # Fixed: Use only AUDIO response modality with complete configuration
         config = LiveConnectConfig(
             response_modalities=["AUDIO"],
             speech_config=speech_config,
+            realtime_input_config=types.RealtimeInputConfig(turn_coverage="TURN_INCLUDES_ALL_INPUT"),
+            context_window_compression=types.ContextWindowCompressionConfig(
+                trigger_tokens=25600,
+                sliding_window=types.SlidingWindow(target_tokens=12800),
+            ),
             system_instruction=Content(parts=[{"text": system_instruction}])
         )
         
@@ -205,11 +203,11 @@ async def practice_tutor_session(websocket: WebSocket):
             gemini_session = session
             logger.info("✅ Gemini Live session connected successfully")
             
-            # Send initial success message to client
-            await websocket.send_json({
-                "type": "session_ready", 
+            # Send initial success message to client (non-blocking)
+            asyncio.create_task(websocket.send_json({
+                "type": "session_ready",
                 "message": "AI Tutor session is ready"
-            })
+            }))
             
             # Create queues for communication
             text_queue = asyncio.Queue()
@@ -332,23 +330,78 @@ Problem: "{problem_text}" """
             async def handle_gemini_responses():
                 """Handle responses from Gemini and send to client"""
                 try:
-                    async for response in session.receive():
-                        if response.data:
-                            # Handle audio response - unified with daily briefing format
-                            import base64
-                            audio_b64 = base64.b64encode(response.data).decode()
-                            await websocket.send_json({
-                                "type": "ai_audio",
-                                "data": audio_b64,
-                                "format": "raw-pcm",
-                                "sampleRate": RECEIVE_SAMPLE_RATE
-                            })
-                            
-                        # Note: With AUDIO-only modality, we won't get text responses
-                        # The frontend will need to handle audio-only interactions
-                            
+                    # Keep the session alive by continuously listening for turns
+                    while True:
+                        # The 'async for' loop now correctly handles chunks within a single turn
+                        async for response in session.receive():
+                            # Correctly parse the complex response object
+                            if hasattr(response, 'server_content') and response.server_content:
+                                # Handle model turn (AI speaking)
+                                if hasattr(response.server_content, 'model_turn') and response.server_content.model_turn:
+                                    model_turn = response.server_content.model_turn
+                                    if hasattr(model_turn, 'parts') and model_turn.parts:
+                                        for part in model_turn.parts:
+                                            # Handle text parts
+                                            if hasattr(part, 'text') and part.text:
+                                                gemini_logger.info(f"📥 Received text from Gemini: {part.text[:100]}...")
+
+                                                # Send without awaiting to prevent blocking
+                                                asyncio.create_task(websocket.send_json({
+                                                    "type": "ai_text",
+                                                    "content": part.text
+                                                }))
+
+                                            # Handle audio data
+                                            elif hasattr(part, 'inline_data') and part.inline_data and hasattr(part.inline_data, 'data') and part.inline_data.data:
+                                                import base64
+                                                audio_b64 = base64.b64encode(part.inline_data.data).decode()
+
+                                                # Send without awaiting to prevent blocking
+                                                asyncio.create_task(websocket.send_json({
+                                                    "type": "ai_audio",
+                                                    "format": "raw-pcm",
+                                                    "sampleRate": RECEIVE_SAMPLE_RATE,
+                                                    "bitsPerSample": 16,
+                                                    "channels": CHANNELS,
+                                                    "data": audio_b64
+                                                }))
+
+                                # Handle user's speech transcription
+                                if hasattr(response.server_content, 'input_transcription') and response.server_content.input_transcription:
+                                    if hasattr(response.server_content.input_transcription, 'text') and response.server_content.input_transcription.text:
+                                        logger.info(f"🎤 User transcription: {response.server_content.input_transcription.text}")
+
+                                        # Send without awaiting to prevent blocking
+                                        asyncio.create_task(websocket.send_json({
+                                            "type": "user_transcription",
+                                            "content": response.server_content.input_transcription.text
+                                        }))
+
+                                # Handle output transcription
+                                if hasattr(response.server_content, 'output_transcription') and response.server_content.output_transcription:
+                                    if hasattr(response.server_content.output_transcription, 'text') and response.server_content.output_transcription.text:
+                                        logger.info(f"🎯 AI transcription: {response.server_content.output_transcription.text}")
+
+                                        # Send without awaiting to prevent blocking
+                                        asyncio.create_task(websocket.send_json({
+                                            "type": "ai_transcription",
+                                            "content": response.server_content.output_transcription.text
+                                        }))
+
+                                # Check for the end of the AI's turn to update UI state
+                                if hasattr(response.server_content, 'end_of_turn') and response.server_content.end_of_turn:
+                                    logger.info("✅ AI turn finished.")
+
+                                    # Send without awaiting to prevent blocking
+                                    asyncio.create_task(websocket.send_json({"type": "ai_turn_end"}))
+
+                except WebSocketDisconnect:
+                    logger.info("🔌 WebSocket disconnected while receiving from Gemini.")
+                except asyncio.CancelledError:
+                    logger.info("🚫 Gemini response handler task was cancelled.")
                 except Exception as e:
                     logger.error(f"❌ Error handling Gemini responses: {e}")
+                    logger.error(f"❌ Full traceback: {traceback.format_exc()}")
 
             # Start all communication tasks
             tasks.append(asyncio.create_task(handle_client_messages()))
@@ -357,6 +410,13 @@ Problem: "{problem_text}" """
             tasks.append(asyncio.create_task(handle_gemini_responses()))
             
             logger.info("🚀 All practice tutor communication tasks started")
+
+            # INITIATE THE CONVERSATION FROM THE BACKEND
+            await text_queue.put(
+                "Start the session by greeting the student warmly and letting them "
+                "know you're ready to help with their practice problems."
+            )
+            logger.info("✅ Initial greeting prompt sent to Gemini session")
             
             # Wait for any task to complete (usually means an error or disconnect)
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)

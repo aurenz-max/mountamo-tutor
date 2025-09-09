@@ -440,7 +440,7 @@ async createPracticeTutorWebSocket(topicContext: any): Promise<WebSocket> {
   }
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//localhost:8000/api/ws/practice-tutor`;
+  const wsUrl = `${protocol}//localhost:8000/api/practice-tutor`;
   
   console.log('🎯 Creating Practice Tutor WebSocket connection to:', wsUrl);
   

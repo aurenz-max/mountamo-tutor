@@ -10,15 +10,15 @@ import {
   Volume2, 
   VolumeX,
   MessageCircle,
-  RefreshCw,
   HelpCircle,
   BookOpen,
   CheckCircle2,
-  Settings,
-  ArrowLeftRight
+  Lightbulb,
+  ArrowRight,
+  PlayCircle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -26,27 +26,27 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAuth } from '@/contexts/AuthContext';
 import { useAICoach } from '@/contexts/AICoachContext';
 
-// Enhanced types for multi-endpoint support
-type AICoachMode = 'sidebar';
-type EndpointType = 'daily-planning' | 'practice-tutor';
-type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
-
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  action?: string;
 }
 
-interface LearningContext {
-  type: 'subskill' | 'daily_planning' | 'activity' | 'practice';
-  title?: string;
-  focus_area?: string;
-  metadata?: any;
-  endpointType?: EndpointType;
-  endpointContext?: any;
+interface ProblemContext {
+  currentProblem?: any;
+  currentIndex?: number;
+  totalProblems?: number;
+  isSubmitted?: boolean;
 }
 
-interface AICoachState {
+interface SubmissionResult {
+  is_correct: boolean;
+  score: number;
+  feedback: any;
+}
+
+interface PracticeAICoachState {
   conversation: {
     messages: Message[];
     isActive: boolean;
@@ -58,32 +58,28 @@ interface AICoachState {
     isMuted: boolean;
   };
   ui: {
-    context: LearningContext | null;
     showAdvancedMode: boolean;
-    currentEndpoint: EndpointType;
-    showEndpointSwitcher: boolean;
+    currentProblemContext: ProblemContext | null;
   };
 }
 
-type AICoachAction = 
+type PracticeAICoachAction = 
   | { type: 'ADD_MESSAGE'; message: Message }
   | { type: 'SET_RESPONDING'; isResponding: boolean }
   | { type: 'SET_LISTENING'; isListening: boolean }
   | { type: 'SET_MUTED'; isMuted: boolean }
-  | { type: 'SET_CONTEXT'; context: LearningContext }
   | { type: 'START_CONVERSATION' }
   | { type: 'TOGGLE_ADVANCED_MODE' }
-  | { type: 'SET_ENDPOINT'; endpoint: EndpointType }
-  | { type: 'TOGGLE_ENDPOINT_SWITCHER' }
+  | { type: 'SET_PROBLEM_CONTEXT'; context: ProblemContext }
   | { type: 'RESET' };
 
-const initialState: AICoachState = {
+const initialState: PracticeAICoachState = {
   conversation: { messages: [], isActive: false, isResponding: false },
   audio: { isListening: false, isPlaying: false, isMuted: false },
-  ui: { context: null, showAdvancedMode: false, currentEndpoint: 'daily-planning', showEndpointSwitcher: false }
+  ui: { showAdvancedMode: false, currentProblemContext: null }
 };
 
-function aiCoachReducer(state: AICoachState, action: AICoachAction): AICoachState {
+function practiceAICoachReducer(state: PracticeAICoachState, action: PracticeAICoachAction): PracticeAICoachState {
   switch (action.type) {
     case 'ADD_MESSAGE':
       return {
@@ -108,11 +104,6 @@ function aiCoachReducer(state: AICoachState, action: AICoachAction): AICoachStat
         ...state,
         audio: { ...state.audio, isMuted: action.isMuted }
       };
-    case 'SET_CONTEXT':
-      return {
-        ...state,
-        ui: { ...state.ui, context: action.context }
-      };
     case 'START_CONVERSATION':
       return {
         ...state,
@@ -123,15 +114,10 @@ function aiCoachReducer(state: AICoachState, action: AICoachAction): AICoachStat
         ...state,
         ui: { ...state.ui, showAdvancedMode: !state.ui.showAdvancedMode }
       };
-    case 'SET_ENDPOINT':
+    case 'SET_PROBLEM_CONTEXT':
       return {
         ...state,
-        ui: { ...state.ui, currentEndpoint: action.endpoint }
-      };
-    case 'TOGGLE_ENDPOINT_SWITCHER':
-      return {
-        ...state,
-        ui: { ...state.ui, showEndpointSwitcher: !state.ui.showEndpointSwitcher }
+        ui: { ...state.ui, currentProblemContext: action.context }
       };
     case 'RESET':
       return initialState;
@@ -140,37 +126,35 @@ function aiCoachReducer(state: AICoachState, action: AICoachAction): AICoachStat
   }
 }
 
-interface AICoachProps {
+interface PracticeAICoachProps {
   studentId?: number;
-  mode?: AICoachMode;
-  context?: LearningContext;
-  endpointType?: EndpointType;
-  endpointContext?: any;
+  practiceContext?: {
+    subject?: string;
+    skill_description?: string;
+    subskill_description?: string;
+    skill_id?: string;
+    subskill_id?: string;
+  };
+  problemContext?: ProblemContext;
   onClose?: () => void;
   className?: string;
-  persistConnection?: boolean;
-  onPracticeModeAction?: (action: string, data?: any) => void;
 }
 
-const AICoach: React.FC<AICoachProps> = ({
+const PracticeAICoach = React.forwardRef<{ sendSubmissionResult: (result: any) => void }, PracticeAICoachProps>(({
   studentId,
-  mode = 'sidebar',
-  context,
-  endpointType = 'daily-planning',
-  endpointContext,
+  practiceContext,
+  problemContext,
   onClose,
-  className = '',
-  persistConnection = false,
-  onPracticeModeAction
-}) => {
-  const [state, dispatch] = useReducer(aiCoachReducer, initialState);
+  className = ''
+}, ref) => {
+  const [state, dispatch] = useReducer(practiceAICoachReducer, initialState);
   const { getAuthToken, userProfile } = useAuth();
-  const { connection, connectionPool, activeEndpoint, connectToAI, sendMessage, isAIConnected, switchEndpoint } = useAICoach();
+  const { connection, connectToAI, sendMessage, isAIConnected, switchEndpoint } = useAICoach();
   
   const effectiveStudentId = studentId || userProfile?.student_id;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Audio processing refs
+  // Audio processing refs - reusing the same system as the main AICoach
   const playbackAudioContextRef = useRef<AudioContext | null>(null);
   const audioQueueRef = useRef<AudioBuffer[]>([]);
   const audioSourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
@@ -183,37 +167,24 @@ const AICoach: React.FC<AICoachProps> = ({
   const BUFFER_GAP = 0.02;
   const MAX_BUFFER_QUEUE = 10;
 
-  // Initialize endpoint when provided
+  // Update problem context when it changes
   useEffect(() => {
-    if (endpointType && endpointType !== state.ui.currentEndpoint) {
-      dispatch({ type: 'SET_ENDPOINT', endpoint: endpointType });
-    }
-  }, [endpointType, state.ui.currentEndpoint]);
-
-  // Set context when provided
-  useEffect(() => {
-    if (context) {
-      // Enhance context with endpoint information
-      const enhancedContext = {
-        ...context,
-        endpointType: endpointType || context.endpointType || 'daily-planning',
-        endpointContext: endpointContext || context.endpointContext
-      };
-      dispatch({ type: 'SET_CONTEXT', context: enhancedContext });
+    if (problemContext) {
+      dispatch({ type: 'SET_PROBLEM_CONTEXT', context: problemContext });
       
-      // Send context to AI if connected
-      if (isAIConnected && connection.socket) {
-        sendContextToAI(enhancedContext);
+      // If we have a new problem and we're connected, notify the AI
+      if (isAIConnected && problemContext.currentProblem) {
+        notifyAIOfNewProblem(problemContext.currentProblem);
       }
     }
-  }, [context, endpointType, endpointContext, isAIConnected]);
+  }, [problemContext, isAIConnected]);
 
   // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [state.conversation.messages]);
 
-  // Handle WebSocket messages from the global connection
+  // Handle WebSocket messages from the practice tutor endpoint
   useEffect(() => {
     if (!connection.socket) return;
 
@@ -221,7 +192,7 @@ const AICoach: React.FC<AICoachProps> = ({
       try {
         const data = JSON.parse(event.data);
         
-        // Always reset the response timeout to prevent it from firing
+        // Clear response timeout
         if (responseTimeoutRef.current) {
           clearTimeout(responseTimeoutRef.current);
           responseTimeoutRef.current = null;
@@ -233,40 +204,23 @@ const AICoach: React.FC<AICoachProps> = ({
               type: 'ADD_MESSAGE', 
               message: { 
                 role: 'system', 
-                content: `[Connected to AI Learning Coach for Student ${data.student_id}]`, 
+                content: '🎯 Practice Tutor connected and ready to help!', 
                 timestamp: new Date() 
               }
             });
             break;
 
-          case 'status':
+          case 'session_ready':
             dispatch({ 
               type: 'ADD_MESSAGE', 
               message: { 
                 role: 'system', 
-                content: `[${data.message}]`, 
+                content: '✅ AI Tutor session is ready for practice!', 
                 timestamp: new Date() 
               }
             });
-            break;
-
-          case 'context_received':
-            dispatch({ 
-              type: 'ADD_MESSAGE', 
-              message: { 
-                role: 'system', 
-                content: `[AI Coach is now focused on: ${data.focus_area || 'your learning'}]`, 
-                timestamp: new Date() 
-              }
-            });
-            break;
-
-          case 'ai_text':
-            dispatch({ 
-              type: 'ADD_MESSAGE', 
-              message: { role: 'assistant', content: data.content, timestamp: new Date() }
-            });
-            dispatch({ type: 'SET_RESPONDING', isResponding: false });
+            // Now that the session is ready, expect the AI's greeting
+            dispatch({ type: 'SET_RESPONDING', isResponding: true });
             break;
 
           case 'ai_audio':
@@ -278,7 +232,6 @@ const AICoach: React.FC<AICoachProps> = ({
             break;
 
           case 'user_transcription':
-            // Handle user speech transcription if provided
             if (data.content) {
               dispatch({ 
                 type: 'ADD_MESSAGE', 
@@ -288,16 +241,15 @@ const AICoach: React.FC<AICoachProps> = ({
             break;
 
           case 'error':
-            console.error('Error from AI Coach server:', data.error || data.message);
+            console.error('Error from Practice Tutor:', data.error || data.message);
             dispatch({ type: 'SET_RESPONDING', isResponding: false });
             break;
 
           default:
-            // Unknown message type - silently ignore
             break;
         }
       } catch (error) {
-        console.error('Error parsing AI Coach WebSocket message:', error);
+        console.error('Error parsing Practice Tutor WebSocket message:', error);
         dispatch({ type: 'SET_RESPONDING', isResponding: false });
       }
     };
@@ -311,7 +263,7 @@ const AICoach: React.FC<AICoachProps> = ({
     };
   }, [connection.socket]);
 
-  // Cleanup effect - FIXED: Now properly separated
+  // Cleanup effect
   useEffect(() => {
     return () => {
       if (responseTimeoutRef.current) {
@@ -326,12 +278,11 @@ const AICoach: React.FC<AICoachProps> = ({
     };
   }, []);
 
-  // Audio processing methods - copied exactly from DailyBriefingGemini
+  // Audio processing methods (copied from main AICoach)
   const processAndPlayRawAudio = (base64Data: string, sampleRate: number = PLAYBACK_SAMPLE_RATE): void => {
-    if (state.audio.isMuted) return; // Don't play audio if muted
+    if (state.audio.isMuted) return;
     
     try {
-      // Decode base64 to binary
       const binaryString = atob(base64Data);
       const arrayBuffer = new ArrayBuffer(binaryString.length);
       const view = new Uint8Array(arrayBuffer);
@@ -340,7 +291,6 @@ const AICoach: React.FC<AICoachProps> = ({
         view[i] = binaryString.charCodeAt(i);
       }
       
-      // Create playback audio context if it doesn't exist
       if (!playbackAudioContextRef.current) {
         try {
           playbackAudioContextRef.current = new AudioContext({
@@ -352,37 +302,23 @@ const AICoach: React.FC<AICoachProps> = ({
         }
       }
       
-      // Convert to Int16 PCM
       const int16View = new Int16Array(arrayBuffer);
-      
-      // Convert to Float32 for Web Audio API
       const numFrames = int16View.length;
       const floatData = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
         floatData[i] = int16View[i] / 32768.0;
       }
       
-      // Create an audio buffer
-      const audioBuffer = playbackAudioContextRef.current.createBuffer(
-        1, // mono
-        numFrames,
-        sampleRate
-      );
-      
-      // Copy the float data to the buffer
+      const audioBuffer = playbackAudioContextRef.current.createBuffer(1, numFrames, sampleRate);
       audioBuffer.copyToChannel(floatData, 0);
       
-      // Add to queue
       audioQueueRef.current.push(audioBuffer);
       
-      // Check if buffer queue has grown too large
       if (audioQueueRef.current.length > MAX_BUFFER_QUEUE) {
         consolidateBuffers();
       }
       
-      // If not currently playing, start playback
       if (!isPlayingRef.current) {
-        // Ensure the audio context is in a running state
         if (playbackAudioContextRef.current.state === 'suspended') {
           playbackAudioContextRef.current.resume().catch(error => {
             console.error('Error resuming audio context:', error);
@@ -396,19 +332,13 @@ const AICoach: React.FC<AICoachProps> = ({
   };
 
   const consolidateBuffers = () => {
-    if (!playbackAudioContextRef.current || audioQueueRef.current.length <= 1) {
-      return;
-    }
+    if (!playbackAudioContextRef.current || audioQueueRef.current.length <= 1) return;
     
     let totalLength = 0;
-    audioQueueRef.current.forEach(buffer => {
-      totalLength += buffer.length;
-    });
+    audioQueueRef.current.forEach(buffer => totalLength += buffer.length);
     
     const consolidatedBuffer = playbackAudioContextRef.current.createBuffer(
-      1, // mono
-      totalLength,
-      playbackAudioContextRef.current.sampleRate
+      1, totalLength, playbackAudioContextRef.current.sampleRate
     );
     
     const outputData = consolidatedBuffer.getChannelData(0);
@@ -466,105 +396,100 @@ const AICoach: React.FC<AICoachProps> = ({
       audioSourceNodeRef.current = null;
       
       if (audioQueueRef.current.length > 0) {
-        setTimeout(() => {
-          playNextAudioInQueue();
-        }, 10);
+        setTimeout(() => playNextAudioInQueue(), 10);
       } else {
         isPlayingRef.current = false;
       }
     };
   };
 
-  const sendContextToAI = (contextToSend: LearningContext) => {
-    if (!isAIConnected || !effectiveStudentId) return;
+  // Practice-specific methods
+  const notifyAIOfNewProblem = (problem: any) => {
+    if (!isAIConnected || !problem) return;
 
-    const contextPayload = {
-      type: 'context',
-      context_type: contextToSend.type,
-      data: {
-        ...contextToSend,
-        student_id: effectiveStudentId
+    sendMessage({
+      type: 'new_problem',
+      problem_context: {
+        problem_data: problem
       }
-    };
+    });
+  };
+
+  const sendPracticeAction = (action: string, additionalData?: any) => {
+    if (!isAIConnected) return;
+
+    let messageType = '';
+    let userMessage = '';
     
-    sendMessage(contextPayload);
+    switch (action) {
+      case 'hint':
+        messageType = 'hint_request';
+        userMessage = 'Asked for a hint';
+        break;
+      case 'explain':
+        messageType = 'concept_explanation';
+        userMessage = 'Asked for concept explanation';
+        break;
+      case 'check-work':
+        messageType = 'check_work';
+        userMessage = 'Asked AI to check work';
+        break;
+      case 'walk-through':
+        messageType = 'text';
+        userMessage = 'Asked for step-by-step walkthrough';
+        break;
+      default:
+        return;
+    }
+
+    sendMessage({
+      type: messageType,
+      content: userMessage,
+      ...additionalData
+    });
+
+    // Add user action to chat
+    dispatch({
+      type: 'ADD_MESSAGE',
+      message: {
+        role: 'user',
+        content: userMessage,
+        timestamp: new Date(),
+        action: action
+      }
+    });
+
+    dispatch({ type: 'SET_RESPONDING', isResponding: true });
+  };
+
+  const sendSubmissionResult = (result: SubmissionResult) => {
+    if (!isAIConnected) return;
+
+    sendMessage({
+      type: 'result_feedback',
+      is_correct: result.is_correct,
+      score: result.score,
+      content: result.feedback
+    });
+
+    dispatch({ type: 'SET_RESPONDING', isResponding: true });
   };
 
   const startConversation = async () => {
     dispatch({ type: 'START_CONVERSATION' });
     
-    if (!isAIConnected && effectiveStudentId) {
-      const targetEndpoint = state.ui.currentEndpoint;
-      await connectToAI(effectiveStudentId, getAuthToken, targetEndpoint, endpointContext);
-    }
-  };
-
-  // Handle endpoint switching
-  const handleEndpointSwitch = async (newEndpoint: EndpointType) => {
-    if (effectiveStudentId && newEndpoint !== state.ui.currentEndpoint) {
-      dispatch({ type: 'SET_ENDPOINT', endpoint: newEndpoint });
-      await switchEndpoint(newEndpoint, effectiveStudentId, getAuthToken, endpointContext);
-    }
-  };
-
-  // Practice mode specific actions
-  const handlePracticeAction = (action: string, data?: any) => {
-    if (state.ui.currentEndpoint === 'practice-tutor') {
-      let message = '';
-      
-      switch (action) {
-        case 'hint':
-          message = 'Can you give me a hint to help me think through this problem?';
-          break;
-        case 'walk-through':
-          message = 'Can you walk me through this problem step by step?';
-          break;
-        case 'explain':
-          message = 'Can you explain the main concept behind this problem?';
-          break;
-        case 'check-work':
-          message = 'Can you help me check if I\'m on the right track with my work?';
-          break;
-        default:
-          return;
-      }
-      
-      if (isAIConnected) {
-        sendMessage({
-          type: action === 'walk-through' ? 'concept_explanation' : 
-                action === 'check-work' ? 'check_work' : 
-                action === 'hint' ? 'hint_request' : 'concept_explanation',
-          content: message
-        }, 'practice-tutor');
-        
-        // Add message to local chat for visual feedback
-        dispatch({
-          type: 'ADD_MESSAGE',
-          message: {
-            role: 'user',
-            content: `Asked for ${action === 'walk-through' ? 'step-by-step guidance' : action}`,
-            timestamp: new Date()
-          }
-        });
-      }
-    }
-    
-    // Call external handler if provided
-    if (onPracticeModeAction) {
-      onPracticeModeAction(action, data);
+    if (!isAIConnected && effectiveStudentId && practiceContext) {
+      await connectToAI(effectiveStudentId, getAuthToken, 'practice-tutor', practiceContext);
     }
   };
 
   const toggleMicrophone = async () => {
     if (state.audio.isListening) {
-      // Stop recording logic
       if (connection.audioService) {
         connection.audioService.stopCapture();
       }
-            
       dispatch({ type: 'SET_LISTENING', isListening: false });
     } else {
-      // Start recording logic
       if (connection.audioService) {
         await connection.audioService.startCapture();
         dispatch({ type: 'SET_LISTENING', isListening: true });
@@ -573,71 +498,45 @@ const AICoach: React.FC<AICoachProps> = ({
     }
   };
 
-  const getContextDisplayName = (): string => {
-    if (state.ui.currentEndpoint === 'practice-tutor') {
-      return 'Practice Tutor';
-    }
+  const getCurrentProblemInfo = () => {
+    const context = state.ui.currentProblemContext;
+    if (!context || !context.currentProblem) return null;
+
+    const problem = context.currentProblem;
+    const problemText = problem.question || problem.problem || problem.prompt || problem.statement || problem.text_with_blanks;
     
-    if (!state.ui.context) return 'General Learning Support';
-    
-    switch (state.ui.context.type) {
-      case 'subskill':
-        return state.ui.context.title || 'Skill-Focused Learning';
-      case 'daily_planning':
-        return 'Daily Learning Plan';
-      case 'activity':
-        return 'Activity Guidance';
-      case 'practice':
-        return 'Practice Session';
-      default:
-        return 'Learning Support';
-    }
+    return {
+      text: problemText,
+      number: (context.currentIndex || 0) + 1,
+      total: context.totalProblems || 1,
+      isSubmitted: context.isSubmitted || false
+    };
   };
 
-  const getEndpointDisplayName = (endpoint: EndpointType): string => {
-    switch (endpoint) {
-      case 'daily-planning':
-        return 'Daily Learning Plan';
-      case 'practice-tutor':
-        return 'Practice Tutor';
-      default:
-        return 'AI Coach';
-    }
-  };
+  // Expose method for parent components to send submission results
+  React.useImperativeHandle(ref, () => ({
+    sendSubmissionResult
+  }));
+
+  const problemInfo = getCurrentProblemInfo();
 
   return (
-    <div className={`flex flex-col h-full bg-white ${className}`}>
+    <div className={`flex flex-col h-full bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
         <div>
           <div className="flex items-center space-x-2">
             <Bot className="h-5 w-5" />
-            <span className="font-semibold">AI Coach</span>
+            <span className="font-semibold">Practice Tutor</span>
             {isAIConnected && (
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             )}
-            {/* Endpoint indicator */}
-            <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30">
-              {getEndpointDisplayName(state.ui.currentEndpoint)}
-            </Badge>
           </div>
-          {state.ui.context && (
-            <div className="text-xs text-white/80 mt-1">
-              {getContextDisplayName()}
-            </div>
-          )}
+          <div className="text-xs text-white/80 mt-1">
+            AI-powered practice guidance
+          </div>
         </div>
         <div className="flex items-center space-x-2">
-          {/* Endpoint Switcher */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-white hover:bg-white/20"
-            onClick={() => dispatch({ type: 'TOGGLE_ENDPOINT_SWITCHER' })}
-            title="Switch AI Coach Mode"
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-          </Button>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -658,65 +557,43 @@ const AICoach: React.FC<AICoachProps> = ({
           )}
         </div>
       </div>
-      
-      {/* Endpoint Switcher Dropdown */}
-      {state.ui.showEndpointSwitcher && (
-        <div className="bg-white border-b shadow-sm p-3">
-          <div className="text-sm font-medium text-gray-700 mb-2">Choose AI Coach Mode:</div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant={state.ui.currentEndpoint === 'daily-planning' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => {
-                handleEndpointSwitch('daily-planning');
-                dispatch({ type: 'TOGGLE_ENDPOINT_SWITCHER' });
-              }}
-              className="flex items-center space-x-1"
-            >
-              <MessageCircle className="h-4 w-4" />
-              <span>Daily Planning</span>
-            </Button>
-            <Button
-              variant={state.ui.currentEndpoint === 'practice-tutor' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => {
-                handleEndpointSwitch('practice-tutor');
-                dispatch({ type: 'TOGGLE_ENDPOINT_SWITCHER' });
-              }}
-              className="flex items-center space-x-1"
-            >
-              <BookOpen className="h-4 w-4" />
-              <span>Practice Tutor</span>
-            </Button>
+
+      {/* Problem Context Info */}
+      {problemInfo && (
+        <div className="p-3 bg-gray-50 border-b">
+          <div className="text-xs text-gray-600 mb-1">
+            Problem {problemInfo.number} of {problemInfo.total}
+            {problemInfo.isSubmitted && (
+              <Badge variant="secondary" className="ml-2 text-xs">Completed</Badge>
+            )}
+          </div>
+          <div className="text-sm text-gray-800 line-clamp-2">
+            {problemInfo.text?.substring(0, 100)}
+            {problemInfo.text && problemInfo.text.length > 100 && '...'}
           </div>
         </div>
       )}
-
+      
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {!state.conversation.isActive ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-              <Bot className="h-8 w-8 text-purple-600" />
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+              <Bot className="h-8 w-8 text-blue-600" />
             </div>
             <h4 className="font-semibold text-gray-900 mb-2">
-              {isAIConnected ? 'Connected and ready!' : 'Ready to help!'}
+              {isAIConnected ? 'Practice Tutor Ready!' : 'Ready to Help!'}
             </h4>
             <p className="text-sm text-gray-600 mb-4">
-              {state.ui.context ? 
-                `I'm ready to discuss ${getContextDisplayName().toLowerCase()}` :
-                'I can help with your learning questions'
-              }
+              I'm here to help you with hints, explanations, and guidance during your practice session.
             </p>
             <Button 
               onClick={startConversation} 
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-blue-600 hover:bg-blue-700"
               disabled={!effectiveStudentId}
             >
-              <Mic className="h-4 w-4 mr-2" />
-              {isAIConnected ? 
-                (state.ui.currentEndpoint === 'practice-tutor' ? 'Start Practice Session' : 'Start Conversation') :
-                'Connect & Start Chat'}
+              <PlayCircle className="h-4 w-4 mr-2" />
+              {isAIConnected ? 'Start Practice Session' : 'Connect & Start'}
             </Button>
           </div>
         ) : (
@@ -736,38 +613,87 @@ const AICoach: React.FC<AICoachProps> = ({
                   'bg-green-500'
                 }`}></div>
                 {state.audio.isListening ? 'Listening...' :
-                 state.conversation.isResponding ? 'AI speaking...' :
+                 state.conversation.isResponding ? 'Tutor responding...' :
                  !isAIConnected ? 'Connecting...' :
-                 'Ready to listen'}
+                 'Ready to help'}
               </div>
             </div>
 
-            {/* Recent messages */}
+            {/* Practice Action Buttons */}
+            {isAIConnected && (
+              <div className="mb-4">
+                <div className="text-xs text-gray-600 mb-3 text-center font-medium">Quick Help:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => sendPracticeAction('hint')}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center space-x-1 text-orange-600 border-orange-200 hover:bg-orange-50"
+                    disabled={state.conversation.isResponding}
+                  >
+                    <Lightbulb className="h-3 w-3" />
+                    <span>Give Hint</span>
+                  </Button>
+                  <Button
+                    onClick={() => sendPracticeAction('explain')}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center space-x-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                    disabled={state.conversation.isResponding}
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    <span>Explain</span>
+                  </Button>
+                  <Button
+                    onClick={() => sendPracticeAction('walk-through')}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center space-x-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+                    disabled={state.conversation.isResponding}
+                  >
+                    <ArrowRight className="h-3 w-3" />
+                    <span>Walk Through</span>
+                  </Button>
+                  <Button
+                    onClick={() => sendPracticeAction('check-work')}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center space-x-1 text-green-600 border-green-200 hover:bg-green-50"
+                    disabled={state.conversation.isResponding}
+                  >
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>Check Work</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Messages */}
             <ScrollArea className="flex-1">
               {state.conversation.messages.length === 0 && !state.conversation.isResponding && (
                 <div className="text-center text-gray-500 py-8">
                   <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Start speaking to begin!</p>
+                  <p className="text-sm">Use the buttons above or speak to get help!</p>
                 </div>
               )}
 
               <div className="space-y-3">
-                {state.conversation.messages.slice(-3).map((msg, index) => (
+                {state.conversation.messages.slice(-4).map((msg, index) => (
                   <Card key={index} className={`${
                     msg.role === 'user' 
-                      ? 'bg-purple-50 border-purple-200' 
+                      ? 'bg-blue-50 border-blue-200' 
                       : msg.role === 'system'
                         ? 'bg-gray-50 border-gray-200'
-                        : 'bg-blue-50 border-blue-200'
+                        : 'bg-purple-50 border-purple-200'
                   }`}>
                     <CardContent className="p-3">
                       <div className="flex items-start space-x-2">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                           msg.role === 'user' 
-                            ? 'bg-purple-500' 
+                            ? 'bg-blue-500' 
                             : msg.role === 'system'
                               ? 'bg-gray-400'
-                              : 'bg-blue-500'
+                              : 'bg-purple-500'
                         }`}>
                           {msg.role === 'user' ? (
                             <User className="h-3 w-3 text-white" />
@@ -779,9 +705,14 @@ const AICoach: React.FC<AICoachProps> = ({
                         </div>
                         <div className="flex-1">
                           <div className="text-sm font-medium text-gray-700 mb-1">
-                            {msg.role === 'user' ? 'You' : msg.role === 'system' ? 'System' : 'AI Coach'}
+                            {msg.role === 'user' ? 'You' : msg.role === 'system' ? 'System' : 'Practice Tutor'}
                           </div>
                           <div className="text-sm text-gray-900">{msg.content}</div>
+                          {msg.action && (
+                            <Badge variant="outline" className="mt-1 text-xs">
+                              {msg.action}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -789,19 +720,19 @@ const AICoach: React.FC<AICoachProps> = ({
                 ))}
 
                 {state.conversation.isResponding && (
-                  <Card className="bg-blue-50 border-blue-200">
+                  <Card className="bg-purple-50 border-purple-200">
                     <CardContent className="p-3">
                       <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
                           <Bot className="h-3 w-3 text-white" />
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className="flex space-x-1">
-                            <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            <div className="w-1 h-1 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-1 h-1 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-1 h-1 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
-                          <span className="text-xs text-gray-600">AI Coach is responding...</span>
+                          <span className="text-xs text-gray-600">Practice tutor is responding...</span>
                         </div>
                       </div>
                     </CardContent>
@@ -811,55 +742,6 @@ const AICoach: React.FC<AICoachProps> = ({
               </div>
             </ScrollArea>
 
-            {/* Practice Mode Action Buttons */}
-            {state.ui.currentEndpoint === 'practice-tutor' && isAIConnected && (
-              <div className="mb-4">
-                <div className="text-xs text-gray-600 mb-2 text-center">Quick Actions:</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    onClick={() => handlePracticeAction('hint')}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-1"
-                    disabled={state.conversation.isResponding}
-                  >
-                    <HelpCircle className="h-3 w-3" />
-                    <span>Hint</span>
-                  </Button>
-                  <Button
-                    onClick={() => handlePracticeAction('walk-through')}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-1"
-                    disabled={state.conversation.isResponding}
-                  >
-                    <BookOpen className="h-3 w-3" />
-                    <span>Walk me through</span>
-                  </Button>
-                  <Button
-                    onClick={() => handlePracticeAction('explain')}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-1"
-                    disabled={state.conversation.isResponding}
-                  >
-                    <MessageCircle className="h-3 w-3" />
-                    <span>Explain concept</span>
-                  </Button>
-                  <Button
-                    onClick={() => handlePracticeAction('check-work')}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-1"
-                    disabled={state.conversation.isResponding}
-                  >
-                    <CheckCircle2 className="h-3 w-3" />
-                    <span>Check my work</span>
-                  </Button>
-                </div>
-              </div>
-            )}
-
             {/* Microphone control */}
             <div className="flex flex-col items-center space-y-3">
               <TooltipProvider>
@@ -868,16 +750,16 @@ const AICoach: React.FC<AICoachProps> = ({
                     <Button
                       onClick={toggleMicrophone}
                       disabled={!isAIConnected}
-                      className={`w-16 h-16 rounded-full transition-all duration-300 ${
+                      className={`w-14 h-14 rounded-full transition-all duration-300 ${
                         state.audio.isListening 
                           ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/25 scale-110 animate-pulse' 
-                          : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl hover:scale-105'
+                          : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl hover:scale-105'
                       }`}
                     >
                       {state.audio.isListening ? (
-                        <MicOff className="h-6 w-6 text-white" />
+                        <MicOff className="h-5 w-5 text-white" />
                       ) : (
-                        <Mic className="h-6 w-6 text-white" />
+                        <Mic className="h-5 w-5 text-white" />
                       )}
                     </Button>
                   </TooltipTrigger>
@@ -890,9 +772,9 @@ const AICoach: React.FC<AICoachProps> = ({
               <div className="text-center">
                 <p className="text-xs text-gray-600">
                   {state.audio.isListening ? 'Release when finished speaking' :
-                   state.conversation.isResponding ? 'AI Coach is responding...' :
+                   state.conversation.isResponding ? 'Practice tutor is responding...' :
                    !isAIConnected ? 'Connecting...' :
-                   'Tap to speak with your AI coach'}
+                   'Tap to speak or use quick help buttons above'}
                 </p>
               </div>
             </div>
@@ -901,6 +783,8 @@ const AICoach: React.FC<AICoachProps> = ({
       </div>
     </div>
   );
-};
+});
 
-export default AICoach;
+PracticeAICoach.displayName = 'PracticeAICoach';
+
+export default PracticeAICoach;
