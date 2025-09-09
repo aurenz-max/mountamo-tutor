@@ -18,7 +18,8 @@ from .api.endpoints import (
     daily_activities,
     daily_briefing_live,
     packages,
-    practice_tutor
+    practice_tutor,
+    live_sessions
     
 )
 
@@ -176,6 +177,13 @@ app.include_router(
     practice_tutor.router, 
     prefix="/api", 
     tags=["practice-tutor"]
+)
+
+# Unified Live Sessions Router (no auth dependency - handled in websocket)
+app.include_router(
+    live_sessions.router, 
+    prefix="/api", 
+    tags=["live-sessions"]
 )
 
 # ETL Management Router (requires auth now)

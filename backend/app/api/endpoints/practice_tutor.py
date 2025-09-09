@@ -125,12 +125,16 @@ Remember: You are here to guide learning, not to solve problems for the student.
 """
     return instruction
 
-@router.websocket("/ws/practice-tutor")
+@router.websocket("/practice-tutor")
 async def practice_tutor_session(websocket: WebSocket):
     """
     WebSocket endpoint for AI Practice Tutor sessions.
     Handles session-level context and problem-level interactions.
     """
+    logger.info(f"🔗 WebSocket connection attempt from: {websocket.client}")
+    logger.info(f"🔗 WebSocket headers: {dict(websocket.headers)}")
+    logger.info(f"🔗 WebSocket query params: {websocket.query_params}")
+    
     await websocket.accept()
     logger.info("🎯 Practice Tutor WebSocket connection accepted")
     
@@ -141,21 +145,26 @@ async def practice_tutor_session(websocket: WebSocket):
         # 1. AUTHENTICATION & SESSION CONTEXT
         logger.info("⏳ Waiting for authentication message...")
         init_message = await asyncio.wait_for(websocket.receive_json(), timeout=15.0)
+        logger.info(f"📨 Received init message type: {init_message.get('type')}")
         
         if init_message.get("type") != "authenticate":
+            logger.error(f"❌ Invalid first message type: {init_message.get('type')}, expected 'authenticate'")
             await websocket.close(code=4001, reason="First message must be authentication")
             return
             
         # Authenticate the user
         token = init_message.get("token")
         if not token:
+            logger.error("❌ No authentication token provided")
             await websocket.close(code=4002, reason="Authentication token required")
             return
             
+        logger.info(f"🔐 Attempting to authenticate token: {token[:20]}...")
         try:
             user_context = await authenticate_websocket_token(token)
             logger.info(f"✅ User authenticated: {user_context.get('email')}")
         except Exception as e:
+            logger.error(f"❌ Authentication failed: {str(e)}")
             await websocket.close(code=4003, reason=f"Authentication failed: {str(e)}")
             return
 
@@ -325,12 +334,14 @@ Problem: "{problem_text}" """
                 try:
                     async for response in session.receive():
                         if response.data:
-                            # Handle audio response
+                            # Handle audio response - unified with daily briefing format
                             import base64
                             audio_b64 = base64.b64encode(response.data).decode()
                             await websocket.send_json({
-                                "type": "audio_response",
-                                "audio_data": audio_b64
+                                "type": "ai_audio",
+                                "data": audio_b64,
+                                "format": "raw-pcm",
+                                "sampleRate": RECEIVE_SAMPLE_RATE
                             })
                             
                         # Note: With AUDIO-only modality, we won't get text responses

@@ -365,7 +365,18 @@ async def package_learning_session(
                             break
                             
                         if "text" in message:
-                            data = json.loads(message["text"])
+                            try:
+                                data = json.loads(message["text"])
+                            except json.JSONDecodeError:
+                                # Handle plain string messages (direct text from user)
+                                text_content = message["text"]
+                                logger.info(f"💬 Received plain text from client: {text_content[:100]}...")
+                                await text_queue.put(text_content)
+                                await session_manager.log_interaction(
+                                    session_id, 
+                                    {"type": "student_text", "content": text_content[:100]}
+                                )
+                                continue
                             
                             # Skip authentication messages since we already handled that
                             if data.get("type") == "authenticate":
