@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Check, AlertTriangle, Info, Lightbulb, CheckCircle, Clock, Image, ArrowLeft, ArrowRight, RotateCcw, Move } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check, AlertTriangle, Info, Lightbulb, CheckCircle, Clock, Image, ArrowLeft, ArrowRight, RotateCcw, Move, Sparkles, Loader2 } from 'lucide-react';
 
 // Type definitions for each primitive
 export interface AlertData {
@@ -135,7 +135,10 @@ export interface AccordionData {
 }
 
 // Alert/Callout Component
-export const AlertPrimitive: React.FC<{ data: AlertData }> = ({ data }) => {
+export const AlertPrimitive: React.FC<{ 
+  data: AlertData;
+  onGetHelp?: () => void;
+}> = ({ data, onGetHelp }) => {
   const styles = {
     info: 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-300 text-blue-900 shadow-blue-100',
     warning: 'bg-gradient-to-r from-amber-50 to-amber-100 border-amber-300 text-amber-900 shadow-amber-100',
@@ -159,6 +162,17 @@ export const AlertPrimitive: React.FC<{ data: AlertData }> = ({ data }) => {
         <div className="flex-1 min-w-0">
           <h4 className="font-semibold mb-2 text-base">{data.title}</h4>
           <p className="text-sm leading-relaxed">{data.content}</p>
+          
+          {/* AI Help Button */}
+          {onGetHelp && (
+            <button
+              onClick={onGetHelp}
+              className="mt-3 bg-yellow-200 hover:bg-yellow-300 text-yellow-800 px-3 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm"
+            >
+              <Lightbulb size={14} />
+              Explain this further
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -511,7 +525,10 @@ export const CarouselPrimitive: React.FC<{ data: CarouselData }> = ({ data }) =>
 };
 
 // Flip Card Component - Fixed with simpler implementation
-export const FlipCardPrimitive: React.FC<{ data: FlipCardData }> = ({ data }) => {
+export const FlipCardPrimitive: React.FC<{ 
+  data: FlipCardData;
+  onGetHint?: () => void;
+}> = ({ data, onGetHint }) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
   return (
@@ -527,6 +544,20 @@ export const FlipCardPrimitive: React.FC<{ data: FlipCardData }> = ({ data }) =>
               <RotateCcw className="w-8 h-8 text-orange-500 mx-auto mb-4" />
               <p className="text-orange-900 font-medium leading-relaxed">{data.front_content}</p>
               <p className="text-xs text-orange-600 mt-4">Click to flip →</p>
+              
+              {/* AI Hint Button on the front */}
+              {onGetHint && !isFlipped && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent card from flipping
+                    onGetHint();
+                  }}
+                  className="mt-3 text-xs bg-orange-200 hover:bg-orange-300 text-orange-800 px-3 py-1 rounded-full font-medium transition-all duration-200 flex items-center gap-1 mx-auto"
+                >
+                  <Lightbulb size={12} />
+                  Need a hint?
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -545,7 +576,11 @@ export const FlipCardPrimitive: React.FC<{ data: FlipCardData }> = ({ data }) =>
 };
 
 // Categorization Activity Component
-export const CategorizationPrimitive: React.FC<{ data: CategorizationData }> = ({ data }) => {
+export const CategorizationPrimitive: React.FC<{ 
+  data: CategorizationData;
+  onWalkthrough?: () => void;
+  onGetHint?: () => void;
+}> = ({ data, onWalkthrough, onGetHint }) => {
   const [userAnswers, setUserAnswers] = useState<{[key: string]: string}>({});
   const [showResults, setShowResults] = useState(false);
 
@@ -640,7 +675,7 @@ export const CategorizationPrimitive: React.FC<{ data: CategorizationData }> = (
               ))}
           </div>
           
-          <div className="flex gap-3 mt-6">
+          <div className="flex gap-3 mt-6 flex-wrap">
             <button
               onClick={checkAnswers}
               disabled={Object.keys(userAnswers).length !== data.items.length}
@@ -648,6 +683,24 @@ export const CategorizationPrimitive: React.FC<{ data: CategorizationData }> = (
             >
               Check Answers
             </button>
+            {/* AI Hint Button */}
+            {onGetHint && (
+              <button
+                onClick={onGetHint}
+                className="bg-yellow-200 hover:bg-yellow-300 text-yellow-800 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+              >
+                <Lightbulb size={16} /> Get a Hint
+              </button>
+            )}
+            {/* AI Walkthrough Button */}
+            {onWalkthrough && (
+              <button
+                onClick={onWalkthrough}
+                className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+              >
+                <Sparkles size={16} /> Walk me through this
+              </button>
+            )}
             <button
               onClick={resetActivity}
               className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"
@@ -662,10 +715,14 @@ export const CategorizationPrimitive: React.FC<{ data: CategorizationData }> = (
 };
 
 // Fill in the Blank Component
-export const FillInTheBlankPrimitive: React.FC<{ data: FillInTheBlankData }> = ({ data }) => {
+export const FillInTheBlankPrimitive: React.FC<{ 
+  data: FillInTheBlankData;
+  onGetHint?: () => void;
+}> = ({ data, onGetHint }) => {
   const [userAnswer, setUserAnswer] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [isHintLoading, setIsHintLoading] = useState(false);
 
   const checkAnswer = () => {
     setShowResult(true);
@@ -675,6 +732,18 @@ export const FillInTheBlankPrimitive: React.FC<{ data: FillInTheBlankData }> = (
     setUserAnswer('');
     setShowResult(false);
     setShowHint(false);
+  };
+
+  // This is now a wrapper for the AI call
+  const handleGetHint = async () => {
+    if (onGetHint) {
+      setIsHintLoading(true);
+      // The parent component will handle the actual AI call and response display
+      onGetHint(); 
+      // In a more advanced implementation, this could return a promise with the hint text
+      // For now, we assume the parent updates a global state that shows the hint
+      setTimeout(() => setIsHintLoading(false), 2000); // Simulate loading
+    }
   };
 
   const isCorrect = userAnswer.toLowerCase().trim() === data.correct_answer.toLowerCase().trim();
@@ -749,12 +818,15 @@ export const FillInTheBlankPrimitive: React.FC<{ data: FillInTheBlankData }> = (
             >
               Check Answer
             </button>
-            {data.hint && (
+            {/* Changed: From static hint to AI-powered hint */}
+            {onGetHint && (
               <button
-                onClick={() => setShowHint(!showHint)}
-                className="bg-yellow-200 hover:bg-yellow-300 text-yellow-800 px-4 py-2 rounded-lg font-medium transition-all duration-200"
+                onClick={handleGetHint}
+                className="bg-yellow-200 hover:bg-yellow-300 text-yellow-800 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                disabled={isHintLoading}
               >
-                {showHint ? 'Hide Hint' : 'Show Hint'}
+                {isHintLoading ? <Loader2 size={16} className="animate-spin" /> : <Lightbulb size={16} />}
+                Get a Hint
               </button>
             )}
           </>
@@ -781,7 +853,10 @@ export const FillInTheBlankPrimitive: React.FC<{ data: FillInTheBlankData }> = (
 };
 
 // Scenario Question Component
-export const ScenarioQuestionPrimitive: React.FC<{ data: ScenarioQuestionData }> = ({ data }) => {
+export const ScenarioQuestionPrimitive: React.FC<{ 
+  data: ScenarioQuestionData;
+  onGetHint?: () => void;
+}> = ({ data, onGetHint }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [showResult, setShowResult] = useState(false);
 
@@ -872,13 +947,24 @@ export const ScenarioQuestionPrimitive: React.FC<{ data: ScenarioQuestionData }>
       
       <div className="flex gap-3">
         {!showResult ? (
-          <button
-            onClick={handleSubmit}
-            disabled={!selectedAnswer.trim()}
-            className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"
-          >
-            Submit Answer
-          </button>
+          <>
+            <button
+              onClick={handleSubmit}
+              disabled={!selectedAnswer.trim()}
+              className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"
+            >
+              Submit Answer
+            </button>
+            {onGetHint && (
+              <button
+                onClick={onGetHint}
+                className="bg-purple-200 hover:bg-purple-300 text-purple-800 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+              >
+                <Lightbulb size={16} />
+                Get a Hint
+              </button>
+            )}
+          </>
         ) : (
           <button
             onClick={resetQuestion}
@@ -930,7 +1016,11 @@ export const TabbedContentPrimitive: React.FC<{ data: TabbedContentData }> = ({ 
 };
 
 // Matching Activity Component
-export const MatchingActivityPrimitive: React.FC<{ data: MatchingActivityData }> = ({ data }) => {
+export const MatchingActivityPrimitive: React.FC<{ 
+  data: MatchingActivityData;
+  onWalkthrough?: () => void;
+  onGetHint?: () => void;
+}> = ({ data, onWalkthrough, onGetHint }) => {
   const [userMatches, setUserMatches] = useState<{[key: string]: string}>({});
   const [showResults, setShowResults] = useState(false);
 
@@ -1065,7 +1155,7 @@ export const MatchingActivityPrimitive: React.FC<{ data: MatchingActivityData }>
         </div>
       </div>
       
-      <div className="flex gap-3 mt-6">
+      <div className="flex gap-3 mt-6 flex-wrap">
         <button
           onClick={checkAnswers}
           disabled={Object.keys(userMatches).length !== data.pairs.length}
@@ -1073,6 +1163,22 @@ export const MatchingActivityPrimitive: React.FC<{ data: MatchingActivityData }>
         >
           Check Matches
         </button>
+        {onGetHint && (
+          <button
+            onClick={onGetHint}
+            className="bg-yellow-200 hover:bg-yellow-300 text-yellow-800 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+          >
+            <Lightbulb size={16} /> Get a Hint
+          </button>
+        )}
+        {onWalkthrough && (
+          <button
+            onClick={onWalkthrough}
+            className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+          >
+            <Sparkles size={16} /> Walk me through
+          </button>
+        )}
         <button
           onClick={resetActivity}
           className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"

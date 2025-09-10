@@ -301,7 +301,7 @@ async def package_learning_session(
         # Get student_id if not provided (same as daily_briefing_live)
         if not student_id:
             logger.info("🔍 Looking up student mapping...")
-            from ..db.cosmos_db import cosmos_db
+            cosmos_db = CosmosDBService()
             student_mapping = await cosmos_db.get_student_mapping(user_id)
             student_id = student_mapping["student_id"] if student_mapping else None
             logger.info(f"📝 Student mapping result: {student_id}")

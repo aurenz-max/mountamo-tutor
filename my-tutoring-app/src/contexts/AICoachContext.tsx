@@ -4,7 +4,7 @@ import React, { createContext, useContext, useRef, useState, useCallback, useEff
 import AudioCaptureService from '@/lib/AudioCaptureService';
 import { authApi } from '@/lib/authApiClient';
 
-type EndpointType = 'daily-planning' | 'practice-tutor';
+type EndpointType = 'daily-planning' | 'practice-tutor' | 'education';
 
 interface AICoachConnection {
   socket: WebSocket | null;
@@ -103,6 +103,20 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
         console.log(`AI Coach connecting to practice tutor: ${wsUrl}`);
         
         socket = new WebSocket(wsUrl);
+      } else if (endpointType === 'education') {
+        // Education endpoint - requires packageId from context
+        const packageId = endpointContext?.packageId;
+        if (!packageId) {
+          throw new Error('Education endpoint requires packageId in endpointContext');
+        }
+        
+        // Store the full context BEFORE connecting to avoid race condition
+        setLastContext(endpointContext);
+        
+        const wsUrl = `ws://localhost:8000/api/packages/${packageId}/learn`;
+        console.log(`AI Coach connecting to education endpoint: ${wsUrl} with context:`, endpointContext);
+        
+        socket = new WebSocket(wsUrl);
       } else {
         // Daily planning connection
         const wsUrl = `ws://localhost:8000/api/daily-briefing?student_id=${studentId}`;
@@ -124,7 +138,7 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
           audioServiceRef.current.setWebSocket(socket);
         }
 
-        // Send authentication for both endpoints
+        // Send authentication for all endpoints
         try {
           const token = await getAuthToken();
           if (!token) throw new Error('No authentication token available');
@@ -144,6 +158,15 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 subskill_id: ''
               }
             }));
+          } else if (endpointType === 'education') {
+            // Education endpoint - send authentication with full package context
+            // Context was already stored above to avoid race condition
+            socket.send(JSON.stringify({
+              type: 'authenticate',
+              token: token
+            }));
+            
+            console.log('Education authentication sent, context available:', lastContext || endpointContext);
           }
         } catch (error) {
           console.error('Error getting auth token for WebSocket:', error);
