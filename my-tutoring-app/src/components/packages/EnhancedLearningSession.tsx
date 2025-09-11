@@ -314,7 +314,7 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Content Area */}
-        <div className={`flex flex-col ${resourcePanelOpen ? 'flex-1' : 'w-full'} min-w-0`}>
+        <div className={`flex flex-col ${resourcePanelOpen ? 'flex-1' : 'w-full'} min-w-0 overflow-hidden`}>
           {/* Content Tabs */}
           <div className="bg-white border-b px-6 py-2">
             <div className="max-w-7xl mx-auto">
@@ -356,7 +356,7 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
 
         {/* PackageLearningAICoach Sidebar */}
         {resourcePanelOpen && (
-          <div className="w-96">
+          <div className="w-96 flex-shrink-0 overflow-hidden">
             <PackageLearningAICoach
               ref={aiCoachRef}
               packageId={packageId}

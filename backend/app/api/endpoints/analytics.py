@@ -166,6 +166,25 @@ class AIRecommendationResponse(BaseModel):
     session_plan: Dict = Field(default_factory=dict)
     generated_at: str
 
+class VelocityMetric(BaseModel):
+    subject: str
+    actual_progress: int
+    expected_progress: float
+    total_subskills: int
+    velocity_percentage: float
+    days_ahead_behind: float
+    velocity_status: str
+    last_updated: str
+
+class VelocityMetricsResponse(BaseModel):
+    student_id: int
+    student_name: str
+    subject: Optional[str] = None
+    metrics: List[VelocityMetric]
+    last_updated: str
+    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    cached: bool = False
+
 # ============================================================================
 # DEPENDENCY INJECTION - Simplified
 # ============================================================================
@@ -458,6 +477,96 @@ async def get_ai_recommendations(
             detail=f"Error generating AI recommendations: {str(e)}"
         )
 
+@router.get("/student/{student_id}/velocity-metrics", response_model=VelocityMetricsResponse)
+async def get_student_velocity_metrics(
+    student_id: int,
+    subject: Optional[str] = None,
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Get velocity metrics for a student"""
+    
+    user_id = user_context["user_id"]
+    
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} velocity analytics"
+            )
+    
+    # Check cache (15 minute TTL for velocity metrics)
+    cache_key = get_cache_key("velocity_metrics", student_id=student_id, subject=subject)
+    
+    cached_result = get_from_cache(cache_key, ttl_minutes=15)
+    if cached_result:        
+        cached_result["cached"] = True
+        return VelocityMetricsResponse(**cached_result)
+    
+    try:
+        logger.info(f"User {user_context['email']} retrieving velocity metrics for student {student_id}")
+        
+        # Fetch from BigQuery
+        velocity_data = await analytics_service.get_velocity_metrics(student_id, subject)
+        
+        if not velocity_data:
+            # Return empty response for students with no velocity data
+            result = VelocityMetricsResponse(
+                student_id=student_id,
+                student_name="Unknown",
+                subject=subject,
+                metrics=[],
+                last_updated=datetime.utcnow().isoformat(),
+                cached=False
+            )
+        else:
+            # Transform the data to match response model
+            metrics = []
+            latest_update = None
+            student_name = velocity_data[0].get('student_name', 'Unknown')
+            
+            for row in velocity_data:
+                metric = VelocityMetric(
+                    subject=row['subject'],
+                    actual_progress=int(row['actual_progress']),
+                    expected_progress=float(row['expected_progress']),
+                    total_subskills=int(row['total_subskills_in_subject']),
+                    velocity_percentage=float(row['velocity_percentage']),
+                    days_ahead_behind=float(row['days_ahead_behind']),
+                    velocity_status=row['velocity_status'],
+                    last_updated=row['last_updated'].isoformat() if row['last_updated'] else datetime.utcnow().isoformat()
+                )
+                metrics.append(metric)
+                
+                # Track the most recent update
+                if row['last_updated']:
+                    if latest_update is None or row['last_updated'] > latest_update:
+                        latest_update = row['last_updated']
+            
+            result = VelocityMetricsResponse(
+                student_id=student_id,
+                student_name=student_name,
+                subject=subject,
+                metrics=metrics,
+                last_updated=latest_update.isoformat() if latest_update else datetime.utcnow().isoformat(),
+                cached=False
+            )
+        
+        # Cache the result
+        set_cache(cache_key, result.dict())
+        
+        logger.info(f"Velocity metrics retrieved: {len(result.metrics)} subjects for student {student_id}")
+        return result
+        
+    except Exception as e:        
+        logger.error(f"Velocity metrics error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error retrieving velocity metrics: {str(e)}"
+        )
+
 # ============================================================================
 # ADMIN ENDPOINTS - Simplified
 # ============================================================================
@@ -553,6 +662,230 @@ async def get_cache_stats(user_context: dict = Depends(get_user_context)):
             detail=f"Error getting cache stats: {str(e)}"
         )
 
+@router.get("/student/{student_id}/subject-recommendations")
+async def get_subject_recommendations(
+    student_id: int,
+    subject: str = Query(..., description="Subject to get recommendations for"),
+    count: Optional[int] = Query(5, ge=1, le=10, description="Number of recommendations to return"),
+    user_context: dict = Depends(get_user_context),
+    ai_service: AIRecommendationService = Depends(get_ai_recommendation_service)
+):
+    """Get AI-powered skill recommendations for a specific subject"""
+    
+    # Validate access - consistent with other analytics endpoints
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} subject recommendations"
+            )
+    
+    try:
+        logger.info(f"User {user_context['email']} requesting subject recommendations for student {student_id}, subject {subject}")
+        
+        recommendations = await ai_service.get_subject_skill_recommendations(
+            student_id=student_id,
+            subject=subject,
+            count=count
+        )
+        return {
+            "student_id": student_id,
+            "subject": subject,
+            "recommendations": recommendations,
+            "generated_at": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting subject recommendations: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate recommendations")
+
+# ============================================================================
+# ENHANCED ANALYTICS ENDPOINTS - Phase 2: Detailed Recent Activity
+# ============================================================================
+
+@router.get("/student/{student_id}/recent-activity-detailed")
+async def get_detailed_recent_activity(
+    student_id: int,
+    hours: int = Query(24, ge=1, le=168, description="Hours of recent activity to fetch"),
+    subject: Optional[str] = Query(None, description="Filter by subject"),
+    include_reviews: bool = Query(True, description="Include reviews and problem context"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum number of activities"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Get detailed recent activity with reviews and problem context"""
+    
+    user_id = user_context["user_id"]
+    
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} detailed activity"
+            )
+    
+    # Check cache (5 minute TTL for recent activity)
+    cache_key = get_cache_key(
+        "detailed_recent_activity", 
+        student_id=student_id, 
+        hours=hours,
+        subject=subject,
+        include_reviews=include_reviews,
+        limit=limit
+    )
+    
+    cached_result = get_from_cache(cache_key, ttl_minutes=5)
+    if cached_result:        
+        return cached_result
+    
+    try:
+        logger.info(f"User {user_context['email']} retrieving detailed recent activity for student {student_id}")
+        
+        # Fetch from BigQuery
+        activities = await analytics_service.get_detailed_recent_activity(
+            student_id=student_id,
+            hours=hours,
+            subject=subject,
+            include_reviews=include_reviews,
+            limit=limit
+        )
+        
+        result = {
+            "student_id": student_id,
+            "time_window_hours": hours,
+            "subject_filter": subject,
+            "include_reviews": include_reviews,
+            "total_activities": len(activities),
+            "activities": activities,
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+        # Cache the result
+        set_cache(cache_key, result)
+        
+        logger.info(f"Retrieved {len(activities)} detailed recent activities for student {student_id}")
+        return result
+        
+    except Exception as e:        
+        logger.error(f"Detailed recent activity error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error retrieving detailed recent activity: {str(e)}"
+        )
+
+@router.get("/student/{student_id}/mistake-patterns")
+async def get_mistake_patterns(
+    student_id: int,
+    subject: Optional[str] = Query(None, description="Filter by subject"),
+    days: int = Query(30, ge=1, le=365, description="Days to analyze for patterns"),
+    min_feedback_length: int = Query(20, ge=10, le=100, description="Minimum feedback length to consider"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Analyze mistake patterns from reviews feedback data"""
+    
+    user_id = user_context["user_id"]
+    
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} mistake patterns"
+            )
+    
+    # Check cache (15 minute TTL for mistake patterns)
+    cache_key = get_cache_key(
+        "mistake_patterns", 
+        student_id=student_id, 
+        subject=subject,
+        days=days,
+        min_feedback_length=min_feedback_length
+    )
+    
+    cached_result = get_from_cache(cache_key, ttl_minutes=15)
+    if cached_result:        
+        return cached_result
+    
+    try:
+        logger.info(f"User {user_context['email']} analyzing mistake patterns for student {student_id}")
+        
+        # Fetch from BigQuery
+        patterns = await analytics_service.get_mistake_patterns(
+            student_id=student_id,
+            subject=subject,
+            days=days,
+            min_feedback_length=min_feedback_length
+        )
+        
+        # Cache the result
+        set_cache(cache_key, patterns)
+        
+        logger.info(f"Analyzed mistake patterns for student {student_id}: {len(patterns.get('mistake_patterns', []))} patterns found")
+        return patterns
+        
+    except Exception as e:        
+        logger.error(f"Mistake patterns error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error analyzing mistake patterns: {str(e)}"
+        )
+
+@router.get("/student/{student_id}/engagement-metrics")
+async def get_engagement_metrics(
+    student_id: int,
+    subject: Optional[str] = Query(None, description="Filter by subject"),
+    days: int = Query(7, ge=1, le=90, description="Days to analyze for engagement"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Get engagement metrics from reviews and attempts data"""
+    
+    user_id = user_context["user_id"]
+    
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} engagement metrics"
+            )
+    
+    # Check cache (10 minute TTL for engagement metrics)
+    cache_key = get_cache_key(
+        "engagement_metrics", 
+        student_id=student_id, 
+        subject=subject,
+        days=days
+    )
+    
+    cached_result = get_from_cache(cache_key, ttl_minutes=10)
+    if cached_result:        
+        return cached_result
+    
+    try:
+        logger.info(f"User {user_context['email']} retrieving engagement metrics for student {student_id}")
+        
+        # Fetch from BigQuery
+        engagement = await analytics_service.get_engagement_metrics(
+            student_id=student_id,
+            subject=subject,
+            days=days
+        )
+        
+        # Cache the result
+        set_cache(cache_key, engagement)
+        
+        logger.info(f"Retrieved engagement metrics for student {student_id}: {engagement['summary']['total_active_days']} active days")
+        return engagement
+        
+    except Exception as e:        
+        logger.error(f"Engagement metrics error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error retrieving engagement metrics: {str(e)}"
+        )
+
 @router.get("/health")
 async def analytics_health_check(
     user_context: dict = Depends(get_user_context),
@@ -591,7 +924,7 @@ async def analytics_health_check(
                 "email": user_context.get("email"),
                 "student_id": user_context.get("student_id")
             },
-            "version": "5.0.0",  # Updated version with AI recommendations
+            "version": "6.0.0",  # Updated version with enhanced analytics
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:

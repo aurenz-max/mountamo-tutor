@@ -1138,6 +1138,71 @@ class BigQueryAnalyticsService:
                 "timestamp": datetime.now().isoformat()
             }
 
+    async def get_velocity_metrics(
+        self,
+        student_id: int,
+        subject: Optional[str] = None
+    ) -> List[Dict]:
+        """Fetch velocity metrics from student_velocity_metrics table"""
+        
+        # Check cache first
+        cache_key = self._get_cache_key(
+            "velocity_metrics",
+            student_id=student_id,
+            subject=subject
+        )
+        
+        cached_result = self._get_cache(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached velocity metrics for student {student_id}")
+            return cached_result
+        
+        try:
+            query = f"""
+            SELECT
+                student_id,
+                student_name,
+                subject,
+                actual_progress,
+                expected_progress,
+                total_subskills_in_subject,
+                velocity_percentage,
+                days_ahead_behind,
+                velocity_status,
+                last_updated,
+                calculation_date
+            FROM `{self.project_id}.{self.dataset_id}.student_velocity_metrics`
+            WHERE student_id = @student_id
+            AND (@subject IS NULL OR subject = @subject)
+            ORDER BY 
+                CASE 
+                    WHEN velocity_status = 'Significantly Behind' THEN 1
+                    WHEN velocity_status = 'Behind' THEN 2
+                    WHEN velocity_status = 'Slightly Behind' THEN 3
+                    WHEN velocity_status = 'On Track' THEN 4
+                    WHEN velocity_status = 'Significantly Ahead' THEN 5
+                    ELSE 6
+                END, subject
+            """
+            
+            parameters = [
+                bigquery.ScalarQueryParameter("student_id", "INT64", student_id),
+                bigquery.ScalarQueryParameter("subject", "STRING", subject)
+            ]
+            
+            results = await self._run_query_async(query, parameters)
+            
+            # Cache the result with 15-minute TTL
+            self._set_cache(cache_key, results)
+            
+            logger.info(f"Retrieved {len(results)} velocity metrics for student {student_id}")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error getting velocity metrics for student {student_id}: {e}")
+            # Return empty list on error rather than raising to prevent dashboard failures
+            return []
+
     async def get_query_costs(self, days: int = 7) -> Dict[str, Any]:
         """Get query cost information for monitoring"""
         try:

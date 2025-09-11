@@ -28,30 +28,30 @@ export interface AnalyticsMetricsResponse {
     recommended_items: number;
   };
   hierarchical_data: Array<{
-    unit_id: string;
-    unit_title: string;
-    mastery: number;
-    proficiency: number;
-    avg_score: number;
-    completion: number;
-    attempted_skills: number;
-    total_skills: number;
-    skills: Array<{
-      skill_id: string;
-      skill_description: string;
+      unit_id: string;
+      unit_title: string;
       mastery: number;
       proficiency: number;
-      subskills: Array<{
-        subskill_id: string;
-        subskill_description: string;
+      avg_score: number;
+      completion: number;
+      attempted_skills: number;
+      total_skills: number;
+      skills: Array<{
+        skill_id: string;
+        skill_description: string;
         mastery: number;
-        avg_score: number;
         proficiency: number;
-        completion: number;
-        is_attempted: boolean;
-        readiness_status: string;
-        priority_level: string;
-        priority_order: number;
+        subskills: Array<{
+          subskill_id: string;
+          subskill_description: string;
+          mastery: number;
+          avg_score: number;
+          proficiency: number;
+          completion: number;
+          is_attempted: boolean;
+          readiness_status: string;
+          priority_level: string;
+          priority_order: number;
       }>;
     }>;
   }>;

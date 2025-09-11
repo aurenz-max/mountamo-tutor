@@ -151,6 +151,27 @@ export interface Recommendation {
   message: string;
 }
 
+export interface VelocityMetric {
+  subject: string;
+  actual_progress: number;
+  expected_progress: number;
+  total_subskills: number;
+  velocity_percentage: number;
+  days_ahead_behind: number;
+  velocity_status: string;
+  last_updated: string;
+}
+
+export interface VelocityMetricsResponse {
+  student_id: number;
+  student_name: string;
+  subject?: string;
+  metrics: VelocityMetric[];
+  last_updated: string;
+  generated_at: string;
+  cached?: boolean;
+}
+
 // UPDATED API OBJECT - Now uses authApiClient for authentication
 export const analyticsApi = {
   // Get hierarchical metrics for a student
@@ -254,6 +275,26 @@ export const analyticsApi = {
     
     // Use authApiClient with authentication
     return authApi.get<Array<Recommendation>>(endpoint);
+  },
+
+  // Get velocity metrics for a student
+  async getVelocityMetrics(
+    studentId: number,
+    options: {
+      subject?: string;
+    } = {}
+  ): Promise<VelocityMetricsResponse> {
+    const { subject } = options;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (subject) params.append('subject', subject);
+    
+    const queryString = params.toString();
+    const endpoint = `/api/analytics/student/${studentId}/velocity-metrics${queryString ? `?${queryString}` : ''}`;
+    
+    // Use authApiClient with authentication
+    return authApi.get<VelocityMetricsResponse>(endpoint);
   }
 };
 
@@ -261,3 +302,4 @@ export const analyticsApi = {
 export const getStudentMetrics = analyticsApi.getStudentMetrics;
 export const getTimeSeriesMetrics = analyticsApi.getTimeSeriesMetrics;  
 export const getRecommendations = analyticsApi.getRecommendations;
+export const getVelocityMetrics = analyticsApi.getVelocityMetrics;

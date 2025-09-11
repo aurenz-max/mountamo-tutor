@@ -23,6 +23,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import UserPreferencesModule from './UserPreferencesModule';
 import DailyBriefingComponent from './DailyBriefingComponent';
 import { AICoachToggleButton } from '@/components/layout/GlobalAICoachToggle'; // Import the global toggle
+import VelocityMetricsCard from '@/components/analytics/VelocityMetricsCard';
+import { useVelocityMetrics } from '@/hooks/useVelocityMetrics';
 
 const EnhancedLearningDashboard: React.FC = () => {
   const { userProfile } = useAuth();
@@ -34,6 +36,42 @@ const EnhancedLearningDashboard: React.FC = () => {
   const studentName = userProfile?.display_name || 'Student';
   const points = userProfile?.total_points || 0;
   const streak = userProfile?.current_streak || 0;
+
+  // Fetch velocity metrics
+  const { 
+    data: velocityData, 
+    loading: velocityLoading, 
+    error: velocityError, 
+    refetch: refetchVelocity 
+  } = useVelocityMetrics(studentId);
+
+  // Handle activity selection from recommendations
+  const handleActivitySelect = async (subskillId: string, subject: string) => {
+    console.log('Activity selected:', { subskillId, subject });
+    
+    try {
+      // Import the auth API client dynamically to avoid SSR issues
+      const { authApi } = await import('@/lib/authApiClient');
+      
+      console.log('🚀 Starting learning session for subskill:', subskillId);
+      
+      // Use the same logic as packages page: get or create content package
+      const response = await authApi.getContentPackageForSubskill(subskillId);
+      console.log('✅ Content package response:', response);
+      
+      if (response.packageId) {
+        // Navigate to the learning session
+        console.log('🎯 Navigating to packages session:', response.packageId);
+        router.push(`/packages/${response.packageId}/learn`);
+      } else {
+        throw new Error('No package ID returned from server');
+      }
+    } catch (error) {
+      console.error('❌ Error handling activity selection:', error);
+      // Fallback to packages list on error
+      router.push('/packages');
+    }
+  };
 
   // Different contexts for different sections
   const dashboardContext = {
@@ -206,6 +244,15 @@ const EnhancedLearningDashboard: React.FC = () => {
               </CardContent>
             </Card>
             
+            {/* Velocity Metrics Card */}
+            <VelocityMetricsCard 
+              data={velocityData}
+              loading={velocityLoading}
+              error={velocityError}
+              studentId={studentId}
+              onActivitySelect={handleActivitySelect}
+            />
+            
             {/* Today's Activities Preview */}
             <Card>
               <CardHeader>
@@ -241,6 +288,15 @@ const EnhancedLearningDashboard: React.FC = () => {
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="mt-6">
+          {/* Velocity Metrics Card */}
+          <VelocityMetricsCard 
+            data={velocityData}
+            loading={velocityLoading}
+            error={velocityError}
+            studentId={studentId}
+            onActivitySelect={handleActivitySelect}
+          />
+
           <Card>
             <CardHeader>
               <CardTitle>Recent Activity (30 Days)</CardTitle>

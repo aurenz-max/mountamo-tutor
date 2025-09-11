@@ -426,37 +426,55 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
     setSubmissionError(null);
 
     try {
-      // Prepare student answer based on type
-      let studentAnswer = '';
-      if (answerData.type === 'option' && answerData.value !== null) {
-        const options = currentProblem.problem_data.full_problem_data?.options || currentProblem.problem_data.options;
-        if (options && Array.isArray(options)) {
-          const selectedOption = options[answerData.value as number];
-          studentAnswer = typeof selectedOption === 'string' ? selectedOption : selectedOption.text;
+      let response;
+      
+      // If this is already a processed review (from primitive components), use it directly
+      if (answerData.primitiveAnswer && (answerData.primitiveAnswer.review || answerData.primitiveAnswer.originalReview)) {
+        response = answerData.primitiveAnswer;
+      } else {
+        // For all other problems, submit to unified backend endpoint using ProblemSet.tsx structure
+        const submission = {
+          subject: currentProblem.subject || 'mathematics',
+          problem: currentProblem.problem_data, // Use the problem_data structure like ProblemSet
+          skill_id: currentProblem.skill_id,
+          subskill_id: currentProblem.subskill_id,
+          // Include primitive_response for structured problems
+          primitive_response: answerData.primitiveAnswer || null
+        };
+
+        // Add additional fields based on answer type
+        if (answerData.type === 'option' && answerData.value !== null) {
+          const options = currentProblem.problem_data.full_problem_data?.options || currentProblem.problem_data.options;
+          if (options && Array.isArray(options)) {
+            const selectedOption = options[answerData.value as number];
+            submission.student_answer = typeof selectedOption === 'string' ? selectedOption : selectedOption.text;
+          }
+        } else if (answerData.type === 'text') {
+          submission.student_answer = answerData.value as string;
+        } else if (answerData.type === 'canvas') {
+          submission.student_answer = 'Canvas submission';
+          submission.canvas_used = true;
+        } else if (answerData.type === 'visual') {
+          submission.student_answer = 'Visual/primitive response';
         }
-      } else if (answerData.type === 'text') {
-        studentAnswer = answerData.value as string;
-      } else if (answerData.type === 'canvas') {
-        studentAnswer = 'Canvas submission';
-      } else if (answerData.type === 'visual') {
-        studentAnswer = 'Visual/primitive response';
+
+        // Only include canvas data if there's actual canvas work
+        if (answerData.canvasData && answerData.canvasData !== 'data:image/png;base64,') {
+          submission.solution_image = answerData.canvasData;
+        }
+
+        console.log('=== PACKAGES SUBMISSION ===');
+        console.log('Submitting to unified endpoint:', {
+          problem_type: currentProblem.problem_data.problem_type,
+          skill_id: currentProblem.skill_id,
+          subskill_id: currentProblem.subskill_id,
+          has_primitive_response: !!submission.primitive_response,
+          submission_keys: Object.keys(submission)
+        });
+       
+        // Use the unified submission endpoint (same as ProblemSet)
+        response = await authApi.submitProblem(submission);
       }
-
-      // Unified submission payload for all problem types - let backend handle the complexity
-      const submissionPayload = {
-        student_id: studentId,
-        subject: currentProblem.subject,
-        problem: currentProblem,
-        solution_image: answerData.canvasData || 'data:image/png;base64,', 
-        skill_id: currentProblem.skill_id || currentProblem.problem_data.metadata?.skill?.id || '',
-        subskill_id: currentProblem.subskill_id || currentProblem.problem_data.metadata?.subskill?.id || '',
-        student_answer: studentAnswer,
-        canvas_used: answerData.type === 'canvas',
-        primitive_response: answerData.primitiveAnswer
-      };
-
-      // Always use the unified submitProblem endpoint - backend will route appropriately
-      const response = await authApi.submitProblem(submissionPayload);
 
       // Get the score to determine next steps
       const score = getScore(response.review);
@@ -665,26 +683,18 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
   const handleSubmitWork = async () => {
     if (currentAnswer?.isSubmitted) return;
 
-    const canvasData = canvasRef.current?.getCanvasData();
-
-    // For problems that use ProblemRenderer, get their answer and submit via unified path
+    // For problems that use ProblemRenderer, let it handle submission through onSubmit callback
     if (needsProblemRenderer(currentProblem) && problemRendererRef.current) {
-      // Get the primitive answer
-      const primitiveAnswer = currentAnswer?.primitiveAnswer;
-      if (!primitiveAnswer) {
-        alert('Please provide an answer before submitting.');
-        return;
+      try {
+        await problemRendererRef.current.submitProblem();
+      } catch (error: any) {
+        console.error('Submission error:', error);
+        setSubmissionError(error.message || 'Failed to submit answer. Please try again.');
       }
-      
-      const answerData = {
-        type: 'visual' as const,
-        value: 'primitive_response',
-        primitiveAnswer: primitiveAnswer,
-        canvasData: canvasData || undefined
-      };
-      await submitProblemToBackend(answerData);
       return;
     }
+
+    const canvasData = canvasRef.current?.getCanvasData();
 
     // For multiple choice, submit the selected option (with optional canvas work)
     const options = currentProblem.problem_data.full_problem_data?.options || currentProblem.problem_data.options;
@@ -697,7 +707,7 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
       const answerData = {
         type: 'option' as const,
         value: selectedAnswer,
-        canvasData: canvasData || undefined
+        canvasData: canvasData || null
       };
       await submitProblemToBackend(answerData);
       return;
@@ -754,14 +764,13 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
             isSubmitted={currentAnswer?.isSubmitted || false}
             currentResponse={currentAnswer?.primitiveAnswer}
             feedback={currentAnswer?.feedback}
-            onSubmit={async (submission) => {
-              // Handle submission from ProblemRenderer
+            onSubmit={async (submissionData) => {
+              // Handle submission from ProblemRenderer using the same structure as ProblemSet
               const answerData = {
                 type: 'visual' as const,
                 value: 'visual_response',
-                primitiveAnswer: submission,
-                isSubmitted: false,
-                attempts: (questionAnswers[currentQuestion]?.attempts || 0)
+                primitiveAnswer: submissionData.primitive_response || submissionData,
+                canvasData: null // ProblemRenderer handles its own visual elements
               };
               await submitProblemToBackend(answerData);
             }}

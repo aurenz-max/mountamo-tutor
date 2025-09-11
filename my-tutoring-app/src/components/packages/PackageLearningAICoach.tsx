@@ -655,7 +655,7 @@ const PackageLearningAICoach = React.forwardRef<any, PackageLearningAICoachProps
             </Button>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col p-4 space-y-4">
+          <div className="flex-1 flex flex-col p-4 space-y-4 min-h-0 overflow-hidden">
             {/* Status indicator */}
             <div className="text-center">
               <div className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${
@@ -747,7 +747,7 @@ const PackageLearningAICoach = React.forwardRef<any, PackageLearningAICoachProps
             )}
 
             {/* Messages */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               {state.conversation.messages.length === 0 && !state.conversation.isResponding && (
                 <div className="text-center text-gray-500 py-8">
                   <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />

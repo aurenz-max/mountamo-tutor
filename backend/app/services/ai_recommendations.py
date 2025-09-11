@@ -399,6 +399,266 @@ Select specific subskill_ids for each activity type. Provide brief, student-frie
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, _execute_query)
     
+    async def get_subject_skill_recommendations(
+        self,
+        student_id: int,
+        subject: str,
+        count: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        Get targeted skill recommendations for a specific subject.
+        Leverages existing student summary data but focuses on single subject.
+        """
+        
+        logger.info(f"Generating {count} skill recommendations for student {student_id}, subject {subject}")
+        
+        try:
+            # Get focused student data for this subject
+            subject_data = await self._get_subject_focused_summary(student_id, subject)
+            
+            if not subject_data:
+                logger.warning(f"No data found for student {student_id}, subject {subject}")
+                return []
+            
+            # Generate recommendations using existing LLM infrastructure
+            recommendations = await self._generate_subject_recommendations(
+                subject_data, count
+            )
+            
+            # Enrich with curriculum data
+            enriched_recommendations = await self._enrich_skill_recommendations(recommendations)
+            
+            logger.info(f"Generated {len(enriched_recommendations)} recommendations for {subject}")
+            return enriched_recommendations
+            
+        except Exception as e:
+            logger.error(f"Error generating subject recommendations: {e}")
+            raise
+
+    async def _get_subject_focused_summary(self, student_id: int, subject: str) -> Dict[str, Any]:
+        """Get optimized subject-specific summary"""
+        
+        query = f"""
+        WITH subject_velocity AS (
+          SELECT 
+            subject,
+            velocity_status,
+            velocity_percentage,
+            days_ahead_behind,
+            actual_progress,
+            expected_progress,
+            total_subskills_in_subject
+          FROM `{self.project_id}.{self.dataset_id}.student_velocity_metrics`
+          WHERE student_id = @student_id AND subject = @subject
+        ),
+        available_skills AS (
+          SELECT 
+            subskill_id,
+            subskill_description,
+            skill_description,
+            subskill_mastery_pct,
+            unlock_score,
+            difficulty_start,
+            readiness_status
+          FROM `{self.project_id}.{self.dataset_id}.student_available_subskills`
+          WHERE student_id = @student_id 
+            AND subject = @subject 
+            AND is_available = TRUE
+          ORDER BY 
+            CASE readiness_status 
+              WHEN 'Ready' THEN 1
+              WHEN 'Nearly Ready' THEN 2 
+              ELSE 3
+            END,
+            unlock_score DESC
+          LIMIT 10  -- Get top 10 available skills
+        ),
+        mastery_context AS (
+          SELECT 
+            subject,
+            AVG(skill_mastery_pct) as avg_mastery,
+            COUNT(*) as total_skills,
+            COUNT(CASE WHEN skill_mastery_pct >= 80 THEN 1 END) as mastered_skills
+          FROM `{self.project_id}.{self.dataset_id}.v_student_skill_mastery`
+          WHERE student_id = @student_id AND subject = @subject
+          GROUP BY subject
+        )
+        SELECT 
+          v.subject,
+          v.velocity_status,
+          v.velocity_percentage,
+          v.days_ahead_behind,
+          v.actual_progress,
+          v.expected_progress,
+          v.total_subskills_in_subject,
+          m.avg_mastery,
+          m.total_skills,
+          m.mastered_skills,
+          ARRAY_AGG(
+            STRUCT(
+              a.subskill_id,
+              a.subskill_description,
+              a.skill_description,
+              a.subskill_mastery_pct,
+              a.unlock_score,
+              a.difficulty_start,
+              a.readiness_status
+            )
+            ORDER BY 
+              CASE a.readiness_status 
+                WHEN 'Ready' THEN 1
+                WHEN 'Nearly Ready' THEN 2 
+                ELSE 3
+              END,
+              a.unlock_score DESC
+          ) as available_subskills
+        FROM subject_velocity v
+        LEFT JOIN mastery_context m ON v.subject = m.subject
+        LEFT JOIN available_skills a ON TRUE
+        GROUP BY v.subject, v.velocity_status, v.velocity_percentage, 
+                 v.days_ahead_behind, v.actual_progress, v.expected_progress,
+                 v.total_subskills_in_subject, m.avg_mastery, m.total_skills, m.mastered_skills
+        """
+        
+        results = await self._run_query_async(query, [
+            bigquery.ScalarQueryParameter("student_id", "INT64", student_id),
+            bigquery.ScalarQueryParameter("subject", "STRING", subject)
+        ])
+        
+        return results[0] if results else None
+
+    async def _generate_subject_recommendations(
+        self,
+        subject_data: Dict[str, Any],
+        count: int
+    ) -> List[Dict[str, Any]]:
+        """Generate skill recommendations using LLM for specific subject"""
+        
+        # Minimal schema for efficiency
+        recommendations_schema = {
+            "type": "object",
+            "properties": {
+                "recommendations": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "subskill_id": {"type": "string"},
+                            "priority_rank": {"type": "integer"},
+                            "student_friendly_reason": {"type": "string"},
+                            "engagement_hook": {"type": "string"},
+                            "estimated_time_minutes": {"type": "integer"},
+                            "difficulty_level": {"type": "string"}
+                        },
+                        "required": ["subskill_id", "priority_rank", "student_friendly_reason", "engagement_hook"]
+                    }
+                }
+            },
+            "required": ["recommendations"]
+        }
+        
+        # Build context
+        velocity_context = {
+            "subject": subject_data["subject"],
+            "velocity_status": subject_data["velocity_status"],
+            "days_behind": subject_data.get("days_ahead_behind", 0),
+            "progress": f"{subject_data.get('actual_progress', 0)}/{subject_data.get('total_subskills_in_subject', 0)} skills completed",
+            "avg_mastery": f"{subject_data.get('avg_mastery', 0):.1f}%"
+        }
+        
+        available_skills = subject_data.get("available_subskills", [])[:8]  # Limit context size
+        
+        prompt = f"""You are recommending specific skills for a K-5 student who is struggling in {subject_data['subject']}.
+
+Student Context:
+- Subject: {velocity_context['subject']}
+- Status: {velocity_context['velocity_status']} ({velocity_context['days_behind']} days behind)
+- Progress: {velocity_context['progress']}
+- Current mastery level: {velocity_context['avg_mastery']}
+
+Available Skills to Choose From:
+{json.dumps([{
+    "subskill_id": skill["subskill_id"],
+    "description": skill["subskill_description"], 
+    "skill_area": skill["skill_description"],
+    "readiness": skill["readiness_status"],
+    "current_mastery": f"{skill.get('subskill_mastery_pct', 0):.0f}%"
+} for skill in available_skills], indent=2)}
+
+Select {count} skills that would be most engaging and helpful for this student to catch up. 
+Focus on:
+1. Skills they're ready for (readiness status)
+2. Building confidence with achievable challenges
+3. Variety in skill areas within the subject
+4. Student-friendly explanations and engaging hooks
+
+Rank by priority (1 = highest priority). Provide engaging, age-appropriate reasons why each skill would help them catch up."""
+
+        response = await self.gemini_client.aio.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=GenerateContentConfig(
+                response_mime_type='application/json',
+                response_schema=recommendations_schema,
+                temperature=0.6,  # Slightly more creative for engagement
+                max_output_tokens=3000
+            )
+        )
+        
+        if not response or not response.text:
+            raise Exception("Empty response from Gemini")
+        
+        result = json.loads(response.text)
+        return result.get("recommendations", [])
+
+    async def _enrich_skill_recommendations(
+        self, 
+        recommendations: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Add curriculum data to recommendations"""
+        
+        subskill_ids = [rec["subskill_id"] for rec in recommendations]
+        
+        if not subskill_ids:
+            return recommendations
+        
+        # Get curriculum data
+        placeholders = ",".join([f"@id_{i}" for i in range(len(subskill_ids))])
+        curriculum_query = f"""
+        SELECT
+          subject, subskill_id, subskill_description, skill_description,
+          difficulty_start, target_difficulty, grade, unit_title
+        FROM `{self.project_id}.{self.dataset_id}.curriculum`
+        WHERE subskill_id IN ({placeholders})
+        """
+        
+        params = [bigquery.ScalarQueryParameter(f"id_{i}", "STRING", sid) 
+                 for i, sid in enumerate(subskill_ids)]
+        
+        curriculum_data = await self._run_query_async(curriculum_query, params)
+        curriculum_lookup = {row["subskill_id"]: row for row in curriculum_data}
+        
+        # Enrich recommendations
+        enriched = []
+        for rec in recommendations:
+            subskill_id = rec["subskill_id"]
+            curriculum = curriculum_lookup.get(subskill_id, {})
+            
+            enriched_rec = {
+                **rec,
+                "subject": curriculum.get("subject", ""),
+                "skill_description": curriculum.get("skill_description", ""),
+                "subskill_description": curriculum.get("subskill_description", ""),
+                "difficulty_start": curriculum.get("difficulty_start"),
+                "target_difficulty": curriculum.get("target_difficulty"),
+                "grade": curriculum.get("grade"),
+                "unit_title": curriculum.get("unit_title"),
+                "estimated_time_minutes": rec.get("estimated_time_minutes", 4)
+            }
+            enriched.append(enriched_rec)
+        
+        return sorted(enriched, key=lambda x: x.get("priority_rank", 999))
+
     async def health_check(self) -> Dict[str, Any]:
         """Check service health"""
         try:

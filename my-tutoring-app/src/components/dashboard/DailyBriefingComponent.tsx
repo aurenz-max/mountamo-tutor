@@ -15,8 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import ActivityCard from './ActivityCard'; // Import the clean ActivityCard component
 
+
 // Import your existing hooks and types
-import { useDailyActivities, DailyActivity, ActivityUtils } from '@/lib/dailyActivitiesAPI';
+import { useDailyActivities, DailyActivity } from '@/lib/dailyActivitiesAPI';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DailyBriefingProps {
