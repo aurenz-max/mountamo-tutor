@@ -51,6 +51,13 @@ class UserProfilesService:
                 email_verified=True,
                 created_at=datetime.utcnow(),
                 last_login=datetime.utcnow(),
+                # XP System initialization
+                total_xp=0,
+                current_level=1,
+                xp_for_next_level=100,
+                current_streak=0,
+                longest_streak=0,
+                last_activity_date=None,
                 onboarding_completed=False
             )
             
@@ -69,12 +76,17 @@ class UserProfilesService:
             
             user_profiles_container.create_item(body=profile_data)
             
-            # Log registration activity
-            await self.log_activity(uid, student_id, ActivityLog(
+            # Log registration activity using EngagementService
+            from ..services.engagement_service import engagement_service
+            await engagement_service.process_activity(
+                user_id=uid,
+                student_id=student_id,
                 activity_type="registration",
-                points_earned=10,
-                metadata={"grade_level": grade_level}
-            ))
+                metadata={
+                    "activity_name": "User Registration",
+                    "grade_level": grade_level
+                }
+            )
             
             logger.info(f"👤 User profile created: {email}")
             return user_profile
@@ -125,11 +137,14 @@ class UserProfilesService:
                     'created_at': user_data.get('created_at'),
                     'last_login': user_data.get('last_login'),
                     'last_activity': user_data.get('last_activity'),
-                    'total_points': user_data.get('total_points', 0),
+                    # XP System fields (new)
+                    'total_xp': user_data.get('total_xp', user_data.get('total_points', 0)),  # Fallback to legacy
+                    'current_level': user_data.get('current_level', user_data.get('level', 1)),  # Fallback to legacy
+                    'xp_for_next_level': user_data.get('xp_for_next_level', 100),
                     'current_streak': user_data.get('current_streak', 0),
                     'longest_streak': user_data.get('longest_streak', 0),
+                    'last_activity_date': user_data.get('last_activity_date'),
                     'badges': user_data.get('badges', []),
-                    'level': user_data.get('level', 1),
                     'preferences': user_data.get('preferences', {}),
                     'onboarding_completed': user_data.get('onboarding_completed', False),
                     'onboarding_completed_at': user_data.get('onboarding_completed_at')
@@ -265,25 +280,27 @@ class UserProfilesService:
             
             await self.update_user_profile(uid, updates)
             
-            # Log onboarding completion activity
-            activity_response = await self.log_activity(uid, student_id, ActivityLog(
+            # Log onboarding completion activity using EngagementService
+            from ..services.engagement_service import engagement_service
+            activity_response = await engagement_service.process_activity(
+                user_id=uid,
+                student_id=student_id,
                 activity_type="onboarding_completion",
-                activity_name="User Onboarding Completed",
-                points_earned=0,  # Will be calculated
                 metadata={
+                    "activity_name": "User Onboarding Completed",
                     "subjects_selected": len(onboarding_data.selectedSubjects),
                     "packages_selected": len(onboarding_data.selectedPackages),
                     "goals_selected": len(onboarding_data.learningGoals),
                     "learning_styles_selected": len(onboarding_data.preferredLearningStyle),
                     "completion_timestamp": onboarding_data.completedAt
                 }
-            ))
+            )
             
             logger.info(f"🎉 Onboarding completed: {uid}")
             
             return {
                 "message": "Onboarding completed successfully",
-                "points_earned": activity_response.points_earned,
+                "points_earned": activity_response.xp_earned,  # Updated to use XP
                 "badges_earned": activity_response.badges_earned,
                 "level_up": activity_response.level_up,
                 "redirect_to": "/dashboard"
@@ -342,19 +359,9 @@ class UserProfilesService:
     # ACTIVITY MANAGEMENT
     # ============================================================================
     
-    async def log_activity(self, user_id: str, student_id: int, activity: ActivityLog) -> ActivityResponse:
-        """Log user activity with points calculation and badge checking"""
+    async def add_activity_log_entry(self, user_id: str, student_id: int, activity: ActivityLog):
+        """Writes a pre-constructed activity log to Cosmos DB."""
         try:
-            # Calculate points
-            points_earned = self._calculate_points(activity)
-            activity.points_earned = points_earned
-            
-            # Get current user profile
-            user_profile = await self.get_user_profile(user_id)
-            if not user_profile:
-                raise HTTPException(status_code=404, detail="User profile not found")
-            
-            # Store activity in Cosmos DB
             activities_container = self.cosmos_db.database.create_container_if_not_exists(
                 id="user_activities",
                 partition_key=PartitionKey(path="/firebase_uid")
@@ -368,47 +375,11 @@ class UserProfilesService:
             activity_data['created_at'] = datetime.utcnow().isoformat()
             activity_data['type'] = 'user_activity'
             
-            activity_ref = activities_container.create_item(body=activity_data)
-            
-            # Update user profile with new points, level, streak
-            new_total_points = user_profile.total_points + points_earned
-            new_level = self._calculate_level(new_total_points)
-            level_up = new_level > user_profile.level
-            new_streak = self._calculate_streak(user_profile)
-            
-            # Check for new badges
-            updated_profile = self._create_updated_profile(
-                user_profile, new_total_points, new_level, new_streak
-            )
-            new_badges = self._check_new_badges(updated_profile, activity)
-            
-            # Update user profile in database
-            update_data = {
-                'total_points': new_total_points,
-                'current_streak': new_streak,
-                'longest_streak': max(user_profile.longest_streak, new_streak),
-                'level': new_level,
-                'last_activity': datetime.utcnow().isoformat()
-            }
-            
-            if new_badges:
-                update_data['badges'] = user_profile.badges + new_badges
-            
-            await self.update_user_profile(user_id, update_data)
-            
-            logger.info(f"📊 Activity logged: {user_id} - {activity.activity_type} (+{points_earned} points)")
-            
-            return ActivityResponse(
-                activity_id=activity_ref['id'],
-                points_earned=points_earned,
-                total_points=new_total_points,
-                level_up=level_up,
-                badges_earned=new_badges
-            )
-            
+            activities_container.create_item(body=activity_data)
+            logger.info(f"📊 Activity logged: {user_id} - {activity.activity_type}")
         except Exception as e:
-            logger.error(f"❌ Failed to log activity: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to log activity")
+            logger.error(f"❌ Failed to write activity log entry: {str(e)}")
+            # Don't re-raise, as this is often in a background task
     
     async def get_user_activities(self, user_id: str, limit: int = 20) -> List[dict]:
         """Get user activities from Cosmos DB"""
@@ -464,6 +435,7 @@ class UserProfilesService:
             week_ago = now - timedelta(days=7)
             month_ago = now - timedelta(days=30)
             
+            # Calculate time-based points (legacy)
             today_points = sum(
                 act.get('points_earned', 0) for act in activities 
                 if act.get('created_at') and datetime.fromisoformat(act['created_at']).date() == today
@@ -476,6 +448,22 @@ class UserProfilesService:
             
             month_points = sum(
                 act.get('points_earned', 0) for act in activities 
+                if act.get('created_at') and datetime.fromisoformat(act['created_at']) >= month_ago
+            )
+            
+            # Calculate time-based XP (new)
+            today_xp = sum(
+                act.get('xp_earned', act.get('points_earned', 0)) for act in activities 
+                if act.get('created_at') and datetime.fromisoformat(act['created_at']).date() == today
+            )
+            
+            week_xp = sum(
+                act.get('xp_earned', act.get('points_earned', 0)) for act in activities 
+                if act.get('created_at') and datetime.fromisoformat(act['created_at']) >= week_ago
+            )
+            
+            month_xp = sum(
+                act.get('xp_earned', act.get('points_earned', 0)) for act in activities 
                 if act.get('created_at') and datetime.fromisoformat(act['created_at']) >= month_ago
             )
             
@@ -492,14 +480,26 @@ class UserProfilesService:
             
             average_accuracy = sum(total_accuracy) / len(total_accuracy) if total_accuracy else None
             
+            # Calculate XP for next level
+            xp_for_next_level = getattr(user_profile, 'xp_for_next_level', 100)
+            
             return UserStats(
-                total_points=user_profile.total_points,
-                current_streak=user_profile.current_streak,
-                longest_streak=user_profile.longest_streak,
-                level=user_profile.level,
+                # Legacy fields for backward compatibility
+                total_points=user_profile.total_xp,
+                level=user_profile.current_level,
                 today_points=today_points,
                 week_points=week_points,
                 month_points=month_points,
+                # New XP fields as per PRD
+                total_xp=user_profile.total_xp,
+                current_level=user_profile.current_level,
+                xp_for_next_level=xp_for_next_level,
+                today_xp=today_xp,
+                week_xp=week_xp,
+                month_xp=month_xp,
+                # Common fields
+                current_streak=user_profile.current_streak,
+                longest_streak=user_profile.longest_streak,
                 total_activities=len(activities),
                 activities_by_type=dict(activities_by_type),
                 average_accuracy=average_accuracy
@@ -536,134 +536,11 @@ class UserProfilesService:
     # PRIVATE HELPER METHODS
     # ============================================================================
     
-    def _calculate_points(self, activity: ActivityLog) -> int:
-        """Calculate points based on activity type, difficulty, and performance"""
-        base_points = {
-            "registration": 10,
-            "login": 5,
-            "lesson": 10,
-            "problem": 15,
-            "quiz": 20,
-            "competency_view": 2,
-            "curriculum_access": 3,
-            "learning_path_start": 15,
-            "perfect_score": 25,
-            "onboarding_completion": 25
-        }
-        
-        points = base_points.get(activity.activity_type, 5)
-        
-        # Difficulty multiplier
-        difficulty_multipliers = {"easy": 1.0, "medium": 1.5, "hard": 2.0}
-        if activity.difficulty_level:
-            points *= difficulty_multipliers.get(activity.difficulty_level, 1.0)
-        
-        # Accuracy bonus
-        if activity.accuracy_percentage:
-            if activity.accuracy_percentage >= 95:
-                points *= 1.5
-            elif activity.accuracy_percentage >= 80:
-                points *= 1.2
-        
-        # Speed bonus
-        if activity.duration_seconds and activity.activity_type in ["problem", "quiz"]:
-            expected_time = {"problem": 300, "quiz": 600}
-            if activity.duration_seconds < expected_time.get(activity.activity_type, 300) * 0.7:
-                points *= 1.3
-        
-        return int(points)
+    # Legacy calculation methods removed - now handled by EngagementService
+    # This eliminates the conflicting XP/points logic that was causing issues
     
-    def _calculate_level(self, total_points: int) -> int:
-        """Calculate user level based on total points"""
-        level = 1
-        points_needed = 100
-        
-        while total_points >= points_needed:
-            level += 1
-            points_needed += level * 200
-        
-        return level
-    
-    def _calculate_streak(self, user_profile: UserProfile) -> int:
-        """Calculate current streak based on last activity"""
-        today = datetime.utcnow().date()
-        last_activity_date = user_profile.last_activity.date() if user_profile.last_activity else None
-        
-        if last_activity_date == today:
-            return user_profile.current_streak
-        elif last_activity_date == today - timedelta(days=1):
-            return user_profile.current_streak + 1
-        else:
-            return 1
-    
-    def _create_updated_profile(
-        self, 
-        profile: UserProfile, 
-        new_points: int, 
-        new_level: int, 
-        new_streak: int
-    ) -> UserProfile:
-        """Create updated profile for badge checking"""
-        updated_data = {
-            'uid': profile.uid,
-            'student_id': profile.student_id,
-            'email': profile.email,
-            'display_name': profile.display_name,
-            'grade_level': profile.grade_level,
-            'email_verified': profile.email_verified,
-            'created_at': profile.created_at,
-            'last_login': profile.last_login,
-            'last_activity': datetime.utcnow(),
-            'total_points': new_points,
-            'current_streak': new_streak,
-            'longest_streak': max(profile.longest_streak, new_streak),
-            'badges': profile.badges,
-            'level': new_level,
-            'preferences': profile.preferences,
-            'onboarding_completed': profile.onboarding_completed,
-            'onboarding_completed_at': profile.onboarding_completed_at
-        }
-        
-        return UserProfile(**updated_data)
-    
-    def _check_new_badges(self, user_profile: UserProfile, activity: ActivityLog) -> List[str]:
-        """Check if user earned new badges"""
-        new_badges = []
-        
-        # Onboarding completion badge
-        if activity.activity_type == "onboarding_completion" and "onboarding_complete" not in user_profile.badges:
-            new_badges.append("onboarding_complete")
-        
-        # Streak badges
-        if user_profile.current_streak == 7 and "week_warrior" not in user_profile.badges:
-            new_badges.append("week_warrior")
-        elif user_profile.current_streak == 30 and "month_master" not in user_profile.badges:
-            new_badges.append("month_master")
-        
-        # Point milestones
-        if user_profile.total_points >= 1000 and "thousand_club" not in user_profile.badges:
-            new_badges.append("thousand_club")
-        elif user_profile.total_points >= 5000 and "five_k_hero" not in user_profile.badges:
-            new_badges.append("five_k_hero")
-        
-        # Accuracy badges
-        if activity.accuracy_percentage and activity.accuracy_percentage == 100:
-            if "perfectionist" not in user_profile.badges:
-                new_badges.append("perfectionist")
-        
-        # Activity type badges
-        activity_badges = {
-            "problem": "problem_solver",
-            "quiz": "quiz_master",
-            "lesson": "knowledge_seeker"
-        }
-        
-        if activity.activity_type in activity_badges:
-            badge_name = activity_badges[activity.activity_type]
-            if badge_name not in user_profile.badges:
-                new_badges.append(badge_name)
-        
-        return new_badges
+    # Badge checking and profile update methods moved to EngagementService
+    # This consolidates all XP/progression logic in one place
     
     def _generate_recommendations(self, profile: UserProfile, stats: UserStats) -> List[Dict[str, str]]:
         """Generate personalized recommendations based on profile and stats"""

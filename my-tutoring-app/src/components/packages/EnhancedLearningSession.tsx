@@ -12,6 +12,16 @@ import Link from 'next/link';
 import { usePackageDetail } from '@/lib/packages/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAICoach } from '@/contexts/AICoachContext';
+import { useEngagement } from '@/contexts/EngagementContext';
+import { authApi } from '@/lib/authApiClient';
+
+// Import primitive completion types
+import { 
+  PackagePrimitiveCompletions, 
+  SectionPrimitiveCompletions, 
+  PrimitiveCompletionState,
+  SectionCompletionStatus
+} from '@/components/content/primitiveCompletionTypes';
 
 // Import the content components and AI coach
 import { ReadingContent } from './ReadingContent';
@@ -35,6 +45,9 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
   // AI Coach context
   const { isAIConnected } = useAICoach();
   
+  // Engagement context for XP and level tracking
+  const { processEngagementResponse } = useEngagement();
+  
   // Package data from your API
   const { package: pkg, loading: packageLoading, error: packageError } = usePackageDetail(packageId);
   
@@ -44,6 +57,10 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
   const [completedObjectives, setCompletedObjectives] = useState<number[]>([]);
   const [completedSections, setCompletedSections] = useState<Record<string, boolean>>({});
   const [currentSectionContext, setCurrentSectionContext] = useState<string>('reading');
+  
+  // Primitive completion tracking
+  const [primitiveCompletions, setPrimitiveCompletions] = useState<PackagePrimitiveCompletions>({});
+  const [sectionCompletionStatus, setSectionCompletionStatus] = useState<Record<string, SectionCompletionStatus>>({});
   
   // Session Goals Modal State
   const [isSessionStarted, setIsSessionStarted] = useState(
@@ -61,6 +78,97 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
       }
       return prev;
     });
+  };
+
+  // Helper function to count primitives in a section
+  const countPrimitivesInSection = (sectionIndex: number): number => {
+    if (!pkg?.content.reading.sections?.[sectionIndex]) return 0;
+    
+    const section = pkg.content.reading.sections[sectionIndex];
+    let count = 0;
+    
+    // Count all interactive primitives that can be completed
+    count += section.quizzes?.length || 0;
+    count += section.categorization_activities?.length || 0;
+    count += section.fill_in_the_blanks?.length || 0;
+    count += section.scenario_questions?.length || 0;
+    count += section.matching_activities?.length || 0;
+    count += section.sequencing_activities?.length || 0;
+    
+    return count;
+  };
+
+  // Check if section should be auto-completed based on primitive completions
+  const checkSectionAutoCompletion = async (sectionIndex: number, sectionTitle: string) => {
+    const totalPrimitives = countPrimitivesInSection(sectionIndex);
+    const sectionCompletions = primitiveCompletions[sectionIndex] || {};
+    
+    // Count completed primitives
+    let completedCount = 0;
+    Object.values(sectionCompletions).forEach(primitiveType => {
+      Object.values(primitiveType).forEach(primitive => {
+        if (primitive.completed) completedCount++;
+      });
+    });
+
+    // Auto-complete section if all primitives are done
+    if (totalPrimitives > 0 && completedCount >= totalPrimitives) {
+      const sectionKey = activeTab; // Use current tab as section key
+      
+      // Don't auto-complete if already manually completed
+      if (!completedSections[sectionKey]) {
+        markComplete(sectionKey);
+      }
+    }
+  };
+
+  // Handle primitive completion
+  const handlePrimitiveComplete = async (sectionIndex: number, primitiveType: string, primitiveIndex: number, score?: number) => {
+    try {
+      // Update local state first for immediate UI feedback
+      const completionState: PrimitiveCompletionState = {
+        completed: true,
+        score,
+        timestamp: new Date()
+      };
+
+      setPrimitiveCompletions(prev => {
+        const newCompletions = { ...prev };
+        if (!newCompletions[sectionIndex]) {
+          newCompletions[sectionIndex] = {};
+        }
+        if (!newCompletions[sectionIndex][primitiveType]) {
+          newCompletions[sectionIndex][primitiveType] = {};
+        }
+        newCompletions[sectionIndex][primitiveType][primitiveIndex] = completionState;
+        return newCompletions;
+      });
+
+      // Get section title
+      const sectionTitle = pkg?.content.reading.sections?.[sectionIndex]?.heading || 
+                          `Section ${sectionIndex + 1}`;
+
+      // Call backend API
+      const response = await authApi.completePrimitive({
+        package_id: packageId,
+        section_title: sectionTitle,
+        primitive_type: primitiveType,
+        primitive_index: primitiveIndex,
+        score
+      });
+
+      // Process engagement response for XP animations
+      if (response && typeof response === 'object' && 'xp_earned' in response) {
+        processEngagementResponse(response as any);
+      }
+
+      // Check if section should be auto-completed (do this after state update)
+      setTimeout(() => checkSectionAutoCompletion(sectionIndex, sectionTitle), 100);
+
+    } catch (error) {
+      console.error('Error completing primitive:', error);
+      // Optionally revert local state on error
+    }
   };
 
   // Update AI coach with current section context
@@ -85,7 +193,8 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
     }
   }, [packageId, pkg]);
 
-  const markComplete = (section: string) => {
+  const markComplete = async (section: string) => {
+    // Optimistically update UI first
     setCompletedSections(prev => ({
       ...prev,
       [section]: true
@@ -93,6 +202,53 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
     
     // Update AI coach that this section was completed
     updateAICoachContext(section, { sectionCompleted: true });
+
+    try {
+      // Call backend to track completion and get XP
+      const response = await authApi.completePackageSection(
+        packageId, 
+        section, 
+        undefined // time spent - could be tracked in future
+      );
+
+      // Process engagement response for XP animations and level-ups
+      if (response && typeof response === 'object' && 'xp_earned' in response) {
+        processEngagementResponse(response as any);
+      }
+
+      // Check if all sections are now complete for package completion bonus
+      const allSections = ['reading', 'audio', 'practice', 'explore'];
+      const availableSections = allSections.filter(sectionId => {
+        if (sectionId === 'audio') return pkg?.content.audio;
+        if (sectionId === 'practice') return pkg?.content.practice;
+        if (sectionId === 'explore') return pkg?.content.visuals && pkg.content.visuals.length > 0;
+        return true; // reading is always available
+      });
+
+      const newCompletedSections = { ...completedSections, [section]: true };
+      const allComplete = availableSections.every(s => newCompletedSections[s]);
+
+      if (allComplete) {
+        // Award bonus XP for completing entire package
+        try {
+          const packageResponse = await authApi.completePackage(
+            packageId,
+            availableSections.length,
+            undefined // total time - could be tracked
+          );
+
+          if (packageResponse && typeof packageResponse === 'object' && 'xp_earned' in packageResponse) {
+            processEngagementResponse(packageResponse as any);
+          }
+        } catch (error) {
+          console.error('Error completing package:', error);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error completing section:', error);
+      // Don't revert UI state - user still completed the section locally
+    }
   };
 
   const handleStartSession = () => {
@@ -130,6 +286,31 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
     }
   }, [activeTab, pkg, isSessionStarted, updateAICoachContext]);
 
+  // Calculate primitive completion progress instead of objectives
+  const { totalPrimitives, completedPrimitivesCount } = React.useMemo(() => {
+    let total = 0;
+    let completed = 0;
+    
+    // Count all primitives across all sections
+    pkg?.content.reading.sections?.forEach((section, sectionIndex) => {
+      const sectionTotal = countPrimitivesInSection(sectionIndex);
+      total += sectionTotal;
+      
+      // Count completed primitives in this section
+      const sectionCompletions = primitiveCompletions[sectionIndex] || {};
+      Object.values(sectionCompletions).forEach(primitiveType => {
+        Object.values(primitiveType).forEach(primitive => {
+          if (primitive.completed) completed++;
+        });
+      });
+    });
+    
+    return { totalPrimitives: total, completedPrimitivesCount: completed };
+  }, [pkg, primitiveCompletions]);
+
+  const progressPercentage = totalPrimitives > 0 
+    ? (completedPrimitivesCount / totalPrimitives) * 100 
+    : 0;
 
   if (packageLoading) {
     return (
@@ -175,10 +356,6 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
     );
   }
 
-  const progressPercentage = pkg.master_context.learning_objectives.length > 0 
-    ? (completedObjectives.length / pkg.master_context.learning_objectives.length) * 100 
-    : 0;
-
   // Define available tabs based on content
   const tabs = [
     { id: 'reading', label: 'Read', icon: BookOpen, color: 'blue' },
@@ -198,6 +375,8 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
             content={pkg.content.reading}
             isCompleted={completedSections.reading || false}
             onComplete={() => markComplete('reading')}
+            onPrimitiveComplete={handlePrimitiveComplete}
+            primitiveCompletions={primitiveCompletions}
             onAskAI={(message) => {
               // Update context first
               updateAICoachContext('reading', { 
@@ -209,6 +388,7 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
               aiCoachRef.current?.sendContextualHelp?.(message);
             }}
             subskillId={pkg.subskill_id}
+            packageId={packageId}
           />
         );
 
@@ -286,6 +466,28 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
                 <span className="text-sm">{isAIConnected ? 'AI Connected' : 'Disconnected'}</span>
               </div>
               
+              {/* Package Completion Indicator */}
+              {(() => {
+                const allSections = ['reading', 'audio', 'practice', 'explore'];
+                const availableSections = allSections.filter(sectionId => {
+                  if (sectionId === 'audio') return pkg?.content.audio;
+                  if (sectionId === 'practice') return pkg?.content.practice;
+                  if (sectionId === 'explore') return pkg?.content.visuals && pkg.content.visuals.length > 0;
+                  return true; // reading is always available
+                });
+                const allComplete = availableSections.every(s => completedSections[s]);
+                
+                if (allComplete) {
+                  return (
+                    <div className="flex items-center space-x-2 text-green-600">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-sm font-semibold">Package Completed! +200 XP Bonus</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              
               <Button
                 variant="ghost"
                 size="sm"
@@ -304,7 +506,7 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Learning Progress</span>
             <span className="text-sm text-muted-foreground">
-              {completedObjectives.length} of {pkg.master_context.learning_objectives.length} objectives
+              {completedPrimitivesCount} of {totalPrimitives} activities completed
             </span>
           </div>
           <Progress value={progressPercentage} className="h-2" />

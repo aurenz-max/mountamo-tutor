@@ -143,7 +143,10 @@ export function AudioContent({ content, isCompleted, onComplete, onAskAI }: Audi
                   Completed
                 </>
               ) : (
-                'Mark as Complete'
+                <>
+                  <span>Mark as Complete</span>
+                  <span className="ml-2 text-yellow-200 font-semibold">+20 XP</span>
+                </>
               )}
             </Button>
           </div>

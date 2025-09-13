@@ -25,6 +25,10 @@ import DailyBriefingComponent from './DailyBriefingComponent';
 import { AICoachToggleButton } from '@/components/layout/GlobalAICoachToggle'; // Import the global toggle
 import VelocityMetricsCard from '@/components/analytics/VelocityMetricsCard';
 import { useVelocityMetrics } from '@/hooks/useVelocityMetrics';
+import { LevelBadge } from '@/components/engagement/LevelBadge';
+import { XPProgressBar } from '@/components/engagement/XPProgressBar';
+import XPCounter from '@/components/engagement/XPCounter';
+import StreakCounter from '@/components/engagement/StreakCounter';
 
 const EnhancedLearningDashboard: React.FC = () => {
   const { userProfile } = useAuth();
@@ -34,7 +38,11 @@ const EnhancedLearningDashboard: React.FC = () => {
 
   const studentId = userProfile?.student_id;
   const studentName = userProfile?.display_name || 'Student';
-  const points = userProfile?.total_points || 0;
+  
+  // Engagement & Progression System data (prefer new fields, fallback to legacy)
+  const totalXP = userProfile?.total_xp || userProfile?.total_points || 0;
+  const currentLevel = userProfile?.current_level || userProfile?.level || 1;
+  const xpForNextLevel = userProfile?.xp_for_next_level || 100;
   const streak = userProfile?.current_streak || 0;
 
   // Fetch velocity metrics
@@ -138,14 +146,6 @@ const EnhancedLearningDashboard: React.FC = () => {
           <p className="text-gray-500">Your personalized learning hub</p>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center">
-            <Award className="text-yellow-500 mr-2" />
-            <span className="font-bold">{points} points</span>
-          </div>
-          <div className="flex items-center">
-            <Flame className="text-orange-500 mr-2" />
-            <span className="font-bold">{streak} day streak</span>
-          </div>
           
           {/* Global AI Coach Toggle */}
           <AICoachToggleButton 
@@ -178,12 +178,27 @@ const EnhancedLearningDashboard: React.FC = () => {
         {/* Dashboard Tab */}
         <TabsContent value="dashboard" className="mt-6">
           <div className="space-y-6">
-            {/* Welcome Card */}
+            {/* Welcome Card with Progress */}
             <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
               <CardContent className="pt-6">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Good morning, {studentName}!</h2>
-                  <p className="mb-4">Ready to continue your learning journey? Your activities are ready below, and your AI coach is standing by to help.</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold mb-2">Good morning, {studentName}!</h2>
+                    <p className="mb-4">Ready to continue your learning journey? Your activities are ready below, and your AI coach is standing by to help.</p>
+                  </div>
+                  <div className="ml-6">
+                    <LevelBadge level={currentLevel} className="scale-125" />
+                  </div>
+                </div>
+                
+                {/* XP Progress Bar */}
+                <div className="mt-4 bg-white/10 rounded-lg p-4">
+                  <XPProgressBar 
+                    totalXP={totalXP}
+                    currentLevel={currentLevel}
+                    xpForNextLevel={xpForNextLevel}
+                    className="text-white [&_.text-gray-600]:text-white/80 [&_.text-gray-800]:text-white [&_.text-gray-500]:text-white/70"
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -60,6 +60,17 @@ class SubmissionResult(BaseModel):
     next_recommendations: List[str] = []
     student_id: int
     user_id: str
+    
+    # Engagement system fields
+    xp_earned: Optional[int] = None
+    base_xp: Optional[int] = None
+    streak_bonus_xp: Optional[int] = None
+    total_xp: Optional[int] = None
+    level_up: Optional[bool] = None
+    new_level: Optional[int] = None
+    previous_level: Optional[int] = None
+    current_streak: Optional[int] = None
+    previous_streak: Optional[int] = None
 
 # ============================================================================
 # DEPENDENCY INJECTION
@@ -364,22 +375,19 @@ async def submit_composable_problem(
         else:
             next_recommendations.append(f"Review concepts for {submission.skill_id} with guided practice")
         
-        # Log submission using same pattern
-        background_tasks.add_task(
-            log_activity_helper,
+        # Process engagement activity synchronously to include in response
+        from ...services.engagement_service import engagement_service
+        engagement_response = await engagement_service.process_activity(
             user_id=firebase_uid,
             student_id=student_id,
-            activity_type="problem_submitted",
-            activity_name=f"Submitted composable {submission.subject} problem",
-            points=points,
+            activity_type="composable_problem_submitted",
             metadata={
+                "activity_name": f"Submitted composable {submission.subject} problem",
                 "subject": submission.subject,
                 "skill_id": submission.skill_id,
-                "student_id": student_id,
                 "score": score,
                 "accuracy": accuracy,
-                "correct": is_correct,
-                "problem_type": "composable"
+                "is_correct": score >= 8  # 8/10 or higher is correct
             }
         )
         
@@ -390,7 +398,17 @@ async def submit_composable_problem(
             encouraging_message=encouraging_message,
             next_recommendations=next_recommendations,
             student_id=student_id,
-            user_id=firebase_uid
+            user_id=firebase_uid,
+            # Add engagement data
+            xp_earned=engagement_response.xp_earned,
+            base_xp=engagement_response.base_xp,
+            streak_bonus_xp=engagement_response.streak_bonus_xp,
+            total_xp=engagement_response.total_xp,
+            level_up=engagement_response.level_up,
+            new_level=engagement_response.new_level,
+            previous_level=engagement_response.previous_level,
+            current_streak=engagement_response.current_streak,
+            previous_streak=engagement_response.previous_streak
         )
         
     except HTTPException:

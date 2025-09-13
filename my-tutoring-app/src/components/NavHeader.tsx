@@ -6,8 +6,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Search, 
-  ShoppingBag, 
   Brain, 
   User, 
   LogOut, 
@@ -17,10 +15,16 @@ import {
   Bot
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEngagement } from '@/contexts/EngagementContext';
 import { useGlobalAICoachUI } from '@/components/layout/GlobalAICoachToggle';
+import { LevelBadge } from '@/components/engagement/LevelBadge';
+import { XPProgressBar } from '@/components/engagement/XPProgressBar';
+import XPCounter from '@/components/engagement/XPCounter';
+import StreakCounter from '@/components/engagement/StreakCounter';
 
 const NavHeader = () => {
   const { user, userProfile, logout } = useAuth();
+  const { processEngagementResponse } = useEngagement();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const router = useRouter();
 
@@ -68,10 +72,30 @@ const NavHeader = () => {
               </p>
               <p className="text-xs text-gray-500">{user.email}</p>
               {userProfile && (
-                <div className="mt-2 flex items-center space-x-4 text-xs text-gray-600">
-                  <span>Grade: {userProfile.grade_level}</span>
-                  <span>Points: {userProfile.total_points || 0}</span>
-                  <span>Streak: {userProfile.current_streak || 0}</span>
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <span>Grade: {userProfile.grade_level}</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <XPCounter 
+                      key={`menu-xp-${userProfile.total_xp || 0}`}
+                      currentXP={userProfile.total_xp || 0}
+                      size="sm"
+                      animate={true}
+                    />
+                    <StreakCounter 
+                      key={`menu-streak-${userProfile.current_streak || 0}`}
+                      currentStreak={userProfile.current_streak || 0}
+                      size="sm"
+                      animate={true}
+                    />
+                  </div>
+                  <XPProgressBar
+                    totalXP={userProfile.total_xp || 0}
+                    currentLevel={userProfile.current_level || 1}
+                    xpForNextLevel={userProfile.xp_for_next_level || 100}
+                    className="max-w-48"
+                  />
                 </div>
               )}
             </div>
@@ -158,9 +182,6 @@ const NavHeader = () => {
               <Link href="/analytics" className="text-sm hover:opacity-80 transition-opacity">
                 Progress
               </Link>
-              <Link href="/read-along" className="text-sm hover:opacity-80 transition-opacity">
-                Read Along
-              </Link>
             </div>
           )}
 
@@ -168,12 +189,26 @@ const NavHeader = () => {
           <div className="flex items-center space-x-4">
             {user && (
               <>
-                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                  <Search className="h-5 w-5" />
-                </button>
-                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                  <ShoppingBag className="h-5 w-5" />
-                </button>
+                {/* Enhanced XP, Level and Streak Display */}
+                {userProfile && (
+                  <div className="hidden md:flex items-center space-x-4">
+                    <div className="flex flex-col items-end space-y-1">
+                      <XPCounter 
+                        key={`nav-xp-${userProfile.total_xp || 0}`}
+                        currentXP={userProfile.total_xp || 0} 
+                        size="sm"
+                        animate={true}
+                      />
+                      <StreakCounter 
+                        key={`nav-streak-${userProfile.current_streak || 0}`}
+                        currentStreak={userProfile.current_streak || 0}
+                        size="sm"
+                        animate={true}
+                      />
+                    </div>
+                    <LevelBadge level={userProfile.current_level || 1} className="w-10 h-10" />
+                  </div>
+                )}
                 
                 {/* AI Coach Toggle Button */}
                 <div className="relative">

@@ -455,16 +455,25 @@ class SubmissionService:
         student_id: int, 
         skill_id: str, 
         subskill_id: str, 
-        success: bool
+        success: bool,
+        subject: str = "math",
+        evaluation: Dict[str, Any] = None
     ) -> dict:
         """Update student competency and return result"""
         try:
-            return await self.competency_service.update_competency(
+            # Create a basic evaluation if none provided
+            if evaluation is None:
+                evaluation = {
+                    "score": 10 if success else 3,
+                    "correct": success
+                }
+            
+            return await self.competency_service.update_competency_from_problem(
                 student_id=student_id,
+                subject=subject,
                 skill_id=skill_id,
                 subskill_id=subskill_id,
-                success=success,
-                problem_difficulty=0.5
+                evaluation=evaluation
             )
         except Exception as e:
             logger.error(f"Error updating competency: {str(e)}")

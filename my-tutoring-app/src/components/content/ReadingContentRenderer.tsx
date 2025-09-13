@@ -20,9 +20,10 @@ import {
   PrimitivesContainer,
   PrimitiveData
 } from './InteractiveContentPrimitives';
+import { PackagePrimitiveCompletions, SectionPrimitiveCompletions, PrimitiveCompletionState } from './primitiveCompletionTypes';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { MessageCircle, Sparkles, Eye, Lightbulb, Loader2, X } from 'lucide-react';
+import { MessageCircle, Sparkles, Eye, Lightbulb, Loader2, X, CheckCircle } from 'lucide-react';
 
 // Types for reading content structure - Updated with enhanced primitives
 export interface ReadingSection {
@@ -70,7 +71,10 @@ interface ReadingContentRendererProps {
   onDiscoveryThreadClick?: (sectionIndex: number, threadIndex: number, thread: string) => void;
   onVisualizeClick?: (sectionIndex: number, heading: string, content: string) => void;
   onCloseVisualModal?: (sectionIndex: number) => void;
+  onPrimitiveComplete?: (sectionIndex: number, primitiveType: string, primitiveIndex: number, score?: number) => void;
   subskillId?: string;
+  // Primitive completion state
+  primitiveCompletions?: PackagePrimitiveCompletions;
 }
 
 // Helper function to render content with inline definitions
@@ -123,9 +127,16 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
   onDiscoveryThreadClick,
   onVisualizeClick,
   onCloseVisualModal,
-  subskillId
+  onPrimitiveComplete,
+  subskillId,
+  primitiveCompletions = {}
 }) => {
   const [checklistStates, setChecklistStates] = useState<{[sectionIndex: number]: boolean[]}>({});
+
+  // Helper function to check if a primitive is completed
+  const isPrimitiveCompleted = (sectionIndex: number, primitiveType: string, primitiveIndex: number): boolean => {
+    return primitiveCompletions[sectionIndex]?.[primitiveType]?.[primitiveIndex]?.completed || false;
+  };
 
   const handleChecklistToggle = (sectionIndex: number, checklistIndex: number) => {
     const isCompleting = !checklistStates[sectionIndex]?.[checklistIndex];
@@ -219,9 +230,22 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
               {/* Quizzes */}
               {section.quizzes && section.quizzes.length > 0 && (
                 <div className="space-y-3">
-                  {section.quizzes.map((quiz, index) => (
-                    <QuizPrimitive key={`quiz-${index}`} data={quiz} />
-                  ))}
+                  {section.quizzes.map((quiz, index) => {
+                    const isCompleted = isPrimitiveCompleted(sectionIndex, 'quiz', index);
+                    return (
+                      <div key={`quiz-${index}`} className="relative">
+                        <QuizPrimitive 
+                          data={quiz}
+                          onComplete={onPrimitiveComplete ? (score) => onPrimitiveComplete(sectionIndex, 'quiz', index, score) : undefined}
+                        />
+                        {isCompleted && (
+                          <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg">
+                            <CheckCircle className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -300,14 +324,24 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
               {/* Categorization Activities */}
               {section.categorization_activities && section.categorization_activities.length > 0 && (
                 <div className="space-y-3">
-                  {section.categorization_activities.map((categorization, index) => (
-                    <CategorizationPrimitive 
-                      key={`categorization-${index}`} 
-                      data={categorization} 
-                      onGetHint={onAskAI ? () => onAskAI(`I need a hint for this categorization activity. The instruction is "${categorization.instruction}". The categories are: ${categorization.categories.join(', ')}. Give me a hint about how to think through categorizing these items without giving away the answers: ${categorization.items.map(i => i.item_text).join(', ')}.`) : undefined}
-                      onWalkthrough={onAskAI ? () => onAskAI(`I need help with this categorization activity. The instruction is "${categorization.instruction}". The categories are ${categorization.categories.join(', ')}. The items are ${categorization.items.map(i => i.item_text).join(', ')}. Please ask me a question to help me place the first item, "${categorization.items[0].item_text}", correctly.`) : undefined}
-                    />
-                  ))}
+                  {section.categorization_activities.map((categorization, index) => {
+                    const isCompleted = isPrimitiveCompleted(sectionIndex, 'categorization', index);
+                    return (
+                      <div key={`categorization-${index}`} className="relative">
+                        <CategorizationPrimitive 
+                          data={categorization} 
+                          onGetHint={onAskAI ? () => onAskAI(`I need a hint for this categorization activity. The instruction is "${categorization.instruction}". The categories are: ${categorization.categories.join(', ')}. Give me a hint about how to think through categorizing these items without giving away the answers: ${categorization.items.map(i => i.item_text).join(', ')}.`) : undefined}
+                          onWalkthrough={onAskAI ? () => onAskAI(`I need help with this categorization activity. The instruction is "${categorization.instruction}". The categories are ${categorization.categories.join(', ')}. The items are ${categorization.items.map(i => i.item_text).join(', ')}. Please ask me a question to help me place the first item, "${categorization.items[0].item_text}", correctly.`) : undefined}
+                          onComplete={onPrimitiveComplete ? (score) => onPrimitiveComplete(sectionIndex, 'categorization', index, score) : undefined}
+                        />
+                        {isCompleted && (
+                          <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-10">
+                            <CheckCircle className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -319,6 +353,7 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
                       key={`fillblank-${index}`} 
                       data={fillBlank} 
                       onGetHint={onAskAI ? () => onAskAI(`I'm stuck on this fill-in-the-blank: "${fillBlank.sentence}". The correct answer is "${fillBlank.correct_answer}". Please give me a simple hint to help me figure it out, but don't tell me the answer directly.`) : undefined}
+                      onComplete={onPrimitiveComplete ? (score) => onPrimitiveComplete(sectionIndex, 'fill_in_the_blank', index, score) : undefined}
                     />
                   ))}
                 </div>
@@ -332,6 +367,7 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
                       key={`scenario-${index}`} 
                       data={scenario} 
                       onGetHint={onAskAI ? () => onAskAI(`I need help with this scenario question. The scenario is: "${scenario.scenario}". The question is: "${scenario.question}". Can you give me a hint to help me think through this without giving away the answer?`) : undefined}
+                      onComplete={onPrimitiveComplete ? (score) => onPrimitiveComplete(sectionIndex, 'scenario_question', index, score) : undefined}
                     />
                   ))}
                 </div>
@@ -357,6 +393,7 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
                       data={matchingActivity} 
                       onGetHint={onAskAI ? () => onAskAI(`I need a hint for this matching activity. The instruction is "${matchingActivity.instruction}". Give me a hint about how to approach matching these items without giving away the answers: ${matchingActivity.pairs.map(p => `"${p.prompt}" and "${p.answer}"`).join(', ')}.`) : undefined}
                       onWalkthrough={onAskAI ? () => onAskAI(`I need help with this matching activity. The instruction is "${matchingActivity.instruction}". The pairs to match are: ${matchingActivity.pairs.map(p => `"${p.prompt}" with "${p.answer}"`).join(', ')}. Can you guide me through matching the first pair step by step?`) : undefined}
+                      onComplete={onPrimitiveComplete ? (score) => onPrimitiveComplete(sectionIndex, 'matching_activity', index, score) : undefined}
                     />
                   ))}
                 </div>
@@ -366,7 +403,11 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
               {section.sequencing_activities && section.sequencing_activities.length > 0 && (
                 <div className="space-y-3">
                   {section.sequencing_activities.map((sequencingActivity, index) => (
-                    <SequencingActivityPrimitive key={`sequencing-${index}`} data={sequencingActivity} />
+                    <SequencingActivityPrimitive 
+                      key={`sequencing-${index}`} 
+                      data={sequencingActivity} 
+                      onComplete={onPrimitiveComplete ? (score) => onPrimitiveComplete(sectionIndex, 'sequencing_activity', index, score) : undefined}
+                    />
                   ))}
                 </div>
               )}

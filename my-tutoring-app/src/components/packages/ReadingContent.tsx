@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CheckCircle, BookOpen, Lightbulb, Loader2, Eye, Sparkles, MessageCircle, X, Maximize } from 'lucide-react';
 import { authApi } from '@/lib/authApiClient';
+import { useEngagement } from '@/contexts/EngagementContext';
 import { ReadingContentRenderer } from '@/components/content/ReadingContentRenderer';
 
 // Updated interface to support interactive primitives - Enhanced with new primitives
@@ -40,8 +41,11 @@ interface ReadingContentProps {
   };
   isCompleted: boolean;
   onComplete: () => void;
+  onPrimitiveComplete?: (sectionIndex: number, primitiveType: string, primitiveIndex: number, score?: number) => void;
+  primitiveCompletions?: any; // PackagePrimitiveCompletions from EnhancedLearningSession
   onAskAI: (message: string) => void;
   subskillId?: string; // 🆕 For saving visualizations to Cosmos DB
+  packageId?: string; // 🆕 For primitive completion tracking
 }
 
 interface DiscoveryThreads {
@@ -61,9 +65,69 @@ interface VisualContent {
   };
 }
 
-export function ReadingContent({ content, isCompleted, onComplete, onAskAI, subskillId }: ReadingContentProps) {
+export function ReadingContent({ content, isCompleted, onComplete, onPrimitiveComplete, primitiveCompletions, onAskAI, subskillId, packageId }: ReadingContentProps) {
   const [discoveryThreads, setDiscoveryThreads] = useState<DiscoveryThreads>({});
   const [visualContent, setVisualContent] = useState<VisualContent>({});
+  
+  // Engagement tracking
+  const { processEngagementResponse } = useEngagement();
+
+  // Track primitive completions
+  const handlePrimitiveCompletion = async (
+    sectionIndex: number,
+    primitiveType: string,
+    primitiveIndex: number,
+    score?: number
+  ) => {
+    // If parent component provided completion handler, use that instead
+    if (onPrimitiveComplete) {
+      onPrimitiveComplete(sectionIndex, primitiveType, primitiveIndex, score);
+      return;
+    }
+
+    // Fallback to the local implementation for standalone use
+    try {
+      const section = content.sections[sectionIndex];
+      
+      // Only track completion if packageId is provided
+      if (!packageId) {
+        console.warn('No packageId provided for primitive completion tracking');
+        return;
+      }
+      
+      const response = await authApi.completePrimitive({
+        package_id: packageId,
+        section_title: section.heading,
+        primitive_type: primitiveType,
+        primitive_index: primitiveIndex,
+        score: score
+      });
+
+      // Process engagement response for XP animations and toast notifications
+      if (response && typeof response === 'object' && 'xp_earned' in response) {
+        // Format the response to match the expected engagement format
+        const engagementResponse = {
+          success: true,
+          xp_earned: response.xp_earned || 0,
+          base_xp: response.base_xp || response.xp_earned || 0,
+          streak_bonus_xp: response.streak_bonus_xp || 0,
+          total_xp: response.total_xp || 0,
+          level_up: response.level_up || false,
+          new_level: response.new_level || 1,
+          previous_level: response.previous_level || 1,
+          current_streak: response.current_streak || 0,
+          previous_streak: response.previous_streak || 0,
+          points_earned: response.points_earned || response.xp_earned || 0,
+          engagement_transaction: response.engagement_transaction || null
+        };
+        
+        processEngagementResponse(engagementResponse);
+      }
+    } catch (error) {
+      console.error('Error completing primitive:', error);
+      // Don't block the user experience for tracking errors
+    }
+  };
 
   // Generate discovery threads for all sections on mount - with better deduplication
   React.useEffect(() => {
@@ -578,6 +642,8 @@ export function ReadingContent({ content, isCompleted, onComplete, onAskAI, subs
         onVisualizeClick={handleVisualizeClick}
         onCloseVisualModal={closeVisualModal}
         subskillId={subskillId}
+        onPrimitiveComplete={handlePrimitiveCompletion}
+        primitiveCompletions={primitiveCompletions}
       />
       
       {/* Completion Section */}
@@ -594,7 +660,10 @@ export function ReadingContent({ content, isCompleted, onComplete, onAskAI, subs
                 Completed
               </>
             ) : (
-              'Mark as Complete'
+              <>
+                <span>Mark as Complete</span>
+                <span className="ml-2 text-yellow-200 font-semibold">+20 XP</span>
+              </>
             )}
           </Button>
         </CardContent>

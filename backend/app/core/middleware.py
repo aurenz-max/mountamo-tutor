@@ -59,7 +59,7 @@ async def get_user_context(firebase_user: dict = Depends(verify_firebase_token))
             # Profile data (with defaults for missing profiles)
             "profile": user_profile.dict() if user_profile else None,
             "grade_level": user_profile.grade_level if user_profile else None,
-            "total_points": user_profile.total_points if user_profile else 0,
+            "total_points": user_profile.total_xp if user_profile else 0,
             "current_streak": user_profile.current_streak if user_profile else 0,
             "badges": user_profile.badges if user_profile else [],
             "preferences": user_profile.preferences if user_profile else {}

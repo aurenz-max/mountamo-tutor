@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle, FileText, Loader2, TrendingUp, AlertCircle, Lightbulb, Target, HelpCircle, GraduationCap, RotateCcw, ChevronDown, ChevronUp, X, ThumbsUp, AlertTriangle, Star, Trophy } from 'lucide-react';
 import { authApi } from '@/lib/authApiClient';
+import { useEngagement } from '@/contexts/EngagementContext';
 
 interface PracticeContentProps {
   content: {
@@ -52,6 +53,8 @@ export function PracticeContent({
   onAskAI, 
   studentId = 1 
 }: PracticeContentProps) {
+  // Engagement tracking
+  const { processEngagementResponse } = useEngagement();
   const [isRefreshingProblems, setIsRefreshingProblems] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -474,6 +477,27 @@ INSTRUCTOR NOTE: This student is asking for help with the above problem. The cor
        
         // Use the unified submission endpoint (same as ProblemSet)
         response = await authApi.submitProblem(submission);
+      }
+
+      // Process engagement response for XP animations and toast notifications
+      if (response && typeof response === 'object' && 'xp_earned' in response) {
+        // Format the response to match the expected engagement format
+        const engagementResponse = {
+          success: true,
+          xp_earned: response.xp_earned || 0,
+          base_xp: response.base_xp || response.xp_earned || 0,
+          streak_bonus_xp: response.streak_bonus_xp || 0,
+          total_xp: response.total_xp || 0,
+          level_up: response.level_up || false,
+          new_level: response.new_level || 1,
+          previous_level: response.previous_level || 1,
+          current_streak: response.current_streak || 0,
+          previous_streak: response.previous_streak || 0,
+          points_earned: response.points_earned || response.xp_earned || 0,
+          engagement_transaction: response.engagement_transaction || null
+        };
+        
+        processEngagementResponse(engagementResponse);
       }
 
       // Get the score to determine next steps
@@ -1188,7 +1212,10 @@ INSTRUCTOR NOTE: The student just submitted an answer. Please provide encouragin
                             Completed
                           </>
                         ) : (
-                          'Complete Practice Session'
+                          <>
+                            <span>Complete Practice Session</span>
+                            <span className="ml-2 text-yellow-200 font-semibold">+20 XP</span>
+                          </>
                         )}
                       </Button>
                     </div>

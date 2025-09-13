@@ -1,11 +1,13 @@
 # backend/app/api/endpoints/packages.py
 # API endpoints for live discovery thread generation and content package orchestration
 
-from fastapi import APIRouter, HTTPException, Depends, Path
+from fastapi import APIRouter, HTTPException, Depends, Path, BackgroundTasks
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel
 import logging
 from ...core.middleware import get_user_context
+from ...services.engagement_service import engagement_service
+from ...core.decorators import log_engagement_activity
 from ...db.cosmos_db import CosmosDBService
 from ...services.discovery_thread_service import DiscoveryThreadService
 from ...dependencies import get_curriculum_service
@@ -33,10 +35,55 @@ def get_content_generator():
             logger.warning(f"Content generation service not available: {e}")
     return content_generator
 
+# ============================================================================
+# ENGAGEMENT METADATA EXTRACTORS
+# ============================================================================
+
+def _extract_package_completion_metadata(kwargs: dict, result: dict) -> dict:
+    """Extracts metadata for a 'content_package_completed' activity."""
+    request = kwargs.get('request')
+    package_id = kwargs.get('package_id')
+    return {
+        "activity_name": f"Completed content package: {package_id}",
+        "package_id": package_id,
+        "sections_completed": request.sections_completed,
+        "total_time_minutes": request.total_time_minutes
+    }
+
+def _extract_section_completion_metadata(kwargs: dict, result: dict) -> dict:
+    """Extracts metadata for a 'content_package_section_completed' activity."""
+    request = kwargs.get('request')
+    package_id = kwargs.get('package_id')
+    return {
+        "activity_name": f"Completed section: {request.section_title}",
+        "package_id": package_id,
+        "section_title": request.section_title,
+        "time_spent_minutes": request.time_spent_minutes
+    }
+
+def _extract_primitive_completion_metadata(kwargs: dict, result: dict) -> dict:
+    """Extracts metadata for a 'content_package_primitive_completed' activity."""
+    request = kwargs.get('request')
+    return {
+        "activity_name": f"Completed {request.primitive_type} in {request.section_title}",
+        "package_id": request.package_id,
+        "section_title": request.section_title,
+        "primitive_type": request.primitive_type,
+        "primitive_index": request.primitive_index,
+        "score": request.score
+    }
+
 # Request models
 class GenerateThreadsRequest(BaseModel):
     heading: str
     content: str
+
+class PrimitiveCompletionRequest(BaseModel):
+    package_id: str
+    section_title: str
+    primitive_type: str  # e.g., "matching_activity", "quiz", "categorization"
+    primitive_index: int
+    score: Optional[float] = None  # e.g., 0.8 for 80% correct
 
 class GenerateVisualRequest(BaseModel):
     heading: str
@@ -846,3 +893,105 @@ async def discovery_threads_health_check():
             "service": "live_discovery_threads",
             "error": str(e)
         }
+
+# ============================================================================
+# ENGAGEMENT SYSTEM ENDPOINTS - Package Completion
+# ============================================================================
+
+class SectionCompletionRequest(BaseModel):
+    section_title: str
+    time_spent_minutes: Optional[int] = None
+
+class PackageCompletionRequest(BaseModel):
+    sections_completed: int
+    total_time_minutes: Optional[int] = None
+
+# IMPORTANT: Primitive completion route must come BEFORE parameterized routes
+# to avoid FastAPI matching "/primitives/complete" as "/{package_id}/complete"
+@router.post("/primitives/complete")
+@log_engagement_activity(
+    activity_type="content_package_primitive_completed",
+    metadata_extractor=_extract_primitive_completion_metadata
+)
+async def complete_primitive(
+    request: PrimitiveCompletionRequest,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context)
+):
+    """Mark a content package interactive primitive as completed. XP is handled automatically."""
+    try:
+        student_id = user_context["student_id"]
+        logger.info(f"Primitive {request.primitive_type} completed in package {request.package_id} by student {student_id}")
+        
+        # Base XP for primitive completion - varies by type and score
+        base_xp = 5  # Base amount for completing any primitive
+        
+        # Bonus for high performance
+        if request.score and request.score >= 0.8:  # 80% or higher
+            base_xp = 10
+        
+        return {
+            "success": True,
+            "package_id": request.package_id,
+            "primitive_type": request.primitive_type,
+            "message": f"{request.primitive_type} completed! XP earned!",
+        }
+        
+    except Exception as e:
+        logger.error(f"Error completing primitive: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{package_id}/sections/complete")
+@log_engagement_activity(
+    activity_type="content_package_section_completed",
+    metadata_extractor=_extract_section_completion_metadata
+)
+async def complete_package_section(
+    package_id: str,
+    request: SectionCompletionRequest,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context)
+):
+    """Mark a content package section as completed. XP is handled automatically."""
+    try:
+        student_id = user_context["student_id"]
+        logger.info(f"Section '{request.section_title}' completed in package {package_id} by student {student_id}")
+        
+        # The endpoint is now ONLY responsible for the section completion logic
+        return {
+            "success": True,
+            "package_id": package_id,
+            "section_title": request.section_title,
+            "message": f"Section '{request.section_title}' completed successfully!",
+        }
+        
+    except Exception as e:
+        logger.error(f"Error completing section in package {package_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{package_id}/complete")
+@log_engagement_activity(
+    activity_type="content_package_completed",
+    metadata_extractor=_extract_package_completion_metadata
+)
+async def complete_package(
+    package_id: str,
+    request: PackageCompletionRequest,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context)
+):
+    """Mark an entire content package as completed. Bonus XP is handled automatically."""
+    try:
+        student_id = user_context["student_id"]
+        logger.info(f"Package {package_id} completed by student {student_id}")
+        
+        # The endpoint's logic is now trivial.
+        return {
+            "success": True,
+            "package_id": package_id,
+            "message": f"Package completed! Bonus XP awarded for mastering all content!",
+        }
+        
+    except Exception as e:
+        logger.error(f"Error completing package {package_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

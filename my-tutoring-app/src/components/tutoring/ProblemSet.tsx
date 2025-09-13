@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, Lightbulb, ArrowRight, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { authApi } from '@/lib/authApiClient';
+import { useEngagement } from '@/contexts/EngagementContext';
 import DrawingWorkspace from './DrawingWorkspace';
 import LoadingOverlay from './LoadingOverlay';
 
@@ -104,6 +105,9 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const [useComposableProblems, setUseComposableProblems] = useState(false);
   const drawingRef = useRef<any>(null);
+  
+  // Engagement system hook
+  const { processEngagementResponse } = useEngagement();
 
   // Auto-start problem generation if specified - MODIFIED to never use recommendations by default
   useEffect(() => {
@@ -336,6 +340,19 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       };
      
       const response = await api.submitProblem(submission);
+      
+      // Process engagement response if present
+      if (response && (response.xp_earned !== undefined || response.level_up !== undefined)) {
+        processEngagementResponse({
+          activity_id: response.activity_id || 'problem_submission',
+          xp_earned: response.xp_earned || 0,
+          points_earned: response.points_earned || response.xp_earned || 0,
+          total_xp: response.total_xp || 0,
+          level_up: response.level_up || false,
+          new_level: response.new_level,
+          badges_earned: response.badges_earned || []
+        });
+      }
       
       // Update the attempted and feedback states for this problem
       const newAttempted = [...problemAttempted];

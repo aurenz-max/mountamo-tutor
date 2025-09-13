@@ -8,6 +8,28 @@ export interface AuthApiError extends Error {
   message: string;
 }
 
+// Engagement Response Types (matching your backend)
+export interface EngagementResponse {
+  activity_id: string;
+  xp_earned: number;
+  points_earned: number; // Backward compatibility
+  total_xp: number;
+  level_up: boolean;
+  new_level?: number;
+  badges_earned: string[];
+}
+
+export interface ActivityCompletionResponse {
+  success: boolean;
+  activity_id?: string;
+  student_id?: number;
+  xp_earned: number;
+  points_earned: number; // Backward compatibility
+  level_up: boolean;
+  new_level?: number;
+  message: string;
+}
+
 // Analytics Response Types (matching your backend)
 export interface AnalyticsMetricsResponse {
   student_id: number;
@@ -792,6 +814,60 @@ private async getAuthToken(): Promise<string> {
     // The backend may return a single problem or multiple problems based on the schema
     // Wrap single problem in array for consistent frontend handling
     return Array.isArray(problem) ? problem : [problem];
+  }
+
+  // ============================================================================
+  // ENGAGEMENT ENDPOINTS
+  // ============================================================================
+
+  /**
+   * Complete a daily activity and earn XP
+   */
+  async completeDailyActivity(studentId: number, activityId: string, pointsEarned?: number): Promise<ActivityCompletionResponse> {
+    const params = new URLSearchParams();
+    if (pointsEarned) params.append('points_earned', pointsEarned.toString());
+    
+    return this.post(`/api/daily-plan/${studentId}/activities/${activityId}/complete${params.toString() ? `?${params.toString()}` : ''}`);
+  }
+
+  /**
+   * Complete the entire daily plan and earn bonus XP
+   */
+  async completeDailyPlan(studentId: number): Promise<ActivityCompletionResponse> {
+    return this.post(`/api/daily-plan/${studentId}/complete`);
+  }
+
+  /**
+   * Complete a package section and earn XP
+   */
+  async completePackageSection(packageId: string, sectionTitle: string, timeSpentMinutes?: number): Promise<ActivityCompletionResponse> {
+    return this.post(`/api/packages/${packageId}/sections/complete`, {
+      section_title: sectionTitle,
+      time_spent_minutes: timeSpentMinutes
+    });
+  }
+
+  /**
+   * Complete an entire package and earn bonus XP
+   */
+  async completePackage(packageId: string, sectionsCompleted: number, totalTimeMinutes?: number): Promise<ActivityCompletionResponse> {
+    return this.post(`/api/packages/${packageId}/complete`, {
+      sections_completed: sectionsCompleted,
+      total_time_minutes: totalTimeMinutes
+    });
+  }
+
+  /**
+   * Complete an interactive primitive and earn XP
+   */
+  async completePrimitive(data: {
+    package_id: string;
+    section_title: string;
+    primitive_type: string;
+    primitive_index: number;
+    score?: number;
+  }): Promise<ActivityCompletionResponse> {
+    return this.post('/api/packages/primitives/complete', data);
   }
 
   async getMyStudentInfo() {

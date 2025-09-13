@@ -1,19 +1,43 @@
 # backend/app/api/endpoints/daily_activities.py
 # Separate endpoint for daily activities (not briefing)
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
 from typing import Optional
 import logging
 from datetime import datetime
 
 from ...core.config import settings
+from ...core.middleware import get_user_context
 from ...services.daily_activities import DailyActivitiesService, DailyPlan
 from ...services.bigquery_analytics import BigQueryAnalyticsService
 from ...services.ai_recommendations import AIRecommendationService
+from ...services.engagement_service import engagement_service
+from ...core.decorators import log_engagement_activity
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# ============================================================================
+# ENGAGEMENT METADATA EXTRACTORS
+# ============================================================================
+
+def _extract_activity_completion_metadata(kwargs: dict, result: dict) -> dict:
+    """Extracts metadata for a 'daily_plan_activity_completed' activity."""
+    activity_id = kwargs.get('activity_id')
+    points_earned = kwargs.get('points_earned')
+    return {
+        "activity_name": f"Completed daily activity {activity_id}",
+        "activity_id": activity_id,
+        "legacy_points": points_earned
+    }
+
+def _extract_plan_completion_metadata(kwargs: dict, result: dict) -> dict:
+    """Extracts metadata for a 'daily_plan_completed' activity."""
+    return {
+        "activity_name": "Completed entire daily plan",
+        "completion_date": datetime.utcnow().isoformat()
+    }
 
 def get_daily_activities_service() -> DailyActivitiesService:
     """Get configured daily activities service with BigQuery and AI recommendations integration"""
@@ -159,29 +183,56 @@ async def refresh_daily_plan(student_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/daily-plan/{student_id}/activities/{activity_id}/complete")
+@log_engagement_activity(
+    activity_type="daily_plan_activity_completed",
+    metadata_extractor=_extract_activity_completion_metadata
+)
 async def mark_activity_completed(
     student_id: int, 
     activity_id: str,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
     points_earned: Optional[int] = Query(None)
 ):
-    """Mark an activity as completed"""
+    """Mark an activity as completed. XP is handled automatically."""
     try:
-        # This would integrate with your user progress tracking
         logger.info(f"Activity {activity_id} completed by student {student_id}")
         
-        # You'd implement the actual completion logic here
-        # service.mark_activity_completed(student_id, activity_id, points_earned)
-        
+        # The endpoint is now ONLY responsible for the activity completion logic
         return {
             "success": True,
             "activity_id": activity_id,
             "student_id": student_id,
-            "points_earned": points_earned or 15,
-            "message": "Activity marked as completed"
+            "message": "Activity completed successfully",
         }
         
     except Exception as e:
         logger.error(f"Error completing activity {activity_id} for student {student_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/daily-plan/{student_id}/complete")
+@log_engagement_activity(
+    activity_type="daily_plan_completed",
+    metadata_extractor=_extract_plan_completion_metadata
+)
+async def complete_daily_plan(
+    student_id: int,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context)
+):
+    """Mark the entire daily plan as completed. Bonus XP is handled automatically."""
+    try:
+        logger.info(f"Daily plan completed by student {student_id}")
+        
+        # The endpoint is now ONLY responsible for the plan completion logic
+        return {
+            "success": True,
+            "student_id": student_id,
+            "message": "Daily plan completed! Bonus XP awarded!",
+        }
+        
+    except Exception as e:
+        logger.error(f"Error completing daily plan for student {student_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/daily-activities/health")

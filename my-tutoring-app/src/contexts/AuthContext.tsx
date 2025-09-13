@@ -18,16 +18,22 @@ interface UserProfile {
   displayName?: string;
   student_id: number;
   grade_level?: string;
-  total_points?: number;
+  // Engagement & Progression System fields
+  total_xp?: number;
+  current_level?: number;
+  xp_for_next_level?: number;
   current_streak?: number;
+  longest_streak?: number;
+  last_activity_date?: string;
   badges?: string[];
+  // Legacy fields (backward compatibility)
+  total_points?: number;
   level?: number;
   created_at?: string;
   last_activity?: string;
   preferences?: Record<string, any>;
   email_verified?: boolean;
   last_login?: string;
-  longest_streak?: number;
 }
 
 interface AuthContextType {
@@ -39,6 +45,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   getAuthToken: () => Promise<string | null>;
   refreshUserProfile: () => Promise<void>;
+  updateUserProfile: (updates: Partial<UserProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -169,6 +176,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateUserProfile = (updates: Partial<UserProfile>) => {
+    console.log('🔄 Updating user profile with:', updates);
+    if (!userProfile) return;
+    
+    setUserProfile(prev => prev ? { ...prev, ...updates } : null);
+    console.log('✅ Profile updated locally');
+  };
+
   const register = async (email: string, password: string, displayName: string, gradeLevel?: string) => {
     try {
       console.log('📝 Registering user:', email);
@@ -289,6 +304,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     getAuthToken,
     refreshUserProfile,
+    updateUserProfile,
   };
 
   return (

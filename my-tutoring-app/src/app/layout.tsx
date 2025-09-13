@@ -5,6 +5,8 @@ import NavHeader from '@/components/NavHeader';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AICoachProvider } from '@/contexts/AICoachContext';
 import { GlobalAICoachProvider } from '@/components/layout/GlobalAICoachToggle'; // Add this import
+import { EngagementProvider } from '@/contexts/EngagementContext';
+import { Toaster } from 'sonner';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -23,12 +25,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <AICoachProvider>
-            <GlobalAICoachProvider>
-              <NavHeader />
-              {children}
-            </GlobalAICoachProvider>
-          </AICoachProvider>
+          <EngagementProvider>
+            <AICoachProvider>
+              <GlobalAICoachProvider>
+                <NavHeader />
+                {children}
+                <Toaster />
+              </GlobalAICoachProvider>
+            </AICoachProvider>
+          </EngagementProvider>
         </AuthProvider>
       </body>
     </html>

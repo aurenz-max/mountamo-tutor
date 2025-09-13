@@ -15,6 +15,7 @@ from typing import Dict, Any, Optional, List
 from ...core.config import settings
 from ...db.cosmos_db import CosmosDBService
 from ...services.user_profiles import user_profiles_service
+from ...services.engagement_service import engagement_service
 from ...models.user_profiles import ActivityLog
 
 # 🔥 FIXED: Import the correct auth dependency from your middleware
@@ -608,6 +609,25 @@ async def package_learning_session(
         logger.info(f"🏁 Package learning session completed for package {package_id} ({session_duration:.1f}s)")
         if gemini_session:
             gemini_logger.info("🔚 Gemini session ended")
+        
+        # Award XP for session duration using engagement service
+        if user_id and student_id and session_duration > 30:  # Only award XP if session was meaningful (>30s)
+            try:
+                duration_minutes = int(session_duration / 60)
+                await engagement_service.process_activity(
+                    user_id=user_id,
+                    student_id=student_id,
+                    activity_type="practice_tutor_session",
+                    metadata={
+                        "activity_name": f"Package learning session: {package_id}",
+                        "package_id": package_id,
+                        "duration_minutes": duration_minutes,
+                        "duration_seconds": int(session_duration)
+                    }
+                )
+                logger.info(f"📈 Awarded XP for {duration_minutes} minute package session")
+            except Exception as e:
+                logger.error(f"Failed to award session XP: {str(e)}")
         
         # Cleanup session
         if 'session_id' in locals():

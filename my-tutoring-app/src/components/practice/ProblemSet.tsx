@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, RefreshCw, Sparkles, Home, BookOpen, HelpCircle, Edit3, CheckCircle2, MessageCircle } from 'lucide-react';
 import { authApi } from '@/lib/authApiClient';
+import { useEngagement } from '@/contexts/EngagementContext';
 import LoadingOverlay from './LoadingOverlay';
 import ProblemRenderer, { type ProblemRendererRef } from './ProblemRenderer';
 
@@ -127,6 +128,9 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [usingRecommendations, setUsingRecommendations] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const problemRendererRef = useRef<ProblemRendererRef>(null);
+  
+  // Engagement system hook
+  const { processEngagementResponse } = useEngagement();
 
   // Auto-start problem generation if specified
   useEffect(() => {
@@ -348,6 +352,27 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       setProblemFeedback(newFeedback);
       
       setFeedback(response);
+      
+      // Process engagement response if present
+      if (response && (response.xp_earned !== undefined || response.level_up !== undefined)) {
+        // Handle both new and legacy response formats
+        const engagementResponse = {
+          success: true,
+          xp_earned: response.xp_earned || 0,
+          base_xp: response.base_xp || response.xp_earned || 0,
+          streak_bonus_xp: response.streak_bonus_xp || 0,
+          total_xp: response.total_xp || 0,
+          level_up: response.level_up || false,
+          new_level: response.new_level || 1,
+          previous_level: response.previous_level || 1,
+          current_streak: response.current_streak || 0,
+          previous_streak: response.previous_streak || 0,
+          points_earned: response.points_earned || response.xp_earned || 0,
+          engagement_transaction: response.engagement_transaction || null
+        };
+        
+        processEngagementResponse(engagementResponse);
+      }
       
       // Notify parent component of submission result
       if (response && response.review && onSubmissionResult) {

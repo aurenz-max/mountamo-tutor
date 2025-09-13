@@ -55,11 +55,14 @@ class UserProfile(BaseModel):
     created_at: datetime
     last_login: Optional[datetime] = None
     last_activity: Optional[datetime] = None
-    total_points: int = 0
+    # XP and Progression System fields
+    total_xp: int = 0  # Renamed from total_points to match PRD
+    current_level: int = 1  # Renamed from level to match PRD
+    xp_for_next_level: int = 100  # New field to track XP needed for next level
     current_streak: int = 0
     longest_streak: int = 0
+    last_activity_date: Optional[datetime] = None  # New field for streak tracking
     badges: List[str] = []
-    level: int = 1
     preferences: Dict[str, Any] = {}
     onboarding_completed: bool = False
     onboarding_completed_at: Optional[datetime] = None
@@ -93,7 +96,8 @@ class ActivityLog(BaseModel):
     activity_type: str  # "lesson", "problem", "quiz", "login", "onboarding_completion", etc.
     activity_id: Optional[str] = None
     activity_name: Optional[str] = None
-    points_earned: int = 0
+    points_earned: int = 0  # Deprecated - kept for backward compatibility
+    xp_earned: int = 0  # New XP field as per PRD
     duration_seconds: Optional[int] = None
     accuracy_percentage: Optional[float] = Field(None, ge=0, le=100)
     difficulty_level: Optional[str] = None  # "easy", "medium", "hard"
@@ -102,11 +106,18 @@ class ActivityLog(BaseModel):
 
 
 class ActivityResponse(BaseModel):
-    """Response model for activity logging"""
+    """Response model for activity logging with complete engagement transaction data"""
     activity_id: str
-    points_earned: int
-    total_points: int
+    points_earned: int  # Deprecated - kept for backward compatibility
+    xp_earned: int  # Total XP earned (base + bonus)
+    base_xp: Optional[int] = None  # Base XP from activity
+    streak_bonus_xp: Optional[int] = None  # Bonus XP from streak
+    total_xp: int  # User's new total XP
     level_up: bool = False
+    new_level: Optional[int] = None  # New level after this activity
+    previous_level: Optional[int] = None  # Previous level before activity
+    current_streak: Optional[int] = None  # New streak count
+    previous_streak: Optional[int] = None  # Previous streak count
     badges_earned: List[str] = []
 
 
@@ -116,13 +127,19 @@ class ActivityResponse(BaseModel):
 
 class UserStats(BaseModel):
     """Comprehensive user statistics model"""
-    total_points: int
+    total_points: int  # Deprecated - kept for backward compatibility
+    total_xp: int  # New XP field as per PRD
     current_streak: int
     longest_streak: int
-    level: int
-    today_points: int
-    week_points: int
-    month_points: int
+    level: int  # Deprecated - kept for backward compatibility
+    current_level: int  # New field as per PRD
+    xp_for_next_level: int  # New field as per PRD
+    today_points: int  # Deprecated - kept for backward compatibility
+    today_xp: int  # New XP field as per PRD
+    week_points: int  # Deprecated - kept for backward compatibility
+    week_xp: int  # New XP field as per PRD
+    month_points: int  # Deprecated - kept for backward compatibility
+    month_xp: int  # New XP field as per PRD
     total_activities: int
     activities_by_type: Dict[str, int]
     average_accuracy: Optional[float] = None

@@ -30,3 +30,14 @@ class SubmissionResult(BaseModel):
     next_recommendations: List[str] = []
     student_id: Optional[int] = None
     user_id: Optional[str] = None
+    
+    # Engagement system fields
+    xp_earned: Optional[int] = None
+    base_xp: Optional[int] = None
+    streak_bonus_xp: Optional[int] = None
+    total_xp: Optional[int] = None
+    level_up: Optional[bool] = None
+    new_level: Optional[int] = None
+    previous_level: Optional[int] = None
+    current_streak: Optional[int] = None
+    previous_streak: Optional[int] = None

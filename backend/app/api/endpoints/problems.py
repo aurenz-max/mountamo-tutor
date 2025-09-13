@@ -12,6 +12,8 @@ import base64
 # FIXED: Import from service layer instead of endpoint
 from ...core.middleware import get_user_context
 from ...services.user_profiles import user_profiles_service
+from ...services.engagement_service import engagement_service
+from ...core.decorators import log_engagement_activity
 from ...models.user_profiles import ActivityLog
 from ...dependencies import get_problem_service, get_competency_service, get_review_service, get_problem_recommender, get_cosmos_db, get_problem_optimizer
 from ...services.problems import ProblemService
@@ -51,6 +53,23 @@ class ProblemResponse(BaseModel):
     generated_at: str
     # Additional field for composable problems
     composable_template: Optional[Dict[str, Any]] = None
+
+# ============================================================================
+# ENGAGEMENT METADATA EXTRACTORS
+# ============================================================================
+
+def _extract_submission_metadata(kwargs: dict, result) -> dict:
+    """Extracts metadata for a 'problem_submitted' activity."""
+    submission = kwargs.get('submission')
+    problem_type = submission.problem.get('problem_type', 'generic')
+    score = result.review.get('score', 0) if hasattr(result, 'review') else 0
+    
+    return {
+        "activity_name": f"Submitted {problem_type} problem",
+        "problem_id": submission.problem.get('id'),
+        "score": score,
+        "is_correct": score >= 8
+    }
 
 # ============================================================================
 # HELPER FUNCTIONS - Use service layer
@@ -167,19 +186,18 @@ async def generate_problem(
                 )
                 raise HTTPException(status_code=404, detail="Failed to generate problem")
             
-            # Log success
+            # Log success with engagement service
             background_tasks.add_task(
-                log_activity_helper,
+                engagement_service.process_activity,
                 user_id=firebase_uid,
                 student_id=student_id,
-                activity_type="problem_generated",
-                activity_name=f"Generated {request.subject} problem",
-                points=5,
+                activity_type="problem_set_generated",
                 metadata={
+                    "activity_name": f"Generated {request.subject} problem",
                     "subject": request.subject,
                     "skill_id": request.skill_id,
-                    "student_id": student_id,
-                    "problem_type": problem.get("problem_type")
+                    "problem_type": problem.get("problem_type"),
+                    "generated_count": 1
                 }
             )
             
@@ -215,18 +233,16 @@ async def generate_problem(
                 )
                 raise HTTPException(status_code=404, detail=f"Failed to generate {request.count} problems")
             
-            # Log success
+            # Log success with engagement service
             background_tasks.add_task(
-                log_activity_helper,
+                engagement_service.process_activity,
                 user_id=firebase_uid,
                 student_id=student_id,
                 activity_type="problem_set_generated",
-                activity_name=f"Generated {len(problems_data)} {request.subject} problems",
-                points=5 * len(problems_data),
                 metadata={
+                    "activity_name": f"Generated {len(problems_data)} {request.subject} problems",
                     "subject": request.subject,
                     "skill_id": request.skill_id,
-                    "student_id": student_id,
                     "requested_count": request.count,
                     "generated_count": len(problems_data)
                 }
@@ -257,6 +273,10 @@ async def generate_problem(
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.post("/submit")
+@log_engagement_activity(
+    activity_type="problem_submitted",
+    metadata_extractor=_extract_submission_metadata
+)
 async def submit_problem(
     submission: ProblemSubmission,
     background_tasks: BackgroundTasks,
@@ -266,13 +286,7 @@ async def submit_problem(
     cosmos_db = Depends(get_cosmos_db)
 ) -> SubmissionResult:
     """
-    Universal problem submission endpoint that handles all problem types:
-    - Legacy package problems (string arrays, generic format)
-    - Structured primitive problems (MCQ, fill-in-blank, matching, etc.)
-    - Interactive/composable problems
-    - Canvas/drawing problems
-    
-    Uses SubmissionService to handle all the complex logic.
+    Universal problem submission endpoint. Engagement XP is handled automatically.
     """
     firebase_uid = user_context["firebase_uid"]
     student_id = user_context["student_id"]
@@ -282,19 +296,8 @@ async def submit_problem(
         from ...services.submission_service import SubmissionService
         submission_service = SubmissionService(review_service, competency_service, cosmos_db)
         
-        # Handle submission using service layer
+        # The endpoint is now ONLY responsible for the submission logic
         result = await submission_service.handle_submission(submission, user_context)
-        
-        # Log activity in background
-        background_tasks.add_task(
-            log_activity_helper,
-            user_id=firebase_uid,
-            student_id=student_id,
-            activity_type="problem_submitted",
-            activity_name=f"Submitted {submission.problem.get('problem_type', 'generic')} problem",
-            points=5,
-            metadata={"problem_id": submission.problem.get('id'), "score": result.review.get('score', 0)}
-        )
         
         return result
         
@@ -410,15 +413,14 @@ async def generate_composable_problem(
         # We just need to log and return it.
         interactive_problem = response.problem
         
-        # Log success using the existing pattern
+        # Log success with engagement service
         background_tasks.add_task(
-            log_activity_helper,
+            engagement_service.process_activity,
             user_id=firebase_uid,
             student_id=student_id,
-            activity_type="problem_generated",
-            activity_name=f"Generated interactive {request.subject} problem",
-            points=10,
+            activity_type="composable_problem_generated",
             metadata={
+                "activity_name": f"Generated interactive {request.subject} problem",
                 "subject": request.subject,
                 "skill_id": request.skill_id,
                 "problem_type": "interactive",

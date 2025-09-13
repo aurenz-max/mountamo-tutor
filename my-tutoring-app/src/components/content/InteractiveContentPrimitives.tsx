@@ -205,7 +205,10 @@ export const ExpandablePrimitive: React.FC<{ data: ExpandableData }> = ({ data }
 };
 
 // Quiz Card Component
-export const QuizPrimitive: React.FC<{ data: QuizData }> = ({ data }) => {
+export const QuizPrimitive: React.FC<{ 
+  data: QuizData; 
+  onComplete?: (score: number) => void;
+}> = ({ data, onComplete }) => {
   const [showAnswer, setShowAnswer] = useState(false);
 
   return (
@@ -219,7 +222,12 @@ export const QuizPrimitive: React.FC<{ data: QuizData }> = ({ data }) => {
       <p className="text-sm text-cyan-800 mb-4 leading-relaxed bg-white bg-opacity-60 p-3 rounded-lg">{data.question}</p>
       
       <button
-        onClick={() => setShowAnswer(!showAnswer)}
+        onClick={() => {
+          if (!showAnswer && onComplete) {
+            onComplete(1.0); // User completed the quiz by viewing the answer
+          }
+          setShowAnswer(!showAnswer);
+        }}
         className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm rounded-lg hover:from-cyan-600 hover:to-cyan-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 font-medium"
       >
         {showAnswer ? '🙈 Hide Answer' : '👁️ Show Answer'}
@@ -580,19 +588,32 @@ export const CategorizationPrimitive: React.FC<{
   data: CategorizationData;
   onWalkthrough?: () => void;
   onGetHint?: () => void;
-}> = ({ data, onWalkthrough, onGetHint }) => {
-  const [userAnswers, setUserAnswers] = useState<{[key: string]: string}>({});
+  onComplete?: (score: number) => void;
+}> = ({ data, onWalkthrough, onGetHint, onComplete }) => {
+  const [userAnswers, setUserAnswers] = useState<{[key: number]: string}>({});
   const [showResults, setShowResults] = useState(false);
 
-  const handleDrop = (itemText: string, category: string) => {
+  const handleDrop = (itemIndex: number, category: string) => {
     setUserAnswers(prev => ({
       ...prev,
-      [itemText]: category
+      [itemIndex]: category
     }));
   };
 
   const checkAnswers = () => {
     setShowResults(true);
+    
+    // Calculate score for engagement tracking
+    if (onComplete && !showResults) {
+      let correctCount = 0;
+      data.items.forEach((item, index) => {
+        if (userAnswers[index] === item.correct_category) {
+          correctCount++;
+        }
+      });
+      const score = data.items.length > 0 ? correctCount / data.items.length : 0;
+      onComplete(score);
+    }
   };
 
   const resetActivity = () => {
@@ -624,12 +645,13 @@ export const CategorizationPrimitive: React.FC<{
               <div className="space-y-2">
                 {Object.entries(userAnswers)
                   .filter(([_, assignedCategory]) => assignedCategory === category)
-                  .map(([itemText]) => {
-                    const item = data.items.find(i => i.item_text === itemText);
+                  .map(([itemIndexStr]) => {
+                    const itemIndex = parseInt(itemIndexStr);
+                    const item = data.items[itemIndex];
                     const isCorrect = item?.correct_category === category;
                     return (
                       <div
-                        key={itemText}
+                        key={`item-${itemIndex}`}
                         className={`p-2 rounded text-sm text-center transition-all duration-200 ${
                           showResults
                             ? isCorrect
@@ -638,7 +660,7 @@ export const CategorizationPrimitive: React.FC<{
                             : 'bg-indigo-100 border border-indigo-300 text-indigo-700'
                         }`}
                       >
-                        {itemText}
+                        {item?.item_text}
                         {showResults && (isCorrect ? ' ✓' : ' ✗')}
                       </div>
                     );
@@ -653,10 +675,11 @@ export const CategorizationPrimitive: React.FC<{
           <h5 className="font-semibold text-indigo-900">Items to categorize:</h5>
           <div className="grid grid-cols-1 gap-3">
             {data.items
-              .filter(item => !userAnswers[item.item_text])
-              .map((item) => (
+              .map((item, index) => ({ item, index }))
+              .filter(({ index }) => !userAnswers[index])
+              .map(({ item, index }) => (
                 <div
-                  key={item.item_text}
+                  key={`item-${index}`}
                   className="bg-white border-2 border-gray-300 rounded-lg p-3 cursor-move hover:border-indigo-300 hover:shadow-md transition-all duration-200"
                 >
                   <p className="text-sm text-gray-700 text-center font-medium">{item.item_text}</p>
@@ -664,7 +687,7 @@ export const CategorizationPrimitive: React.FC<{
                     {data.categories.map((category) => (
                       <button
                         key={category}
-                        onClick={() => handleDrop(item.item_text, category)}
+                        onClick={() => handleDrop(index, category)}
                         className="flex-1 text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-2 py-1 rounded transition-colors"
                       >
                         → {category}
@@ -718,7 +741,8 @@ export const CategorizationPrimitive: React.FC<{
 export const FillInTheBlankPrimitive: React.FC<{ 
   data: FillInTheBlankData;
   onGetHint?: () => void;
-}> = ({ data, onGetHint }) => {
+  onComplete?: (score: number) => void;
+}> = ({ data, onGetHint, onComplete }) => {
   const [userAnswer, setUserAnswer] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -726,6 +750,13 @@ export const FillInTheBlankPrimitive: React.FC<{
 
   const checkAnswer = () => {
     setShowResult(true);
+    
+    // Trigger completion callback with score
+    if (onComplete && !showResult) {
+      const isCorrect = userAnswer.toLowerCase().trim() === data.correct_answer.toLowerCase().trim();
+      const score = isCorrect ? 1.0 : 0.0;
+      onComplete(score);
+    }
   };
 
   const resetQuestion = () => {
@@ -856,12 +887,20 @@ export const FillInTheBlankPrimitive: React.FC<{
 export const ScenarioQuestionPrimitive: React.FC<{ 
   data: ScenarioQuestionData;
   onGetHint?: () => void;
-}> = ({ data, onGetHint }) => {
+  onComplete?: (score: number) => void;
+}> = ({ data, onGetHint, onComplete }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [showResult, setShowResult] = useState(false);
 
   const handleSubmit = () => {
     setShowResult(true);
+    
+    // Trigger completion callback with score
+    if (onComplete && !showResult) {
+      const isCorrect = selectedAnswer === data.correct_answer;
+      const score = isCorrect ? 1.0 : 0.0;
+      onComplete(score);
+    }
   };
 
   const resetQuestion = () => {
@@ -1020,33 +1059,47 @@ export const MatchingActivityPrimitive: React.FC<{
   data: MatchingActivityData;
   onWalkthrough?: () => void;
   onGetHint?: () => void;
-}> = ({ data, onWalkthrough, onGetHint }) => {
-  const [userMatches, setUserMatches] = useState<{[key: string]: string}>({});
+  onComplete?: (score: number) => void;
+}> = ({ data, onWalkthrough, onGetHint, onComplete }) => {
+  const [userMatches, setUserMatches] = useState<{[key: number]: number}>({});
   const [showResults, setShowResults] = useState(false);
 
-  // Shuffle the answers for display
-  const [shuffledAnswers] = useState(() => {
-    const answers = data.pairs.map(pair => pair.answer);
-    return answers.sort(() => Math.random() - 0.5);
+  // Shuffle the answers for display, but keep track of original indices
+  const [shuffledAnswerIndices] = useState(() => {
+    const indices = data.pairs.map((_, index) => index);
+    return indices.sort(() => Math.random() - 0.5);
   });
 
-  const handleMatch = (prompt: string, answer: string) => {
+  const handleMatch = (promptIndex: number, answerIndex: number) => {
     setUserMatches(prev => ({
       ...prev,
-      [prompt]: answer
+      [promptIndex]: answerIndex
     }));
   };
 
-  const removeMatch = (prompt: string) => {
+  const removeMatch = (promptIndex: number) => {
     setUserMatches(prev => {
       const newMatches = { ...prev };
-      delete newMatches[prompt];
+      delete newMatches[promptIndex];
       return newMatches;
     });
   };
 
   const checkAnswers = () => {
     setShowResults(true);
+    
+    // Calculate score for engagement tracking
+    if (onComplete && !showResults) {
+      let correctCount = 0;
+      data.pairs.forEach((pair, promptIndex) => {
+        const userAnswerIndex = userMatches[promptIndex];
+        if (userAnswerIndex !== undefined && data.pairs[userAnswerIndex]?.answer === pair.answer) {
+          correctCount++;
+        }
+      });
+      const score = data.pairs.length > 0 ? correctCount / data.pairs.length : 0;
+      onComplete(score);
+    }
   };
 
   const resetActivity = () => {
@@ -1069,14 +1122,15 @@ export const MatchingActivityPrimitive: React.FC<{
         {/* Prompts Column */}
         <div className="space-y-3">
           <h5 className="font-semibold text-green-900 mb-3">Match these:</h5>
-          {data.pairs.map((pair, index) => {
-            const userAnswer = userMatches[pair.prompt];
+          {data.pairs.map((pair, promptIndex) => {
+            const userAnswerIndex = userMatches[promptIndex];
+            const userAnswer = userAnswerIndex !== undefined ? data.pairs[userAnswerIndex]?.answer : undefined;
             const correctAnswer = pair.answer;
             const isCorrect = userAnswer === correctAnswer;
             
             return (
               <div
-                key={index}
+                key={`prompt-${promptIndex}`}
                 className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                   showResults && userAnswer
                     ? isCorrect
@@ -1106,7 +1160,7 @@ export const MatchingActivityPrimitive: React.FC<{
                     </span>
                     {!showResults && (
                       <button
-                        onClick={() => removeMatch(pair.prompt)}
+                        onClick={() => removeMatch(promptIndex)}
                         className="text-red-500 hover:text-red-700 text-sm"
                       >
                         Remove
@@ -1122,12 +1176,13 @@ export const MatchingActivityPrimitive: React.FC<{
         {/* Answers Column */}
         <div className="space-y-3">
           <h5 className="font-semibold text-green-900 mb-3">With these:</h5>
-          {shuffledAnswers.map((answer, index) => {
-            const isUsed = Object.values(userMatches).includes(answer);
+          {shuffledAnswerIndices.map((answerIndex, displayIndex) => {
+            const answer = data.pairs[answerIndex]?.answer;
+            const isUsed = Object.values(userMatches).includes(answerIndex);
             
             return (
               <div
-                key={index}
+                key={`answer-${answerIndex}`}
                 className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                   isUsed ? 'bg-gray-100 border-gray-300 opacity-50' : 'bg-white border-green-200 hover:border-green-300 cursor-pointer'
                 }`}
@@ -1135,12 +1190,12 @@ export const MatchingActivityPrimitive: React.FC<{
                 <span className="text-sm text-green-800">{answer}</span>
                 {!isUsed && !showResults && (
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {data.pairs.map((pair, pairIndex) => {
-                      if (userMatches[pair.prompt]) return null;
+                    {data.pairs.map((pair, promptIndex) => {
+                      if (userMatches[promptIndex] !== undefined) return null;
                       return (
                         <button
-                          key={pairIndex}
-                          onClick={() => handleMatch(pair.prompt, answer)}
+                          key={`match-btn-${promptIndex}`}
+                          onClick={() => handleMatch(promptIndex, answerIndex)}
                           className="text-xs bg-green-100 hover:bg-green-200 text-green-700 px-2 py-1 rounded transition-colors"
                         >
                           → {pair.prompt.length > 20 ? pair.prompt.substring(0, 20) + '...' : pair.prompt}
@@ -1202,7 +1257,10 @@ export const MatchingActivityPrimitive: React.FC<{
 };
 
 // Sequencing Activity Component
-export const SequencingActivityPrimitive: React.FC<{ data: SequencingActivityData }> = ({ data }) => {
+export const SequencingActivityPrimitive: React.FC<{ 
+  data: SequencingActivityData;
+  onComplete?: (score: number) => void;
+}> = ({ data, onComplete }) => {
   const [shuffledItems, setShuffledItems] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -1222,6 +1280,13 @@ export const SequencingActivityPrimitive: React.FC<{ data: SequencingActivityDat
 
   const checkOrder = () => {
     setShowResults(true);
+    
+    // Trigger completion callback with score
+    if (onComplete && !showResults) {
+      const isCorrectOrder = JSON.stringify(shuffledItems) === JSON.stringify(data.items);
+      const score = isCorrectOrder ? 1.0 : 0.0;
+      onComplete(score);
+    }
   };
 
   const resetActivity = () => {
@@ -1380,22 +1445,68 @@ export const AccordionPrimitive: React.FC<{ data: AccordionData }> = ({ data }) 
   );
 };
 
+// Primitive completion callback type
+export interface PrimitiveCompletionCallback {
+  (primitiveType: string, primitiveIndex: number, score?: number): void;
+}
+
 // Main renderer for all primitives - Updated with new enhanced primitives (removed image hotspots)
 export type PrimitiveData = AlertData | ExpandableData | QuizData | DefinitionData | ChecklistData | TableData | KeyValueData | 
   InteractiveTimelineData | CarouselData | FlipCardData | CategorizationData | FillInTheBlankData | ScenarioQuestionData |
   TabbedContentData | MatchingActivityData | SequencingActivityData | AccordionData;
 
-export const ContentPrimitiveRenderer: React.FC<{ data: PrimitiveData; onChecklistToggle?: () => void }> = ({ 
+export const ContentPrimitiveRenderer: React.FC<{ 
+  data: PrimitiveData; 
+  onChecklistToggle?: () => void;
+  onComplete?: PrimitiveCompletionCallback;
+  primitiveIndex?: number;
+  isCompleted?: boolean;
+}> = ({ 
   data, 
-  onChecklistToggle 
+  onChecklistToggle,
+  onComplete,
+  primitiveIndex = 0,
+  isCompleted = false
 }) => {
+  // Helper to create completion handler for interactive primitives
+  const createCompletionHandler = (primitiveType: string) => (score?: number) => {
+    onComplete?.(primitiveType, primitiveIndex, score);
+  };
+
+  // Wrapper for interactive primitives with completion indicator
+  const wrapWithCompletionIndicator = (children: React.ReactNode, primitiveType: string) => {
+    // Only show completion indicator for interactive primitives
+    const interactivePrimitives = ['quiz', 'categorization', 'fill_in_the_blank', 'scenario_question', 'matching_activity', 'sequencing_activity'];
+    
+    if (!interactivePrimitives.includes(primitiveType) || !isCompleted) {
+      return children;
+    }
+
+    return (
+      <div className="relative">
+        {children}
+        {/* Completion Overlay */}
+        <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-2 shadow-lg animate-pulse">
+          <CheckCircle className="w-4 h-4" />
+        </div>
+        {/* Completion Badge */}
+        <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg">
+          ✓ Completed
+        </div>
+      </div>
+    );
+  };
+
   switch (data.type) {
     case 'alert':
       return <AlertPrimitive data={data} />;
     case 'expandable':
       return <ExpandablePrimitive data={data} />;
     case 'quiz':
-      return <QuizPrimitive data={data} />;
+      return wrapWithCompletionIndicator(
+        <QuizPrimitive data={data} onComplete={createCompletionHandler('quiz')} />,
+        'quiz'
+      );
     case 'definition':
       return <DefinitionPrimitive data={data} />;
     case 'checklist':
@@ -1412,18 +1523,33 @@ export const ContentPrimitiveRenderer: React.FC<{ data: PrimitiveData; onCheckli
     case 'flip_card':
       return <FlipCardPrimitive data={data} />;
     case 'categorization':
-      return <CategorizationPrimitive data={data} />;
+      return wrapWithCompletionIndicator(
+        <CategorizationPrimitive data={data} onComplete={createCompletionHandler('categorization')} />,
+        'categorization'
+      );
     case 'fill_in_the_blank':
-      return <FillInTheBlankPrimitive data={data} />;
+      return wrapWithCompletionIndicator(
+        <FillInTheBlankPrimitive data={data} onComplete={createCompletionHandler('fill_in_the_blank')} />,
+        'fill_in_the_blank'
+      );
     case 'scenario_question':
-      return <ScenarioQuestionPrimitive data={data} />;
+      return wrapWithCompletionIndicator(
+        <ScenarioQuestionPrimitive data={data} onComplete={createCompletionHandler('scenario_question')} />,
+        'scenario_question'
+      );
     // New Primitives
     case 'tabbed_content':
       return <TabbedContentPrimitive data={data} />;
     case 'matching_activity':
-      return <MatchingActivityPrimitive data={data} />;
+      return wrapWithCompletionIndicator(
+        <MatchingActivityPrimitive data={data} onComplete={createCompletionHandler('matching_activity')} />,
+        'matching_activity'
+      );
     case 'sequencing_activity':
-      return <SequencingActivityPrimitive data={data} />;
+      return wrapWithCompletionIndicator(
+        <SequencingActivityPrimitive data={data} onComplete={createCompletionHandler('sequencing_activity')} />,
+        'sequencing_activity'
+      );
     case 'accordion':
       return <AccordionPrimitive data={data} />;
     default:
@@ -1435,7 +1561,9 @@ export const ContentPrimitiveRenderer: React.FC<{ data: PrimitiveData; onCheckli
 export const PrimitivesContainer: React.FC<{ 
   primitives: PrimitiveData[]; 
   onChecklistToggle?: (index: number) => void; 
-}> = ({ primitives, onChecklistToggle }) => {
+  onComplete?: PrimitiveCompletionCallback;
+  completedPrimitives?: Record<number, boolean>;
+}> = ({ primitives, onChecklistToggle, onComplete, completedPrimitives = {} }) => {
   if (!primitives || primitives.length === 0) return null;
 
   return (
@@ -1444,7 +1572,10 @@ export const PrimitivesContainer: React.FC<{
         <ContentPrimitiveRenderer 
           key={index} 
           data={primitive} 
+          primitiveIndex={index}
+          isCompleted={completedPrimitives[index] || false}
           onChecklistToggle={() => onChecklistToggle?.(index)}
+          onComplete={onComplete}
         />
       ))}
     </div>
