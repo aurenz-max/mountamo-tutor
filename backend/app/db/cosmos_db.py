@@ -79,6 +79,13 @@ class CosmosDBService:
             unique_key_policy={'uniqueKeys': [{'paths': ['/email']}]}
         )
 
+        # 🆕 NEW: Daily plans container for persistent daily activity recommendations
+        self.daily_plans = self.database.create_container_if_not_exists(
+            id="daily_plans",
+            partition_key=PartitionKey(path="/student_id"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/student_id', '/date']}]}
+        )
+
     # ============================================================================
     # 🔥 NEW: STUDENT MAPPING METHODS
     # ============================================================================
@@ -229,6 +236,213 @@ class CosmosDBService:
         except Exception as e:
             logger.error(f"Error validating user access: {str(e)}")
             return False
+
+    # ============================================================================
+    # 🆕 DAILY PLANS PERSISTENCE METHODS
+    # ============================================================================
+
+    async def get_daily_plan(
+        self,
+        student_id: int,
+        date: str,
+        firebase_uid: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get daily plan for a student on a specific date"""
+
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+        try:
+            plan_id = f"{student_id}_{date}"
+            logger.info(f"🔍 COSMOS DB LOOKUP - plan_id: '{plan_id}', partition_key: {student_id}")
+
+            result = self.daily_plans.read_item(
+                item=plan_id,
+                partition_key=student_id  # Use integer, not string
+            )
+
+            logger.info(f"✅ FOUND EXISTING DAILY PLAN - Student: {student_id}, Date: {date}")
+            return result
+
+        except CosmosResourceNotFoundError as e:
+            logger.info(f"❌ NO DAILY PLAN FOUND - Student: {student_id}, Date: {date}")
+            logger.info(f"📋 Cosmos lookup details - plan_id: '{plan_id}', partition_key: {student_id}")
+            return None
+        except Exception as e:
+            logger.error(f"💥 ERROR GETTING DAILY PLAN - Student: {student_id}, Date: {date}: {str(e)}")
+            return None
+
+    async def save_daily_plan(
+        self,
+        student_id: int,
+        date: str,
+        daily_plan_data: Dict[str, Any],
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Save a daily plan to Cosmos DB"""
+
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+        try:
+            plan_id = f"{student_id}_{date}"
+            timestamp = datetime.utcnow().isoformat()
+
+            # Transform DailyPlan object to persistent schema
+            plan_document = {
+                "id": plan_id,
+                "student_id": student_id,
+                "date": date,
+                "daily_theme": daily_plan_data.get("session_plan", {}).get("daily_theme"),
+                "learning_objectives": daily_plan_data.get("session_plan", {}).get("learning_objectives", []),
+                "session_plan": daily_plan_data.get("session_plan", {}),
+                "activities": [],
+                "personalization_source": daily_plan_data.get("personalization_source", "unknown"),
+                "total_points": daily_plan_data.get("total_points", 0),
+                "progress": daily_plan_data.get("progress", {}),
+                "createdAt": timestamp,
+                "updatedAt": timestamp,
+                "firebase_uid": firebase_uid,
+                "document_type": "daily_plan"
+            }
+
+            # Process activities and add completion status
+            for activity in daily_plan_data.get("activities", []):
+                activity_dict = activity.dict() if hasattr(activity, 'dict') else activity
+                activity_dict["is_complete"] = False  # Add completion status
+                plan_document["activities"].append(activity_dict)
+
+            # Save to Cosmos DB
+            result = self.daily_plans.upsert_item(body=plan_document)
+            logger.info(f"Saved daily plan {plan_id} to Cosmos DB")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error saving daily plan: {str(e)}")
+            raise
+
+    async def update_activity_completion(
+        self,
+        student_id: int,
+        date: str,
+        activity_id: str,
+        is_complete: bool = True,
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Update completion status of a specific activity in the daily plan"""
+
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+        try:
+            plan_id = f"{student_id}_{date}"
+
+            # Get the existing plan
+            plan = self.daily_plans.read_item(
+                item=plan_id,
+                partition_key=student_id
+            )
+
+            # Update the specific activity
+            activity_found = False
+            for activity in plan.get("activities", []):
+                if activity.get("id") == activity_id:
+                    activity["is_complete"] = is_complete
+                    activity_found = True
+                    logger.info(f"Updated activity {activity_id} completion to {is_complete}")
+                    break
+
+            if not activity_found:
+                logger.warning(f"Activity {activity_id} not found in plan {plan_id}")
+                return False
+
+            # Update timestamp and save
+            plan["updatedAt"] = datetime.utcnow().isoformat()
+            self.daily_plans.upsert_item(body=plan)
+
+            logger.info(f"Successfully updated activity completion in plan {plan_id}")
+            return True
+
+        except CosmosResourceNotFoundError:
+            logger.warning(f"Daily plan {plan_id} not found for activity completion update")
+            return False
+        except Exception as e:
+            logger.error(f"Error updating activity completion: {str(e)}")
+            return False
+
+    async def delete_daily_plan(
+        self,
+        student_id: int,
+        date: str,
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Delete a daily plan (used for force refresh)"""
+
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+        try:
+            plan_id = f"{student_id}_{date}"
+
+            self.daily_plans.delete_item(
+                item=plan_id,
+                partition_key=student_id
+            )
+
+            logger.info(f"Deleted daily plan {plan_id}")
+            return True
+
+        except CosmosResourceNotFoundError:
+            logger.info(f"Daily plan {plan_id} not found for deletion")
+            return True  # Already deleted
+        except Exception as e:
+            logger.error(f"Error deleting daily plan: {str(e)}")
+            return False
+
+    async def get_daily_plan_progress(
+        self,
+        student_id: int,
+        date: str,
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get progress summary for a daily plan"""
+
+        plan = await self.get_daily_plan(student_id, date, firebase_uid)
+        if not plan:
+            return {
+                "completed_activities": 0,
+                "total_activities": 0,
+                "progress_percentage": 0.0,
+                "points_earned": 0
+            }
+
+        activities = plan.get("activities", [])
+        completed = sum(1 for activity in activities if activity.get("is_complete", False))
+        total = len(activities)
+
+        return {
+            "completed_activities": completed,
+            "total_activities": total,
+            "progress_percentage": (completed / total * 100) if total > 0 else 0.0,
+            "points_earned": sum(
+                activity.get("points", 0)
+                for activity in activities
+                if activity.get("is_complete", False)
+            )
+        }
 
     async def query_items(self, container_name: str, query: str, parameters: List[Dict] = None) -> List[Dict]:
         """

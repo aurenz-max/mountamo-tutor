@@ -223,35 +223,90 @@ class CurriculumParser:
 class DailyActivitiesService:
     """Enhanced service with curriculum metadata support"""
     
-    def __init__(self, analytics_service=None, ai_recommendation_service=None, curriculum_service=None):
+    def __init__(self, analytics_service=None, ai_recommendation_service=None, curriculum_service=None, cosmos_db_service=None):
         self.analytics_service = analytics_service
         self.ai_recommendation_service = ai_recommendation_service
         self.curriculum_service = curriculum_service
+        self.cosmos_db_service = cosmos_db_service
     
-    async def generate_daily_plan(self, student_id: int, date: Optional[str] = None, session_type: str = 'daily') -> DailyPlan:
-        """Main method: Get recommendations → Create activities → Return plan"""
-        
+    async def get_or_generate_daily_plan(self, student_id: int, date: Optional[str] = None, force_refresh: bool = False) -> DailyPlan:
+        """
+        Main method with persistence:
+        1. Try to fetch today's plan from Cosmos DB.
+        2. If not found OR force_refresh is true, generate a new one.
+        3. Save the new plan to Cosmos DB.
+        4. Return the plan.
+        """
         if not date:
             date = datetime.now().strftime("%Y-%m-%d")
-        
-        logger.info(f"Generating daily plan for student {student_id}, session_type={session_type}")
-        
+
+        logger.info(f"🔄 DAILY PLAN REQUEST - Student: {student_id}, Date: {date}, Force Refresh: {force_refresh}")
+        logger.info(f"🔍 COSMOS DB SERVICE AVAILABLE: {self.cosmos_db_service is not None}")
+
+        # Step 1: Retrieval-First Logic (FR6)
+        if not force_refresh and self.cosmos_db_service:
+            try:
+                logger.info(f"🔍 ATTEMPTING COSMOS DB RETRIEVAL - Student: {student_id}, Date: {date}")
+                existing_plan_doc = await self.cosmos_db_service.get_daily_plan(student_id, date)
+                if existing_plan_doc:
+                    logger.info(f"✅ FOUND EXISTING PLAN IN COSMOS DB - Student: {student_id}, Date: {date}")
+                    logger.info(f"📋 Existing plan has {len(existing_plan_doc.get('activities', []))} activities")
+                    logger.info(f"🎯 Activity IDs in saved plan: {[act.get('id') for act in existing_plan_doc.get('activities', [])]}")
+                    converted_plan = self._convert_cosmos_doc_to_daily_plan(existing_plan_doc)
+                    logger.info(f"📤 RETURNING SAVED PLAN - {len(converted_plan.activities)} activities, source: {converted_plan.personalization_source}")
+                    return converted_plan
+                else:
+                    logger.info(f"❌ NO EXISTING PLAN FOUND IN COSMOS DB - Will generate new plan")
+            except Exception as e:
+                logger.warning(f"❌ ERROR RETRIEVING EXISTING PLAN - Will generate new one: {e}")
+
+        # Step 2: Generation Logic (Fallback)
+        logger.info(f"🚀 GENERATING NEW DAILY PLAN - Student: {student_id}, Date: {date}")
+        generated_plan = await self._generate_fresh_daily_plan(student_id, date)
+        logger.info(f"✨ FRESH PLAN GENERATED - {len(generated_plan.activities)} activities, source: {generated_plan.personalization_source}")
+        logger.info(f"🎯 Generated activity IDs: {[act.id for act in generated_plan.activities]}")
+
+        # Step 3: Persistence Logic (FR5 & FR7)
+        if self.cosmos_db_service:
+            try:
+                # If force_refresh, delete the existing plan first
+                if force_refresh:
+                    logger.info(f"🗑️ FORCE REFRESH - Deleting existing plan first")
+                    await self.cosmos_db_service.delete_daily_plan(student_id, date)
+
+                # Save the new plan
+                plan_dict = generated_plan.dict()
+                logger.info(f"💾 SAVING NEW PLAN TO COSMOS DB - Student: {student_id}, Date: {date}")
+                await self.cosmos_db_service.save_daily_plan(student_id, date, plan_dict)
+                logger.info(f"✅ SAVED NEW DAILY PLAN TO COSMOS DB - Student: {student_id}, Date: {date}")
+            except Exception as e:
+                logger.error(f"❌ FAILED TO SAVE DAILY PLAN TO COSMOS DB: {e}")
+                # Continue without persistence - don't fail the entire request
+
+        logger.info(f"📤 RETURNING GENERATED PLAN - Student: {student_id}, Source: {generated_plan.personalization_source}")
+        return generated_plan
+
+    async def _generate_fresh_daily_plan(self, student_id: int, date: str, session_type: str = 'daily') -> DailyPlan:
+        """Generate a fresh daily plan using AI recommendations and fallbacks"""
+
+        logger.info(f"Generating fresh daily plan for student {student_id}, session_type={session_type}")
+
         session_plan = None
-        
+
         # Step 1: Try to get AI recommendations first, then fall back to basic recommendations
         ai_result = await self._get_ai_recommendations_with_session_plan(student_id, session_type)
-        
+
         if ai_result and ai_result.get('recommendations'):
-            activities = self._create_activities_from_recommendations(ai_result['recommendations'])
+            activities = await self._create_activities_from_recommendations(ai_result['recommendations'], student_id)
             personalization_source = 'ai_recommendations'
             session_plan = ai_result.get('session_plan')
             logger.info(f"Created {len(activities)} activities from AI recommendations")
         else:
             # Step 2: Fall back to basic BigQuery recommendations
             recommendations = await self._get_recommendations(student_id)
-            
+
             if recommendations:
-                activities = self._create_activities_from_recommendations(recommendations)
+                activities = await self._create_activities_from_recommendations(recommendations, student_id)
                 personalization_source = 'bigquery_recommendations'
                 logger.info(f"Created {len(activities)} activities from basic BigQuery recommendations")
             else:
@@ -259,7 +314,7 @@ class DailyActivitiesService:
                 activities = self._create_fallback_activities()
                 personalization_source = 'fallback'
                 logger.info(f"Created {len(activities)} fallback activities")
-        
+
         # Step 4: Calculate totals and progress
         total_points = sum(a.points for a in activities)
         progress = DailyProgress(
@@ -270,7 +325,7 @@ class DailyActivitiesService:
             current_streak=1,  # Would get from user profile
             progress_percentage=0.0
         )
-        
+
         return DailyPlan(
             student_id=student_id,
             date=date,
@@ -280,6 +335,85 @@ class DailyActivitiesService:
             total_points=total_points,
             session_plan=session_plan
         )
+
+    def _convert_cosmos_doc_to_daily_plan(self, cosmos_doc: Dict) -> DailyPlan:
+        """Convert a Cosmos DB document back to a DailyPlan object"""
+
+        logger.info(f"🔄 CONVERTING COSMOS DOC TO DAILY PLAN")
+        logger.info(f"📋 Cosmos doc has {len(cosmos_doc.get('activities', []))} activities")
+
+        # Convert activities back to DailyActivity objects
+        activities = []
+        for activity_dict in cosmos_doc.get("activities", []):
+            # Ensure curriculum_metadata is properly structured if it exists
+            if activity_dict.get("curriculum_metadata"):
+                curr_meta = activity_dict["curriculum_metadata"]
+                activity_dict["curriculum_metadata"] = CurriculumMetadata(**curr_meta)
+
+            activity = DailyActivity(**activity_dict)
+            activities.append(activity)
+
+        # Get progress from Cosmos or calculate from current completion state
+        completed_count = sum(1 for activity in cosmos_doc.get("activities", [])
+                            if activity.get("is_complete", False))
+        total_count = len(cosmos_doc.get("activities", []))
+
+        progress = DailyProgress(
+            completed_activities=completed_count,
+            total_activities=total_count,
+            points_earned_today=sum(
+                activity.get("points", 0)
+                for activity in cosmos_doc.get("activities", [])
+                if activity.get("is_complete", False)
+            ),
+            daily_goal=60,
+            current_streak=1,
+            progress_percentage=(completed_count / total_count * 100) if total_count > 0 else 0.0
+        )
+
+        return DailyPlan(
+            student_id=cosmos_doc["student_id"],
+            date=cosmos_doc["date"],
+            activities=activities,
+            progress=progress,
+            personalization_source=cosmos_doc.get("personalization_source", "unknown"),
+            total_points=cosmos_doc.get("total_points", 0),
+            session_plan=cosmos_doc.get("session_plan")
+        )
+
+    async def mark_activity_completed(self, student_id: int, activity_id: str, date: Optional[str] = None) -> bool:
+        """Mark an activity as completed in the persistent daily plan"""
+
+        if not date:
+            date = datetime.now().strftime("%Y-%m-%d")
+
+        if not self.cosmos_db_service:
+            logger.warning("No Cosmos DB service available for activity completion")
+            return False
+
+        try:
+            success = await self.cosmos_db_service.update_activity_completion(
+                student_id=student_id,
+                date=date,
+                activity_id=activity_id,
+                is_complete=True
+            )
+
+            if success:
+                logger.info(f"Successfully marked activity {activity_id} as completed for student {student_id}")
+            else:
+                logger.warning(f"Failed to mark activity {activity_id} as completed for student {student_id}")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"Error marking activity completion: {e}")
+            return False
+
+    # Keep the old method for backward compatibility
+    async def generate_daily_plan(self, student_id: int, date: Optional[str] = None, session_type: str = 'daily') -> DailyPlan:
+        """Backward compatibility method - delegates to get_or_generate_daily_plan"""
+        return await self.get_or_generate_daily_plan(student_id, date, force_refresh=False)
     
     async def _get_ai_recommendations_with_session_plan(self, student_id: int, session_type: str = 'daily') -> Optional[Dict]:
         """Get AI-powered recommendations with session plan from AI recommendation service using new playlist method"""
@@ -313,7 +447,7 @@ class DailyActivitiesService:
                         'skill_description': activity.get('skill_description', ''),
                         'priority': 'high' if activity.get('activity_type') == 'core_challenge' else 'medium',
                         'priority_level': activity.get('activity_type', 'practice'),
-                        'mastery': 0.5,  # Default mastery for activity type determination
+                        'mastery': 0.0,  # Will be updated with actual competency data
                         'readiness_status': 'Ready',
                         # Add AI-specific metadata
                         'ai_reason': activity.get('reason', ''),
@@ -414,22 +548,28 @@ class DailyActivitiesService:
             logger.error(f"Failed to get basic recommendations: {str(e)}")
             return None
     
-    def _create_activities_from_recommendations(self, recommendations: List[Dict]) -> List[DailyActivity]:
+    async def _create_activities_from_recommendations(self, recommendations: List[Dict], student_id: int = None) -> List[DailyActivity]:
         """Convert basic BigQuery recommendations into daily activities with curriculum metadata"""
-        
+
         activities = []
-        
+
         for i, rec in enumerate(recommendations):
             # Extract data from recommendation
             subskill_desc = rec.get('subskill_description', 'Practice Session')
             subject = rec.get('subject', 'Mathematics')
             priority = rec.get('priority', 'medium')
-            mastery = rec.get('mastery', 0.0)
             skill_id = rec.get('skill_id', '')
             subskill_id = rec.get('subskill_id', f'skill_{i}')
+
+            # Fetch actual competency data if available
+            mastery = await self._get_competency_score(student_id, subject, skill_id, subskill_id) if student_id else rec.get('mastery', 0.0)
             
+            # Update the recommendation with actual mastery
+            rec_with_mastery = rec.copy()
+            rec_with_mastery['mastery'] = mastery
+
             # Determine activity type and get config
-            activity_type = self._determine_activity_type(rec)
+            activity_type = self._determine_activity_type(rec_with_mastery)
             config = self._get_activity_config(activity_type, subskill_desc)
             
             # Calculate points and assign time slot
@@ -544,24 +684,67 @@ class DailyActivitiesService:
             activities.append(activity)
         
         return activities
-    
+
+    async def _get_competency_score(self, student_id: int, subject: str, skill_id: str, subskill_id: str) -> float:
+        """Fetch actual competency score from BigQuery using credibility-adjusted scoring"""
+        if not self.analytics_service:
+            logger.warning("No BigQuery analytics service available for competency lookup")
+            return 0.0
+
+        try:
+            # Use BigQuery analytics service to get competency data
+            competency_data = await self.analytics_service.get_student_competency(
+                student_id=student_id,
+                subject=subject,
+                skill_id=skill_id,
+                subskill_id=subskill_id
+            )
+
+            if not competency_data:
+                logger.debug(f"No competency data found for {subskill_id}, defaulting to 0.0")
+                return 0.0
+
+            # Get raw score (0-10 scale) and credibility (0-1 scale)
+            raw_score = competency_data.get('current_score', 0) / 10.0  # Convert to 0-1 scale
+
+            # Use credibility-adjusted score: blended_score = score * credibility
+            # This means low credibility results in very low effective scores
+            adjusted_score = raw_score 
+
+            logger.debug(f"Competency for {subskill_id}: raw={raw_score:.2f}, credibility={credibility:.2f}, adjusted={adjusted_score:.2f}")
+            return adjusted_score
+
+        except Exception as e:
+            logger.warning(f"Error fetching competency from BigQuery for {subskill_id}: {e}")
+            return 0.0  # Default to 0 for new/unknown skills
+
     def _determine_activity_type(self, recommendation: Dict) -> str:
-        """Determine best activity type based on recommendation data"""
+        """Determine best activity type based on credibility-adjusted competency data"""
         mastery = recommendation.get('mastery', 0.0)
         priority = recommendation.get('priority', 'medium')
-        
+
+        # Using credibility-adjusted scores:
+        # - Low mastery (< 0.3) = New/struggling skills -> Learning session
+        # - Medium mastery (0.3-0.7) = Developing skills -> Practice
+        # - High mastery (> 0.7) = Strong skills -> Review
+
         if mastery < 0.3:
-            return 'tutoring'
-        elif priority == 'high':
-            return 'practice'
-        elif mastery > 0.7:
-            return 'review'
+            return 'packages'  # Learn: Interactive learning session
         else:
-            return 'practice'
+            return 'practice'  # Practice: Targeted practice
     
     def _get_activity_config(self, activity_type: str, subskill_desc: str) -> Dict[str, str]:
         """Get configuration for activity type"""
         configs = {
+            "packages": {
+                "title": f"Learn: {subskill_desc}",
+                "description": f"Interactive learning session for {subskill_desc.lower()}",
+                "category": "Learning Packages",
+                "time": "12 min",
+                "action": "Start Learning",
+                "endpoint": "/packages",
+                "icon": "book-open"
+            },
             "practice": {
                 "title": f"Practice: {subskill_desc}",
                 "description": f"Targeted practice for {subskill_desc.lower()}",

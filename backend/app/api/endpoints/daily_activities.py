@@ -40,51 +40,57 @@ def _extract_plan_completion_metadata(kwargs: dict, result: dict) -> dict:
     }
 
 def get_daily_activities_service() -> DailyActivitiesService:
-    """Get configured daily activities service with BigQuery and AI recommendations integration"""
+    """Get configured daily activities service with BigQuery, AI recommendations, and Cosmos DB integration"""
+    from ...db.cosmos_db import CosmosDBService
+
     analytics_service = BigQueryAnalyticsService(
         project_id=settings.GCP_PROJECT_ID,
         dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
     )
-    
+
     ai_recommendation_service = AIRecommendationService(
         project_id=settings.GCP_PROJECT_ID,
         dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
     )
-    
+
+    cosmos_db_service = CosmosDBService()
+
     return DailyActivitiesService(
         analytics_service=analytics_service,
-        ai_recommendation_service=ai_recommendation_service
+        ai_recommendation_service=ai_recommendation_service,
+        cosmos_db_service=cosmos_db_service
     )
 
 @router.get("/daily-plan/{student_id}", response_model=DailyPlan)
 async def get_daily_plan(
-    student_id: int, 
+    student_id: int,
     date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format")
 ):
     """
-    Get daily plan for a student
-    - Tries BigQuery recommendations first
-    - Falls back to standard activities if needed
+    Get persistent daily plan for a student
+    - Retrieves from Cosmos DB if exists
+    - Generates new plan if not found
+    - Saves new plans to Cosmos DB for persistence
     """
     try:
         logger.info(f"Getting daily plan for student {student_id}")
-        
+
         service = get_daily_activities_service()
-        daily_plan = await service.generate_daily_plan(student_id, date)
-        
-        logger.info(f"Generated plan with {len(daily_plan.activities)} activities using {daily_plan.personalization_source}")
+        daily_plan = await service.get_or_generate_daily_plan(student_id, date, force_refresh=False)
+
+        logger.info(f"Retrieved plan with {len(daily_plan.activities)} activities using {daily_plan.personalization_source}")
         return daily_plan
-        
+
     except Exception as e:
-        logger.error(f"Error generating daily plan for student {student_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate daily plan: {str(e)}")
+        logger.error(f"Error getting daily plan for student {student_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get daily plan: {str(e)}")
 
 @router.get("/daily-plan/{student_id}/activities")
 async def get_daily_activities(student_id: int, date: Optional[str] = Query(None)):
-    """Get activities list with enhanced transparency metadata"""
+    """Get activities list with enhanced transparency metadata from persistent daily plan"""
     try:
         service = get_daily_activities_service()
-        daily_plan = await service.generate_daily_plan(student_id, date)
+        daily_plan = await service.get_or_generate_daily_plan(student_id, date, force_refresh=False)
         
         # Enhanced activity data with full transparency
         enhanced_activities = []
@@ -165,22 +171,46 @@ async def get_daily_activities(student_id: int, date: Optional[str] = Query(None
 
 @router.post("/daily-plan/{student_id}/refresh")
 async def refresh_daily_plan(student_id: int):
-    """Force refresh/regenerate the daily plan"""
+    """Force refresh/regenerate the daily plan (deletes existing and creates new)"""
     try:
-        logger.info(f"Refreshing daily plan for student {student_id}")
-        
+        logger.info(f"Force refreshing daily plan for student {student_id}")
+
         service = get_daily_activities_service()
-        daily_plan = await service.generate_daily_plan(student_id)
-        
+        daily_plan = await service.get_or_generate_daily_plan(student_id, force_refresh=True)
+
         return {
             "success": True,
-            "message": "Daily plan refreshed successfully",
+            "message": "Daily plan refreshed and saved successfully",
             "plan": daily_plan.dict()
         }
-        
+
     except Exception as e:
         logger.error(f"Error refreshing daily plan for student {student_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+async def hydrate_plan_completion(student_id: int, activity_id: str):
+    """Background task to update the daily plan document in Cosmos DB."""
+    try:
+        from ...db.cosmos_db import CosmosDBService
+        from datetime import datetime
+
+        cosmos_db = CosmosDBService()
+        today_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+        success = await cosmos_db.update_activity_completion(
+            student_id=student_id,
+            date=today_str,
+            activity_id=activity_id,
+            is_complete=True
+        )
+
+        if success:
+            logger.info(f"Hydrated plan completion: marked activity {activity_id} as complete for student {student_id}")
+        else:
+            logger.warning(f"Could not find activity {activity_id} in daily plan for student {student_id} to hydrate")
+
+    except Exception as e:
+        logger.error(f"Failed to hydrate daily plan for student {student_id}: {e}")
 
 @router.post("/daily-plan/{student_id}/activities/{activity_id}/complete")
 @log_engagement_activity(
@@ -188,24 +218,26 @@ async def refresh_daily_plan(student_id: int):
     metadata_extractor=_extract_activity_completion_metadata
 )
 async def mark_activity_completed(
-    student_id: int, 
+    student_id: int,
     activity_id: str,
     background_tasks: BackgroundTasks,
     user_context: dict = Depends(get_user_context),
     points_earned: Optional[int] = Query(None)
 ):
-    """Mark an activity as completed. XP is handled automatically."""
+    """Mark an activity as completed. XP is handled automatically by decorator, persistence by background task."""
     try:
         logger.info(f"Activity {activity_id} completed by student {student_id}")
-        
-        # The endpoint is now ONLY responsible for the activity completion logic
+
+        # Add background task to hydrate the plan completion in Cosmos DB
+        background_tasks.add_task(hydrate_plan_completion, student_id, activity_id)
+
         return {
             "success": True,
             "activity_id": activity_id,
             "student_id": student_id,
-            "message": "Activity completed successfully",
+            "message": "Activity completion is being processed.",
         }
-        
+
     except Exception as e:
         logger.error(f"Error completing activity {activity_id} for student {student_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -237,28 +269,32 @@ async def complete_daily_plan(
 
 @router.get("/daily-activities/health")
 async def daily_activities_health():
-    """Health check for daily activities service"""
+    """Health check for daily activities service with persistence"""
     try:
         service = get_daily_activities_service()
-        
-        # Test the service
-        test_plan = await service.generate_daily_plan(1)  # Test with student ID 1
-        
+
+        # Test the service with persistence
+        test_plan = await service.get_or_generate_daily_plan(1)  # Test with student ID 1
+
         return {
             "status": "healthy",
             "service": "daily_activities",
             "features": {
                 "bigquery_integration": service.analytics_service is not None,
+                "ai_recommendations": service.ai_recommendation_service is not None,
+                "cosmos_db_persistence": service.cosmos_db_service is not None,
                 "activity_generation": True,
-                "fallback_support": True
+                "fallback_support": True,
+                "persistent_daily_plans": True
             },
             "test_results": {
                 "generated_activities": len(test_plan.activities),
-                "personalization_source": test_plan.personalization_source
+                "personalization_source": test_plan.personalization_source,
+                "plan_date": test_plan.date
             },
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         return {
             "status": "unhealthy",

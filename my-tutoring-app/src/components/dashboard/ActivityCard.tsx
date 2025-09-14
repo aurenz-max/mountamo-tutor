@@ -31,12 +31,13 @@ interface ActivityCardProps {
     estimated_time: string;
     points: number;
     priority: string;
+    type?: string; // Backend activity type: 'packages' or 'practice'
+    is_complete?: boolean; // Backend completion status
     metadata?: {
       from_recommendations?: boolean;
       subject?: string;
       unit_description?: string;
       skill_description?: string;
-      completed?: boolean;
       [key: string]: any; // Allow for additional metadata fields
     };
     curriculum_metadata?: {
@@ -64,6 +65,7 @@ interface ActivityCardProps {
     };
   };
   onLearningSelect: (option: LearningOption) => void;
+  onMarkComplete?: (activityId: string, pointsEarned?: number) => void;
   loading?: boolean;
   loadingAction?: string;
   expanded?: boolean;
@@ -81,6 +83,7 @@ interface LearningOption {
 const ActivityCard: React.FC<ActivityCardProps> = ({
   activityData,
   onLearningSelect,
+  onMarkComplete,
   loading = false,
   loadingAction = null,
   expanded = false,
@@ -101,7 +104,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                              activityData.title.replace(/^(Learn|Practice|Review):\s*/, '') ||
                              'Learning Activity';
 
-  const isCompleted = activityData.metadata?.completed || false;
+  const isCompleted = activityData.is_complete || false;
   const aiRecommended = activityData.metadata?.from_recommendations || false;
   
   // New transparency data
@@ -184,6 +187,13 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       icon: Wrench,
       color: 'bg-orange-500',
       route: `/projects/activities/${activityData.id}`
+    },
+    {
+      id: 'mark-complete',
+      title: 'Done',
+      icon: CheckCircle,
+      color: 'bg-green-600',
+      route: '#complete' // Special route for completion
     }
   ];
 
@@ -332,31 +342,49 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         {/* Always visible action buttons */}
         {isCompleted ? (
           <div className="text-center text-green-600 font-medium">
-            Activity completed!
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Activity completed!
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             {learningOptions.map((option) => {
               const IconComponent = option.icon;
               const isButtonLoading = loading && loadingAction === option.id;
               const isOtherButtonLoading = loading && loadingAction !== option.id;
-              
+
+              // Determine if this button should show "AI Recommended" label
+              const showAIRecommended =
+                (activityData.type === 'practice' && option.id === 'practice-problems') ||
+                (activityData.type === 'packages' && option.id === 'educational-content');
+
               return (
                 <motion.button
                   key={option.id}
                   whileHover={{ scale: isButtonLoading ? 1 : 1.05 }}
                   whileTap={{ scale: isButtonLoading ? 1 : 0.95 }}
                   className={`flex flex-col items-center p-3 rounded-lg border transition-all group ${
-                    isOtherButtonLoading 
-                      ? 'border-gray-200 opacity-50' 
+                    isOtherButtonLoading
+                      ? 'border-gray-200 opacity-50'
+                      : option.id === 'mark-complete'
+                      ? 'border-green-300 bg-green-50 hover:border-green-400 hover:shadow-md'
+                      : showAIRecommended
+                      ? 'border-purple-300 bg-purple-50 hover:border-purple-400 hover:shadow-md ring-2 ring-purple-200'
                       : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                   }`}
-                  onClick={() => onLearningSelect(option)}
+                  onClick={() => {
+                    if (option.id === 'mark-complete' && onMarkComplete) {
+                      onMarkComplete(activityData.id, activityData.points);
+                    } else {
+                      onLearningSelect(option);
+                    }
+                  }}
                   disabled={loading}
                 >
                   <div className={`w-8 h-8 rounded-lg mb-2 flex items-center justify-center ${option.color} text-white ${
                     isOtherButtonLoading ? '' : 'group-hover:scale-110'
-                  } transition-transform`}>
+                  } transition-transform ${showAIRecommended ? 'ring-2 ring-purple-300' : ''}`}>
                     {isButtonLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -364,10 +392,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     )}
                   </div>
                   <span className={`text-xs font-medium transition-colors ${
-                    isOtherButtonLoading 
-                      ? 'text-gray-400' 
-                      : isButtonLoading 
+                    isOtherButtonLoading
+                      ? 'text-gray-400'
+                      : isButtonLoading
                       ? 'text-blue-600'
+                      : showAIRecommended
+                      ? 'text-purple-700 font-bold'
                       : 'text-gray-700 group-hover:text-blue-600'
                   }`}>
                     {isButtonLoading && option.id === 'educational-content' ? 'Generating...' : option.title}

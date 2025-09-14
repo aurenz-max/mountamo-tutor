@@ -1250,6 +1250,61 @@ class BigQueryAnalyticsService:
                 "timestamp": datetime.now().isoformat()
             }
 
+    async def get_student_competency(
+        self,
+        student_id: int,
+        subject: str,
+        skill_id: str,
+        subskill_id: str
+    ) -> Optional[Dict]:
+        """Get student competency data for a specific subskill"""
+
+        try:
+            query = f"""
+            SELECT
+                student_id,
+                subskill_id,
+                AVG(score) as current_score,
+                COUNT(*) as attempt_count,
+                -- Credibility based on attempt count (max at 10 attempts)
+                LEAST(COUNT(*) / 10.0, 1.0) as credibility,
+                -- Mastery calculation (avg_score * credibility)
+                AVG(score / 10.0) * LEAST(COUNT(*) / 10.0, 1.0) as mastery,
+                MIN(timestamp) as first_attempt,
+                MAX(timestamp) as last_attempt
+            FROM `{self.project_id}.{self.dataset_id}.attempts`
+            WHERE student_id = @student_id
+                AND subject = @subject
+                AND subskill_id = @subskill_id
+            GROUP BY student_id, subskill_id
+            """
+
+            parameters = [
+                bigquery.ScalarQueryParameter("student_id", "INT64", student_id),
+                bigquery.ScalarQueryParameter("subject", "STRING", subject),
+                bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)
+            ]
+
+            results = await self._run_query_async(query, parameters)
+
+            if results and len(results) > 0:
+                result = results[0]
+                return {
+                    'current_score': float(result['current_score']),
+                    'credibility': float(result['credibility']),
+                    'mastery': float(result['mastery']),
+                    'attempt_count': int(result['attempt_count']),
+                    'first_attempt': result['first_attempt'],
+                    'last_attempt': result['last_attempt']
+                }
+            else:
+                # Return None if no data found
+                return None
+
+        except Exception as e:
+            logger.error(f"Error getting student competency for {subskill_id}: {e}")
+            return None
+
     def clear_cache(self):
         """Clear the analytics cache"""
         self._cache.clear()

@@ -281,15 +281,15 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
             estimated_time: activity.estimated_time,
             points: activity.points,
             priority: activity.priority,
-            type: activity.type,
+            type: activity.type, // Backend activity type: 'packages' or 'practice'
             endpoint: activity.endpoint,
+            is_complete: activity.is_complete, // Backend completion status
             metadata: {
               from_recommendations: activity.metadata?.from_recommendations,
               subject: activity.metadata?.subject,
               skill_id: activity.metadata?.skill_id,
               priority_level: activity.metadata?.priority_level,
-              difficulty: activity.metadata?.difficulty,
-              completed: activity.metadata?.completed
+              difficulty: activity.metadata?.difficulty
             },
             curriculum_metadata: activity.curriculum_metadata,
             source_type: activity.source_type,
@@ -309,6 +309,10 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
                 ...option,
                 activityId: activity.id
               })}
+              onMarkComplete={(activityId, pointsEarned) => {
+                console.log('Marking activity complete:', activityId, pointsEarned);
+                completeActivity(activityId, pointsEarned);
+              }}
               loading={loadingActivity === activity.id}
               loadingAction={loadingActivity === activity.id ? loadingAction : undefined}
             />

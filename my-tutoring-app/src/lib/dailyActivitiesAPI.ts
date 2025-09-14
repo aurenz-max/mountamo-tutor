@@ -13,6 +13,7 @@ export interface DailyActivity {
   action: string;
   endpoint: string;
   icon_type: string;
+  is_complete?: boolean; // Backend completion status from Cosmos DB
   metadata: Record<string, any>;
   source_type?: 'ai_recommendations' | 'bigquery_recommendations' | 'fallback';
   source_details?: {
@@ -237,18 +238,26 @@ export function useDailyActivities({
       // Use the enhanced activities endpoint that includes transparency metadata
       const enhancedPlan = await api.getDailyActivities(studentId, date);
       
+      // Calculate actual completion stats from activities using backend's is_complete field
+      const completedActivities = enhancedPlan.activities.filter(
+        (activity: any) => activity.is_complete === true
+      ).length;
+      const totalActivities = enhancedPlan.activities.length;
+
       // Convert the enhanced response to the expected DailyPlan format
       const plan: DailyPlan = {
         student_id: enhancedPlan.student_id,
         date: enhancedPlan.date,
         activities: enhancedPlan.activities,
         progress: {
-          completed_activities: enhancedPlan.summary?.total_activities || 0,
-          total_activities: enhancedPlan.summary?.total_activities || 0,
-          points_earned_today: 0, // Would need to track this separately
+          completed_activities: completedActivities,
+          total_activities: totalActivities,
+          points_earned_today: enhancedPlan.activities
+            .filter((activity: any) => activity.is_complete === true)
+            .reduce((sum: number, activity: any) => sum + (activity.points || 0), 0),
           daily_goal: 60,
           current_streak: 1,
-          progress_percentage: 0.0
+          progress_percentage: totalActivities > 0 ? (completedActivities / totalActivities) * 100 : 0
         },
         personalization_source: enhancedPlan.summary?.personalization_source || 'unknown',
         total_points: enhancedPlan.summary?.total_points || 0,
@@ -290,8 +299,8 @@ export function useDailyActivities({
         return {
           ...prev,
           activities: prev.activities.map(activity =>
-            activity.id === activityId 
-              ? { ...activity, metadata: { ...activity.metadata, completed: true } }
+            activity.id === activityId
+              ? { ...activity, is_complete: true, metadata: { ...activity.metadata } }
               : activity
           ),
           progress: {
