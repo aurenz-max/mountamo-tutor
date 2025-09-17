@@ -67,7 +67,7 @@ class CurriculumService:
         ORDER BY subject
         """
         
-        results = await self.bigquery_service.execute_query(query)
+        results = await self.bigquery_service._run_query_async(query)
         subjects = [row['subject'] for row in results]
         
         # Cache the result
@@ -105,7 +105,7 @@ class CurriculumService:
         from google.cloud import bigquery
         parameters = [bigquery.ScalarQueryParameter("subject", "STRING", subject)]
         
-        results = await self.bigquery_service.execute_query(query, parameters)
+        results = await self.bigquery_service._run_query_async(query, parameters)
         structured_curriculum = self._structure_curriculum_data(results)
         
         # Cache the result
@@ -166,7 +166,7 @@ class CurriculumService:
         from google.cloud import bigquery
         parameters = [bigquery.ScalarQueryParameter("subject", "STRING", subject)]
         
-        results = await self.bigquery_service.execute_query(query, parameters)
+        results = await self.bigquery_service._run_query_async(query, parameters)
         return [row['subskill_id'] for row in results]
     
     async def get_detailed_objectives(self, subject: str, subskill_id: str) -> Dict[str, Any]:
@@ -184,7 +184,7 @@ class CurriculumService:
             from google.cloud import bigquery
             parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
             
-            results = await self.bigquery_service.execute_query(query, parameters)
+            results = await self.bigquery_service._run_query_async(query, parameters)
             
             if results:
                 objective = random.choice(results)
@@ -233,7 +233,7 @@ class CurriculumService:
             from google.cloud import bigquery
             parameters = [bigquery.ScalarQueryParameter("subject", "STRING", subject)]
         
-        results = await self.bigquery_service.execute_query(query, parameters)
+        results = await self.bigquery_service._run_query_async(query, parameters)
         
         if subject and results:
             return results[0]
@@ -253,7 +253,7 @@ class CurriculumService:
             LIMIT 1
             """
             
-            await self.bigquery_service.execute_query(test_query)
+            await self.bigquery_service._run_query_async(test_query)
             
             return {
                 "status": "healthy",

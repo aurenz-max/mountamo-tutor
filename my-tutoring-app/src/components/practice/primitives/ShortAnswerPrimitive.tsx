@@ -15,7 +15,8 @@ const ShortAnswerPrimitive: React.FC<ShortAnswerPrimitiveProps> = ({
   currentResponse,
   feedback,
   onUpdate,
-  disabled = false
+  disabled = false,
+  disableFeedback = false
 }) => {
   const handleAnswerChange = (value: string) => {
     if (disabled || isSubmitted) return;
@@ -45,7 +46,7 @@ const ShortAnswerPrimitive: React.FC<ShortAnswerPrimitiveProps> = ({
       </div>
 
       {/* Show feedback after submission */}
-      {isSubmitted && feedback?.shortAnswerReview && (
+      {isSubmitted && !disableFeedback && feedback?.shortAnswerReview && (
         <div className="space-y-4">
           {/* Show expected answer if available */}
           {problem.answer && (

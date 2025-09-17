@@ -403,10 +403,55 @@ class AuthenticatedApiClient {
     return this.get('/api/analytics/health');
   }
 
+  // ============================================================================
+  // ASSESSMENT ENDPOINTS
+  // ============================================================================
 
-// ============================================================================
-// PACKAGE ENDPOINTS - Add to your AuthenticatedApiClient class
-// ============================================================================
+  /**
+   * Get available subjects for assessment
+   */
+  async getAssessmentSubjects() {
+    return this.get('/api/assessments/subjects');
+  }
+
+  /**
+   * Create a new assessment for a subject
+   */
+  async createAssessment(subject: string, request: {
+    student_id: number;
+    question_count: number;
+  }) {
+    return this.post(`/api/assessments/${subject}`, request);
+  }
+
+  /**
+   * Submit assessment answers
+   */
+  async submitAssessment(subject: string, request: {
+    assessment_id: string;
+    answers: { [key: string]: any };
+    time_taken_minutes?: number;
+  }) {
+    return this.post(`/api/assessments/${subject}/submit`, request);
+  }
+
+  /**
+   * Get assessment data for taking the assessment
+   */
+  async getAssessment(assessmentId: string) {
+    return this.get(`/api/assessments/assessment/${assessmentId}`);
+  }
+
+  /**
+   * Get assessment summary/results
+   */
+  async getAssessmentSummary(assessmentId: string) {
+    return this.get(`/api/assessments/${assessmentId}/summary`);
+  }
+
+  // ============================================================================
+  // PACKAGE ENDPOINTS
+  // ============================================================================
 
 /**
  * Get content packages with filtering

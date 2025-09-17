@@ -173,6 +173,9 @@ const NavHeader = () => {
               <Link href="/practice" className="text-sm hover:opacity-80 transition-opacity">
                 Practice
               </Link>
+              <Link href="/assessments" className="text-sm hover:opacity-80 transition-opacity">
+                Assessments
+              </Link>
               <Link href="/curriculum" className="text-sm hover:opacity-80 transition-opacity">
                 Library
               </Link>

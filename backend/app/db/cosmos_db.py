@@ -86,6 +86,13 @@ class CosmosDBService:
             unique_key_policy={'uniqueKeys': [{'paths': ['/student_id', '/date']}]}
         )
 
+        # 🆕 NEW: Assessments container for persistent assessment storage
+        self.assessments = self.database.create_container_if_not_exists(
+            id="assessments",
+            partition_key=PartitionKey(path="/student_id"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/assessment_id']}]}
+        )
+
     # ============================================================================
     # 🔥 NEW: STUDENT MAPPING METHODS
     # ============================================================================
@@ -1934,6 +1941,232 @@ class CosmosDBService:
             
         except Exception as e:
             logger.error(f"Error searching content packages: {str(e)}")
+            return []
+
+    # ============================================================================
+    # 🆕 NEW: ASSESSMENT METHODS
+    # ============================================================================
+
+    async def store_assessment(
+        self,
+        assessment_data: Dict[str, Any],
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Store assessment data in Cosmos DB with expiration"""
+        try:
+            student_id = assessment_data.get("student_id")
+            assessment_id = assessment_data.get("assessment_id")
+
+            # Validate user access
+            if firebase_uid and student_id:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+            timestamp = datetime.utcnow().isoformat()
+
+            # Calculate expiration time (6 hours from creation)
+            from datetime import timedelta
+            expires_at = (datetime.utcnow() + timedelta(hours=6)).isoformat()
+
+            # Create the assessment document
+            assessment_document = {
+                "id": assessment_id,
+                "assessment_id": assessment_id,
+                "student_id": student_id,
+                "subject": assessment_data.get("subject"),
+                "status": "created",
+                "total_questions": assessment_data.get("total_questions", 0),
+                "estimated_duration_minutes": assessment_data.get("estimated_duration_minutes", 30),
+                "blueprint": assessment_data.get("blueprint", {}),
+                "problems": assessment_data.get("problems", []),
+                "created_at": timestamp,
+                "expires_at": expires_at,
+                "started_at": None,
+                "completed_at": None,
+                "answers": None,
+                "score_data": None,
+                "time_taken_minutes": None,
+                "firebase_uid": firebase_uid,
+                "document_type": "assessment",
+                "ttl": 21600  # 6 hours in seconds for automatic deletion
+            }
+
+            # Store the assessment
+            result = self.assessments.create_item(body=assessment_document)
+            logger.info(f"Stored assessment {assessment_id} for student {student_id}")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error storing assessment: {str(e)}")
+            raise
+
+    async def get_assessment(
+        self,
+        assessment_id: str,
+        student_id: int,
+        firebase_uid: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieve assessment by ID with validation"""
+        try:
+            # Validate user access
+            if firebase_uid:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+            # Get the assessment
+            result = self.assessments.read_item(
+                item=assessment_id,
+                partition_key=student_id
+            )
+
+            # Check if assessment has expired
+            if result.get("expires_at"):
+                expires_at = datetime.fromisoformat(result["expires_at"])
+                if datetime.utcnow() > expires_at:
+                    logger.warning(f"Assessment {assessment_id} has expired")
+                    return None
+
+            logger.info(f"Retrieved assessment {assessment_id} for student {student_id}")
+            return result
+
+        except CosmosResourceNotFoundError:
+            logger.info(f"Assessment {assessment_id} not found for student {student_id}")
+            return None
+        except Exception as e:
+            logger.error(f"Error retrieving assessment: {str(e)}")
+            return None
+
+    async def update_assessment_status(
+        self,
+        assessment_id: str,
+        student_id: int,
+        status: str,
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Update assessment status (created → in_progress → completed)"""
+        try:
+            # Validate user access
+            if firebase_uid:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+            # Get the existing assessment
+            assessment = await self.get_assessment(assessment_id, student_id, firebase_uid)
+            if not assessment:
+                return False
+
+            # Update status and relevant timestamps
+            assessment["status"] = status
+
+            if status == "in_progress" and not assessment.get("started_at"):
+                assessment["started_at"] = datetime.utcnow().isoformat()
+            elif status == "completed" and not assessment.get("completed_at"):
+                assessment["completed_at"] = datetime.utcnow().isoformat()
+
+            # Save the updated assessment
+            self.assessments.upsert_item(body=assessment)
+            logger.info(f"Updated assessment {assessment_id} status to {status}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error updating assessment status: {str(e)}")
+            return False
+
+    async def store_assessment_submission(
+        self,
+        assessment_id: str,
+        student_id: int,
+        answers: Dict[str, Any],
+        score_data: Dict[str, Any],
+        time_taken_minutes: Optional[int] = None,
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Store student answers and scoring results"""
+        try:
+            # Validate user access
+            if firebase_uid:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+            # Get the existing assessment
+            assessment = await self.get_assessment(assessment_id, student_id, firebase_uid)
+            if not assessment:
+                return False
+
+            # Update with submission data
+            assessment["answers"] = answers
+            assessment["score_data"] = score_data
+            assessment["time_taken_minutes"] = time_taken_minutes
+            assessment["status"] = "completed"
+            assessment["completed_at"] = datetime.utcnow().isoformat()
+
+            # Save the updated assessment
+            self.assessments.upsert_item(body=assessment)
+            logger.info(f"Stored submission for assessment {assessment_id}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error storing assessment submission: {str(e)}")
+            return False
+
+    async def get_student_assessments(
+        self,
+        student_id: int,
+        status: Optional[str] = None,
+        limit: int = 50,
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get assessments for a student with optional status filter"""
+        try:
+            # Validate user access
+            if firebase_uid:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+            query = """
+            SELECT * FROM c
+            WHERE c.student_id = @student_id
+            AND c.document_type = 'assessment'
+            """
+            params = [{"name": "@student_id", "value": student_id}]
+
+            if status:
+                query += " AND c.status = @status"
+                params.append({"name": "@status", "value": status})
+
+            query += " ORDER BY c.created_at DESC OFFSET 0 LIMIT @limit"
+            params.append({"name": "@limit", "value": limit})
+
+            results = list(self.assessments.query_items(
+                query=query,
+                parameters=params,
+                partition_key=student_id
+            ))
+
+            # Filter out expired assessments
+            current_time = datetime.utcnow()
+            valid_results = []
+
+            for result in results:
+                if result.get("expires_at"):
+                    expires_at = datetime.fromisoformat(result["expires_at"])
+                    if current_time <= expires_at:
+                        valid_results.append(result)
+                else:
+                    valid_results.append(result)
+
+            return valid_results
+
+        except Exception as e:
+            logger.error(f"Error getting student assessments: {str(e)}")
             return []
 
     # ============================================================================

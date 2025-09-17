@@ -38,6 +38,11 @@ class EngagementService:
             "content_package_primitive_completed": 5,  # Base XP for interactive primitives
             "daily_streak_base": 10,
             "daily_streak_max_bonus": 50,
+            # --- NEW ASSESSMENT XP VALUES ---
+            "assessment_generated": 15,
+            "assessment_submitted_base": 50,
+            "assessment_submitted_performance_bonus_max": 150,
+            # --- END NEW VALUES ---
         }
         
         # Pre-calculate level thresholds for performance
@@ -240,7 +245,21 @@ class EngagementService:
             if score and score >= 0.8:
                 base_xp *= 2  # Double XP for excellent performance
             return base_xp
-        
+
+        # --- NEW ASSESSMENT LOGIC ---
+        if activity_type == "assessment_generated":
+            return self.xp_config["assessment_generated"]
+
+        if activity_type == "assessment_submitted":
+            base_xp = self.xp_config["assessment_submitted_base"]
+
+            # Calculate performance bonus
+            score_percentage = metadata.get('score_percentage', 0.0)  # Expects a float like 0.85
+            bonus_xp = int(score_percentage * self.xp_config["assessment_submitted_performance_bonus_max"])
+
+            return base_xp + bonus_xp
+        # --- END NEW LOGIC ---
+
         return 5  # Default minimum XP
     
     def _precalculate_level_thresholds(self, max_level: int = 100) -> Dict[int, int]:

@@ -17,7 +17,8 @@ const FillInBlankPrimitive: React.FC<FillInBlankPrimitiveProps> = ({
   currentResponse,
   feedback,
   onUpdate,
-  disabled = false
+  disabled = false,
+  disableFeedback = false
 }) => {
   const handleBlankChange = (blankId: string, value: string) => {
     if (disabled || isSubmitted) return;
@@ -70,8 +71,8 @@ const FillInBlankPrimitive: React.FC<FillInBlankPrimitiveProps> = ({
             if (blankMatch) {
               const blankId = blankMatch[1];
               const evaluation = getBlankEvaluation(blankId);
-              const isCorrect = evaluation?.is_correct;
-              const isIncorrect = evaluation && !evaluation.is_correct;
+              const isCorrect = isSubmitted && !disableFeedback && evaluation?.is_correct;
+              const isIncorrect = isSubmitted && !disableFeedback && evaluation && !evaluation.is_correct;
               
               return (
                 <span key={partIndex} className="inline-flex items-center mx-1">
@@ -89,7 +90,7 @@ const FillInBlankPrimitive: React.FC<FillInBlankPrimitiveProps> = ({
                           : 'border-gray-300'
                     } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
-                  {isSubmitted && (
+                  {isSubmitted && !disableFeedback && (
                     <span className="ml-1">
                       {isCorrect && <span className="w-4 h-4 text-green-600">✓</span>}
                       {isIncorrect && <span className="text-red-600 text-sm">✗</span>}
@@ -104,7 +105,7 @@ const FillInBlankPrimitive: React.FC<FillInBlankPrimitiveProps> = ({
       </div>
       
       {/* Show detailed feedback after submission */}
-      {isSubmitted && feedback?.fibReview && (
+      {isSubmitted && !disableFeedback && feedback?.fibReview && (
         <div className="space-y-2">
           <h4 className="font-medium text-gray-800">Answer Details:</h4>
           {feedback.fibReview.blank_evaluations?.map((evaluation: any) => (

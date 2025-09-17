@@ -20,7 +20,8 @@ const MatchingPrimitive: React.FC<MatchingPrimitiveProps> = ({
   currentResponse,
   feedback,
   onUpdate,
-  disabled = false
+  disabled = false,
+  disableFeedback = false
 }) => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
@@ -64,11 +65,13 @@ const MatchingPrimitive: React.FC<MatchingPrimitiveProps> = ({
   };
 
   const isCorrectMatch = (leftId: string): boolean => {
+    if (disableFeedback || !isSubmitted) return false;
     const evaluation = getMatchEvaluation(leftId);
     return evaluation?.is_correct || false;
   };
 
   const isIncorrectMatch = (leftId: string): boolean => {
+    if (disableFeedback || !isSubmitted) return false;
     const evaluation = getMatchEvaluation(leftId);
     return evaluation && !evaluation.is_correct;
   };
@@ -190,7 +193,7 @@ const MatchingPrimitive: React.FC<MatchingPrimitiveProps> = ({
                         }>
                           {getRightItemText(matchedRightId)}
                         </span>
-                        {isSubmitted && (
+                        {isSubmitted && !disableFeedback && (
                           <span className="ml-2">
                             {isCorrect && <CheckCircle className="w-4 h-4 text-green-600" />}
                             {isIncorrect && <XCircle className="w-4 h-4 text-red-600" />}
@@ -198,7 +201,7 @@ const MatchingPrimitive: React.FC<MatchingPrimitiveProps> = ({
                         )}
                       </div>
                     )}
-                    {isSubmitted && isIncorrect && expectedMatches.length > 0 && (
+                    {isSubmitted && !disableFeedback && isIncorrect && expectedMatches.length > 0 && (
                       <div className="mt-2 text-xs text-green-600">
                         Expected: {expectedMatches.map(rightId => getRightItemText(rightId)).join(' or ')}
                       </div>
@@ -258,7 +261,7 @@ const MatchingPrimitive: React.FC<MatchingPrimitiveProps> = ({
       </div>
 
       {/* Show detailed feedback after submission */}
-      {isSubmitted && feedback?.matchingReview && (
+      {isSubmitted && !disableFeedback && feedback?.matchingReview && (
         <div className="space-y-2 mt-6">
           <h4 className="font-medium text-gray-800">Match Details:</h4>
           {feedback.matchingReview.match_evaluations?.map((evaluation: any) => (

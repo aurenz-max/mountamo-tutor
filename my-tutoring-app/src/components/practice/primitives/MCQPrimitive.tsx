@@ -21,7 +21,8 @@ const MCQPrimitive: React.FC<MCQPrimitiveProps> = ({
   currentResponse,
   feedback,
   onUpdate,
-  disabled = false
+  disabled = false,
+  disableFeedback = false
 }) => {
   const handleOptionChange = (optionId: string) => {
     if (disabled || isSubmitted) return;
@@ -33,12 +34,12 @@ const MCQPrimitive: React.FC<MCQPrimitiveProps> = ({
   };
 
   const isOptionCorrect = (optionId: string) => {
-    return isSubmitted && optionId === problem.correct_option_id;
+    return isSubmitted && !disableFeedback && optionId === problem.correct_option_id;
   };
 
   const isOptionIncorrectlySelected = (optionId: string) => {
-    return isSubmitted && 
-           currentResponse?.selected_option_id === optionId && 
+    return isSubmitted && !disableFeedback &&
+           currentResponse?.selected_option_id === optionId &&
            optionId !== problem.correct_option_id;
   };
 

@@ -119,6 +119,7 @@ interface ProblemRendererProps {
   currentResponse: any;
   feedback: any;
   submitting: boolean;
+  isAssessmentMode?: boolean; // New prop for assessment mode
 }
 
 // Helper function to map backend problem types to frontend component keys
@@ -169,7 +170,7 @@ const getProblemType = (problem: Problem): string => {
 
 const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
   (
-    { problem, isSubmitted, onSubmit, onUpdate, currentResponse, feedback, submitting },
+    { problem, isSubmitted, onSubmit, onUpdate, currentResponse, feedback, submitting, isAssessmentMode = false },
     ref
   ) => {
     const problemType = getProblemType(problem);
@@ -211,6 +212,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             isSubmitted={isSubmitted}
             feedback={feedback}
             currentResponse={currentResponse}
+            disableFeedback={isAssessmentMode}
           />
         );
 
@@ -222,6 +224,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             isSubmitted={isSubmitted}
             feedback={feedback}
             currentResponse={currentResponse}
+            disableFeedback={isAssessmentMode}
           />
         );
 
@@ -233,6 +236,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             isSubmitted={isSubmitted}
             feedback={feedback}
             currentResponse={currentResponse}
+            disableFeedback={isAssessmentMode}
           />
         );
 
@@ -244,6 +248,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             isSubmitted={isSubmitted}
             feedback={feedback}
             currentResponse={currentResponse}
+            disableFeedback={isAssessmentMode}
           />
         );
 
@@ -255,6 +260,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             isSubmitted={isSubmitted}
             feedback={feedback}
             currentResponse={currentResponse}
+            disableFeedback={isAssessmentMode}
           />
         );
 
@@ -266,6 +272,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             isSubmitted={isSubmitted}
             feedback={feedback}
             currentResponse={currentResponse}
+            disableFeedback={isAssessmentMode}
           />
         );
 
@@ -277,6 +284,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             isSubmitted={isSubmitted}
             feedback={feedback}
             currentResponse={currentResponse}
+            disableFeedback={isAssessmentMode}
           />
         );
 
@@ -288,6 +296,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             isSubmitted={isSubmitted}
             feedback={feedback}
             currentResponse={currentResponse}
+            disableFeedback={isAssessmentMode}
           />
         );
 

@@ -17,7 +17,8 @@ const SequencingPrimitive: React.FC<SequencingPrimitiveProps> = ({
   currentResponse,
   feedback,
   onUpdate,
-  disabled = false
+  disabled = false,
+  disableFeedback = false
 }) => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   
@@ -86,8 +87,8 @@ const SequencingPrimitive: React.FC<SequencingPrimitiveProps> = ({
         <h4 className="font-medium text-gray-800 mb-3">Drag items to arrange them in the correct order:</h4>
         {currentSequence.map((item, index) => {
           const itemFeedback = getItemFeedback(item);
-          const isCorrect = itemFeedback?.is_correct;
-          const isIncorrect = itemFeedback && !itemFeedback.is_correct;
+          const isCorrect = isSubmitted && !disableFeedback && itemFeedback?.is_correct;
+          const isIncorrect = isSubmitted && !disableFeedback && itemFeedback && !itemFeedback.is_correct;
           
           return (
             <div
@@ -122,7 +123,7 @@ const SequencingPrimitive: React.FC<SequencingPrimitiveProps> = ({
                 }`}>
                   {item}
                 </span>
-                {isSubmitted && (
+                {isSubmitted && !disableFeedback && (
                   <span className="ml-2">
                     {isCorrect && <CheckCircle className="w-5 h-5 text-green-600" />}
                     {isIncorrect && <XCircle className="w-5 h-5 text-red-600" />}
@@ -157,7 +158,7 @@ const SequencingPrimitive: React.FC<SequencingPrimitiveProps> = ({
       </div>
 
       {/* Show feedback after submission */}
-      {isSubmitted && feedback?.sequencingReview && (
+      {isSubmitted && !disableFeedback && feedback?.sequencingReview && (
         <div className="space-y-4">
           {!feedback.sequencingReview.is_correct && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

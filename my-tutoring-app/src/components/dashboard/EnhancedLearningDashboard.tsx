@@ -2,16 +2,17 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Award, 
-  BarChart2, 
-  PenTool, 
+import {
+  Award,
+  BarChart2,
+  PenTool,
   Users,
   RefreshCw,
   Flame,
   Settings,
   BookOpen,
-  Calendar
+  Calendar,
+  ClipboardCheck
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,8 +28,6 @@ import VelocityMetricsCard from '@/components/analytics/VelocityMetricsCard';
 import { useVelocityMetrics } from '@/hooks/useVelocityMetrics';
 import { LevelBadge } from '@/components/engagement/LevelBadge';
 import { XPProgressBar } from '@/components/engagement/XPProgressBar';
-import XPCounter from '@/components/engagement/XPCounter';
-import StreakCounter from '@/components/engagement/StreakCounter';
 
 const EnhancedLearningDashboard: React.FC = () => {
   const { userProfile } = useAuth();
@@ -240,12 +239,21 @@ const EnhancedLearningDashboard: React.FC = () => {
                     <BookOpen className="h-6 w-6 text-orange-500" />
                     <span className="text-sm">Learning Path</span>
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="h-20 flex flex-col items-center justify-center space-y-2"
+                    onClick={() => router.push('/practice')}
                   >
                     <PenTool className="h-6 w-6 text-red-500" />
                     <span className="text-sm">Practice</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-20 flex flex-col items-center justify-center space-y-2"
+                    onClick={() => router.push('/assessments')}
+                  >
+                    <ClipboardCheck className="h-6 w-6 text-blue-500" />
+                    <span className="text-sm">Assessments</span>
                   </Button>
                   <Button 
                     variant="outline" 

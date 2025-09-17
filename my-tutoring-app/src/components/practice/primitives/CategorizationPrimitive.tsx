@@ -17,7 +17,8 @@ const CategorizationPrimitive: React.FC<CategorizationPrimitiveProps> = ({
   currentResponse,
   feedback,
   onUpdate,
-  disabled = false
+  disabled = false,
+  disableFeedback = false
 }) => {
   const handleCategorize = (itemText: string, category: string) => {
     if (disabled || isSubmitted) return;
@@ -40,11 +41,13 @@ const CategorizationPrimitive: React.FC<CategorizationPrimitiveProps> = ({
   };
 
   const isItemCorrect = (itemText: string): boolean => {
+    if (disableFeedback || !isSubmitted) return false;
     const itemFeedback = getItemFeedback(itemText);
     return itemFeedback?.is_correct || false;
   };
 
   const isItemIncorrect = (itemText: string): boolean => {
+    if (disableFeedback || !isSubmitted) return false;
     const itemFeedback = getItemFeedback(itemText);
     return itemFeedback && !itemFeedback.is_correct;
   };
@@ -84,7 +87,7 @@ const CategorizationPrimitive: React.FC<CategorizationPrimitiveProps> = ({
                     >
                       <div className="flex items-center justify-between">
                         <span>{item.item_text}</span>
-                        {isSubmitted && (
+                        {isSubmitted && !disableFeedback && (
                           <span>
                             {isCorrect && <CheckCircle className="w-4 h-4 text-green-600" />}
                             {isIncorrect && <XCircle className="w-4 h-4 text-red-600" />}
@@ -131,7 +134,7 @@ const CategorizationPrimitive: React.FC<CategorizationPrimitiveProps> = ({
       </div>
 
       {/* Show feedback after submission */}
-      {isSubmitted && feedback?.categorizationReview && (
+      {isSubmitted && !disableFeedback && feedback?.categorizationReview && (
         <div className="space-y-4">
           {/* Show incorrect items with correct categories */}
           {feedback.categorizationReview.item_evaluations?.some((e: any) => !e.is_correct) && (

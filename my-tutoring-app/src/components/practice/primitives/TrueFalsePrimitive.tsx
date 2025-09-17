@@ -18,7 +18,8 @@ const TrueFalsePrimitive: React.FC<TrueFalsePrimitiveProps> = ({
   currentResponse,
   feedback,
   onUpdate,
-  disabled = false
+  disabled = false,
+  disableFeedback = false
 }) => {
   const handleAnswerChange = (value: boolean) => {
     if (disabled || isSubmitted) return;
@@ -39,12 +40,12 @@ const TrueFalsePrimitive: React.FC<TrueFalsePrimitiveProps> = ({
   };
 
   const isCorrectAnswer = (value: boolean): boolean => {
-    return isSubmitted && value === problem.correct;
+    return isSubmitted && !disableFeedback && value === problem.correct;
   };
 
   const isIncorrectSelection = (value: boolean): boolean => {
-    return isSubmitted && 
-           currentResponse?.selected_answer === value && 
+    return isSubmitted && !disableFeedback &&
+           currentResponse?.selected_answer === value &&
            value !== problem.correct;
   };
 

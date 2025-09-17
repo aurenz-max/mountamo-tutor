@@ -5,21 +5,22 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Import existing endpoints
 from .api.endpoints import (
-    auth, 
-    competency, 
-    curriculum, 
-    problems, 
-    learning_paths, 
-    gemini, 
-    analytics, 
-    playground, 
+    auth,
+    competency,
+    curriculum,
+    problems,
+    learning_paths,
+    gemini,
+    analytics,
+    playground,
     education,
     user_profiles,
     daily_activities,
     daily_briefing_live,
     packages,
-    practice_tutor
-    
+    practice_tutor,
+    assessments
+
 )
 
 from .api import etl_routes
@@ -173,9 +174,17 @@ app.include_router(
 
 # Practice Tutor WebSocket Router (no auth dependency - handled in websocket)
 app.include_router(
-    practice_tutor.router, 
-    prefix="/api", 
+    practice_tutor.router,
+    prefix="/api",
     tags=["practice-tutor"]
+)
+
+# Assessment Router
+app.include_router(
+    assessments.router,
+    prefix="/api/assessments",
+    tags=["assessments"],
+    dependencies=[Depends(get_user_context)]
 )
 
 
@@ -199,11 +208,12 @@ async def root():
         "authenticated_endpoints": {
             "problems": "/api/problems",
             "visual_problems": "/api/visual-problems",  # 🔥 NEW: Visual Problem Library
-            "analytics": "/api/analytics", 
+            "analytics": "/api/analytics",
             "curriculum": "/api/curriculum",
             "competency": "/api/competency",
             "daily_activities": "/api/daily-activities",
-            "discovery_threads": "/api/discovery"  # 🔥 NEW: Discovery threads for packages
+            "discovery_threads": "/api/discovery",  # 🔥 NEW: Discovery threads for packages
+            "assessments": "/api/assessments"  # 🔥 NEW: Personalized subject assessments
         },
         "features": {
             "simplified_authentication": True,
@@ -215,7 +225,8 @@ async def root():
             "streaks": True,
             "data_isolation": True,
             "daily_activities": True,
-            "discovery_threads": True  # 🔥 NEW: Discovery threads for learning packages
+            "discovery_threads": True,  # 🔥 NEW: Discovery threads for learning packages
+            "personalized_assessments": True  # 🔥 NEW: Subject-based personalized assessments
         }
     }
 
@@ -237,7 +248,8 @@ async def health_check():
             "automatic_student_mapping": True,
             "simplified_dependencies": True,
             "daily_activities": True,
-            "discovery_threads": True  # 🔥 NEW: Discovery threads for packages
+            "discovery_threads": True,  # 🔥 NEW: Discovery threads for packages
+            "personalized_assessments": True  # 🔥 NEW: Subject-based personalized assessments
         },
         "endpoints": {
             "auth": "/api/auth/health",
@@ -245,6 +257,7 @@ async def health_check():
             "problems": "/api/problems/health",
             "analytics": "/api/analytics/health",
             "daily_activities": "/api/daily-activities/health",  # 🔥 NEW: Added health endpoint
+            "assessments": "/api/assessments/health",  # 🔥 NEW: Assessment health endpoint
             "docs": "/docs"
         }
     }

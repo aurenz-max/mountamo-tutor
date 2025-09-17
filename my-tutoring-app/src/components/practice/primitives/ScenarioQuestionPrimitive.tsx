@@ -15,7 +15,8 @@ const ScenarioQuestionPrimitive: React.FC<ScenarioQuestionPrimitiveProps> = ({
   currentResponse,
   feedback,
   onUpdate,
-  disabled = false
+  disabled = false,
+  disableFeedback = false
 }) => {
   const handleAnswerChange = (value: string) => {
     if (disabled || isSubmitted) return;
@@ -51,7 +52,7 @@ const ScenarioQuestionPrimitive: React.FC<ScenarioQuestionPrimitiveProps> = ({
       </div>
 
       {/* Show feedback after submission */}
-      {isSubmitted && feedback?.scenarioReview && (
+      {isSubmitted && !disableFeedback && feedback?.scenarioReview && (
         <div className="space-y-4">
           {/* Show expected answer */}
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg">

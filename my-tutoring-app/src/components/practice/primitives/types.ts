@@ -9,24 +9,27 @@
 export interface ProblemPrimitiveProps<TProblem = any, TResponse = any> {
   /** The problem data to render */
   problem: TProblem;
-  
+
   /** Whether the problem has been submitted and should show results */
   isSubmitted: boolean;
-  
+
   /** Current student response/answer */
   currentResponse?: TResponse;
-  
+
   /** Feedback from backend after submission */
   feedback?: any;
-  
+
   /** Callback when student updates their answer (before submission) */
   onUpdate: (response: TResponse) => void;
-  
+
   /** Whether submission is currently in progress */
   submitting?: boolean;
-  
+
   /** Whether the primitive should be disabled for interaction */
   disabled?: boolean;
+
+  /** Whether to disable immediate feedback (for assessments) */
+  disableFeedback?: boolean;
 }
 
 // Specific response types for different problem types
