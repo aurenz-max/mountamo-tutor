@@ -12,6 +12,10 @@ import { useEngagement } from '@/contexts/EngagementContext';
 import { authApi } from '@/lib/authApiClient';
 import XPCounter from '@/components/engagement/XPCounter';
 import StreakCounter from '@/components/engagement/StreakCounter';
+import AssessmentResultsHeader from '@/components/assessment/AssessmentResultsHeader';
+import KeyTakeawaysCard from '@/components/assessment/KeyTakeawaysCard';
+import SkillAnalysisCard from '@/components/assessment/SkillAnalysisCard';
+import ReviewItemsCard from '@/components/assessment/ReviewItemsCard';
 
 interface AssessmentSummary {
   assessment_id: string;
@@ -34,6 +38,40 @@ interface AssessmentSummary {
     total_xp: number;
   };
   submitted_at?: string;
+  // Enhanced AI-powered assessment feedback
+  ai_summary?: string;
+  performance_quote?: string;
+  skill_analysis?: Array<{
+    skill_id: string;
+    skill_name: string;
+    total_questions: number;
+    correct_count: number;
+    assessment_focus: string;
+    performance_label: string;
+    insight_text: string;
+    next_step: {
+      text: string;
+      link: string;
+    };
+  }>;
+  common_misconceptions?: string[];
+  review_items?: Array<{
+    problem_id: string;
+    question_text: string;
+    your_answer_text: string;
+    correct_answer_text: string;
+    analysis: {
+      understanding: string;
+      approach: string;
+    };
+    feedback: {
+      praise: string;
+      guidance: string;
+      encouragement: string;
+    };
+    related_skill_id: string;
+    lesson_link: string;
+  }>;
 }
 
 const AssessmentResultsPage = () => {
@@ -78,7 +116,13 @@ const AssessmentResultsPage = () => {
             time_taken_minutes: results.time_taken_minutes,
             skill_breakdown: results.skill_breakdown || [],
             engagement_transaction: results.engagement_transaction,
-            submitted_at: results.submitted_at
+            submitted_at: results.submitted_at,
+            // Enhanced AI fields
+            ai_summary: results.ai_summary,
+            performance_quote: results.performance_quote,
+            skill_analysis: results.skill_analysis,
+            common_misconceptions: results.common_misconceptions,
+            review_items: results.review_items
           };
 
           setSummary(formattedSummary);
@@ -108,10 +152,17 @@ const AssessmentResultsPage = () => {
           time_taken_minutes: data.time_taken_minutes,
           skill_breakdown: data.skill_breakdown || [],
           engagement_transaction: data.engagement_transaction,
-          submitted_at: data.submitted_at
+          submitted_at: data.submitted_at,
+          // Enhanced AI fields
+          ai_summary: data.ai_summary,
+          performance_quote: data.performance_quote,
+          skill_analysis: data.skill_analysis,
+          common_misconceptions: data.common_misconceptions,
+          review_items: data.review_items
         };
 
         setSummary(formattedSummary);
+        console.log('Assessment Summary Data:', formattedSummary);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching assessment summary:', err);
@@ -174,24 +225,26 @@ const AssessmentResultsPage = () => {
       <div className="max-w-4xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-            <Trophy className="h-8 w-8 text-blue-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Assessment Complete!</h1>
-          <p className="text-gray-600">Here are your results for the {summary.subject} assessment</p>
-        </div>
+        <AssessmentResultsHeader
+          performanceQuote={summary.performance_quote}
+          subject={summary.subject}
+        />
 
         {/* Score Summary */}
         <Card className="shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl mb-4">Overall Score</CardTitle>
+            <CardTitle className="text-2xl mb-4">Your Performance</CardTitle>
             <div className={`inline-flex items-center px-6 py-3 rounded-full text-2xl font-bold ${getScoreColor(summary.score_percentage || 0)}`}>
               {summary.correct_count} / {summary.total_questions} ({(summary.score_percentage || 0).toFixed(1)}%)
             </div>
             <Badge variant="outline" className="mt-2 text-lg px-4 py-1">
               {getScoreLabel(summary.score_percentage || 0)}
             </Badge>
+            {summary.ai_summary && (
+              <div className="mt-4 text-sm text-gray-600 max-w-2xl mx-auto">
+                {summary.ai_summary}
+              </div>
+            )}
           </CardHeader>
         </Card>
 
@@ -243,29 +296,48 @@ const AssessmentResultsPage = () => {
           </Card>
         )}
 
-        {/* Skill Breakdown */}
-        {summary.skill_breakdown && summary.skill_breakdown.length > 0 && (
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Target className="h-6 w-6 mr-2" />
-                Skill Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {summary.skill_breakdown.map((skill, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-900">{skill.skill_name}</span>
-                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${getScoreColor(skill.percentage)}`}>
-                      {skill.correct_answers}/{skill.total_questions} ({skill.percentage}%)
-                    </span>
+        {/* Key Takeaways */}
+        {(summary.common_misconceptions && summary.common_misconceptions.length > 0) ||
+         (summary.skill_analysis && summary.skill_analysis.length > 0) ? (
+          <KeyTakeawaysCard
+            commonMisconceptions={summary.common_misconceptions || []}
+            skillAnalysis={summary.skill_analysis || []}
+          />
+        ) : null}
+
+        {/* Enhanced Skill Analysis */}
+        {summary.skill_analysis && summary.skill_analysis.length > 0 ? (
+          <SkillAnalysisCard skillAnalysis={summary.skill_analysis} />
+        ) : (
+          /* Fallback to original skill breakdown if enhanced data is not available */
+          summary.skill_breakdown && summary.skill_breakdown.length > 0 && (
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Target className="h-6 w-6 mr-2" />
+                  Skill Breakdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {summary.skill_breakdown.map((skill, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-gray-900">{skill.skill_name}</span>
+                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${getScoreColor(skill.percentage)}`}>
+                        {skill.correct_answers}/{skill.total_questions} ({skill.percentage}%)
+                      </span>
+                    </div>
+                    <Progress value={skill.percentage} className="h-2" />
                   </div>
-                  <Progress value={skill.percentage} className="h-2" />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
+          )
+        )}
+
+        {/* Review Items */}
+        {summary.review_items && summary.review_items.length > 0 && (
+          <ReviewItemsCard reviewItems={summary.review_items} />
         )}
 
         {/* Time Taken */}

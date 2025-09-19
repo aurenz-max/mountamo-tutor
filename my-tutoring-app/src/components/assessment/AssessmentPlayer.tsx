@@ -116,6 +116,15 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
     return answers[problemId] || null;
   };
 
+  const getProblemForRenderer = (problem: any) => {
+    // Handle the new nested problem schema where actual problem data is in problem_data.full_problem_data
+    if (problem?.problem_data?.full_problem_data) {
+      return problem.problem_data.full_problem_data;
+    }
+    // Fallback to the original structure for backward compatibility
+    return problem;
+  };
+
   if (!currentProblem) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -176,7 +185,7 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
           </CardHeader>
           <CardContent className="pt-0">
             <ProblemRenderer
-              problem={currentProblem}
+              problem={getProblemForRenderer(currentProblem)}
               isSubmitted={false}
               onSubmit={async () => {}} // No submission during assessment
               onUpdate={handleUpdate}

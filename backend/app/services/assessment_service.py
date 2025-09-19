@@ -9,8 +9,35 @@ from .problems import ProblemService
 from .curriculum_service import CurriculumService
 from .submission_service import SubmissionService
 from .engagement_service import engagement_service
+from .ai_assessment_service import AIAssessmentService
 from ..db.cosmos_db import CosmosDBService
 from ..schemas.problem_submission import ProblemSubmission
+from ..schemas.assessment_problems import (
+    AssessmentProblemType,
+    AssessmentMultipleChoice,
+    AssessmentTrueFalse,
+    AssessmentFillInBlanks,
+    AssessmentMatchingActivity,
+    AssessmentSequencingActivity,
+    AssessmentCategorizationActivity,
+    AssessmentScenarioQuestion,
+    AssessmentShortAnswer,
+    AssessmentMCQOption,
+    AssessmentBlankItem,
+    AssessmentMatchingItem,
+    AssessmentMatchingMapping,
+    AssessmentCategorizationItem,
+    DifficultyLevel
+)
+from ..schemas.assessment_review import (
+    AssessmentProblemReview,
+    AssessmentReviewDocument,
+    AssessmentReviewObservation,
+    AssessmentReviewAnalysis,
+    AssessmentReviewEvaluation,
+    AssessmentReviewFeedback,
+    AssessmentSubmissionRequest
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +63,7 @@ class AssessmentService:
         self.curriculum = curriculum_service
         self.submission_service = submission_service
         self.cosmos = cosmos_service or CosmosDBService()
+        self.ai_assessment = AIAssessmentService()
 
         # Assessment configuration
         self.skill_selection_weights = {
@@ -81,8 +109,8 @@ class AssessmentService:
                 logger.warning(f"No metrics data found for student {student_id} in subject {subject}")
                 return await self._handle_cold_start(student_id, subject, question_count)
 
-            # 2. Extract all subskills from hierarchical data
-            all_subskills = self._extract_subskills_from_metrics(metrics_data)
+            # 2. Extract all subskills from hierarchical data for the requested subject
+            all_subskills = self._extract_subskills_from_metrics(metrics_data, subject)
 
             if not all_subskills:
                 logger.warning(f"No subskills found for student {student_id} in subject {subject}")
@@ -120,11 +148,15 @@ class AssessmentService:
             logger.error(f"Error creating assessment blueprint: {e}")
             raise
 
-    def _extract_subskills_from_metrics(self, metrics_data: Dict) -> List[Dict]:
-        """Extract all subskills from the hierarchical metrics structure."""
+    def _extract_subskills_from_metrics(self, metrics_data: Dict, subject: str = None) -> List[Dict]:
+        """Extract all subskills from the hierarchical metrics structure, optionally filtered by subject."""
         all_subskills = []
 
         for unit in metrics_data.get('hierarchical_data', []):
+            # Skip units that don't match the requested subject
+            if subject and unit.get('subject') and unit.get('subject') != subject:
+                continue
+
             for skill in unit.get('skills', []):
                 for subskill in skill.get('subskills', []):
                     # Enrich subskill data with parent context
@@ -133,7 +165,8 @@ class AssessmentService:
                         "unit_id": unit.get('unit_id'),
                         "unit_title": unit.get('unit_title'),
                         "skill_id": skill.get('skill_id'),
-                        "skill_description": skill.get('skill_description')
+                        "skill_description": skill.get('skill_description'),
+                        "subject": unit.get('subject')  # Include subject for verification
                     }
                     all_subskills.append(subskill_data)
 
@@ -215,6 +248,7 @@ class AssessmentService:
     ) -> List[Dict]:
         """Select subskills from each category up to target counts."""
         selected_subskills = []
+        total_requested = sum(target_counts.values())
 
         for category, target_count in target_counts.items():
             available_subskills = categories.get(category, [])
@@ -229,6 +263,17 @@ class AssessmentService:
                 selected = random.sample(available_subskills, actual_count)
                 selected_subskills.extend(selected)
                 logger.info(f"Selected {actual_count} subskills from {category}")
+
+        # If we don't have enough subskills, pad by duplicating existing ones
+        # This ensures we can generate the requested number of problems
+        if len(selected_subskills) < total_requested:
+            shortage = total_requested - len(selected_subskills)
+            logger.info(f"Padding {shortage} subskills to reach target of {total_requested}")
+
+            # Duplicate randomly selected subskills to make up the difference
+            if selected_subskills:
+                padding = random.choices(selected_subskills, k=shortage)
+                selected_subskills.extend(padding)
 
         # Shuffle the final list to mix categories
         random.shuffle(selected_subskills)
@@ -342,7 +387,7 @@ class AssessmentService:
             problems = await self.problems.generate_problem(
                 subject=subject,
                 recommendations=recommendations,
-                count=len(recommendations)
+                count=question_count
             )
 
             # 4. Parse the JSON response from ProblemService
@@ -358,16 +403,18 @@ class AssessmentService:
 
             # 5. Enrich problems with assessment metadata
             enriched_problems = self._enrich_problems_with_metadata(
-                problems_data, blueprint['selected_subskills']
+                problems_data, blueprint['selected_subskills'], subject
             )
 
-            # 6. Build final assessment response
+            # 6. Build final assessment response - convert structured problems to dict for serialization
+            problems_dict = [problem.dict() for problem in enriched_problems]
+
             assessment = {
                 "assessment_id": f"assess_{student_id}_{subject}_{int(datetime.utcnow().timestamp())}",
                 "student_id": student_id,
                 "subject": subject,
                 "blueprint": blueprint,
-                "problems": enriched_problems,
+                "problems": problems_dict,
                 "total_questions": len(enriched_problems),
                 "estimated_duration_minutes": len(enriched_problems) * 2,  # ~2 min per question
                 "generated_at": datetime.utcnow().isoformat()
@@ -401,17 +448,17 @@ class AssessmentService:
     def _enrich_problems_with_metadata(
         self,
         problems_data: Dict,
-        selected_subskills: List[Dict]
-    ) -> List[Dict]:
-        """Enrich generated problems with assessment-specific metadata."""
-        if not isinstance(problems_data, dict):
-            logger.warning("Problems data is not a dict, using as-is")
-            return problems_data
-
+        selected_subskills: List[Dict],
+        subject: str
+    ) -> List[AssessmentProblemType]:
+        """
+        Convert generated problems to structured AssessmentProblemType objects
+        """
         enriched_problems = []
 
         # Handle different problem types from the rich schema
-        problem_types = ['multiple_choice', 'true_false', 'fill_in_blanks', 'matching_activity', 'open_ended']
+        problem_types = ['multiple_choice', 'true_false', 'fill_in_blanks', 'matching_activity',
+                        'sequencing_activity', 'categorization_activity', 'scenario_question', 'short_answer']
 
         subskill_index = 0
         for problem_type in problem_types:
@@ -421,18 +468,164 @@ class AssessmentService:
                 if subskill_index < len(selected_subskills):
                     subskill = selected_subskills[subskill_index]
 
-                    # Add assessment-specific metadata
-                    problem['assessment_metadata'] = {
-                        "subskill_id": subskill.get('subskill_id'),
-                        "category": subskill.get('category'),
-                        "skill_description": subskill.get('skill_description'),
-                        "unit_title": subskill.get('unit_title')
-                    }
+                    # Create the appropriate assessment problem type
+                    try:
+                        if problem_type == "multiple_choice":
+                            assessment_problem = AssessmentMultipleChoice(
+                                id=problem.get('id', f"mcq_{subskill_index + 1}"),
+                                difficulty=DifficultyLevel(problem.get('difficulty', 'medium')),
+                                grade_level=problem.get('grade_level', 'K'),
+                                question=problem.get('question', ''),
+                                options=[
+                                    AssessmentMCQOption(id=opt['id'], text=opt['text'])
+                                    for opt in problem.get('options', [])
+                                ],
+                                correct_option_id=problem.get('correct_option_id', 'A'),
+                                rationale=problem.get('rationale', ''),
+                                teaching_note=problem.get('teaching_note', ''),
+                                success_criteria=problem.get('success_criteria', []),
+                                skill_id=subskill.get('skill_id', 'default_skill'),
+                                subskill_id=subskill.get('subskill_id', 'default_subskill'),
+                                subject=subject
+                            )
+                        elif problem_type == "true_false":
+                            assessment_problem = AssessmentTrueFalse(
+                                id=problem.get('id', f"tf_{subskill_index + 1}"),
+                                difficulty=DifficultyLevel(problem.get('difficulty', 'medium')),
+                                grade_level=problem.get('grade_level', 'K'),
+                                statement=problem.get('statement', ''),
+                                correct=problem.get('correct', True),
+                                rationale=problem.get('rationale', ''),
+                                teaching_note=problem.get('teaching_note', ''),
+                                success_criteria=problem.get('success_criteria', []),
+                                skill_id=subskill.get('skill_id', 'default_skill'),
+                                subskill_id=subskill.get('subskill_id', 'default_subskill'),
+                                subject=subject
+                            )
+                        elif problem_type == "fill_in_blanks":
+                            assessment_problem = AssessmentFillInBlanks(
+                                id=problem.get('id', f"fib_{subskill_index + 1}"),
+                                difficulty=DifficultyLevel(problem.get('difficulty', 'medium')),
+                                grade_level=problem.get('grade_level', 'K'),
+                                text_with_blanks=problem.get('text_with_blanks', ''),
+                                blanks=[
+                                    AssessmentBlankItem(
+                                        id=blank.get('id', str(i)),
+                                        correct_answers=blank.get('correct_answers', []),
+                                        case_sensitive=blank.get('case_sensitive', False)
+                                    )
+                                    for i, blank in enumerate(problem.get('blanks', []))
+                                ],
+                                rationale=problem.get('rationale', ''),
+                                teaching_note=problem.get('teaching_note', ''),
+                                success_criteria=problem.get('success_criteria', []),
+                                skill_id=subskill.get('skill_id', 'default_skill'),
+                                subskill_id=subskill.get('subskill_id', 'default_subskill'),
+                                subject=subject
+                            )
+                        elif problem_type == "matching_activity":
+                            assessment_problem = AssessmentMatchingActivity(
+                                id=problem.get('id', f"match_{subskill_index + 1}"),
+                                difficulty=DifficultyLevel(problem.get('difficulty', 'medium')),
+                                grade_level=problem.get('grade_level', 'K'),
+                                prompt=problem.get('prompt', ''),
+                                left_items=[
+                                    AssessmentMatchingItem(id=item.get('id', str(i)), text=item.get('text', ''))
+                                    for i, item in enumerate(problem.get('left_items', []))
+                                ],
+                                right_items=[
+                                    AssessmentMatchingItem(id=item.get('id', str(i)), text=item.get('text', ''))
+                                    for i, item in enumerate(problem.get('right_items', []))
+                                ],
+                                mappings=[
+                                    AssessmentMatchingMapping(
+                                        left_id=mapping.get('left_id', ''),
+                                        right_ids=mapping.get('right_ids', [])
+                                    )
+                                    for mapping in problem.get('mappings', [])
+                                ],
+                                rationale=problem.get('rationale', ''),
+                                teaching_note=problem.get('teaching_note', ''),
+                                success_criteria=problem.get('success_criteria', []),
+                                skill_id=subskill.get('skill_id', 'default_skill'),
+                                subskill_id=subskill.get('subskill_id', 'default_subskill'),
+                                subject=subject
+                            )
+                        elif problem_type == "sequencing_activity":
+                            assessment_problem = AssessmentSequencingActivity(
+                                id=problem.get('id', f"seq_{subskill_index + 1}"),
+                                difficulty=DifficultyLevel(problem.get('difficulty', 'medium')),
+                                grade_level=problem.get('grade_level', 'K'),
+                                instruction=problem.get('instruction', ''),
+                                items=problem.get('items', []),
+                                rationale=problem.get('rationale', ''),
+                                teaching_note=problem.get('teaching_note', ''),
+                                success_criteria=problem.get('success_criteria', []),
+                                skill_id=subskill.get('skill_id', 'default_skill'),
+                                subskill_id=subskill.get('subskill_id', 'default_subskill'),
+                                subject=subject
+                            )
+                        elif problem_type == "categorization_activity":
+                            assessment_problem = AssessmentCategorizationActivity(
+                                id=problem.get('id', f"cat_{subskill_index + 1}"),
+                                difficulty=DifficultyLevel(problem.get('difficulty', 'medium')),
+                                grade_level=problem.get('grade_level', 'K'),
+                                instruction=problem.get('instruction', ''),
+                                categories=problem.get('categories', []),
+                                categorization_items=[
+                                    AssessmentCategorizationItem(
+                                        item_text=item.get('item_text', ''),
+                                        correct_category=item.get('correct_category', '')
+                                    )
+                                    for item in problem.get('categorization_items', [])
+                                ],
+                                rationale=problem.get('rationale', ''),
+                                teaching_note=problem.get('teaching_note', ''),
+                                success_criteria=problem.get('success_criteria', []),
+                                skill_id=subskill.get('skill_id', 'default_skill'),
+                                subskill_id=subskill.get('subskill_id', 'default_subskill'),
+                                subject=subject
+                            )
+                        elif problem_type == "scenario_question":
+                            assessment_problem = AssessmentScenarioQuestion(
+                                id=problem.get('id', f"scenario_{subskill_index + 1}"),
+                                difficulty=DifficultyLevel(problem.get('difficulty', 'medium')),
+                                grade_level=problem.get('grade_level', 'K'),
+                                scenario=problem.get('scenario', ''),
+                                scenario_question=problem.get('scenario_question', ''),
+                                scenario_answer=problem.get('scenario_answer', ''),
+                                rationale=problem.get('rationale', ''),
+                                teaching_note=problem.get('teaching_note', ''),
+                                success_criteria=problem.get('success_criteria', []),
+                                skill_id=subskill.get('skill_id', 'default_skill'),
+                                subskill_id=subskill.get('subskill_id', 'default_subskill'),
+                                subject=subject
+                            )
+                        elif problem_type == "short_answer":
+                            assessment_problem = AssessmentShortAnswer(
+                                id=problem.get('id', f"short_{subskill_index + 1}"),
+                                difficulty=DifficultyLevel(problem.get('difficulty', 'medium')),
+                                grade_level=problem.get('grade_level', 'K'),
+                                question=problem.get('question', ''),
+                                rationale=problem.get('rationale', ''),
+                                teaching_note=problem.get('teaching_note', ''),
+                                success_criteria=problem.get('success_criteria', []),
+                                skill_id=subskill.get('skill_id', 'default_skill'),
+                                subskill_id=subskill.get('subskill_id', 'default_subskill'),
+                                subject=subject
+                            )
+                        else:
+                            # Skip unknown problem types
+                            continue
 
-                    subskill_index += 1
+                        enriched_problems.append(assessment_problem)
+                        subskill_index += 1
 
-                enriched_problems.append(problem)
+                    except Exception as e:
+                        logger.error(f"Failed to create assessment problem of type {problem_type}: {e}")
+                        continue
 
+        logger.info(f"Enriched {len(enriched_problems)} problems with structured schemas")
         return enriched_problems
 
     # ============================================================================
@@ -519,8 +712,11 @@ class AssessmentService:
         firebase_uid: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Scores an assessment by processing each answer through the SubmissionService,
+        Scores an assessment by processing each problem through the SubmissionService,
         aggregates results, calculates skill breakdowns, and awards XP.
+
+        CRITICAL: This method processes ALL problems in the assessment, not just submitted answers.
+        Unanswered questions are marked as incorrect to ensure accurate scoring.
         """
         try:
             assessment = await self.get_assessment(assessment_id, student_id, firebase_uid)
@@ -534,65 +730,145 @@ class AssessmentService:
 
             correct_count = 0
             skill_results: Dict[str, Dict[str, Any]] = {}
+            problem_reviews = []  # Store review data for each problem
 
             user_context = {"firebase_uid": firebase_uid, "student_id": student_id, "email": ""} # Mock context for service
 
-            # Process each problem submission concurrently
-            submission_tasks = []
+            # Get blueprint for skill description lookup
+            blueprint = assessment.get("blueprint", {})
+            selected_subskills = blueprint.get("selected_subskills", [])
+
+            # Create a mapping from skill_id to skill_description
+            skill_id_to_description = {}
+            for subskill in selected_subskills:
+                skill_id = subskill.get("skill_id")
+                skill_description = subskill.get("skill_description")
+                if skill_id and skill_description:
+                    skill_id_to_description[skill_id] = skill_description
+
+            # === CORE FIX: Loop through ALL problems, not just submitted answers ===
+            # This ensures every problem is accounted for in the final score
             for problem in problems:
-                problem_id = problem.get("id") or problem.get("problem_id")
-                student_answer_raw = answers.get(str(problem_id))  # Ensure problem_id is string for lookup
+                problem_id_str = str(problem.get("id") or problem.get("problem_id"))
 
-                # Handle different answer formats
-                student_answer = None
-                primitive_response = None
-
-                if isinstance(student_answer_raw, dict):
-                    # Interactive problem answer (MCQ, etc.) - use primitive_response
-                    primitive_response = student_answer_raw
-                    student_answer = ""  # Set to empty string for schema compliance
-                elif isinstance(student_answer_raw, str):
-                    # Text-based answer - use student_answer
-                    student_answer = student_answer_raw
-                else:
-                    # Convert other types to string
-                    student_answer = str(student_answer_raw) if student_answer_raw is not None else ""
-
-                # Construct a ProblemSubmission object for the service
-                submission_payload = ProblemSubmission(
-                    subject=assessment.get("subject", "general"),
-                    problem=problem,
-                    student_answer=student_answer,
-                    primitive_response=primitive_response,  # Add primitive_response for interactive problems
-                    solution_image=None,  # Not applicable for most assessment questions
-                    canvas_used=False,
-                    skill_id=problem.get("assessment_metadata", {}).get("skill_id") or problem.get("skill_id", "default_skill"),
-                    subskill_id=problem.get("assessment_metadata", {}).get("subskill_id") or problem.get("subskill_id", "default_subskill"),
-                )
-                submission_tasks.append(
-                    self.submission_service.handle_submission(submission_payload, user_context)
+                # Extract skill description from the problem, using blueprint lookup first
+                skill_id = problem.get("skill_id", "")
+                skill_desc = (
+                    skill_id_to_description.get(skill_id) or  # Use blueprint lookup first
+                    problem.get("skill_description") or
+                    problem.get("assessment_metadata", {}).get("skill_description") or
+                    problem.get("metadata", {}).get("skill_description") or
+                    "General"
                 )
 
-            submission_results = await asyncio.gather(*submission_tasks, return_exceptions=True)
-
-            # Aggregate results
-            for i, result in enumerate(submission_results):
-                problem = problems[i]
-                skill_desc = problem.get("assessment_metadata", {}).get("skill_description") or problem.get("skill_description", "General")
-
-                if isinstance(result, Exception):
-                    logger.error(f"Error processing problem {problem.get('id')}: {result}")
-                    continue
-
+                # Initialize skill in tracker if not present
                 if skill_desc not in skill_results:
                     skill_results[skill_desc] = {"correct": 0, "total": 0, "skill_name": skill_desc}
+                skill_results[skill_desc]["total"] += 1  # Increment total for this skill
 
-                skill_results[skill_desc]["total"] += 1
+                student_answer_raw = answers.get(problem_id_str)
 
-                # Check if the answer was correct from the review
-                if result.review.get("correct") or result.review.get("score", 0) >= 7:
+                review_data = None
+                is_correct = False
+                display_student_answer = "Not Answered"
+
+                if student_answer_raw is not None:
+                    # --- This is an ANSWERED question ---
+                    # Handle different answer formats for submission service
+                    student_answer = None
+                    primitive_response = None
+
+                    if isinstance(student_answer_raw, dict):
+                        # Interactive problem answer (MCQ, etc.) - use primitive_response
+                        primitive_response = student_answer_raw
+                        student_answer = ""  # Set to empty string for schema compliance
+                    elif isinstance(student_answer_raw, str):
+                        # Text-based answer - use student_answer
+                        student_answer = student_answer_raw
+                    else:
+                        # Convert other types to string
+                        student_answer = str(student_answer_raw)
+
+                    # Construct a ProblemSubmission object for the service
+                    submission_payload = ProblemSubmission(
+                        subject=assessment.get("subject", "general"),
+                        problem=problem,
+                        student_answer=student_answer,
+                        primitive_response=primitive_response,
+                        solution_image=None,  # Not applicable for most assessment questions
+                        canvas_used=False,
+                        skill_id=problem.get("assessment_metadata", {}).get("skill_id") or problem.get("skill_id", "default_skill"),
+                        subskill_id=problem.get("assessment_metadata", {}).get("subskill_id") or problem.get("subskill_id", "default_subskill"),
+                    )
+
+                    try:
+                        submission_result = await self.submission_service.handle_submission(submission_payload, user_context)
+                        review_data = submission_result.review
+                        is_correct = review_data.get("correct") or review_data.get("score", 0) >= 7
+
+                        # **CRITICAL FIX for "No answer recorded"**: Extract the actual answer text
+                        if isinstance(student_answer_raw, dict):  # For MCQ
+                            display_student_answer = review_data.get("observation", {}).get("selected_answer_text") or review_data.get("selected_option_text", "Answer Submitted")
+                        else:
+                            display_student_answer = str(student_answer_raw)
+
+                    except Exception as e:
+                        logger.error(f"Error processing submitted answer for problem {problem_id_str}: {e}")
+                        is_correct = False  # Treat submission error as incorrect
+                        review_data = {"error": str(e), "score": 0, "correct": False}
+                        display_student_answer = "Submission Error"
+
+                else:
+                    # --- This is an UNANSWERED question ---
+                    is_correct = False
+                    display_student_answer = "Not Answered"
+                    # Create structured review for unanswered questions
+                    review_data = await self._create_assessment_review(
+                        problem, None, student_id, firebase_uid
+                    )
+
+                # --- Aggregate results for EVERY problem ---
+                if is_correct:
                     correct_count += 1
                     skill_results[skill_desc]["correct"] += 1
+
+                # --- Create structured review document for EVERY problem ---
+                # Extract the review if it's from submission service or use our assessment review
+                if isinstance(review_data, dict) and 'observation' in review_data:
+                    # This is already a structured review from submission service - convert it
+                    structured_review = self._convert_submission_review_to_assessment_review(
+                        review_data, problem, student_id
+                    )
+                elif hasattr(review_data, 'observation'):
+                    # This is already an AssessmentProblemReview
+                    structured_review = review_data
+                else:
+                    # Fallback for legacy review format
+                    structured_review = await self._create_assessment_review(
+                        problem, student_answer_raw, student_id, firebase_uid
+                    )
+
+                # Create review document matching JSON structure
+                review_document = AssessmentReviewDocument(
+                    id=f"{assessment_id}_{problem_id_str}_{int(datetime.utcnow().timestamp())}",
+                    student_id=student_id,
+                    subject=assessment.get("subject", "Unknown"),
+                    skill_id=problem.get("skill_id", "unknown"),
+                    subskill_id=problem.get("subskill_id", "unknown"),
+                    problem_id=problem_id_str,
+                    timestamp=datetime.utcnow().isoformat(),
+                    problem_content=problem,
+                    full_review=structured_review,
+                    observation=structured_review.observation,
+                    analysis=structured_review.analysis,
+                    evaluation=structured_review.evaluation,
+                    feedback=structured_review.feedback,
+                    score=structured_review.score,
+                    firebase_uid=firebase_uid or "",
+                    created_at=datetime.utcnow().isoformat()
+                )
+
+                problem_reviews.append(review_document.dict())
 
             score_percentage = (correct_count / total_questions * 100) if total_questions > 0 else 0
 
@@ -613,13 +889,55 @@ class AssessmentService:
                 "total_questions": total_questions,
                 "score_percentage": score_percentage,
                 "skill_breakdown": skill_breakdown_list,
+                "problem_reviews": problem_reviews,  # Embed all review data
                 "submitted_at": datetime.utcnow().isoformat()
             }
+
+            # Generate AI summary using the assessment blueprint and results
+            try:
+                logger.info(f"Generating AI summary for assessment {assessment_id}")
+
+                # Use all problem reviews for comprehensive feedback (both correct and incorrect)
+                # The AI service will prioritize incorrect ones in the review_items section
+                ai_summary_data = await self.ai_assessment.generate_enhanced_assessment_summary(
+                    blueprint=assessment.get("blueprint", {}),
+                    submission_result=score_data,
+                    review_items_data=problem_reviews  # Pass all reviews for complete context
+                )
+
+                # Extract AI summary data - store only at top level to avoid duplication
+                ai_summary_fields = {
+                    "ai_summary": ai_summary_data.get("ai_summary", ""),
+                    "performance_quote": ai_summary_data.get("performance_quote", ""),
+                    "skill_analysis": ai_summary_data.get("skill_analysis", []),
+                    "common_misconceptions": ai_summary_data.get("common_misconceptions", []),
+                    "review_items": ai_summary_data.get("review_items", [])
+                }
+
+                logger.info(f"AI summary generated successfully for assessment {assessment_id}")
+
+            except Exception as e:
+                logger.error(f"Failed to generate AI summary for assessment {assessment_id}: {e}")
+                # Continue without AI summary - assessment submission should not fail
+                ai_summary_fields = {
+                    "ai_summary": "",
+                    "performance_quote": "",
+                    "skill_analysis": [],
+                    "common_misconceptions": [],
+                    "review_items": []
+                }
 
             # Store submission and update assessment status in Cosmos DB
             await self.cosmos.store_assessment_submission(
                 assessment_id, student_id, answers, score_data, time_taken_minutes, firebase_uid
             )
+
+            # Store AI summary data directly in the assessment document for easy access
+            # Pass the extracted AI fields to avoid duplication
+            await self._store_ai_summary_in_assessment(
+                assessment_id, student_id, ai_summary_fields, firebase_uid
+            )
+
             await self.update_assessment_status(assessment_id, student_id, "completed", firebase_uid)
 
             # Engagement processing is handled by the @log_engagement_activity decorator on the endpoint
@@ -667,7 +985,8 @@ class AssessmentService:
             answers = assessment.get("answers", {})
             time_taken_minutes = assessment.get("time_taken_minutes")
 
-            # Return the same format as the submission result
+            # Return enhanced format with AI summary and review items
+            # Prioritize top-level AI summary data (clean structure without duplication)
             return {
                 "assessment_id": assessment_id,
                 "student_id": student_id,
@@ -677,9 +996,261 @@ class AssessmentService:
                 "score_percentage": score_data.get("score_percentage", 0),
                 "time_taken_minutes": time_taken_minutes,
                 "skill_breakdown": score_data.get("skill_breakdown", []),
-                "submitted_at": score_data.get("submitted_at")
+                "submitted_at": score_data.get("submitted_at"),
+
+                # Enhanced assessment feedback fields - prefer top-level data for clean structure
+                "ai_summary": assessment.get("ai_summary", ""),
+                "performance_quote": assessment.get("performance_quote", ""),
+                "skill_analysis": assessment.get("skill_analysis", []),
+                "common_misconceptions": assessment.get("common_misconceptions", []),
+                "review_items": assessment.get("review_items", []),
+                "problem_reviews": score_data.get("problem_reviews", []),  # Still include raw review data
+                "ai_summary_generated_at": assessment.get("ai_summary_generated_at")
             }
 
         except Exception as e:
             logger.error(f"Failed to get assessment summary for {assessment_id}: {e}")
             raise
+
+    def _extract_problem_content_for_review(self, problem: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract question, correct answer, and other relevant content from problem for review data"""
+
+        # Initialize content with common fields
+        content = {
+            "difficulty": problem.get("difficulty", "medium"),
+            "metadata": problem.get("assessment_metadata", {})
+        }
+
+        # Extract content based on problem type - check direct problem properties
+        problem_type = problem.get("problem_type", "")
+
+        if problem_type == "true_false" or problem.get("statement") is not None:
+            # True/False problem
+            content.update({
+                "statement": problem.get("statement", ""),
+                "correct": problem.get("correct"),
+                "question": problem.get("statement", ""),  # Also set as question for AI processing
+                "prompt": "Decide whether the statement is True or False.",
+                "rationale": problem.get("rationale", ""),
+                "allow_explain_why": False,
+                "trickiness": "none"
+            })
+        elif problem_type == "multiple_choice" or problem.get("question"):
+            # Multiple choice or other question-based problems
+            content.update({
+                "question": problem.get("question", ""),
+                "options": problem.get("options", []),
+                "correct_option_id": problem.get("correct_option_id", ""),
+                "rationale": problem.get("rationale", "")
+            })
+        elif problem_type == "fill_in_blanks" or problem.get("text_with_blanks"):
+            # Fill in the blank
+            content.update({
+                "text_with_blanks": problem.get("text_with_blanks", ""),
+                "question": problem.get("text_with_blanks", ""),  # Also set as question for AI processing
+                "blanks": problem.get("blanks", []),
+                "rationale": problem.get("rationale", "")
+            })
+        elif problem_type == "matching_activity" or problem.get("prompt"):
+            # Matching or other activity-based problems
+            content.update({
+                "prompt": problem.get("prompt", ""),
+                "question": problem.get("prompt", ""),  # Also set as question for AI processing
+                "left_items": problem.get("left_items", []),
+                "right_items": problem.get("right_items", []),
+                "mappings": problem.get("mappings", []),
+                "rationale": problem.get("rationale", "")
+            })
+        elif problem_type == "scenario_question":
+            # Scenario question
+            content.update({
+                "scenario": problem.get("scenario", ""),
+                "scenario_question": problem.get("scenario_question", ""),
+                "question": problem.get("scenario_question", ""),  # Also set as question for AI processing
+                "scenario_answer": problem.get("scenario_answer", ""),
+                "rationale": problem.get("rationale", "")
+            })
+        else:
+            # Fallback for unknown problem types
+            content.update({
+                "question": problem.get("problem", "Question not available"),
+                "answer": problem.get("answer", ""),
+                "rationale": problem.get("rationale", "")
+            })
+
+        return content
+
+    async def _store_ai_summary_in_assessment(
+        self,
+        assessment_id: str,
+        student_id: int,
+        ai_summary_fields: Dict[str, Any],
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Store AI summary data directly in the assessment document structure (no duplication)"""
+        try:
+            # Get the current assessment document
+            assessment = await self.cosmos.get_assessment(assessment_id, student_id, firebase_uid)
+            if not assessment:
+                logger.error(f"Assessment {assessment_id} not found for storing AI summary")
+                return False
+
+            # Add AI summary to top level of assessment document (clean structure)
+            assessment.update(ai_summary_fields)
+            assessment["ai_summary_generated_at"] = datetime.utcnow().isoformat()
+
+            # Update the assessment document in Cosmos DB
+            self.cosmos.assessments.upsert_item(body=assessment)
+
+            logger.info(f"Successfully stored AI summary in assessment document {assessment_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to store AI summary in assessment {assessment_id}: {e}")
+            return False
+
+    async def _create_assessment_review(
+        self,
+        problem_data: Dict[str, Any],
+        student_answer: Any,
+        student_id: int,
+        firebase_uid: str
+    ) -> AssessmentProblemReview:
+        """Create structured assessment review for a single problem"""
+
+        problem_type = problem_data.get("problem_type", "unknown")
+        is_correct = False
+        selected_answer_text = "Not answered"
+
+        if student_answer is not None:
+            # Evaluate based on problem type
+            if problem_type == "multiple_choice":
+                correct_option_id = problem_data.get("correct_option_id")
+
+                # Extract selected option ID from student answer
+                if isinstance(student_answer, dict) and "selected_option_id" in student_answer:
+                    selected_option_id = student_answer["selected_option_id"]
+                else:
+                    selected_option_id = str(student_answer)
+
+                is_correct = selected_option_id == correct_option_id
+
+                # Find the selected option text
+                options = problem_data.get("options", [])
+                selected_option = next((opt for opt in options if opt.get("id") == selected_option_id), None)
+                selected_answer_text = selected_option.get("text", selected_option_id) if selected_option else selected_option_id
+
+            elif problem_type == "true_false":
+                correct_answer = problem_data.get("correct")
+
+                # Extract selected answer from student answer
+                if isinstance(student_answer, dict) and "selected_answer" in student_answer:
+                    selected_boolean = student_answer["selected_answer"]
+                else:
+                    selected_boolean = bool(student_answer)
+
+                is_correct = selected_boolean == correct_answer
+                selected_answer_text = "True" if selected_boolean else "False"
+
+            elif problem_type == "fill_in_blanks":
+                # Simple check - could be enhanced
+                blanks = problem_data.get("blanks", [])
+                if isinstance(student_answer, dict):
+                    correct_count = 0
+                    for blank in blanks:
+                        blank_id = blank.get("id")
+                        correct_answers = blank.get("correct_answers", [])
+                        student_blank_answer = student_answer.get(blank_id, "")
+                        if student_blank_answer.lower() in [ans.lower() for ans in correct_answers]:
+                            correct_count += 1
+                    is_correct = correct_count == len(blanks)
+                    selected_answer_text = str(student_answer)
+                else:
+                    selected_answer_text = str(student_answer)
+
+            else:
+                # For other problem types, basic handling
+                selected_answer_text = str(student_answer)
+                # Could add more sophisticated evaluation logic here
+
+        score = 10 if is_correct else 3
+
+        # Create structured review
+        review = AssessmentProblemReview(
+            observation=AssessmentReviewObservation(
+                canvas_description="No canvas work for this assessment question",
+                selected_answer=selected_answer_text,
+                work_shown="Assessment response provided" if student_answer is not None else "No response provided"
+            ),
+            analysis=AssessmentReviewAnalysis(
+                understanding="Good understanding demonstrated" if is_correct else "Needs additional practice",
+                approach="Student selected an answer" if student_answer is not None else "No approach shown",
+                accuracy="Correct answer" if is_correct else "Incorrect answer",
+                creativity="Standard assessment response"
+            ),
+            evaluation=AssessmentReviewEvaluation(
+                score=score,
+                justification=f"{'Correct' if is_correct else 'Incorrect'} answer for assessment question"
+            ),
+            feedback=AssessmentReviewFeedback(
+                praise="Good work!" if is_correct else "Good effort!",
+                guidance=problem_data.get("rationale", "Review the concept") if not is_correct else "Well done!",
+                encouragement="Keep practicing!" if not is_correct else "Excellent!",
+                next_steps="Continue to next question" if is_correct else "Review this topic"
+            ),
+            skill_id=problem_data.get("skill_id", "unknown"),
+            subject=problem_data.get("subject", "unknown"),
+            subskill_id=problem_data.get("subskill_id", "unknown"),
+            score=score,
+            correct=is_correct,
+            accuracy_percentage=100 if is_correct else 30
+        )
+
+        return review
+
+    def _convert_submission_review_to_assessment_review(
+        self,
+        submission_review: Dict[str, Any],
+        problem_data: Dict[str, Any],
+        student_id: int
+    ) -> AssessmentProblemReview:
+        """Convert submission service review to structured assessment review format"""
+
+        # Extract data from submission review with fallbacks
+        observation_data = submission_review.get("observation", {})
+        analysis_data = submission_review.get("analysis", {})
+        evaluation_data = submission_review.get("evaluation", {})
+        feedback_data = submission_review.get("feedback", {})
+
+        score = evaluation_data.get("score", submission_review.get("score", 0))
+        is_correct = submission_review.get("correct", score >= 7)
+
+        return AssessmentProblemReview(
+            observation=AssessmentReviewObservation(
+                canvas_description=observation_data.get("canvas_description", "No canvas work"),
+                selected_answer=observation_data.get("selected_answer", "Not provided"),
+                work_shown=observation_data.get("work_shown", "Assessment response")
+            ),
+            analysis=AssessmentReviewAnalysis(
+                understanding=analysis_data.get("understanding", "Understanding assessed"),
+                approach=analysis_data.get("approach", "Standard assessment approach"),
+                accuracy=analysis_data.get("accuracy", "Correct" if is_correct else "Incorrect"),
+                creativity=analysis_data.get("creativity", "Standard response")
+            ),
+            evaluation=AssessmentReviewEvaluation(
+                score=score,
+                justification=evaluation_data.get("justification", f"Score: {score}/10")
+            ),
+            feedback=AssessmentReviewFeedback(
+                praise=feedback_data.get("praise", "Good effort!"),
+                guidance=feedback_data.get("guidance", "Keep practicing"),
+                encouragement=feedback_data.get("encouragement", "You're doing well!"),
+                next_steps=feedback_data.get("next_steps", "Continue learning")
+            ),
+            skill_id=problem_data.get("skill_id", "unknown"),
+            subject=problem_data.get("subject", "unknown"),
+            subskill_id=problem_data.get("subskill_id", "unknown"),
+            score=score,
+            correct=is_correct,
+            accuracy_percentage=100 if is_correct else 30
+        )
