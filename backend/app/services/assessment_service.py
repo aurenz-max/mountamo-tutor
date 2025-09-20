@@ -724,13 +724,55 @@ class AssessmentService:
             else:
                 batch_data = batch_response
 
+            # Enrich submission results with the same metadata structure as reviews container
+            enriched_submission_results = []
+            submission_results = batch_data.get("submission_results", [])
+            problems = assessment.get("problems", [])
+
+            for i, result in enumerate(submission_results):
+                if hasattr(result, 'dict'):
+                    result_data = result.dict()
+                else:
+                    result_data = result
+
+                # Get corresponding problem data
+                problem = problems[i] if i < len(problems) else {}
+                problem_id = problem.get("id") or problem.get("problem_id") or f"problem_{i}"
+
+                # Create enriched result with metadata matching reviews container structure
+                enriched_result = {
+                    **result_data,
+                    "id": f"{assessment_id}_{problem_id}_{int(datetime.utcnow().timestamp())}",
+                    "student_id": student_id,
+                    "subject": assessment.get("subject", "Unknown"),
+                    "skill_id": problem.get("skill_id", "unknown"),
+                    "subskill_id": problem.get("subskill_id", "unknown"),
+                    "problem_id": str(problem_id),
+                    "timestamp": batch_data.get("batch_submitted_at"),
+                    "problem_content": problem,
+                    "full_review": result_data.get("review", {}),
+                    "firebase_uid": firebase_uid,
+                    "created_at": batch_data.get("batch_submitted_at")
+                }
+
+                # Add the individual review components for easier querying
+                review_data = result_data.get("review", {})
+                enriched_result.update({
+                    "observation": review_data.get("observation", {}),
+                    "analysis": review_data.get("analysis", {}),
+                    "evaluation": review_data.get("evaluation", {}),
+                    "feedback": review_data.get("feedback", {}),
+                    "score": float(review_data.get("evaluation", {}).get("score", 0))
+                        if isinstance(review_data.get("evaluation"), dict)
+                        else float(review_data.get("evaluation", 0))
+                })
+
+                enriched_submission_results.append(enriched_result)
+
             # Add batch submission field to assessment document
             assessment["batch_submission"] = {
                 "batch_id": batch_data.get("batch_id"),
-                "submission_results": [
-                    result.dict() if hasattr(result, 'dict') else result
-                    for result in batch_data.get("submission_results", [])
-                ],
+                "submission_results": enriched_submission_results,
                 "total_problems": batch_data.get("total_problems", 0),
                 "batch_submitted_at": batch_data.get("batch_submitted_at"),
                 "engagement_summary": {
@@ -1279,36 +1321,74 @@ class AssessmentService:
                 # Could add more sophisticated evaluation logic here
 
         score = 10 if is_correct else 3
+        accuracy_percentage = 100 if is_correct else 30
 
-        # Create structured review
+        # Create structured review matching submission service format
+        review_data = {
+            "observation": {
+                "canvas_description": "No canvas work for this categorization question" if problem_type == "categorization_activity"
+                                    else "No canvas work for this assessment question",
+                "selected_answer": selected_answer_text if student_answer is not None else "{}",
+                "work_shown": "Student categorized items into provided categories" if problem_type == "categorization_activity"
+                            else ("Assessment response provided" if student_answer is not None else "No response provided")
+            },
+            "analysis": {
+                "understanding": "Good understanding demonstrated" if is_correct else "Student needs additional practice with this concept.",
+                "approach": "Student selected an answer" if student_answer is not None else "No approach shown",
+                "accuracy": "Correct answer" if is_correct else "Incorrect answer",
+                "creativity": "Standard categorization response" if problem_type == "categorization_activity"
+                            else "Standard assessment response"
+            },
+            "evaluation": {
+                "score": score,
+                "justification": f"Student correctly categorized {selected_answer_text.count('correct') if 'correct' in str(selected_answer_text) else 0} out of {len(problem_data.get('categorization_items', []))} items"
+                               if problem_type == "categorization_activity" and not is_correct
+                               else f"{'Correct' if is_correct else 'Incorrect'} answer for assessment question"
+            },
+            "feedback": {
+                "praise": "Good work!" if is_correct else "Good effort on this question!",
+                "guidance": problem_data.get("teaching_note", problem_data.get("rationale", "Review the concept")) if not is_correct else "Well done!",
+                "encouragement": "Keep practicing!" if not is_correct else "Excellent!",
+                "next_steps": "Continue to next question" if is_correct else "Review this topic"
+            },
+            "skill_id": problem_data.get("skill_id", "unknown"),
+            "subject": problem_data.get("subject", "unknown"),
+            "subskill_id": problem_data.get("subskill_id", "unknown"),
+            "score": score,
+            "correct": is_correct,
+            "accuracy_percentage": accuracy_percentage,
+            "selected_answer_text": selected_answer_text if student_answer is not None else "Not answered"
+        }
+
+        # Return structured review that matches both assessment format and submission service metadata
         review = AssessmentProblemReview(
             observation=AssessmentReviewObservation(
-                canvas_description="No canvas work for this assessment question",
-                selected_answer=selected_answer_text,
-                work_shown="Assessment response provided" if student_answer is not None else "No response provided"
+                canvas_description=review_data["observation"]["canvas_description"],
+                selected_answer=review_data["observation"]["selected_answer"],
+                work_shown=review_data["observation"]["work_shown"]
             ),
             analysis=AssessmentReviewAnalysis(
-                understanding="Good understanding demonstrated" if is_correct else "Needs additional practice",
-                approach="Student selected an answer" if student_answer is not None else "No approach shown",
-                accuracy="Correct answer" if is_correct else "Incorrect answer",
-                creativity="Standard assessment response"
+                understanding=review_data["analysis"]["understanding"],
+                approach=review_data["analysis"]["approach"],
+                accuracy=review_data["analysis"]["accuracy"],
+                creativity=review_data["analysis"]["creativity"]
             ),
             evaluation=AssessmentReviewEvaluation(
                 score=score,
-                justification=f"{'Correct' if is_correct else 'Incorrect'} answer for assessment question"
+                justification=review_data["evaluation"]["justification"]
             ),
             feedback=AssessmentReviewFeedback(
-                praise="Good work!" if is_correct else "Good effort!",
-                guidance=problem_data.get("rationale", "Review the concept") if not is_correct else "Well done!",
-                encouragement="Keep practicing!" if not is_correct else "Excellent!",
-                next_steps="Continue to next question" if is_correct else "Review this topic"
+                praise=review_data["feedback"]["praise"],
+                guidance=review_data["feedback"]["guidance"],
+                encouragement=review_data["feedback"]["encouragement"],
+                next_steps=review_data["feedback"]["next_steps"]
             ),
-            skill_id=problem_data.get("skill_id", "unknown"),
-            subject=problem_data.get("subject", "unknown"),
-            subskill_id=problem_data.get("subskill_id", "unknown"),
+            skill_id=review_data["skill_id"],
+            subject=review_data["subject"],
+            subskill_id=review_data["subskill_id"],
             score=score,
             correct=is_correct,
-            accuracy_percentage=100 if is_correct else 30
+            accuracy_percentage=accuracy_percentage
         )
 
         return review
