@@ -806,6 +806,32 @@ private async getAuthToken(): Promise<string> {
   }
 
   /**
+   * Batch problem submission for assessments
+   * - Submits multiple problems at once with assessment context
+   * - Returns enhanced feedback with engagement data
+   * - Supports all problem types in a single batch
+   */
+  async submitProblemBatch(request: {
+    assessment_context?: {
+      assessment_id: string;
+      subject: string;
+      student_id: number;
+    };
+    submissions: Array<{
+      subject: string;
+      problem: any;
+      solution_image?: string;
+      skill_id: string;
+      student_answer?: string;
+      canvas_used?: boolean;
+      subskill_id?: string;
+      primitive_response?: any;
+    }>;
+  }) {
+    return this.post('/api/problems/submit-batch', request);
+  }
+
+  /**
    * DEPRECATED: Use generatePracticeSet instead
    * Kept for backward compatibility during migration
    */

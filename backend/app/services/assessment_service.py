@@ -703,6 +703,90 @@ class AssessmentService:
             logger.error(f"Failed to store assessment submission: {e}")
             return False
 
+    async def store_batch_submission(
+        self,
+        assessment_id: str,
+        student_id: int,
+        batch_response,  # BatchSubmissionResponse
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Store batch submission results in assessment document"""
+        try:
+            # Get the current assessment document
+            assessment = await self.cosmos.get_assessment(assessment_id, student_id, firebase_uid)
+            if not assessment:
+                logger.error(f"Assessment {assessment_id} not found for storing batch submission")
+                return False
+
+            # Convert batch response to dict for storage
+            if hasattr(batch_response, 'dict'):
+                batch_data = batch_response.dict()
+            else:
+                batch_data = batch_response
+
+            # Add batch submission field to assessment document
+            assessment["batch_submission"] = {
+                "batch_id": batch_data.get("batch_id"),
+                "submission_results": [
+                    result.dict() if hasattr(result, 'dict') else result
+                    for result in batch_data.get("submission_results", [])
+                ],
+                "total_problems": batch_data.get("total_problems", 0),
+                "batch_submitted_at": batch_data.get("batch_submitted_at"),
+                "engagement_summary": {
+                    "total_xp_earned": 0,  # Will be filled by engagement decorator
+                    "streak_bonus": 0,
+                    "level_up": False
+                }
+            }
+
+            # Compute score data to mark assessment as completed
+            submission_results = batch_data.get("submission_results", [])
+            total_score = 0
+            correct_count = 0
+            total_questions = len(submission_results)
+
+            for result in submission_results:
+                if hasattr(result, 'dict'):
+                    result_data = result.dict()
+                else:
+                    result_data = result
+
+                # Extract score from review data
+                review = result_data.get("review", {})
+                if isinstance(review.get("evaluation"), dict):
+                    score = review["evaluation"].get("score", 0)
+                elif isinstance(review.get("evaluation"), (int, float)):
+                    score = review["evaluation"]
+                else:
+                    score = review.get("score", 0)
+
+                total_score += score
+                if score >= 7:  # Consider 7+ as correct
+                    correct_count += 1
+
+            # Add score data to mark as completed
+            assessment["score_data"] = {
+                "total_score": total_score,
+                "max_possible_score": total_questions * 10,
+                "correct_count": correct_count,
+                "total_questions": total_questions,
+                "percentage_score": (total_score / (total_questions * 10)) * 100 if total_questions > 0 else 0,
+                "percentage_correct": (correct_count / total_questions) * 100 if total_questions > 0 else 0,
+                "completed_at": batch_data.get("batch_submitted_at"),
+                "completion_method": "batch_submission"
+            }
+
+            # Update the assessment document in Cosmos DB
+            self.cosmos.assessments.upsert_item(body=assessment)
+
+            logger.info(f"Successfully stored batch submission in assessment document {assessment_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to store batch submission in assessment {assessment_id}: {e}")
+            return False
+
     async def score_assessment(
         self,
         assessment_id: str,
@@ -1165,6 +1249,27 @@ class AssessmentService:
                             correct_count += 1
                     is_correct = correct_count == len(blanks)
                     selected_answer_text = str(student_answer)
+                else:
+                    selected_answer_text = str(student_answer)
+
+            elif problem_type == "categorization_activity":
+                # Check categorization answers
+                categorization_items = problem_data.get("categorization_items", [])
+                if isinstance(student_answer, dict) and "student_categorization" in student_answer:
+                    student_categorization = student_answer["student_categorization"]
+                    correct_count = 0
+                    total_items = len(categorization_items)
+
+                    for item in categorization_items:
+                        item_text = item.get("item_text")
+                        correct_category = item.get("correct_category")
+                        student_category = student_categorization.get(item_text)
+
+                        if student_category == correct_category:
+                            correct_count += 1
+
+                    is_correct = correct_count == total_items
+                    selected_answer_text = str(student_categorization)
                 else:
                     selected_answer_text = str(student_answer)
 

@@ -83,15 +83,58 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
       const endTime = new Date();
       const timeTakenMinutes = Math.ceil((endTime.getTime() - startTime.getTime()) / (1000 * 60));
 
-      const submissionData = {
-        assessment_id: assessmentData.assessment_id,
-        answers: answers,
-        time_taken_minutes: timeTakenMinutes
+      // Prepare batch submission data
+      const submissions = assessmentData.problems.map((problem: any, index: number) => {
+        const problemId = problem.id || problem.problem_id || `problem_${index}`;
+        const answer = answers[problemId];
+
+        // For structured problems (MC, TF, etc.), prioritize primitive_response
+        // For open-ended problems, use student_answer
+        let studentAnswer = answer?.student_answer;
+        let primitiveResponse = answer?.primitive_response;
+
+        // If answer has selected_option_id directly (from MCQPrimitive), treat it as primitive_response
+        if (answer?.selected_option_id && !primitiveResponse) {
+          primitiveResponse = { selected_option_id: answer.selected_option_id };
+        }
+
+        // If answer has selected_answer directly (from TrueFalsePrimitive), treat it as primitive_response
+        if (answer?.selected_answer !== undefined && !primitiveResponse) {
+          primitiveResponse = {
+            selected_answer: answer.selected_answer,
+            explanation: answer.explanation || ''
+          };
+        }
+
+        // If we have primitive_response but no student_answer, use the primitive_response as student_answer
+        if (primitiveResponse && !studentAnswer) {
+          studentAnswer = typeof primitiveResponse === 'string' ? primitiveResponse : JSON.stringify(primitiveResponse);
+        }
+
+        return {
+          subject: assessmentData.subject,
+          problem: problem, // Send original problem structure, not processed one
+          skill_id: problem.skill_id || problem.problem_data?.skill_id || 'unknown',
+          subskill_id: problem.subskill_id || problem.problem_data?.subskill_id,
+          student_answer: studentAnswer,
+          primitive_response: primitiveResponse,
+          canvas_used: answer?.canvas_used || false,
+          solution_image: answer?.solution_image
+        };
+      });
+
+      const batchRequest = {
+        assessment_context: {
+          assessment_id: assessmentData.assessment_id,
+          subject: assessmentData.subject,
+          student_id: assessmentData.student_id
+        },
+        submissions
       };
 
-      const result = await authApi.submitAssessment(assessmentData.subject, submissionData);
+      const result = await authApi.submitProblemBatch(batchRequest);
 
-      console.log('Assessment submission result:', result);
+      console.log('Batch assessment submission result:', result);
 
       // Store results in sessionStorage for the results page
       sessionStorage.setItem(`assessment_results_${assessmentData.assessment_id}`, JSON.stringify(result));

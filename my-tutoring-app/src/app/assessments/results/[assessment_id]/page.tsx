@@ -16,6 +16,7 @@ import AssessmentResultsHeader from '@/components/assessment/AssessmentResultsHe
 import KeyTakeawaysCard from '@/components/assessment/KeyTakeawaysCard';
 import SkillAnalysisCard from '@/components/assessment/SkillAnalysisCard';
 import ReviewItemsCard from '@/components/assessment/ReviewItemsCard';
+import BatchAssessmentResults from '@/components/assessment/BatchAssessmentResults';
 
 interface AssessmentSummary {
   assessment_id: string;
@@ -72,6 +73,26 @@ interface AssessmentSummary {
     related_skill_id: string;
     lesson_link: string;
   }>;
+  // NEW: Batch submission format
+  batch_submission?: {
+    batch_id: string;
+    submission_results: Array<{
+      problem_id: string;
+      review: {
+        observation: { selected_answer: string; work_shown: string };
+        analysis: { understanding: string; approach: string };
+        evaluation: { score: number; justification: string };
+        feedback: { praise: string; guidance: string; encouragement: string };
+      };
+      score: number;
+      correct: boolean;
+    }>;
+    xp_earned: number;
+    level_up: boolean;
+    current_streak: number;
+    current_level?: number;
+    total_xp?: number;
+  };
 }
 
 const AssessmentResultsPage = () => {
@@ -84,6 +105,7 @@ const AssessmentResultsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [engagementProcessed, setEngagementProcessed] = useState(false);
+  const [displayMode, setDisplayMode] = useState<'batch' | 'legacy'>('legacy');
 
   const assessmentId = params.assessment_id as string;
 
@@ -106,31 +128,63 @@ const AssessmentResultsPage = () => {
         if (storedResults) {
           const results = JSON.parse(storedResults);
 
-          // Map the backend response to our interface
-          const formattedSummary: AssessmentSummary = {
-            assessment_id: results.assessment_id,
-            subject: results.subject,
-            total_questions: results.total_questions,
-            correct_count: results.correct_count, // Use correct_count from backend
-            score_percentage: results.score_percentage,
-            time_taken_minutes: results.time_taken_minutes,
-            skill_breakdown: results.skill_breakdown || [],
-            engagement_transaction: results.engagement_transaction,
-            submitted_at: results.submitted_at,
-            // Enhanced AI fields
-            ai_summary: results.ai_summary,
-            performance_quote: results.performance_quote,
-            skill_analysis: results.skill_analysis,
-            common_misconceptions: results.common_misconceptions,
-            review_items: results.review_items
-          };
+          // Check if this is a batch submission (new format)
+          if (results.batch_submission) {
+            setDisplayMode('batch');
+            const formattedSummary: AssessmentSummary = {
+              assessment_id: results.assessment_id || assessmentId,
+              subject: results.subject || 'Unknown',
+              total_questions: results.batch_submission.submission_results?.length || 0,
+              correct_count: results.batch_submission.submission_results?.filter((r: any) => r.correct).length || 0,
+              score_percentage: results.batch_submission.submission_results?.length > 0
+                ? (results.batch_submission.submission_results.filter((r: any) => r.correct).length / results.batch_submission.submission_results.length) * 100
+                : 0,
+              time_taken_minutes: results.time_taken_minutes,
+              skill_breakdown: results.skill_breakdown || [],
+              engagement_transaction: results.engagement_transaction,
+              submitted_at: results.submitted_at,
+              batch_submission: results.batch_submission
+            };
 
-          setSummary(formattedSummary);
+            setSummary(formattedSummary);
 
-          // Process engagement if present
-          if (results.engagement_transaction && !engagementProcessed) {
-            await processEngagementResponse(results.engagement_transaction);
-            setEngagementProcessed(true);
+            // Process engagement from batch submission
+            if (results.batch_submission.xp_earned > 0 && !engagementProcessed) {
+              await processEngagementResponse({
+                xp_earned: results.batch_submission.xp_earned,
+                level_up: results.batch_submission.level_up,
+                current_level: results.batch_submission.current_level,
+                total_xp: results.batch_submission.total_xp
+              });
+              setEngagementProcessed(true);
+            }
+          } else {
+            // Legacy format
+            setDisplayMode('legacy');
+            const formattedSummary: AssessmentSummary = {
+              assessment_id: results.assessment_id,
+              subject: results.subject,
+              total_questions: results.total_questions,
+              correct_count: results.correct_count,
+              score_percentage: results.score_percentage,
+              time_taken_minutes: results.time_taken_minutes,
+              skill_breakdown: results.skill_breakdown || [],
+              engagement_transaction: results.engagement_transaction,
+              submitted_at: results.submitted_at,
+              ai_summary: results.ai_summary,
+              performance_quote: results.performance_quote,
+              skill_analysis: results.skill_analysis,
+              common_misconceptions: results.common_misconceptions,
+              review_items: results.review_items
+            };
+
+            setSummary(formattedSummary);
+
+            // Process engagement if present
+            if (results.engagement_transaction && !engagementProcessed) {
+              await processEngagementResponse(results.engagement_transaction);
+              setEngagementProcessed(true);
+            }
           }
 
           setLoading(false);
@@ -142,27 +196,47 @@ const AssessmentResultsPage = () => {
         // Otherwise fetch from API (fallback)
         const data = await authApi.getAssessmentSummary(assessmentId);
 
-        // Map the API response to our interface (same mapping as sessionStorage)
-        const formattedSummary: AssessmentSummary = {
-          assessment_id: data.assessment_id,
-          subject: data.subject,
-          total_questions: data.total_questions,
-          correct_count: data.correct_count,
-          score_percentage: data.score_percentage,
-          time_taken_minutes: data.time_taken_minutes,
-          skill_breakdown: data.skill_breakdown || [],
-          engagement_transaction: data.engagement_transaction,
-          submitted_at: data.submitted_at,
-          // Enhanced AI fields
-          ai_summary: data.ai_summary,
-          performance_quote: data.performance_quote,
-          skill_analysis: data.skill_analysis,
-          common_misconceptions: data.common_misconceptions,
-          review_items: data.review_items
-        };
+        // Check if API returns batch submission format
+        if (data.batch_submission) {
+          setDisplayMode('batch');
+          const formattedSummary: AssessmentSummary = {
+            assessment_id: data.assessment_id || assessmentId,
+            subject: data.subject || 'Unknown',
+            total_questions: data.batch_submission.submission_results?.length || 0,
+            correct_count: data.batch_submission.submission_results?.filter((r: any) => r.correct).length || 0,
+            score_percentage: data.batch_submission.submission_results?.length > 0
+              ? (data.batch_submission.submission_results.filter((r: any) => r.correct).length / data.batch_submission.submission_results.length) * 100
+              : 0,
+            time_taken_minutes: data.time_taken_minutes,
+            skill_breakdown: data.skill_breakdown || [],
+            engagement_transaction: data.engagement_transaction,
+            submitted_at: data.submitted_at,
+            batch_submission: data.batch_submission
+          };
+          setSummary(formattedSummary);
+        } else {
+          // Legacy API format
+          setDisplayMode('legacy');
+          const formattedSummary: AssessmentSummary = {
+            assessment_id: data.assessment_id,
+            subject: data.subject,
+            total_questions: data.total_questions,
+            correct_count: data.correct_count,
+            score_percentage: data.score_percentage,
+            time_taken_minutes: data.time_taken_minutes,
+            skill_breakdown: data.skill_breakdown || [],
+            engagement_transaction: data.engagement_transaction,
+            submitted_at: data.submitted_at,
+            ai_summary: data.ai_summary,
+            performance_quote: data.performance_quote,
+            skill_analysis: data.skill_analysis,
+            common_misconceptions: data.common_misconceptions,
+            review_items: data.review_items
+          };
+          setSummary(formattedSummary);
+        }
 
-        setSummary(formattedSummary);
-        console.log('Assessment Summary Data:', formattedSummary);
+        console.log('Assessment Summary Data:', summary);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching assessment summary:', err);
@@ -220,6 +294,68 @@ const AssessmentResultsPage = () => {
     );
   }
 
+  // If we have a batch submission, use the new format
+  if (displayMode === 'batch' && summary.batch_submission) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Header */}
+          <AssessmentResultsHeader
+            performanceQuote={summary.performance_quote}
+            subject={summary.subject}
+          />
+
+          {/* Batch Assessment Results */}
+          <BatchAssessmentResults batchSubmission={summary.batch_submission} />
+
+          {/* Time Taken */}
+          {summary.time_taken_minutes && (
+            <Card className="shadow-lg">
+              <CardContent className="flex items-center justify-center p-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
+                    {Math.round(summary.time_taken_minutes)} minutes
+                  </div>
+                  <div className="text-gray-600">Time taken</div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/assessments')}
+              className="flex items-center"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Take Another Assessment
+            </Button>
+
+            <Button
+              onClick={() => router.push('/')}
+              className="flex items-center"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => router.push('/practice')}
+              className="flex items-center"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Practice More
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Legacy format
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-4xl mx-auto space-y-6">

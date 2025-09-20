@@ -508,6 +508,16 @@ HOLISTIC ANALYSIS PRIORITIES:
             # Flatten list of lists and filter empty values
             all_answers = [ans for sublist in correct_answers for ans in (sublist if isinstance(sublist, list) else [sublist]) if ans]
             return ', '.join(all_answers) if all_answers else 'Answer not available'
+        elif problem_content.get('categorization_items'):
+            # Handle categorization problems
+            categorization_items = problem_content.get('categorization_items', [])
+            correct_categorizations = {}
+            for item in categorization_items:
+                item_text = item.get('item_text')
+                correct_category = item.get('correct_category')
+                if item_text and correct_category:
+                    correct_categorizations[item_text] = correct_category
+            return str(correct_categorizations) if correct_categorizations else 'Answer not available'
         else:
             return "Answer not available"
 
@@ -535,6 +545,8 @@ HOLISTIC ANALYSIS PRIORITIES:
             return problem_content.get('question', 'Question not available')
         elif problem_type == 'matching_activity':
             return problem_content.get('prompt', 'Question not available')
+        elif problem_type == 'categorization_activity':
+            return problem_content.get('instruction', 'Question not available')
         elif problem_type == 'scenario_question':
             return problem_content.get('scenario_question', 'Question not available')
         else:
@@ -543,6 +555,7 @@ HOLISTIC ANALYSIS PRIORITIES:
                 problem_content.get('question') or
                 problem_content.get('statement') or
                 problem_content.get('prompt') or
+                problem_content.get('instruction') or
                 problem_content.get('text_with_blanks') or
                 problem_content.get('scenario_question') or
                 'Question not available'

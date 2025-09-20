@@ -30,7 +30,7 @@ class SubmissionResult(BaseModel):
     next_recommendations: List[str] = []
     student_id: Optional[int] = None
     user_id: Optional[str] = None
-    
+
     # Engagement system fields
     xp_earned: Optional[int] = None
     base_xp: Optional[int] = None
@@ -41,3 +41,25 @@ class SubmissionResult(BaseModel):
     previous_level: Optional[int] = None
     current_streak: Optional[int] = None
     previous_streak: Optional[int] = None
+
+
+class AssessmentContext(BaseModel):
+    """Assessment context for batch submissions"""
+    assessment_id: str
+    subject: str
+    student_id: int
+
+
+class BatchSubmissionRequest(BaseModel):
+    """Schema for batch problem submission requests"""
+    assessment_context: Optional[AssessmentContext] = None
+    submissions: List[ProblemSubmission]
+
+
+class BatchSubmissionResponse(BaseModel):
+    """Schema for batch problem submission results"""
+    batch_id: str
+    assessment_id: Optional[str] = None
+    total_problems: int
+    submission_results: List[SubmissionResult]
+    batch_submitted_at: str

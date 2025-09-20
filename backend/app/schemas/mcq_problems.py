@@ -8,11 +8,6 @@ class MCQOption(BaseModel):
     id: str = Field(..., description="Stable ID for the option, e.g., 'A', 'B', 'C', 'D'.")
     text: str = Field(..., description="Option text, student-facing, 10-120 chars.")
 
-    @validator("id")
-    def id_must_be_alphabetical(cls, v):
-        if not (v and v.lower() in ["a", "b", "c", "d", "e", "f"]):
-            raise ValueError("Option ID must be A-F (case insensitive)")
-        return v.upper()
 
 
 class MCQPayload(BaseModel):
@@ -56,7 +51,7 @@ class MCQResponse(BaseModel):
     subskill_id: str
     difficulty: str
     question: str = Field(..., description="One clear question, 15-200 chars.")
-    options: List[MCQOption] = Field(..., min_items=4, max_items=6)
+    options: List[MCQOption]
     correct_option_id: str = Field(..., description="Must match one of options[].id")
     rationale: str = Field(..., description="Explain why correct is correct; 1-3 sentences.")
     metadata: Dict = Field(default_factory=dict, description="Concept group, learning objectives, etc.")

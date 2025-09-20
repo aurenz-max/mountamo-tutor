@@ -22,7 +22,7 @@ from ...services.review import ReviewService
 from ...services.bigquery_analytics import BigQueryAnalyticsService
 from ...services.composable_problem_generation import ComposableProblemGenerationService
 from ...schemas.composable_problems import ProblemGenerationRequest, ComposableProblem, InteractiveProblem
-from ...schemas.problem_submission import ProblemSubmission, SubmissionResult
+from ...schemas.problem_submission import ProblemSubmission, SubmissionResult, BatchSubmissionRequest, BatchSubmissionResponse
 from ...core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -63,12 +63,43 @@ def _extract_submission_metadata(kwargs: dict, result) -> dict:
     submission = kwargs.get('submission')
     problem_type = submission.problem.get('problem_type', 'generic')
     score = result.review.get('score', 0) if hasattr(result, 'review') else 0
-    
+
     return {
         "activity_name": f"Submitted {problem_type} problem",
         "problem_id": submission.problem.get('id'),
         "score": score,
         "is_correct": score >= 8
+    }
+
+def _extract_batch_submission_metadata(kwargs: dict, result) -> dict:
+    """Extracts metadata for a 'batch_problems_submitted' activity."""
+    batch_request = kwargs.get('batch_request')
+    total_problems = len(batch_request.submissions) if batch_request else 0
+
+    # Calculate aggregate metrics from batch results
+    correct_count = 0
+    total_score = 0
+
+    if hasattr(result, 'submission_results'):
+        for submission_result in result.submission_results:
+            if hasattr(submission_result, 'review'):
+                score = submission_result.review.get('score', 0)
+                total_score += score
+                if score >= 8:
+                    correct_count += 1
+
+    activity_name = "Submitted assessment batch"
+    if batch_request and batch_request.assessment_context:
+        subject = batch_request.assessment_context.subject
+        activity_name = f"Submitted {subject} assessment"
+
+    return {
+        "activity_name": activity_name,
+        "total_problems": total_problems,
+        "correct_count": correct_count,
+        "average_score": total_score / total_problems if total_problems > 0 else 0,
+        "assessment_id": batch_request.assessment_context.assessment_id if batch_request and batch_request.assessment_context else None,
+        "subject": batch_request.assessment_context.subject if batch_request and batch_request.assessment_context else "general"
     }
 
 # ============================================================================
@@ -317,6 +348,142 @@ async def submit_problem(
         )
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+@router.post("/submit-batch")
+@log_engagement_activity(
+    activity_type="batch_problems_submitted",
+    metadata_extractor=_extract_batch_submission_metadata
+)
+async def submit_problem_batch(
+    batch_request: BatchSubmissionRequest,
+    background_tasks: BackgroundTasks,
+    user_context: dict = Depends(get_user_context),
+    review_service: ReviewService = Depends(get_review_service),
+    competency_service: CompetencyService = Depends(get_competency_service),
+    cosmos_db = Depends(get_cosmos_db)
+) -> BatchSubmissionResponse:
+    """
+    Batch problem submission endpoint. Processes multiple problems using the same logic
+    as individual problem submissions. Engagement XP is handled automatically by decorator.
+    """
+    firebase_uid = user_context["firebase_uid"]
+    student_id = user_context["student_id"]
+
+    try:
+        # Initialize submission service
+        from ...services.submission_service import SubmissionService
+        submission_service = SubmissionService(review_service, competency_service, cosmos_db)
+
+        # Generate batch ID
+        import uuid
+        batch_id = f"batch_{int(datetime.utcnow().timestamp())}_{uuid.uuid4().hex[:8]}"
+
+        # Process each submission
+        submission_results = []
+        failed_submissions = []
+
+        logger.info(f"Processing batch of {len(batch_request.submissions)} submissions for student {student_id}")
+
+        for i, submission in enumerate(batch_request.submissions):
+            try:
+                result = await submission_service.handle_submission(submission, user_context)
+                submission_results.append(result)
+                logger.info(f"Successfully processed submission {i+1}/{len(batch_request.submissions)}")
+            except Exception as e:
+                logger.error(f"Error processing submission {i+1}: {str(e)}")
+                failed_submissions.append({
+                    "submission_index": i,
+                    "problem_id": submission.problem.get("id", f"problem_{i}"),
+                    "error": str(e)
+                })
+
+        if not submission_results and failed_submissions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"All submissions failed. Failed count: {len(failed_submissions)}"
+            )
+
+        # Create response
+        response = BatchSubmissionResponse(
+            batch_id=batch_id,
+            assessment_id=batch_request.assessment_context.assessment_id if batch_request.assessment_context else None,
+            total_problems=len(batch_request.submissions),
+            submission_results=submission_results,
+            batch_submitted_at=datetime.utcnow().isoformat()
+        )
+
+        # Store batch submission if assessment context provided
+        if batch_request.assessment_context:
+            await _store_batch_submission(
+                batch_request.assessment_context,
+                response,
+                user_context,
+                cosmos_db
+            )
+
+        if failed_submissions:
+            logger.warning(f"Batch processed with {len(failed_submissions)} failures: {failed_submissions}")
+
+        logger.info(f"Batch submission completed: {len(submission_results)} successful, {len(failed_submissions)} failed")
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in batch problem submission: {str(e)}")
+        background_tasks.add_task(
+            log_activity_helper,
+            user_id=firebase_uid,
+            student_id=student_id,
+            activity_type="batch_submission_error",
+            activity_name="Batch submission failed",
+            points=0,
+            metadata={"error": str(e), "student_id": student_id}
+        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+async def _store_batch_submission(
+    assessment_context: dict,
+    batch_response: BatchSubmissionResponse,
+    user_context: dict,
+    cosmos_db
+) -> None:
+    """Store batch submission results in assessment document"""
+    try:
+        # Get the assessment service to store batch results
+        from ...services.assessment_service import AssessmentService
+        from ...services.bigquery_analytics import BigQueryAnalyticsService
+        from ...services.problems import ProblemService
+        from ...services.curriculum_service import CurriculumService
+        from ...services.submission_service import SubmissionService
+
+        # Initialize services (simplified for batch storage)
+        bigquery_service = get_bigquery_analytics_service()
+        problem_service = await get_problem_service()
+        curriculum_service = CurriculumService(bigquery_service)
+        submission_service = SubmissionService(None, None, cosmos_db)
+
+        assessment_service = AssessmentService(
+            bigquery_service,
+            problem_service,
+            curriculum_service,
+            submission_service,
+            cosmos_db
+        )
+
+        # Store batch submission data in assessment
+        await assessment_service.store_batch_submission(
+            assessment_context.assessment_id,
+            assessment_context.student_id,
+            batch_response,
+            user_context.get("firebase_uid")
+        )
+
+        logger.info(f"Stored batch submission for assessment {assessment_context.assessment_id}")
+
+    except Exception as e:
+        logger.error(f"Failed to store batch submission: {str(e)}")
+        # Don't raise - submission should continue even if storage fails
 
 
 # ============================================================================
