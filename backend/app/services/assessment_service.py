@@ -819,6 +819,89 @@ class AssessmentService:
                 "completion_method": "batch_submission"
             }
 
+            # Generate AI summary for batch submissions
+            try:
+                logger.info(f"Generating AI summary for batch assessment {assessment_id}")
+
+                # Convert batch submission results to the format expected by AI service
+                score_data = assessment["score_data"]
+                blueprint = assessment.get("blueprint", {})
+
+                # Convert enriched_submission_results to problem_reviews format for AI service
+                problem_reviews = []
+                for result in enriched_submission_results:
+                    # Handle the batch submission review format and convert to AssessmentReviewDocument structure
+                    full_review_payload = result.get("full_review", {})
+                    if isinstance(full_review_payload, AssessmentProblemReview):
+                        structured_full_review = full_review_payload
+                    else:
+                        submission_review = full_review_payload.copy() if isinstance(full_review_payload, dict) else {}
+                        for section_key in ("observation", "analysis", "evaluation", "feedback"):
+                            section_value = submission_review.get(section_key)
+                            if not isinstance(section_value, dict) or not section_value:
+                                submission_review[section_key] = result.get(section_key) or {}
+                        if "score" not in submission_review and result.get("score") is not None:
+                            submission_review["score"] = result.get("score")
+                        structured_full_review = self._convert_submission_review_to_assessment_review(
+                            submission_review,
+                            result.get("problem_content", {}),
+                            student_id
+                        )
+
+                    # Create proper AssessmentReviewDocument structure
+                    review_document = AssessmentReviewDocument(
+                        id=result.get("id", f"{assessment_id}_{result.get('problem_id', 'unknown')}_{int(datetime.utcnow().timestamp())}"),
+                        student_id=student_id,
+                        subject=assessment.get("subject", "Unknown"),
+                        skill_id=result.get("skill_id", "unknown"),
+                        subskill_id=result.get("subskill_id", "unknown"),
+                        problem_id=result.get("problem_id", "unknown"),
+                        timestamp=result.get("timestamp", datetime.utcnow().isoformat()),
+                        problem_content=result.get("problem_content", {}),
+                        full_review=structured_full_review,
+                        observation=structured_full_review.observation,
+                        analysis=structured_full_review.analysis,
+                        evaluation=structured_full_review.evaluation,
+                        feedback=structured_full_review.feedback,
+                        score=structured_full_review.score,
+                        firebase_uid=firebase_uid or "",
+                        created_at=result.get("created_at", datetime.utcnow().isoformat())
+                    )
+                    problem_reviews.append(review_document.dict())
+
+                # Generate AI summary using the assessment blueprint and results
+                ai_summary_data = await self.ai_assessment.generate_enhanced_assessment_summary(
+                    blueprint=blueprint,
+                    submission_result=score_data,
+                    review_items_data=problem_reviews
+                )
+
+                # Extract AI summary data - store only at top level to avoid duplication
+                ai_summary_fields = {
+                    "ai_summary": ai_summary_data.get("ai_summary", ""),
+                    "performance_quote": ai_summary_data.get("performance_quote", ""),
+                    "skill_analysis": ai_summary_data.get("skill_analysis", []),
+                    "common_misconceptions": ai_summary_data.get("common_misconceptions", []),
+                    "review_items": ai_summary_data.get("review_items", [])
+                }
+
+                logger.info(f"AI summary generated successfully for batch assessment {assessment_id}")
+
+            except Exception as e:
+                logger.error(f"Failed to generate AI summary for batch assessment {assessment_id}: {e}")
+                # Continue without AI summary - assessment submission should not fail
+                ai_summary_fields = {
+                    "ai_summary": "",
+                    "performance_quote": "",
+                    "skill_analysis": [],
+                    "common_misconceptions": [],
+                    "review_items": []
+                }
+
+            # Add AI summary fields to assessment
+            assessment.update(ai_summary_fields)
+            assessment["ai_summary_generated_at"] = datetime.utcnow().isoformat()
+
             # Update the assessment document in Cosmos DB
             self.cosmos.assessments.upsert_item(body=assessment)
 

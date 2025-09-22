@@ -119,6 +119,11 @@ class AIAssessmentService:
         Returns:
             Enhanced assessment summary with AI insights merged with computed data
         """
+        logger.info(f"AI ASSESSMENT DEBUG - Input data:")
+        logger.info(f"  review_items_data length: {len(review_items_data)}")
+        for i, item in enumerate(review_items_data):
+            logger.info(f"  item {i}: problem_id={item.get('problem_id', 'unknown')}, problem_type={item.get('problem_content', {}).get('problem_type', 'unknown')}")
+
         try:
             # Extract key information
             subject = blueprint.get('subject', 'Unknown Subject')
@@ -383,26 +388,37 @@ HOLISTIC ANALYSIS PRIORITIES:
             for insight in ai_insights.get("problem_insights", [])
         }
 
-        for review_data in review_items_data:
+        logger.info(f"AI ASSESSMENT DEBUG - Processing {len(review_items_data)} review items for review_items generation")
+
+        for i, review_data in enumerate(review_items_data):
             problem_id = review_data.get('problem_id', 'unknown')
             problem_content = review_data.get('problem_content', {})
+
+            logger.info(f"AI ASSESSMENT DEBUG - Review item {i+1}/{len(review_items_data)}:")
+            logger.info(f"  problem_id: {problem_id}")
+            logger.info(f"  problem_content keys: {list(problem_content.keys())}")
+            logger.info(f"  problem_type: {problem_content.get('problem_type', 'unknown')}")
+            logger.info(f"  review_data keys: {list(review_data.keys())}")
+            logger.info(f"  review_data.correct: {review_data.get('correct', 'not found')}")
+            logger.info(f"  review_data.score: {review_data.get('score', 'not found')}")
+            logger.info(f"  review_data.your_answer_text: {review_data.get('your_answer_text', 'not found')}")
+            logger.info(f"  review_data.selected_answer_text: {review_data.get('selected_answer_text', 'not found')}")
 
             # Get AI insights for this problem
             ai_insight = problem_insights_map.get(problem_id, {})
 
-            # Extract computed data fields
-            question_text = (
-                problem_content.get('statement') or
-                problem_content.get('question') or
-                "Question not available"
-            )
+            # Extract computed data fields using proper extraction method
+            question_text = self._extract_question_text(problem_content)
+            logger.info(f"  extracted question_text: {question_text}")
 
             # Extract student answer using the structured extraction method
             your_answer = self._extract_student_answer(review_data)
+            logger.info(f"  extracted your_answer: {your_answer}")
             if your_answer in ["No answer", "Not answered", "Not Answered"]:
                 your_answer = "No answer recorded"
 
             correct_answer = self._extract_correct_answer(problem_content)
+            logger.info(f"  extracted correct_answer: {correct_answer}")
 
             review_item = {
                 "problem_id": problem_id,
@@ -423,6 +439,7 @@ HOLISTIC ANALYSIS PRIORITIES:
                 "subject": problem_content.get('subject') or review_data.get('subject', 'Unknown'),
                 "lesson_link": f"/practice/{review_data.get('subskill_id', 'unknown')}"
             }
+            logger.info(f"  final review_item: {review_item}")
             enhanced_summary["review_items"].append(review_item)
 
         return enhanced_summary
@@ -575,19 +592,42 @@ HOLISTIC ANALYSIS PRIORITIES:
 
     def _extract_student_answer(self, review_item: Dict[str, Any]) -> str:
         """Extract student answer from review item - handles both structured and legacy formats"""
-        # Try structured observation format first
+        logger.info(f"    _extract_student_answer DEBUG for problem {review_item.get('problem_id', 'unknown')}:")
+        logger.info(f"      checking your_answer_text: {review_item.get('your_answer_text', 'not found')}")
+        logger.info(f"      checking selected_answer_text: {review_item.get('selected_answer_text', 'not found')}")
+
+        # Try direct answer fields first (for categorization and other structured problems)
+        if 'your_answer_text' in review_item:
+            answer = review_item.get('your_answer_text', 'No answer')
+            if answer and answer != 'No answer':
+                logger.info(f"      returning your_answer_text: {answer}")
+                return answer
+
+        if 'selected_answer_text' in review_item:
+            answer = review_item.get('selected_answer_text', 'No answer')
+            if answer and answer != 'No answer':
+                logger.info(f"      returning selected_answer_text: {answer}")
+                return answer
+
+        # Try structured observation format
         if 'observation' in review_item:
             observation = review_item['observation']
+            logger.info(f"      checking observation: {observation}")
             if isinstance(observation, dict):
-                return observation.get('selected_answer', 'No answer')
+                answer = observation.get('selected_answer', 'No answer')
+                if answer and answer != 'No answer':
+                    logger.info(f"      returning observation.selected_answer: {answer}")
+                    return answer
 
         # Try legacy format
         student_answer = review_item.get('student_answer', 'No answer')
+        logger.info(f"      checking student_answer: {student_answer}")
         if student_answer and student_answer != 'No answer':
+            logger.info(f"      returning student_answer: {student_answer}")
             return student_answer
 
-        # Try alternative fields
-        return review_item.get('your_answer_text', 'No answer')
+        logger.info(f"      returning default: No answer")
+        return 'No answer'
 
     def _safe_json_loads(self, response_text: str, operation: str) -> Dict[str, Any]:
         """Safely parse JSON response with error handling"""

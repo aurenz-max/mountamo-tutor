@@ -106,6 +106,11 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
           };
         }
 
+        // If answer has student_categorization (from CategorizationPrimitive), treat it as primitive_response
+        if (answer?.student_categorization && !primitiveResponse) {
+          primitiveResponse = answer.student_categorization;
+        }
+
         // If we have primitive_response but no student_answer, use the primitive_response as student_answer
         if (primitiveResponse && !studentAnswer) {
           studentAnswer = typeof primitiveResponse === 'string' ? primitiveResponse : JSON.stringify(primitiveResponse);

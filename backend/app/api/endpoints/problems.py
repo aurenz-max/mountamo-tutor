@@ -321,12 +321,22 @@ async def submit_problem(
     """
     firebase_uid = user_context["firebase_uid"]
     student_id = user_context["student_id"]
-    
+
+    # Debug logging for raw submission data
+    logger.info(f"RAW SUBMISSION DEBUG for student {student_id}:")
+    logger.info(f"  submission.subject: {submission.subject}")
+    logger.info(f"  submission.skill_id: {submission.skill_id}")
+    logger.info(f"  submission.subskill_id: {submission.subskill_id}")
+    logger.info(f"  submission.student_answer: '{submission.student_answer}'")
+    logger.info(f"  submission.primitive_response: {submission.primitive_response}")
+    logger.info(f"  submission.canvas_used: {submission.canvas_used}")
+    logger.info(f"  submission.solution_image length: {len(submission.solution_image) if submission.solution_image else 0}")
+
     try:
         # Initialize submission service
         from ...services.submission_service import SubmissionService
         submission_service = SubmissionService(review_service, competency_service, cosmos_db)
-        
+
         # The endpoint is now ONLY responsible for the submission logic
         result = await submission_service.handle_submission(submission, user_context)
         
@@ -385,6 +395,18 @@ async def submit_problem_batch(
 
         for i, submission in enumerate(batch_request.submissions):
             try:
+                # Debug logging for batch submission data
+                logger.info(f"BATCH SUBMISSION DEBUG [{i+1}/{len(batch_request.submissions)}] for student {student_id}:")
+                logger.info(f"  submission.subject: {submission.subject}")
+                logger.info(f"  submission.skill_id: {submission.skill_id}")
+                logger.info(f"  submission.subskill_id: {submission.subskill_id}")
+                logger.info(f"  submission.student_answer: '{submission.student_answer}'")
+                logger.info(f"  submission.primitive_response: {submission.primitive_response}")
+                logger.info(f"  submission.canvas_used: {submission.canvas_used}")
+                logger.info(f"  submission.solution_image length: {len(submission.solution_image) if submission.solution_image else 0}")
+                logger.info(f"  problem_id: {submission.problem.get('id', 'unknown')}")
+                logger.info(f"  problem_type: {submission.problem.get('problem_type', 'unknown')}")
+
                 result = await submission_service.handle_submission(submission, user_context)
                 submission_results.append(result)
                 logger.info(f"Successfully processed submission {i+1}/{len(batch_request.submissions)}")
