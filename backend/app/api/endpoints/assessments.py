@@ -86,6 +86,54 @@ class AvailableSubjectsResponse(BaseModel):
     message: Optional[str] = None
 
 
+class SkillAnalysisItem(BaseModel):
+    """Model for individual skill analysis in assessment summary"""
+    skill_id: str
+    skill_name: str
+    total_questions: int
+    correct_count: int
+    assessment_focus: str
+    performance_label: str
+    insight_text: str
+    next_step: Dict[str, str]
+
+
+class ReviewItem(BaseModel):
+    """Model for individual review item in assessment summary"""
+    problem_id: str
+    question_text: str
+    your_answer_text: str
+    correct_answer_text: str
+    analysis: Dict[str, str]
+    feedback: Dict[str, str]
+    related_skill_id: str
+    subskill_id: str
+    subject: str
+    lesson_link: str
+
+
+class EnhancedAssessmentSummaryResponse(BaseModel):
+    """Response model for enhanced assessment summary with AI insights"""
+    assessment_id: str
+    student_id: int
+    subject: str
+    total_questions: int
+    correct_count: int
+    score_percentage: float
+    time_taken_minutes: Optional[int]
+    skill_breakdown: List[Dict[str, Any]]
+    submitted_at: Optional[str]
+
+    # Enhanced AI-powered fields
+    ai_summary: str
+    performance_quote: str
+    skill_analysis: List[SkillAnalysisItem]
+    common_misconceptions: List[str]
+    review_items: List[ReviewItem]
+    problem_reviews: List[Dict[str, Any]]
+    ai_summary_generated_at: Optional[str]
+
+
 # ============================================================================
 # DEPENDENCY INJECTION - Following analytics.py pattern
 # ============================================================================
@@ -489,7 +537,7 @@ async def get_assessment_summary(
     assessment_id: str,
     user_context: dict = Depends(get_user_context),
     assessment_service: AssessmentService = Depends(get_assessment_service)
-) -> Dict:
+) -> EnhancedAssessmentSummaryResponse:
     """
     Get summary information for a completed assessment.
 
@@ -508,7 +556,7 @@ async def get_assessment_summary(
             firebase_uid=firebase_uid
         )
 
-        return summary
+        return EnhancedAssessmentSummaryResponse(**summary)
 
     except ValueError as e:
         logger.error(f"Value error getting assessment summary: {e}")

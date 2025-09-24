@@ -788,6 +788,19 @@ class AssessmentService:
             correct_count = 0
             total_questions = len(submission_results)
 
+            # Track skill performance for skill breakdown
+            skill_results: Dict[str, Dict[str, Any]] = {}
+            blueprint = assessment.get("blueprint", {})
+            selected_subskills = blueprint.get("selected_subskills", [])
+
+            # Create a mapping from skill_id to skill_description
+            skill_id_to_description = {}
+            for subskill in selected_subskills:
+                skill_id = subskill.get('skill_id') or subskill.get('subskill_id')
+                skill_desc = subskill.get('skill_description') or subskill.get('subskill_description')
+                if skill_id and skill_desc:
+                    skill_id_to_description[skill_id] = skill_desc
+
             for result in submission_results:
                 if hasattr(result, 'dict'):
                     result_data = result.dict()
@@ -804,8 +817,33 @@ class AssessmentService:
                     score = review.get("score", 0)
 
                 total_score += score
-                if score >= 7:  # Consider 7+ as correct
+                is_correct = score >= 7  # Consider 7+ as correct
+                if is_correct:
                     correct_count += 1
+
+                # Track skill performance
+                problem_data = result_data.get("problem", {})
+                skill_id = problem_data.get("skill_id") or problem_data.get("subskill_id")
+                skill_desc = skill_id_to_description.get(skill_id, "General")
+
+                # Initialize skill in tracker if not present
+                if skill_desc not in skill_results:
+                    skill_results[skill_desc] = {"correct": 0, "total": 0, "skill_name": skill_desc}
+                skill_results[skill_desc]["total"] += 1
+
+                if is_correct:
+                    skill_results[skill_desc]["correct"] += 1
+
+            # Format skill breakdown for response
+            skill_breakdown_list = []
+            for skill_name, data in skill_results.items():
+                percentage = round((data["correct"] / data["total"] * 100) if data["total"] > 0 else 0)
+                skill_breakdown_list.append({
+                    "skill_name": skill_name,
+                    "correct_answers": data["correct"],
+                    "total_questions": data["total"],
+                    "percentage": percentage,
+                })
 
             # Add score data to mark as completed
             assessment["score_data"] = {
@@ -816,7 +854,8 @@ class AssessmentService:
                 "percentage_score": (total_score / (total_questions * 10)) * 100 if total_questions > 0 else 0,
                 "percentage_correct": (correct_count / total_questions) * 100 if total_questions > 0 else 0,
                 "completed_at": batch_data.get("batch_submitted_at"),
-                "completion_method": "batch_submission"
+                "completion_method": "batch_submission",
+                "skill_breakdown": skill_breakdown_list
             }
 
             # Generate AI summary for batch submissions
@@ -1194,8 +1233,53 @@ class AssessmentService:
             answers = assessment.get("answers", {})
             time_taken_minutes = assessment.get("time_taken_minutes")
 
+            # Check if AI insights are missing and generate them on-demand
+            needs_ai_insights = (
+                not assessment.get("ai_summary") and
+                not assessment.get("skill_analysis") and
+                score_data.get("problem_reviews")  # Only if we have review data
+            )
+
+            ai_summary_fields = {}
+            if needs_ai_insights:
+                try:
+                    logger.info(f"Generating missing AI insights for assessment {assessment_id}")
+
+                    # Generate AI insights using existing data
+                    ai_summary_data = await self.ai_assessment.generate_enhanced_assessment_summary(
+                        blueprint=assessment.get("blueprint", {}),
+                        submission_result=score_data,
+                        review_items_data=score_data.get("problem_reviews", [])
+                    )
+
+                    ai_summary_fields = {
+                        "ai_summary": ai_summary_data.get("ai_summary", ""),
+                        "performance_quote": ai_summary_data.get("performance_quote", ""),
+                        "skill_analysis": ai_summary_data.get("skill_analysis", []),
+                        "common_misconceptions": ai_summary_data.get("common_misconceptions", []),
+                        "review_items": ai_summary_data.get("review_items", [])
+                    }
+
+                    # Store the generated insights in the assessment document for future use
+                    await self._store_ai_summary_in_assessment(
+                        assessment_id, student_id, ai_summary_fields, firebase_uid
+                    )
+
+                    logger.info(f"AI insights generated and stored for assessment {assessment_id}")
+
+                except Exception as e:
+                    logger.error(f"Failed to generate AI insights for assessment {assessment_id}: {e}")
+                    # Use fallback values
+                    ai_summary_fields = {
+                        "ai_summary": "Assessment completed successfully. Great work!",
+                        "performance_quote": "You're making good progress in your learning journey!",
+                        "skill_analysis": [],
+                        "common_misconceptions": [],
+                        "review_items": []
+                    }
+
             # Return enhanced format with AI summary and review items
-            # Prioritize top-level AI summary data (clean structure without duplication)
+            # Prioritize top-level data if available, otherwise use generated insights
             return {
                 "assessment_id": assessment_id,
                 "student_id": student_id,
@@ -1205,16 +1289,16 @@ class AssessmentService:
                 "score_percentage": score_data.get("score_percentage", 0),
                 "time_taken_minutes": time_taken_minutes,
                 "skill_breakdown": score_data.get("skill_breakdown", []),
-                "submitted_at": score_data.get("submitted_at"),
+                "submitted_at": score_data.get("submitted_at") or datetime.utcnow().isoformat(),
 
-                # Enhanced assessment feedback fields - prefer top-level data for clean structure
-                "ai_summary": assessment.get("ai_summary", ""),
-                "performance_quote": assessment.get("performance_quote", ""),
-                "skill_analysis": assessment.get("skill_analysis", []),
-                "common_misconceptions": assessment.get("common_misconceptions", []),
-                "review_items": assessment.get("review_items", []),
+                # Enhanced assessment feedback fields - use stored data or generated insights
+                "ai_summary": assessment.get("ai_summary") or ai_summary_fields.get("ai_summary", ""),
+                "performance_quote": assessment.get("performance_quote") or ai_summary_fields.get("performance_quote", ""),
+                "skill_analysis": assessment.get("skill_analysis") or ai_summary_fields.get("skill_analysis", []),
+                "common_misconceptions": assessment.get("common_misconceptions") or ai_summary_fields.get("common_misconceptions", []),
+                "review_items": assessment.get("review_items") or ai_summary_fields.get("review_items", []),
                 "problem_reviews": score_data.get("problem_reviews", []),  # Still include raw review data
-                "ai_summary_generated_at": assessment.get("ai_summary_generated_at")
+                "ai_summary_generated_at": assessment.get("ai_summary_generated_at") or datetime.utcnow().isoformat()
             }
 
         except Exception as e:

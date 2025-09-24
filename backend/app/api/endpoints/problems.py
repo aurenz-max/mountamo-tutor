@@ -19,6 +19,7 @@ from ...dependencies import get_problem_service, get_competency_service, get_rev
 from ...services.problems import ProblemService
 from ...services.competency import CompetencyService
 from ...services.review import ReviewService
+from ...services.recommender import ProblemRecommender
 from ...services.bigquery_analytics import BigQueryAnalyticsService
 from ...services.composable_problem_generation import ComposableProblemGenerationService
 from ...schemas.composable_problems import ProblemGenerationRequest, ComposableProblem, InteractiveProblem
@@ -169,17 +170,25 @@ async def generate_problem(
     request: ProblemRequest,
     background_tasks: BackgroundTasks,
     user_context: dict = Depends(get_user_context),
-    problem_service: ProblemService = Depends(get_problem_service)
+    problem_service: ProblemService = Depends(get_problem_service),
+    recommender: ProblemRecommender = Depends(get_problem_recommender),
+    competency_service: CompetencyService = Depends(get_competency_service),
+    cosmos_db = Depends(get_cosmos_db)
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     """
     Generate a set of one or more problems for a practice session.
     Accepts a 'count' parameter in the request body.
     Returns a single problem dict if count=1, or a list of problem dicts if count>1.
     """
-    
+
     firebase_uid = user_context["firebase_uid"]
     student_id = user_context["student_id"]
-    
+
+    # Ensure dependencies are properly injected into problem service
+    problem_service.recommender = recommender
+    problem_service.competency_service = competency_service
+    problem_service.cosmos_db = cosmos_db
+
     try:
         logger.info(f"User {user_context['email']} generating {request.count} problems for student {student_id}")
         

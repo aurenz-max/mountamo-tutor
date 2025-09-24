@@ -365,6 +365,14 @@ class UniversalValidator:
                 logger.debug(f"[UNIVERSAL_VALIDATOR] Structured option '{option_id}' converted to index {index}")
                 return index
 
+        # Handle opt_a, opt_b, opt_c format
+        if option_id.startswith('opt_'):
+            letter = option_id.split('_')[1]  # Extract the letter part
+            if letter.isalpha() and len(letter) == 1:
+                index = ord(letter.upper()) - ord('A')
+                logger.debug(f"[UNIVERSAL_VALIDATOR] Opt format '{option_id}' converted to index {index}")
+                return index
+
         # Fallback: try hardcoded list for other formats
         option_ids = ['A', 'B', 'C', 'D', 'E', 'F']
         try:

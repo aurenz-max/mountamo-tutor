@@ -158,7 +158,7 @@ GENERATE COMPREHENSIVE INSIGHTS:
 2. **performance_quote**: One encouraging sentence that reflects their actual engagement and effort
 
 3. **skill_insights**: For each subskill tested, provide:
-   - subskill_id: Use the actual subskill identifier from the context
+   - subskill_id: Use the EXACT subskill identifier from "SUBSKILLS TESTED" section above (e.g., "SS002-01-B", NOT generic names)
    - insight_text: Actionable insight referencing assessment focus AND engagement patterns
    - next_step_text: Recommended action that considers both performance and confidence
 
@@ -168,7 +168,7 @@ GENERATE COMPREHENSIVE INSIGHTS:
    - Limit to 2-3 key patterns that inform instruction
 
 5. **problem_insights**: For each problem, provide analysis and feedback:
-   - problem_id: Use the actual problem identifier
+   - problem_id: Use the EXACT problem identifier from "DETAILED PROBLEM REVIEWS" section above
    - analysis: Understanding and approach (acknowledge if not attempted)
    - feedback: Appropriate praise, guidance, and encouragement for the response given
 
@@ -189,7 +189,7 @@ HOLISTIC ANALYSIS PRIORITIES:
                     response_mime_type='application/json',
                     response_schema=ASSESSMENT_AI_INSIGHTS_SCHEMA,
                     temperature=0.7,
-                    max_output_tokens=6000  # Reduced since we're generating less redundant content
+                    max_output_tokens=10000  # Increased to prevent JSON truncation
                 )
             )
 
@@ -272,6 +272,15 @@ HOLISTIC ANALYSIS PRIORITIES:
 
         # Add subskills tested with their categories for narrative context
         if selected_subskills:
+            context_parts.append("\nSUBSKILLS TESTED (with actual IDs for AI insights):")
+            for subskill in selected_subskills:
+                subskill_id = subskill.get('subskill_id', 'unknown')
+                desc = subskill.get('subskill_description') or subskill.get('skill_description', '')
+                category = subskill.get('category', 'general')
+                if desc:
+                    context_parts.append(f"- {subskill_id}: {desc} (Category: {category})")
+
+            # Also add grouped by category for narrative understanding
             category_skills = {}
             for subskill in selected_subskills:
                 desc = subskill.get('subskill_description') or subskill.get('skill_description', '')
@@ -324,6 +333,9 @@ HOLISTIC ANALYSIS PRIORITIES:
         category_breakdown = blueprint.get('category_breakdown', {})
         skill_breakdown = submission_result.get('skill_breakdown', [])
 
+        # Get subject for practice links
+        subject = blueprint.get('subject', 'mathematics')
+
         # Start with AI insights
         enhanced_summary = {
             "ai_summary": ai_insights.get("ai_summary", ""),
@@ -339,6 +351,8 @@ HOLISTIC ANALYSIS PRIORITIES:
             for insight in ai_insights.get("skill_insights", [])
         }
 
+        logger.info(f"AI ASSESSMENT DEBUG - skill_insights_map: {skill_insights_map}")
+
         # Create mapping from skill_description to subskill_id from blueprint
         selected_subskills = blueprint.get('selected_subskills', [])
         skill_to_subskill_map = {}
@@ -348,36 +362,75 @@ HOLISTIC ANALYSIS PRIORITIES:
             if skill_desc and subskill_id:
                 skill_to_subskill_map[skill_desc] = subskill_id
 
-        for skill_data in skill_breakdown:
-            skill_name = skill_data.get('skill_name')
-            total_questions = skill_data.get('total_questions', 0)
-            correct_count = skill_data.get('correct_answers', 0)
-            percentage = skill_data.get('percentage', 0)
+        logger.info(f"AI ASSESSMENT DEBUG - skill_to_subskill_map: {skill_to_subskill_map}")
+        logger.info(f"AI ASSESSMENT DEBUG - skill_breakdown length: {len(skill_breakdown)}")
+        logger.info(f"AI ASSESSMENT DEBUG - skill_breakdown: {skill_breakdown}")
 
-            # Get subskill_id from blueprint mapping
-            subskill_id = skill_to_subskill_map.get(skill_name)
+        if not skill_breakdown:
+            logger.warning(f"AI ASSESSMENT DEBUG - No skill breakdown data found! submission_result keys: {list(submission_result.keys())}")
+            logger.warning(f"AI ASSESSMENT DEBUG - submission_result: {submission_result}")
 
-            # Get AI insights for this skill
-            ai_insight = skill_insights_map.get(subskill_id, {})
+        # Instead of iterating over skill_breakdown (which groups by skill_name),
+        # iterate over AI skill_insights (which has proper subskill granularity)
+        for subskill_id, ai_insight in skill_insights_map.items():
+            logger.info(f"AI ASSESSMENT DEBUG - Processing subskill: {subskill_id}")
 
-            # Determine assessment focus from blueprint
-            assessment_focus = self._determine_assessment_focus(skill_name, category_breakdown, blueprint)
+            # Find the subskill info from blueprint
+            subskill_info = None
+            for subskill in selected_subskills:
+                if subskill.get('subskill_id') == subskill_id:
+                    subskill_info = subskill
+                    break
 
-            # Compute performance label based on percentage
+            if not subskill_info:
+                logger.warning(f"AI ASSESSMENT DEBUG - Could not find blueprint info for subskill: {subskill_id}")
+                continue
+
+            # Calculate performance for this specific subskill by examining review_items_data
+            total_questions = 0
+            correct_count = 0
+            for review_item in review_items_data:
+                item_subskill_id = review_item.get('subskill_id')
+                if item_subskill_id == subskill_id:
+                    total_questions += 1
+                    if self._extract_correctness(review_item):
+                        correct_count += 1
+
+            # If no questions found for this subskill, skip it
+            if total_questions == 0:
+                logger.info(f"AI ASSESSMENT DEBUG - No questions found for subskill {subskill_id}, skipping")
+                continue
+
+            percentage = (correct_count / total_questions * 100) if total_questions > 0 else 0
+
+            # Get subskill details
+            subskill_description = subskill_info.get('subskill_description') or subskill_info.get('skill_description', '')
+            category = subskill_info.get('category', 'general')
+
+            # Determine assessment focus and performance label
+            assessment_focus = {
+                'weak_spots': 'Weak Spot',
+                'recent_practice': 'Recent Practice',
+                'foundational_review': 'Foundational Review',
+                'new_frontiers': 'New Frontier'
+            }.get(category, 'General')
+
             performance_label = self._compute_performance_label(percentage)
 
-            # Build complete skill analysis
+            logger.info(f"AI ASSESSMENT DEBUG - Subskill {subskill_id}: {correct_count}/{total_questions} ({percentage}%)")
+
+            # Build complete skill analysis using AI insights
             skill_analysis = {
-                "skill_id": skill_name,
-                "skill_name": skill_name,
+                "skill_id": subskill_id,
+                "skill_name": subskill_description,
                 "total_questions": total_questions,
                 "correct_count": correct_count,
                 "assessment_focus": assessment_focus,
                 "performance_label": performance_label,
-                "insight_text": ai_insight.get("insight_text"),
+                "insight_text": ai_insight.get("insight_text", ""),
                 "next_step": {
-                    "text": ai_insight.get("next_step_text"),
-                    "link": f"/practice/{subskill_id}"
+                    "text": ai_insight.get("next_step_text", ""),
+                    "link": f"/practice/{subskill_id}?subject={subject}"
                 }
             }
             enhanced_summary["skill_analysis"].append(skill_analysis)
@@ -437,7 +490,7 @@ HOLISTIC ANALYSIS PRIORITIES:
                 "related_skill_id": review_data.get('subskill_id', review_data.get('skill_id', 'unknown_skill')),
                 "subskill_id": review_data.get('subskill_id', 'unknown'),
                 "subject": problem_content.get('subject') or review_data.get('subject', 'Unknown'),
-                "lesson_link": f"/practice/{review_data.get('subskill_id', 'unknown')}"
+                "lesson_link": f"/practice/{review_data.get('subskill_id', 'unknown')}?subject={subject}"
             }
             logger.info(f"  final review_item: {review_item}")
             enhanced_summary["review_items"].append(review_item)
@@ -724,7 +777,7 @@ HOLISTIC ANALYSIS PRIORITIES:
         return insights
 
 
-    def _generate_fallback_ai_summary(self, submission_result: Dict[str, Any]) -> str:
+    def _generate_fallback_ai_summary(self, submission_result: Dict[str, Any], review_items_data: List[Dict[str, Any]]) -> str:
         """Generate basic AI summary if AI service fails"""
         score_percentage = submission_result.get('score_percentage', 0)
         correct_count = submission_result.get('correct_count', 0)
