@@ -449,6 +449,13 @@ class AuthenticatedApiClient {
     return this.get(`/api/assessments/${assessmentId}/summary`);
   }
 
+  /**
+   * Get detailed assessment results with AI insights
+   */
+  async getAssessmentResults(assessmentId: string) {
+    return this.get(`/api/assessments/${assessmentId}/summary`);
+  }
+
   // ============================================================================
   // PACKAGE ENDPOINTS
   // ============================================================================

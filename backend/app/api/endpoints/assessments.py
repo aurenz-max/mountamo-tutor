@@ -3,6 +3,7 @@ from typing import Dict, Optional, Any, List
 from datetime import datetime
 from pydantic import BaseModel, Field
 import logging
+import uuid
 
 # Import services and middleware following the same pattern as analytics.py
 from ...core.middleware import get_user_context
@@ -19,6 +20,8 @@ from ...services.review import ReviewService
 from ...services.competency import CompetencyService
 from ...db.cosmos_db import CosmosDBService
 from ...core.config import settings
+from ...schemas.problem_submission import ProblemSubmission, BatchSubmissionRequest, BatchSubmissionResponse
+from ...schemas.assessment_review import EnhancedAssessmentSummaryResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -61,6 +64,10 @@ class SubmitAssessmentRequest(BaseModel):
     assessment_id: str = Field(..., description="ID of the assessment being submitted")
     answers: Dict[str, Any] = Field(..., description="Student answers mapped to problem IDs")
     time_taken_minutes: Optional[int] = Field(None, description="Time taken to complete assessment")
+
+class BatchAssessmentSubmissionRequest(BaseModel):
+    """Request model for batch assessment submission"""
+    batch_request: BatchSubmissionRequest = Field(..., description="Batch submission data with assessment context")
 
 
 class AssessmentSubmissionResponse(BaseModel):
@@ -110,28 +117,6 @@ class ReviewItem(BaseModel):
     subskill_id: str
     subject: str
     lesson_link: str
-
-
-class EnhancedAssessmentSummaryResponse(BaseModel):
-    """Response model for enhanced assessment summary with AI insights"""
-    assessment_id: str
-    student_id: int
-    subject: str
-    total_questions: int
-    correct_count: int
-    score_percentage: float
-    time_taken_minutes: Optional[int]
-    skill_breakdown: List[Dict[str, Any]]
-    submitted_at: Optional[str]
-
-    # Enhanced AI-powered fields
-    ai_summary: str
-    performance_quote: str
-    skill_analysis: List[SkillAnalysisItem]
-    common_misconceptions: List[str]
-    review_items: List[ReviewItem]
-    problem_reviews: List[Dict[str, Any]]
-    ai_summary_generated_at: Optional[str]
 
 
 # ============================================================================
@@ -234,7 +219,13 @@ def extract_assessment_generation_metadata(kwargs, result):
 
 def extract_assessment_submission_metadata(kwargs, result):
     """Extract metadata for assessment submission engagement activity"""
-    result_data = result.dict() if hasattr(result, 'dict') else result
+    # Handle both the new EnhancedAssessmentSummaryResponse and legacy responses
+    if hasattr(result, 'dict'):
+        result_data = result.dict()
+    elif hasattr(result, '__dict__'):
+        result_data = result.__dict__
+    else:
+        result_data = result
 
     correct_count = result_data.get('correct_count', 0)
     total_count = result_data.get('total_questions', 1)  # Avoid division by zero
@@ -409,9 +400,10 @@ async def submit_assessment(
     request: SubmitAssessmentRequest,
     user_context: dict = Depends(get_user_context),
     assessment_service: AssessmentService = Depends(get_assessment_service)
-) -> AssessmentSubmissionResponse:
+) -> EnhancedAssessmentSummaryResponse:
     """
-    Submit student answers for an assessment and return the score.
+    Submit student answers for an assessment, get the full scored summary,
+    and persist the results. This is the correct endpoint for submitting assessments.
     Awards base XP + significant performance-based bonus.
     """
     firebase_uid = user_context["firebase_uid"]
@@ -420,8 +412,12 @@ async def submit_assessment(
     try:
         logger.info(f"User {user_context['email']} submitting assessment {request.assessment_id} for subject {subject}")
 
-        # Score the assessment
-        submission_result = await assessment_service.score_assessment(
+        # 1. Score the assessment. This handles everything:
+        #    - Calls SubmissionService for each problem
+        #    - Generates summary, skill analysis, problem reviews
+        #    - Calls AI service for insights
+        #    - Persists the complete results to the assessment document in CosmosDB
+        await assessment_service.score_assessment(
             assessment_id=request.assessment_id,
             student_id=student_id,
             answers=request.answers,
@@ -429,15 +425,21 @@ async def submit_assessment(
             firebase_uid=firebase_uid
         )
 
-        if not submission_result:
+        # 2. Fetch the newly generated summary to return to the client
+        #    The data is now guaranteed to be in the database.
+        summary_data = await assessment_service.get_assessment_summary(
+            assessment_id=request.assessment_id,
+            student_id=student_id,
+            firebase_uid=firebase_uid
+        )
+
+        if not summary_data:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Could not score assessment"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Scoring succeeded, but failed to retrieve the summary."
             )
 
-        # Engagement activity is now handled by the @log_engagement_activity decorator
-
-        return AssessmentSubmissionResponse(**submission_result)
+        return EnhancedAssessmentSummaryResponse(**summary_data)
 
     except ValueError as e:
         logger.error(f"Value error submitting assessment: {e}")

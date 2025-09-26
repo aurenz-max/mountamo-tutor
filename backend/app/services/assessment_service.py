@@ -3,6 +3,7 @@ import logging
 import random
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
+from dataclasses import dataclass
 
 from .bigquery_analytics import BigQueryAnalyticsService
 from .problems import ProblemService
@@ -40,6 +41,28 @@ from ..schemas.assessment_review import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ProcessedReview:
+    """A clean, standardized representation of a single problem's result."""
+    problem_id: str
+    subskill_id: str
+    is_correct: bool
+    score: int
+    student_answer_text: str
+    correct_answer_text: str
+    full_review_payload: Dict[str, Any] # The rich payload from SubmissionService
+    problem_content: Dict[str, Any]     # The original problem definition
+
+    # Essential metadata for downstream builders
+    skill_id: str
+    skill_description: str
+    subskill_description: str
+    unit_id: str
+    unit_title: str
+    subject: str
+    category: str  # Pre-assigned category (weak_spots, recent_practice, etc.)
 
 
 class AssessmentService:
@@ -166,7 +189,7 @@ class AssessmentService:
                         "unit_title": unit.get('unit_title'),
                         "skill_id": skill.get('skill_id'),
                         "skill_description": skill.get('skill_description'),
-                        "subject": unit.get('subject')  # Include subject for verification
+                        "subject": subject or unit.get('subject')  # Use provided subject or fall back to unit subject
                     }
                     all_subskills.append(subskill_data)
 
@@ -703,253 +726,429 @@ class AssessmentService:
             logger.error(f"Failed to store assessment submission: {e}")
             return False
 
-    async def store_batch_submission(
-        self,
-        assessment_id: str,
-        student_id: int,
-        batch_response,  # BatchSubmissionResponse
-        firebase_uid: Optional[str] = None
-    ) -> bool:
-        """Store batch submission results in assessment document"""
-        try:
-            # Get the current assessment document
-            assessment = await self.cosmos.get_assessment(assessment_id, student_id, firebase_uid)
-            if not assessment:
-                logger.error(f"Assessment {assessment_id} not found for storing batch submission")
-                return False
+    # ============================================================================
+    # NEW REFACTORED SCORING METHODS (Mise en Place Architecture)
+    # ============================================================================
 
-            # Convert batch response to dict for storage
-            if hasattr(batch_response, 'dict'):
-                batch_data = batch_response.dict()
-            else:
-                batch_data = batch_response
+    async def _process_single_problem(self, problem: Dict, student_answer: Any, blueprint: Dict[str, Any]) -> ProcessedReview:
+        """
+        Handles the processing of a single problem and extracts all necessary metadata.
+        Uses SubmissionService (which includes universal validator) for clean evaluation.
+        """
+        # Extract basic problem identifiers
+        problem_id = str(problem.get("id") or problem.get("problem_id"))
 
-            # Enrich submission results with the same metadata structure as reviews container
-            enriched_submission_results = []
-            submission_results = batch_data.get("submission_results", [])
-            problems = assessment.get("problems", [])
+        # Extract metadata from problem first, but look up from blueprint if missing
+        skill_id = problem.get("skill_id", "unknown")
+        subskill_id = problem.get("subskill_id", "unknown")
 
-            for i, result in enumerate(submission_results):
-                if hasattr(result, 'dict'):
-                    result_data = result.dict()
-                else:
-                    result_data = result
+        # Initialize metadata variables
+        skill_description = problem.get("skill_description", "Unknown Skill")
+        subskill_description = problem.get("subskill_description", "Unknown Subskill")
+        unit_id = problem.get("unit_id", "unknown")
+        unit_title = problem.get("unit_title", "Unknown Unit")
+        subject = problem.get("subject", blueprint.get("subject", "Unknown Subject"))
+        category = "foundational_review"  # Default fallback
 
-                # Get corresponding problem data
-                problem = problems[i] if i < len(problems) else {}
-                problem_id = problem.get("id") or problem.get("problem_id") or f"problem_{i}"
+        # Look up complete metadata from blueprint if not in problem
+        selected_subskills = blueprint.get("selected_subskills", [])
+        for subskill in selected_subskills:
+            # Match by subskill_id or skill_id
+            if (subskill.get("subskill_id") == subskill_id or
+                subskill.get("skill_id") == skill_id):
+                # Fill in missing metadata from blueprint
+                if skill_description == "Unknown Skill":
+                    skill_description = subskill.get("skill_description", skill_description)
+                if subskill_description == "Unknown Subskill":
+                    subskill_description = subskill.get("subskill_description", subskill_description)
+                if unit_id == "unknown":
+                    unit_id = subskill.get("unit_id", unit_id)
+                if unit_title == "Unknown Unit":
+                    unit_title = subskill.get("unit_title", unit_title)
+                if subject in ["Unknown Subject", "unknown", None]:
+                    subject = subskill.get("subject", subject)
+                category = subskill.get("category", "foundational_review")
+                break
 
-                # Create enriched result with metadata matching reviews container structure
-                enriched_result = {
-                    **result_data,
-                    "id": f"{assessment_id}_{problem_id}_{int(datetime.utcnow().timestamp())}",
-                    "student_id": student_id,
-                    "subject": assessment.get("subject", "Unknown"),
-                    "skill_id": problem.get("skill_id", "unknown"),
-                    "subskill_id": problem.get("subskill_id", "unknown"),
-                    "problem_id": str(problem_id),
-                    "timestamp": batch_data.get("batch_submitted_at"),
-                    "problem_content": problem,
-                    "full_review": result_data.get("review", {}),
-                    "firebase_uid": firebase_uid,
-                    "created_at": batch_data.get("batch_submitted_at")
-                }
+        logger.info(f"[ASSESSMENT_SERVICE] Processing problem {problem_id}")
+        logger.info(f"[ASSESSMENT_SERVICE] Metadata - Skill: {skill_id} ({skill_description})")
+        logger.info(f"[ASSESSMENT_SERVICE] Metadata - Subskill: {subskill_id} ({subskill_description})")
+        logger.info(f"[ASSESSMENT_SERVICE] Metadata - Unit: {unit_id} ({unit_title})")
+        logger.info(f"[ASSESSMENT_SERVICE] Metadata - Subject: {subject}")
+        logger.debug(f"[ASSESSMENT_SERVICE] Student answer provided: {student_answer is not None}")
 
-                # Add the individual review components for easier querying
-                review_data = result_data.get("review", {})
-                enriched_result.update({
-                    "observation": review_data.get("observation", {}),
-                    "analysis": review_data.get("analysis", {}),
-                    "evaluation": review_data.get("evaluation", {}),
-                    "feedback": review_data.get("feedback", {}),
-                    "score": float(review_data.get("evaluation", {}).get("score", 0))
-                        if isinstance(review_data.get("evaluation"), dict)
-                        else float(review_data.get("evaluation", 0))
-                })
+        is_correct = False
+        score = 0
+        student_answer_text = "Not Answered"
+        correct_answer_text = self._extract_correct_answer_text(problem)
+        full_review_payload = {}
 
-                enriched_submission_results.append(enriched_result)
-
-            # Add batch submission field to assessment document
-            assessment["batch_submission"] = {
-                "batch_id": batch_data.get("batch_id"),
-                "submission_results": enriched_submission_results,
-                "total_problems": batch_data.get("total_problems", 0),
-                "batch_submitted_at": batch_data.get("batch_submitted_at"),
-                "engagement_summary": {
-                    "total_xp_earned": 0,  # Will be filled by engagement decorator
-                    "streak_bonus": 0,
-                    "level_up": False
-                }
-            }
-
-            # Compute score data to mark assessment as completed
-            submission_results = batch_data.get("submission_results", [])
-            total_score = 0
-            correct_count = 0
-            total_questions = len(submission_results)
-
-            # Track skill performance for skill breakdown
-            skill_results: Dict[str, Dict[str, Any]] = {}
-            blueprint = assessment.get("blueprint", {})
-            selected_subskills = blueprint.get("selected_subskills", [])
-
-            # Create a mapping from skill_id to skill_description
-            skill_id_to_description = {}
-            for subskill in selected_subskills:
-                skill_id = subskill.get('skill_id') or subskill.get('subskill_id')
-                skill_desc = subskill.get('skill_description') or subskill.get('subskill_description')
-                if skill_id and skill_desc:
-                    skill_id_to_description[skill_id] = skill_desc
-
-            for result in submission_results:
-                if hasattr(result, 'dict'):
-                    result_data = result.dict()
-                else:
-                    result_data = result
-
-                # Extract score from review data
-                review = result_data.get("review", {})
-                if isinstance(review.get("evaluation"), dict):
-                    score = review["evaluation"].get("score", 0)
-                elif isinstance(review.get("evaluation"), (int, float)):
-                    score = review["evaluation"]
-                else:
-                    score = review.get("score", 0)
-
-                total_score += score
-                is_correct = score >= 7  # Consider 7+ as correct
-                if is_correct:
-                    correct_count += 1
-
-                # Track skill performance
-                problem_data = result_data.get("problem", {})
-                skill_id = problem_data.get("skill_id") or problem_data.get("subskill_id")
-                skill_desc = skill_id_to_description.get(skill_id, "General")
-
-                # Initialize skill in tracker if not present
-                if skill_desc not in skill_results:
-                    skill_results[skill_desc] = {"correct": 0, "total": 0, "skill_name": skill_desc}
-                skill_results[skill_desc]["total"] += 1
-
-                if is_correct:
-                    skill_results[skill_desc]["correct"] += 1
-
-            # Format skill breakdown for response
-            skill_breakdown_list = []
-            for skill_name, data in skill_results.items():
-                percentage = round((data["correct"] / data["total"] * 100) if data["total"] > 0 else 0)
-                skill_breakdown_list.append({
-                    "skill_name": skill_name,
-                    "correct_answers": data["correct"],
-                    "total_questions": data["total"],
-                    "percentage": percentage,
-                })
-
-            # Add score data to mark as completed
-            assessment["score_data"] = {
-                "total_score": total_score,
-                "max_possible_score": total_questions * 10,
-                "correct_count": correct_count,
-                "total_questions": total_questions,
-                "percentage_score": (total_score / (total_questions * 10)) * 100 if total_questions > 0 else 0,
-                "percentage_correct": (correct_count / total_questions) * 100 if total_questions > 0 else 0,
-                "completed_at": batch_data.get("batch_submitted_at"),
-                "completion_method": "batch_submission",
-                "skill_breakdown": skill_breakdown_list
-            }
-
-            # Generate AI summary for batch submissions
+        if student_answer is not None:
+            # Process answered question through SubmissionService
             try:
-                logger.info(f"Generating AI summary for batch assessment {assessment_id}")
+                logger.info(f"[ASSESSMENT_SERVICE] Calling SubmissionService for problem {problem_id}")
 
-                # Convert batch submission results to the format expected by AI service
-                score_data = assessment["score_data"]
-                blueprint = assessment.get("blueprint", {})
+                # Handle different answer formats for submission service
+                processed_student_answer = ""
+                primitive_response = None
 
-                # Convert enriched_submission_results to problem_reviews format for AI service
-                problem_reviews = []
-                for result in enriched_submission_results:
-                    # Handle the batch submission review format and convert to AssessmentReviewDocument structure
-                    full_review_payload = result.get("full_review", {})
-                    if isinstance(full_review_payload, AssessmentProblemReview):
-                        structured_full_review = full_review_payload
-                    else:
-                        submission_review = full_review_payload.copy() if isinstance(full_review_payload, dict) else {}
-                        for section_key in ("observation", "analysis", "evaluation", "feedback"):
-                            section_value = submission_review.get(section_key)
-                            if not isinstance(section_value, dict) or not section_value:
-                                submission_review[section_key] = result.get(section_key) or {}
-                        if "score" not in submission_review and result.get("score") is not None:
-                            submission_review["score"] = result.get("score")
-                        structured_full_review = self._convert_submission_review_to_assessment_review(
-                            submission_review,
-                            result.get("problem_content", {}),
-                            student_id
-                        )
+                if isinstance(student_answer, dict):
+                    # Interactive problem answer (MCQ, etc.)
+                    primitive_response = student_answer
+                    processed_student_answer = ""
+                    logger.debug(f"[ASSESSMENT_SERVICE] Problem {problem_id}: Using primitive_response format")
+                elif isinstance(student_answer, str):
+                    processed_student_answer = student_answer
+                    logger.debug(f"[ASSESSMENT_SERVICE] Problem {problem_id}: Using text answer format")
+                else:
+                    processed_student_answer = str(student_answer)
+                    logger.debug(f"[ASSESSMENT_SERVICE] Problem {problem_id}: Converting answer to string")
 
-                    # Create proper AssessmentReviewDocument structure
-                    review_document = AssessmentReviewDocument(
-                        id=result.get("id", f"{assessment_id}_{result.get('problem_id', 'unknown')}_{int(datetime.utcnow().timestamp())}"),
-                        student_id=student_id,
-                        subject=assessment.get("subject", "Unknown"),
-                        skill_id=result.get("skill_id", "unknown"),
-                        subskill_id=result.get("subskill_id", "unknown"),
-                        problem_id=result.get("problem_id", "unknown"),
-                        timestamp=result.get("timestamp", datetime.utcnow().isoformat()),
-                        problem_content=result.get("problem_content", {}),
-                        full_review=structured_full_review,
-                        observation=structured_full_review.observation,
-                        analysis=structured_full_review.analysis,
-                        evaluation=structured_full_review.evaluation,
-                        feedback=structured_full_review.feedback,
-                        score=structured_full_review.score,
-                        firebase_uid=firebase_uid or "",
-                        created_at=result.get("created_at", datetime.utcnow().isoformat())
-                    )
-                    problem_reviews.append(review_document.dict())
-
-                # Generate AI summary using the assessment blueprint and results
-                ai_summary_data = await self.ai_assessment.generate_enhanced_assessment_summary(
-                    blueprint=blueprint,
-                    submission_result=score_data,
-                    review_items_data=problem_reviews
+                # Create submission payload
+                submission_payload = ProblemSubmission(
+                    subject=subject,
+                    problem=problem,
+                    student_answer=processed_student_answer,
+                    primitive_response=primitive_response,
+                    solution_image=None,
+                    canvas_used=False,
+                    skill_id=skill_id,
+                    subskill_id=subskill_id,
                 )
 
-                # Extract AI summary data - store only at top level to avoid duplication
-                ai_summary_fields = {
-                    "ai_summary": ai_summary_data.get("ai_summary", ""),
-                    "performance_quote": ai_summary_data.get("performance_quote", ""),
-                    "skill_analysis": ai_summary_data.get("skill_analysis", []),
-                    "common_misconceptions": ai_summary_data.get("common_misconceptions", []),
-                    "review_items": ai_summary_data.get("review_items", [])
-                }
+                # Mock user context for service
+                user_context = {"firebase_uid": "", "student_id": 0, "email": ""}
 
-                logger.info(f"AI summary generated successfully for batch assessment {assessment_id}")
+                # Process through SubmissionService (handles universal validation)
+                submission_result = await self.submission_service.handle_submission(
+                    submission_payload, user_context
+                )
+
+                # Extract results from SubmissionService response
+                review_data = submission_result.review
+                is_correct = review_data.get("correct", False) or review_data.get("score", 0) >= 7
+                score = review_data.get("score", 0)
+
+                logger.info(f"[ASSESSMENT_SERVICE] Problem {problem_id}: SubmissionService returned score={score}, correct={is_correct}")
+
+                # Extract student answer text for display
+                if isinstance(student_answer, dict):
+                    student_answer_text = (
+                        review_data.get("observation", {}).get("selected_answer_text") or
+                        review_data.get("selected_option_text", "Answer Submitted")
+                    )
+                else:
+                    student_answer_text = str(student_answer)
+
+                # Get correct answer from review data if available
+                correct_answer_text = review_data.get("correct_answer_text", self._extract_correct_answer_text(problem))
+
+                logger.debug(f"[ASSESSMENT_SERVICE] Problem {problem_id}: Student answer='{student_answer_text}'")
+                logger.debug(f"[ASSESSMENT_SERVICE] Problem {problem_id}: Correct answer='{correct_answer_text}'")
+
+                # Convert review to dict format for full_review_payload
+                if hasattr(review_data, 'dict'):
+                    full_review_payload = review_data.dict()
+                elif isinstance(review_data, dict):
+                    full_review_payload = review_data
+                else:
+                    full_review_payload = {"raw_review": review_data}
 
             except Exception as e:
-                logger.error(f"Failed to generate AI summary for batch assessment {assessment_id}: {e}")
-                # Continue without AI summary - assessment submission should not fail
-                ai_summary_fields = {
-                    "ai_summary": "",
-                    "performance_quote": "",
-                    "skill_analysis": [],
-                    "common_misconceptions": [],
-                    "review_items": []
+                logger.error(f"[ASSESSMENT_SERVICE] Error processing answer for problem {problem_id}: {e}")
+                is_correct = False
+                score = 0
+                student_answer_text = "Submission Error"
+                correct_answer_text = "Error"
+                full_review_payload = {"error": str(e), "score": 0, "correct": False}
+
+        else:
+            # Handle unanswered question
+            logger.info(f"[ASSESSMENT_SERVICE] Problem {problem_id}: No answer provided")
+            is_correct = False
+            score = 0
+            student_answer_text = "Not Answered"
+            correct_answer_text = self._extract_correct_answer_text(problem)
+
+            # Create minimal review for unanswered question
+            full_review_payload = {
+                "observation": {"selected_answer": "Not answered", "work_shown": "No response provided"},
+                "analysis": {"understanding": "No response to assess", "accuracy": "Unanswered"},
+                "evaluation": {"score": 0, "justification": "Question not answered"},
+                "feedback": {"guidance": "Please attempt all questions", "encouragement": "Try your best!"},
+                "score": 0,
+                "correct": False
+            }
+
+        logger.info(f"[ASSESSMENT_SERVICE] Problem {problem_id} processing complete: score={score}, correct={is_correct}")
+
+        return ProcessedReview(
+            problem_id=problem_id,
+            subskill_id=subskill_id,
+            is_correct=is_correct,
+            score=score,
+            student_answer_text=student_answer_text,
+            correct_answer_text=correct_answer_text,
+            full_review_payload=full_review_payload,
+            problem_content=problem,
+            # Essential metadata for downstream builders
+            skill_id=skill_id,
+            skill_description=skill_description,
+            subskill_description=subskill_description,
+            unit_id=unit_id,
+            unit_title=unit_title,
+            subject=subject,
+            category=category
+        )
+
+    def _build_summary(self, processed_reviews: List[ProcessedReview]) -> Dict[str, Any]:
+        """Calculates and returns the top-level summary stats with detailed analytics."""
+        logger.info(f"[ASSESSMENT_SERVICE] Building enhanced summary from {len(processed_reviews)} processed reviews")
+
+        if not processed_reviews:
+            return {
+                "correct_count": 0,
+                "total_questions": 0,
+                "score_percentage": 0.0,
+                "performance_by_problem_type": {},
+                "performance_by_category": {},
+                "detailed_metrics": {}
+            }
+
+        # Basic totals
+        correct_count = sum(1 for review in processed_reviews if review.is_correct)
+        total_questions = len(processed_reviews)
+        score_percentage = (correct_count / total_questions * 100) if total_questions > 0 else 0.0
+
+        # Performance by problem type
+        problem_type_stats = {}
+        for review in processed_reviews:
+            problem_type = review.problem_content.get("problem_type", "unknown")
+            if problem_type not in problem_type_stats:
+                problem_type_stats[problem_type] = {"correct": 0, "total": 0}
+
+            problem_type_stats[problem_type]["total"] += 1
+            if review.is_correct:
+                problem_type_stats[problem_type]["correct"] += 1
+
+        # Add percentages to problem type stats
+        performance_by_problem_type = {}
+        for ptype, stats in problem_type_stats.items():
+            percentage = (stats["correct"] / stats["total"] * 100) if stats["total"] > 0 else 0.0
+            performance_by_problem_type[ptype] = {
+                **stats,
+                "percentage": round(percentage, 1)
+            }
+
+        # Performance by pre-assigned skill category (weak_spots, recent_practice, etc.)
+        # Categories are now available directly from each ProcessedReview
+        category_stats = {}
+
+        # Aggregate by category using the category from each ProcessedReview
+        for review in processed_reviews:
+            category = review.category
+
+            if category not in category_stats:
+                category_stats[category] = {"correct": 0, "total": 0, "skills": set()}
+
+            category_stats[category]["total"] += 1
+            if review.is_correct:
+                category_stats[category]["correct"] += 1
+            category_stats[category]["skills"].add(review.skill_id)
+
+        # Convert to final format with percentages
+        performance_by_category = {}
+        for category, stats in category_stats.items():
+            percentage = (stats["correct"] / stats["total"] * 100) if stats["total"] > 0 else 0.0
+            performance_by_category[category] = {
+                "correct": stats["correct"],
+                "total": stats["total"],
+                "percentage": round(percentage, 1),
+                "unique_skills": len(stats["skills"])
+            }
+
+        # Additional detailed metrics
+        unique_skills = set(review.skill_id for review in processed_reviews)
+        skill_performance = {}
+        for skill_id in unique_skills:
+            skill_reviews = [r for r in processed_reviews if r.skill_id == skill_id]
+            correct = sum(1 for r in skill_reviews if r.is_correct)
+            total = len(skill_reviews)
+            skill_performance[skill_id] = {"correct": correct, "total": total, "percentage": (correct/total*100) if total > 0 else 0}
+
+        detailed_metrics = {
+            "average_score_per_skill": round(sum(sp["percentage"] for sp in skill_performance.values()) / len(skill_performance), 1) if skill_performance else 0.0,
+            "skills_mastered": len([s for s in skill_performance.values() if s["percentage"] >= 80.0]),
+            "skills_struggling": len([s for s in skill_performance.values() if s["percentage"] < 50.0]),
+            "total_skills_assessed": len(unique_skills),
+            "problem_type_distribution": {ptype: stats["total"] for ptype, stats in problem_type_stats.items()},
+            "category_distribution": {category: stats["total"] for category, stats in category_stats.items()}
+        }
+
+        summary_data = {
+            "correct_count": correct_count,
+            "total_questions": total_questions,
+            "score_percentage": round(score_percentage, 1),
+            "performance_by_problem_type": performance_by_problem_type,
+            "performance_by_category": performance_by_category,
+            "detailed_metrics": detailed_metrics
+        }
+
+        logger.info(f"[ASSESSMENT_SERVICE] Enhanced summary calculated:")
+        logger.info(f"[ASSESSMENT_SERVICE] - Overall: {correct_count}/{total_questions} ({score_percentage:.1f}%)")
+        logger.info(f"[ASSESSMENT_SERVICE] - Problem types: {list(performance_by_problem_type.keys())}")
+        logger.info(f"[ASSESSMENT_SERVICE] - Categories: {list(performance_by_category.keys())}")
+        logger.info(f"[ASSESSMENT_SERVICE] - Skills mastered: {detailed_metrics['skills_mastered']}/{detailed_metrics['total_skills_assessed']}")
+
+        return summary_data
+
+    def _build_skill_analysis(self, processed_reviews: List[ProcessedReview]) -> List[Dict]:
+        """
+        Aggregates performance by subskill_id and formats the skill_analysis array.
+        This function is now simple and completely decoupled.
+        """
+        logger.info(f"[ASSESSMENT_SERVICE] Building skill analysis from {len(processed_reviews)} processed reviews")
+
+        if not processed_reviews:
+            return []
+
+        # Aggregate performance by skill - categories are now available directly from ProcessedReview
+        skill_performance = {}
+        for review in processed_reviews:
+            skill_id = review.skill_id
+
+            if skill_id not in skill_performance:
+                skill_performance[skill_id] = {
+                    "skill_id": skill_id,
+                    "correct_count": 0,
+                    "total_questions": 0,
+                    "skill_name": review.skill_description or skill_id,
+                    "category": review.category,  # Use the category from ProcessedReview
+                    "unit_id": review.unit_id,
+                    "unit_title": review.unit_title
                 }
 
-            # Add AI summary fields to assessment
-            assessment.update(ai_summary_fields)
-            assessment["ai_summary_generated_at"] = datetime.utcnow().isoformat()
+            skill_performance[skill_id]["total_questions"] += 1
+            if review.is_correct:
+                skill_performance[skill_id]["correct_count"] += 1
 
-            # Update the assessment document in Cosmos DB
-            self.cosmos.assessments.upsert_item(body=assessment)
+        # Convert to final skill_analysis format with percentages
+        skill_analysis_list = []
+        for skill_id, performance in skill_performance.items():
+            percentage = (performance["correct_count"] / performance["total_questions"] * 100) if performance["total_questions"] > 0 else 0.0
 
-            logger.info(f"Successfully stored batch submission in assessment document {assessment_id}")
-            return True
+            skill_analysis_entry = {
+                "skill_id": skill_id,
+                "skill_name": performance["skill_name"],
+                "category": performance["category"],  # Keep the original assigned category
+                "total_questions": performance["total_questions"],
+                "correct_count": performance["correct_count"],
+                "percentage": round(percentage, 1),
+                "unit_id": performance["unit_id"],
+                "unit_title": performance["unit_title"]
+            }
 
-        except Exception as e:
-            logger.error(f"Failed to store batch submission in assessment {assessment_id}: {e}")
-            return False
+            skill_analysis_list.append(skill_analysis_entry)
+
+        # Sort by category priority and then by performance
+        category_priority = {
+            "weak_spots": 1,
+            "recent_practice": 2,
+            "foundational_review": 3,
+            "new_frontiers": 4
+        }
+
+        skill_analysis_list.sort(key=lambda x: (
+            category_priority.get(x["category"], 5),
+            -x["percentage"]  # Higher percentage first within category
+        ))
+
+        logger.info(f"[ASSESSMENT_SERVICE] Skill analysis completed:")
+        category_counts = {}
+        for entry in skill_analysis_list:
+            category = entry["category"]
+            category_counts[category] = category_counts.get(category, 0) + 1
+
+        for category, count in category_counts.items():
+            logger.info(f"[ASSESSMENT_SERVICE] - {category}: {count} skills")
+
+        return skill_analysis_list
+
+    def _build_problem_reviews(self, processed_reviews: List[ProcessedReview]) -> List[Dict]:
+        """Formats the final, lean problem_reviews array for the UI."""
+        logger.info(f"[ASSESSMENT_SERVICE] Building problem reviews from {len(processed_reviews)} processed reviews")
+
+        problem_reviews = []
+        for review in processed_reviews:
+            problem_review = {
+                "problem_id": review.problem_id,
+                "is_correct": review.is_correct,
+                "score": review.score,
+                "student_answer_text": review.student_answer_text,
+                "correct_answer_text": review.correct_answer_text,
+                "skill_id": review.skill_id,
+                "skill_name": review.skill_description,
+                "subskill_id": review.subskill_id,
+                "subskill_name": review.subskill_description,
+                "unit_id": review.unit_id,
+                "unit_title": review.unit_title,
+                "problem_type": review.problem_content.get("problem_type", "unknown")
+            }
+            problem_reviews.append(problem_review)
+
+        logger.info(f"[ASSESSMENT_SERVICE] Problem reviews completed: {len(problem_reviews)} entries")
+        return problem_reviews
+
+    def _extract_correct_answer_text(self, problem: Dict) -> str:
+        """Extract the correct answer text from a problem for display purposes."""
+        problem_id = problem.get("id", "unknown")
+        problem_type = problem.get("problem_type", "")
+
+        logger.debug(f"[ASSESSMENT_SERVICE] Extracting correct answer for problem {problem_id}, type: {problem_type}")
+
+        if problem_type == "multiple_choice" and problem.get("options"):
+            correct_option_id = problem.get("correct_option_id", "")
+            options = problem.get("options", [])
+            logger.debug(f"[ASSESSMENT_SERVICE] MCQ problem {problem_id}: correct_option_id={correct_option_id}, options_count={len(options)}")
+
+            correct_option = next((opt for opt in options if opt.get("id") == correct_option_id), None)
+            if correct_option:
+                answer_text = correct_option.get("text", correct_option_id)
+                logger.debug(f"[ASSESSMENT_SERVICE] MCQ problem {problem_id}: found correct answer='{answer_text}'")
+                return answer_text
+            else:
+                logger.warning(f"[ASSESSMENT_SERVICE] MCQ problem {problem_id}: correct option {correct_option_id} not found in options")
+                return "Unknown"
+
+        elif problem_type == "true_false":
+            correct_value = problem.get("correct")
+            answer_text = "True" if correct_value else "False"
+            logger.debug(f"[ASSESSMENT_SERVICE] True/False problem {problem_id}: correct={correct_value}, answer='{answer_text}'")
+            return answer_text
+
+        elif problem_type == "fill_in_blanks":
+            blanks = problem.get("blanks", [])
+            logger.debug(f"[ASSESSMENT_SERVICE] Fill-in-blanks problem {problem_id}: blanks_count={len(blanks)}")
+
+            if blanks:
+                correct_answers = blanks[0].get("correct_answers", [])
+                answer_text = ", ".join(correct_answers) if correct_answers else "Fill in blanks"
+                logger.debug(f"[ASSESSMENT_SERVICE] Fill-in-blanks problem {problem_id}: first_blank_answers={correct_answers}")
+                return answer_text
+
+        elif problem_type == "scenario_question":
+            answer_text = problem.get("scenario_answer", "See scenario answer")
+            logger.debug(f"[ASSESSMENT_SERVICE] Scenario problem {problem_id}: answer='{answer_text[:50]}...'")
+            return answer_text
+
+        else:
+            answer_text = problem.get("answer", problem.get("rationale", "See solution"))
+            logger.debug(f"[ASSESSMENT_SERVICE] Generic problem {problem_id} (type={problem_type}): answer='{answer_text[:50]}...'")
+            return answer_text
+
+    # ============================================================================
+    # COSMOS DB STORAGE METHODS
+    # ============================================================================
 
     async def score_assessment(
         self,
@@ -959,253 +1158,69 @@ class AssessmentService:
         time_taken_minutes: Optional[int] = None,
         firebase_uid: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """
-        Scores an assessment by processing each problem through the SubmissionService,
-        aggregates results, calculates skill breakdowns, and awards XP.
+        """Orchestrates the scoring of an assessment using the new Mise en Place architecture."""
 
-        CRITICAL: This method processes ALL problems in the assessment, not just submitted answers.
-        Unanswered questions are marked as incorrect to ensure accurate scoring.
-        """
         try:
+            # 1. SETUP: Fetch the assessment definition
             assessment = await self.get_assessment(assessment_id, student_id, firebase_uid)
             if not assessment:
                 raise ValueError(f"Assessment {assessment_id} not found for student {student_id}")
 
             problems = assessment.get("problems", [])
-            total_questions = len(problems)
-            if total_questions == 0:
+            if not problems:
                 raise ValueError("Assessment contains no problems to score.")
 
-            correct_count = 0
-            skill_results: Dict[str, Dict[str, Any]] = {}
-            problem_reviews = []  # Store review data for each problem
-
-            user_context = {"firebase_uid": firebase_uid, "student_id": student_id, "email": ""} # Mock context for service
-
-            # Get blueprint for skill description lookup
+            # 2. PREP WORK (Transformation): Create the "Mise en Place"
+            # This loop's ONLY job is to convert raw submissions into our clean intermediate format.
+            processed_reviews: List[ProcessedReview] = []
             blueprint = assessment.get("blueprint", {})
-            selected_subskills = blueprint.get("selected_subskills", [])
-
-            # Create a mapping from skill_id to skill_description
-            skill_id_to_description = {}
-            for subskill in selected_subskills:
-                skill_id = subskill.get("skill_id")
-                skill_description = subskill.get("skill_description")
-                if skill_id and skill_description:
-                    skill_id_to_description[skill_id] = skill_description
-
-            # === CORE FIX: Loop through ALL problems, not just submitted answers ===
-            # This ensures every problem is accounted for in the final score
             for problem in problems:
-                problem_id_str = str(problem.get("id") or problem.get("problem_id"))
+                student_answer = answers.get(str(problem.get("id") or problem.get("problem_id")))
+                review = await self._process_single_problem(problem, student_answer, blueprint)
+                processed_reviews.append(review)
 
-                # Extract skill description from the problem, using blueprint lookup first
-                skill_id = problem.get("skill_id", "")
-                skill_desc = (
-                    skill_id_to_description.get(skill_id) or  # Use blueprint lookup first
-                    problem.get("skill_description") or
-                    problem.get("assessment_metadata", {}).get("skill_description") or
-                    problem.get("metadata", {}).get("skill_description") or
-                    "General"
-                )
+            # 3. ASSEMBLY (Building): Delegate to specialized, independent functions.
+            summary_data = self._build_summary(processed_reviews)
 
-                # Initialize skill in tracker if not present
-                if skill_desc not in skill_results:
-                    skill_results[skill_desc] = {"correct": 0, "total": 0, "skill_name": skill_desc}
-                skill_results[skill_desc]["total"] += 1  # Increment total for this skill
+            skill_analysis_data = self._build_skill_analysis(processed_reviews)
 
-                student_answer_raw = answers.get(problem_id_str)
+            problem_reviews_data = self._build_problem_reviews(processed_reviews)
 
-                review_data = None
-                is_correct = False
-                display_student_answer = "Not Answered"
+            ai_insights_data = await self.ai_assessment.generate_enhanced_assessment_summary(
+                blueprint=assessment.get("blueprint", {}),
+                submission_result=summary_data,
+                review_items_data=[pr.full_review_payload for pr in processed_reviews]
+            )
 
-                if student_answer_raw is not None:
-                    # --- This is an ANSWERED question ---
-                    # Handle different answer formats for submission service
-                    student_answer = None
-                    primitive_response = None
-
-                    if isinstance(student_answer_raw, dict):
-                        # Interactive problem answer (MCQ, etc.) - use primitive_response
-                        primitive_response = student_answer_raw
-                        student_answer = ""  # Set to empty string for schema compliance
-                    elif isinstance(student_answer_raw, str):
-                        # Text-based answer - use student_answer
-                        student_answer = student_answer_raw
-                    else:
-                        # Convert other types to string
-                        student_answer = str(student_answer_raw)
-
-                    # Construct a ProblemSubmission object for the service
-                    submission_payload = ProblemSubmission(
-                        subject=assessment.get("subject", "general"),
-                        problem=problem,
-                        student_answer=student_answer,
-                        primitive_response=primitive_response,
-                        solution_image=None,  # Not applicable for most assessment questions
-                        canvas_used=False,
-                        skill_id=problem.get("assessment_metadata", {}).get("skill_id") or problem.get("skill_id", "default_skill"),
-                        subskill_id=problem.get("assessment_metadata", {}).get("subskill_id") or problem.get("subskill_id", "default_subskill"),
-                    )
-
-                    try:
-                        submission_result = await self.submission_service.handle_submission(submission_payload, user_context)
-                        review_data = submission_result.review
-                        is_correct = review_data.get("correct") or review_data.get("score", 0) >= 7
-
-                        # **CRITICAL FIX for "No answer recorded"**: Extract the actual answer text
-                        if isinstance(student_answer_raw, dict):  # For MCQ
-                            display_student_answer = review_data.get("observation", {}).get("selected_answer_text") or review_data.get("selected_option_text", "Answer Submitted")
-                        else:
-                            display_student_answer = str(student_answer_raw)
-
-                    except Exception as e:
-                        logger.error(f"Error processing submitted answer for problem {problem_id_str}: {e}")
-                        is_correct = False  # Treat submission error as incorrect
-                        review_data = {"error": str(e), "score": 0, "correct": False}
-                        display_student_answer = "Submission Error"
-
-                else:
-                    # --- This is an UNANSWERED question ---
-                    is_correct = False
-                    display_student_answer = "Not Answered"
-                    # Create structured review for unanswered questions
-                    review_data = await self._create_assessment_review(
-                        problem, None, student_id, firebase_uid
-                    )
-
-                # --- Aggregate results for EVERY problem ---
-                if is_correct:
-                    correct_count += 1
-                    skill_results[skill_desc]["correct"] += 1
-
-                # --- Create structured review document for EVERY problem ---
-                # Extract the review if it's from submission service or use our assessment review
-                if isinstance(review_data, dict) and 'observation' in review_data:
-                    # This is already a structured review from submission service - convert it
-                    structured_review = self._convert_submission_review_to_assessment_review(
-                        review_data, problem, student_id
-                    )
-                elif hasattr(review_data, 'observation'):
-                    # This is already an AssessmentProblemReview
-                    structured_review = review_data
-                else:
-                    # Fallback for legacy review format
-                    structured_review = await self._create_assessment_review(
-                        problem, student_answer_raw, student_id, firebase_uid
-                    )
-
-                # Create review document matching JSON structure
-                review_document = AssessmentReviewDocument(
-                    id=f"{assessment_id}_{problem_id_str}_{int(datetime.utcnow().timestamp())}",
-                    student_id=student_id,
-                    subject=assessment.get("subject", "Unknown"),
-                    skill_id=problem.get("skill_id", "unknown"),
-                    subskill_id=problem.get("subskill_id", "unknown"),
-                    problem_id=problem_id_str,
-                    timestamp=datetime.utcnow().isoformat(),
-                    problem_content=problem,
-                    full_review=structured_review,
-                    observation=structured_review.observation,
-                    analysis=structured_review.analysis,
-                    evaluation=structured_review.evaluation,
-                    feedback=structured_review.feedback,
-                    score=structured_review.score,
-                    firebase_uid=firebase_uid or "",
-                    created_at=datetime.utcnow().isoformat()
-                )
-
-                problem_reviews.append(review_document.dict())
-
-            score_percentage = (correct_count / total_questions * 100) if total_questions > 0 else 0
-
-            # Format skill breakdown for response
-            skill_breakdown_list = []
-            for skill_name, data in skill_results.items():
-                percentage = round((data["correct"] / data["total"] * 100) if data["total"] > 0 else 0)
-                skill_breakdown_list.append({
-                    "skill_name": skill_name,
-                    "correct_answers": data["correct"],
-                    "total_questions": data["total"],
-                    "percentage": percentage,
-                })
-
-            # Create final score data payload
-            score_data = {
-                "correct_count": correct_count,
-                "total_questions": total_questions,
-                "score_percentage": score_percentage,
-                "skill_breakdown": skill_breakdown_list,
-                "problem_reviews": problem_reviews,  # Embed all review data
-                "submitted_at": datetime.utcnow().isoformat()
+            # 4. FINAL ASSEMBLY: Combine the built parts into the final results object.
+            final_results = {
+                "summary": summary_data,
+                "problem_reviews": problem_reviews_data,
+                "ai_insights": ai_insights_data
             }
 
-            # Generate AI summary using the assessment blueprint and results
-            try:
-                logger.info(f"Generating AI summary for assessment {assessment_id}")
-
-                # Use all problem reviews for comprehensive feedback (both correct and incorrect)
-                # The AI service will prioritize incorrect ones in the review_items section
-                ai_summary_data = await self.ai_assessment.generate_enhanced_assessment_summary(
-                    blueprint=assessment.get("blueprint", {}),
-                    submission_result=score_data,
-                    review_items_data=problem_reviews  # Pass all reviews for complete context
-                )
-
-                # Extract AI summary data - store only at top level to avoid duplication
-                ai_summary_fields = {
-                    "ai_summary": ai_summary_data.get("ai_summary", ""),
-                    "performance_quote": ai_summary_data.get("performance_quote", ""),
-                    "skill_analysis": ai_summary_data.get("skill_analysis", []),
-                    "common_misconceptions": ai_summary_data.get("common_misconceptions", []),
-                    "review_items": ai_summary_data.get("review_items", [])
-                }
-
-                logger.info(f"AI summary generated successfully for assessment {assessment_id}")
-
-            except Exception as e:
-                logger.error(f"Failed to generate AI summary for assessment {assessment_id}: {e}")
-                # Continue without AI summary - assessment submission should not fail
-                ai_summary_fields = {
-                    "ai_summary": "",
-                    "performance_quote": "",
-                    "skill_analysis": [],
-                    "common_misconceptions": [],
-                    "review_items": []
-                }
-
-            # Store submission and update assessment status in Cosmos DB
-            await self.cosmos.store_assessment_submission(
-                assessment_id, student_id, answers, score_data, time_taken_minutes, firebase_uid
+            # 5. PERSISTENCE: Update the assessment document in Cosmos DB.
+            await self.cosmos.update_assessment_with_results(
+                assessment_id,
+                student_id,
+                final_results,
+                answers,
+                time_taken_minutes,
+                firebase_uid
             )
 
-            # Store AI summary data directly in the assessment document for easy access
-            # Pass the extracted AI fields to avoid duplication
-            await self._store_ai_summary_in_assessment(
-                assessment_id, student_id, ai_summary_fields, firebase_uid
-            )
-
-            await self.update_assessment_status(assessment_id, student_id, "completed", firebase_uid)
-
-            # Engagement processing is handled by the @log_engagement_activity decorator on the endpoint
-
-            # Return the full submission result
+            # 6. RETURN: Return a user-friendly summary.
             return {
                 "assessment_id": assessment_id,
                 "student_id": student_id,
                 "subject": assessment.get("subject"),
-                "total_questions": total_questions,
-                "correct_count": correct_count,
-                "score_percentage": round(score_percentage, 2), # Round for display
+                **summary_data,
                 "time_taken_minutes": time_taken_minutes,
-                "skill_breakdown": skill_breakdown_list,
-                "submitted_at": score_data["submitted_at"]
+                "submitted_at": datetime.utcnow().isoformat()
             }
 
         except Exception as e:
             logger.error(f"Failed to score assessment {assessment_id}: {e}")
-            # Re-raise to be caught by the endpoint handler
             raise
 
     async def get_assessment_summary(
@@ -1216,93 +1231,63 @@ class AssessmentService:
     ) -> Dict[str, Any]:
         """
         Get summary statistics for a completed assessment.
-        Returns the submission results and scoring data.
+        Simplified - just fetch and return results object for completed assessments.
         """
         try:
+            logger.info(f"[ASSESSMENT_SERVICE] Fetching assessment summary for {assessment_id}")
+
             # Get the assessment from Cosmos DB
             assessment = await self.cosmos.get_assessment(assessment_id, student_id, firebase_uid)
             if not assessment:
                 raise ValueError(f"Assessment {assessment_id} not found for student {student_id}")
 
-            # Check if assessment has score data (indicates completion)
+            # Check assessment status
+            status = assessment.get("status")
+            if status != "completed":
+                raise ValueError(f"Assessment {assessment_id} is not completed yet (status: {status})")
+
+            # For new structure: return the results object if it exists
+            results = assessment.get("results")
+            if results:
+                logger.info(f"[ASSESSMENT_SERVICE] Returning new results structure for assessment {assessment_id}")
+                # Include basic assessment metadata with results
+                return {
+                    "assessment_id": assessment_id,
+                    "student_id": student_id,
+                    "subject": assessment.get("subject"),
+                    "status": status,
+                    "completed_at": assessment.get("completed_at"),
+                    "time_taken_minutes": assessment.get("time_taken_minutes"),
+                    **results  # Spread the results object (summary, skill_analysis, problem_reviews, ai_insights)
+                }
+
+            # Fallback for old structure: check for legacy score_data
             score_data = assessment.get("score_data")
             if not score_data:
-                raise ValueError(f"Assessment {assessment_id} has not been completed yet")
+                raise ValueError(f"Assessment {assessment_id} has no results or score data available")
 
-            # Extract the submission results directly from assessment document
-            answers = assessment.get("answers", {})
-            time_taken_minutes = assessment.get("time_taken_minutes")
+            logger.warning(f"[ASSESSMENT_SERVICE] Using legacy score_data structure for assessment {assessment_id}")
 
-            # Check if AI insights are missing and generate them on-demand
-            needs_ai_insights = (
-                not assessment.get("ai_summary") and
-                not assessment.get("skill_analysis") and
-                score_data.get("problem_reviews")  # Only if we have review data
-            )
-
-            ai_summary_fields = {}
-            if needs_ai_insights:
-                try:
-                    logger.info(f"Generating missing AI insights for assessment {assessment_id}")
-
-                    # Generate AI insights using existing data
-                    ai_summary_data = await self.ai_assessment.generate_enhanced_assessment_summary(
-                        blueprint=assessment.get("blueprint", {}),
-                        submission_result=score_data,
-                        review_items_data=score_data.get("problem_reviews", [])
-                    )
-
-                    ai_summary_fields = {
-                        "ai_summary": ai_summary_data.get("ai_summary", ""),
-                        "performance_quote": ai_summary_data.get("performance_quote", ""),
-                        "skill_analysis": ai_summary_data.get("skill_analysis", []),
-                        "common_misconceptions": ai_summary_data.get("common_misconceptions", []),
-                        "review_items": ai_summary_data.get("review_items", [])
-                    }
-
-                    # Store the generated insights in the assessment document for future use
-                    await self._store_ai_summary_in_assessment(
-                        assessment_id, student_id, ai_summary_fields, firebase_uid
-                    )
-
-                    logger.info(f"AI insights generated and stored for assessment {assessment_id}")
-
-                except Exception as e:
-                    logger.error(f"Failed to generate AI insights for assessment {assessment_id}: {e}")
-                    # Use fallback values
-                    ai_summary_fields = {
-                        "ai_summary": "Assessment completed successfully. Great work!",
-                        "performance_quote": "You're making good progress in your learning journey!",
-                        "skill_analysis": [],
-                        "common_misconceptions": [],
-                        "review_items": []
-                    }
-
-            # Return enhanced format with AI summary and review items
-            # Prioritize top-level data if available, otherwise use generated insights
+            # Return legacy format for backward compatibility
             return {
                 "assessment_id": assessment_id,
                 "student_id": student_id,
                 "subject": assessment.get("subject"),
+                "status": status,
+                "completed_at": assessment.get("completed_at"),
+                "time_taken_minutes": assessment.get("time_taken_minutes"),
                 "total_questions": score_data.get("total_questions", 0),
                 "correct_count": score_data.get("correct_count", 0),
                 "score_percentage": score_data.get("score_percentage", 0),
-                "time_taken_minutes": time_taken_minutes,
                 "skill_breakdown": score_data.get("skill_breakdown", []),
-                "submitted_at": score_data.get("submitted_at") or datetime.utcnow().isoformat(),
-
-                # Enhanced assessment feedback fields - use stored data or generated insights
-                "ai_summary": assessment.get("ai_summary") or ai_summary_fields.get("ai_summary", ""),
-                "performance_quote": assessment.get("performance_quote") or ai_summary_fields.get("performance_quote", ""),
-                "skill_analysis": assessment.get("skill_analysis") or ai_summary_fields.get("skill_analysis", []),
-                "common_misconceptions": assessment.get("common_misconceptions") or ai_summary_fields.get("common_misconceptions", []),
-                "review_items": assessment.get("review_items") or ai_summary_fields.get("review_items", []),
-                "problem_reviews": score_data.get("problem_reviews", []),  # Still include raw review data
-                "ai_summary_generated_at": assessment.get("ai_summary_generated_at") or datetime.utcnow().isoformat()
+                "problem_reviews": score_data.get("problem_reviews", []),
+                "ai_summary": assessment.get("ai_summary", ""),
+                "performance_quote": assessment.get("performance_quote", ""),
+                "skill_analysis": assessment.get("skill_analysis", [])
             }
 
         except Exception as e:
-            logger.error(f"Failed to get assessment summary for {assessment_id}: {e}")
+            logger.error(f"[ASSESSMENT_SERVICE] Failed to get assessment summary for {assessment_id}: {e}")
             raise
 
     def _extract_problem_content_for_review(self, problem: Dict[str, Any]) -> Dict[str, Any]:

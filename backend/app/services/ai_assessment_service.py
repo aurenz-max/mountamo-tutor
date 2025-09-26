@@ -11,7 +11,15 @@ from datetime import datetime
 from google.genai.types import Schema, GenerateContentConfig
 
 from .ai_service_factory import AIServiceFactory
-from ..schemas.assessment_review import AssessmentReviewDocument, AssessmentProblemReview
+from ..schemas.assessment_review import (
+    AssessmentReviewDocument,
+    AssessmentProblemReview,
+    AssessmentFocusTag,
+    PerformanceLabel,
+    NextStepAction,
+    EnhancedSkillAnalysis,
+    SubskillDetail
+)
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +208,7 @@ HOLISTIC ANALYSIS PRIORITIES:
                 ai_insights, blueprint, submission_result, review_items_data
             )
 
-            logger.info(f"Generated enhanced assessment summary with {len(enhanced_summary.get('skill_analysis', []))} skills and {len(enhanced_summary.get('review_items', []))} review items")
+            logger.info(f"Generated enhanced assessment summary with {len(enhanced_summary.get('skill_insights', []))} skills and {len(enhanced_summary.get('review_items', []))} review items")
             return enhanced_summary
 
         except Exception as e:
@@ -271,30 +279,69 @@ HOLISTIC ANALYSIS PRIORITIES:
                 context_parts.append(f"- {skill_name}: {correct}/{total} ({percentage}%)")
 
         # Add subskills tested with their categories for narrative context
-        if selected_subskills:
+        # CRITICAL FIX: Extract actual subskill IDs from review_items_data to ensure AI gets the right IDs
+        actual_subskills_tested = set()
+        subskill_id_to_category = {}
+
+        if review_items_data:
+            for review_item in review_items_data:
+                actual_subskill_id = review_item.get('subskill_id')
+                if actual_subskill_id and actual_subskill_id != 'unknown':
+                    actual_subskills_tested.add(actual_subskill_id)
+
+                    # Try to find the category from blueprint data
+                    matching_blueprint_subskill = None
+                    for subskill in selected_subskills:
+                        if (subskill.get('subskill_id') == actual_subskill_id or
+                            subskill.get('skill_id') == actual_subskill_id):
+                            matching_blueprint_subskill = subskill
+                            break
+
+                    if matching_blueprint_subskill:
+                        subskill_id_to_category[actual_subskill_id] = matching_blueprint_subskill.get('category', 'general')
+                    else:
+                        subskill_id_to_category[actual_subskill_id] = 'general'
+
+        if actual_subskills_tested:
             context_parts.append("\nSUBSKILLS TESTED (with actual IDs for AI insights):")
+            for actual_subskill_id in sorted(actual_subskills_tested):
+                # Find description from blueprint or use the ID
+                description = actual_subskill_id  # fallback
+                category = subskill_id_to_category.get(actual_subskill_id, 'general')
+
+                # Try to find description from blueprint
+                for subskill in selected_subskills:
+                    if (subskill.get('subskill_id') == actual_subskill_id or
+                        subskill.get('skill_id') == actual_subskill_id):
+                        description = subskill.get('subskill_description') or subskill.get('skill_description', actual_subskill_id)
+                        break
+
+                context_parts.append(f"- {actual_subskill_id}: {description} (Category: {category})")
+
+            # Group by category for narrative understanding
+            category_skills = {}
+            for subskill_id in actual_subskills_tested:
+                category = subskill_id_to_category.get(subskill_id, 'general')
+                if category not in category_skills:
+                    category_skills[category] = []
+                category_skills[category].append(subskill_id)
+
+            if category_skills:
+                context_parts.append("\nSKILLS BY ASSESSMENT FOCUS:")
+                for category, skill_ids in category_skills.items():
+                    category_name = category.replace('_', ' ').title()
+                    context_parts.append(f"- {category_name}: {', '.join(skill_ids[:3])}")  # First 3 skill IDs per category
+        elif selected_subskills:
+            # Fallback to blueprint data if review items don't have subskill IDs
+            context_parts.append("\nSUBSKILLS TESTED (from blueprint - FALLBACK):")
             for subskill in selected_subskills:
                 subskill_id = subskill.get('subskill_id', 'unknown')
                 desc = subskill.get('subskill_description') or subskill.get('skill_description', '')
                 category = subskill.get('category', 'general')
                 if desc:
                     context_parts.append(f"- {subskill_id}: {desc} (Category: {category})")
-
-            # Also add grouped by category for narrative understanding
-            category_skills = {}
-            for subskill in selected_subskills:
-                desc = subskill.get('subskill_description') or subskill.get('skill_description', '')
-                category = subskill.get('category', 'general')
-                if desc and category:
-                    if category not in category_skills:
-                        category_skills[category] = []
-                    category_skills[category].append(desc)
-
-            if category_skills:
-                context_parts.append("\nSKILLS BY ASSESSMENT FOCUS:")
-                for category, skills in category_skills.items():
-                    category_name = category.replace('_', ' ').title()
-                    context_parts.append(f"- {category_name}: {'; '.join(skills[:2])}")  # First 2 skills per category
+                    actual_subskills_tested.add(subskill_id)
+                    subskill_id_to_category[subskill_id] = category
 
         # Add detailed problem analysis - now with structured data support
         if review_items_data:
@@ -341,11 +388,10 @@ HOLISTIC ANALYSIS PRIORITIES:
             "ai_summary": ai_insights.get("ai_summary", ""),
             "performance_quote": ai_insights.get("performance_quote", ""),
             "common_misconceptions": ai_insights.get("common_misconceptions", []),
-            "skill_analysis": [],
-            "review_items": []
+            "skill_insights": []
         }
 
-        # Build skill_analysis by merging AI insights with computed data
+        # Build skill_insights by merging AI insights with computed data
         skill_insights_map = {
             insight.get("subskill_id"): insight
             for insight in ai_insights.get("skill_insights", [])
@@ -370,130 +416,117 @@ HOLISTIC ANALYSIS PRIORITIES:
             logger.warning(f"AI ASSESSMENT DEBUG - No skill breakdown data found! submission_result keys: {list(submission_result.keys())}")
             logger.warning(f"AI ASSESSMENT DEBUG - submission_result: {submission_result}")
 
-        # Instead of iterating over skill_breakdown (which groups by skill_name),
-        # iterate over AI skill_insights (which has proper subskill granularity)
-        for subskill_id, ai_insight in skill_insights_map.items():
-            logger.info(f"AI ASSESSMENT DEBUG - Processing subskill: {subskill_id}")
+        # CRITICAL FIX: Aggregate by skill_id, not subskill_id
+        # Group subskills by their parent skill_id
+        skills_tested = {}
 
-            # Find the subskill info from blueprint
+        for review_item in review_items_data:
+            subskill_id = review_item.get('subskill_id')
+            if not subskill_id or subskill_id == 'unknown':
+                continue
+
+            # Find the parent skill_id for this subskill
+            parent_skill_id = None
             subskill_info = None
             for subskill in selected_subskills:
                 if subskill.get('subskill_id') == subskill_id:
+                    parent_skill_id = subskill.get('skill_id', subskill_id)
                     subskill_info = subskill
                     break
 
-            if not subskill_info:
-                logger.warning(f"AI ASSESSMENT DEBUG - Could not find blueprint info for subskill: {subskill_id}")
+            if not parent_skill_id:
                 continue
 
-            # Calculate performance for this specific subskill by examining review_items_data
-            total_questions = 0
-            correct_count = 0
-            for review_item in review_items_data:
-                item_subskill_id = review_item.get('subskill_id')
-                if item_subskill_id == subskill_id:
-                    total_questions += 1
-                    if self._extract_correctness(review_item):
-                        correct_count += 1
+            # Initialize skill entry if not exists
+            if parent_skill_id not in skills_tested:
+                skills_tested[parent_skill_id] = {
+                    'skill_id': parent_skill_id,
+                    'skill_description': subskill_info.get('skill_description', 'Unknown Skill'),
+                    'unit_id': subskill_info.get('unit_id', 'unknown'),
+                    'unit_title': subskill_info.get('unit_title', 'Unknown Unit'),
+                    'category': subskill_info.get('category', 'general'),
+                    'total_questions': 0,
+                    'correct_count': 0,
+                    'subskills': {}
+                }
 
-            # If no questions found for this subskill, skip it
-            if total_questions == 0:
-                logger.info(f"AI ASSESSMENT DEBUG - No questions found for subskill {subskill_id}, skipping")
-                continue
+            # Track subskill details within parent skill
+            if subskill_id not in skills_tested[parent_skill_id]['subskills']:
+                skills_tested[parent_skill_id]['subskills'][subskill_id] = SubskillDetail(
+                    subskill_id=subskill_id,
+                    subskill_description=subskill_info.get('subskill_description', 'Unknown Subskill'),
+                    questions=0,
+                    correct=0
+                )
 
+            # Aggregate performance
+            skills_tested[parent_skill_id]['total_questions'] += 1
+            skills_tested[parent_skill_id]['subskills'][subskill_id].questions += 1
+
+            if self._extract_correctness(review_item):
+                skills_tested[parent_skill_id]['correct_count'] += 1
+                skills_tested[parent_skill_id]['subskills'][subskill_id].correct += 1
+
+        logger.info(f"AI ASSESSMENT DEBUG - Skills tested (aggregated): {list(skills_tested.keys())}")
+
+        # Process each skill (not subskill) for analysis
+        for skill_id, skill_data in skills_tested.items():
+            logger.info(f"AI ASSESSMENT DEBUG - Processing skill: {skill_id}")
+
+            # Get AI insights if available (check both skill and subskill insights)
+            ai_insight = skill_insights_map.get(skill_id, {})
+
+            # If no skill-level insight, try to get from first subskill
+            if not ai_insight and skill_data['subskills']:
+                first_subskill_id = next(iter(skill_data['subskills'].keys()))
+                ai_insight = skill_insights_map.get(first_subskill_id, {})
+
+            # Calculate aggregated performance
+            total_questions = skill_data['total_questions']
+            correct_count = skill_data['correct_count']
             percentage = (correct_count / total_questions * 100) if total_questions > 0 else 0
 
-            # Get subskill details
-            subskill_description = subskill_info.get('subskill_description') or subskill_info.get('skill_description', '')
-            category = subskill_info.get('category', 'general')
-
-            # Determine assessment focus and performance label
-            assessment_focus = {
-                'weak_spots': 'Weak Spot',
-                'recent_practice': 'Recent Practice',
-                'foundational_review': 'Foundational Review',
-                'new_frontiers': 'New Frontier'
-            }.get(category, 'General')
-
+            # Map to enhanced schema types
+            category = skill_data['category']
+            focus_tag = self._map_category_to_focus_tag(category)
             performance_label = self._compute_performance_label(percentage)
 
-            logger.info(f"AI ASSESSMENT DEBUG - Subskill {subskill_id}: {correct_count}/{total_questions} ({percentage}%)")
+            logger.info(f"AI ASSESSMENT DEBUG - Skill {skill_id}: {correct_count}/{total_questions} ({percentage}%)")
 
-            # Build complete skill analysis using AI insights
-            skill_analysis = {
-                "skill_id": subskill_id,
-                "skill_name": subskill_description,
-                "total_questions": total_questions,
-                "correct_count": correct_count,
-                "assessment_focus": assessment_focus,
-                "performance_label": performance_label,
-                "insight_text": ai_insight.get("insight_text", ""),
-                "next_step": {
-                    "text": ai_insight.get("next_step_text", ""),
-                    "link": f"/practice/{subskill_id}?subject={subject}"
-                }
-            }
-            enhanced_summary["skill_analysis"].append(skill_analysis)
+            # Generate contextual insight and next step using AI insight + fallback logic
+            ai_insight_text = ai_insight.get("insight_text", "")
+            ai_next_step_text = ai_insight.get("next_step_text", "")
 
-        # Build review_items by merging AI insights with computed data
-        problem_insights_map = {
-            insight.get("problem_id"): insight
-            for insight in ai_insights.get("problem_insights", [])
-        }
+            contextual_insight = self._generate_contextual_insight(focus_tag, performance_label, ai_insight_text)
 
-        logger.info(f"AI ASSESSMENT DEBUG - Processing {len(review_items_data)} review items for review_items generation")
+            # For next step, recommend the subskill that needs the most work
+            worst_performing_subskill = min(
+                skill_data['subskills'].values(),
+                key=lambda s: (s.correct / s.questions) if s.questions > 0 else 0
+            )
+            target_subskill_id = worst_performing_subskill.subskill_id
 
-        for i, review_data in enumerate(review_items_data):
-            problem_id = review_data.get('problem_id', 'unknown')
-            problem_content = review_data.get('problem_content', {})
+            next_step_action = self._generate_next_step_action(focus_tag, performance_label, target_subskill_id, subject, ai_next_step_text)
 
-            logger.info(f"AI ASSESSMENT DEBUG - Review item {i+1}/{len(review_items_data)}:")
-            logger.info(f"  problem_id: {problem_id}")
-            logger.info(f"  problem_content keys: {list(problem_content.keys())}")
-            logger.info(f"  problem_type: {problem_content.get('problem_type', 'unknown')}")
-            logger.info(f"  review_data keys: {list(review_data.keys())}")
-            logger.info(f"  review_data.correct: {review_data.get('correct', 'not found')}")
-            logger.info(f"  review_data.score: {review_data.get('score', 'not found')}")
-            logger.info(f"  review_data.your_answer_text: {review_data.get('your_answer_text', 'not found')}")
-            logger.info(f"  review_data.selected_answer_text: {review_data.get('selected_answer_text', 'not found')}")
+            # Create enhanced skill analysis with subskill details
+            skill_analysis = EnhancedSkillAnalysis(
+                skill_id=skill_id,
+                skill_name=skill_data['skill_description'],
+                total_questions=total_questions,
+                correct_count=correct_count,
+                assessment_focus_tag=focus_tag,
+                performance_label=performance_label,
+                insight_text=contextual_insight,
+                next_step=next_step_action,
+                percentage=int(percentage),
+                category=category,
+                unit_id=skill_data['unit_id'],
+                unit_title=skill_data['unit_title'],
+                subskills=list(skill_data['subskills'].values())  # Include all subskills tested
+            )
 
-            # Get AI insights for this problem
-            ai_insight = problem_insights_map.get(problem_id, {})
-
-            # Extract computed data fields using proper extraction method
-            question_text = self._extract_question_text(problem_content)
-            logger.info(f"  extracted question_text: {question_text}")
-
-            # Extract student answer using the structured extraction method
-            your_answer = self._extract_student_answer(review_data)
-            logger.info(f"  extracted your_answer: {your_answer}")
-            if your_answer in ["No answer", "Not answered", "Not Answered"]:
-                your_answer = "No answer recorded"
-
-            correct_answer = self._extract_correct_answer(problem_content)
-            logger.info(f"  extracted correct_answer: {correct_answer}")
-
-            review_item = {
-                "problem_id": problem_id,
-                "question_text": question_text,
-                "your_answer_text": your_answer,
-                "correct_answer_text": correct_answer,
-                "analysis": ai_insight.get("analysis", {
-                    "understanding": "Student needs additional practice with this concept.",
-                    "approach": "Student attempted to answer the question."
-                }),
-                "feedback": ai_insight.get("feedback", {
-                    "praise": "Good effort on this question!",
-                    "guidance": problem_content.get('rationale', 'Review the key concepts for this topic.'),
-                    "encouragement": "Keep practicing to improve your understanding!"
-                }),
-                "related_skill_id": review_data.get('subskill_id', review_data.get('skill_id', 'unknown_skill')),
-                "subskill_id": review_data.get('subskill_id', 'unknown'),
-                "subject": problem_content.get('subject') or review_data.get('subject', 'Unknown'),
-                "lesson_link": f"/practice/{review_data.get('subskill_id', 'unknown')}?subject={subject}"
-            }
-            logger.info(f"  final review_item: {review_item}")
-            enhanced_summary["review_items"].append(review_item)
+            # Convert to dict for JSON serialization
+            enhanced_summary["skill_insights"].append(skill_analysis.dict())
 
         return enhanced_summary
 
@@ -537,31 +570,135 @@ HOLISTIC ANALYSIS PRIORITIES:
 
         return ''
 
-    def _determine_assessment_focus(self, skill_name: str, category_breakdown: Dict[str, int], blueprint: Dict[str, Any]) -> str:
+    def _determine_assessment_focus(self, skill_name: str, category_breakdown: Dict[str, int], blueprint: Dict[str, Any]) -> AssessmentFocusTag:
         """Determine assessment focus category for a skill based on blueprint data."""
         selected_subskills = blueprint.get('selected_subskills', [])
         for subskill in selected_subskills:
             if (subskill.get('skill_description') == skill_name or
                 subskill.get('subskill_description') == skill_name):
                 category = subskill.get('category', 'general')
-                return {
-                    'weak_spots': 'Weak Spot',
-                    'recent_practice': 'Recent Practice',
-                    'foundational_review': 'Foundational Review',
-                    'new_frontiers': 'New Frontier'
-                }.get(category, 'General')
-        return 'General'
+                return self._map_category_to_focus_tag(category)
+        return AssessmentFocusTag.GENERAL
 
-    def _compute_performance_label(self, percentage: float) -> str:
+    def _compute_performance_label(self, percentage: float) -> PerformanceLabel:
         """Compute performance label based on percentage score."""
         if percentage == 100:
-            return "Mastered"
+            return PerformanceLabel.MASTERED
         elif percentage >= 75:
-            return "Proficient"
+            return PerformanceLabel.PROFICIENT
         elif percentage >= 50:
-            return "Developing"
+            return PerformanceLabel.DEVELOPING
         else:
-            return "Needs Review"
+            return PerformanceLabel.NEEDS_REVIEW
+
+    def _map_category_to_focus_tag(self, category: str) -> AssessmentFocusTag:
+        """Map internal category to visual focus tag."""
+        category_mapping = {
+            'weak_spots': AssessmentFocusTag.WEAK_SPOT,
+            'recent_practice': AssessmentFocusTag.RECENT_PRACTICE,
+            'foundational_review': AssessmentFocusTag.FOUNDATIONAL_REVIEW,
+            'new_frontiers': AssessmentFocusTag.NEW_FRONTIER,
+            'foundational_cold_start': AssessmentFocusTag.GENERAL
+        }
+        return category_mapping.get(category, AssessmentFocusTag.GENERAL)
+
+    def _generate_contextual_insight(self, focus_tag: AssessmentFocusTag, performance_label: PerformanceLabel, ai_insight: str = "") -> str:
+        """Generate context-aware insight based on assessment focus and performance combination."""
+
+        # Use AI insight if available, otherwise fall back to rule-based system
+        if ai_insight and ai_insight.strip():
+            return ai_insight
+
+        # Rule-based insight matrix for 16 possible combinations
+        insight_matrix = {
+            # Weak Spots
+            (AssessmentFocusTag.WEAK_SPOT, PerformanceLabel.MASTERED):
+                "Amazing! This was a tricky topic for you, but you've mastered it. Your hard work is paying off!",
+            (AssessmentFocusTag.WEAK_SPOT, PerformanceLabel.PROFICIENT):
+                "Great progress! You're doing much better with this challenging topic. Just a little more practice to master it completely.",
+            (AssessmentFocusTag.WEAK_SPOT, PerformanceLabel.DEVELOPING):
+                "You're making progress on this challenging topic! Keep practicing the fundamentals to build stronger understanding.",
+            (AssessmentFocusTag.WEAK_SPOT, PerformanceLabel.NEEDS_REVIEW):
+                "This topic has been tricky for you. Let's break it down step by step and work on the basics together.",
+
+            # Recent Practice
+            (AssessmentFocusTag.RECENT_PRACTICE, PerformanceLabel.MASTERED):
+                "Excellent! Your recent practice has really paid off - you've mastered this skill completely.",
+            (AssessmentFocusTag.RECENT_PRACTICE, PerformanceLabel.PROFICIENT):
+                "Great job! Your recent practice is working well. You have a solid grasp with just minor details to polish.",
+            (AssessmentFocusTag.RECENT_PRACTICE, PerformanceLabel.DEVELOPING):
+                "You're so close! Your recent practice shows you understand the basics. Let's iron out the last few details.",
+            (AssessmentFocusTag.RECENT_PRACTICE, PerformanceLabel.NEEDS_REVIEW):
+                "Your recent practice is a good start, but this concept needs more time to stick. Let's review the key points.",
+
+            # Foundational Review
+            (AssessmentFocusTag.FOUNDATIONAL_REVIEW, PerformanceLabel.MASTERED):
+                "Perfect! You've maintained your mastery of this important foundational skill. Well done!",
+            (AssessmentFocusTag.FOUNDATIONAL_REVIEW, PerformanceLabel.PROFICIENT):
+                "Good retention! You mostly remember this foundational skill, with just a few areas to touch up.",
+            (AssessmentFocusTag.FOUNDATIONAL_REVIEW, PerformanceLabel.DEVELOPING):
+                "This foundational skill has gotten a bit rusty. A quick review will help bring it back to full strength.",
+            (AssessmentFocusTag.FOUNDATIONAL_REVIEW, PerformanceLabel.NEEDS_REVIEW):
+                "It looks like this foundational skill needs refreshing. Let's review the basics to rebuild this important foundation.",
+
+            # New Frontier
+            (AssessmentFocusTag.NEW_FRONTIER, PerformanceLabel.MASTERED):
+                "Wow! You've mastered this brand new concept on your first try. You're really ready for new challenges!",
+            (AssessmentFocusTag.NEW_FRONTIER, PerformanceLabel.PROFICIENT):
+                "Impressive! You picked up this new concept quickly and did very well for your first time trying it.",
+            (AssessmentFocusTag.NEW_FRONTIER, PerformanceLabel.DEVELOPING):
+                "Good first attempt! You're getting the hang of this new concept. It takes time to master something completely new.",
+            (AssessmentFocusTag.NEW_FRONTIER, PerformanceLabel.NEEDS_REVIEW):
+                "This is a brand new topic, so it's perfectly normal to be learning the ropes. Taking the first step is what counts!"
+        }
+
+        return insight_matrix.get((focus_tag, performance_label),
+                                "You're making progress on this topic. Keep practicing to improve your understanding!")
+
+    def _generate_next_step_action(self, focus_tag: AssessmentFocusTag, performance_label: PerformanceLabel, subskill_id: str, subject: str, ai_next_step: str = "") -> NextStepAction:
+        """Generate appropriate next step action based on context."""
+
+        # Use AI-generated next step if available
+        if ai_next_step and ai_next_step.strip():
+            action_text = ai_next_step
+        else:
+            # Rule-based next step matrix
+            action_matrix = {
+                # Weak Spots
+                (AssessmentFocusTag.WEAK_SPOT, PerformanceLabel.MASTERED): ("Challenge Yourself", "challenge"),
+                (AssessmentFocusTag.WEAK_SPOT, PerformanceLabel.PROFICIENT): ("Practice More Problems", "practice"),
+                (AssessmentFocusTag.WEAK_SPOT, PerformanceLabel.DEVELOPING): ("Review Key Concepts", "review"),
+                (AssessmentFocusTag.WEAK_SPOT, PerformanceLabel.NEEDS_REVIEW): ("Learn the Basics", "learn"),
+
+                # Recent Practice
+                (AssessmentFocusTag.RECENT_PRACTICE, PerformanceLabel.MASTERED): ("Try Advanced Problems", "challenge"),
+                (AssessmentFocusTag.RECENT_PRACTICE, PerformanceLabel.PROFICIENT): ("Practice More Problems", "practice"),
+                (AssessmentFocusTag.RECENT_PRACTICE, PerformanceLabel.DEVELOPING): ("Practice More Problems", "practice"),
+                (AssessmentFocusTag.RECENT_PRACTICE, PerformanceLabel.NEEDS_REVIEW): ("Review Recent Lessons", "review"),
+
+                # Foundational Review
+                (AssessmentFocusTag.FOUNDATIONAL_REVIEW, PerformanceLabel.MASTERED): ("Move to Advanced Topics", "challenge"),
+                (AssessmentFocusTag.FOUNDATIONAL_REVIEW, PerformanceLabel.PROFICIENT): ("Quick Practice Session", "practice"),
+                (AssessmentFocusTag.FOUNDATIONAL_REVIEW, PerformanceLabel.DEVELOPING): ("Refresh this Skill", "review"),
+                (AssessmentFocusTag.FOUNDATIONAL_REVIEW, PerformanceLabel.NEEDS_REVIEW): ("Refresh this Skill", "review"),
+
+                # New Frontier
+                (AssessmentFocusTag.NEW_FRONTIER, PerformanceLabel.MASTERED): ("Explore Related Topics", "challenge"),
+                (AssessmentFocusTag.NEW_FRONTIER, PerformanceLabel.PROFICIENT): ("Practice New Skill", "practice"),
+                (AssessmentFocusTag.NEW_FRONTIER, PerformanceLabel.DEVELOPING): ("Practice New Skill", "practice"),
+                (AssessmentFocusTag.NEW_FRONTIER, PerformanceLabel.NEEDS_REVIEW): ("Learn the Basics", "learn")
+            }
+
+            action_text, action_type = action_matrix.get((focus_tag, performance_label), ("Continue Learning", "learn"))
+
+        # Generate appropriate link
+        link = f"/practice/{subskill_id}?subject={subject.lower().replace(' ', '-')}"
+
+        return NextStepAction(
+            text=action_text,
+            link=link,
+            action_type=action_type if not ai_next_step else "learn"
+        )
 
     def _extract_correct_answer(self, problem_content: Dict[str, Any]) -> str:
         """Extract the correct answer from problem content."""
@@ -714,13 +851,14 @@ HOLISTIC ANALYSIS PRIORITIES:
         skill_breakdown: List[Dict[str, Any]],
         review_items_data: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Generate fallback skill insights"""
+        """Generate fallback skill insights using performance-based logic"""
         insights = []
         for skill in skill_breakdown:
             skill_name = skill.get('skill_name', 'Unknown Skill')
             percentage = skill.get('percentage', 0)
             subskill_id = self._find_subskill_id_for_skill(skill_name, review_items_data)
 
+            # Generate performance-based insights (no context-aware logic in fallback)
             if percentage == 100:
                 insight_text = "You've mastered this skill. You consistently applied the concepts correctly."
                 next_step_text = "Practice a related skill"

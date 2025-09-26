@@ -383,20 +383,21 @@ async def submit_problem_batch(
     """
     Batch problem submission endpoint. Processes multiple problems using the same logic
     as individual problem submissions. Engagement XP is handled automatically by decorator.
+
+    NOTE: This endpoint is for general batch submissions (e.g., practice sets) and
+    is NOT aware of assessments. For submitting an assessment, use the
+    /api/assessments/{subject}/submit endpoint.
     """
     firebase_uid = user_context["firebase_uid"]
     student_id = user_context["student_id"]
 
     try:
-        # Initialize submission service
         from ...services.submission_service import SubmissionService
         submission_service = SubmissionService(review_service, competency_service, cosmos_db)
 
-        # Generate batch ID
         import uuid
         batch_id = f"batch_{int(datetime.utcnow().timestamp())}_{uuid.uuid4().hex[:8]}"
 
-        # Process each submission
         submission_results = []
         failed_submissions = []
 
@@ -404,23 +405,10 @@ async def submit_problem_batch(
 
         for i, submission in enumerate(batch_request.submissions):
             try:
-                # Debug logging for batch submission data
-                logger.info(f"BATCH SUBMISSION DEBUG [{i+1}/{len(batch_request.submissions)}] for student {student_id}:")
-                logger.info(f"  submission.subject: {submission.subject}")
-                logger.info(f"  submission.skill_id: {submission.skill_id}")
-                logger.info(f"  submission.subskill_id: {submission.subskill_id}")
-                logger.info(f"  submission.student_answer: '{submission.student_answer}'")
-                logger.info(f"  submission.primitive_response: {submission.primitive_response}")
-                logger.info(f"  submission.canvas_used: {submission.canvas_used}")
-                logger.info(f"  submission.solution_image length: {len(submission.solution_image) if submission.solution_image else 0}")
-                logger.info(f"  problem_id: {submission.problem.get('id', 'unknown')}")
-                logger.info(f"  problem_type: {submission.problem.get('problem_type', 'unknown')}")
-
                 result = await submission_service.handle_submission(submission, user_context)
                 submission_results.append(result)
-                logger.info(f"Successfully processed submission {i+1}/{len(batch_request.submissions)}")
             except Exception as e:
-                logger.error(f"Error processing submission {i+1}: {str(e)}")
+                logger.error(f"Error processing submission {i+1} in batch: {str(e)}")
                 failed_submissions.append({
                     "submission_index": i,
                     "problem_id": submission.problem.get("id", f"problem_{i}"),
@@ -430,10 +418,9 @@ async def submit_problem_batch(
         if not submission_results and failed_submissions:
             raise HTTPException(
                 status_code=400,
-                detail=f"All submissions failed. Failed count: {len(failed_submissions)}"
+                detail=f"All submissions in batch failed. Failed count: {len(failed_submissions)}"
             )
 
-        # Create response
         response = BatchSubmissionResponse(
             batch_id=batch_id,
             assessment_id=batch_request.assessment_context.assessment_id if batch_request.assessment_context else None,
@@ -442,17 +429,13 @@ async def submit_problem_batch(
             batch_submitted_at=datetime.utcnow().isoformat()
         )
 
-        # Store batch submission if assessment context provided
-        if batch_request.assessment_context:
-            await _store_batch_submission(
-                batch_request.assessment_context,
-                response,
-                user_context,
-                cosmos_db
-            )
+        # --- REMOVED THE ASSESSMENT-SPECIFIC LOGIC ---
+        # The call to _store_batch_submission has been deleted.
+        # This endpoint is now decoupled from the assessment service.
+        # ---------------------------------------------
 
         if failed_submissions:
-            logger.warning(f"Batch processed with {len(failed_submissions)} failures: {failed_submissions}")
+            logger.warning(f"Batch processed with {len(failed_submissions)} failures.")
 
         logger.info(f"Batch submission completed: {len(submission_results)} successful, {len(failed_submissions)} failed")
         return response
@@ -461,60 +444,13 @@ async def submit_problem_batch(
         raise
     except Exception as e:
         logger.error(f"Error in batch problem submission: {str(e)}")
-        background_tasks.add_task(
-            log_activity_helper,
-            user_id=firebase_uid,
-            student_id=student_id,
-            activity_type="batch_submission_error",
-            activity_name="Batch submission failed",
-            points=0,
-            metadata={"error": str(e), "student_id": student_id}
-        )
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-async def _store_batch_submission(
-    assessment_context: dict,
-    batch_response: BatchSubmissionResponse,
-    user_context: dict,
-    cosmos_db
-) -> None:
-    """Store batch submission results in assessment document"""
-    try:
-        # Get the assessment service to store batch results
-        from ...services.assessment_service import AssessmentService
-        from ...services.bigquery_analytics import BigQueryAnalyticsService
-        from ...services.problems import ProblemService
-        from ...services.curriculum_service import CurriculumService
-        from ...services.submission_service import SubmissionService
-
-        # Initialize services (simplified for batch storage)
-        bigquery_service = get_bigquery_analytics_service()
-        problem_service = await get_problem_service()
-        curriculum_service = CurriculumService(bigquery_service)
-        submission_service = SubmissionService(None, None, cosmos_db)
-
-        assessment_service = AssessmentService(
-            bigquery_service,
-            problem_service,
-            curriculum_service,
-            submission_service,
-            cosmos_db
-        )
-
-        # Store batch submission data in assessment
-        await assessment_service.store_batch_submission(
-            assessment_context.assessment_id,
-            assessment_context.student_id,
-            batch_response,
-            user_context.get("firebase_uid")
-        )
-
-        logger.info(f"Stored batch submission for assessment {assessment_context.assessment_id}")
-
-    except Exception as e:
-        logger.error(f"Failed to store batch submission: {str(e)}")
-        # Don't raise - submission should continue even if storage fails
+# --- DELETED _store_batch_submission HELPER FUNCTION ---
+# This function has been removed to decouple the problems endpoint from assessments.
+# Assessment-specific logic now belongs only in the assessments endpoint.
+# ----------------------------------------------------------
 
 
 # ============================================================================

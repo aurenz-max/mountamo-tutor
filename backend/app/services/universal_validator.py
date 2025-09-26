@@ -114,12 +114,11 @@ class UniversalValidator:
                     selected_option_id = primitive_response.get('selected_option_id')
                     logger.debug(f"[UNIVERSAL_VALIDATOR] MCQ selected_option_id: {selected_option_id}")
                     if selected_option_id:
-                        # Convert option ID to index
-                        answer = UniversalValidator._convert_option_id_to_index(selected_option_id, question)
-                        logger.info(f"[UNIVERSAL_VALIDATOR] MCQ converted option {selected_option_id} to index {answer}")
+                        logger.info(f"[UNIVERSAL_VALIDATOR] MCQ using direct option ID: {selected_option_id}")
                         return MultipleChoiceResponse(
                             question_id=question_id,
-                            answer=answer
+                            answer=0,  # Placeholder for backward compatibility
+                            selected_option_id=selected_option_id  # No conversion needed!
                         )
 
                 elif question_type == QuestionType.TRUE_FALSE:
@@ -246,7 +245,8 @@ class UniversalValidator:
                         logger.info(f"[UNIVERSAL_VALIDATOR] MCQ fallback - using int answer: {student_answer}")
                         return MultipleChoiceResponse(
                             question_id=question_id,
-                            answer=student_answer
+                            answer=student_answer,
+                            selected_option_id=""  # No ID available in fallback
                         )
                     elif isinstance(student_answer, str):
                         # Handle string answers like "A", "B", etc.
@@ -255,7 +255,8 @@ class UniversalValidator:
                             logger.info(f"[UNIVERSAL_VALIDATOR] MCQ fallback - converted '{student_answer}' to index {answer_index}")
                             return MultipleChoiceResponse(
                                 question_id=question_id,
-                                answer=answer_index
+                                answer=answer_index,
+                                selected_option_id=""  # No ID available in fallback
                             )
                 elif question_type == QuestionType.TRUE_FALSE:
                     if isinstance(student_answer, str):
@@ -347,82 +348,79 @@ class UniversalValidator:
             return None
 
     @staticmethod
-    def _convert_option_id_to_index(option_id: str, question: MultipleChoiceQuestion) -> int:
-        """Convert option ID (like 'A', 'B', 'option_C') to numeric index"""
-        logger.debug(f"[UNIVERSAL_VALIDATOR] Converting option_id '{option_id}' for question with {len(question.options)} options")
-
-        # Handle single letter IDs (A, B, C)
-        if option_id.isalpha() and len(option_id) == 1:
-            index = ord(option_id.upper()) - ord('A')
-            logger.debug(f"[UNIVERSAL_VALIDATOR] Single letter '{option_id}' converted to index {index}")
-            return index
-
-        # Handle structured option IDs (option_A, option_B, option_C, etc.)
-        if option_id.startswith('option_'):
-            letter = option_id.split('_')[1]  # Extract the letter part
-            if letter.isalpha() and len(letter) == 1:
-                index = ord(letter.upper()) - ord('A')
-                logger.debug(f"[UNIVERSAL_VALIDATOR] Structured option '{option_id}' converted to index {index}")
-                return index
-
-        # Handle opt_a, opt_b, opt_c format
-        if option_id.startswith('opt_'):
-            letter = option_id.split('_')[1]  # Extract the letter part
-            if letter.isalpha() and len(letter) == 1:
-                index = ord(letter.upper()) - ord('A')
-                logger.debug(f"[UNIVERSAL_VALIDATOR] Opt format '{option_id}' converted to index {index}")
-                return index
-
-        # Fallback: try hardcoded list for other formats
-        option_ids = ['A', 'B', 'C', 'D', 'E', 'F']
-        try:
-            index = option_ids.index(option_id)
-            logger.debug(f"[UNIVERSAL_VALIDATOR] Fallback option '{option_id}' converted to index {index}")
-            return index
-        except ValueError:
-            logger.warning(f"[UNIVERSAL_VALIDATOR] Could not convert option_id '{option_id}', defaulting to index 0")
-            return 0  # Default to first option
-
-    @staticmethod
     def _validate_multiple_choice(
         question: MultipleChoiceQuestion,
         response: MultipleChoiceResponse
     ) -> QuestionEvaluation:
-        """Validate multiple choice response"""
-        logger.debug(f"[UNIVERSAL_VALIDATOR] MCQ Validation Details:")
-        logger.debug(f"[UNIVERSAL_VALIDATOR]   Student answer index: {response.answer}")
-        logger.debug(f"[UNIVERSAL_VALIDATOR]   Correct answer index: {question.correct_answer}")
-        logger.debug(f"[UNIVERSAL_VALIDATOR]   Total options: {len(question.options)}")
+        """Validate multiple choice response using direct ID comparison"""
 
-        is_correct = response.answer == question.correct_answer
-        score = 10.0 if is_correct else 3.0
+        # Use ID-based validation if available, fall back to index-based for compatibility
+        if response.selected_option_id and question.correct_option_id:
+            student_option_id = response.selected_option_id
+            correct_option_id = question.correct_option_id
 
-        student_answer_text = ""
-        correct_answer_text = ""
+            # Direct ID comparison - no brittle conversion!
+            is_correct = student_option_id == correct_option_id
+            score = 10.0 if is_correct else 3.0
 
-        if 0 <= response.answer < len(question.options):
-            student_answer_text = question.options[response.answer]
-            logger.debug(f"[UNIVERSAL_VALIDATOR]   Student selected: '{student_answer_text}' (index {response.answer})")
+            # Get display texts for feedback
+            student_text = question.get_option_text_by_id(student_option_id)
+            correct_text = question.get_option_text_by_id(correct_option_id)
 
-        if 0 <= question.correct_answer < len(question.options):
-            correct_answer_text = question.options[question.correct_answer]
-            logger.debug(f"[UNIVERSAL_VALIDATOR]   Correct answer: '{correct_answer_text}' (index {question.correct_answer})")
+            logger.debug(f"[UNIVERSAL_VALIDATOR] MCQ Validation Details:")
+            logger.debug(f"[UNIVERSAL_VALIDATOR]   Student option ID: {student_option_id}")
+            logger.debug(f"[UNIVERSAL_VALIDATOR]   Correct option ID: {correct_option_id}")
+            logger.debug(f"[UNIVERSAL_VALIDATOR]   Student selected: '{student_text}'")
+            logger.debug(f"[UNIVERSAL_VALIDATOR]   Correct answer: '{correct_text}'")
 
-        logger.info(f"[UNIVERSAL_VALIDATOR] MCQ Result: {'CORRECT' if is_correct else 'INCORRECT'} - Score: {score}")
-        logger.info(f"[UNIVERSAL_VALIDATOR] Student: {student_answer_text} | Correct: {correct_answer_text}")
+            logger.info(f"[UNIVERSAL_VALIDATOR] MCQ Result: {'CORRECT' if is_correct else 'INCORRECT'} - Score: {score}")
+            logger.info(f"[UNIVERSAL_VALIDATOR] Student: {student_text} | Correct: {correct_text}")
 
-        feedback = question.rationale if not is_correct else "Correct! Well done!"
+            return QuestionEvaluation(
+                question_id=question.id,
+                question_type=question.type,
+                is_correct=is_correct,
+                score=score,
+                feedback=question.rationale if not is_correct else "Correct! Well done!",
+                student_answer=student_text,
+                correct_answer=correct_text,
+                explanation=question.teaching_note
+            )
 
-        return QuestionEvaluation(
-            question_id=question.id,
-            question_type=question.type,
-            is_correct=is_correct,
-            score=score,
-            feedback=feedback,
-            student_answer=student_answer_text,
-            correct_answer=correct_answer_text,
-            explanation=question.teaching_note
-        )
+        else:
+            # Fallback to index-based validation for backward compatibility
+            logger.debug(f"[UNIVERSAL_VALIDATOR] MCQ Fallback to index-based validation")
+            logger.debug(f"[UNIVERSAL_VALIDATOR]   Student answer index: {response.answer}")
+            logger.debug(f"[UNIVERSAL_VALIDATOR]   Correct answer index: {question.correct_answer}")
+            logger.debug(f"[UNIVERSAL_VALIDATOR]   Total options: {len(question.options)}")
+
+            is_correct = response.answer == question.correct_answer
+            score = 10.0 if is_correct else 3.0
+
+            student_answer_text = ""
+            correct_answer_text = ""
+
+            if 0 <= response.answer < len(question.options):
+                student_answer_text = question.options[response.answer]
+                logger.debug(f"[UNIVERSAL_VALIDATOR]   Student selected: '{student_answer_text}' (index {response.answer})")
+
+            if 0 <= question.correct_answer < len(question.options):
+                correct_answer_text = question.options[question.correct_answer]
+                logger.debug(f"[UNIVERSAL_VALIDATOR]   Correct answer: '{correct_answer_text}' (index {question.correct_answer})")
+
+            logger.info(f"[UNIVERSAL_VALIDATOR] MCQ Result: {'CORRECT' if is_correct else 'INCORRECT'} - Score: {score}")
+            logger.info(f"[UNIVERSAL_VALIDATOR] Student: {student_answer_text} | Correct: {correct_answer_text}")
+
+            return QuestionEvaluation(
+                question_id=question.id,
+                question_type=question.type,
+                is_correct=is_correct,
+                score=score,
+                feedback=question.rationale if not is_correct else "Correct! Well done!",
+                student_answer=student_answer_text,
+                correct_answer=correct_answer_text,
+                explanation=question.teaching_note
+            )
 
     @staticmethod
     def _validate_true_false(

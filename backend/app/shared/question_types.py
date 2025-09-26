@@ -27,7 +27,15 @@ class BaseQuestion(BaseModel):
 class MultipleChoiceQuestion(BaseQuestion):
     type: Literal[QuestionType.MULTIPLE_CHOICE] = QuestionType.MULTIPLE_CHOICE
     options: List[str]
-    correct_answer: int  # Index of correct option
+    correct_answer: int  # Index of correct option (kept for backward compatibility)
+
+    # NEW FIELDS for ID-based validation
+    correct_option_id: str = ""  # Original option ID: "opt_005"
+    option_id_map: Dict[str, str] = Field(default_factory=dict)  # ID to text mapping: {"opt_004": "<", "opt_005": ">"}
+
+    def get_option_text_by_id(self, option_id: str) -> str:
+        """Get display text for an option ID"""
+        return self.option_id_map.get(option_id, "Unknown Option")
 
 class TrueFalseQuestion(BaseQuestion):
     type: Literal[QuestionType.TRUE_FALSE] = QuestionType.TRUE_FALSE
@@ -89,7 +97,8 @@ class BaseResponse(BaseModel):
 
 class MultipleChoiceResponse(BaseResponse):
     question_type: Literal[QuestionType.MULTIPLE_CHOICE] = QuestionType.MULTIPLE_CHOICE
-    answer: int  # Selected option index
+    answer: int  # Selected option index (kept for backward compatibility)
+    selected_option_id: str = ""  # NEW: Original option ID, no conversion needed
 
 class TrueFalseResponse(BaseResponse):
     question_type: Literal[QuestionType.TRUE_FALSE] = QuestionType.TRUE_FALSE

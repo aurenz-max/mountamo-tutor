@@ -165,34 +165,57 @@ class ProblemConverter:
 
     @staticmethod
     def _convert_multiple_choice(source_data: Dict[str, Any], metadata: Dict[str, Any]) -> MultipleChoiceQuestion:
-        """Convert multiple choice primitive to standard format"""
+        """Convert multiple choice primitive to standard format with ID preservation"""
         options = source_data.get('options', [])
         logger.debug(f"[PROBLEM_CONVERTER] MCQ options: {options}")
+
+        # Build display texts and ID mapping
+        option_texts = []
+        option_id_map = {}
+        correct_option_id = ""
+        correct_index = 0
 
         # Handle both structured options (with id/text) and simple string arrays
         if options and isinstance(options[0], dict):
             # Structured options with id/text
-            option_texts = [opt['text'] for opt in options]
             correct_option_id = source_data.get('correct_option_id', 'A')
+
+            for i, opt in enumerate(options):
+                option_id = opt['id']
+                option_text = opt['text']
+                option_texts.append(option_text)
+                option_id_map[option_id] = option_text
+
+                # Find correct index for backward compatibility
+                if option_id == correct_option_id:
+                    correct_index = i
+
             logger.debug(f"[PROBLEM_CONVERTER] MCQ option_texts: {option_texts}")
             logger.debug(f"[PROBLEM_CONVERTER] MCQ correct_option_id: {correct_option_id}")
-
-            # Find correct answer index
-            correct_index = next(
-                (i for i, opt in enumerate(options) if opt['id'] == correct_option_id),
-                0
-            )
-            logger.info(f"[PROBLEM_CONVERTER] MCQ mapped '{correct_option_id}' to index {correct_index}")
+            logger.info(f"[PROBLEM_CONVERTER] MCQ ID mapping: {option_id_map}")
+            logger.info(f"[PROBLEM_CONVERTER] Correct option: '{correct_option_id}' -> '{option_id_map.get(correct_option_id)}'")
 
         elif options and isinstance(options[0], str):
-            # Legacy string array options
-            option_texts = options
+            # Legacy string array options - generate IDs for consistency
             correct_answer = source_data.get('correct_answer', source_data.get('answer', 0))
             correct_index = correct_answer if isinstance(correct_answer, int) else 0
+
+            for i, option_text in enumerate(options):
+                option_id = f"option_{chr(65 + i)}"  # A, B, C...
+                option_texts.append(option_text)
+                option_id_map[option_id] = option_text
+
+                # Set correct option ID
+                if i == correct_index:
+                    correct_option_id = option_id
+
             logger.debug(f"[PROBLEM_CONVERTER] MCQ legacy format - correct_index: {correct_index}")
+            logger.info(f"[PROBLEM_CONVERTER] Legacy format ID mapping: {option_id_map}")
         else:
             # Fallback
             option_texts = []
+            option_id_map = {}
+            correct_option_id = "option_A"
             correct_index = 0
             logger.warning(f"[PROBLEM_CONVERTER] MCQ fallback used - no valid options found")
 
@@ -203,7 +226,9 @@ class ProblemConverter:
             id=source_data.get('id', 'mc_question'),
             question_text=source_data.get('question', ''),
             options=option_texts,
-            correct_answer=correct_index,
+            correct_answer=correct_index,  # Keep for compatibility
+            correct_option_id=correct_option_id,  # NEW
+            option_id_map=option_id_map,  # NEW
             metadata=metadata,
             rationale=source_data.get('rationale', ''),
             teaching_note=source_data.get('teaching_note', ''),

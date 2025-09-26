@@ -2,522 +2,172 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, Trophy, Target, BookOpen, Home, RotateCcw } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEngagement } from '@/contexts/EngagementContext';
 import { authApi } from '@/lib/authApiClient';
-import XPCounter from '@/components/engagement/XPCounter';
-import StreakCounter from '@/components/engagement/StreakCounter';
-import AssessmentResultsHeader from '@/components/assessment/AssessmentResultsHeader';
-import KeyTakeawaysCard from '@/components/assessment/KeyTakeawaysCard';
-import SkillAnalysisCard from '@/components/assessment/SkillAnalysisCard';
-import ReviewItemsCard from '@/components/assessment/ReviewItemsCard';
-import BatchAssessmentResults from '@/components/assessment/BatchAssessmentResults';
-
-interface AssessmentSummary {
-  assessment_id: string;
-  subject: string;
-  total_questions: number;
-  correct_count: number; // Backend returns correct_count, not correct_answers
-  score_percentage: number;
-  time_taken_minutes?: number;
-  skill_breakdown: Array<{
-    skill_name: string;
-    total_questions: number;
-    correct_answers: number;
-    percentage: number;
-  }>;
-  engagement_transaction?: {
-    xp_earned: number;
-    streak_bonus: number;
-    level_gained: boolean;
-    current_level: number;
-    total_xp: number;
-  };
-  submitted_at?: string;
-  // Enhanced AI-powered assessment feedback
-  ai_summary?: string;
-  performance_quote?: string;
-  skill_analysis?: Array<{
-    skill_id: string;
-    skill_name: string;
-    total_questions: number;
-    correct_count: number;
-    assessment_focus: string;
-    performance_label: string;
-    insight_text: string;
-    next_step: {
-      text: string;
-      link: string;
-    };
-  }>;
-  common_misconceptions?: string[];
-  review_items?: Array<{
-    problem_id: string;
-    question_text: string;
-    your_answer_text: string;
-    correct_answer_text: string;
-    analysis: {
-      understanding: string;
-      approach: string;
-    };
-    feedback: {
-      praise: string;
-      guidance: string;
-      encouragement: string;
-    };
-    related_skill_id: string;
-    lesson_link: string;
-  }>;
-  // NEW: Batch submission format
-  batch_submission?: {
-    batch_id: string;
-    submission_results: Array<{
-      problem_id: string;
-      review: {
-        observation: { selected_answer: string; work_shown: string };
-        analysis: { understanding: string; approach: string };
-        evaluation: { score: number; justification: string };
-        feedback: { praise: string; guidance: string; encouragement: string };
-      };
-      score: number;
-      correct: boolean;
-    }>;
-    xp_earned: number;
-    level_up: boolean;
-    current_streak: number;
-    current_level?: number;
-    total_xp?: number;
-  };
-}
+import { EnhancedAssessmentSummaryResponse } from '@/types/assessment';
+import AtAGlanceHeader from '@/components/assessment/results/AtAGlanceHeader';
+import AINarrative from '@/components/assessment/results/AINarrative';
+import SkillBreakdown from '@/components/assessment/results/SkillBreakdown';
+import DataDeepDive from '@/components/assessment/results/DataDeepDive';
+import QuestionReview from '@/components/assessment/results/QuestionReview';
 
 const AssessmentResultsPage = () => {
   const params = useParams();
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-  const { processEngagementResponse } = useEngagement();
-
-  const [summary, setSummary] = useState<AssessmentSummary | null>(null);
+  const { user } = useAuth();
+  const [resultsData, setResultsData] = useState<EnhancedAssessmentSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [engagementProcessed, setEngagementProcessed] = useState(false);
-  const [displayMode, setDisplayMode] = useState<'batch' | 'legacy'>('legacy');
+  const [showQuestionReview, setShowQuestionReview] = useState(false);
 
   const assessmentId = params.assessment_id as string;
 
   useEffect(() => {
-    const fetchAssessmentSummary = async () => {
+    const fetchResults = async () => {
+      if (!assessmentId || !user) {
+        return;
+      }
+
       try {
-        // Wait for auth to finish loading before checking user
-        if (authLoading) {
-          return;
-        }
+        setLoading(true);
+        setError(null);
 
-        if (!user) {
-          setError('Please log in to view results');
-          setLoading(false);
-          return;
-        }
+        // Fetch assessment results from the API
+        const data = await authApi.getAssessmentResults(assessmentId);
+        console.log('Assessment results data:', data);
+        console.log('Skill analysis:', data.skill_analysis);
+        console.log('AI insights skill insights:', data.ai_insights?.skill_insights);
+        setResultsData(data);
 
-        // Try to get results from sessionStorage first (from submission)
-        const storedResults = sessionStorage.getItem(`assessment_results_${assessmentId}`);
-        if (storedResults) {
-          const results = JSON.parse(storedResults);
+      } catch (error: any) {
+        console.error('Error fetching assessment results:', error);
 
-          // Check if this is a batch submission (new format)
-          if (results.batch_submission) {
-            setDisplayMode('batch');
-            const formattedSummary: AssessmentSummary = {
-              assessment_id: results.assessment_id || assessmentId,
-              subject: results.subject || 'Unknown',
-              total_questions: results.batch_submission.submission_results?.length || 0,
-              correct_count: results.batch_submission.submission_results?.filter((r: any) => r.correct).length || 0,
-              score_percentage: results.batch_submission.submission_results?.length > 0
-                ? (results.batch_submission.submission_results.filter((r: any) => r.correct).length / results.batch_submission.submission_results.length) * 100
-                : 0,
-              time_taken_minutes: results.time_taken_minutes,
-              skill_breakdown: results.skill_breakdown || [],
-              engagement_transaction: results.engagement_transaction,
-              submitted_at: results.submitted_at,
-              batch_submission: results.batch_submission
-            };
-
-            setSummary(formattedSummary);
-
-            // Process engagement from batch submission
-            if (results.batch_submission.xp_earned > 0 && !engagementProcessed) {
-              await processEngagementResponse({
-                xp_earned: results.batch_submission.xp_earned,
-                level_up: results.batch_submission.level_up,
-                current_level: results.batch_submission.current_level,
-                total_xp: results.batch_submission.total_xp
-              });
-              setEngagementProcessed(true);
-            }
-          } else {
-            // Legacy format
-            setDisplayMode('legacy');
-            const formattedSummary: AssessmentSummary = {
-              assessment_id: results.assessment_id,
-              subject: results.subject,
-              total_questions: results.total_questions,
-              correct_count: results.correct_count,
-              score_percentage: results.score_percentage,
-              time_taken_minutes: results.time_taken_minutes,
-              skill_breakdown: results.skill_breakdown || [],
-              engagement_transaction: results.engagement_transaction,
-              submitted_at: results.submitted_at,
-              ai_summary: results.ai_summary,
-              performance_quote: results.performance_quote,
-              skill_analysis: results.skill_analysis,
-              common_misconceptions: results.common_misconceptions,
-              review_items: results.review_items
-            };
-
-            setSummary(formattedSummary);
-
-            // Process engagement if present
-            if (results.engagement_transaction && !engagementProcessed) {
-              await processEngagementResponse(results.engagement_transaction);
-              setEngagementProcessed(true);
-            }
-          }
-
-          setLoading(false);
-          // Clear the session storage after use
-          sessionStorage.removeItem(`assessment_results_${assessmentId}`);
-          return;
-        }
-
-        // Otherwise fetch from API (fallback)
-        const data = await authApi.getAssessmentSummary(assessmentId);
-
-        // Check if API returns batch submission format
-        if (data.batch_submission) {
-          setDisplayMode('batch');
-          const formattedSummary: AssessmentSummary = {
-            assessment_id: data.assessment_id || assessmentId,
-            subject: data.subject || 'Unknown',
-            total_questions: data.batch_submission.submission_results?.length || 0,
-            correct_count: data.batch_submission.submission_results?.filter((r: any) => r.correct).length || 0,
-            score_percentage: data.batch_submission.submission_results?.length > 0
-              ? (data.batch_submission.submission_results.filter((r: any) => r.correct).length / data.batch_submission.submission_results.length) * 100
-              : 0,
-            time_taken_minutes: data.time_taken_minutes,
-            skill_breakdown: data.skill_breakdown || [],
-            engagement_transaction: data.engagement_transaction,
-            submitted_at: data.submitted_at,
-            batch_submission: data.batch_submission
-          };
-          setSummary(formattedSummary);
+        if (error.status === 404) {
+          setError('Assessment results not found');
+        } else if (error.status === 403) {
+          setError('You do not have permission to view these results');
         } else {
-          // Legacy API format
-          setDisplayMode('legacy');
-          const formattedSummary: AssessmentSummary = {
-            assessment_id: data.assessment_id,
-            subject: data.subject,
-            total_questions: data.total_questions,
-            correct_count: data.correct_count,
-            score_percentage: data.score_percentage,
-            time_taken_minutes: data.time_taken_minutes,
-            skill_breakdown: data.skill_breakdown || [],
-            engagement_transaction: data.engagement_transaction,
-            submitted_at: data.submitted_at,
-            ai_summary: data.ai_summary,
-            performance_quote: data.performance_quote,
-            skill_analysis: data.skill_analysis,
-            common_misconceptions: data.common_misconceptions,
-            review_items: data.review_items
-          };
-          setSummary(formattedSummary);
+          setError('Failed to load assessment results. Please try again.');
         }
-
-        console.log('Assessment Summary Data:', summary);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching assessment summary:', err);
-        setError('Unable to load assessment results. Please try again.');
+      } finally {
         setLoading(false);
       }
     };
 
-    if (assessmentId) {
-      fetchAssessmentSummary();
-    }
-  }, [assessmentId, user, authLoading, processEngagementResponse, engagementProcessed]);
-
-  const getScoreColor = (percentage: number) => {
-    if (percentage >= 90) return 'text-green-600 bg-green-50';
-    if (percentage >= 80) return 'text-blue-600 bg-blue-50';
-    if (percentage >= 70) return 'text-yellow-600 bg-yellow-50';
-    return 'text-red-600 bg-red-50';
-  };
-
-  const getScoreLabel = (percentage: number) => {
-    if (percentage >= 90) return 'Excellent';
-    if (percentage >= 80) return 'Good';
-    if (percentage >= 70) return 'Fair';
-    return 'Needs Improvement';
-  };
+    fetchResults();
+  }, [assessmentId, user]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-3" />
-            <span className="text-gray-700">Loading assessment results...</span>
-          </CardContent>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Loading Results</h2>
+          <p className="text-gray-500">Analyzing your assessment performance...</p>
         </Card>
       </div>
     );
   }
 
-  if (error || !summary) {
+  if (error || !resultsData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="text-center p-8">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to Load Results</h3>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <Button onClick={() => router.push('/assessments')} className="w-full">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="p-8 text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-red-600 mb-2">Results Not Found</h2>
+          <p className="text-gray-600 mb-6">
+            {error || 'The assessment results could not be loaded.'}
+          </p>
+          <div className="space-y-3">
+            <Button
+              onClick={() => router.push('/assessments')}
+              className="w-full"
+            >
               Back to Assessments
             </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // If we have a batch submission, use the new format
-  if (displayMode === 'batch' && summary.batch_submission) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Header */}
-          <AssessmentResultsHeader
-            performanceQuote={summary.performance_quote}
-            subject={summary.subject}
-          />
-
-          {/* Batch Assessment Results */}
-          <BatchAssessmentResults batchSubmission={summary.batch_submission} />
-
-          {/* Time Taken */}
-          {summary.time_taken_minutes && (
-            <Card className="shadow-lg">
-              <CardContent className="flex items-center justify-center p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    {Math.round(summary.time_taken_minutes)} minutes
-                  </div>
-                  <div className="text-gray-600">Time taken</div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               variant="outline"
-              onClick={() => router.push('/assessments')}
-              className="flex items-center"
+              onClick={() => router.back()}
+              className="w-full"
             >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Take Another Assessment
-            </Button>
-
-            <Button
-              onClick={() => router.push('/')}
-              className="flex items-center"
-            >
-              <Home className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => router.push('/practice')}
-              className="flex items-center"
-            >
-              <BookOpen className="h-4 w-4 mr-2" />
-              Practice More
+              Go Back
             </Button>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
 
-  // Legacy format
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Authentication Required</h2>
+          <p className="text-gray-500 mb-4">Please sign in to view assessment results.</p>
+          <Button onClick={() => router.push('/auth/login')}>
+            Sign In
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
-        {/* Header */}
-        <AssessmentResultsHeader
-          performanceQuote={summary.performance_quote}
-          subject={summary.subject}
+  // Show question review modal/page
+  if (showQuestionReview) {
+    return (
+      <QuestionReview
+        problemReviews={resultsData.problem_reviews || []}
+        onClose={() => setShowQuestionReview(false)}
+      />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
+        {/* Level 1: At-a-Glance Header */}
+        <AtAGlanceHeader
+          summary={resultsData.summary}
+          aiInsights={resultsData.ai_insights}
+          skillAnalysis={resultsData.ai_insights?.skill_insights || []}
         />
 
-        {/* Score Summary */}
-        <Card className="shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl mb-4">Your Performance</CardTitle>
-            <div className={`inline-flex items-center px-6 py-3 rounded-full text-2xl font-bold ${getScoreColor(summary.score_percentage || 0)}`}>
-              {summary.correct_count} / {summary.total_questions} ({(summary.score_percentage || 0).toFixed(1)}%)
-            </div>
-            <Badge variant="outline" className="mt-2 text-lg px-4 py-1">
-              {getScoreLabel(summary.score_percentage || 0)}
-            </Badge>
-            {summary.ai_summary && (
-              <div className="mt-4 text-sm text-gray-600 max-w-2xl mx-auto">
-                {summary.ai_summary}
-              </div>
-            )}
-          </CardHeader>
+        {/* Level 2: AI Narrative */}
+        <AINarrative
+          aiInsights={resultsData.ai_insights}
+        />
+
+        {/* Level 3: Skill Breakdown */}
+        <SkillBreakdown
+          skillAnalysis={resultsData.ai_insights?.skill_insights || []}
+        />
+
+        {/* Level 4: Data Deep Dive */}
+        <DataDeepDive
+          summary={resultsData.summary}
+        />
+
+        {/* Level 5: Question Review Button */}
+        <Card className="p-6 mt-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Want to Review Individual Questions?
+            </h3>
+            <p className="text-gray-600 mb-4">
+              See exactly which questions you got right or wrong, along with detailed explanations.
+            </p>
+            <Button
+              onClick={() => setShowQuestionReview(true)}
+              variant="outline"
+              className="px-6 py-2"
+            >
+              Review All Questions
+            </Button>
+          </div>
         </Card>
-
-        {/* XP and Engagement Rewards */}
-        {summary.engagement_transaction && (
-          <Card className="shadow-lg border-2 border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
-            <CardHeader>
-              <CardTitle className="flex items-center text-yellow-700">
-                <Trophy className="h-6 w-6 mr-2" />
-                Rewards Earned
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600 mb-1">
-                    +{summary.engagement_transaction.xp_earned} XP
-                  </div>
-                  <div className="text-sm text-gray-600">Experience Points</div>
-                </div>
-
-                {summary.engagement_transaction.streak_bonus > 0 && (
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600 mb-1">
-                      +{summary.engagement_transaction.streak_bonus} XP
-                    </div>
-                    <div className="text-sm text-gray-600">Streak Bonus</div>
-                  </div>
-                )}
-
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600 mb-1">
-                    Level {summary.engagement_transaction.current_level}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {summary.engagement_transaction.level_gained ? 'Level Up!' : 'Current Level'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-center space-x-6">
-                <XPCounter
-                  currentXP={summary.engagement_transaction.total_xp}
-                  size="lg"
-                  animate={true}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Key Takeaways */}
-        {(summary.common_misconceptions && summary.common_misconceptions.length > 0) ||
-         (summary.skill_analysis && summary.skill_analysis.length > 0) ? (
-          <KeyTakeawaysCard
-            commonMisconceptions={summary.common_misconceptions || []}
-            skillAnalysis={summary.skill_analysis || []}
-          />
-        ) : null}
-
-        {/* Enhanced Skill Analysis */}
-        {summary.skill_analysis && summary.skill_analysis.length > 0 ? (
-          <SkillAnalysisCard skillAnalysis={summary.skill_analysis} />
-        ) : (
-          /* Fallback to original skill breakdown if enhanced data is not available */
-          summary.skill_breakdown && summary.skill_breakdown.length > 0 && (
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Target className="h-6 w-6 mr-2" />
-                  Skill Breakdown
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {summary.skill_breakdown.map((skill, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-900">{skill.skill_name}</span>
-                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${getScoreColor(skill.percentage)}`}>
-                        {skill.correct_answers}/{skill.total_questions} ({skill.percentage}%)
-                      </span>
-                    </div>
-                    <Progress value={skill.percentage} className="h-2" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )
-        )}
-
-        {/* Review Items */}
-        {summary.review_items && summary.review_items.length > 0 && (
-          <ReviewItemsCard reviewItems={summary.review_items} />
-        )}
-
-        {/* Time Taken */}
-        {summary.time_taken_minutes && (
-          <Card className="shadow-lg">
-            <CardContent className="flex items-center justify-center p-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 mb-1">
-                  {Math.round(summary.time_taken_minutes)} minutes
-                </div>
-                <div className="text-gray-600">Time taken</div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/assessments')}
-            className="flex items-center"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Take Another Assessment
-          </Button>
-
-          <Button
-            onClick={() => router.push('/')}
-            className="flex items-center"
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => router.push('/practice')}
-            className="flex items-center"
-          >
-            <BookOpen className="h-4 w-4 mr-2" />
-            Practice More
-          </Button>
-        </div>
       </div>
     </div>
   );

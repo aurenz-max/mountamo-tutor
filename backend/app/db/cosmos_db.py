@@ -2116,6 +2116,48 @@ class CosmosDBService:
             logger.error(f"Error storing assessment submission: {str(e)}")
             return False
 
+    async def update_assessment_with_results(
+        self,
+        assessment_id: str,
+        student_id: int,
+        final_results: Dict[str, Any],
+        answers: Dict[str, Any],
+        time_taken_minutes: Optional[int] = None,
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Update assessment with new results structure and set status to 'completed'"""
+        try:
+            # Validate user access
+            if firebase_uid:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+            # Get the existing assessment
+            assessment = await self.get_assessment(assessment_id, student_id, firebase_uid)
+            if not assessment:
+                logger.error(f"Assessment {assessment_id} not found for student {student_id}")
+                return False
+
+            # Update the assessment with the new structure
+            assessment["results"] = final_results
+            assessment["student_answers"] = answers
+            assessment["status"] = "completed"
+            assessment["completed_at"] = datetime.utcnow().isoformat()
+
+            if time_taken_minutes is not None:
+                assessment["time_taken_minutes"] = time_taken_minutes
+
+            # Save the updated assessment
+            self.assessments.upsert_item(body=assessment)
+            logger.info(f"Updated assessment {assessment_id} with new results structure")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error updating assessment with results: {str(e)}")
+            return False
+
     async def get_student_assessments(
         self,
         student_id: int,
