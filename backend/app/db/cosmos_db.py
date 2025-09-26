@@ -2008,7 +2008,12 @@ class CosmosDBService:
         student_id: int,
         firebase_uid: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """Retrieve assessment by ID with validation"""
+        """
+        Retrieve assessment by ID with validation and expiration check.
+
+        This method enforces expiration - returns None if assessment has expired.
+        Use for taking assessments where expiration should block access.
+        """
         try:
             # Validate user access
             if firebase_uid:
@@ -2037,6 +2042,41 @@ class CosmosDBService:
             return None
         except Exception as e:
             logger.error(f"Error retrieving assessment: {str(e)}")
+            return None
+
+    async def get_assessment_for_results(
+        self,
+        assessment_id: str,
+        student_id: int,
+        firebase_uid: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve assessment by ID for viewing results - ignores expiration.
+
+        This method allows viewing results of completed assessments even if expired.
+        Use for showing assessment history and results.
+        """
+        try:
+            # Validate user access
+            if firebase_uid:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+            # Get the assessment without checking expiration
+            result = self.assessments.read_item(
+                item=assessment_id,
+                partition_key=student_id
+            )
+
+            logger.info(f"Retrieved assessment {assessment_id} for results viewing (ignoring expiration)")
+            return result
+
+        except CosmosResourceNotFoundError:
+            logger.info(f"Assessment {assessment_id} not found for student {student_id}")
+            return None
+        except Exception as e:
+            logger.error(f"Error retrieving assessment for results: {str(e)}")
             return None
 
     async def update_assessment_status(
@@ -2210,6 +2250,91 @@ class CosmosDBService:
         except Exception as e:
             logger.error(f"Error getting student assessments: {str(e)}")
             return []
+
+    async def get_completed_assessments(
+        self,
+        student_id: int,
+        firebase_uid: Optional[str] = None,
+        page: int = 1,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Get completed assessments for a student with pagination.
+
+        This method returns ALL completed assessments regardless of expiration status,
+        as per PRD requirements for assessment history.
+        """
+        try:
+            # Validate user access
+            if firebase_uid:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+            # Calculate offset for pagination
+            offset = (page - 1) * limit
+
+            query = """
+            SELECT * FROM c
+            WHERE c.student_id = @student_id
+            AND c.document_type = 'assessment'
+            AND c.status = 'completed'
+            ORDER BY c.completed_at DESC
+            OFFSET @offset LIMIT @limit
+            """
+
+            params = [
+                {"name": "@student_id", "value": student_id},
+                {"name": "@offset", "value": offset},
+                {"name": "@limit", "value": limit}
+            ]
+
+            results = list(self.assessments.query_items(
+                query=query,
+                parameters=params,
+                partition_key=student_id
+            ))
+
+            logger.info(f"Retrieved {len(results)} completed assessments for student {student_id} (ignoring expiration for history)")
+            return results
+
+        except Exception as e:
+            logger.error(f"Error getting completed assessments: {str(e)}")
+            return []
+
+    async def get_completed_assessments_count(
+        self,
+        student_id: int,
+        firebase_uid: Optional[str] = None
+    ) -> int:
+        """Get the total count of completed assessments for a student"""
+        try:
+            # Validate user access
+            if firebase_uid:
+                has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+                if not has_access:
+                    raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+            query = """
+            SELECT VALUE COUNT(1) FROM c
+            WHERE c.student_id = @student_id
+            AND c.document_type = 'assessment'
+            AND c.status = 'completed'
+            """
+
+            params = [{"name": "@student_id", "value": student_id}]
+
+            results = list(self.assessments.query_items(
+                query=query,
+                parameters=params,
+                partition_key=student_id
+            ))
+
+            return results[0] if results else 0
+
+        except Exception as e:
+            logger.error(f"Error getting completed assessments count: {str(e)}")
+            return 0
 
     # ============================================================================
     # 🆕 VISUALIZE CONCEPTS METHODS

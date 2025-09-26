@@ -1236,8 +1236,8 @@ class AssessmentService:
         try:
             logger.info(f"[ASSESSMENT_SERVICE] Fetching assessment summary for {assessment_id}")
 
-            # Get the assessment from Cosmos DB
-            assessment = await self.cosmos.get_assessment(assessment_id, student_id, firebase_uid)
+            # Get the assessment from Cosmos DB - use get_assessment_for_results to ignore expiration
+            assessment = await self.cosmos.get_assessment_for_results(assessment_id, student_id, firebase_uid)
             if not assessment:
                 raise ValueError(f"Assessment {assessment_id} not found for student {student_id}")
 
@@ -1288,6 +1288,81 @@ class AssessmentService:
 
         except Exception as e:
             logger.error(f"[ASSESSMENT_SERVICE] Failed to get assessment summary for {assessment_id}: {e}")
+            raise
+
+    async def get_assessment_history(
+        self,
+        student_id: int,
+        firebase_uid: Optional[str] = None,
+        page: int = 1,
+        limit: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Get a paginated list of completed assessments for a student.
+
+        Args:
+            student_id: The student's ID
+            firebase_uid: User's Firebase UID for access validation
+            page: Page number for pagination (1-based)
+            limit: Number of assessments per page
+
+        Returns:
+            Dict containing the list of completed assessments and pagination info
+        """
+        try:
+            logger.info(f"[ASSESSMENT_SERVICE] Fetching assessment history for student {student_id}")
+
+            # Get completed assessments from Cosmos DB
+            assessments = await self.cosmos.get_completed_assessments(
+                student_id=student_id,
+                firebase_uid=firebase_uid,
+                page=page,
+                limit=limit
+            )
+
+            # Transform assessments to history format
+            history_items = []
+            for assessment in assessments:
+                # Extract summary data from results or legacy score_data
+                results = assessment.get("results", {})
+                summary = results.get("summary", {})
+
+                # Fallback to legacy format if new format not available
+                if not summary:
+                    score_data = assessment.get("score_data", {})
+                    total_questions = score_data.get("total_questions", assessment.get("total_questions", 0))
+                    correct_count = score_data.get("correct_count", 0)
+                    score_percentage = score_data.get("score_percentage", 0.0)
+                else:
+                    total_questions = summary.get("total_questions", 0)
+                    correct_count = summary.get("correct_count", 0)
+                    score_percentage = summary.get("score_percentage", 0.0)
+
+                history_item = {
+                    "assessment_id": assessment.get("assessment_id"),
+                    "subject": assessment.get("subject"),
+                    "completed_at": assessment.get("completed_at"),
+                    "total_questions": total_questions,
+                    "correct_count": correct_count,
+                    "score_percentage": score_percentage
+                }
+                history_items.append(history_item)
+
+            # Get total count for pagination
+            total_count = await self.cosmos.get_completed_assessments_count(
+                student_id=student_id,
+                firebase_uid=firebase_uid
+            )
+
+            return {
+                "assessments": history_items,
+                "total_count": total_count,
+                "page": page,
+                "limit": limit
+            }
+
+        except Exception as e:
+            logger.error(f"[ASSESSMENT_SERVICE] Failed to get assessment history for student {student_id}: {e}")
             raise
 
     def _extract_problem_content_for_review(self, problem: Dict[str, Any]) -> Dict[str, Any]:

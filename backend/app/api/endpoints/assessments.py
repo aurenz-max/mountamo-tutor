@@ -93,6 +93,24 @@ class AvailableSubjectsResponse(BaseModel):
     message: Optional[str] = None
 
 
+class AssessmentHistoryItem(BaseModel):
+    """Model for individual assessment in history list"""
+    assessment_id: str
+    subject: str
+    completed_at: str
+    total_questions: int
+    correct_count: int
+    score_percentage: float
+
+
+class AssessmentHistoryResponse(BaseModel):
+    """Response model for assessment history"""
+    assessments: List[AssessmentHistoryItem]
+    total_count: int
+    page: int
+    limit: int
+
+
 class SkillAnalysisItem(BaseModel):
     """Model for individual skill analysis in assessment summary"""
     skill_id: str
@@ -577,6 +595,61 @@ async def get_assessment_summary(
 # ============================================================================
 # UTILITY ENDPOINTS
 # ============================================================================
+
+@router.get("/history")
+async def get_assessment_history(
+    page: int = 1,
+    limit: int = 10,
+    user_context: dict = Depends(get_user_context),
+    assessment_service: AssessmentService = Depends(get_assessment_service)
+) -> AssessmentHistoryResponse:
+    """
+    Get assessment history for the authenticated student.
+
+    Returns a paginated list of completed assessments with their scores and metadata,
+    sorted by completion date in descending order (most recent first).
+    """
+    firebase_uid = user_context["firebase_uid"]
+    student_id = user_context["student_id"]
+
+    try:
+        logger.info(f"User {user_context['email']} getting assessment history for student {student_id}")
+
+        # Validate pagination parameters
+        if page < 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Page must be greater than 0"
+            )
+        if limit < 1 or limit > 50:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Limit must be between 1 and 50"
+            )
+
+        # Get assessment history from service
+        history_data = await assessment_service.get_assessment_history(
+            student_id=student_id,
+            firebase_uid=firebase_uid,
+            page=page,
+            limit=limit
+        )
+
+        return AssessmentHistoryResponse(**history_data)
+
+    except ValueError as e:
+        logger.error(f"Value error getting assessment history: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error getting assessment history: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get assessment history"
+        )
+
 
 @router.get("/subjects")
 async def get_available_subjects(

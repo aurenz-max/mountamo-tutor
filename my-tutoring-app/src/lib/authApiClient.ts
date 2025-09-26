@@ -98,6 +98,23 @@ export interface AnalyticsTimeseriesResponse {
   generated_at: string;
 }
 
+// Assessment History Types
+export interface AssessmentHistoryItem {
+  assessment_id: string;
+  subject: string;
+  completed_at: string;
+  total_questions: number;
+  correct_count: number;
+  score_percentage: number;
+}
+
+export interface AssessmentHistoryResponse {
+  assessments: AssessmentHistoryItem[];
+  total_count: number;
+  page: number;
+  limit: number;
+}
+
 export interface AnalyticsRecommendation {
   type: string;
   priority: 'high' | 'medium' | 'low';
@@ -454,6 +471,17 @@ class AuthenticatedApiClient {
    */
   async getAssessmentResults(assessmentId: string) {
     return this.get(`/api/assessments/${assessmentId}/summary`);
+  }
+
+  /**
+   * Get assessment history for the authenticated student
+   */
+  async getAssessmentHistory(page: number = 1, limit: number = 10) {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    return this.get(`/api/assessments/history?${params.toString()}`);
   }
 
   // ============================================================================
