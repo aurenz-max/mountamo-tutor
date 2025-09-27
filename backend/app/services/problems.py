@@ -4,9 +4,11 @@ from .base_ai_service import BaseAIService
 from .ai_service_factory import AIServiceFactory
 import logging
 import json
+import random
 from google import genai
 from google.genai.types import GenerateContentConfig
 from ..generators.content_schemas import PRACTICE_PROBLEMS_SCHEMA
+from ..generators.content import ContentGenerationRequest
 from ..core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -20,9 +22,11 @@ class ProblemService:
         self.recommender = None  # Will be set by dependency injection
         self.cosmos_db = None  # Will be set by dependency injection
         self.problem_optimizer = None  # Will be set by dependency injection
+        self.master_context_generator = None  # Will be set by dependency injection
+        self.context_primitives_generator = None  # Will be set by dependency injection
         self._problem_history = {}  # In-memory storage for now
         self._current_ai_service_type = "gemini"  # Default to Gemini for JSON schema support
-        
+
         # Initialize Gemini client like the generators do
         self.client = None
         self._initialize_gemini()
@@ -62,16 +66,18 @@ class ProblemService:
         self,
         subject: str,
         recommendations: List[Dict[str, Any]],
-        count: int = 5
+        count: int = 5,
+        context_primitives: Optional[Dict[str, Any]] = None
     ) -> Optional[str]:
         """
-        Universal problem generation method using Gemini with JSON schema.
-        
+        Universal problem generation method using Gemini with JSON schema and context primitives.
+
         Args:
             subject: The subject area
             recommendations: List of recommendation objects
             count: Number of problems to generate
-            
+            context_primitives: Optional context primitives for problem variety
+
         Returns:
             JSON string with problems array
         """
@@ -88,8 +94,55 @@ class ProblemService:
                 while len(recommendations) < count:
                     recommendations.append(recommendations[-1])
             
+            # Build enhanced prompt with context primitives for variety
+            context_section = ""
+            if context_primitives:
+                # Randomly sample from primitives for variety in each generation
+                all_objects = context_primitives.get('concrete_objects', [])
+                all_characters = context_primitives.get('characters', [])
+                all_scenarios = context_primitives.get('scenarios', [])
+                all_locations = context_primitives.get('locations', [])
+
+                # Random sample to ensure different combinations each time
+                sampled_objects = random.sample(all_objects, min(10, len(all_objects)))
+                sampled_characters = random.sample(all_characters, min(5, len(all_characters)))
+                sampled_scenarios = random.sample(all_scenarios, min(8, len(all_scenarios)))
+                sampled_locations = random.sample(all_locations, min(6, len(all_locations)))
+
+                # Log the selected primitives for debugging
+                logger.info(f"[CONTEXT_PRIMITIVES] Selected objects: {sampled_objects}")
+                logger.info(f"[CONTEXT_PRIMITIVES] Selected characters: {[c.get('name', 'Unknown') for c in sampled_characters]}")
+                logger.info(f"[CONTEXT_PRIMITIVES] Selected scenarios: {sampled_scenarios}")
+                logger.info(f"[CONTEXT_PRIMITIVES] Selected locations: {sampled_locations}")
+
+                # Format for prompt
+                objects_sample = ', '.join(sampled_objects)
+                characters_sample = [f"{c.get('name', 'Unknown')} ({c.get('age', 'child')})"
+                                   for c in sampled_characters]
+                scenarios_sample = ', '.join(sampled_scenarios)
+                locations_sample = ', '.join(sampled_locations)
+
+                context_section = f"""
+
+CONTEXT PRIMITIVES FOR VARIETY (Use these to create diverse problems):
+✓ Objects: {objects_sample}
+✓ Characters: {', '.join(characters_sample)}
+✓ Scenarios: {scenarios_sample}
+✓ Locations: {locations_sample}
+
+VARIETY INSTRUCTIONS:
+- For each problem, select DIFFERENT combinations from the context primitives above
+- Never reuse the same object-character-scenario combination
+- Distribute problems across different locations and contexts
+- Ensure each problem feels unique and engaging
+"""
+            else:
+                logger.info("[CONTEXT_PRIMITIVES] No context primitives provided - using default generation")
+
             # Build the prompt for multiple problems using the new rich schema
             prompt = f"""Generate {count} different age-appropriate {subject} problems for kindergarten students using a variety of problem types.
+
+{context_section}
 
 Your response must use the rich problem schema with separate arrays for each problem type:
 
@@ -287,7 +340,18 @@ IMPORTANT:
             
             # Generate problems if we have recommendations that need new problems
             if formatted_recs:
-                raw_response = await self.generate_problem(subject, formatted_recs, len(formatted_recs))
+                # Get context primitives for variety (using first recommendation)
+                context_primitives = None
+                if formatted_recs:
+                    context_primitives = await self.get_or_generate_context_primitives(subject, formatted_recs[0])
+                    if context_primitives:
+                        objects_count = len(context_primitives.get('concrete_objects', []))
+                        scenarios_count = len(context_primitives.get('scenarios', []))
+                        logger.info(f"🚀 [DYNAMIC_VARIETY] Using context primitives for problem generation: {objects_count} objects, {scenarios_count} scenarios")
+                    else:
+                        logger.info(f"⚠️ [FALLBACK] No context primitives available - using default generation")
+
+                raw_response = await self.generate_problem(subject, formatted_recs, len(formatted_recs), context_primitives)
                 if raw_response:
                     try:
                         response_data = json.loads(raw_response)
@@ -349,6 +413,104 @@ IMPORTANT:
             import traceback
             traceback.print_exc()
             return []
+
+    async def get_or_generate_context_primitives(self, subject: str, recommendation: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Get cached context primitives or generate new ones for a subskill.
+
+        Args:
+            subject: The subject area
+            recommendation: Recommendation dict with unit, skill, subskill info
+
+        Returns:
+            Dict containing context primitives or None if generation fails
+        """
+        try:
+            subskill_id = recommendation.get('subskill', {}).get('id')
+            if not subskill_id:
+                logger.error("No subskill ID found in recommendation")
+                return None
+
+            # Try to get cached primitives first
+            if self.cosmos_db:
+                cached_primitives = await self.cosmos_db.get_cached_context_primitives(
+                    subject=subject,
+                    subskill_id=subskill_id
+                )
+                if cached_primitives:
+                    logger.info(f"Using cached context primitives for {subject}:{subskill_id}")
+                    return cached_primitives
+
+            # Cache miss - generate new primitives
+            logger.info(f"🔄 Cache miss - generating new context primitives for {subject}:{subskill_id}")
+
+            if not self.master_context_generator or not self.context_primitives_generator:
+                logger.error("❌ Context generators not initialized - Dynamic Problem Variety Engine disabled")
+                logger.error(f"   master_context_generator: {self.master_context_generator is not None}")
+                logger.error(f"   context_primitives_generator: {self.context_primitives_generator is not None}")
+                return None
+
+            # Create ContentGenerationRequest from recommendation
+            unit = recommendation.get('unit', {})
+            skill = recommendation.get('skill', {})
+            subskill = recommendation.get('subskill', {})
+
+            request = ContentGenerationRequest(
+                subject=subject,
+                grade=recommendation.get('grade_level', 'Kindergarten'),  # Default to Kindergarten
+                unit=unit.get('title', ''),
+                skill=skill.get('description', ''),
+                subskill=subskill.get('description', ''),
+                unit_id=unit.get('id'),
+                skill_id=skill.get('id'),
+                subskill_id=subskill_id,
+                difficulty_level="beginner",  # Most problems are for young learners
+                prerequisites=[]
+            )
+
+            # Generate master context first
+            logger.info(f"🧠 Generating master context for {subskill.get('description', 'unknown subskill')}")
+            master_context = await self.master_context_generator.generate_master_context(request)
+            logger.info(f"✅ Master context generated with {len(master_context.core_concepts)} core concepts")
+
+            # Generate context primitives using master context
+            logger.info(f"🎯 Generating context primitives using master context")
+            primitives_data = await self.context_primitives_generator.generate_context_primitives(
+                request, master_context
+            )
+
+            if primitives_data:
+                objects_count = len(primitives_data.get('concrete_objects', []))
+                scenarios_count = len(primitives_data.get('scenarios', []))
+                characters_count = len(primitives_data.get('characters', []))
+                logger.info(f"🎉 Context primitives generated successfully: {objects_count} objects, {scenarios_count} scenarios, {characters_count} characters")
+            else:
+                logger.error(f"❌ Failed to generate context primitives")
+                return None
+
+            # Cache the newly generated primitives
+            if self.cosmos_db and primitives_data:
+                try:
+                    await self.cosmos_db.save_cached_context_primitives(
+                        subject=subject,
+                        grade_level=request.grade or "Kindergarten",
+                        unit_id=unit.get('id', ''),
+                        skill_id=skill.get('id', ''),
+                        subskill_id=subskill_id,
+                        primitives_data=primitives_data
+                    )
+                    logger.info(f"Successfully cached new context primitives for {subject}:{subskill_id}")
+                except Exception as cache_error:
+                    logger.error(f"Failed to cache context primitives: {cache_error}")
+                    # Don't fail the request if caching fails - just log it
+
+            return primitives_data
+
+        except Exception as e:
+            logger.error(f"Error in get_or_generate_context_primitives: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
 
     # Legacy method for backwards compatibility
     async def get_problem(self, student_id: int, subject: str, context: Optional[Dict] = None) -> Optional[Dict[str, Any]]:

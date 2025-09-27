@@ -342,7 +342,18 @@ async def get_problem_service(
     if not hasattr(_problem_service, 'problem_optimizer') or _problem_service.problem_optimizer is None:
         logger.info("Setting problem_optimizer on ProblemService")
         _problem_service.problem_optimizer = problem_optimizer
-        
+
+    # Initialize context generators for Dynamic Problem Variety Engine
+    if _problem_service.master_context_generator is None:
+        logger.info("Setting master_context_generator on ProblemService")
+        from .generators.master_context import MasterContextGenerator
+        _problem_service.master_context_generator = MasterContextGenerator(cosmos_service=cosmos_db)
+
+    if _problem_service.context_primitives_generator is None:
+        logger.info("Setting context_primitives_generator on ProblemService")
+        from .generators.context_primitives import ContextPrimitivesGenerator
+        _problem_service.context_primitives_generator = ContextPrimitivesGenerator(cosmos_service=cosmos_db)
+
     return _problem_service
 
 def get_review_service(

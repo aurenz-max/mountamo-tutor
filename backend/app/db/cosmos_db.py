@@ -93,6 +93,13 @@ class CosmosDBService:
             unique_key_policy={'uniqueKeys': [{'paths': ['/assessment_id']}]}
         )
 
+        # 🆕 NEW: Context Primitives container for dynamic problem variety
+        self.context_primitives = self.database.create_container_if_not_exists(
+            id="context_primitives",
+            partition_key=PartitionKey(path="/subject"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/subskill_id']}]}
+        )
+
     # ============================================================================
     # 🔥 NEW: STUDENT MAPPING METHODS
     # ============================================================================
@@ -1395,6 +1402,77 @@ class CosmosDBService:
         except Exception as e:
             logger.error(f"Error getting cached problems: {str(e)}")
             return []
+
+    # ============================================================================
+    # CONTEXT PRIMITIVES CACHING METHODS
+    # ============================================================================
+
+    async def get_cached_context_primitives(self, subject: str, subskill_id: str) -> Optional[Dict[str, Any]]:
+        """Get cached context primitives for a specific subskill"""
+        try:
+            query = """
+            SELECT c.primitives
+            FROM c
+            WHERE c.subject = @subject
+            AND c.subskill_id = @subskill_id
+            """
+
+            params = [
+                {"name": "@subject", "value": subject},
+                {"name": "@subskill_id", "value": subskill_id}
+            ]
+
+            items = list(self.context_primitives.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=False  # Using partition key
+            ))
+
+            if items:
+                logger.info(f"Cache HIT for context primitives: {subject}:{subskill_id}")
+                return items[0].get("primitives", {})
+            else:
+                logger.info(f"Cache MISS for context primitives: {subject}:{subskill_id}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error getting cached context primitives for {subject}:{subskill_id}: {str(e)}")
+            return None
+
+    async def save_cached_context_primitives(
+        self,
+        subject: str,
+        grade_level: str,
+        unit_id: str,
+        skill_id: str,
+        subskill_id: str,
+        primitives_data: Dict[str, Any]
+    ):
+        """Save context primitives to cache with curriculum IDs"""
+        try:
+            # Create deterministic document ID
+            document_id = f"{subject.lower()}:{grade_level.lower()}:{subskill_id}"
+
+            # Create the document with curriculum IDs
+            document = {
+                "id": document_id,
+                "subject": subject,
+                "grade_level": grade_level,
+                "unit_id": unit_id,
+                "skill_id": skill_id,
+                "subskill_id": subskill_id,
+                "version": "1.0",
+                "created_at": datetime.utcnow().isoformat(),
+                "primitives": primitives_data
+            }
+
+            # Use upsert to handle both creation and potential updates
+            self.context_primitives.upsert_item(body=document)
+            logger.info(f"Successfully cached context primitives for {subject}:{unit_id}:{skill_id}:{subskill_id}")
+
+        except Exception as e:
+            logger.error(f"Error saving context primitives for {subject}:{subskill_id}: {str(e)}")
+            raise
 
     # ============================================================================
     # ENHANCED P5JS CODE METHODS

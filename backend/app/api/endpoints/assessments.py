@@ -148,29 +148,59 @@ def get_bigquery_analytics_service() -> BigQueryAnalyticsService:
         dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
     )
 
-def get_problem_service() -> ProblemService:
-    """Get problem service instance"""
-    return ProblemService()
+async def get_problem_service() -> ProblemService:
+    """Get problem service instance with context primitives generators"""
+    from ...dependencies import get_problem_service as get_main_problem_service
+    from ...services.competency import CompetencyService
+    from ...services.recommender import ProblemRecommender
+    from ...db.cosmos_db import CosmosDBService
+    from ...db.problem_optimizer import ProblemOptimizer
+
+    # Use the main dependency injection function to get fully configured ProblemService
+    cosmos_db = get_cosmos_service()
+    competency_service = await get_competency_service()
+    recommender = await get_problem_recommender(competency_service)
+    problem_optimizer = await get_problem_optimizer(cosmos_db, recommender)
+
+    # Get the fully configured ProblemService from main dependencies
+    return await get_main_problem_service(recommender, cosmos_db, competency_service, problem_optimizer)
 
 def get_cosmos_service() -> CosmosDBService:
     """Get Cosmos DB service instance"""
     return CosmosDBService()
 
-def get_curriculum_service(
+async def get_curriculum_service(
     bigquery_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
 ) -> CurriculumService:
     """Get curriculum service instance with proper dependency injection"""
-    return CurriculumService(bigquery_service=bigquery_service)
+    from ...dependencies import get_curriculum_service as get_main_curriculum_service
+    return await get_main_curriculum_service()
 
 def get_review_service() -> ReviewService:
     """Get review service instance"""
     return ReviewService()
 
-def get_competency_service() -> CompetencyService:
+async def get_competency_service() -> CompetencyService:
     """Get competency service instance"""
-    return CompetencyService()
+    from ...dependencies import get_competency_service as get_main_competency_service
+    return await get_main_competency_service()
 
-def get_submission_service(
+async def get_problem_recommender(
+    competency_service: CompetencyService = Depends(get_competency_service)
+):
+    """Get problem recommender instance"""
+    from ...dependencies import get_problem_recommender as get_main_problem_recommender
+    return await get_main_problem_recommender(competency_service)
+
+async def get_problem_optimizer(
+    cosmos_db: CosmosDBService = Depends(get_cosmos_service),
+    recommender = Depends(get_problem_recommender)
+):
+    """Get problem optimizer instance"""
+    from ...dependencies import get_problem_optimizer as get_main_problem_optimizer
+    return await get_main_problem_optimizer(cosmos_db, recommender)
+
+async def get_submission_service(
     review_service: ReviewService = Depends(get_review_service),
     competency_service: CompetencyService = Depends(get_competency_service),
     cosmos_service: CosmosDBService = Depends(get_cosmos_service)
@@ -182,7 +212,7 @@ def get_submission_service(
         cosmos_db=cosmos_service
     )
 
-def get_assessment_service(
+async def get_assessment_service(
     bigquery_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service),
     problem_service: ProblemService = Depends(get_problem_service),
     curriculum_service: CurriculumService = Depends(get_curriculum_service),

@@ -754,3 +754,139 @@ PROBLEM_REVIEW_SCHEMA = Schema(
     },
     required=["observation", "analysis", "evaluation", "feedback"]
 )
+
+# Context Primitives Schema - For generating diverse problem contexts
+CONTEXT_PRIMITIVES_SCHEMA = Schema(
+    type="object",
+    properties={
+        # Object/Entity Primitives
+        "concrete_objects": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="15-20 countable, manipulable items appropriate for the skill/grade level"
+        ),
+        "living_things": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="8-12 animals, plants, people relevant to the learning context"
+        ),
+        "locations": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="6-10 settings, places, environments where concepts apply"
+        ),
+        "tools_materials": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="Instruments, equipment, materials used in educational contexts"
+        ),
+
+        # Relationship Primitives
+        "comparison_pairs": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "attribute": Schema(type="string", description="What is being compared (size, quantity, etc.)"),
+                    "examples": Schema(type="array", items=Schema(type="string"), description="Specific items that can be compared")
+                },
+                required=["attribute", "examples"]
+            ),
+            description="Items that can be compared (bigger/smaller, more/less, faster/slower)"
+        ),
+        "categories": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "category_name": Schema(type="string", description="Name of the category"),
+                    "items": Schema(type="array", items=Schema(type="string"), description="4-6 items belonging to this category")
+                },
+                required=["category_name", "items"]
+            ),
+            description="3-5 categories with their members for classification activities"
+        ),
+        "sequences": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "sequence_type": Schema(type="string", description="Type of sequence (time, process, size, etc.)"),
+                    "items": Schema(type="array", items=Schema(type="string"), description="Items in correct sequential order")
+                },
+                required=["sequence_type", "items"]
+            ),
+            description="2-4 ordered sets for sequencing activities"
+        ),
+
+        # Action Primitives
+        "actions": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="Common verbs and actions appropriate for the learning context"
+        ),
+
+        # Attribute Primitives
+        "attributes": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "attribute_name": Schema(type="string", description="Name of the attribute (color, size, shape, etc.)"),
+                    "values": Schema(type="array", items=Schema(type="string"), description="Possible values for this attribute")
+                },
+                required=["attribute_name", "values"]
+            ),
+            description="Physical and conceptual attributes with their possible values"
+        ),
+
+        # Narrative Primitives
+        "characters": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "name": Schema(type="string", description="Character's name"),
+                    "age": Schema(type="string", description="Character's age or age group"),
+                    "role": Schema(type="string", description="Character's role or occupation")
+                },
+                required=["name", "age", "role"]
+            ),
+            description="5-8 age-appropriate characters for scenarios"
+        ),
+        "scenarios": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="8-12 realistic situations where this skill applies in daily life"
+        ),
+
+        # Subject-Specific Primitives (populated based on subject)
+        "subject_specific": Schema(
+            type="object",
+            properties={
+                "math_contexts": Schema(
+                    type="array",
+                    items=Schema(type="string"),
+                    description="Math-specific contexts (measurement, counting, shapes, etc.)"
+                ),
+                "science_phenomena": Schema(
+                    type="array",
+                    items=Schema(type="string"),
+                    description="Observable scientific phenomena appropriate for grade level"
+                ),
+                "social_studies_elements": Schema(
+                    type="array",
+                    items=Schema(type="string"),
+                    description="Community, cultural, and social concepts"
+                ),
+                "language_arts_elements": Schema(
+                    type="array",
+                    items=Schema(type="string"),
+                    description="Reading, writing, speaking, and listening contexts"
+                )
+            },
+            description="Subject-specific primitive elements"
+        )
+    },
+    required=["concrete_objects", "living_things", "locations", "scenarios", "characters"]
+)

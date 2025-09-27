@@ -10,8 +10,9 @@ from ...services.engagement_service import engagement_service
 from ...core.decorators import log_engagement_activity
 from ...db.cosmos_db import CosmosDBService
 from ...services.discovery_thread_service import DiscoveryThreadService
-from ...dependencies import get_curriculum_service
+from ...dependencies import get_curriculum_service, get_problem_service
 from ...services.curriculum_service import CurriculumService
+from ...services.problems import ProblemService
 
 logger = logging.getLogger(__name__)
 

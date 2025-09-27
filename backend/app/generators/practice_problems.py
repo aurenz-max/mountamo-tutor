@@ -8,28 +8,79 @@ from google.genai.types import GenerateContentConfig
 from .base_generator import BaseContentGenerator
 from .content import ContentGenerationRequest, MasterContext, ContentComponent, ComponentType
 from .content_schemas import PRACTICE_PROBLEMS_SCHEMA
+from .context_primitives import ContextPrimitivesGenerator
 
 logger = logging.getLogger(__name__)
 
 
 class PracticeProblemsGenerator(BaseContentGenerator):
-    """Generator for practice problems and assessments"""
+    """Generator for practice problems and assessments with context primitives support"""
+
+    def __init__(self, cosmos_service=None):
+        super().__init__(cosmos_service)
+        self.context_primitives_generator = ContextPrimitivesGenerator(cosmos_service=cosmos_service)
     
     async def generate_practice_problems(
-        self, 
+        self,
         request: ContentGenerationRequest,
         master_context: MasterContext,
         reading_comp: ContentComponent,
         visual_comp: ContentComponent,
         package_id: str
     ) -> ContentComponent:
-        """Generate practice problems integrating all content - UPDATED WITH GRADE"""
-        
-        reading_concepts = [concept for section in reading_comp.content.get('sections', []) 
+        """Generate practice problems integrating all content with context primitives for variety"""
+
+        reading_concepts = [concept for section in reading_comp.content.get('sections', [])
                           for concept in section.get('concepts_covered', [])]
         visual_elements = visual_comp.content.get('interactive_elements', [])
         grade_info = self._extract_grade_info(request)
+
+        # Generate context primitives for enhanced problem variety
+        logger.info(f"🎯 Generating context primitives for enhanced problem variety in {request.subject}")
+        try:
+            context_primitives = await self.context_primitives_generator.generate_context_primitives(
+                request, master_context
+            )
+            logger.info(f"✅ Context primitives generated with {len(context_primitives.get('concrete_objects', []))} objects, {len(context_primitives.get('scenarios', []))} scenarios")
+        except Exception as e:
+            logger.warning(f"⚠️ Context primitives generation failed, using default variety: {str(e)}")
+            context_primitives = None
         
+        # Build context primitives section for enhanced variety
+        context_section = ""
+        if context_primitives:
+            import random
+            # Sample from primitives for variety (like in problems.py)
+            all_objects = context_primitives.get('concrete_objects', [])
+            all_characters = context_primitives.get('characters', [])
+            all_scenarios = context_primitives.get('scenarios', [])
+            all_locations = context_primitives.get('locations', [])
+
+            # Random sample for variety
+            sampled_objects = random.sample(all_objects, min(12, len(all_objects)))
+            sampled_characters = random.sample(all_characters, min(6, len(all_characters)))
+            sampled_scenarios = random.sample(all_scenarios, min(8, len(all_scenarios)))
+            sampled_locations = random.sample(all_locations, min(6, len(all_locations)))
+
+            # Format characters for display
+            characters_sample = [f"{c.get('name', 'Unknown')} ({c.get('age', 'child')})"
+                               for c in sampled_characters]
+
+            context_section = f"""
+CONTEXT PRIMITIVES FOR VARIETY (Use these to create diverse, engaging problems):
+✓ Objects: {', '.join(sampled_objects)}
+✓ Characters: {', '.join(characters_sample)}
+✓ Scenarios: {', '.join(sampled_scenarios)}
+✓ Locations: {', '.join(sampled_locations)}
+
+VARIETY INSTRUCTIONS:
+- For each problem, select DIFFERENT combinations from the context primitives above
+- Never reuse the same object-character-scenario combination across problems
+- Distribute problems across different locations and contexts
+- Ensure each problem feels unique, engaging, and age-appropriate for {grade_info}
+- Use the primitives to create realistic, relatable situations
+"""
+
         prompt = f"""
         Create a diverse set of high-quality practice problems for {grade_info} students learning {request.subskill} that integrate multiple learning modes.
 
@@ -41,7 +92,9 @@ class PracticeProblemsGenerator(BaseContentGenerator):
         Learning Objectives: {', '.join(master_context.learning_objectives)}
 
         Content Integration:
-        Reading covered: {', '.join(reading_concepts)}        
+        Reading covered: {', '.join(reading_concepts)}
+
+        {context_section}
 
         ### PRACTICE PROBLEM PRIMITIVES (Choose the best types for your material):
         
@@ -142,6 +195,8 @@ class PracticeProblemsGenerator(BaseContentGenerator):
                                 "grade_level": grade_info,
                                 # Include the full problem structure for frontend rendering
                                 "full_problem_data": problem,
+                                "context_primitives_applied": context_primitives is not None,
+                                "variety_enhanced": context_primitives is not None,
                                 "metadata": {
                                     "subject": request.subject,
                                     "grade_level": grade_info,
@@ -185,7 +240,10 @@ class PracticeProblemsGenerator(BaseContentGenerator):
                     "problem_count": len(formatted_problems),
                     "estimated_time": len(formatted_problems) * 2,
                     "format": "structured_problems",
-                    "grade_level": grade_info
+                    "grade_level": grade_info,
+                    "context_primitives_applied": context_primitives is not None,
+                    "variety_enhanced": context_primitives is not None,
+                    "dynamic_variety_engine_enabled": True
                 }
             )
             

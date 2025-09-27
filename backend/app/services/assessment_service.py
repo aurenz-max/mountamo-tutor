@@ -406,14 +406,26 @@ class AssessmentService:
             if not recommendations:
                 raise ValueError("No recommendations could be generated from blueprint")
 
-            # 3. Generate problems using ProblemService
+            # 3. Get context primitives for variety (using first recommendation)
+            context_primitives = None
+            if recommendations:
+                context_primitives = await self.problems.get_or_generate_context_primitives(subject, recommendations[0])
+                if context_primitives:
+                    objects_count = len(context_primitives.get('concrete_objects', []))
+                    scenarios_count = len(context_primitives.get('scenarios', []))
+                    logger.info(f"🚀 [ASSESSMENT_VARIETY] Using context primitives for assessment generation: {objects_count} objects, {scenarios_count} scenarios")
+                else:
+                    logger.info(f"⚠️ [ASSESSMENT_FALLBACK] No context primitives available - using default generation")
+
+            # 4. Generate problems using ProblemService with context primitives
             problems = await self.problems.generate_problem(
                 subject=subject,
                 recommendations=recommendations,
-                count=question_count
+                count=question_count,
+                context_primitives=context_primitives
             )
 
-            # 4. Parse the JSON response from ProblemService
+            # 5. Parse the JSON response from ProblemService
             if isinstance(problems, str):
                 import json
                 try:
@@ -424,12 +436,12 @@ class AssessmentService:
             else:
                 problems_data = problems
 
-            # 5. Enrich problems with assessment metadata
+            # 6. Enrich problems with assessment metadata
             enriched_problems = self._enrich_problems_with_metadata(
                 problems_data, blueprint['selected_subskills'], subject
             )
 
-            # 6. Build final assessment response - convert structured problems to dict for serialization
+            # 7. Build final assessment response - convert structured problems to dict for serialization
             problems_dict = [problem.dict() for problem in enriched_problems]
 
             assessment = {
@@ -456,13 +468,26 @@ class AssessmentService:
 
         for subskill in selected_subskills:
             recommendation = {
+                "unit": {
+                    "id": subskill.get('unit_id'),
+                    "title": subskill.get('unit_title')
+                },
+                "skill": {
+                    "id": subskill.get('skill_id'),
+                    "description": subskill.get('skill_description')
+                },
+                "subskill": {
+                    "id": subskill.get('subskill_id'),
+                    "description": subskill.get('subskill_description')
+                },
+                "assessment_category": subskill.get('category'),  # Track which category this is from
+                # Legacy flat structure for backward compatibility
                 "subskill_id": subskill.get('subskill_id'),
                 "subskill_description": subskill.get('subskill_description'),
                 "skill_id": subskill.get('skill_id'),
                 "skill_description": subskill.get('skill_description'),
                 "unit_id": subskill.get('unit_id'),
-                "unit_title": subskill.get('unit_title'),
-                "assessment_category": subskill.get('category')  # Track which category this is from
+                "unit_title": subskill.get('unit_title')
             }
             recommendations.append(recommendation)
 
