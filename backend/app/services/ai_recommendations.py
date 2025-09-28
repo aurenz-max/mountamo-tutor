@@ -31,54 +31,75 @@ class AIRecommendationService:
         logger.info("Parsimonious AI Recommendation Service initialized")
     
     async def generate_daily_playlist(
-        self, 
+        self,
         student_id: int,
         target_activities: int = 6,
-        daily_theme: Optional[str] = None
+        daily_theme: Optional[str] = None,
+        assessment_feedback_map: Optional[Dict[str, Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
         Generate a parsimonious daily playlist following PRD pedagogical structure:
         1. Warm-Up (confidence builder)
-        2. Core Challenges (new learning from priority subjects)  
+        2. Core Challenges (new learning from priority subjects)
         3. Practice & Reinforcement (supporting skills)
         4. Cool-Down (engaging review)
-        
+
         This approach is much more efficient than the previous implementation.
         """
-        
-        logger.info(f"Generating daily playlist for student {student_id}")
-        
+
+        logger.info(f"🎯 AI_RECOMMENDATIONS: Starting playlist generation for student {student_id}")
+        logger.info(f"🎯 AI_RECOMMENDATIONS: Target activities: {target_activities}")
+        logger.info(f"🎯 AI_RECOMMENDATIONS: Assessment feedback provided: {assessment_feedback_map is not None}")
+        if assessment_feedback_map:
+            logger.info(f"🎯 AI_RECOMMENDATIONS: Assessment feedback subjects: {list(assessment_feedback_map.keys())}")
+
         try:
             # Single optimized query to get all needed data
+            logger.info(f"🎯 AI_RECOMMENDATIONS: Fetching student summary from BigQuery...")
             student_summary = await self._get_student_summary(student_id)
-            
+
             if not student_summary:
-                logger.warning(f"No data found for student {student_id}")
+                logger.error(f"🎯 AI_RECOMMENDATIONS: CRITICAL - No student data found for {student_id} in BigQuery")
+                logger.error(f"🎯 AI_RECOMMENDATIONS: This will cause fallback to BigQuery recommendations")
                 return self._empty_playlist_response()
+
+            logger.info(f"🎯 AI_RECOMMENDATIONS: Student summary retrieved successfully with {len(student_summary.get('subjects', []))} subjects")
             
             # Algorithmically allocate activities based on PRD velocity rules
+            logger.info(f"🎯 AI_RECOMMENDATIONS: Creating session structure...")
             session_structure = self._create_session_structure(student_summary, target_activities)
-            
+            logger.info(f"🎯 AI_RECOMMENDATIONS: Session structure created with focus subjects: {session_structure.get('focus_subjects', [])}")
+
             # Use LLM efficiently for final activity selection within structure
-            playlist = await self._generate_structured_playlist(session_structure, daily_theme)
+            logger.info(f"🎯 AI_RECOMMENDATIONS: Generating structured playlist with LLM...")
+            playlist = await self._generate_structured_playlist(session_structure, daily_theme, assessment_feedback_map)
             
-            logger.info(f"Generated playlist with {len(playlist.get('activities', []))} activities")
-            return playlist
+            if playlist and playlist.get('activities'):
+                logger.info(f"🎯 AI_RECOMMENDATIONS: SUCCESS - Generated playlist with {len(playlist.get('activities', []))} activities")
+                logger.info(f"🎯 AI_RECOMMENDATIONS: Activity types: {[act.get('activity_type') for act in playlist.get('activities', [])]}")
+                return playlist
+            else:
+                logger.error(f"🎯 AI_RECOMMENDATIONS: CRITICAL - Empty playlist generated, will cause BigQuery fallback")
+                logger.error(f"🎯 AI_RECOMMENDATIONS: Playlist result: {playlist}")
+                return self._empty_playlist_response()
             
         except Exception as e:
-            logger.error(f"Error generating daily playlist for student {student_id}: {e}")
+            logger.error(f"🎯 AI_RECOMMENDATIONS: EXCEPTION - Error generating daily playlist for student {student_id}: {e}")
+            logger.error(f"🎯 AI_RECOMMENDATIONS: This will cause fallback to BigQuery recommendations")
+            import traceback
+            logger.error(f"🎯 AI_RECOMMENDATIONS: Stack trace: {traceback.format_exc()}")
             raise
     
     async def _get_student_summary(self, student_id: int) -> Dict[str, Any]:
         """Get optimized student summary in a single query - much more parsimonious"""
-        
+
         logger.info(f"Getting student summary for {student_id}")
-        
+
         try:
             # Single comprehensive query instead of multiple queries
             summary_query = f"""
             WITH velocity_data AS (
-              SELECT 
+              SELECT
                 subject,
                 velocity_status,
                 velocity_percentage,
@@ -88,7 +109,7 @@ class AIRecommendationService:
               WHERE student_id = @student_id
             ),
             available_skills AS (
-              SELECT 
+              SELECT
                 subject,
                 subskill_id,
                 subskill_description,
@@ -102,7 +123,7 @@ class AIRecommendationService:
               WHERE student_id = @student_id AND is_available = TRUE
             ),
             mastery_overview AS (
-              SELECT 
+              SELECT
                 subject,
                 AVG(skill_mastery_pct) as avg_mastery,
                 COUNT(*) as total_skills
@@ -110,7 +131,7 @@ class AIRecommendationService:
               WHERE student_id = @student_id
               GROUP BY subject
             )
-            SELECT 
+            SELECT
               v.subject,
               v.velocity_status,
               v.velocity_percentage,
@@ -134,27 +155,27 @@ class AIRecommendationService:
             FROM velocity_data v
             LEFT JOIN mastery_overview m ON v.subject = m.subject
             LEFT JOIN available_skills a ON v.subject = a.subject AND a.skill_rank <= 4
-            GROUP BY v.subject, v.velocity_status, v.velocity_percentage, 
-                     v.days_ahead_behind, v.recommendation_priority, 
+            GROUP BY v.subject, v.velocity_status, v.velocity_percentage,
+                     v.days_ahead_behind, v.recommendation_priority,
                      m.avg_mastery, m.total_skills
             ORDER BY v.recommendation_priority
             """
-            
+
             results = await self._run_query_async(summary_query, [
                 bigquery.ScalarQueryParameter("student_id", "INT64", student_id)
             ])
-            
+
             if not results:
                 return None
-                
+
             summary = {
                 "student_id": student_id,
                 "subjects": results
             }
-            
+
             logger.info(f"Retrieved summary for {len(results)} subjects")
             return summary
-            
+
         except Exception as e:
             logger.error(f"Error getting student summary: {e}")
             raise
@@ -219,13 +240,15 @@ class AIRecommendationService:
         return session_structure
     
     async def _generate_structured_playlist(
-        self, 
-        session_structure: Dict[str, Any], 
-        daily_theme: Optional[str]
+        self,
+        session_structure: Dict[str, Any],
+        daily_theme: Optional[str],
+        assessment_feedback_map: Optional[Dict[str, Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """Use LLM efficiently within pre-structured session - minimal token usage"""
-        
-        logger.info("Generating structured playlist with LLM")
+
+        logger.info(f"🤖 LLM_GENERATION: Starting structured playlist generation")
+        logger.info(f"🤖 LLM_GENERATION: Assessment feedback map provided: {assessment_feedback_map is not None}")
         
         try:
             # Minimal schema for efficient LLM usage
@@ -260,34 +283,87 @@ class AIRecommendationService:
                 "required": ["activities", "session_plan"]
             }
             
-            # Build concise context - only essential data
+            # Build enhanced context with assessment feedback synthesis
             context_summary = {
                 "structure": session_structure["pedagogical_flow"],
                 "focus_subjects": session_structure["focus_subjects"],
-                "allocations": [{"subject": s["subject"], "allocation": s["allocation"], "velocity": s["velocity_status"]} 
+                "allocations": [{"subject": s["subject"], "allocation": s["allocation"], "velocity": s["velocity_status"]}
                                for s in session_structure["subject_allocations"]],
-                "available_options": {s["subject"]: [skill["subskill_id"] for skill in s["available_subskills"][:3]] 
+                "available_options": {s["subject"]: [skill["subskill_id"] for skill in s["available_subskills"][:3]]
                                     for s in session_structure["subject_allocations"]}
             }
-            
-            # Concise prompt - much smaller than before
+
+            # Merge assessment-recommended subskills into available options
+            if assessment_feedback_map:
+                logger.info(f"🤖 LLM_GENERATION: Merging assessment-recommended subskills into available options")
+                for subject, feedback in assessment_feedback_map.items():
+                    if subject in context_summary["available_options"]:
+                        recommended_subskills = feedback.get("recommended_subskills", [])
+                        if recommended_subskills:
+                            # Add assessment-recommended subskills to available options for this subject
+                            assessment_subskill_ids = [rec["subskill_id"] for rec in recommended_subskills]
+
+                            # Before merging
+                            existing_options = context_summary["available_options"][subject]
+                            logger.info(f"🤖 MERGE_BEFORE: {subject} existing options: {existing_options}")
+                            logger.info(f"🤖 MERGE_BEFORE: {subject} assessment recommendations: {assessment_subskill_ids}")
+
+                            # Merge with existing available options, prioritizing assessment recommendations
+                            merged_options = assessment_subskill_ids + [opt for opt in existing_options if opt not in assessment_subskill_ids]
+                            context_summary["available_options"][subject] = merged_options
+
+                            # After merging
+                            logger.info(f"🤖 MERGE_AFTER: {subject} final merged options: {merged_options}")
+                    else:
+                        logger.warning(f"🤖 LLM_GENERATION: Subject {subject} from assessment feedback not found in session structure")
+
+            # Build assessment feedback context if available
+            logger.info(f"🤖 LLM_GENERATION: Building assessment feedback context...")
+            assessment_context = self._build_assessment_feedback_context(assessment_feedback_map, context_summary)
+            logger.info(f"🤖 LLM_GENERATION: Assessment context length: {len(assessment_context)} chars")
+            if assessment_feedback_map:
+                logger.info(f"🤖 LLM_GENERATION: Assessment context preview: {assessment_context[:200]}...")
+
+            # Enhanced prompt with hierarchical decision-making (velocity → assessment)
             theme_text = f'Daily theme: "{daily_theme}"' if daily_theme else "Create an engaging daily theme"
-            prompt = f"""Create a K-5 daily learning playlist following this structure:
+
+            base_prompt = f"""You are an expert K-5 curriculum planner creating a personalized daily learning plan for a student. Your mission is to create a 6-activity plan that intelligently balances the student's long-term learning pace with immediate needs identified in their latest assessment.
+
+Follow this strict hierarchy of decision-making:
+1. **Prioritize subjects based on OVERALL STUDENT VELOCITY.** Subjects listed as "Behind" are the highest priority for the day's "Core Challenge" activities.
+2. **Select specific skills within those subjects based on CRITICAL FEEDBACK FROM LAST ASSESSMENT.** Use the skills marked as "NEEDS_REVIEW" or "DEVELOPING" to fill the Core Challenge and Practice slots.
 
 {theme_text}
 
-Session Structure:
+**1. OVERALL STUDENT VELOCITY (Long-Term Trends):**
+{json.dumps(context_summary["allocations"], indent=2)}
+
+**2. AVAILABLE SKILLS & ACTIVITIES:**
+{json.dumps(context_summary["available_options"], indent=2)}
+
+{assessment_context}
+
+**SESSION STRUCTURE:**
 1. Warm-Up: 1 confidence-building activity from strongest subject
-2. Core Challenges: 2 new learning activities from focus subjects
-3. Practice: 2 reinforcement activities  
+2. Core Challenges: 2 new learning activities from focus subjects{' (prioritize skills from assessment feedback)' if assessment_feedback_map else ''}
+3. Practice: 2 reinforcement activities{' (include DEVELOPING skills from assessments)' if assessment_feedback_map else ''}
 4. Cool-Down: 1 engaging review activity
 
-Subject Priorities & Available Options:
-{json.dumps(context_summary, indent=2)}
-
 Select specific subskill_ids for each activity type. Provide brief, student-friendly reasons."""
+
+            prompt = base_prompt
             
+            # Log the final context being sent to LLM
+            logger.info(f"🤖 LLM_INPUT: Sending context to Gemini:")
+            logger.info(f"🤖 LLM_INPUT: Available options for each subject:")
+            for subject, options in context_summary["available_options"].items():
+                logger.info(f"🤖 LLM_INPUT: - {subject}: {options}")
+            logger.info(f"🤖 LLM_INPUT: Assessment context preview: {assessment_context[:500]}...")
+
             # Efficient LLM call
+            logger.info(f"🤖 LLM_GENERATION: Calling Gemini API with prompt length: {len(prompt)} chars")
+            logger.debug(f"🤖 LLM_GENERATION: Full prompt: {prompt[:500]}...")
+
             response = await self.gemini_client.aio.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt,
@@ -298,14 +374,34 @@ Select specific subskill_ids for each activity type. Provide brief, student-frie
                     max_output_tokens=5000  # Much smaller limit
                 )
             )
+
+            logger.info(f"🤖 LLM_GENERATION: Gemini API response received")
             
             if not response or not response.text:
+                logger.error(f"🤖 LLM_GENERATION: CRITICAL - Empty response from Gemini API")
+                logger.error(f"🤖 LLM_GENERATION: Response object: {response}")
                 raise Exception("Empty response from Gemini")
-                
+
+            logger.info(f"🤖 LLM_GENERATION: Parsing Gemini response: {len(response.text)} chars")
+            logger.debug(f"🤖 LLM_GENERATION: Raw response: {response.text[:500]}...")
+
             playlist_data = json.loads(response.text)
+
+            # Log what the LLM actually selected
+            activities = playlist_data.get('activities', [])
+            logger.info(f"🤖 LLM_OUTPUT: Gemini selected {len(activities)} activities:")
+            for i, activity in enumerate(activities):
+                subject = activity.get('subject')
+                subskill_id = activity.get('subskill_id')
+                activity_type = activity.get('activity_type')
+                reason = activity.get('reason', 'No reason provided')
+                logger.info(f"🤖 LLM_OUTPUT: Activity {i+1}: {subject} -> {subskill_id} ({activity_type})")
+                logger.info(f"🤖 LLM_OUTPUT: - Reason: {reason}")
+
+            logger.info(f"🤖 LLM_GENERATION: Successfully parsed playlist with {len(playlist_data.get('activities', []))} activities")
             
-            # Add curriculum data to activities
-            enriched_activities = await self._enrich_activities(playlist_data["activities"])
+            # Add curriculum data and assessment metadata to activities
+            enriched_activities = await self._enrich_activities(playlist_data["activities"], assessment_feedback_map)
             
             final_playlist = {
                 "student_id": session_structure.get("student_id"),
@@ -316,21 +412,24 @@ Select specific subskill_ids for each activity type. Provide brief, student-frie
                 "generated_at": datetime.utcnow().isoformat()
             }
             
-            logger.info(f"Generated playlist with {len(enriched_activities)} activities")
+            logger.info(f"🤖 LLM_GENERATION: SUCCESS - Generated final playlist with {len(enriched_activities)} activities")
+            logger.info(f"🤖 LLM_GENERATION: Final playlist theme: {final_playlist.get('daily_theme')}")
             return final_playlist
             
         except Exception as e:
-            logger.error(f"Error generating structured playlist: {e}")
+            logger.error(f"🤖 LLM_GENERATION: EXCEPTION - Error generating structured playlist: {e}")
+            import traceback
+            logger.error(f"🤖 LLM_GENERATION: Stack trace: {traceback.format_exc()}")
             raise
     
-    async def _enrich_activities(self, activities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Add curriculum data to selected activities - single efficient query"""
-        
+    async def _enrich_activities(self, activities: List[Dict[str, Any]], assessment_feedback_map: Optional[Dict[str, Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+        """Add curriculum data and assessment metadata to selected activities - single efficient query"""
+
         subskill_ids = [activity["subskill_id"] for activity in activities]
-        
+
         if not subskill_ids:
             return activities
-            
+
         # Single query to get all curriculum data
         placeholders = ",".join([f"@id_{i}" for i in range(len(subskill_ids))])
         curriculum_query = f"""
@@ -340,19 +439,43 @@ Select specific subskill_ids for each activity type. Provide brief, student-frie
         FROM `{self.project_id}.{self.dataset_id}.curriculum`
         WHERE subskill_id IN ({placeholders})
         """
-        
-        params = [bigquery.ScalarQueryParameter(f"id_{i}", "STRING", sid) 
+
+        params = [bigquery.ScalarQueryParameter(f"id_{i}", "STRING", sid)
                  for i, sid in enumerate(subskill_ids)]
-        
+
         curriculum_data = await self._run_query_async(curriculum_query, params)
         curriculum_lookup = {row["subskill_id"]: row for row in curriculum_data}
-        
+
+        # Create assessment metadata lookup
+        assessment_metadata_lookup = {}
+        if assessment_feedback_map:
+            for subject, feedback in assessment_feedback_map.items():
+                assessment_info = {
+                    "assessment_id": feedback.get("assessment_id"),
+                    "completed_at": feedback.get("completed_at"),
+                    "score_percentage": feedback.get("score_percentage", 0),
+                    "subject": subject
+                }
+
+                # Map each recommended subskill to the assessment metadata
+                insights = feedback.get("insights", {})
+                recommended_subskills = insights.get("recommended_subskills", [])
+                for rec in recommended_subskills:
+                    subskill_id = rec.get("subskill_id")
+                    if subskill_id:
+                        assessment_metadata_lookup[subskill_id] = {
+                            **assessment_info,
+                            "performance_label": rec.get("performance_label"),
+                            "assessment_focus_tag": rec.get("assessment_focus_tag"),
+                            "recommendation_reason": rec.get("reason", "")
+                        }
+
         # Enrich activities
         enriched = []
         for activity in activities:
             subskill_id = activity["subskill_id"]
             curriculum = curriculum_lookup.get(subskill_id, {})
-            
+
             enriched_activity = {
                 **activity,
                 "skill_description": curriculum.get("skill_description", ""),
@@ -363,10 +486,47 @@ Select specific subskill_ids for each activity type. Provide brief, student-frie
                 "unit_title": curriculum.get("unit_title"),
                 "estimated_time": activity.get("estimated_time", 3)
             }
+
+            # Add assessment metadata if this subskill came from an assessment recommendation
+            if subskill_id in assessment_metadata_lookup:
+                assessment_meta = assessment_metadata_lookup[subskill_id]
+                enriched_activity["assessment_source"] = {
+                    "assessment_id": assessment_meta["assessment_id"],
+                    "subject": assessment_meta["subject"],
+                    "completed_at": assessment_meta["completed_at"],
+                    "score_percentage": assessment_meta["score_percentage"],
+                    "performance_label": assessment_meta["performance_label"],
+                    "assessment_focus_tag": assessment_meta["assessment_focus_tag"],
+                    "recommendation_reason": assessment_meta["recommendation_reason"],
+                    "source_description": self._format_assessment_source_description(assessment_meta)
+                }
+                logger.info(f"🏷️ ASSESSMENT_METADATA: Added assessment source to {subskill_id}: {enriched_activity['assessment_source']['source_description']}")
+
             enriched.append(enriched_activity)
-            
+
         return enriched
-    
+
+    def _format_assessment_source_description(self, assessment_meta: Dict[str, Any]) -> str:
+        """Format a human-readable description of where this skill recommendation came from"""
+        subject = assessment_meta.get("subject", "")
+        completed_at = assessment_meta.get("completed_at")
+        score_percentage = assessment_meta.get("score_percentage", 0)
+        performance_label = assessment_meta.get("performance_label", "")
+
+        # Format the date
+        date_str = self._get_days_ago(completed_at)
+
+        # Create the description based on the pattern you requested
+        description = f"from your {subject.lower()} assessment taken {date_str}"
+
+        if score_percentage > 0:
+            description += f", scoring {score_percentage:.0f}% on this skill"
+
+        if performance_label and performance_label != "":
+            description += f" ({performance_label.lower()})"
+
+        return description
+
     def _empty_playlist_response(self) -> Dict[str, Any]:
         """Return empty playlist when no data available"""
         return {
@@ -701,3 +861,119 @@ Rank by priority (1 = highest priority). Provide engaging, age-appropriate reaso
                 "error": str(e),
                 "timestamp": datetime.utcnow().isoformat()
             }
+
+    def _build_assessment_feedback_context(
+        self,
+        assessment_feedback_map: Optional[Dict[str, Dict[str, Any]]],
+        context_summary: Dict[str, Any]
+    ) -> str:
+        """
+        Build assessment feedback context for the LLM prompt.
+        This implements the hierarchical synthesis logic.
+        """
+        logger.info(f"📊 ASSESSMENT_FEEDBACK: Building context from feedback map")
+        logger.info(f"📊 ASSESSMENT_FEEDBACK: Feedback map is None: {assessment_feedback_map is None}")
+
+        if not assessment_feedback_map:
+            logger.info(f"📊 ASSESSMENT_FEEDBACK: No assessment feedback provided, using default context")
+            return "**3. CRITICAL FEEDBACK FROM LAST ASSESSMENT:** No recent assessment data available."
+
+        logger.info(f"📊 ASSESSMENT_FEEDBACK: Processing {len(assessment_feedback_map)} subjects with feedback")
+        logger.info(f"📊 ASSESSMENT_FEEDBACK: Available subjects: {list(assessment_feedback_map.keys())}")
+        logger.info(f"📊 ASSESSMENT_FEEDBACK: Context summary subjects: {list(context_summary.get('available_options', {}).keys())}")
+
+        feedback_sections = []
+        subjects_with_feedback = []
+
+        # Process each subject that has both velocity data and assessment feedback
+        for subject in context_summary.get("available_options", {}):
+            logger.debug(f"📊 ASSESSMENT_FEEDBACK: Checking subject {subject}")
+            if subject in assessment_feedback_map:
+                logger.info(f"📊 ASSESSMENT_FEEDBACK: Processing feedback for subject {subject}")
+                feedback = assessment_feedback_map[subject]
+                subjects_with_feedback.append(subject)
+
+                # Extract priority skills from feedback
+                weak_spot_skills = feedback.get("weak_spot_skills", [])
+                developing_skills = feedback.get("developing_skills", [])
+                insights = feedback.get("insights", {}).get("insights", [])
+                recommended_subskills = feedback.get("recommended_subskills", [])  # New: specific recommendations
+                logger.info(f"📊 CONTEXT_BUILD: Processing {len(recommended_subskills)} recommended subskills for {subject}")
+                for i, rec in enumerate(recommended_subskills[:4]):
+                    logger.info(f"📊 CONTEXT_BUILD: Rec {i+1}: {rec.get('subskill_id')} - {rec.get('reason', 'No reason')}")
+
+                if insights or recommended_subskills:
+                    subject_feedback = f"- **{subject}** (assessed {self._get_days_ago(feedback.get('completed_at'))}):"
+
+                    # Add specific subskill recommendations from assessment
+                    if recommended_subskills:
+                        subject_feedback += "\n  - **ASSESSMENT RECOMMENDED SUBSKILLS:**"
+                        for rec in recommended_subskills[:4]:  # Limit to 4 for prompt efficiency
+                            focus_tag = rec.get("assessment_focus_tag", "")
+                            performance = rec.get("performance_label", "")
+                            subject_feedback += f"\n    - MUST INCLUDE: {rec.get('subskill_id')} ({focus_tag}, {performance})"
+                            subject_feedback += f"\n      Reason: \"{rec.get('reason', 'Assessment recommended')}\""
+
+                    # Group insights by performance level for additional context
+                    weak_spots = [i for i in insights if i.get("assessment_focus_tag") == "🎯 Weak Spot" or i.get("performance_label") == "Needs Review"]
+                    developing = [i for i in insights if i.get("performance_label") == "Developing"]
+                    mastered = [i for i in insights if i.get("performance_label") == "Mastered"]
+
+                    logger.info(f"📊 ASSESSMENT_FEEDBACK: Subject {subject} - weak spots: {len(weak_spots)}, developing: {len(developing)}, mastered: {len(mastered)}")
+
+                    if weak_spots:
+                        subject_feedback += "\n  - **WEAK_SPOT / NEEDS_REVIEW:**"
+                        for insight in weak_spots[:2]:  # Limit to 2 for prompt efficiency
+                            subject_feedback += f"\n    - Skill: {insight.get('skill_name', 'Unknown')}"
+                            subject_feedback += f"\n      Insight: \"{insight.get('insight_text', 'Needs attention')}\""
+
+                    if developing:
+                        subject_feedback += "\n  - **DEVELOPING:**"
+                        for insight in developing[:2]:  # Limit to 2 for prompt efficiency
+                            subject_feedback += f"\n    - Skill: {insight.get('skill_name', 'Unknown')}"
+                            subject_feedback += f"\n      Insight: \"{insight.get('insight_text', 'Making progress')}\""
+
+                    if mastered:
+                        subject_feedback += "\n  - **MASTERED:**"
+                        for insight in mastered[:1]:  # Just 1 example for confidence building
+                            subject_feedback += f"\n    - Skill: {insight.get('skill_name', 'Unknown')}"
+
+                    feedback_sections.append(subject_feedback)
+                    logger.info(f"📊 ASSESSMENT_FEEDBACK: Added feedback section for {subject}")
+                else:
+                    logger.warning(f"📊 ASSESSMENT_FEEDBACK: Subject {subject} has no insights")
+            else:
+                logger.debug(f"📊 ASSESSMENT_FEEDBACK: Subject {subject} not in feedback map")
+
+        if feedback_sections:
+            feedback_text = "**3. CRITICAL FEEDBACK FROM LAST ASSESSMENT:**\n" + "\n\n".join(feedback_sections)
+            feedback_text += f"\n\n**Subjects with recent assessment feedback:** {', '.join(subjects_with_feedback)}"
+            logger.info(f"📊 ASSESSMENT_FEEDBACK: SUCCESS - Built feedback context with {len(feedback_sections)} sections")
+            logger.info(f"📊 ASSESSMENT_FEEDBACK: Subjects with feedback: {subjects_with_feedback}")
+            return feedback_text
+        else:
+            logger.warning(f"📊 ASSESSMENT_FEEDBACK: No actionable insights found despite having feedback map")
+            return "**3. CRITICAL FEEDBACK FROM LAST ASSESSMENT:** Recent assessments available but no actionable insights extracted."
+
+    def _get_days_ago(self, completed_at: Optional[str]) -> str:
+        """Get human-readable description of how long ago assessment was completed"""
+        if not completed_at:
+            return "recently"
+
+        try:
+            from datetime import datetime
+            completed = datetime.fromisoformat(completed_at.replace('Z', '+00:00'))
+            now = datetime.utcnow().replace(tzinfo=completed.tzinfo)
+            delta = now - completed
+            days = delta.days
+
+            if days == 0:
+                return "today"
+            elif days == 1:
+                return "yesterday"
+            elif days <= 7:
+                return f"{days} days ago"
+            else:
+                return f"{days // 7} weeks ago"
+        except Exception:
+            return "recently"

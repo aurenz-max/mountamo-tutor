@@ -2628,3 +2628,55 @@ class CosmosDBService:
         except Exception as e:
             logger.error(f"Error getting visualize concept by ID: {str(e)}")
             return None
+
+    # ============================================================================
+    # 🆕 ASSESSMENT QUERY METHODS
+    # ============================================================================
+
+
+
+    async def get_recent_completed_assessments(
+        self,
+        student_id: int,
+        days_back: int = 30
+    ) -> List[Dict[str, Any]]:
+        """
+        Get recent completed assessments for a student.
+        Returns assessments ordered by completion date (most recent first).
+        """
+        try:
+            from datetime import datetime, timedelta
+
+            # Calculate cutoff date
+            cutoff_date = datetime.utcnow() - timedelta(days=days_back)
+            cutoff_iso = cutoff_date.isoformat()
+
+            # Query for completed assessments within the time window
+            query = """
+            SELECT * FROM c
+            WHERE c.student_id = @student_id
+            AND c.status = 'completed'
+            AND c.completed_at >= @cutoff_date
+            ORDER BY c.completed_at DESC
+            """
+
+            params = [
+                {"name": "@student_id", "value": student_id},
+                {"name": "@cutoff_date", "value": cutoff_iso}
+            ]
+
+            # Execute query
+            results = list(self.assessments.query_items(
+                query=query,
+                parameters=params,
+                partition_key=student_id
+            ))
+
+            logger.info(f"Retrieved {len(results)} completed assessments for student {student_id}")
+            return results
+
+        except Exception as e:
+            logger.error(f"Error getting recent completed assessments: {str(e)}")
+            return []
+
+

@@ -158,8 +158,8 @@ class CurriculumParser:
                     'subject': recommendation_data.get('subject', 'Mathematics'),
                     'unit': {
                         'id': recommendation_data.get('subskill_id', '').split('-')[0] if '-' in recommendation_data.get('subskill_id', '') else '',
-                        'title': recommendation_data.get('unit_title', 'Learning Unit'),
-                        'description': recommendation_data.get('unit_title', 'Learning Unit')
+                        'title': recommendation_data.get('unit_title') or 'Learning Unit',
+                        'description': recommendation_data.get('unit_title') or 'Learning Unit'
                     },
                     'skill': {
                         'id': recommendation_data.get('skill_id', ''),
@@ -264,6 +264,7 @@ class DailyActivitiesService:
         logger.info(f"🚀 GENERATING NEW DAILY PLAN - Student: {student_id}, Date: {date}")
         generated_plan = await self._generate_fresh_daily_plan(student_id, date)
         logger.info(f"✨ FRESH PLAN GENERATED - {len(generated_plan.activities)} activities, source: {generated_plan.personalization_source}")
+        logger.info(f"🚀 RECOMMENDATION_FLOW: Final personalization source: {generated_plan.personalization_source}")
         logger.info(f"🎯 Generated activity IDs: {[act.id for act in generated_plan.activities]}")
 
         # Step 3: Persistence Logic (FR5 & FR7)
@@ -284,6 +285,10 @@ class DailyActivitiesService:
                 # Continue without persistence - don't fail the entire request
 
         logger.info(f"📤 RETURNING GENERATED PLAN - Student: {student_id}, Source: {generated_plan.personalization_source}")
+        if generated_plan.personalization_source == 'bigquery_recommendations':
+            logger.warning(f"⚠️ ATTENTION: Plan used BigQuery fallback instead of AI recommendations")
+        elif generated_plan.personalization_source == 'fallback':
+            logger.error(f"🚨 CRITICAL: Plan used static fallback - both AI and BigQuery failed")
         return generated_plan
 
     async def _generate_fresh_daily_plan(self, student_id: int, date: str, session_type: str = 'daily') -> DailyPlan:
@@ -294,26 +299,32 @@ class DailyActivitiesService:
         session_plan = None
 
         # Step 1: Try to get AI recommendations first, then fall back to basic recommendations
+        logger.info(f"🚀 RECOMMENDATION_FLOW: Starting recommendation flow for student {student_id}")
         ai_result = await self._get_ai_recommendations_with_session_plan(student_id, session_type)
 
         if ai_result and ai_result.get('recommendations'):
+            logger.info(f"🚀 RECOMMENDATION_FLOW: SUCCESS - Using AI recommendations")
             activities = await self._create_activities_from_recommendations(ai_result['recommendations'], student_id)
             personalization_source = 'ai_recommendations'
             session_plan = ai_result.get('session_plan')
-            logger.info(f"Created {len(activities)} activities from AI recommendations")
+            logger.info(f"🚀 RECOMMENDATION_FLOW: Created {len(activities)} activities from AI recommendations")
         else:
             # Step 2: Fall back to basic BigQuery recommendations
+            logger.warning(f"🚀 RECOMMENDATION_FLOW: FALLBACK - AI recommendations failed, trying BigQuery")
+            logger.warning(f"🚀 RECOMMENDATION_FLOW: AI result: {ai_result}")
             recommendations = await self._get_recommendations(student_id)
 
             if recommendations:
+                logger.info(f"🚀 RECOMMENDATION_FLOW: Using BigQuery recommendations")
                 activities = await self._create_activities_from_recommendations(recommendations, student_id)
                 personalization_source = 'bigquery_recommendations'
-                logger.info(f"Created {len(activities)} activities from basic BigQuery recommendations")
+                logger.info(f"🚀 RECOMMENDATION_FLOW: Created {len(activities)} activities from basic BigQuery recommendations")
             else:
                 # Step 3: Final fallback to static activities
+                logger.error(f"🚀 RECOMMENDATION_FLOW: FINAL FALLBACK - Both AI and BigQuery failed, using static activities")
                 activities = self._create_fallback_activities()
                 personalization_source = 'fallback'
-                logger.info(f"Created {len(activities)} fallback activities")
+                logger.info(f"🚀 RECOMMENDATION_FLOW: Created {len(activities)} fallback activities")
 
         # Step 4: Calculate totals and progress
         total_points = sum(a.points for a in activities)
@@ -415,27 +426,210 @@ class DailyActivitiesService:
         """Backward compatibility method - delegates to get_or_generate_daily_plan"""
         return await self.get_or_generate_daily_plan(student_id, date, force_refresh=False)
     
+    async def _get_recent_assessment_feedback_by_subject(self, student_id: int) -> Dict[str, Dict[str, Any]]:
+        """
+        Get recent assessment feedback organized by subject for daily plan synthesis.
+        Returns a dictionary mapping subject -> feedback document.
+        """
+        logger.info(f"📄 ASSESSMENT_FEEDBACK: Retrieving recent feedback for student {student_id}")
+
+        if not self.cosmos_db_service:
+            logger.warning(f"📄 ASSESSMENT_FEEDBACK: No Cosmos DB service configured, skipping feedback retrieval")
+            return {}
+
+        try:
+            logger.info(f"📄 ASSESSMENT_FEEDBACK: Retrieving recent assessment feedback for student {student_id}")
+
+            # Get recent completed assessments directly
+            logger.info(f"📄 ASSESSMENT_FEEDBACK: Querying Cosmos DB for recent assessments (30 days back)")
+            recent_assessments = await self.cosmos_db_service.get_recent_completed_assessments(
+                student_id=student_id,
+                days_back=30
+            )
+            logger.info(f"📄 ASSESSMENT_FEEDBACK: Found {len(recent_assessments)} recent assessments")
+
+            # Extract insights from each assessment and organize by subject
+            feedback_by_subject = {}
+            for i, assessment in enumerate(recent_assessments):
+                subject = assessment.get("subject")
+                logger.debug(f"📄 ASSESSMENT_FEEDBACK: Processing assessment {i+1}: subject={subject}")
+                if not subject:
+                    logger.debug(f"📄 ASSESSMENT_FEEDBACK: Skipping assessment {i+1} - no subject")
+                    continue
+
+                # Extract insights from the assessment results
+                logger.debug(f"📄 ASSESSMENT_FEEDBACK: Extracting insights from {subject} assessment")
+                insights = self._extract_insights_from_assessment(assessment)
+                if insights:
+                    logger.info(f"📄 ASSESSMENT_FEEDBACK: Found insights for {subject}: {len(insights.get('insights', []))} skills")
+                    # Keep only the most recent per subject
+                    if subject not in feedback_by_subject:
+                        feedback_by_subject[subject] = {
+                            "subject": subject,
+                            "assessment_id": assessment.get("assessment_id"),
+                            "completed_at": assessment.get("completed_at"),
+                            "insights": insights,
+                            "score_percentage": insights.get("score_percentage", 0)
+                        }
+                        logger.info(f"📄 FEEDBACK_COMPILATION: Added feedback for {subject}")
+                        insights = feedback_by_subject[subject]['insights']
+                        rec_subskills = insights.get('recommended_subskills', [])
+                        logger.info(f"📄 FEEDBACK_COMPILATION: {subject} has {len(rec_subskills)} recommended subskills:")
+                        for rec in rec_subskills:
+                            logger.info(f"📄 FEEDBACK_COMPILATION: - {rec['subskill_id']} ({rec['performance_label']})")
+                    else:
+                        logger.debug(f"📄 ASSESSMENT_FEEDBACK: Skipping {subject} - already have recent feedback")
+                else:
+                    logger.debug(f"📄 ASSESSMENT_FEEDBACK: No insights extracted from {subject} assessment")
+
+            logger.info(f"📄 ASSESSMENT_FEEDBACK: SUCCESS - Retrieved feedback for {len(feedback_by_subject)} subjects")
+            logger.info(f"📄 ASSESSMENT_FEEDBACK: Subjects with feedback: {list(feedback_by_subject.keys())}")
+            return feedback_by_subject
+
+        except Exception as e:
+            logger.error(f"📄 ASSESSMENT_FEEDBACK: EXCEPTION - Error retrieving feedback for student {student_id}: {e}")
+            import traceback
+            logger.error(f"📄 ASSESSMENT_FEEDBACK: Stack trace: {traceback.format_exc()}")
+            return {}
+
+    def _extract_insights_from_assessment(self, assessment: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Extract insights from an assessment document for daily plan synthesis.
+        Returns simplified insights data or None if no useful data found.
+        """
+        try:
+            # Get assessment results
+            results = assessment.get("results", {})
+            if not results:
+                return None
+
+            # Extract AI insights (new structure)
+            ai_insights = results.get("ai_insights", {})
+            skill_insights = ai_insights.get("skill_insights", [])
+
+            if not skill_insights:
+                return None
+
+            # Convert to the format expected by daily plan synthesis
+            priority_skills = []
+            weak_spot_skills = []
+            developing_skills = []
+            recommended_subskills = []  # New: specific subskill recommendations from assessment
+
+            for insight in skill_insights:
+                skill_id = insight.get("skill_id")
+                if not skill_id:
+                    continue
+
+                # Extract recommended subskill from next_step, but ONLY for skills that need practice
+                performance_label = insight.get("performance_label", "")
+
+                # Only include subskills that need practice (not already mastered)
+                if performance_label in ["Developing", "Needs Review"]:
+                    next_step = insight.get("next_step", {})
+                    if next_step and next_step.get("link"):
+                        # Extract subskill ID from the link (e.g., "/practice/SS001-01-J?subject=social-studies" -> "SS001-01-J")
+                        link = next_step.get("link", "")
+                        if "/practice/" in link:
+                            subskill_part = link.split("/practice/")[1].split("?")[0]
+                            if subskill_part:
+                                logger.info(f"📄 SUBSKILL_EXTRACTION: Extracted subskill {subskill_part} from link {link} (Performance: {performance_label})")
+                                recommended_subskills.append({
+                                    "skill_id": skill_id,
+                                    "subskill_id": subskill_part,
+                                    "reason": next_step.get("text", ""),
+                                    "assessment_focus_tag": insight.get("assessment_focus_tag", ""),
+                                    "performance_label": performance_label
+                                })
+                            else:
+                                logger.warning(f"📄 SUBSKILL_EXTRACTION: Failed to extract subskill from link {link}")
+                        else:
+                            logger.warning(f"📄 SUBSKILL_EXTRACTION: Link does not contain /practice/ pattern: {link}")
+                else:
+                    logger.debug(f"📄 SUBSKILL_EXTRACTION: Skipping subskill extraction for {skill_id} - already {performance_label}")
+
+                # Handle both string and enum values for assessment focus and performance
+                assessment_focus = str(insight.get("assessment_focus_tag", "")).upper()
+                performance = str(insight.get("performance_label", "")).upper()
+
+                # Check for weak spot patterns
+                if ("WEAK_SPOT" in assessment_focus or "🎯" in assessment_focus or
+                    "NEEDS_REVIEW" in performance or "NEEDS REVIEW" in performance):
+                    weak_spot_skills.append(skill_id)
+                    priority_skills.append(skill_id)
+                elif "DEVELOPING" in performance:
+                    developing_skills.append(skill_id)
+                    priority_skills.append(skill_id)
+
+            # Extract summary data
+            summary = results.get("summary", {})
+
+            # At the end of the method, before return:
+            logger.info(f"📄 ASSESSMENT_EXTRACTION: Final recommended_subskills count: {len(recommended_subskills)}")
+            for rec in recommended_subskills:
+                logger.info(f"📄 ASSESSMENT_EXTRACTION: Recommended: {rec['subskill_id']} ({rec['assessment_focus_tag']}, {rec['performance_label']})")
+
+            return {
+                "insights": skill_insights,
+                "priority_skills": priority_skills,
+                "weak_spot_skills": weak_spot_skills,
+                "developing_skills": developing_skills,
+                "recommended_subskills": recommended_subskills,  # New: pass specific recommendations
+                "score_percentage": summary.get("score_percentage", 0),
+                "total_questions": summary.get("total_questions", 0),
+                "correct_count": summary.get("correct_count", 0)
+            }
+
+        except Exception as e:
+            logger.error(f"Error extracting insights from assessment: {e}")
+            return None
+
     async def _get_ai_recommendations_with_session_plan(self, student_id: int, session_type: str = 'daily') -> Optional[Dict]:
         """Get AI-powered recommendations with session plan from AI recommendation service using new playlist method"""
-        
+
+        logger.info(f"🤖 DAILY_ACTIVITIES: Starting AI recommendations flow for student {student_id}")
+
         if not self.ai_recommendation_service:
-            logger.info("No AI recommendation service configured, skipping AI recommendations")
+            logger.error(f"🤖 DAILY_ACTIVITIES: CRITICAL - No AI recommendation service configured")
+            logger.error(f"🤖 DAILY_ACTIVITIES: This will cause immediate fallback to BigQuery recommendations")
             return None
-        
+
         try:
-            logger.info(f"Calling generate_daily_playlist for student {student_id}")
-            playlist = await self.ai_recommendation_service.generate_daily_playlist(
-                student_id=student_id,
-                target_activities=6  # Standard daily playlist size
-            )
-            
+            logger.info(f"🤖 DAILY_ACTIVITIES: Calling generate_daily_playlist for student {student_id}")
+
+            # Get recent assessment feedback for intelligent synthesis
+            logger.info(f"🤖 DAILY_ACTIVITIES: Retrieving recent assessment feedback...")
+            assessment_feedback = await self._get_recent_assessment_feedback_by_subject(student_id)
+            logger.info(f"🤖 DAILY_ACTIVITIES: Assessment feedback retrieved for {len(assessment_feedback)} subjects")
+
+            # Call AI service with assessment feedback if available
+            if assessment_feedback:
+                logger.info(f"🤖 DAILY_ACTIVITIES: Including assessment feedback for {len(assessment_feedback)} subjects in AI recommendations")
+                logger.info(f"🤖 DAILY_ACTIVITIES: Feedback subjects: {list(assessment_feedback.keys())}")
+                playlist = await self.ai_recommendation_service.generate_daily_playlist(
+                    student_id=student_id,
+                    target_activities=6,  # Standard daily playlist size
+                    assessment_feedback_map=assessment_feedback
+                )
+            else:
+                logger.warning(f"🤖 DAILY_ACTIVITIES: No recent assessment feedback found, generating playlist with velocity data only")
+                playlist = await self.ai_recommendation_service.generate_daily_playlist(
+                    student_id=student_id,
+                    target_activities=6
+                )
+
+            logger.info(f"🤖 DAILY_ACTIVITIES: AI service returned playlist: {playlist is not None}")
+            if playlist:
+                logger.info(f"🤖 DAILY_ACTIVITIES: Playlist has activities: {playlist.get('activities') is not None}")
+                logger.info(f"🤖 DAILY_ACTIVITIES: Playlist keys: {list(playlist.keys())}")
+
             if playlist and playlist.get('activities'):
                 activities = playlist.get('activities', [])
-                logger.info(f"Got {len(activities)} activities from daily playlist")
-                
+                logger.info(f"🤖 DAILY_ACTIVITIES: SUCCESS - Got {len(activities)} activities from AI daily playlist")
+
                 # Extract session plan from playlist
                 session_plan = playlist.get('session_plan', {})
-                
+
                 # Convert playlist activities to basic recommendation format for compatibility
                 converted_recommendations = []
                 for activity in activities:
@@ -457,23 +651,33 @@ class DailyActivitiesService:
                         # Add rich curriculum metadata from AI service
                         'unit_title': activity.get('unit_title', ''),
                         'difficulty_start': activity.get('difficulty_start'),
-                        'difficulty_end': activity.get('difficulty_end'), 
+                        'difficulty_end': activity.get('difficulty_end'),
                         'target_difficulty': activity.get('target_difficulty'),
-                        'grade': activity.get('grade')
+                        'grade': activity.get('grade'),
+                        # Add assessment feedback context if used
+                        'assessment_informed': len(assessment_feedback) > 0
                     }
                     converted_recommendations.append(basic_rec)
-                
-                logger.info(f"Converted {len(converted_recommendations)} playlist activities to recommendation format")
-                return {
+
+                logger.info(f"🤖 DAILY_ACTIVITIES: Converted {len(converted_recommendations)} playlist activities to recommendation format")
+                result = {
                     'recommendations': converted_recommendations,
-                    'session_plan': session_plan
+                    'session_plan': session_plan,
+                    'assessment_feedback_used': len(assessment_feedback) > 0,
+                    'subjects_with_feedback': list(assessment_feedback.keys())
                 }
+                logger.info(f"🤖 DAILY_ACTIVITIES: SUCCESS - Returning AI recommendations")
+                return result
             else:
-                logger.info("No playlist activities returned")
+                logger.error(f"🤖 DAILY_ACTIVITIES: CRITICAL - No playlist activities returned from AI service")
+                logger.error(f"🤖 DAILY_ACTIVITIES: This will cause fallback to BigQuery recommendations")
                 return None
-                
+
         except Exception as e:
-            logger.error(f"Failed to get AI recommendations: {str(e)}")
+            logger.error(f"🤖 DAILY_ACTIVITIES: EXCEPTION - Failed to get AI recommendations: {str(e)}")
+            logger.error(f"🤖 DAILY_ACTIVITIES: This will cause fallback to BigQuery recommendations")
+            import traceback
+            logger.error(f"🤖 DAILY_ACTIVITIES: Stack trace: {traceback.format_exc()}")
             return None
 
     async def _get_ai_recommendations(self, student_id: int, session_type: str = 'daily') -> Optional[List[Dict]]:
@@ -602,7 +806,8 @@ class DailyActivitiesService:
                     'from_ai_recommendations': rec.get('from_ai_recommendations', False),
                     'ai_reason': rec.get('ai_reason'),
                     'priority_rank': rec.get('priority_rank'),
-                    'estimated_time_minutes': rec.get('estimated_time')
+                    'estimated_time_minutes': rec.get('estimated_time'),
+                    'assessment_informed': rec.get('assessment_informed', False)
                 }
             }
             

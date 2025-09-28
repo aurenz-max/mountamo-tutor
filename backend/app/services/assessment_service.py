@@ -1217,6 +1217,19 @@ class AssessmentService:
                 review_items_data=[pr.full_review_payload for pr in processed_reviews]
             )
 
+            # Add comprehensive logging for assessment insights generation
+            logger.info(f"🔍 ASSESSMENT_INSIGHTS: Generated insights for assessment {assessment_id}")
+            logger.info(f"🔍 ASSESSMENT_INSIGHTS: Subject: {assessment.get('subject')}")
+            if ai_insights_data and ai_insights_data.get('skill_insights'):
+                for insight in ai_insights_data['skill_insights']:
+                    next_step = insight.get('next_step', {})
+                    link = next_step.get('link', '')
+                    logger.info(f"🔍 ASSESSMENT_INSIGHTS: Skill {insight.get('skill_id')} -> Next step link: {link}")
+                    logger.info(f"🔍 ASSESSMENT_INSIGHTS: Assessment focus: {insight.get('assessment_focus_tag')}")
+                    logger.info(f"🔍 ASSESSMENT_INSIGHTS: Performance: {insight.get('performance_label')}")
+            else:
+                logger.warning(f"🔍 ASSESSMENT_INSIGHTS: No skill insights generated for assessment {assessment_id}")
+
             # 4. FINAL ASSEMBLY: Combine the built parts into the final results object.
             final_results = {
                 "summary": summary_data,
@@ -1234,7 +1247,9 @@ class AssessmentService:
                 firebase_uid
             )
 
-            # 6. RETURN: Return a user-friendly summary.
+            # 6. ASSESSMENT FEEDBACK: No longer needed - daily plan will query assessment documents directly
+
+            # 7. RETURN: Return a user-friendly summary.
             return {
                 "assessment_id": assessment_id,
                 "student_id": student_id,
@@ -1691,3 +1706,4 @@ class AssessmentService:
             correct=is_correct,
             accuracy_percentage=100 if is_correct else 30
         )
+
