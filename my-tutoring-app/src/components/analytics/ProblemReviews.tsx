@@ -135,8 +135,8 @@ const ProblemReviews: React.FC<ProblemReviewsProps> = ({
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Problem Reviews</h2>
         <div className="flex gap-4">
-          <Select 
-            value={selectedSubject || 'all_subjects'} 
+          <Select
+            value={selectedSubject || 'all_subjects'}
             onValueChange={(value) => {
               setSelectedSubject(value === 'all_subjects' ? null : value);
               setSelectedSkill(null); // Reset skill when subject changes
@@ -152,10 +152,10 @@ const ProblemReviews: React.FC<ProblemReviewsProps> = ({
               ))}
             </SelectContent>
           </Select>
-          
+
           {selectedSubject && (
-            <Select 
-              value={selectedSkill || 'all_skills'} 
+            <Select
+              value={selectedSkill || 'all_skills'}
               onValueChange={(value) => setSelectedSkill(value === 'all_skills' ? null : value)}
             >
               <SelectTrigger className="w-40">
@@ -181,10 +181,24 @@ const ProblemReviews: React.FC<ProblemReviewsProps> = ({
           </Card>
         ) : (
           reviewsToDisplay.map((review) => (
-            <ReviewCard key={review.id} review={review} />
+            <Card key={review.id}>
+              <CardHeader>
+                <CardTitle>{review.subject} - Score: {review.score}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-500">{new Date(review.timestamp).toLocaleString()}</p>
+                {review.problem_content?.problem && (
+                  <div className="mt-4">
+                    <strong>Problem:</strong> <span>{review.problem_content.problem}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ))
         )}
       </div>
     </div>
   );
 };
+
+export default ProblemReviews;
