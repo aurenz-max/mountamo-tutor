@@ -15,8 +15,8 @@ from fastapi import HTTPException
 
 from ..core.middleware import get_cosmos_db_service
 from ..models.user_profiles import (
-    UserProfile, OnboardingData, ActivityLog, ActivityResponse, 
-    UserStats, DashboardResponse
+    UserProfile, OnboardingData, ActivityLog, ActivityResponse,
+    UserStats, DashboardResponse, StudentMisconception
 )
 
 logger = logging.getLogger(__name__)
@@ -118,13 +118,35 @@ class UserProfilesService:
             ))
             
             if results:
-                user_data = results[0]
-                
+                # Keep the original document for potential migration
+                original_doc = results[0]
+                # Work with a copy for datetime conversions
+                user_data = results[0].copy()
+
                 # Convert ISO strings back to datetime objects
                 datetime_fields = ['created_at', 'last_login', 'last_activity', 'onboarding_completed_at']
                 for field in datetime_fields:
                     if isinstance(user_data.get(field), str) and user_data.get(field):
                         user_data[field] = datetime.fromisoformat(user_data[field])
+
+                # Parse misconceptions from raw dict to StudentMisconception objects
+                raw_misconceptions = user_data.get('misconceptions', [])
+                parsed_misconceptions = []
+                if raw_misconceptions:
+                    for raw_misc in raw_misconceptions:
+                        try:
+                            # Convert last_detected_at string to datetime if needed
+                            if isinstance(raw_misc.get('last_detected_at'), str):
+                                raw_misc['last_detected_at'] = datetime.fromisoformat(raw_misc['last_detected_at'])
+
+                            # Convert resolved_at string to datetime if exists
+                            if 'resolved_at' in raw_misc and isinstance(raw_misc.get('resolved_at'), str):
+                                raw_misc['resolved_at'] = datetime.fromisoformat(raw_misc['resolved_at'])
+
+                            parsed_misconceptions.append(StudentMisconception(**raw_misc))
+                        except Exception as e:
+                            logger.warning(f"⚠️ [USER_PROFILES] Failed to parse misconception: {str(e)}")
+                            continue
                 
                 # Clean data for UserProfile model
                 profile_fields = {
@@ -147,8 +169,23 @@ class UserProfilesService:
                     'badges': user_data.get('badges', []),
                     'preferences': user_data.get('preferences', {}),
                     'onboarding_completed': user_data.get('onboarding_completed', False),
-                    'onboarding_completed_at': user_data.get('onboarding_completed_at')
+                    'onboarding_completed_at': user_data.get('onboarding_completed_at'),
+                    # Misconception tracking (new) - use parsed StudentMisconception objects
+                    'misconceptions': parsed_misconceptions
                 }
+
+                # Migration: If misconceptions field doesn't exist in Cosmos DB, add it
+                if 'misconceptions' not in original_doc:
+                    logger.info(f"🔄 [USER_PROFILES] Migrating profile for {uid} - adding misconceptions field")
+                    try:
+                        # Use the original document (which has ISO strings, not datetime objects)
+                        original_doc['misconceptions'] = []
+                        user_profiles_container.replace_item(item=original_doc['id'], body=original_doc)
+                        logger.info(f"✅ [USER_PROFILES] Migration successful - misconceptions field added to Cosmos DB")
+                    except Exception as e:
+                        logger.warning(f"⚠️ [USER_PROFILES] Failed to migrate profile: {str(e)}")
+                        import traceback
+                        logger.warning(f"⚠️ [USER_PROFILES] Traceback: {traceback.format_exc()}")
                 
                 return UserProfile(**profile_fields)
             else:
@@ -355,6 +392,232 @@ class UserProfilesService:
             logger.error(f"❌ Failed to get onboarding preferences: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to get onboarding preferences")
     
+    # ============================================================================
+    # MISCONCEPTION MANAGEMENT
+    # ============================================================================
+
+    async def add_or_update_misconception(
+        self,
+        uid: str,
+        subskill_id: str,
+        misconception_text: str,
+        assessment_id: str
+    ) -> bool:
+        """
+        Add or update a misconception in the user's profile.
+
+        This method is called by the AssessmentService after scoring to persist
+        AI-identified misconceptions for targeted remediation.
+
+        Args:
+            uid: User's Firebase UID
+            subskill_id: The subskill this misconception relates to
+            misconception_text: AI-generated description of the misconception
+            assessment_id: Assessment ID that identified this misconception
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            user_profiles_container = self.cosmos_db.database.create_container_if_not_exists(
+                id="user_profiles",
+                partition_key=PartitionKey(path="/firebase_uid")
+            )
+
+            query = "SELECT * FROM c WHERE c.firebase_uid = @uid AND c.type = 'user_profile'"
+            params = [{"name": "@uid", "value": uid}]
+            items = list(user_profiles_container.query_items(query=query, parameters=params, partition_key=uid))
+
+            if not items:
+                logger.warning(f"⚠️ User profile not found for UID {uid} when adding misconception")
+                return False
+
+            doc = items[0]
+
+            # Ensure misconceptions field exists and is a list
+            if 'misconceptions' not in doc or not isinstance(doc['misconceptions'], list):
+                doc['misconceptions'] = []
+
+            # Check if misconception for this subskill already exists
+            existing_misconception = next(
+                (m for m in doc['misconceptions'] if m.get('subskill_id') == subskill_id),
+                None
+            )
+
+            if existing_misconception:
+                # Update existing misconception
+                logger.info(f"🔄 Updating existing misconception for user {uid}, subskill {subskill_id}")
+                existing_misconception['misconception_text'] = misconception_text
+                existing_misconception['source_assessment_id'] = assessment_id
+                existing_misconception['last_detected_at'] = datetime.utcnow().isoformat()
+                existing_misconception['status'] = 'active'  # Mark as active again
+            else:
+                # Add new misconception
+                logger.info(f"➕ Adding new misconception for user {uid}, subskill {subskill_id}")
+                new_misconception = {
+                    "subskill_id": subskill_id,
+                    "misconception_text": misconception_text,
+                    "source_assessment_id": assessment_id,
+                    "last_detected_at": datetime.utcnow().isoformat(),
+                    "status": "active"
+                }
+                doc['misconceptions'].append(new_misconception)
+
+            # Persist changes
+            doc['updated_at'] = datetime.utcnow().isoformat()
+            user_profiles_container.replace_item(item=doc['id'], body=doc)
+
+            logger.info(f"✅ Misconception stored successfully for user {uid}, subskill {subskill_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ Failed to add or update misconception for UID {uid}: {str(e)}")
+            return False
+
+    async def get_active_misconception_for_subskill(
+        self,
+        uid: str,
+        subskill_id: str
+    ) -> Optional[StudentMisconception]:
+        """
+        Retrieve the active misconception for a given subskill.
+
+        This method is called by AssessmentService when building practice recommendations
+        to enable targeted remediation.
+
+        Args:
+            uid: User's Firebase UID
+            subskill_id: The subskill to check for misconceptions
+
+        Returns:
+            StudentMisconception if found, None otherwise
+        """
+        try:
+            logger.info(f"🔵 [USER_PROFILES] get_active_misconception_for_subskill() called")
+            logger.info(f"🔵 [USER_PROFILES] Parameters: uid={uid[:8]}..., subskill_id={subskill_id}")
+
+            profile = await self.get_user_profile(uid)
+
+            if not profile:
+                logger.warning(f"⚠️ [USER_PROFILES] No profile found for uid {uid[:8]}...")
+                return None
+
+            if not profile.misconceptions:
+                logger.info(f"📝 [USER_PROFILES] Profile found but no misconceptions list exists")
+                return None
+
+            logger.info(f"📊 [USER_PROFILES] Profile has {len(profile.misconceptions)} total misconceptions")
+            logger.info(f"🔍 [USER_PROFILES] Misconceptions type: {type(profile.misconceptions)}")
+            logger.info(f"🔍 [USER_PROFILES] Misconceptions content: {profile.misconceptions}")
+
+            # Find active misconception for this subskill
+            for idx, misconception in enumerate(profile.misconceptions):
+                logger.info(f"🔍 [USER_PROFILES] Checking misconception #{idx+1} (type: {type(misconception)})")
+                logger.info(f"🔍 [USER_PROFILES] Misconception data: subskill_id={getattr(misconception, 'subskill_id', 'N/A')}, status={getattr(misconception, 'status', 'N/A')}")
+
+                if misconception.subskill_id == subskill_id:
+                    logger.info(f"🎯 [USER_PROFILES] Found matching subskill_id: {subskill_id}")
+
+                    if misconception.status == 'active':
+                        logger.info(f"✅ [USER_PROFILES] ACTIVE misconception found!")
+                        logger.info(f"📝 [USER_PROFILES] Misconception text: {misconception.misconception_text[:100]}...")
+                        logger.info(f"🕐 [USER_PROFILES] Last detected: {misconception.last_detected_at}")
+                        return misconception
+                    else:
+                        logger.info(f"⏭️ [USER_PROFILES] Misconception exists but status is '{misconception.status}' (not active)")
+
+            logger.info(f"❌ [USER_PROFILES] No active misconception found for subskill {subskill_id}")
+            return None
+
+        except Exception as e:
+            logger.error(f"❌ [USER_PROFILES] Exception in get_active_misconception_for_subskill: {str(e)}")
+            import traceback
+            logger.error(f"❌ [USER_PROFILES] Traceback: {traceback.format_exc()}")
+            return None
+
+    async def resolve_misconception(
+        self,
+        uid: str,
+        subskill_id: str
+    ) -> bool:
+        """
+        Mark a misconception as resolved based on improved performance.
+
+        This method can be called when a student demonstrates mastery of a previously
+        misunderstood concept (future feature for Phase 5).
+
+        Args:
+            uid: User's Firebase UID
+            subskill_id: The subskill misconception to resolve
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            logger.info(f"🟠 [USER_PROFILES] ========== RESOLVE_MISCONCEPTION START ==========")
+            logger.info(f"🟠 [USER_PROFILES] Parameters: uid={uid[:8]}..., subskill_id={subskill_id}")
+
+            user_profiles_container = self.cosmos_db.database.create_container_if_not_exists(
+                id="user_profiles",
+                partition_key=PartitionKey(path="/firebase_uid")
+            )
+
+            logger.info(f"🔍 [USER_PROFILES] Querying Cosmos DB for user profile")
+            query = "SELECT * FROM c WHERE c.firebase_uid = @uid AND c.type = 'user_profile'"
+            params = [{"name": "@uid", "value": uid}]
+            items = list(user_profiles_container.query_items(query=query, parameters=params, partition_key=uid))
+
+            if not items:
+                logger.error(f"❌ [USER_PROFILES] User profile not found for UID {uid[:8]}...")
+                return False
+
+            doc = items[0]
+            logger.info(f"✅ [USER_PROFILES] User profile document found")
+
+            if 'misconceptions' not in doc or not isinstance(doc['misconceptions'], list):
+                logger.error(f"❌ [USER_PROFILES] No misconceptions field in profile or not a list")
+                return False
+
+            logger.info(f"📊 [USER_PROFILES] Profile has {len(doc['misconceptions'])} misconceptions")
+
+            # Find and resolve the misconception
+            found = False
+            for idx, misconception in enumerate(doc['misconceptions']):
+                logger.info(f"🔍 [USER_PROFILES] Checking misconception #{idx+1}: subskill_id={misconception.get('subskill_id')}, status={misconception.get('status')}")
+
+                if misconception.get('subskill_id') == subskill_id:
+                    logger.info(f"🎯 [USER_PROFILES] Found matching subskill_id: {subskill_id}")
+
+                    if misconception.get('status') == 'active':
+                        logger.info(f"🔄 [USER_PROFILES] Updating misconception status from 'active' to 'resolved'")
+                        misconception['status'] = 'resolved'
+                        misconception['resolved_at'] = datetime.utcnow().isoformat()
+                        found = True
+                        logger.info(f"✅ [USER_PROFILES] Misconception marked as resolved!")
+                        logger.info(f"🕐 [USER_PROFILES] Resolved at: {misconception['resolved_at']}")
+                        break
+                    else:
+                        logger.warning(f"⚠️ [USER_PROFILES] Misconception found but status is '{misconception.get('status')}' (not 'active')")
+
+            if found:
+                logger.info(f"💾 [USER_PROFILES] Saving updated profile to Cosmos DB")
+                doc['updated_at'] = datetime.utcnow().isoformat()
+                user_profiles_container.replace_item(item=doc['id'], body=doc)
+                logger.info(f"🎉 [USER_PROFILES] ✅ Successfully resolved and saved misconception for subskill {subskill_id}")
+                logger.info(f"🟠 [USER_PROFILES] ========== RESOLVE_MISCONCEPTION SUCCESS ==========")
+                return True
+            else:
+                logger.error(f"❌ [USER_PROFILES] No active misconception found to resolve for subskill {subskill_id}")
+                logger.info(f"🟠 [USER_PROFILES] ========== RESOLVE_MISCONCEPTION FAILED ==========")
+                return False
+
+        except Exception as e:
+            logger.error(f"❌ [USER_PROFILES] Exception in resolve_misconception: {str(e)}")
+            import traceback
+            logger.error(f"❌ [USER_PROFILES] Traceback: {traceback.format_exc()}")
+            logger.info(f"🟠 [USER_PROFILES] ========== RESOLVE_MISCONCEPTION ERROR ==========")
+            return False
+
     # ============================================================================
     # ACTIVITY MANAGEMENT
     # ============================================================================

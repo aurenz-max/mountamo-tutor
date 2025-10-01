@@ -431,9 +431,143 @@ Provide detailed, encouraging feedback in the following JSON format:
             print("[ERROR] Reached end of parsing function without valid data or explicit failure.")
             return None
 
+    async def analyze_misconception(
+        self,
+        question: Any,  # Question object from question_types
+        evaluation: Any  # QuestionEvaluation object
+    ) -> Optional[str]:
+        """
+        Analyzes an incorrect submission to diagnose the root misconception.
+
+        This method uses AI to perform root-cause analysis of a student's error,
+        identifying their specific conceptual misunderstanding (not just explaining
+        the correct answer).
+
+        Args:
+            question: Standardized Question object with question_text and correct_answer
+            evaluation: QuestionEvaluation object with student_answer, correct_answer, feedback
+
+        Returns:
+            A concise string describing the student's misconception, or None if analysis fails
+        """
+        try:
+            logger.info(f"🧠 [MISCONCEPTION_ANALYSIS] ========== AI MISCONCEPTION ANALYSIS START ==========")
+            logger.info(f"🧠 [MISCONCEPTION_ANALYSIS] Analyzing student's incorrect answer to diagnose root cause")
+            logger.info(f"🧠 [MISCONCEPTION_ANALYSIS] Question type: {question.type}")
+
+            # Extract data from standardized objects
+            question_text = question.question_text
+            correct_answer = evaluation.correct_answer
+            student_answer = evaluation.student_answer
+            feedback = evaluation.feedback
+
+            logger.info(f"📋 [MISCONCEPTION_ANALYSIS] Question: {question_text[:100] if question_text else 'N/A'}...")
+            logger.info(f"✅ [MISCONCEPTION_ANALYSIS] Correct answer: {correct_answer[:100] if correct_answer else 'N/A'}")
+            logger.info(f"❌ [MISCONCEPTION_ANALYSIS] Student's incorrect answer: {student_answer[:100] if student_answer else 'N/A'}...")
+            logger.info(f"💬 [MISCONCEPTION_ANALYSIS] Initial feedback: {feedback[:100] if feedback else 'N/A'}...")
+
+            # Build the diagnostic prompt
+            logger.info(f"🔧 [MISCONCEPTION_ANALYSIS] Building AI diagnostic prompt...")
+            prompt = f"""You are an expert learning diagnostician for young children (ages 5-6). Your task is to analyze an incorrect answer and determine the specific conceptual misunderstanding. Do not provide generic feedback. Pinpoint the root cause of the error.
+
+**Problem Context:**
+- Question: "{question_text}"
+- Correct Answer: "{correct_answer}"
+
+**Student's Submission:**
+- Student's Incorrect Answer: "{student_answer}"
+- Initial Feedback Given: "{feedback}"
+
+**Your Task:**
+Based on all the information above, what is the student's core misconception? Describe the misunderstanding in a single, concise sentence from the student's point of view if possible.
+
+**Examples of Good Misconception Diagnoses:**
+- "The student likely thinks 'fewer' means the smaller number, not the difference between numbers."
+- "The student correctly identified the numbers but confused the '+' symbol with the '-' symbol."
+- "The student is only counting the items in the last group mentioned, not all the items combined."
+- "The student seems to believe all sides of a rectangle must be the same length."
+
+**Output Format:**
+Your response MUST be a single JSON object with one key: "misconception_text".
+
+{{
+  "misconception_text": "YOUR_DIAGNOSIS_HERE"
+}}
+"""
+
+            # Use Gemini client for misconception analysis
+            if self.client:
+                try:
+                    logger.info(f"🚀 [MISCONCEPTION_ANALYSIS] Sending diagnostic request to Gemini AI (model: {self.model_id})...")
+
+                    # Define JSON schema for response
+                    response_schema = {
+                        "type": "object",
+                        "properties": {
+                            "misconception_text": {"type": "string"}
+                        },
+                        "required": ["misconception_text"]
+                    }
+
+                    # Generate response with structured JSON
+                    response = await self.client.aio.models.generate_content(
+                        model=f'models/{self.model_id}',
+                        contents=[prompt],
+                        config=GenerateContentConfig(
+                            response_mime_type='application/json',
+                            response_schema=response_schema,
+                            temperature=0.7,
+                            max_output_tokens=512
+                        )
+                    )
+
+                    logger.info(f"📥 [MISCONCEPTION_ANALYSIS] Received response from Gemini AI")
+
+                    # Parse the JSON response
+                    if response and response.candidates and response.candidates[0].content.parts:
+                        response_text = response.candidates[0].content.parts[0].text.strip()
+                        logger.info(f"📄 [MISCONCEPTION_ANALYSIS] Raw response: {response_text[:200]}...")
+
+                        response_data = json.loads(response_text)
+                        misconception_text = response_data.get("misconception_text")
+
+                        if misconception_text:
+                            logger.info(f"🎯 [MISCONCEPTION_ANALYSIS] ========== AI DIAGNOSIS COMPLETE ==========")
+                            logger.info(f"🎯 [MISCONCEPTION_ANALYSIS] Student-specific misconception identified:")
+                            logger.info(f"🎯 [MISCONCEPTION_ANALYSIS] \"{misconception_text}\"")
+                            logger.info(f"🎯 [MISCONCEPTION_ANALYSIS] This describes WHY the student got it wrong, not WHAT the right answer is")
+                            return misconception_text
+                        else:
+                            logger.warning(f"⚠️ [MISCONCEPTION_ANALYSIS] AI returned empty misconception_text")
+                            logger.warning(f"⚠️ [MISCONCEPTION_ANALYSIS] Response data: {response_data}")
+                            return None
+                    else:
+                        logger.warning(f"⚠️ [MISCONCEPTION_ANALYSIS] Empty or invalid response structure from Gemini")
+                        logger.warning(f"⚠️ [MISCONCEPTION_ANALYSIS] Response: {response}")
+                        return None
+
+                except json.JSONDecodeError as e:
+                    logger.error(f"❌ [MISCONCEPTION_ANALYSIS] Failed to parse JSON response: {str(e)}")
+                    logger.error(f"❌ [MISCONCEPTION_ANALYSIS] Raw response text: {response_text if 'response_text' in locals() else 'N/A'}")
+                    return None
+                except Exception as e:
+                    logger.error(f"❌ [MISCONCEPTION_ANALYSIS] Error calling Gemini API: {str(e)}")
+                    import traceback
+                    logger.error(f"❌ [MISCONCEPTION_ANALYSIS] Traceback: {traceback.format_exc()}")
+                    return None
+            else:
+                logger.error(f"❌ [MISCONCEPTION_ANALYSIS] Gemini client not initialized - cannot perform AI analysis")
+                return None
+
+        except Exception as e:
+            logger.error(f"❌ [MISCONCEPTION_ANALYSIS] Unexpected error in analyze_misconception: {str(e)}")
+            import traceback
+            logger.error(f"❌ [MISCONCEPTION_ANALYSIS] Traceback: {traceback.format_exc()}")
+            return None
+
     async def save_problem_attempt(
-        self, 
-        student_id: int, 
+        self,
+        student_id: int,
         problem: Dict[str, Any],
         student_answer: str,
         is_correct: bool

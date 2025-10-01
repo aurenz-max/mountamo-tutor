@@ -188,10 +188,13 @@ async def generate_problem(
     problem_service.recommender = recommender
     problem_service.competency_service = competency_service
     problem_service.cosmos_db = cosmos_db
+    problem_service.user_profiles_service = user_profiles_service  # For misconception tracking
 
     try:
-        logger.info(f"User {user_context['email']} generating {request.count} problems for student {student_id}")
-        
+        logger.info(f"🎓 [GENERATE_ENDPOINT] User {user_context['email']} generating {request.count} problems for student {student_id}")
+        logger.info(f"📋 [GENERATE_ENDPOINT] Request: subject={request.subject}, unit={request.unit_id}, skill={request.skill_id}, subskill={request.subskill_id}")
+        logger.info(f"👤 [GENERATE_ENDPOINT] Firebase UID: {firebase_uid}")
+
         if not request.subject:
             raise HTTPException(status_code=400, detail="Subject is required")
         
@@ -251,14 +254,21 @@ async def generate_problem(
         
         else:
             # Multiple problems generation
+            logger.info(f"🔄 [GENERATE_ENDPOINT] Calling problem_service.get_problems() with count={request.count}")
+            logger.info(f"🎯 [MISCONCEPTION_ENGINE] Passing firebase_uid={firebase_uid} to enable misconception checking")
+
+            # MISCONCEPTION-DRIVEN PRACTICE ENGINE: Pass firebase_uid to enable misconception checking
             problems_data = await problem_service.get_problems(
                 student_id=student_id,
                 subject=request.subject,
                 count=request.count,
                 unit_id=context.get('unit'),
                 skill_id=context.get('skill'),
-                subskill_id=context.get('subskill')
+                subskill_id=context.get('subskill'),
+                firebase_uid=firebase_uid  # Enable misconception-driven remediation
             )
+
+            logger.info(f"✅ [GENERATE_ENDPOINT] Received {len(problems_data) if problems_data else 0} problems from service")
             
             if not problems_data:
                 # Log failure and raise error
@@ -332,23 +342,46 @@ async def submit_problem(
     student_id = user_context["student_id"]
 
     # Debug logging for raw submission data
-    logger.info(f"RAW SUBMISSION DEBUG for student {student_id}:")
-    logger.info(f"  submission.subject: {submission.subject}")
-    logger.info(f"  submission.skill_id: {submission.skill_id}")
-    logger.info(f"  submission.subskill_id: {submission.subskill_id}")
-    logger.info(f"  submission.student_answer: '{submission.student_answer}'")
-    logger.info(f"  submission.primitive_response: {submission.primitive_response}")
-    logger.info(f"  submission.canvas_used: {submission.canvas_used}")
-    logger.info(f"  submission.solution_image length: {len(submission.solution_image) if submission.solution_image else 0}")
+    logger.info(f"📨 [SUBMIT_ENDPOINT] ========== PROBLEM SUBMISSION START ==========")
+    logger.info(f"📨 [SUBMIT_ENDPOINT] Student: {student_id}, User: {user_context['email']}")
+    logger.info(f"📨 [SUBMIT_ENDPOINT] Firebase UID: {firebase_uid}")
+    logger.info(f"📋 [SUBMIT_ENDPOINT] Subject: {submission.subject}, Skill: {submission.skill_id}, Subskill: {submission.subskill_id}")
+    logger.info(f"💬 [SUBMIT_ENDPOINT] Student answer: '{submission.student_answer}'")
+    logger.info(f"📝 [SUBMIT_ENDPOINT] Primitive response: {submission.primitive_response}")
+    logger.info(f"🎨 [SUBMIT_ENDPOINT] Canvas used: {submission.canvas_used}")
+    logger.info(f"🖼️ [SUBMIT_ENDPOINT] Solution image: {'Yes' if submission.solution_image else 'No'} ({len(submission.solution_image) if submission.solution_image else 0} chars)")
+
+    # Check if this is a remedial problem
+    remediation_tag = submission.problem.get('metadata', {}).get('remediation_for_subskill_id')
+    if remediation_tag:
+        logger.info(f"🎯 [MISCONCEPTION_ENGINE] 🚨 This is a REMEDIAL problem for subskill: {remediation_tag}")
+    else:
+        logger.info(f"📝 [SUBMIT_ENDPOINT] This is a standard (non-remedial) problem")
 
     try:
         # Initialize submission service
+        # MISCONCEPTION-DRIVEN PRACTICE ENGINE: Inject user_profiles_service for resolution
         from ...services.submission_service import SubmissionService
-        submission_service = SubmissionService(review_service, competency_service, cosmos_db)
+        submission_service = SubmissionService(
+            review_service,
+            competency_service,
+            cosmos_db,
+            user_profiles_service  # Enable misconception resolution
+        )
 
         # The endpoint is now ONLY responsible for the submission logic
+        logger.info(f"🔄 [SUBMIT_ENDPOINT] Calling submission_service.handle_submission()")
         result = await submission_service.handle_submission(submission, user_context)
-        
+
+        logger.info(f"✅ [SUBMIT_ENDPOINT] Submission processed successfully")
+        logger.info(f"📊 [SUBMIT_ENDPOINT] Score: {result.review.get('score', 'N/A')}, Correct: {result.review.get('correct', 'N/A')}")
+
+        # Log if misconception was resolved
+        if result.review.get('metadata', {}).get('remediation_successful'):
+            logger.info(f"🎉 [MISCONCEPTION_ENGINE] ✅ Misconception successfully resolved!")
+
+        logger.info(f"📨 [SUBMIT_ENDPOINT] ========== PROBLEM SUBMISSION END ==========")
+
         return result
         
     except ValueError as e:
@@ -393,7 +426,13 @@ async def submit_problem_batch(
 
     try:
         from ...services.submission_service import SubmissionService
-        submission_service = SubmissionService(review_service, competency_service, cosmos_db)
+        # MISCONCEPTION-DRIVEN PRACTICE ENGINE: Inject user_profiles_service for resolution
+        submission_service = SubmissionService(
+            review_service,
+            competency_service,
+            cosmos_db,
+            user_profiles_service  # Enable misconception resolution
+        )
 
         import uuid
         batch_id = f"batch_{int(datetime.utcnow().timestamp())}_{uuid.uuid4().hex[:8]}"

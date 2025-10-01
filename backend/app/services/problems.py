@@ -24,6 +24,7 @@ class ProblemService:
         self.problem_optimizer = None  # Will be set by dependency injection
         self.master_context_generator = None  # Will be set by dependency injection
         self.context_primitives_generator = None  # Will be set by dependency injection
+        self.user_profiles_service = None  # Will be set by dependency injection (for misconceptions)
         self._problem_history = {}  # In-memory storage for now
         self._current_ai_service_type = "gemini"  # Default to Gemini for JSON schema support
 
@@ -164,6 +165,27 @@ Here are the specific learning objectives for each problem:
 """
             # Add each recommendation to the prompt
             for i, rec in enumerate(recommendations[:count]):
+                # MISCONCEPTION-DRIVEN PRACTICE ENGINE
+                # Check if this recommendation has a misconception to address
+                misconception_section = ""
+                if rec.get('misconception_to_address'):
+                    misconception_section = f"""
+### 🎯 CRITICAL REMEDIATION TASK ###
+This student has a specific misconception: "{rec.get('misconception_to_address')}"
+Your PRIMARY goal for this problem is to directly challenge and correct this misunderstanding.
+
+EFFECTIVE REMEDIATION STRATEGIES:
+- Create a True/False question that is FALSE *because* of the misconception
+- Design a Multiple Choice question where the misconception is a compelling distractor
+- Build a Categorization activity forcing differentiation between confused categories
+- Craft a Scenario that highlights why the misconception leads to errors
+
+Ensure the 'rationale' and 'teaching_note' EXPLICITLY explain why the misconception is incorrect
+and guide the student toward the correct understanding.
+###################################
+"""
+                    logger.info(f"[MISCONCEPTION_ENGINE] Problem #{i+1} will target: {rec.get('misconception_to_address')}")
+
                 prompt += f"""
 PROBLEM #{i+1}:
 Subject: {subject}
@@ -173,7 +195,7 @@ Subskill: {rec.get('subskill', {}).get('description', '')}
 Concept Group: {rec.get('detailed_objectives', {}).get('ConceptGroup', 'General')}
 Specific Learning Objective: {rec.get('detailed_objectives', {}).get('DetailedObjective', 'Basic understanding')}
 Difficulty Level: {rec.get('difficulty', 5.0)} (1-10 scale)
-
+{misconception_section}
 """
 
             # Add generation instructions
@@ -233,7 +255,8 @@ IMPORTANT:
         skill_id: Optional[str] = None,
         subskill_id: Optional[str] = None,
         unit_id: Optional[str] = None,
-        recommendations: Optional[List[Dict[str, Any]]] = None
+        recommendations: Optional[List[Dict[str, Any]]] = None,
+        firebase_uid: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Universal method to get 1 or more problems.
@@ -251,12 +274,16 @@ IMPORTANT:
             List of problem objects (empty list if none found)
         """
         try:
-            print(f"[DEBUG] Getting {count} problems for student {student_id}, subject {subject}")
-            
+            logger.info(f"🔵 [PROBLEM_SERVICE] get_problems() called: student_id={student_id}, subject={subject}, count={count}")
+            logger.info(f"🔵 [PROBLEM_SERVICE] Filters: skill_id={skill_id}, subskill_id={subskill_id}, unit_id={unit_id}")
+            logger.info(f"🔵 [PROBLEM_SERVICE] firebase_uid={'provided' if firebase_uid else 'NOT PROVIDED'}")
+
             # Ensure dependencies are available
             if not self.recommender or not self.competency_service:
-                print("[ERROR] Required services not initialized")
+                logger.error(f"❌ [PROBLEM_SERVICE] Required services not initialized - recommender: {bool(self.recommender)}, competency: {bool(self.competency_service)}")
                 return []
+
+            logger.info(f"✅ [PROBLEM_SERVICE] Dependencies validated - user_profiles_service: {bool(self.user_profiles_service)}")
             
             final_problems = []
             formatted_recs = []
@@ -332,11 +359,42 @@ IMPORTANT:
                         subject=subject,
                         subskill_id=recommendation['subskill']['id']
                     )
-                    
+
+                    # MISCONCEPTION-DRIVEN PRACTICE ENGINE
+                    # Check if student has an active misconception for this subskill
+                    misconception_text = None
+                    subskill_id_for_check = recommendation['subskill']['id']
+
+                    logger.info(f"🔍 [MISCONCEPTION_ENGINE] Checking for misconceptions - subskill_id={subskill_id_for_check}")
+                    logger.info(f"🔍 [MISCONCEPTION_ENGINE] user_profiles_service available: {bool(self.user_profiles_service)}")
+                    logger.info(f"🔍 [MISCONCEPTION_ENGINE] firebase_uid available: {bool(firebase_uid)}")
+
+                    if self.user_profiles_service and firebase_uid:
+                        logger.info(f"🔍 [MISCONCEPTION_ENGINE] Calling get_active_misconception_for_subskill(uid={firebase_uid[:8]}..., subskill_id={subskill_id_for_check})")
+                        misconception = await self.user_profiles_service.get_active_misconception_for_subskill(
+                            uid=firebase_uid,
+                            subskill_id=subskill_id_for_check
+                        )
+                        if misconception:
+                            misconception_text = misconception.misconception_text
+                            logger.info(f"🎯 [MISCONCEPTION_ENGINE] ✅ FOUND active misconception for subskill {subskill_id_for_check}")
+                            logger.info(f"🎯 [MISCONCEPTION_ENGINE] Misconception text: {misconception_text[:100]}...")
+                        else:
+                            logger.info(f"✅ [MISCONCEPTION_ENGINE] No active misconception found for subskill {subskill_id_for_check}")
+                    else:
+                        if not self.user_profiles_service:
+                            logger.warning(f"⚠️ [MISCONCEPTION_ENGINE] user_profiles_service not available - skipping misconception check")
+                        if not firebase_uid:
+                            logger.warning(f"⚠️ [MISCONCEPTION_ENGINE] firebase_uid not provided - skipping misconception check")
+
                     formatted_recs.append({
                         **recommendation,
-                        'detailed_objectives': objectives
+                        'detailed_objectives': objectives,
+                        'misconception_to_address': misconception_text  # Add misconception to recommendation
                     })
+
+                    if misconception_text:
+                        logger.info(f"📝 [MISCONCEPTION_ENGINE] Added misconception to recommendation for problem generation")
             
             # Generate problems if we have recommendations that need new problems
             if formatted_recs:
@@ -368,6 +426,26 @@ IMPORTANT:
                                 
                                 for gemini_problem in response_data[problem_type]:
                                     if problem_counter < len(formatted_recs):
+                                        # MISCONCEPTION-DRIVEN PRACTICE ENGINE
+                                        # Add remediation metadata if this problem targets a misconception
+                                        metadata = {
+                                            'subject': subject,
+                                            'unit': formatted_recs[problem_counter].get('unit'),
+                                            'skill': formatted_recs[problem_counter].get('skill'),
+                                            'subskill': formatted_recs[problem_counter].get('subskill'),
+                                            'difficulty': formatted_recs[problem_counter].get('difficulty'),
+                                            'objectives': formatted_recs[problem_counter].get('detailed_objectives')
+                                        }
+
+                                        # Add remediation tag if problem targets a misconception
+                                        if formatted_recs[problem_counter].get('misconception_to_address'):
+                                            subskill_id = formatted_recs[problem_counter]['subskill']['id']
+                                            metadata['remediation_for_subskill_id'] = subskill_id
+                                            logger.info(f"🏷️ [MISCONCEPTION_ENGINE] ✅ Tagged problem #{problem_counter+1} as REMEDIAL for subskill {subskill_id}")
+                                            logger.info(f"🏷️ [MISCONCEPTION_ENGINE] Problem type: {problem_type}, Problem ID: {gemini_problem.get('id', 'unknown')}")
+                                        else:
+                                            logger.info(f"📝 [PROBLEM_SERVICE] Problem #{problem_counter+1} is standard (not remedial)")
+
                                         # Take Gemini's structured problem and just add our metadata
                                         enriched_problem = {
                                             **gemini_problem,  # Keep all of Gemini's rich structure
@@ -376,14 +454,7 @@ IMPORTANT:
                                             # Don't set user_id here - let endpoint handle it
                                             'generated_at': datetime.now().isoformat(),
                                             'composable_template': None,
-                                            'metadata': {
-                                                'subject': subject,
-                                                'unit': formatted_recs[problem_counter].get('unit'),
-                                                'skill': formatted_recs[problem_counter].get('skill'),
-                                                'subskill': formatted_recs[problem_counter].get('subskill'),
-                                                'difficulty': formatted_recs[problem_counter].get('difficulty'),
-                                                'objectives': formatted_recs[problem_counter].get('detailed_objectives')
-                                            }
+                                            'metadata': metadata
                                         }
                                         
                                         # Cache the problem

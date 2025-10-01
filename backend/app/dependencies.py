@@ -354,6 +354,11 @@ async def get_problem_service(
         from .generators.context_primitives import ContextPrimitivesGenerator
         _problem_service.context_primitives_generator = ContextPrimitivesGenerator(cosmos_service=cosmos_db)
 
+    # MISCONCEPTION-DRIVEN PRACTICE ENGINE: Inject user_profiles_service for misconception checking
+    if _problem_service.user_profiles_service is None:
+        logger.info("Setting user_profiles_service on ProblemService for misconception-driven remediation")
+        _problem_service.user_profiles_service = user_profiles_service
+
     return _problem_service
 
 def get_review_service(

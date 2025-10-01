@@ -399,10 +399,12 @@ async def create_assessment(
         logger.info(f"User {user_context['email']} creating full assessment for student {request.student_id}, subject: {subject}")
 
         # Generate the complete assessment with problems
+        # Pass firebase_uid to enable misconception-driven practice
         assessment = await assessment_service.generate_assessment_problems(
             student_id=request.student_id,
             subject=subject,
-            question_count=request.question_count
+            question_count=request.question_count,
+            firebase_uid=firebase_uid
         )
 
         if not assessment:

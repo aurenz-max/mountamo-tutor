@@ -27,11 +27,12 @@ logger = logging.getLogger(__name__)
 
 class SubmissionService:
     """Universal problem submission handler"""
-    
-    def __init__(self, review_service: ReviewService, competency_service: CompetencyService, cosmos_db=None):
+
+    def __init__(self, review_service: ReviewService, competency_service: CompetencyService, cosmos_db=None, user_profiles_service=None):
         self.review_service = review_service
         self.competency_service = competency_service
         self.cosmos_db = cosmos_db
+        self.user_profiles_service = user_profiles_service
     
     async def handle_submission(
         self,
@@ -45,8 +46,17 @@ class SubmissionService:
         firebase_uid = user_context["firebase_uid"]
         student_id = user_context["student_id"]
 
-        logger.info(f"[SUBMISSION_SERVICE] User {user_context['email']} submitting problem for student {student_id}")
-        logger.info(f"[SUBMISSION_SERVICE] Problem ID: {submission.problem.get('id')}")
+        logger.info(f"🟢 [SUBMISSION_SERVICE] ========== HANDLE_SUBMISSION START ==========")
+        logger.info(f"🟢 [SUBMISSION_SERVICE] User: {user_context['email']}, Student: {student_id}")
+        logger.info(f"🟢 [SUBMISSION_SERVICE] Problem ID: {submission.problem.get('id')}")
+        logger.info(f"🟢 [SUBMISSION_SERVICE] Firebase UID: {firebase_uid[:8]}...")
+
+        # Check for remediation tag
+        remediation_subskill_id = submission.problem.get('metadata', {}).get('remediation_for_subskill_id')
+        if remediation_subskill_id:
+            logger.info(f"🎯 [MISCONCEPTION_ENGINE] This submission is for a REMEDIAL problem (subskill: {remediation_subskill_id})")
+        else:
+            logger.info(f"📝 [SUBMISSION_SERVICE] This is a standard problem submission")
 
         try:
             # STEP 1: Convert problem to standardized format
@@ -91,8 +101,137 @@ class SubmissionService:
                 evaluation={'score': evaluation.score, 'correct': evaluation.is_correct}
             )
 
-            # STEP 6: Save to CosmosDB
+            # STEP 5.5: MISCONCEPTION-DRIVEN PRACTICE ENGINE
+            # A) Resolve misconception if this was a remedial problem and submission was correct
+            # B) Create new misconception if regular problem was answered incorrectly
+            logger.info(f"🔍 [MISCONCEPTION_ENGINE] ========== CHECKING FOR MISCONCEPTION RESOLUTION ==========")
+            logger.info(f"🔍 [MISCONCEPTION_ENGINE] Evaluation - is_correct: {evaluation.is_correct}, score: {evaluation.score}")
+
+            remediation_successful = False
+            misconception_created = False
+
+            if evaluation.is_correct and evaluation.score >= 8:
+                # ======================================================================
+                # PART A: RESOLVE MISCONCEPTION (student got remedial problem correct)
+                # ======================================================================
+                logger.info(f"✅ [MISCONCEPTION_ENGINE] Problem answered correctly with high score - checking for remediation tag")
+                remediation_subskill_id = submission.problem.get('metadata', {}).get('remediation_for_subskill_id')
+
+                if remediation_subskill_id:
+                    logger.info(f"🎯 [MISCONCEPTION_ENGINE] REMEDIATION TAG FOUND: subskill_id={remediation_subskill_id}")
+
+                    if self.user_profiles_service:
+                        logger.info(f"🔄 [MISCONCEPTION_ENGINE] Calling user_profiles_service.resolve_misconception()")
+                        logger.info(f"🔄 [MISCONCEPTION_ENGINE] Parameters: uid={firebase_uid[:8]}..., subskill_id={remediation_subskill_id}")
+
+                        resolved = await self.user_profiles_service.resolve_misconception(
+                            uid=firebase_uid,
+                            subskill_id=remediation_subskill_id
+                        )
+
+                        if resolved:
+                            remediation_successful = True
+                            logger.info(f"🎉 [MISCONCEPTION_ENGINE] ✅✅✅ MISCONCEPTION SUCCESSFULLY RESOLVED! ✅✅✅")
+                            logger.info(f"🎉 [MISCONCEPTION_ENGINE] Student {student_id} has overcome misconception for subskill {remediation_subskill_id}")
+                        else:
+                            logger.error(f"❌ [MISCONCEPTION_ENGINE] Failed to resolve misconception - resolve_misconception returned False")
+                    else:
+                        logger.error(f"❌ [MISCONCEPTION_ENGINE] user_profiles_service not available - cannot resolve misconception")
+                else:
+                    logger.info(f"📝 [MISCONCEPTION_ENGINE] No remediation tag found - this is a standard problem")
+            else:
+                # ======================================================================
+                # PART B: CREATE MISCONCEPTION (student got problem wrong)
+                # ======================================================================
+                if not evaluation.is_correct:
+                    logger.info(f"❌ [MISCONCEPTION_ENGINE] Problem answered incorrectly - checking if we should identify misconception")
+
+                    # Check if this is a remedial problem - we don't want to create misconceptions from remedial problems
+                    if remediation_subskill_id:
+                        logger.info(f"⏭️ [MISCONCEPTION_ENGINE] Skipping misconception creation - this is a remedial problem")
+                    else:
+                        # Extract subskill_id from submission
+                        subskill_id = submission.subskill_id or submission.problem.get('metadata', {}).get('subskill', {}).get('id')
+
+                        logger.info(f"🔍 [MISCONCEPTION_ENGINE] Extracted subskill_id: {subskill_id}")
+                        logger.info(f"🔍 [MISCONCEPTION_ENGINE] submission.subskill_id: {submission.subskill_id}")
+                        logger.info(f"🔍 [MISCONCEPTION_ENGINE] user_profiles_service available: {bool(self.user_profiles_service)}")
+
+                        if subskill_id and subskill_id != 'unknown' and self.user_profiles_service:
+                            logger.info(f"🧠 [MISCONCEPTION_ENGINE] ========== INVOKING AI MISCONCEPTION ANALYSIS ==========")
+                            logger.info(f"🧠 [MISCONCEPTION_ENGINE] Standard problem answered incorrectly - analyzing root cause with AI")
+                            logger.info(f"🧠 [MISCONCEPTION_ENGINE] This will identify WHY the student got it wrong (student-specific)")
+                            logger.info(f"🧠 [MISCONCEPTION_ENGINE] NOT just explaining what the correct answer is (problem-specific)")
+
+                            # Use AI to analyze the misconception
+                            # Pass the standardized question + evaluation data
+                            misconception_text = await self.review_service.analyze_misconception(
+                                question=standard_question,
+                                evaluation=evaluation
+                            )
+
+                            logger.info(f"🔙 [MISCONCEPTION_ENGINE] Returned from AI analysis")
+
+                            if misconception_text:
+                                # Store the AI-generated misconception
+                                logger.info(f"💾 [MISCONCEPTION_ENGINE] AI analysis successful! Storing student-specific misconception...")
+                                logger.info(f"💾 [MISCONCEPTION_ENGINE] Misconception text: \"{misconception_text[:150]}...\"")
+
+                                try:
+                                    success = await self.user_profiles_service.add_or_update_misconception(
+                                        uid=firebase_uid,
+                                        subskill_id=subskill_id,
+                                        misconception_text=misconception_text,
+                                        assessment_id="practice_session_analysis"  # New source ID for AI-driven analysis
+                                    )
+
+                                    if success:
+                                        misconception_created = True
+                                        logger.info(f"✅ [MISCONCEPTION_ENGINE] ========== AI-DRIVEN MISCONCEPTION STORED ==========")
+                                        logger.info(f"✅ [MISCONCEPTION_ENGINE] User: {firebase_uid[:8]}..., Subskill: {subskill_id}")
+                                        logger.info(f"✅ [MISCONCEPTION_ENGINE] Source: practice_session_analysis (AI-powered)")
+                                        logger.info(f"✅ [MISCONCEPTION_ENGINE] Misconception captures student's thinking error, not correct answer explanation")
+                                    else:
+                                        logger.warning(f"⚠️ [MISCONCEPTION_ENGINE] Failed to store misconception in user profile")
+                                except Exception as e:
+                                    logger.error(f"❌ [MISCONCEPTION_ENGINE] Error storing misconception: {e}")
+                                    import traceback
+                                    logger.error(f"❌ [MISCONCEPTION_ENGINE] Traceback: {traceback.format_exc()}")
+                            else:
+                                # Fallback: AI analysis failed, store generic misconception
+                                logger.warning(f"⚠️ [MISCONCEPTION_ENGINE] AI analysis failed. Storing generic misconception.")
+                                skill_desc = submission.problem.get('metadata', {}).get('skill', {}).get('description', 'this concept')
+                                fallback_text = f"Student requires further review on {skill_desc}."
+
+                                try:
+                                    success = await self.user_profiles_service.add_or_update_misconception(
+                                        uid=firebase_uid,
+                                        subskill_id=subskill_id,
+                                        misconception_text=fallback_text,
+                                        assessment_id="practice_session_fallback"
+                                    )
+                                    if success:
+                                        misconception_created = True
+                                        logger.info(f"✅ [MISCONCEPTION_ENGINE] Fallback misconception stored")
+                                except Exception as e:
+                                    logger.error(f"❌ [MISCONCEPTION_ENGINE] Error storing fallback misconception: {e}")
+                        else:
+                            if not subskill_id or subskill_id == 'unknown':
+                                logger.warning(f"⚠️ [MISCONCEPTION_ENGINE] Cannot create misconception - subskill_id is missing or 'unknown'")
+                            elif not self.user_profiles_service:
+                                logger.warning(f"⚠️ [MISCONCEPTION_ENGINE] Cannot create misconception - user_profiles_service not available")
+                elif evaluation.score < 8:
+                    logger.info(f"⚠️ [MISCONCEPTION_ENGINE] Score too low ({evaluation.score}) - could track misconception in future")
+
+            # STEP 6: Save to CosmosDB (with remediation metadata)
             if self.cosmos_db:
+                # Add remediation metadata to review before saving
+                review['metadata'] = review.get('metadata', {})
+                if remediation_successful:
+                    review['metadata']['remediation_successful'] = True
+                if misconception_created:
+                    review['metadata']['misconception_created'] = True
+
                 await self._save_attempt_and_review(
                     submission, user_context, review, standard_question.dict()
                 )

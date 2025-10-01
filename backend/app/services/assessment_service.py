@@ -11,6 +11,7 @@ from .curriculum_service import CurriculumService
 from .submission_service import SubmissionService
 from .engagement_service import engagement_service
 from .ai_assessment_service import AIAssessmentService
+from .user_profiles import user_profiles_service
 from ..db.cosmos_db import CosmosDBService
 from ..schemas.problem_submission import ProblemSubmission
 from ..schemas.assessment_problems import (
@@ -63,6 +64,9 @@ class ProcessedReview:
     unit_title: str
     subject: str
     category: str  # Pre-assigned category (weak_spots, recent_practice, etc.)
+
+    # Misconception-Driven Practice Engine fields
+    misconception: str = ""  # Problem-specific misconception from AI (empty if correct)
 
 
 class AssessmentService:
@@ -377,7 +381,8 @@ class AssessmentService:
         self,
         student_id: int,
         subject: str,
-        question_count: int = 15
+        question_count: int = 15,
+        firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Generate a complete personalized assessment with problems.
@@ -386,6 +391,7 @@ class AssessmentService:
             student_id: The student's ID
             subject: Subject to assess
             question_count: Number of questions to include
+            firebase_uid: Optional Firebase UID for misconception lookup
 
         Returns:
             Dict containing the assessment blueprint and generated problems
@@ -398,9 +404,10 @@ class AssessmentService:
                 student_id, subject, question_count
             )
 
-            # 2. Convert blueprint to problem recommendations format
-            recommendations = self._convert_blueprint_to_recommendations(
-                blueprint['selected_subskills']
+            # 2. Convert blueprint to problem recommendations format with misconceptions
+            recommendations = await self._convert_blueprint_to_recommendations(
+                blueprint['selected_subskills'],
+                firebase_uid=firebase_uid
             )
 
             if not recommendations:
@@ -462,8 +469,24 @@ class AssessmentService:
             logger.error(f"Error generating assessment problems: {e}")
             raise
 
-    def _convert_blueprint_to_recommendations(self, selected_subskills: List[Dict]) -> List[Dict]:
-        """Convert blueprint subskills to ProblemService recommendations format."""
+    async def _convert_blueprint_to_recommendations(
+        self,
+        selected_subskills: List[Dict],
+        firebase_uid: Optional[str] = None
+    ) -> List[Dict]:
+        """
+        Convert blueprint subskills to ProblemService recommendations format.
+
+        For weak-spot subskills, this method looks up active misconceptions and attaches them
+        to enable targeted remediation (Misconception-Driven Practice Engine).
+
+        Args:
+            selected_subskills: List of subskills from the assessment blueprint
+            firebase_uid: Optional Firebase UID to look up misconceptions
+
+        Returns:
+            List of recommendation dicts with optional misconception_to_address field
+        """
         recommendations = []
 
         for subskill in selected_subskills:
@@ -489,7 +512,29 @@ class AssessmentService:
                 "unit_id": subskill.get('unit_id'),
                 "unit_title": subskill.get('unit_title')
             }
+
+            # MISCONCEPTION-DRIVEN PRACTICE ENGINE
+            # For weak-spot subskills, look up active misconceptions for targeted remediation
+            if firebase_uid and subskill.get('category') == 'weak_spots':
+                try:
+                    misconception = await user_profiles_service.get_active_misconception_for_subskill(
+                        uid=firebase_uid,
+                        subskill_id=subskill.get('subskill_id')
+                    )
+
+                    if misconception and misconception.misconception_text:
+                        recommendation['misconception_to_address'] = misconception.misconception_text
+                        logger.info(f"🎯 MISCONCEPTION_ENGINE: Attaching misconception for subskill {subskill.get('subskill_id')}")
+                        logger.info(f"   Misconception: {misconception.misconception_text}")
+                except Exception as e:
+                    logger.error(f"❌ MISCONCEPTION_ENGINE: Error looking up misconception: {e}")
+
             recommendations.append(recommendation)
+
+        # Log summary of recommendations with misconceptions
+        misconception_count = sum(1 for r in recommendations if r.get('misconception_to_address'))
+        if misconception_count > 0:
+            logger.info(f"💡 MISCONCEPTION_ENGINE: {misconception_count}/{len(recommendations)} problems will target specific misconceptions")
 
         return recommendations
 
@@ -1117,7 +1162,8 @@ class AssessmentService:
                 "subskill_name": review.subskill_description,
                 "unit_id": review.unit_id,
                 "unit_title": review.unit_title,
-                "problem_type": review.problem_content.get("problem_type", "unknown")
+                "problem_type": review.problem_content.get("problem_type", "unknown"),
+                "misconception": review.misconception  # Include problem-specific misconception
             }
             problem_reviews.append(problem_review)
 
@@ -1229,6 +1275,49 @@ class AssessmentService:
                     logger.info(f"🔍 ASSESSMENT_INSIGHTS: Performance: {insight.get('performance_label')}")
             else:
                 logger.warning(f"🔍 ASSESSMENT_INSIGHTS: No skill insights generated for assessment {assessment_id}")
+
+            # Merge AI-generated problem-level misconceptions into processed reviews
+            if ai_insights_data and ai_insights_data.get('problem_insights'):
+                problem_insights_map = {
+                    insight.get("problem_id"): insight.get("misconception", "")
+                    for insight in ai_insights_data['problem_insights']
+                }
+                for pr in processed_reviews:
+                    pr.misconception = problem_insights_map.get(pr.problem_id, "")
+                    if pr.misconception and not pr.is_correct:
+                        logger.info(f"💡 MISCONCEPTION: Problem {pr.problem_id} (subskill {pr.subskill_id}): {pr.misconception}")
+
+            # ============================================================================
+            # MISCONCEPTION-DRIVEN PRACTICE ENGINE
+            # Persist problem-specific misconceptions for targeted remediation
+            # ============================================================================
+            if firebase_uid:
+                misconceptions_stored = 0
+                for pr in processed_reviews:
+                    # Only store misconceptions for incorrect problems that have a misconception identified
+                    if not pr.is_correct and pr.misconception and pr.misconception.strip():
+                        try:
+                            success = await user_profiles_service.add_or_update_misconception(
+                                uid=firebase_uid,
+                                subskill_id=pr.subskill_id,
+                                misconception_text=pr.misconception,
+                                assessment_id=assessment_id
+                            )
+                            if success:
+                                misconceptions_stored += 1
+                                logger.info(f"✅ MISCONCEPTION_ENGINE: Stored misconception for problem {pr.problem_id}")
+                                logger.info(f"   Subskill: {pr.subskill_id} - {pr.subskill_description}")
+                                logger.info(f"   Category: {pr.category}")
+                                logger.info(f"   Misconception: {pr.misconception}")
+                        except Exception as e:
+                            logger.error(f"❌ MISCONCEPTION_ENGINE: Error storing misconception for problem {pr.problem_id}: {e}")
+
+                if misconceptions_stored > 0:
+                    logger.info(f"💡 MISCONCEPTION_ENGINE: Stored {misconceptions_stored} problem-specific misconceptions")
+                else:
+                    logger.info(f"✨ MISCONCEPTION_ENGINE: No misconceptions identified or all answers correct!")
+            else:
+                logger.info(f"ℹ️ MISCONCEPTION_ENGINE: No firebase_uid provided, skipping misconception storage")
 
             # 4. FINAL ASSEMBLY: Combine the built parts into the final results object.
             final_results = {

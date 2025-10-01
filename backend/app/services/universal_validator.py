@@ -151,6 +151,7 @@ class UniversalValidator:
 
                 elif question_type == QuestionType.SEQUENCING:
                     sequencing_answer = (
+                        primitive_response.get('student_sequence') or
                         primitive_response.get('sequence') or
                         primitive_response.get('answer') or
                         primitive_response.get('items')

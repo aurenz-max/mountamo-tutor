@@ -9,6 +9,27 @@ from typing import Optional, Dict, Any, List
 
 
 # ============================================================================
+# MISCONCEPTION MODELS
+# ============================================================================
+
+class StudentMisconception(BaseModel):
+    """Model for tracking student learning misconceptions identified through assessments"""
+    subskill_id: str = Field(..., description="The subskill this misconception relates to")
+    misconception_text: str = Field(..., description="AI-generated description of the misconception")
+    source_assessment_id: str = Field(..., description="Assessment ID that identified this misconception")
+    last_detected_at: datetime = Field(default_factory=datetime.utcnow, description="When this misconception was last detected")
+    status: str = Field(default="active", description="Status: 'active' or 'resolved'")
+
+    @validator('status')
+    def validate_status(cls, v):
+        """Validate misconception status"""
+        valid_statuses = ['active', 'resolved']
+        if v not in valid_statuses:
+            raise ValueError(f'Status must be one of: {", ".join(valid_statuses)}')
+        return v
+
+
+# ============================================================================
 # ONBOARDING MODELS
 # ============================================================================
 
@@ -66,6 +87,8 @@ class UserProfile(BaseModel):
     preferences: Dict[str, Any] = {}
     onboarding_completed: bool = False
     onboarding_completed_at: Optional[datetime] = None
+    # Misconception tracking for adaptive learning
+    misconceptions: List[StudentMisconception] = Field(default_factory=list, description="Student's identified learning misconceptions")
 
 
 class UserProfileUpdate(BaseModel):

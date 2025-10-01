@@ -91,11 +91,15 @@ ASSESSMENT_AI_INSIGHTS_SCHEMA = Schema(
                             "encouragement": Schema(type="string", description="Encouraging message")
                         },
                         required=["praise", "guidance", "encouragement"]
+                    ),
+                    "misconception": Schema(
+                        type="string",
+                        description="Specific misconception identified for this incorrect problem, or empty string if correct"
                     )
                 },
-                required=["problem_id", "analysis", "feedback"]
+                required=["problem_id", "analysis", "feedback", "misconception"]
             ),
-            description="AI analysis for problems, joined by problem_id"
+            description="AI analysis for problems, joined by problem_id with problem-specific misconceptions"
         )
     },
     required=["ai_summary", "performance_quote", "skill_insights", "common_misconceptions", "problem_insights"]
@@ -179,6 +183,7 @@ GENERATE COMPREHENSIVE INSIGHTS:
    - problem_id: Use the EXACT problem identifier from "DETAILED PROBLEM REVIEWS" section above
    - analysis: Understanding and approach (acknowledge if not attempted)
    - feedback: Appropriate praise, guidance, and encouragement for the response given
+   - misconception: For INCORRECT problems only, identify the specific misconception (e.g., "Student confuses recreational services with educational services"). For correct problems, use empty string "".
 
 HOLISTIC ANALYSIS PRIORITIES:
 - Notice and comment on overall engagement patterns (completion rate, confidence)
