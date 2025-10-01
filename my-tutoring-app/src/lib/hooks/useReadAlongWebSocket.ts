@@ -25,7 +25,8 @@ export default function useReadAlongWebSocket({
 
     const connectWebSocket = () => {
       // Connect to the existing tutoring websocket endpoint
-      ws = new WebSocket('ws://localhost:8000/api/tutoring/session')
+      const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+      ws = new WebSocket(`${wsBaseUrl}/api/tutoring/session`)
       wsRef.current = ws
       
       ws.onopen = () => {

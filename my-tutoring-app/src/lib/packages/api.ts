@@ -4,7 +4,7 @@ import type { PackageFilters, PackageCard, ContentPackage } from './types';
 class PackageAPI {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:8000/api/packages') {
+  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/packages` : 'http://localhost:8000/api/packages') {
     this.baseUrl = baseUrl;
   }
 
@@ -109,9 +109,8 @@ class PackageAPI {
     const params = new URLSearchParams();
     if (studentId) params.append('student_id', studentId.toString());
     
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Connect to your backend server on port 8000, not the frontend on port 3000
-    const wsUrl = `${protocol}//localhost:8000/api/packages/${packageId}/learn?${params}`;
+    const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+    const wsUrl = `${wsBaseUrl}/api/packages/${packageId}/learn?${params}`;
     
     console.log('🔌 Creating WebSocket connection to:', wsUrl);
     return new WebSocket(wsUrl);

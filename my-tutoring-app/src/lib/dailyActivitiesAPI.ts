@@ -94,7 +94,7 @@ export class DailyActivitiesAPI {
   private baseURL: string;
   private getAuthToken: () => Promise<string | null>;
 
-  constructor(baseURL: string = 'http://localhost:8000/api/daily-activities', getAuthToken: () => Promise<string | null>) {
+  constructor(baseURL: string = process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/daily-activities` : 'http://localhost:8000/api/daily-activities', getAuthToken: () => Promise<string | null>) {
     this.baseURL = baseURL;
     this.getAuthToken = getAuthToken;
   }

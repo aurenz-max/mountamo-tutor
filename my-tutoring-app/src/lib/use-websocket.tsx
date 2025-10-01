@@ -123,7 +123,8 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
     shouldReconnect.current = true
 
       try {
-    ws.current = new WebSocket('ws://localhost:8000/api/gemini/chat');
+    const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+    ws.current = new WebSocket(`${wsBaseUrl}/api/gemini/chat`);
     
     ws.current.onopen = () => {
       console.log('WebSocket connection established');

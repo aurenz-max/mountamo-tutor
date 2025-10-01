@@ -541,8 +541,8 @@ async createPracticeTutorWebSocket(topicContext: any): Promise<WebSocket> {
     throw new Error('Authentication required for Practice Tutor WebSocket connection');
   }
 
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//localhost:8000/api/practice-tutor`;
+  const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+  const wsUrl = `${wsBaseUrl}/api/practice-tutor`;
   
   console.log('🎯 Creating Practice Tutor WebSocket connection to:', wsUrl);
   
@@ -615,9 +615,9 @@ async createLearningSessionWebSocket(packageId: string, studentId?: number): Pro
 
   const params = new URLSearchParams();
   if (studentId) params.append('student_id', studentId.toString());
-  
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//localhost:8000/api/packages/${packageId}/learn?${params}`;
+
+  const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+  const wsUrl = `${wsBaseUrl}/api/packages/${packageId}/learn?${params}`;
   
   console.log('🔌 Creating WebSocket connection to:', wsUrl);
   

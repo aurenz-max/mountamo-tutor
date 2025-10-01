@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+  ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api`
+  : 'http://localhost:8000/api';
 
 
 export interface TutoringSession {
@@ -642,7 +644,8 @@ async getSubskillCompetency(data: { // New function for subskill-level competenc
   
 // WebSocket connection helper for STT
 connectSTT(): WebSocket {
-  const ws = new WebSocket('ws://localhost:8000/api/stt/stream');
+  const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+  const ws = new WebSocket(`${wsBaseUrl}/api/stt/stream`);
   
   ws.onopen = () => {
     console.log('STT WebSocket connected');
@@ -658,12 +661,12 @@ connectSTT(): WebSocket {
   return ws;
 },
 
-  getAdvancedRecommendations: async ({ student_id, subject, limit = 5 }) => {
+  getAdvancedRecommendations: async ({ student_id, subject, limit = 5 }: { student_id: number; subject: string; limit?: number }) => {
     try {
-      console.log(`Fetching advanced recommendations: http://localhost:8000/api/analytics/student/${student_id}/recommendations?subject=${subject}&limit=${limit}`);
-      
+      console.log(`Fetching advanced recommendations: ${API_BASE_URL}/analytics/student/${student_id}/recommendations?subject=${subject}&limit=${limit}`);
+
       const response = await fetch(
-        `http://localhost:8000/api/analytics/student/${student_id}/recommendations?subject=${subject}&limit=${limit}`
+        `${API_BASE_URL}/analytics/student/${student_id}/recommendations?subject=${subject}&limit=${limit}`
       );
       
       if (!response.ok) {

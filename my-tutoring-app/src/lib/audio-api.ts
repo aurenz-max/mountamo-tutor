@@ -32,7 +32,8 @@ export class AudioAPI {
 
   private setupWebSocket(callbacks: AudioCallback): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
-      const ws = new WebSocket(`ws://localhost:8000/api/audio/ws/audio/${this.feature}`);
+      const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+      const ws = new WebSocket(`${wsBaseUrl}/api/audio/ws/audio/${this.feature}`);
 
       ws.onopen = () => {
         console.log('WebSocket connection established');

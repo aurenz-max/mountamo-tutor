@@ -1,6 +1,8 @@
 // src/lib/visualContentApi.ts
 
-const VISUAL_API_BASE_URL = 'http://localhost:8000/api/visual';
+const VISUAL_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+  ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/visual`
+  : 'http://localhost:8000/api/visual';
 
 export interface ImageCategory {
   category: string;
