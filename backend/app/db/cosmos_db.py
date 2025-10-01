@@ -100,6 +100,35 @@ class CosmosDBService:
             unique_key_policy={'uniqueKeys': [{'paths': ['/subskill_id']}]}
         )
 
+        # 🆕 NEW: Parent Portal containers
+        self.parent_accounts = self.database.create_container_if_not_exists(
+            id="parent_accounts",
+            partition_key=PartitionKey(path="/parent_uid"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/email']}]}
+        )
+
+        self.parent_student_links = self.database.create_container_if_not_exists(
+            id="parent_student_links",
+            partition_key=PartitionKey(path="/parent_uid")
+        )
+
+        self.explorer_projects = self.database.create_container_if_not_exists(
+            id="explorer_projects",
+            partition_key=PartitionKey(path="/subject")
+        )
+
+        self.session_summaries = self.database.create_container_if_not_exists(
+            id="session_summaries",
+            partition_key=PartitionKey(path="/student_id")
+        )
+
+        # 🆕 NEW: Weekly Plans container for Proactive Weekly Learning Planner
+        self.weekly_plans = self.database.create_container_if_not_exists(
+            id="weekly_plans",
+            partition_key=PartitionKey(path="/student_id"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/student_id', '/week_start_date']}]}
+        )
+
     # ============================================================================
     # 🔥 NEW: STUDENT MAPPING METHODS
     # ============================================================================
@@ -2678,5 +2707,416 @@ class CosmosDBService:
         except Exception as e:
             logger.error(f"Error getting recent completed assessments: {str(e)}")
             return []
+
+    # ============================================================================
+    # 🆕 NEW: PARENT PORTAL METHODS
+    # ============================================================================
+
+    async def upsert_parent_account(self, parent_account_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create or update a parent account"""
+        try:
+            # Ensure required fields
+            if 'id' not in parent_account_data:
+                parent_account_data['id'] = parent_account_data['parent_uid']
+
+            parent_account_data['updated_at'] = datetime.utcnow().isoformat()
+
+            result = self.parent_accounts.upsert_item(body=parent_account_data)
+            logger.info(f"✅ Upserted parent account: {parent_account_data['parent_uid']}")
+            return result
+        except Exception as e:
+            logger.error(f"❌ Error upserting parent account: {str(e)}")
+            raise
+
+    async def get_parent_account(self, parent_uid: str) -> Optional[Dict[str, Any]]:
+        """Get parent account by Firebase UID"""
+        try:
+            result = self.parent_accounts.read_item(
+                item=parent_uid,
+                partition_key=parent_uid
+            )
+            return result
+        except CosmosResourceNotFoundError:
+            logger.info(f"Parent account not found: {parent_uid}")
+            return None
+        except Exception as e:
+            logger.error(f"❌ Error getting parent account: {str(e)}")
+            return None
+
+    async def create_parent_student_link(self, link_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a link between parent and student"""
+        try:
+            # Ensure required fields
+            if 'id' not in link_data:
+                link_data['id'] = link_data['link_id']
+
+            link_data['created_at'] = datetime.utcnow().isoformat()
+
+            result = self.parent_student_links.create_item(body=link_data)
+            logger.info(f"✅ Created parent-student link: {link_data['parent_uid']} -> {link_data['student_id']}")
+            return result
+        except Exception as e:
+            logger.error(f"❌ Error creating parent-student link: {str(e)}")
+            raise
+
+    async def get_parent_student_links(self, parent_uid: str) -> List[Dict[str, Any]]:
+        """Get all student links for a parent"""
+        try:
+            query = """
+            SELECT * FROM c
+            WHERE c.parent_uid = @parent_uid
+            AND c.verified = true
+            """
+
+            params = [{"name": "@parent_uid", "value": parent_uid}]
+
+            results = list(self.parent_student_links.query_items(
+                query=query,
+                parameters=params,
+                partition_key=parent_uid
+            ))
+
+            return results
+        except Exception as e:
+            logger.error(f"❌ Error getting parent-student links: {str(e)}")
+            return []
+
+    async def save_session_summary(self, summary_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Save a tutoring session summary"""
+        try:
+            if 'id' not in summary_data:
+                summary_data['id'] = summary_data['session_id']
+
+            summary_data['created_at'] = datetime.utcnow().isoformat()
+
+            result = self.session_summaries.create_item(body=summary_data)
+            logger.info(f"✅ Saved session summary: {summary_data['session_id']}")
+            return result
+        except Exception as e:
+            logger.error(f"❌ Error saving session summary: {str(e)}")
+            raise
+
+    async def get_session_summary(self, session_id: str, student_id: int) -> Optional[Dict[str, Any]]:
+        """Get a session summary by ID"""
+        try:
+            result = self.session_summaries.read_item(
+                item=session_id,
+                partition_key=student_id
+            )
+            return result
+        except CosmosResourceNotFoundError:
+            logger.info(f"Session summary not found: {session_id}")
+            return None
+        except Exception as e:
+            logger.error(f"❌ Error getting session summary: {str(e)}")
+            return None
+
+    async def get_recent_session_summaries(
+        self,
+        student_id: int,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """Get recent session summaries for a student"""
+        try:
+            query = f"""
+            SELECT TOP {limit} * FROM c
+            WHERE c.student_id = @student_id
+            ORDER BY c.created_at DESC
+            """
+
+            params = [{"name": "@student_id", "value": student_id}]
+
+            results = list(self.session_summaries.query_items(
+                query=query,
+                parameters=params,
+                partition_key=student_id
+            ))
+
+            return results
+        except Exception as e:
+            logger.error(f"❌ Error getting recent session summaries: {str(e)}")
+            return []
+
+    async def create_explorer_project(self, project_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create an explorer project"""
+        try:
+            if 'id' not in project_data:
+                project_data['id'] = project_data['project_id']
+
+            project_data['created_at'] = datetime.utcnow().isoformat()
+
+            result = self.explorer_projects.create_item(body=project_data)
+            logger.info(f"✅ Created explorer project: {project_data['project_id']}")
+            return result
+        except Exception as e:
+            logger.error(f"❌ Error creating explorer project: {str(e)}")
+            raise
+
+    async def get_explorer_projects_by_subskill(self, subskill_id: str) -> List[Dict[str, Any]]:
+        """Get explorer projects for a specific subskill"""
+        try:
+            query = """
+            SELECT * FROM c
+            WHERE c.subskill_id = @subskill_id
+            """
+
+            params = [{"name": "@subskill_id", "value": subskill_id}]
+
+            results = list(self.explorer_projects.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=True
+            ))
+
+            return results
+        except Exception as e:
+            logger.error(f"❌ Error getting explorer projects: {str(e)}")
+            return []
+
+    # ============================================================================
+    # 🆕 WEEKLY PLAN METHODS (Proactive Weekly Learning Planner)
+    # ============================================================================
+
+    async def save_weekly_plan(
+        self,
+        student_id: int,
+        week_start_date: str,
+        plan_data: Dict[str, Any],
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Save a weekly plan to Cosmos DB"""
+
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+        try:
+            plan_id = f"{student_id}_{week_start_date}"
+            timestamp = datetime.utcnow().isoformat()
+
+            # Transform WeeklyPlan object to persistent schema
+            plan_document = {
+                "id": plan_id,
+                "plan_id": plan_id,
+                "student_id": student_id,
+                "week_start_date": week_start_date,
+                "weekly_theme": plan_data.get("weekly_theme", "Weekly Learning Plan"),
+                "weekly_objectives": plan_data.get("weekly_objectives", []),
+                "source_analytics_snapshot": plan_data.get("source_analytics_snapshot", {}),
+                "planned_activities": plan_data.get("planned_activities", []),
+                "generated_at": plan_data.get("generated_at", timestamp),
+                "last_updated_at": timestamp,
+                "generation_model": plan_data.get("generation_model", "gemini-2.5-flash"),
+                "parent_starred_activities": plan_data.get("parent_starred_activities", []),
+                "total_activities": plan_data.get("total_activities", len(plan_data.get("planned_activities", []))),
+                "completed_activities": plan_data.get("completed_activities", 0),
+                "assigned_activities": plan_data.get("assigned_activities", 0),
+                "firebase_uid": firebase_uid,
+                "document_type": "weekly_plan",
+                "createdAt": timestamp,
+                "updatedAt": timestamp
+            }
+
+            # Save to Cosmos DB (upsert to allow updates)
+            result = self.weekly_plans.upsert_item(body=plan_document)
+            logger.info(f"✅ Saved weekly plan {plan_id} to Cosmos DB")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Error saving weekly plan: {str(e)}")
+            raise
+
+    async def get_weekly_plan(
+        self,
+        student_id: int,
+        week_start_date: str,
+        firebase_uid: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get weekly plan for a student for a specific week"""
+
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+        try:
+            plan_id = f"{student_id}_{week_start_date}"
+            logger.info(f"🔍 COSMOS DB LOOKUP - weekly plan_id: '{plan_id}', partition_key: {student_id}")
+
+            result = self.weekly_plans.read_item(
+                item=plan_id,
+                partition_key=student_id
+            )
+
+            logger.info(f"✅ FOUND WEEKLY PLAN - Student: {student_id}, Week: {week_start_date}")
+            return result
+
+        except CosmosResourceNotFoundError:
+            logger.info(f"❌ NO WEEKLY PLAN FOUND - Student: {student_id}, Week: {week_start_date}")
+            return None
+        except Exception as e:
+            logger.error(f"💥 ERROR GETTING WEEKLY PLAN - Student: {student_id}, Week: {week_start_date}: {str(e)}")
+            return None
+
+    async def get_current_weekly_plan(
+        self,
+        student_id: int,
+        firebase_uid: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get current week's plan (automatically calculates Monday of current week)"""
+        from datetime import datetime, timedelta
+
+        # Get Monday of current week
+        today = datetime.utcnow()
+        monday = today - timedelta(days=today.weekday())
+        week_start_date = monday.strftime('%Y-%m-%d')
+
+        return await self.get_weekly_plan(student_id, week_start_date, firebase_uid)
+
+    async def update_activity_status_in_weekly_plan(
+        self,
+        student_id: int,
+        week_start_date: str,
+        activity_uid: str,
+        new_status: str,
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Update the status of a specific activity in the weekly plan"""
+
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+        try:
+            plan_id = f"{student_id}_{week_start_date}"
+
+            # Get the existing plan
+            plan = self.weekly_plans.read_item(
+                item=plan_id,
+                partition_key=student_id
+            )
+
+            # Update the specific activity
+            activity_found = False
+            for activity in plan.get("planned_activities", []):
+                if activity.get("activity_uid") == activity_uid:
+                    old_status = activity.get("status")
+                    activity["status"] = new_status
+
+                    # Update tracking dates
+                    if new_status == "completed":
+                        activity["completed_date"] = datetime.utcnow().strftime('%Y-%m-%d')
+                    elif new_status == "assigned":
+                        activity["assigned_date"] = datetime.utcnow().strftime('%Y-%m-%d')
+
+                    activity_found = True
+                    logger.info(f"Updated activity {activity_uid} status: {old_status} → {new_status}")
+                    break
+
+            if not activity_found:
+                logger.warning(f"Activity {activity_uid} not found in weekly plan {plan_id}")
+                return False
+
+            # Recalculate status counts
+            completed_count = sum(1 for act in plan["planned_activities"] if act.get("status") == "completed")
+            assigned_count = sum(1 for act in plan["planned_activities"] if act.get("status") == "assigned")
+
+            plan["completed_activities"] = completed_count
+            plan["assigned_activities"] = assigned_count
+
+            # Update timestamp and save
+            plan["last_updated_at"] = datetime.utcnow().isoformat()
+            plan["updatedAt"] = datetime.utcnow().isoformat()
+            self.weekly_plans.upsert_item(body=plan)
+
+            logger.info(f"✅ Successfully updated activity status in weekly plan {plan_id}")
+            return True
+
+        except CosmosResourceNotFoundError:
+            logger.warning(f"Weekly plan {plan_id} not found for activity status update")
+            return False
+        except Exception as e:
+            logger.error(f"❌ Error updating activity status in weekly plan: {str(e)}")
+            return False
+
+    async def delete_weekly_plan(
+        self,
+        student_id: int,
+        week_start_date: str,
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Delete a weekly plan (useful for regeneration)"""
+
+        # Validate user access
+        if firebase_uid:
+            has_access = await self.validate_user_access_to_student(firebase_uid, student_id)
+            if not has_access:
+                raise PermissionError(f"User {firebase_uid} does not have access to student {student_id}")
+
+        try:
+            plan_id = f"{student_id}_{week_start_date}"
+
+            self.weekly_plans.delete_item(
+                item=plan_id,
+                partition_key=student_id
+            )
+
+            logger.info(f"✅ Deleted weekly plan {plan_id}")
+            return True
+
+        except CosmosResourceNotFoundError:
+            logger.info(f"Weekly plan {plan_id} not found for deletion (already deleted)")
+            return True  # Already deleted
+        except Exception as e:
+            logger.error(f"❌ Error deleting weekly plan: {str(e)}")
+            return False
+
+    async def add_parent_star_to_activity(
+        self,
+        student_id: int,
+        week_start_date: str,
+        activity_uid: str,
+        firebase_uid: Optional[str] = None
+    ) -> bool:
+        """Add a parent star to an activity (Phase 3 feature)"""
+
+        try:
+            plan_id = f"{student_id}_{week_start_date}"
+
+            # Get the existing plan
+            plan = self.weekly_plans.read_item(
+                item=plan_id,
+                partition_key=student_id
+            )
+
+            # Add to starred list if not already there
+            starred_list = plan.get("parent_starred_activities", [])
+            if activity_uid not in starred_list:
+                starred_list.append(activity_uid)
+                plan["parent_starred_activities"] = starred_list
+
+                # Update timestamp and save
+                plan["last_updated_at"] = datetime.utcnow().isoformat()
+                plan["updatedAt"] = datetime.utcnow().isoformat()
+                self.weekly_plans.upsert_item(body=plan)
+
+                logger.info(f"⭐ Parent starred activity {activity_uid} in weekly plan {plan_id}")
+                return True
+            else:
+                logger.info(f"Activity {activity_uid} already starred")
+                return True
+
+        except CosmosResourceNotFoundError:
+            logger.warning(f"Weekly plan {plan_id} not found for starring")
+            return False
+        except Exception as e:
+            logger.error(f"❌ Error starring activity: {str(e)}")
+            return False
 
 

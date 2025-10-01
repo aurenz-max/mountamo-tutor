@@ -19,7 +19,9 @@ from .api.endpoints import (
     daily_briefing_live,
     packages,
     practice_tutor,
-    assessments
+    assessments,
+    parent_portal,
+    weekly_planner
 
 )
 
@@ -184,6 +186,22 @@ app.include_router(
     assessments.router,
     prefix="/api/assessments",
     tags=["assessments"],
+    dependencies=[Depends(get_user_context)]
+)
+
+# 🆕 NEW: Parent Portal Router
+app.include_router(
+    parent_portal.router,
+    prefix="/api/parent",
+    tags=["parent-portal"],
+    dependencies=[Depends(get_user_context)]
+)
+
+# 🆕 NEW: Weekly Planner Router (Shadow Mode - Phase 1)
+app.include_router(
+    weekly_planner.router,
+    prefix="/api/weekly-planner",
+    tags=["weekly-planner"],
     dependencies=[Depends(get_user_context)]
 )
 

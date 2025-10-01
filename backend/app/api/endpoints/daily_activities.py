@@ -189,14 +189,15 @@ async def refresh_daily_plan(student_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 async def hydrate_plan_completion(student_id: int, activity_id: str):
-    """Background task to update the daily plan document in Cosmos DB."""
+    """Background task to update the daily plan document in Cosmos DB AND the weekly plan if applicable."""
     try:
         from ...db.cosmos_db import CosmosDBService
-        from datetime import datetime
+        from datetime import datetime, timedelta
 
         cosmos_db = CosmosDBService()
         today_str = datetime.utcnow().strftime("%Y-%m-%d")
 
+        # Step 1: Update daily plan completion
         success = await cosmos_db.update_activity_completion(
             student_id=student_id,
             date=today_str,
@@ -205,12 +206,36 @@ async def hydrate_plan_completion(student_id: int, activity_id: str):
         )
 
         if success:
-            logger.info(f"Hydrated plan completion: marked activity {activity_id} as complete for student {student_id}")
+            logger.info(f"✅ Hydrated plan completion: marked activity {activity_id} as complete for student {student_id}")
         else:
-            logger.warning(f"Could not find activity {activity_id} in daily plan for student {student_id} to hydrate")
+            logger.warning(f"⚠️ Could not find activity {activity_id} in daily plan for student {student_id} to hydrate")
+
+        # Step 2: CRITICAL - Update weekly plan if this activity came from a weekly plan
+        # Extract activity_uid from activity_id if it's from weekly plan
+        if activity_id.startswith("weekly-"):
+            activity_uid = activity_id.replace("weekly-", "")
+            logger.info(f"📅 Activity came from weekly plan, updating weekly plan status for {activity_uid}")
+
+            # Calculate current week's Monday
+            today = datetime.utcnow()
+            monday = today - timedelta(days=today.weekday())
+            week_start_date = monday.strftime('%Y-%m-%d')
+
+            # Update the weekly plan
+            weekly_success = await cosmos_db.update_activity_status_in_weekly_plan(
+                student_id=student_id,
+                week_start_date=week_start_date,
+                activity_uid=activity_uid,
+                new_status="completed"
+            )
+
+            if weekly_success:
+                logger.info(f"✅ Updated weekly plan: marked {activity_uid} as completed")
+            else:
+                logger.warning(f"⚠️ Could not find activity {activity_uid} in weekly plan")
 
     except Exception as e:
-        logger.error(f"Failed to hydrate daily plan for student {student_id}: {e}")
+        logger.error(f"❌ Failed to hydrate plan completion for student {student_id}: {e}")
 
 @router.post("/daily-plan/{student_id}/activities/{activity_id}/complete")
 @log_engagement_activity(

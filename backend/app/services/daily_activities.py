@@ -292,13 +292,49 @@ class DailyActivitiesService:
         return generated_plan
 
     async def _generate_fresh_daily_plan(self, student_id: int, date: str, session_type: str = 'daily') -> DailyPlan:
-        """Generate a fresh daily plan using AI recommendations and fallbacks"""
+        """
+        Generate a fresh daily plan using the following priority:
+        1. FIRST: Try to pull from weekly plan (if exists)
+        2. FALLBACK: Use AI daily recommendations
+        3. FINAL FALLBACK: Use BigQuery or static activities
+        """
 
         logger.info(f"Generating fresh daily plan for student {student_id}, session_type={session_type}")
 
         session_plan = None
 
-        # Step 1: Try to get AI recommendations first, then fall back to basic recommendations
+        # NEW PHASE 2 LOGIC: Check for weekly plan first
+        weekly_plan_result = await self._try_pull_from_weekly_plan(student_id, date)
+
+        if weekly_plan_result:
+            logger.info(f"📅 WEEKLY_PLAN: Successfully pulled activities from weekly plan")
+            activities = weekly_plan_result['activities']
+            personalization_source = 'weekly_plan'
+            session_plan = weekly_plan_result.get('session_plan')
+
+            # Step 4: Calculate totals and progress
+            total_points = sum(a.points for a in activities)
+            progress = DailyProgress(
+                completed_activities=0,
+                total_activities=len(activities),
+                points_earned_today=0,
+                daily_goal=60,
+                current_streak=1,
+                progress_percentage=0.0
+            )
+
+            return DailyPlan(
+                student_id=student_id,
+                date=date,
+                activities=activities,
+                progress=progress,
+                personalization_source=personalization_source,
+                total_points=total_points,
+                session_plan=session_plan
+            )
+
+        # FALLBACK: Original AI-based daily generation
+        logger.info(f"🚀 RECOMMENDATION_FLOW: No weekly plan found, using AI daily recommendations")
         logger.info(f"🚀 RECOMMENDATION_FLOW: Starting recommendation flow for student {student_id}")
         ai_result = await self._get_ai_recommendations_with_session_plan(student_id, session_type)
 
@@ -346,6 +382,225 @@ class DailyActivitiesService:
             total_points=total_points,
             session_plan=session_plan
         )
+
+    async def _try_pull_from_weekly_plan(self, student_id: int, date: str) -> Optional[Dict[str, Any]]:
+        """
+        Try to pull activities from the weekly plan using adaptive logic:
+        1. Catch-up: Pull pending/assigned activities from previous days
+        2. Today's scheduled: Pull pending activities for today
+        3. Accelerate: If room remains, pull from future days
+        """
+        from datetime import datetime, timedelta
+        from ..models.weekly_plan import WeeklyPlan, PlannedActivity
+
+        if not self.cosmos_db_service:
+            logger.info(f"📅 WEEKLY_PLAN: No Cosmos DB service, skipping weekly plan check")
+            return None
+
+        try:
+            # Calculate current week's Monday
+            today = datetime.strptime(date, '%Y-%m-%d')
+            monday = today - timedelta(days=today.weekday())
+            week_start_date = monday.strftime('%Y-%m-%d')
+            current_day_of_week = today.weekday()  # 0 = Monday
+
+            logger.info(f"📅 WEEKLY_PLAN: Checking for week starting {week_start_date}, current day: {current_day_of_week}")
+
+            # Try to get weekly plan
+            plan_dict = await self.cosmos_db_service.get_weekly_plan(student_id, week_start_date)
+
+            if not plan_dict:
+                logger.info(f"📅 WEEKLY_PLAN: No weekly plan found for student {student_id}, week {week_start_date}")
+                logger.info(f"🚀 WEEKLY_PLAN: AUTO-GENERATING weekly plan for student {student_id}...")
+
+                # 🆕 AUTO-GENERATE WEEKLY PLAN
+                try:
+                    from ..services.weekly_planner import WeeklyPlannerService
+
+                    # Create weekly planner service instance
+                    weekly_planner = WeeklyPlannerService(
+                        project_id=self.analytics_service.project_id if self.analytics_service else None,
+                        dataset_id=self.analytics_service.dataset_id if self.analytics_service else 'analytics',
+                        cosmos_db_service=self.cosmos_db_service
+                    )
+
+                    # Generate the weekly plan (saves automatically to Cosmos DB)
+                    weekly_plan = await weekly_planner.generate_weekly_plan(
+                        student_id=student_id,
+                        week_start_date=week_start_date,
+                        target_activities=20,
+                        force_regenerate=False
+                    )
+
+                    logger.info(f"✅ WEEKLY_PLAN: Auto-generated plan with {weekly_plan.total_activities} activities")
+                    logger.info(f"✅ WEEKLY_PLAN: Theme: '{weekly_plan.weekly_theme}'")
+
+                    # Convert to dict for the rest of the logic
+                    plan_dict = weekly_plan.dict()
+
+                except Exception as e:
+                    logger.error(f"❌ WEEKLY_PLAN: Auto-generation failed: {e}")
+                    import traceback
+                    logger.error(f"❌ WEEKLY_PLAN: Stack trace: {traceback.format_exc()}")
+                    logger.info(f"📅 WEEKLY_PLAN: Falling back to AI daily recommendations")
+                    return None
+
+            weekly_plan = WeeklyPlan(**plan_dict)
+            logger.info(f"✅ WEEKLY_PLAN: Found weekly plan with {weekly_plan.total_activities} activities")
+            logger.info(f"📅 WEEKLY_PLAN: Progress: {weekly_plan.completed_activities}/{weekly_plan.total_activities} completed")
+
+            # ADAPTIVE PULL LOGIC
+            selected_activities = []
+            target_count = 6  # Target 6 activities for the daily plan
+
+            # Step 1: CATCH-UP - Get activities from previous days that are still pending/assigned
+            catch_up_activities = weekly_plan.get_catch_up_activities(current_day_of_week)
+            for activity in catch_up_activities[:3]:  # Max 3 catch-up activities
+                selected_activities.append(activity)
+                logger.info(f"📅 CATCH_UP: Added {activity.subskill_id} from day {activity.planned_day}")
+
+            # Step 2: TODAY'S SCHEDULED - Get pending activities for today
+            if len(selected_activities) < target_count:
+                todays_activities = weekly_plan.get_pending_activities_for_day(current_day_of_week)
+                remaining_slots = target_count - len(selected_activities)
+                for activity in todays_activities[:remaining_slots]:
+                    selected_activities.append(activity)
+                    logger.info(f"📅 SCHEDULED: Added {activity.subskill_id} for today")
+
+            # Step 3: ACCELERATE - If student is ahead and room remains, pull from future days
+            if len(selected_activities) < target_count:
+                future_activities = weekly_plan.get_accelerate_activities(current_day_of_week, count=2)
+                remaining_slots = target_count - len(selected_activities)
+                for activity in future_activities[:remaining_slots]:
+                    selected_activities.append(activity)
+                    logger.info(f"📅 ACCELERATE: Added {activity.subskill_id} from day {activity.planned_day}")
+
+            if not selected_activities:
+                logger.warning(f"📅 WEEKLY_PLAN: No activities selected from weekly plan")
+                return None
+
+            logger.info(f"✅ WEEKLY_PLAN: Selected {len(selected_activities)} activities for today's plan")
+
+            # Convert PlannedActivity objects to DailyActivity format
+            daily_activities = await self._convert_planned_activities_to_daily(selected_activities, student_id)
+
+            # Update activity statuses in weekly plan to "assigned"
+            for activity in selected_activities:
+                await self.cosmos_db_service.update_activity_status_in_weekly_plan(
+                    student_id=student_id,
+                    week_start_date=week_start_date,
+                    activity_uid=activity.activity_uid,
+                    new_status="assigned"
+                )
+
+            return {
+                'activities': daily_activities,
+                'session_plan': {
+                    'weekly_theme': weekly_plan.weekly_theme,
+                    'session_focus': f"Day {current_day_of_week + 1} of weekly plan"
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"❌ WEEKLY_PLAN: Error pulling from weekly plan: {e}")
+            import traceback
+            logger.error(f"❌ WEEKLY_PLAN: Stack trace: {traceback.format_exc()}")
+            return None
+
+    async def _convert_planned_activities_to_daily(
+        self,
+        planned_activities: List,
+        student_id: int
+    ) -> List[DailyActivity]:
+        """Convert PlannedActivity objects from weekly plan to DailyActivity format"""
+        from ..models.weekly_plan import PlannedActivity
+
+        daily_activities = []
+
+        for i, planned_activity in enumerate(planned_activities):
+            # Determine activity type and get config
+            activity_type = self._determine_activity_type_from_planned(planned_activity)
+            config = self._get_activity_config(activity_type, planned_activity.subskill_description)
+
+            # Calculate points based on priority
+            points = self._calculate_points_from_planned(planned_activity)
+
+            # Assign time slot
+            time_slots = ['morning', 'midday', 'afternoon', 'evening']
+            time_slot = time_slots[i % len(time_slots)]
+
+            # Create DailyActivity
+            activity_dict = {
+                'id': f"weekly-{planned_activity.activity_uid}",
+                'type': activity_type,
+                'title': f"Learn: {planned_activity.subskill_description}",
+                'description': planned_activity.llm_reasoning,
+                'category': planned_activity.subject,
+                'estimated_time': f"{planned_activity.estimated_time_minutes} min",
+                'points': points,
+                'priority': planned_activity.priority.value,
+                'time_slot': time_slot,
+                'action': config['action'],
+                'endpoint': config['endpoint'],
+                'icon_type': config['icon'],
+                'metadata': {
+                    'from_weekly_plan': True,
+                    'activity_uid': planned_activity.activity_uid,
+                    'planned_day': planned_activity.planned_day,
+                    'subject': planned_activity.subject,
+                    'skill_id': planned_activity.subskill_id,
+                    'llm_reasoning': planned_activity.llm_reasoning
+                }
+            }
+
+            # Add curriculum metadata
+            activity_dict['curriculum_metadata'] = {
+                'subject': planned_activity.subject,
+                'unit': {
+                    'title': planned_activity.unit_title or 'Learning Unit',
+                    'description': planned_activity.unit_title or 'Learning Unit'
+                },
+                'skill': {
+                    'id': planned_activity.subskill_id,
+                    'description': planned_activity.skill_description or 'Learning Skill'
+                },
+                'subskill': {
+                    'id': planned_activity.subskill_id,
+                    'description': planned_activity.subskill_description
+                }
+            }
+
+            # Enhance with curriculum parser
+            enhanced_dict = CurriculumParser.enhance_activity_with_curriculum_data(
+                activity_dict,
+                planned_activity.subskill_description
+            )
+
+            activity = DailyActivity(**enhanced_dict)
+            daily_activities.append(activity)
+
+        return daily_activities
+
+    def _determine_activity_type_from_planned(self, planned_activity) -> str:
+        """Determine activity type from PlannedActivity"""
+        activity_type_str = str(planned_activity.activity_type)
+        if hasattr(planned_activity.activity_type, 'value'):
+            activity_type_str = planned_activity.activity_type.value
+
+        return activity_type_str
+
+    def _calculate_points_from_planned(self, planned_activity) -> int:
+        """Calculate points based on priority from PlannedActivity"""
+        priority_str = str(planned_activity.priority)
+        if hasattr(planned_activity.priority, 'value'):
+            priority_str = planned_activity.priority.value
+
+        if priority_str == 'high':
+            return 30
+        elif priority_str == 'medium':
+            return 23
+        else:
+            return 15
 
     def _convert_cosmos_doc_to_daily_plan(self, cosmos_doc: Dict) -> DailyPlan:
         """Convert a Cosmos DB document back to a DailyPlan object"""
