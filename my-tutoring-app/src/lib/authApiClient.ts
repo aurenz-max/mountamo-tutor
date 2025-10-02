@@ -1,5 +1,6 @@
 // lib/authApiClient.ts - Enhanced with Analytics Methods
 import { auth } from './firebase';
+import type { ProblemGenerationRequest } from '@/types/curriculum';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
@@ -706,6 +707,30 @@ private async getAuthToken(): Promise<string> {
 }
 
   // ============================================================================
+  // DAILY PLAN ENDPOINTS
+  // ============================================================================
+
+  /**
+   * Get daily plan for a student
+   */
+  async getDailyPlan(studentId: number, date?: string) {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    const queryString = params.toString();
+    return this.get(`/api/daily-plan/${studentId}${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get enhanced daily activities with transparency metadata
+   */
+  async getDailyActivities(studentId: number, date?: string) {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    const queryString = params.toString();
+    return this.get(`/api/daily-plan/${studentId}/activities${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // ============================================================================
   // LEGACY ANALYTICS METHODS (for backwards compatibility)
   // ============================================================================
 
@@ -784,37 +809,23 @@ private async getAuthToken(): Promise<string> {
   /**
    * Universal problem generation for practice sets.
    * Generates one or more problems of various types.
-   * 
-   * @param data - The request payload.
+   *
+   * @param data - The request payload (use ProblemGenerationRequest type for type safety).
    * @param data.count - The number of problems to generate. Defaults to 1.
    * @returns A promise that resolves to a single problem object (if count=1) or an array of problem objects (if count>1).
    */
-  async generateProblem(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: number;
-    count?: number;
-  }): Promise<Problem | Problem[]> {
+  async generateProblem(data: ProblemGenerationRequest): Promise<Problem | Problem[]> {
     return this.post('/api/problems/generate', data);
   }
 
   /**
    * Generate multiple problems for a practice session.
    * Convenience method that always returns an array.
-   * 
-   * @param data - The request payload. Defaults to 5 problems if count not specified.
+   *
+   * @param data - The request payload (use ProblemGenerationRequest type for type safety). Defaults to 5 problems if count not specified.
    * @returns A promise that resolves to an array of problem objects.
    */
-  async generateProblemSet(data: {
-    subject: string;
-    unit_id?: string;
-    skill_id?: string;
-    subskill_id?: string;
-    difficulty?: number;
-    count?: number;
-  }): Promise<Problem[]> {
+  async generateProblemSet(data: ProblemGenerationRequest): Promise<Problem[]> {
     const count = data.count || 5; // Default to 5 problems for practice sets
     const result = await this.post('/api/problems/generate', { ...data, count });
     // Ensure we always return an array for problem sets

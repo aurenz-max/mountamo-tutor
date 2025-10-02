@@ -78,32 +78,8 @@ interface ProblemSetProps {
 }
 
 // Enhanced helper function to clean IDs and extract components
-const parseActivityId = (activityId: string) => {
-  // Remove "rec-" prefix if present
-  const cleanId = activityId.startsWith('rec-') ? activityId.substring(4) : activityId;
-  
-  // For COUNT001-01-A format:
-  // - Unit: COUNT001
-  // - Skill: COUNT001-01  
-  // - Subskill: COUNT001-01-A
-  
-  const parts = cleanId.split('-');
-  if (parts.length >= 3) {
-    const unit = parts[0]; // COUNT001
-    const skill = `${parts[0]}-${parts[1]}`; // COUNT001-01
-    const subskill = cleanId; // COUNT001-01-A
-    
-    return { unit, skill, subskill, cleanId };
-  }
-  
-  // Fallback for simpler IDs
-  return { 
-    unit: parts[0] || cleanId, 
-    skill: cleanId, 
-    subskill: cleanId, 
-    cleanId 
-  };
-};
+// NOTE: parseActivityId function removed - we now use curriculum IDs directly from
+// the curriculum_metadata provided by the backend. No parsing or string manipulation needed!
 
 
 const ProblemSet: React.FC<ProblemSetProps> = ({ 
@@ -153,58 +129,41 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
     setError(null);
     setFeedback(null);
     setUsingRecommendations(false);
-    
+
     try {
-      // Parse IDs from the current topic
-      let skillId, subskillId, unitId;
-      
-      if (currentTopic.selection) {
-        // Parse the subskill first since it contains the full hierarchy
-        const subskillParsed = parseActivityId(currentTopic.selection.subskill || '');
-        const skillParsed = parseActivityId(currentTopic.selection.skill || '');
-        
-        // Use subskill parsing as the primary source of truth
-        unitId = subskillParsed.unit;
-        subskillId = subskillParsed.subskill;
-        
-        // Derive skill_id from subskill_id if needed
-        // For COUNT001-01-A, skill should be COUNT001-01
-        if (subskillParsed.skill && subskillParsed.skill !== subskillParsed.unit) {
-          skillId = subskillParsed.skill;
-        } else {
-          // Fallback to the skill selection if it looks more complete
-          skillId = skillParsed.skill || skillParsed.cleanId;
-        }
-      } else if (currentTopic.id) {
-        // Parse from activity ID directly
-        const parsed = parseActivityId(currentTopic.id);
-        unitId = parsed.unit;
-        skillId = parsed.skill;
-        subskillId = parsed.subskill;
-      } else {
-        throw new Error('No valid skill/subskill identifiers found in currentTopic');
-      }
-      
-      console.log('=== DEBUG: ID Parsing ===');
-      console.log('Original currentTopic:', JSON.stringify(currentTopic, null, 2));
-      console.log('Parsed IDs:', { unitId, skillId, subskillId });
-      
+      // IMPORTANT: Use curriculum IDs directly from currentTopic.selection
+      // NO PARSING - these are the actual curriculum IDs from the backend
+      const skillId = currentTopic.selection?.skill;
+      const subskillId = currentTopic.selection?.subskill;
+      const unitId = currentTopic.selection?.unit;
+
+      console.log('🎯 [PROBLEM_SET] Generating problems with curriculum IDs:');
+      console.log('  Subject:', currentTopic.subject);
+      console.log('  Unit ID:', unitId);
+      console.log('  Skill ID:', skillId);
+      console.log('  Subskill ID:', subskillId);
+
       // Validate required IDs
       if (!skillId || !subskillId) {
-        throw new Error(`Missing required IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
+        console.error('❌ [PROBLEM_SET] Missing required curriculum IDs:', {
+          skill_id: skillId,
+          subskill_id: subskillId,
+          currentTopic
+        });
+        throw new Error(`Missing required curriculum IDs - skill_id: ${skillId}, subskill_id: ${subskillId}`);
       }
-      
-      // Use the unified practice set generation API
+
+      // Use the unified practice set generation API with typed request
       const practiceSetRequest = {
         subject: currentTopic.subject || 'mathematics',
+        unit_id: unitId,
         skill_id: skillId,
         subskill_id: subskillId,
         count: numProblems
       };
-      
-      console.log('=== API REQUEST ===');
-      console.log('Requesting practice set:', practiceSetRequest);
-      
+
+      console.log('📤 [PROBLEM_SET] API Request:', practiceSetRequest);
+
       // Call the unified practice set API endpoint
       const problemsArray = await authApi.generatePracticeSet(practiceSetRequest);
       
@@ -304,17 +263,18 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
    
     try {
       const currentProblem = problems[currentIndex];
-      
-      // Parse IDs for submission
-      const parsed = parseActivityId(
-        currentProblem.metadata?.subskill?.id || 
-        currentTopic.selection?.subskill || 
-        currentTopic.id || 
-        ''
-      );
+
+      // Use curriculum IDs directly from currentTopic (NO PARSING)
+      const skillId = currentTopic.selection?.skill;
+      const subskillId = currentTopic.selection?.subskill;
+
+      console.log('📤 [PROBLEM_SET] Submitting problem with curriculum IDs:', {
+        skill_id: skillId,
+        subskill_id: subskillId
+      });
 
       let response;
-      
+
       // If this is already a processed review (from primitive components), use it directly
       if (submissionData.review || submissionData.originalReview) {
         response = submissionData;
@@ -323,21 +283,19 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
         const submission = {
           subject: currentTopic.subject || 'mathematics',
           problem: currentProblem,
-          skill_id: parsed.skill,
-          subskill_id: parsed.subskill,
+          skill_id: skillId,
+          subskill_id: subskillId,
           // Include primitive_response for structured problems
           primitive_response: submissionData.primitive_response || null,
           ...submissionData
         };
-        
-        console.log('=== UNIFIED SUBMISSION ===');
-        console.log('Submitting to unified endpoint:', {
+
+        console.log('📤 [PROBLEM_SET] Submission payload:', {
           problem_type: currentProblem.problem_type,
-          parsed_ids: parsed,
           has_primitive_response: !!submission.primitive_response,
           submission_keys: Object.keys(submission)
         });
-       
+
         // Use the unified submission endpoint
         response = await authApi.submitProblem(submission);
       }
@@ -467,7 +425,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const renderCompletionNotification = () => {
     if (problemAttempted.every(Boolean)) {
       if (fromDashboard) {
-        const parsed = parseActivityId(currentTopic.selection?.subskill || currentTopic.id || '');
+        // Use subskill ID directly (no parsing needed)
+        const subskillId = currentTopic.selection?.subskill || '';
         
         return (
           <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
@@ -491,8 +450,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button 
-                onClick={() => window.location.href = `/daily-learning/${parsed.subskill}`} 
+              <Button
+                onClick={() => window.location.href = `/daily-learning/${subskillId}`}
                 variant="outline"
                 className="flex items-center"
               >
@@ -583,9 +542,10 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
             <div className="mb-4 p-3 bg-gray-100 rounded text-xs font-mono">
               <div><strong>Current Topic:</strong> {JSON.stringify(currentTopic, null, 2)}</div>
               {currentTopic.selection && (
-                <div><strong>Parsed Selection:</strong> {JSON.stringify({
-                  skill: parseActivityId(currentTopic.selection.skill || ''),
-                  subskill: parseActivityId(currentTopic.selection.subskill || '')
+                <div><strong>Selection IDs:</strong> {JSON.stringify({
+                  skill_id: currentTopic.selection.skill,
+                  subskill_id: currentTopic.selection.subskill,
+                  unit_id: currentTopic.selection.unit
                 }, null, 2)}</div>
               )}
             </div>

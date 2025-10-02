@@ -209,12 +209,73 @@ class CurriculumService:
                 'SubskillDescription': f'Practice and master {subskill_id} concepts'
             }
     
+    async def get_subskill_metadata(self, subskill_id: str) -> Optional[Dict[str, Any]]:
+        """Get unit, skill, and subskill metadata for a given subskill_id"""
+        cache_key = f"subskill_metadata_{subskill_id}"
+
+        # Check cache
+        if cache_key in self._cache and self._is_cache_valid(cache_key):
+            return self._cache[cache_key]
+
+        query = f"""
+        SELECT
+            subject,
+            unit_id,
+            unit_title,
+            skill_id,
+            skill_description,
+            subskill_id,
+            subskill_description,
+            difficulty_start,
+            difficulty_end,
+            target_difficulty,
+            grade
+        FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.curriculum`
+        WHERE subskill_id = @subskill_id
+        LIMIT 1
+        """
+
+        from google.cloud import bigquery
+        parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
+
+        try:
+            results = await self.bigquery_service._run_query_async(query, parameters)
+
+            if results and len(results) > 0:
+                row = results[0]
+                metadata = {
+                    'subject': row.get('subject'),
+                    'unit_id': row.get('unit_id'),
+                    'unit_title': row.get('unit_title'),
+                    'skill_id': row.get('skill_id'),
+                    'skill_description': row.get('skill_description'),
+                    'subskill_id': row.get('subskill_id'),
+                    'subskill_description': row.get('subskill_description'),
+                    'difficulty_start': row.get('difficulty_start'),
+                    'difficulty_end': row.get('difficulty_end'),
+                    'target_difficulty': row.get('target_difficulty'),
+                    'grade': row.get('grade')
+                }
+
+                # Cache the result
+                self._cache[cache_key] = metadata
+                self._cache_timestamps[cache_key] = datetime.now(timezone.utc)
+
+                return metadata
+            else:
+                logger.warning(f"No curriculum metadata found for subskill_id: {subskill_id}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error fetching subskill metadata for {subskill_id}: {e}")
+            return None
+
     async def get_curriculum_stats(self, subject: Optional[str] = None) -> Dict[str, Any]:
         """Get curriculum statistics from BigQuery"""
         where_clause = "WHERE subject = @subject" if subject else ""
-        
+
         query = f"""
-        SELECT 
+        SELECT
             subject,
             COUNT(DISTINCT unit_id) as total_units,
             COUNT(DISTINCT skill_id) as total_skills,
@@ -227,14 +288,14 @@ class CurriculumService:
         GROUP BY subject
         ORDER BY subject
         """
-        
+
         parameters = []
         if subject:
             from google.cloud import bigquery
             parameters = [bigquery.ScalarQueryParameter("subject", "STRING", subject)]
-        
+
         results = await self.bigquery_service._run_query_async(query, parameters)
-        
+
         if subject and results:
             return results[0]
         else:

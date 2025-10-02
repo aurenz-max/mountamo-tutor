@@ -1,4 +1,4 @@
-// app/practice/[subskillId]/page.tsx - Updated with persistent AI Coach
+// app/practice/[subskillId]/page.tsx - Updated with proper curriculum metadata handling
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -7,9 +7,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/lib/authApiClient';
 import SyllabusSelector from '@/components/practice/SyllabusSelector';
 import ProblemSet from '@/components/practice/ProblemSet';
-import PracticeAICoach from '@/components/practice/PracticeAICoach'; // Import specialized practice AI coach
+import PracticeAICoach from '@/components/practice/PracticeAICoach';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, RefreshCw, ArrowLeft, Home, MessageCircle, X } from 'lucide-react';
+import type { TopicSelection } from '@/types/curriculum';
 
 interface PracticeSubskillPageProps {
   params: {
@@ -22,9 +23,9 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
   const searchParams = useSearchParams();
   const { userProfile } = useAuth();
   const { subskillId } = params;
-  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState<TopicSelection | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activityData, setActivityData] = useState(null);
+  const [activityData, setActivityData] = useState<any>(null);
   
   // AI Coach state
   const [showAICoach, setShowAICoach] = useState(false);
@@ -55,18 +56,20 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
         }
         
         setActivityData(activity);
-        
-        // Create topic selection based on subskillId and activity data
-        const topicSelection = createTopicFromSubskillId(subskillId, activity);
-        
+
+        // Create topic selection based on curriculum metadata and URL params
+        const topicSelection = createTopicFromCurriculumMetadata(subskillId, activity);
+
         if (topicSelection) {
           setSelectedTopic(topicSelection);
-          console.log('Auto-started practice session with:', topicSelection);
+          console.log('✅ [PRACTICE_PAGE] Auto-started practice session with:', topicSelection);
+        } else {
+          console.error('❌ [PRACTICE_PAGE] Failed to create topic selection - missing curriculum metadata');
         }
       } catch (err) {
-        console.log('Error initializing practice session:', err);
-        // Still try to create a basic topic selection
-        const fallbackTopic = createTopicFromSubskillId(subskillId, null);
+        console.log('⚠️ [PRACTICE_PAGE] Error initializing practice session:', err);
+        // Still try to create a topic selection from URL params
+        const fallbackTopic = createTopicFromCurriculumMetadata(subskillId, null);
         if (fallbackTopic) {
           setSelectedTopic(fallbackTopic);
         }
@@ -76,7 +79,7 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
     };
 
     initializePracticeSession();
-  }, [subskillId, userProfile?.student_id]);
+  }, [subskillId, userProfile?.student_id, searchParams]);
 
   // Create AI Coach context for this practice session
   const practiceContext = {
@@ -91,46 +94,76 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
     }
   };
 
-  // Create topic selection from subskillId
-  const createTopicFromSubskillId = (subskillId: string, activity: any) => {
-    // Parse the subskillId to extract meaningful information
-    // Format: rec-COUNT001-01-A or similar
-    const parts = subskillId.replace(/^rec-/, '').split('-');
-    
-    let skill = parts[0] || 'COUNT001';
-    let subskill = parts.slice(1).join('-') || '01-A';
-    
-    // Get subject from URL parameter (passed from ActivityCard) or activity metadata
+  /**
+   * Create TopicSelection from URL parameters and activity data
+   * IMPORTANT: Uses curriculum_metadata from activity or URL params - never parses activity ID
+   */
+  const createTopicFromCurriculumMetadata = (activityId: string, activity: any): TopicSelection | null => {
+    // First, try to get curriculum metadata from URL parameters (passed from ActivityCard)
+    const skillIdFromUrl = searchParams?.get('skill_id');
+    const subskillIdFromUrl = searchParams?.get('subskill_id');
+    const unitIdFromUrl = searchParams?.get('unit_id');
     const subjectFromUrl = searchParams?.get('subject');
-    const detectedSubject = subjectFromUrl || activity?.metadata?.subject || 'mathematics';
-    
-    // Create a structured topic selection that matches your existing format
-    const topicSelection = {
+
+    // Descriptions from URL (optional)
+    const unitTitleFromUrl = searchParams?.get('unit_title');
+    const skillDescriptionFromUrl = searchParams?.get('skill_description');
+    const subskillDescriptionFromUrl = searchParams?.get('subskill_description');
+
+    // Use curriculum metadata from activity if available, otherwise fall back to URL params
+    const actualSkillId = activity?.curriculum_metadata?.skill?.id || skillIdFromUrl;
+    const actualSubskillId = activity?.curriculum_metadata?.subskill?.id || subskillIdFromUrl;
+    const actualUnitId = activity?.curriculum_metadata?.unit?.id || unitIdFromUrl;
+    const detectedSubject = subjectFromUrl || activity?.curriculum_metadata?.subject || activity?.metadata?.subject;
+
+    console.log('🎯 [PRACTICE_PAGE] Creating topic from curriculum metadata:', {
+      activityId,
+      source: activity?.curriculum_metadata ? 'activity' : 'url_params',
+      actualSkillId,
+      actualSubskillId,
+      actualUnitId,
+      detectedSubject
+    });
+
+    // Validate we have the minimum required data
+    if (!detectedSubject || !actualSkillId || !actualSubskillId) {
+      console.error('❌ [PRACTICE_PAGE] Missing required curriculum data:', {
+        subject: detectedSubject,
+        skill_id: actualSkillId,
+        subskill_id: actualSubskillId
+      });
+      return null;
+    }
+
+    // Create TopicSelection using the typed structure
+    const topicSelection: TopicSelection = {
       subject: detectedSubject,
       selection: {
-        unit: activity?.metadata?.unit_id || skill.substring(0, 5), // e.g., COUNT
-        skill: skill, // e.g., COUNT001
-        subskill: subskillId // Use full subskillId as subskill identifier
+        unit: actualUnitId,
+        skill: actualSkillId,
+        subskill: actualSubskillId
       },
-      // Extract from activity data if available
       unit: {
-        title: activity?.metadata?.unit_title || `Unit: ${skill.substring(0, 5)}`
+        id: actualUnitId || '',
+        title: activity?.curriculum_metadata?.unit?.title || unitTitleFromUrl || `Unit: ${actualUnitId}`,
+        description: activity?.curriculum_metadata?.unit?.description
       },
       skill: {
-        description: activity?.title || activity?.description || 
-                    subskillId.replace(/^rec-/, '').replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+        id: actualSkillId,
+        description: activity?.curriculum_metadata?.skill?.description || skillDescriptionFromUrl || activity?.title || 'Practice Session'
       },
       subskill: {
-        description: activity?.description || 
-                    `Practice problems for ${subskillId.replace(/^rec-/, '').replace(/-/g, ' ')}`
+        id: actualSubskillId,
+        description: activity?.curriculum_metadata?.subskill?.description || subskillDescriptionFromUrl || activity?.description || 'Practice problems'
       },
       difficulty_range: {
         target: activity?.metadata?.difficulty || 3.0
       },
-      autoStart: true, // This tells ProblemSet to start immediately
-      fromCardInterface: true // This indicates it came from the new card interface
+      autoStart: true,
+      fromCardInterface: true
     };
 
+    console.log('✅ [PRACTICE_PAGE] Topic selection created:', topicSelection);
     return topicSelection;
   };
   
@@ -355,8 +388,8 @@ const PracticeSubskillPage: React.FC<PracticeSubskillPageProps> = ({ params }) =
               subject: activityData?.metadata?.subject || selectedTopic?.subject || 'mathematics',
               skill_description: activityData?.title || selectedTopic?.skill?.description,
               subskill_description: activityData?.description || selectedTopic?.subskill?.description,
-              skill_id: selectedTopic?.selection?.skill || selectedTopic?.id,
-              subskill_id: selectedTopic?.selection?.subskill || selectedTopic?.id || subskillId,
+              skill_id: selectedTopic?.selection?.skill || '',
+              subskill_id: selectedTopic?.selection?.subskill || subskillId,
             }}
             problemContext={currentProblemContext}
             onClose={() => setShowAICoach(false)}

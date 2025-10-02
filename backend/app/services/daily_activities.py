@@ -122,7 +122,15 @@ class CurriculumParser:
             subject_name = cls.SUBJECT_MAPPING.get(subject_code, subject_code)
             unit_description = cls.UNIT_DESCRIPTIONS.get(subject_unit, f"Unit {unit_num}")
             skill_description = cls.SKILL_DESCRIPTIONS.get((subject_unit, skill_num), f"Skill {skill_num}")
-            
+
+            # CRITICAL FIX: Construct proper hierarchical IDs
+            # For input "SS001-04-E":
+            #   unit_id: SS001
+            #   skill_id: SS001-04  (NOT just "04")
+            #   subskill_id: SS001-04-E (full ID)
+            skill_id = f"{subject_unit}-{skill_num}"  # e.g., "SS001-04"
+            subskill_id = clean_id  # Full ID, e.g., "SS001-04-E"
+
             return {
                 'subject': subject_name,
                 'unit': {
@@ -131,11 +139,11 @@ class CurriculumParser:
                     'description': unit_description
                 },
                 'skill': {
-                    'id': skill_num,
+                    'id': skill_id,  # FIXED: Now "SS001-04" instead of just "04"
                     'description': skill_description
                 },
                 'subskill': {
-                    'id': subskill_code,
+                    'id': subskill_id,  # FIXED: Now "SS001-04-E" (full ID)
                     'description': 'Learning Activity'  # Will be overridden by actual title
                 }
             }
@@ -385,13 +393,14 @@ class DailyActivitiesService:
 
     async def _try_pull_from_weekly_plan(self, student_id: int, date: str) -> Optional[Dict[str, Any]]:
         """
-        Try to pull activities from the weekly plan using adaptive logic:
-        1. Catch-up: Pull pending/assigned activities from previous days
-        2. Today's scheduled: Pull pending activities for today
-        3. Accelerate: If room remains, pull from future days
+        Try to pull activities from the weekly plan using adaptive logic (FR2):
+        1. INJECT ASSESSMENT FEEDBACK: Pull high-priority activities from recent assessments (72 hours)
+        2. CATCH-UP: Pull pending/assigned activities from previous days
+        3. TODAY'S SCHEDULED: Pull pending activities for today (with substitution if needed)
+        4. ACCELERATE: If room remains, pull from future days
         """
         from datetime import datetime, timedelta
-        from ..models.weekly_plan import WeeklyPlan, PlannedActivity
+        from ..models.weekly_plan import WeeklyPlan, PlannedActivity, ActivityStatus
 
         if not self.cosmos_db_service:
             logger.info(f"📅 WEEKLY_PLAN: No Cosmos DB service, skipping weekly plan check")
@@ -449,25 +458,58 @@ class DailyActivitiesService:
             logger.info(f"✅ WEEKLY_PLAN: Found weekly plan with {weekly_plan.total_activities} activities")
             logger.info(f"📅 WEEKLY_PLAN: Progress: {weekly_plan.completed_activities}/{weekly_plan.total_activities} completed")
 
-            # ADAPTIVE PULL LOGIC
+            # ADAPTIVE PULL LOGIC (FR2)
             selected_activities = []
             target_count = 6  # Target 6 activities for the daily plan
+            deferred_activities = []  # Track activities we defer
 
-            # Step 1: CATCH-UP - Get activities from previous days that are still pending/assigned
-            catch_up_activities = weekly_plan.get_catch_up_activities(current_day_of_week)
-            for activity in catch_up_activities[:3]:  # Max 3 catch-up activities
-                selected_activities.append(activity)
-                logger.info(f"📅 CATCH_UP: Added {activity.subskill_id} from day {activity.planned_day}")
+            # Step 1 (FR2): INJECT ASSESSMENT FEEDBACK (72-hour window, max 2 activities)
+            assessment_activities = await self._get_assessment_driven_activities(student_id, hours_back=72)
+            if assessment_activities:
+                logger.info(f"🎯 ASSESSMENT_INJECTION: Found {len(assessment_activities)} assessment-driven activities")
+                for i, assessment_activity in enumerate(assessment_activities[:2]):  # Max 2
+                    selected_activities.append(assessment_activity)
+                    logger.info(f"🎯 ASSESSMENT_INJECTION: Added {assessment_activity['subskill_id']} from assessment {assessment_activity.get('assessment_id')}")
 
-            # Step 2: TODAY'S SCHEDULED - Get pending activities for today
+            # Step 2: CATCH-UP - Get activities from previous days that are still pending/assigned
+            if len(selected_activities) < target_count:
+                catch_up_activities = weekly_plan.get_catch_up_activities(current_day_of_week)
+                remaining_slots = target_count - len(selected_activities)
+                for activity in catch_up_activities[:remaining_slots]:
+                    selected_activities.append(activity)
+                    logger.info(f"📅 CATCH_UP: Added {activity.subskill_id} from day {activity.planned_day}")
+
+            # Step 3: TODAY'S SCHEDULED - Get pending activities for today (WITH SUBSTITUTION)
             if len(selected_activities) < target_count:
                 todays_activities = weekly_plan.get_pending_activities_for_day(current_day_of_week)
                 remaining_slots = target_count - len(selected_activities)
-                for activity in todays_activities[:remaining_slots]:
-                    selected_activities.append(activity)
-                    logger.info(f"📅 SCHEDULED: Added {activity.subskill_id} for today")
 
-            # Step 3: ACCELERATE - If student is ahead and room remains, pull from future days
+                # Check if we need to substitute (assessment activities caused overflow)
+                if len(todays_activities) > remaining_slots and assessment_activities:
+                    # INTELLIGENT SUBSTITUTION (FR2): Replace lower-priority activities
+                    logger.info(f"🔄 SUBSTITUTION: Need to substitute - {len(todays_activities)} scheduled but only {remaining_slots} slots")
+
+                    # Sort today's activities by priority (low priority first for substitution)
+                    sorted_todays = sorted(todays_activities, key=lambda x: (
+                        0 if x.priority.value == 'low' else 1 if x.priority.value == 'medium' else 2
+                    ))
+
+                    # Take activities that fit, defer the rest
+                    for activity in sorted_todays[:remaining_slots]:
+                        selected_activities.append(activity)
+                        logger.info(f"📅 SCHEDULED: Added {activity.subskill_id} for today")
+
+                    # Defer lower-priority activities
+                    for activity in sorted_todays[remaining_slots:]:
+                        deferred_activities.append(activity)
+                        logger.warning(f"⏭️ DEFERRED: {activity.subskill_id} deferred due to assessment priority")
+                else:
+                    # No substitution needed, just take what fits
+                    for activity in todays_activities[:remaining_slots]:
+                        selected_activities.append(activity)
+                        logger.info(f"📅 SCHEDULED: Added {activity.subskill_id} for today")
+
+            # Step 4: ACCELERATE - If student is ahead and room remains, pull from future days
             if len(selected_activities) < target_count:
                 future_activities = weekly_plan.get_accelerate_activities(current_day_of_week, count=2)
                 remaining_slots = target_count - len(selected_activities)
@@ -484,13 +526,28 @@ class DailyActivitiesService:
             # Convert PlannedActivity objects to DailyActivity format
             daily_activities = await self._convert_planned_activities_to_daily(selected_activities, student_id)
 
-            # Update activity statuses in weekly plan to "assigned"
+            # Update activity statuses in weekly plan (FR2)
+            # Mark selected activities as "assigned"
             for activity in selected_activities:
+                # Skip assessment-driven activities that aren't in the weekly plan
+                if isinstance(activity, dict):
+                    continue
+
                 await self.cosmos_db_service.update_activity_status_in_weekly_plan(
                     student_id=student_id,
                     week_start_date=week_start_date,
                     activity_uid=activity.activity_uid,
                     new_status="assigned"
+                )
+
+            # Mark deferred activities as "deferred" (FR3, FR5)
+            for deferred_activity in deferred_activities:
+                logger.info(f"🔄 SUBSTITUTION_LOG: Deferring {deferred_activity.activity_uid} - student_id={student_id}, week={week_start_date}")
+                await self.cosmos_db_service.update_activity_status_in_weekly_plan(
+                    student_id=student_id,
+                    week_start_date=week_start_date,
+                    activity_uid=deferred_activity.activity_uid,
+                    new_status="deferred"
                 )
 
             return {
@@ -507,17 +564,139 @@ class DailyActivitiesService:
             logger.error(f"❌ WEEKLY_PLAN: Stack trace: {traceback.format_exc()}")
             return None
 
+    async def _get_assessment_driven_activities(
+        self,
+        student_id: int,
+        hours_back: int = 72
+    ) -> List[Dict[str, Any]]:
+        """
+        Get high-priority activities from recent assessments (FR2)
+        Returns activities that need immediate attention based on assessment feedback
+        """
+        if not self.cosmos_db_service:
+            logger.info(f"🎯 ASSESSMENT_INJECTION: No Cosmos DB service")
+            return []
+
+        try:
+            from datetime import datetime, timedelta
+
+            # Calculate cutoff time (72 hours back)
+            cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
+            cutoff_iso = cutoff_time.isoformat()
+
+            # Get recent assessments
+            assessments = await self.cosmos_db_service.get_recent_completed_assessments(
+                student_id=student_id,
+                days_back=int(hours_back / 24) + 1  # Convert hours to days (rounded up)
+            )
+
+            if not assessments:
+                logger.info(f"🎯 ASSESSMENT_INJECTION: No recent assessments found")
+                return []
+
+            # Filter to only those within the time window
+            recent_assessments = [
+                a for a in assessments
+                if a.get('completed_at', '') >= cutoff_iso
+            ]
+
+            logger.info(f"🎯 ASSESSMENT_INJECTION: Found {len(recent_assessments)} assessments within {hours_back} hours")
+
+            # Extract priority subskills (Needs Review / Developing)
+            assessment_activities = []
+
+            for assessment in recent_assessments:
+                results = assessment.get('results', {})
+                ai_insights = results.get('ai_insights', {})
+                skill_insights = ai_insights.get('skill_insights', [])
+
+                for insight in skill_insights:
+                    performance = str(insight.get('performance_label', '')).upper()
+
+                    if 'NEEDS_REVIEW' in performance or 'NEEDS REVIEW' in performance or 'DEVELOPING' in performance:
+                        # Extract subskill from next_step
+                        next_step = insight.get('next_step', {})
+                        link = next_step.get('link', '')
+
+                        if '/practice/' in link:
+                            subskill_id = link.split('/practice/')[1].split('?')[0]
+
+                            # Create activity data structure
+                            assessment_activities.append({
+                                'subskill_id': subskill_id,
+                                'subskill_description': insight.get('skill_description', 'Practice Session'),
+                                'subject': assessment.get('subject', 'General'),
+                                'skill_id': insight.get('skill_id'),
+                                'assessment_id': assessment.get('assessment_id'),
+                                'performance': performance,
+                                'reason': next_step.get('text', 'Assessment identified this skill needs practice'),
+                                'from_assessment': True,
+                                'priority': 'high'
+                            })
+
+            logger.info(f"🎯 ASSESSMENT_INJECTION: Extracted {len(assessment_activities)} priority activities from assessments")
+            return assessment_activities[:2]  # Max 2 per day
+
+        except Exception as e:
+            logger.error(f"🎯 ASSESSMENT_INJECTION: Error getting assessment activities: {e}")
+            import traceback
+            logger.error(f"🎯 ASSESSMENT_INJECTION: {traceback.format_exc()}")
+            return []
+
+    async def _convert_assessment_activity_to_daily(
+        self,
+        assessment_activity: Dict[str, Any],
+        index: int
+    ) -> Dict[str, Any]:
+        """Convert assessment-driven activity dict to DailyActivity format"""
+        time_slots = ['morning', 'midday', 'afternoon', 'evening']
+
+        return {
+            'id': f"assessment-{assessment_activity.get('assessment_id')}-{assessment_activity.get('subskill_id')}",
+            'type': 'practice',
+            'title': f"Practice: {assessment_activity.get('subskill_description')}",
+            'description': assessment_activity.get('reason', 'Assessment-driven practice'),
+            'category': assessment_activity.get('subject', 'General'),
+            'estimated_time': '15 min',
+            'points': 30,  # High points for assessment-driven
+            'priority': 'high',
+            'time_slot': time_slots[index % len(time_slots)],
+            'action': 'Start Practice',
+            'endpoint': '/practice',
+            'icon_type': 'target',  # Special icon for assessment-driven
+            'metadata': {
+                'from_assessment_feedback': True,
+                'assessment_id': assessment_activity.get('assessment_id'),
+                'performance': assessment_activity.get('performance'),
+                'skill_id': assessment_activity.get('skill_id'),
+                'assessment_reason': assessment_activity.get('reason'),
+                'subject': assessment_activity.get('subject')
+            }
+        }
+
     async def _convert_planned_activities_to_daily(
         self,
         planned_activities: List,
         student_id: int
     ) -> List[DailyActivity]:
-        """Convert PlannedActivity objects from weekly plan to DailyActivity format"""
+        """Convert PlannedActivity objects and assessment-driven activities to DailyActivity format"""
         from ..models.weekly_plan import PlannedActivity
 
         daily_activities = []
 
         for i, planned_activity in enumerate(planned_activities):
+            # Handle assessment-driven activities (dict format)
+            if isinstance(planned_activity, dict):
+                activity_dict = await self._convert_assessment_activity_to_daily(planned_activity, i)
+                enhanced_dict = CurriculumParser.enhance_activity_with_curriculum_data(
+                    activity_dict,
+                    planned_activity.get('subskill_description')
+                )
+                activity = DailyActivity(**enhanced_dict)
+                daily_activities.append(activity)
+                continue
+
+            # Handle PlannedActivity objects (from weekly plan)
             # Determine activity type and get config
             activity_type = self._determine_activity_type_from_planned(planned_activity)
             config = self._get_activity_config(activity_type, planned_activity.subskill_description)
@@ -548,35 +727,72 @@ class DailyActivitiesService:
                     'activity_uid': planned_activity.activity_uid,
                     'planned_day': planned_activity.planned_day,
                     'subject': planned_activity.subject,
-                    'skill_id': planned_activity.subskill_id,
+                    'skill_id': planned_activity.skill_id,
                     'llm_reasoning': planned_activity.llm_reasoning
                 }
             }
 
-            # Add curriculum metadata
-            activity_dict['curriculum_metadata'] = {
-                'subject': planned_activity.subject,
-                'unit': {
-                    'title': planned_activity.unit_title or 'Learning Unit',
-                    'description': planned_activity.unit_title or 'Learning Unit'
-                },
-                'skill': {
-                    'id': planned_activity.subskill_id,
-                    'description': planned_activity.skill_description or 'Learning Skill'
-                },
-                'subskill': {
-                    'id': planned_activity.subskill_id,
-                    'description': planned_activity.subskill_description
+            # Lookup rich curriculum metadata from curriculum service if available
+            curriculum_metadata = None
+            if self.curriculum_service:
+                try:
+                    curriculum_metadata = await self.curriculum_service.get_subskill_metadata(planned_activity.subskill_id)
+                    if curriculum_metadata:
+                        logger.info(f"📚 CURRICULUM_LOOKUP: Found metadata for {planned_activity.subskill_id}: unit={curriculum_metadata.get('unit_title')}")
+                except Exception as e:
+                    logger.warning(f"📚 CURRICULUM_LOOKUP: Failed to lookup metadata for {planned_activity.subskill_id}: {e}")
+
+            # Add curriculum metadata - use curriculum service data if available, else fallback to weekly plan data
+            if curriculum_metadata:
+                activity_dict['curriculum_metadata'] = {
+                    'subject': curriculum_metadata.get('subject', planned_activity.subject),
+                    'unit': {
+                        'id': curriculum_metadata.get('unit_id', planned_activity.unit_id),
+                        'title': curriculum_metadata.get('unit_title', planned_activity.unit_title or 'Learning Unit'),
+                        'description': curriculum_metadata.get('unit_title', planned_activity.unit_title or 'Learning Unit')
+                    },
+                    'skill': {
+                        'id': curriculum_metadata.get('skill_id', planned_activity.skill_id),
+                        'description': curriculum_metadata.get('skill_description', planned_activity.skill_description or 'Learning Skill')
+                    },
+                    'subskill': {
+                        'id': curriculum_metadata.get('subskill_id', planned_activity.subskill_id),
+                        'description': curriculum_metadata.get('subskill_description', planned_activity.subskill_description)
+                    }
                 }
-            }
 
-            # Enhance with curriculum parser
-            enhanced_dict = CurriculumParser.enhance_activity_with_curriculum_data(
-                activity_dict,
-                planned_activity.subskill_description
-            )
+                # Also add metadata fields for backward compatibility
+                activity_dict['metadata']['unit_description'] = curriculum_metadata.get('unit_title', 'Learning Unit')
+                activity_dict['metadata']['skill_description'] = curriculum_metadata.get('skill_description', 'Learning Skill')
+                if curriculum_metadata.get('grade'):
+                    activity_dict['metadata']['grade'] = curriculum_metadata.get('grade')
+                if curriculum_metadata.get('difficulty_start') or curriculum_metadata.get('target_difficulty'):
+                    activity_dict['metadata']['difficulty_range'] = {
+                        'start': curriculum_metadata.get('difficulty_start'),
+                        'end': curriculum_metadata.get('difficulty_end'),
+                        'target': curriculum_metadata.get('target_difficulty')
+                    }
+            else:
+                # Fallback to weekly plan data
+                activity_dict['curriculum_metadata'] = {
+                    'subject': planned_activity.subject,
+                    'unit': {
+                        'id': planned_activity.unit_id,
+                        'title': planned_activity.unit_title or 'Learning Unit',
+                        'description': planned_activity.unit_title or 'Learning Unit'
+                    },
+                    'skill': {
+                        'id': planned_activity.skill_id,
+                        'description': planned_activity.skill_description or 'Learning Skill'
+                    },
+                    'subskill': {
+                        'id': planned_activity.subskill_id,
+                        'description': planned_activity.subskill_description
+                    }
+                }
 
-            activity = DailyActivity(**enhanced_dict)
+            # Don't enhance with curriculum parser since we already have rich metadata
+            activity = DailyActivity(**activity_dict)
             daily_activities.append(activity)
 
         return daily_activities

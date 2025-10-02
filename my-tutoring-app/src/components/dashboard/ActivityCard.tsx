@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  MessageCircle, 
-  PenTool, 
-  BookOpen, 
+import {
+  MessageCircle,
+  PenTool,
+  BookOpen,
   Wrench,
   Star,
   Clock,
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { hasValidCurriculumMetadata } from '@/types/curriculum';
 
 interface ActivityCardProps {
   activityData: {
@@ -159,6 +160,25 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     hasProperStructure: !!activityData.curriculum_metadata
   });
 
+  // Build practice route with curriculum metadata
+  // IMPORTANT: Pass the full curriculum metadata via URL params so the practice page
+  // doesn't have to parse the activity ID
+  const buildPracticeRoute = () => {
+    const params = new URLSearchParams();
+    params.append('subject', subject);
+
+    if (activityData.curriculum_metadata) {
+      params.append('unit_id', activityData.curriculum_metadata.unit.id);
+      params.append('skill_id', activityData.curriculum_metadata.skill.id);
+      params.append('subskill_id', activityData.curriculum_metadata.subskill.id);
+      params.append('unit_title', activityData.curriculum_metadata.unit.title);
+      params.append('skill_description', activityData.curriculum_metadata.skill.description);
+      params.append('subskill_description', activityData.curriculum_metadata.subskill.description);
+    }
+
+    return `/practice/${activityData.id}?${params.toString()}`;
+  };
+
   const learningOptions: LearningOption[] = [
     {
       id: 'live-tutoring',
@@ -172,7 +192,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       title: 'Practice',
       icon: PenTool,
       color: 'bg-green-500',
-      route: `/practice/${activityData.id}?subject=${encodeURIComponent(subject)}`
+      route: buildPracticeRoute()
     },
     {
       id: 'educational-content',

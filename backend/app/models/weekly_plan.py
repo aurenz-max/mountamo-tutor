@@ -19,6 +19,7 @@ class ActivityStatus(str, Enum):
     PENDING = "pending"  # Not yet assigned to a daily plan
     ASSIGNED = "assigned"  # Assigned to today's daily plan
     COMPLETED = "completed"  # Student completed the activity
+    DEFERRED = "deferred"  # Activity was deferred due to higher-priority activity (e.g., from assessment)
     SKIPPED = "skipped"  # Activity was skipped (e.g., student caught up)
 
 
@@ -48,7 +49,9 @@ class PlannedActivity(BaseModel):
     subskill_id: str = Field(..., description="Curriculum subskill ID")
     subskill_description: str = Field(..., description="Human-readable subskill description")
     subject: str = Field(..., description="Subject area (e.g., Mathematics, Science)")
+    skill_id: str = Field(..., description="Parent skill ID (e.g., SS001-04)")
     skill_description: Optional[str] = Field(None, description="Parent skill description")
+    unit_id: str = Field(..., description="Curriculum unit ID (e.g., SS001)")
     unit_title: Optional[str] = Field(None, description="Curriculum unit title")
 
     activity_type: ActivityType = Field(..., description="Type of activity")
@@ -68,6 +71,10 @@ class PlannedActivity(BaseModel):
     # Tracking
     assigned_date: Optional[str] = Field(None, description="Date activity was assigned (YYYY-MM-DD)")
     completed_date: Optional[str] = Field(None, description="Date activity was completed (YYYY-MM-DD)")
+
+    # Assessment-driven activity tracking (FR3)
+    source_assessment_id: Optional[str] = Field(None, description="Assessment ID if activity was driven by assessment feedback")
+    substituted_for_uid: Optional[str] = Field(None, description="UID of activity this replaced (for DEFERRED tracking)")
 
     @validator('planned_day')
     def validate_planned_day(cls, v):

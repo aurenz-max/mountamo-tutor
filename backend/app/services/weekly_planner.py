@@ -90,13 +90,22 @@ class WeeklyPlannerService:
 
             logger.info(f"✅ WEEKLY_PLANNER: Analytics snapshot retrieved with {len(analytics_snapshot['subjects'])} subjects")
 
-            # Step 2: Generate weekly plan using LLM
+            # Step 1.5 (FR1): Fetch recent assessment feedback (last 7 days)
+            logger.info(f"📄 WEEKLY_PLANNER: Fetching recent assessment feedback...")
+            assessment_feedback = await self._get_recent_assessment_feedback(student_id, days_back=7)
+            if assessment_feedback:
+                logger.info(f"✅ WEEKLY_PLANNER: Found assessment feedback for {len(assessment_feedback)} subjects")
+            else:
+                logger.info(f"📄 WEEKLY_PLANNER: No recent assessment feedback found")
+
+            # Step 2: Generate weekly plan using LLM (with assessment feedback)
             logger.info(f"🤖 WEEKLY_PLANNER: Calling LLM for weekly plan generation...")
             weekly_plan_data = await self._call_llm_for_weekly_planning(
                 student_id,
                 week_start_date,
                 analytics_snapshot,
-                target_activities
+                target_activities,
+                assessment_feedback=assessment_feedback
             )
 
             logger.info(f"✅ WEEKLY_PLANNER: LLM generated {len(weekly_plan_data['planned_activities'])} activities")
@@ -158,17 +167,26 @@ class WeeklyPlannerService:
             ),
             available_skills AS (
               SELECT
-                subject,
-                subskill_id,
-                subskill_description,
-                skill_description,
-                subskill_mastery_pct,
-                unlock_score,
-                difficulty_start,
-                readiness_status,
-                ROW_NUMBER() OVER (PARTITION BY subject ORDER BY unlock_score DESC) as skill_rank
-              FROM `{self.project_id}.{self.dataset_id}.student_available_subskills`
-              WHERE student_id = @student_id AND is_available = TRUE
+                a.subject,
+                a.subskill_id,
+                a.subskill_description,
+                a.skill_description,
+                a.subskill_mastery_pct,
+                a.unlock_score,
+                a.difficulty_start,
+                a.readiness_status,
+                c.unit_id,
+                c.unit_title,
+                c.skill_id,
+                c.target_difficulty,
+                c.grade,
+                ROW_NUMBER() OVER (PARTITION BY a.subject ORDER BY a.unlock_score DESC) as skill_rank
+              FROM `{self.project_id}.{self.dataset_id}.student_available_subskills` a
+              LEFT JOIN `{self.project_id}.{self.dataset_id}.curriculum` c
+                ON a.subskill_id = c.subskill_id
+                AND a.skill_id = c.skill_id
+                AND a.subject = c.subject
+              WHERE a.student_id = @student_id AND a.is_available = TRUE
             )
             SELECT
               v.subject,
@@ -184,9 +202,14 @@ class WeeklyPlannerService:
                   a.subskill_id,
                   a.subskill_description,
                   a.skill_description,
+                  a.unit_id,
+                  a.unit_title,
+                  a.skill_id,
                   a.subskill_mastery_pct,
                   a.unlock_score,
                   a.difficulty_start,
+                  a.target_difficulty,
+                  a.grade,
                   a.readiness_status
                 )
                 ORDER BY a.skill_rank
@@ -220,12 +243,91 @@ class WeeklyPlannerService:
             logger.error(f"❌ Error fetching analytics snapshot: {e}")
             raise
 
+    async def _get_recent_assessment_feedback(
+        self,
+        student_id: int,
+        days_back: int = 7
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get recent assessment feedback to inform weekly planning (FR1)
+        Returns a dict mapping subject -> list of priority subskills from assessments
+        """
+        if not self.cosmos_db_service:
+            logger.warning(f"📄 WEEKLY_PLANNER: No Cosmos DB service, skipping assessment feedback")
+            return None
+
+        try:
+            # Get recent completed assessments
+            assessments = await self.cosmos_db_service.get_recent_completed_assessments(
+                student_id=student_id,
+                days_back=days_back
+            )
+
+            if not assessments:
+                return None
+
+            logger.info(f"📄 WEEKLY_PLANNER: Processing {len(assessments)} recent assessments")
+
+            # Extract priority skills by subject
+            feedback_by_subject = {}
+
+            for assessment in assessments:
+                subject = assessment.get('subject')
+                if not subject:
+                    continue
+
+                # Extract AI insights
+                results = assessment.get('results', {})
+                ai_insights = results.get('ai_insights', {})
+                skill_insights = ai_insights.get('skill_insights', [])
+
+                # Find "Needs Review" and "Developing" skills
+                priority_subskills = []
+                for insight in skill_insights:
+                    performance = str(insight.get('performance_label', '')).upper()
+
+                    if 'NEEDS_REVIEW' in performance or 'NEEDS REVIEW' in performance or 'DEVELOPING' in performance:
+                        # Extract subskill from next_step link
+                        next_step = insight.get('next_step', {})
+                        link = next_step.get('link', '')
+
+                        if '/practice/' in link:
+                            subskill_id = link.split('/practice/')[1].split('?')[0]
+                            priority_subskills.append({
+                                'subskill_id': subskill_id,
+                                'skill_id': insight.get('skill_id'),
+                                'performance': performance,
+                                'reason': next_step.get('text', ''),
+                                'assessment_id': assessment.get('assessment_id')
+                            })
+
+                # Store the most recent per subject
+                if priority_subskills and subject not in feedback_by_subject:
+                    feedback_by_subject[subject] = {
+                        'assessment_id': assessment.get('assessment_id'),
+                        'completed_at': assessment.get('completed_at'),
+                        'priority_subskills': priority_subskills[:3]  # Max 3 per subject
+                    }
+
+            logger.info(f"📄 WEEKLY_PLANNER: Extracted feedback for {len(feedback_by_subject)} subjects")
+            for subject, data in feedback_by_subject.items():
+                logger.info(f"📄 WEEKLY_PLANNER: {subject}: {len(data['priority_subskills'])} priority skills")
+
+            return feedback_by_subject if feedback_by_subject else None
+
+        except Exception as e:
+            logger.error(f"❌ WEEKLY_PLANNER: Error getting assessment feedback: {e}")
+            import traceback
+            logger.error(f"❌ WEEKLY_PLANNER: {traceback.format_exc()}")
+            return None
+
     async def _call_llm_for_weekly_planning(
         self,
         student_id: int,
         week_start_date: str,
         analytics_snapshot: Dict[str, Any],
-        target_activities: int
+        target_activities: int,
+        assessment_feedback: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Call Gemini LLM to generate structured weekly learning plan
@@ -253,16 +355,22 @@ class WeeklyPlannerService:
                                 "subskill_description": {"type": "string"},
                                 "subject": {"type": "string"},
                                 "skill_description": {"type": "string"},
+                                "skill_id": {"type": "string"},
+                                "unit_id": {"type": "string"},
+                                "unit_title": {"type": "string"},
                                 "activity_type": {"type": "string"},
                                 "planned_day": {"type": "integer"},
                                 "priority": {"type": "string"},
                                 "llm_reasoning": {"type": "string"},
                                 "estimated_time_minutes": {"type": "integer"},
-                                "difficulty_start": {"type": "integer"}
+                                "difficulty_start": {"type": "integer"},
+                                "target_difficulty": {"type": "integer"},
+                                "grade": {"type": "string"}
                             },
                             "required": [
                                 "activity_uid", "subskill_id", "subskill_description",
-                                "subject", "activity_type", "planned_day",
+                                "subject", "skill_description", "skill_id", "unit_id",
+                                "unit_title", "activity_type", "planned_day",
                                 "priority", "llm_reasoning"
                             ]
                         }
@@ -277,12 +385,13 @@ class WeeklyPlannerService:
             # Apply PRD velocity-based allocation rules
             subject_allocations = self._calculate_subject_allocations(subjects, target_activities)
 
-            # Build comprehensive prompt
+            # Build comprehensive prompt (with assessment feedback if available)
             prompt = self._build_weekly_planning_prompt(
                 week_start_date,
                 subject_allocations,
                 subjects,
-                target_activities
+                target_activities,
+                assessment_feedback=assessment_feedback
             )
 
             logger.info(f"🤖 LLM_WEEKLY: Calling Gemini with prompt length: {len(prompt)} chars")
@@ -308,13 +417,26 @@ class WeeklyPlannerService:
             # Parse and validate response
             weekly_plan_data = json.loads(response.text)
 
-            # Add unique activity UIDs if not provided
+            # Add unique activity UIDs if not provided and mark assessment-driven activities
             for activity in weekly_plan_data['planned_activities']:
                 if not activity.get('activity_uid'):
                     activity['activity_uid'] = str(uuid.uuid4())
 
                 # Set default status
                 activity['status'] = ActivityStatus.PENDING.value
+
+                # Mark assessment-driven activities (FR1)
+                if assessment_feedback:
+                    subskill_id = activity.get('subskill_id')
+                    llm_reasoning = activity.get('llm_reasoning', '').lower()
+
+                    # Check if this activity matches any assessment feedback
+                    for subject, feedback in assessment_feedback.items():
+                        for priority_skill in feedback['priority_subskills']:
+                            if priority_skill['subskill_id'] == subskill_id or 'assessment' in llm_reasoning:
+                                activity['source_assessment_id'] = feedback['assessment_id']
+                                logger.info(f"📄 WEEKLY_PLANNER: Marked {subskill_id} as assessment-driven from {feedback['assessment_id']}")
+                                break
 
             logger.info(f"✅ LLM_WEEKLY: Successfully generated {len(weekly_plan_data['planned_activities'])} activities")
             logger.info(f"✅ LLM_WEEKLY: Weekly theme: {weekly_plan_data.get('weekly_theme')}")
@@ -382,7 +504,8 @@ class WeeklyPlannerService:
         week_start_date: str,
         subject_allocations: List[Dict[str, Any]],
         subjects: List[Dict[str, Any]],
-        target_activities: int
+        target_activities: int,
+        assessment_feedback: Optional[Dict[str, Any]] = None
     ) -> str:
         """Build comprehensive LLM prompt for weekly planning"""
 
@@ -412,14 +535,46 @@ class WeeklyPlannerService:
                     "subskill_id": s["subskill_id"],
                     "subskill_description": s["subskill_description"],
                     "skill_description": s["skill_description"],
+                    "skill_id": s.get("skill_id"),
+                    "unit_id": s.get("unit_id"),
+                    "unit_title": s.get("unit_title"),
                     "readiness_status": s["readiness_status"],
                     "mastery_pct": s.get("subskill_mastery_pct", 0),
-                    "difficulty_start": s.get("difficulty_start")
+                    "difficulty_start": s.get("difficulty_start"),
+                    "target_difficulty": s.get("target_difficulty"),
+                    "grade": s.get("grade")
                 }
                 for s in a["available_subskills"][:6]
             ]
             for a in subject_allocations
         }
+
+        # Build assessment feedback section if available (FR1)
+        assessment_section = ""
+        if assessment_feedback:
+            assessment_details = []
+            for subject, feedback in assessment_feedback.items():
+                skills_list = []
+                for skill in feedback['priority_subskills']:
+                    skills_list.append(f"  - {skill['subskill_id']}: {skill['reason']} (Performance: {skill['performance']})")
+                assessment_details.append(f"**{subject}:**\n" + "\n".join(skills_list))
+
+            assessment_section = f"""
+
+---
+
+**🎯 CRITICAL ASSESSMENT FEEDBACK (PRIORITY):**
+Recent assessments identified skills that need immediate attention. These MUST be prioritized early in the week (Monday/Tuesday) with HIGH priority:
+
+{chr(10).join(assessment_details)}
+
+**ASSESSMENT-DRIVEN ACTIVITY REQUIREMENTS:**
+- Include activities for these skills on Monday or Tuesday (days 0-1)
+- Mark all assessment-driven activities with "high" priority
+- In the llm_reasoning, reference the assessment feedback (e.g., "Assessment identified this as 'Needs Review'")
+
+---
+"""
 
         prompt = f"""You are an expert K-5 curriculum planner creating a comprehensive weekly learning plan for a student.
 
@@ -431,9 +586,7 @@ class WeeklyPlannerService:
 3. **Balance each day:** Aim for 4-5 activities per day with variety in subjects and activity types.
 4. **Activity progression:** Start with easier/review activities early in the week, build to more challenging topics by Friday.
 5. **Use ONLY subskills from the available options provided below.**
-
----
-
+{assessment_section}
 **STUDENT VELOCITY & SUBJECT ALLOCATIONS:**
 {json.dumps(allocation_summary, indent=2)}
 
@@ -467,16 +620,22 @@ class WeeklyPlannerService:
 3. **planned_activities:** Array of {target_activities} activities with:
    - **activity_uid:** Generate a unique ID (use format: "ACT-<subject>-<day>-<number>")
    - **subskill_id:** MUST match exactly from available options
-   - **subskill_description:** Copy from available options
+   - **subskill_description:** Copy EXACTLY from available options
    - **subject:** Subject name
-   - **skill_description:** Copy from available options
-   - **unit_title:** Copy from available options
+   - **skill_description:** Copy EXACTLY from available options
+   - **skill_id:** Copy EXACTLY from available options (REQUIRED)
+   - **unit_id:** Copy EXACTLY from available options (REQUIRED)
+   - **unit_title:** Copy EXACTLY from available options (REQUIRED - do NOT leave null)
    - **activity_type:** practice, packages, or review
    - **planned_day:** 0-4 (Monday-Friday)
    - **priority:** high, medium, or low
    - **llm_reasoning:** Brief (1-2 sentences) explanation of why this activity is included and when
    - **estimated_time_minutes:** 10-15 minutes per activity
-   - **difficulty_start, target_difficulty, grade:** Copy from available options if present
+   - **difficulty_start:** Copy from available options if present
+   - **target_difficulty:** Copy from available options if present
+   - **grade:** Copy from available options if present
+
+**CRITICAL:** For each activity, you MUST copy the skill_id, unit_id, and unit_title EXACTLY from the available subskills data. Do NOT leave these fields null or empty.
 
 **EXAMPLE ACTIVITY:**
 {{
@@ -485,6 +644,8 @@ class WeeklyPlannerService:
   "subskill_description": "Count and identify numbers 0-10",
   "subject": "Mathematics",
   "skill_description": "Number Recognition and Counting",
+  "skill_id": "MATH001-01",
+  "unit_id": "MATH001",
   "unit_title": "Number Sense Foundations",
   "activity_type": "practice",
   "planned_day": 0,
