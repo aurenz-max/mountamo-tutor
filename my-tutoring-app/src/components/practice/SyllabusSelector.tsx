@@ -574,6 +574,7 @@ const SyllabusSelector = ({ onSelect }) => {
                         icon={getLevelIcon(2)}
                         onClick={() => setSelection(prev => ({
                           ...prev,
+                          skill: skill.id,  // Set parent skill ID when selecting subskill
                           subskill: subskill.id
                         }))}
                       />

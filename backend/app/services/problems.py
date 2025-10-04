@@ -6,10 +6,15 @@ import logging
 import json
 import random
 from google import genai
-from google.genai.types import GenerateContentConfig
-from ..generators.content_schemas import PRACTICE_PROBLEMS_SCHEMA
+from google.genai.types import GenerateContentConfig, Schema
+from ..generators.content_schemas import (
+    PRACTICE_PROBLEMS_SCHEMA,
+    PRACTICE_PROBLEMS_SCHEMA_STEP1,
+    VISUAL_TYPE_TO_SCHEMA
+)
 from ..generators.content import ContentGenerationRequest
 from ..core.config import settings
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +41,261 @@ class ProblemService:
         """Initialize Gemini client with configuration"""
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY is required. Please check your configuration.")
-        
+
         self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
         logger.info(f"Gemini client initialized for {self.__class__.__name__}")
+
+    # ============================================================================
+    # VISUAL GENERATION PIPELINE - Two-Step Architecture
+    # ============================================================================
+
+    def _build_batch_visual_schema(self, intents: List[Dict[str, Any]]) -> Schema:
+        """
+        Dynamically builds a schema for batch visual generation based on intents.
+
+        Args:
+            intents: List of visual intents with visual_id and visual_type
+                     Example: [{"visual_id": "q_1", "visual_type": "bar-model"}, ...]
+
+        Returns:
+            Schema object with properties for each visual_id
+        """
+        properties = {}
+        required_ids = []
+
+        for intent in intents:
+            visual_id = intent.get("visual_id")
+            visual_type = intent.get("visual_type")
+
+            if not visual_id or not visual_type:
+                logger.warning(f"Intent missing visual_id or visual_type: {intent}")
+                continue
+
+            # Get the schema for this visual type
+            visual_schema = VISUAL_TYPE_TO_SCHEMA.get(visual_type)
+            if not visual_schema:
+                logger.warning(f"Unknown visual type: {visual_type}")
+                continue
+
+            properties[visual_id] = visual_schema
+            required_ids.append(visual_id)
+
+        # Create composite schema
+        batch_schema = Schema(
+            type="object",
+            properties=properties,
+            required=required_ids
+        )
+
+        logger.info(f"Built batch schema with {len(properties)} visual intents: {list(properties.keys())}")
+        return batch_schema
+
+    async def _generate_batch_visuals(
+        self,
+        problem: Dict[str, Any],
+        problem_context: str
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Generates all visuals for a single problem in ONE AI call.
+
+        Args:
+            problem: Problem dict with visual intents
+            problem_context: Context string describing the problem
+
+        Returns:
+            Dict mapping visual_id to visual data: {"q_1": {...}, "opt_A": {...}, ...}
+        """
+        try:
+            # Collect all visual intents from the problem
+            intents = []
+
+            # Check question/statement visual intent
+            question_intent = problem.get("question_visual_intent") or problem.get("statement_visual_intent")
+            if question_intent and question_intent.get("needs_visual"):
+                intents.append(question_intent)
+
+            # Check option visual intents (for MCQ)
+            if problem.get("options"):
+                for option in problem["options"]:
+                    option_intent = option.get("option_visual_intent")
+                    if option_intent and option_intent.get("needs_visual"):
+                        intents.append(option_intent)
+
+            if not intents:
+                logger.info(f"No visual intents found for problem {problem.get('id', 'unknown')}")
+                return {}
+
+            logger.info(f"Generating {len(intents)} visuals for problem {problem.get('id', 'unknown')}")
+
+            # Build composite schema
+            batch_schema = self._build_batch_visual_schema(intents)
+
+            # Build focused prompt
+            prompt_parts = [
+                f"Generate visual data for this {problem.get('problem_type', 'problem')}:",
+                f"Problem: {problem_context}",
+                "",
+                "You must generate JSON with these exact keys and visual types:"
+            ]
+
+            for intent in intents:
+                visual_id = intent.get("visual_id")
+                visual_type = intent.get("visual_type")
+                visual_purpose = intent.get("visual_purpose", "No specific purpose provided")
+                prompt_parts.append(f"- '{visual_id}': {visual_type} - {visual_purpose}")
+
+            prompt_parts.extend([
+                "",
+                "IMPORTANT:",
+                "- Return ONLY the JSON object with these exact keys",
+                "- All visuals in this problem should be stylistically consistent",
+                "- Use appropriate colors and sizing for kindergarten students",
+                "- Keep visuals simple and clear"
+            ])
+
+            prompt = "\n".join(prompt_parts)
+
+            logger.info(f"Calling Gemini Flash for batch visual generation (model: gemini-1.5-flash)")
+
+            # Call Gemini 1.5 Flash for visual generation (cheaper, faster model)
+            response = await self.client.aio.models.generate_content(
+                model='gemini-flash-lite-latest',
+                contents=prompt,
+                config=GenerateContentConfig(
+                    response_mime_type='application/json',
+                    response_schema=batch_schema,
+                    temperature=0.7,
+                    max_output_tokens=4000
+                )
+            )
+
+            visual_batch = json.loads(response.text)
+            logger.info(f"Successfully generated {len(visual_batch)} visuals: {list(visual_batch.keys())}")
+            return visual_batch
+
+        except Exception as e:
+            logger.error(f"Error in _generate_batch_visuals: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {}
+
+    def _inject_visuals_into_problem(
+        self,
+        problem: Dict[str, Any],
+        visual_batch: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Injects visual data into problem, replacing visual intents with visual data.
+
+        Args:
+            problem: Problem with visual intents
+            visual_batch: Dict mapping visual_id to visual data
+
+        Returns:
+            Problem with visual_data fields (intents removed)
+        """
+        # Handle question visual
+        question_intent = problem.get("question_visual_intent") or problem.get("statement_visual_intent")
+        intent_field = "question_visual_intent" if "question_visual_intent" in problem else "statement_visual_intent"
+        data_field = "question_visual_data" if "question_visual_intent" in problem else "statement_visual_data"
+
+        if question_intent and question_intent.get("needs_visual"):
+            visual_id = question_intent.get("visual_id")
+            visual_type = question_intent.get("visual_type")
+
+            if visual_id in visual_batch:
+                problem[data_field] = {
+                    "type": visual_type,
+                    "data": visual_batch[visual_id]
+                }
+                logger.info(f"Injected {visual_type} visual for {data_field} (id: {visual_id})")
+            else:
+                problem[data_field] = None
+                logger.warning(f"Visual {visual_id} not found in batch, setting to null")
+        else:
+            problem[data_field] = None
+
+        # Remove the intent field
+        if intent_field in problem:
+            del problem[intent_field]
+
+        # Handle option visuals (for MCQ)
+        if problem.get("options"):
+            for option in problem["options"]:
+                option_intent = option.get("option_visual_intent")
+
+                if option_intent and option_intent.get("needs_visual"):
+                    visual_id = option_intent.get("visual_id")
+                    visual_type = option_intent.get("visual_type")
+
+                    if visual_id in visual_batch:
+                        option["visual_data"] = {
+                            "type": visual_type,
+                            "data": visual_batch[visual_id]
+                        }
+                        logger.info(f"Injected {visual_type} visual for option {option.get('id')} (visual_id: {visual_id})")
+                    else:
+                        option["visual_data"] = None
+                        logger.warning(f"Visual {visual_id} not found in batch for option {option.get('id')}")
+                else:
+                    option["visual_data"] = None
+
+                # Remove the intent field
+                if "option_visual_intent" in option:
+                    del option["option_visual_intent"]
+
+        return problem
+
+    async def _orchestrate_visual_generation(
+        self,
+        problems_with_intents: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Orchestrates visual generation for multiple problems.
+        Each problem's visuals are generated in one batch call for consistency.
+        Multiple problems can be processed in parallel.
+
+        Args:
+            problems_with_intents: List of problems with visual intents
+
+        Returns:
+            List of problems with visual_data embedded (intents removed)
+        """
+        logger.info(f"Orchestrating visual generation for {len(problems_with_intents)} problems")
+
+        async def process_problem(problem: Dict[str, Any]) -> Dict[str, Any]:
+            """Process a single problem's visuals"""
+            problem_id = problem.get('id', 'unknown')
+            problem_type = problem.get('problem_type', 'unknown')
+
+            # Build context string for this problem
+            if problem.get('question'):
+                problem_context = f"{problem_type}: {problem.get('question')}"
+            elif problem.get('statement'):
+                problem_context = f"{problem_type}: {problem.get('statement')}"
+            else:
+                problem_context = f"{problem_type} problem"
+
+            try:
+                # Generate all visuals for this problem in ONE call
+                visual_batch = await self._generate_batch_visuals(problem, problem_context)
+
+                # Inject the visuals into the problem
+                updated_problem = self._inject_visuals_into_problem(problem, visual_batch)
+
+                return updated_problem
+
+            except Exception as e:
+                logger.error(f"Failed to generate visuals for problem {problem_id}: {str(e)}")
+                # Graceful degradation: set all visuals to null
+                problem = self._inject_visuals_into_problem(problem, {})
+                return problem
+
+        # Process all problems in parallel
+        updated_problems = await asyncio.gather(*[process_problem(p) for p in problems_with_intents])
+
+        logger.info(f"Visual generation complete for {len(updated_problems)} problems")
+        return updated_problems
 
     def set_ai_service(self, service_type: str) -> None:
         """
@@ -140,7 +397,7 @@ VARIETY INSTRUCTIONS:
             else:
                 logger.info("[CONTEXT_PRIMITIVES] No context primitives provided - using default generation")
 
-            # Build the prompt for multiple problems using the new rich schema
+            # Build the prompt for multiple problems using the new rich schema WITH VISUAL INTENTS
             prompt = f"""Generate {count} different age-appropriate {subject} problems for kindergarten students using a variety of problem types.
 
 {context_section}
@@ -149,7 +406,7 @@ Your response must use the rich problem schema with separate arrays for each pro
 
 ### PRACTICE PROBLEM PRIMITIVES (Choose the best types for your material):
 - **multiple_choice**: 4-6 option questions - excellent for testing comprehension
-- **true_false**: Statement evaluation with rationale - perfect for testing understanding 
+- **true_false**: Statement evaluation with rationale - perfect for testing understanding
 - **fill_in_blanks**: Interactive sentences with missing key terms - ideal for vocabulary
 - **matching_activity**: Connect related items - great for building relationships
 - **sequencing_activity**: Arrange items in correct order - perfect for processes
@@ -159,6 +416,59 @@ Your response must use the rich problem schema with separate arrays for each pro
 
 Generate problems as separate arrays by type (e.g., "multiple_choice": [...], "true_false": [...]).
 Distribute {count} problems across 2-3 different problem types for variety.
+
+### 🎨 VISUAL GENERATION INSTRUCTIONS - CHOOSE THE RIGHT VISUAL FOR THE JOB:
+
+For each question and option, decide if a visual would enhance learning and select the MOST APPROPRIATE visual type:
+
+**📊 MATH PROBLEMS:**
+• **Quantity Comparison** ("Who has more? 8 leaves vs 6 leaves")
+  ✓ USE: bar-model (shows quantities side-by-side for easy comparison)
+  ✗ AVOID: labeled-diagram (too complex for simple counting)
+
+• **Number Sequences** ("What comes after 5?")
+  ✓ USE: number-line (shows ordering and progression)
+
+• **Place Value** ("Show the number 23")
+  ✓ USE: base-ten-blocks (2 tens, 3 ones)
+
+• **Shapes & Spatial** ("Which shape is a rectangle?")
+  ✓ USE: geometric-shape (clear shape visualization)
+
+**🔬 SCIENCE PROBLEMS:**
+• **Parts of Objects** ("Label the parts of a plant")
+  ✓ USE: labeled-diagram (ONLY when problem requires identifying structural components)
+  ✗ AVOID: For quantity/counting problems - use bar-model instead!
+
+• **Cycles & Processes** ("Butterfly life cycle")
+  ✓ USE: cycle-diagram (circular repeating process)
+
+**📚 ABC/LITERACY PROBLEMS:**
+• **Letter Sounds** ("What starts with 'B'?")
+  ✓ USE: letter-picture (pictures of Ball, Bat, Banana)
+
+• **Letter Writing** ("Trace the letter A")
+  ✓ USE: letter-tracing (stroke order with arrows)
+
+• **Rhyming** ("Which word rhymes with cat?")
+  ✓ USE: rhyming-pairs (cat-hat with pictures)
+
+**⚠️ CRITICAL RULES:**
+1. **Simplicity First**: Choose the SIMPLEST visual that achieves the learning goal
+2. **Avoid Overuse of labeled-diagram**: ONLY use for structural/anatomical problems with multiple labeled parts
+3. **Quantity Comparisons = bar-model**: For "more/less/same" problems, ALWAYS use bar-model, NOT labeled-diagram
+
+**🏷️ VISUAL METADATA:**
+- Set needs_visual=true only if visual genuinely enhances understanding
+- Assign unique visual_id:
+  * Question/statement visual: "q_N" (e.g., "q_1", "q_2")
+  * Option visuals: "opt_A_N", "opt_B_N", etc. (e.g., "opt_A_1", "opt_B_1")
+- Provide visual_purpose: Clear instruction (e.g., "Show 8 big leaves in one bar, 6 small leaves in another bar for comparison")
+
+**🎯 MULTIPLE CHOICE VISUAL STRATEGY:**
+- Correct answer options: Show the accurate concept/quantity
+- Incorrect options (distractors): Show plausible mistakes or different values
+- Consistency: Use same visual_type for all options when possible (e.g., all bar-models or all letter-pictures)
 
 Here are the specific learning objectives for each problem:
 
@@ -224,22 +534,68 @@ IMPORTANT:
 - Set difficulty as "easy" or "medium" for kindergarten level
 """
 
-            print(f"[DEBUG] Using rich schema with {count} problems across multiple types")
-            logger.info(f"[PROBLEMS_SERVICE] Generating {count} problems using rich schema for subject: {subject}")
-            
+            print(f"[DEBUG] Using TWO-STEP VISUAL GENERATION with {count} problems across multiple types")
+            logger.info(f"[PROBLEMS_SERVICE] STEP 1: Generating {count} problems with visual intents using rich schema for subject: {subject}")
+
+            # Log the schema structure for debugging
+            logger.info(f"[SCHEMA_DEBUG] Schema properties: {list(PRACTICE_PROBLEMS_SCHEMA_STEP1.properties.keys())}")
+            for prop_name, prop_schema in PRACTICE_PROBLEMS_SCHEMA_STEP1.properties.items():
+                logger.info(f"[SCHEMA_DEBUG] Property '{prop_name}': type={prop_schema.type}, has_items={hasattr(prop_schema, 'items')}")
+                if hasattr(prop_schema, 'items') and hasattr(prop_schema.items, 'properties'):
+                    logger.info(f"[SCHEMA_DEBUG]   Items properties: {list(prop_schema.items.properties.keys()) if prop_schema.items.properties else 'EMPTY'}")
+
+            # STEP 1: Generate problems with visual intents (heavy model)
             response = await self.client.aio.models.generate_content(
                 model='gemini-2.5-flash-preview-05-20',
                 contents=prompt,
                 config=GenerateContentConfig(
                     response_mime_type='application/json',
-                    response_schema=PRACTICE_PROBLEMS_SCHEMA,
+                    response_schema=PRACTICE_PROBLEMS_SCHEMA_STEP1,  # Use Step 1 schema with intents
                     temperature=0.5,
                     max_output_tokens=15000
                 )
             )
-            
-            print(f"[DEBUG] Generated {count} problems successfully")
-            return response.text
+
+            print(f"[DEBUG] STEP 1 complete: Generated {count} problems with visual intents")
+            logger.info(f"[PROBLEMS_SERVICE] STEP 1 complete. Received response with intents.")
+
+            # STEP 2: Generate actual visual data and inject into problems
+            try:
+                problems_with_intents = json.loads(response.text)
+                logger.info(f"[PROBLEMS_SERVICE] STEP 2: Orchestrating visual generation for all problems")
+
+                # Collect all problems across all types
+                all_problems = []
+                for problem_type in ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity",
+                                    "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"]:
+                    if problem_type in problems_with_intents and problems_with_intents[problem_type]:
+                        for problem in problems_with_intents[problem_type]:
+                            problem['problem_type'] = problem_type
+                            all_problems.append(problem)
+
+                logger.info(f"[PROBLEMS_SERVICE] Found {len(all_problems)} total problems to process for visuals")
+
+                # Generate visuals for all problems (batched per problem, parallelized across problems)
+                problems_with_visuals = await self._orchestrate_visual_generation(all_problems)
+
+                # Reassemble the response structure
+                final_response = {problem_type: [] for problem_type in problems_with_intents.keys()}
+                for problem in problems_with_visuals:
+                    problem_type = problem.pop('problem_type', None)  # Remove temporary field
+                    if problem_type and problem_type in final_response:
+                        final_response[problem_type].append(problem)
+
+                print(f"[DEBUG] STEP 2 complete: Visual generation finished, returning assembled problems")
+                logger.info(f"[PROBLEMS_SERVICE] STEP 2 complete. Visual generation orchestration finished.")
+
+                return json.dumps(final_response)
+
+            except Exception as e:
+                # If visual generation fails, fall back to text-only problems
+                logger.error(f"[PROBLEMS_SERVICE] Visual generation failed, falling back to text-only: {str(e)}")
+                print(f"[WARNING] Visual generation failed, returning text-only problems: {str(e)}")
+                # Return original response without visuals (graceful degradation)
+                return response.text
             
         except Exception as e:
             print(f"[ERROR] Error generating problems: {str(e)}")

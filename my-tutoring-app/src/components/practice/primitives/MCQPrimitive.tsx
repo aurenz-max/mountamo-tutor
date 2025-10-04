@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle } from 'lucide-react';
 import type { MCQPrimitiveProps } from './types';
+import { VisualPrimitiveRenderer } from '../visuals/VisualPrimitiveRenderer';
 
 /**
  * MCQPrimitive - A "dumb" UI component for Multiple Choice Questions
@@ -68,6 +69,16 @@ const MCQPrimitive: React.FC<MCQPrimitiveProps> = ({
             </h3>
           </div>
 
+          {/* Question Visual (if present) */}
+          {(problem as any).question_visual_data && (
+            <div className="my-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <VisualPrimitiveRenderer
+                visualData={(problem as any).question_visual_data}
+                className=""
+              />
+            </div>
+          )}
+
           {/* MCQ Options */}
           <div className="space-y-3">
             {problem.options && problem.options.length > 0 ? problem.options.map((option, index) => {
@@ -103,17 +114,29 @@ const MCQPrimitive: React.FC<MCQPrimitiveProps> = ({
                     }`}>
                       {isSelected && !isSubmitted ? '●' : getOptionLetter(index)}
                     </div>
-                    <span className={`flex-1 text-base ${
-                      isCorrect
-                        ? 'text-green-800 font-medium'
-                        : isIncorrectSelection
-                          ? 'text-red-800'
-                          : isSelected
-                            ? 'text-blue-800 font-medium'
-                            : 'text-gray-700'
-                    }`}>
-                      {option.text}
-                    </span>
+                    <div className="flex-1">
+                      <span className={`text-base ${
+                        isCorrect
+                          ? 'text-green-800 font-medium'
+                          : isIncorrectSelection
+                            ? 'text-red-800'
+                            : isSelected
+                              ? 'text-blue-800 font-medium'
+                              : 'text-gray-700'
+                      }`}>
+                        {option.text}
+                      </span>
+
+                      {/* Option Visual (if present) */}
+                      {(option as any).visual_data && (
+                        <div className="mt-3 ml-0 p-3 bg-white rounded border border-gray-200">
+                          <VisualPrimitiveRenderer
+                            visualData={(option as any).visual_data}
+                            className=""
+                          />
+                        </div>
+                      )}
+                    </div>
                     {isSubmitted && (
                       <div className="ml-2">
                         {isCorrect && <CheckCircle className="w-5 h-5 text-green-600" />}

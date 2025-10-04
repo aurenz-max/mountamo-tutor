@@ -446,6 +446,304 @@ VISUAL_METADATA_SCHEMA = Schema(
     required=["description", "interactive_elements", "concepts_demonstrated", "user_instructions", "grade_appropriate_features", "learning_objectives_addressed", "educational_value"]
 )
 
+# ============================================================================
+# VISUAL GENERATION SCHEMAS - Two-Step Visual Architecture
+# ============================================================================
+# NOTE: These schemas must be defined BEFORE PRACTICE_PROBLEMS_SCHEMA_STEP1
+
+# Visual Intent Schema - Used in Step 1 to indicate what visuals are needed
+VISUAL_INTENT_SCHEMA = Schema(
+    type="object",
+    properties={
+        "needs_visual": Schema(
+            type="boolean",
+            description="Set to true if this element requires a visual component"
+        ),
+        "visual_type": Schema(
+            type="string",
+            description="""If needs_visual is true, specify the MOST APPROPRIATE visual primitive:
+
+MATH VISUALS:
+• bar-model: Comparing quantities side-by-side (e.g., "8 apples vs 6 oranges - which is more?")
+• number-line: Number sequences, ordering, skip counting
+• base-ten-blocks: Place value, multi-digit numbers
+• fraction-circles: Part-whole fractions, fraction comparison
+• geometric-shape: Shape identification, spatial reasoning
+
+SCIENCE VISUALS:
+• labeled-diagram: Parts of complex objects/organisms (plant parts, insect anatomy) - NOT for simple counting
+• cycle-diagram: Repeating processes, life cycles
+• tree-diagram: Hierarchical classification, branching
+• line-graph: Change over time, trends
+• thermometer: Temperature measurement
+
+LANGUAGE ARTS VISUALS:
+• sentence-diagram: Parts of speech, sentence structure
+• story-sequence: Beginning/middle/end narrative structure
+• word-web: Vocabulary associations, related concepts
+• character-web: Character traits with evidence
+• venn-diagram: Compare/contrast two items
+
+ABC/LITERACY VISUALS:
+• letter-tracing: Letter formation, stroke order
+• letter-picture: Letter-sound correspondence, initial sounds
+• alphabet-sequence: Alphabetical order, missing letters
+• rhyming-pairs: Rhyme identification, word families
+• sight-word-card: High-frequency word recognition
+• sound-sort: Phoneme categorization, sound discrimination
+
+⚠️ CRITICAL: Choose the simplest visual that serves the learning goal. Avoid labeled-diagram for quantity comparisons!""",
+            enum=[
+                # Math primitives
+                "bar-model", "base-ten-blocks", "number-line", "fraction-circles", "geometric-shape",
+                # Science primitives
+                "labeled-diagram", "cycle-diagram", "tree-diagram", "line-graph", "thermometer",
+                # Language Arts primitives
+                "sentence-diagram", "story-sequence", "word-web", "character-web", "venn-diagram",
+                # ABCs primitives
+                "letter-tracing", "letter-picture", "alphabet-sequence", "rhyming-pairs",
+                "sight-word-card", "sound-sort"
+            ]
+        ),
+        "visual_purpose": Schema(
+            type="string",
+            description="A clear, concise instruction for the visual generator on what this visual must show"
+        ),
+        "visual_id": Schema(
+            type="string",
+            description="Unique identifier for this visual request (e.g., 'q_1', 'opt_A_1')"
+        )
+    },
+    required=["needs_visual"]
+)
+
+# Practice Problems Schema Step 1 - WITH VISUAL INTENTS (for heavy model)
+# This is used in Step 1 to generate problems with visual intent metadata
+PRACTICE_PROBLEMS_SCHEMA_STEP1 = Schema(
+    type="object",
+    properties={
+        # Multiple Choice Problems with Visual Intents
+        "multiple_choice": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(type="string"),
+                    "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+                    "grade_level": Schema(type="string"),
+                    "question": Schema(type="string"),
+                    "question_visual_intent": VISUAL_INTENT_SCHEMA,
+                    "options": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "id": Schema(type="string"),
+                                "text": Schema(type="string"),
+                                "option_visual_intent": VISUAL_INTENT_SCHEMA
+                            },
+                            required=["id", "text", "option_visual_intent"]
+                        )
+                    ),
+                    "correct_option_id": Schema(type="string"),
+                    "rationale": Schema(type="string"),
+                    "teaching_note": Schema(type="string"),
+                    "success_criteria": Schema(type="array", items=Schema(type="string"))
+                },
+                required=["id", "difficulty", "grade_level", "question", "question_visual_intent", "options", "correct_option_id", "rationale", "teaching_note", "success_criteria"]
+            )
+        ),
+
+        # True/False Problems with Visual Intents
+        "true_false": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(type="string"),
+                    "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+                    "grade_level": Schema(type="string"),
+                    "statement": Schema(type="string"),
+                    "statement_visual_intent": VISUAL_INTENT_SCHEMA,
+                    "correct": Schema(type="boolean"),
+                    "rationale": Schema(type="string"),
+                    "teaching_note": Schema(type="string"),
+                    "success_criteria": Schema(type="array", items=Schema(type="string"))
+                },
+                required=["id", "difficulty", "grade_level", "statement", "statement_visual_intent", "correct", "rationale", "teaching_note", "success_criteria"]
+            )
+        ),
+
+        # Fill in the Blanks Problems
+        "fill_in_blanks": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(type="string"),
+                    "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+                    "grade_level": Schema(type="string"),
+                    "text_with_blanks": Schema(type="string"),
+                    "blanks": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "id": Schema(type="string"),
+                                "correct_answers": Schema(type="array", items=Schema(type="string")),
+                                "case_sensitive": Schema(type="boolean")
+                            },
+                            required=["id", "correct_answers", "case_sensitive"]
+                        )
+                    ),
+                    "rationale": Schema(type="string"),
+                    "teaching_note": Schema(type="string"),
+                    "success_criteria": Schema(type="array", items=Schema(type="string"))
+                },
+                required=["id", "difficulty", "grade_level", "text_with_blanks", "blanks", "rationale", "teaching_note", "success_criteria"]
+            )
+        ),
+
+        # Matching Activities
+        "matching_activity": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(type="string"),
+                    "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+                    "grade_level": Schema(type="string"),
+                    "prompt": Schema(type="string"),
+                    "left_items": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "id": Schema(type="string"),
+                                "text": Schema(type="string")
+                            },
+                            required=["id", "text"]
+                        )
+                    ),
+                    "right_items": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "id": Schema(type="string"),
+                                "text": Schema(type="string")
+                            },
+                            required=["id", "text"]
+                        )
+                    ),
+                    "mappings": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "left_id": Schema(type="string"),
+                                "right_ids": Schema(type="array", items=Schema(type="string"))
+                            },
+                            required=["left_id", "right_ids"]
+                        )
+                    ),
+                    "rationale": Schema(type="string"),
+                    "teaching_note": Schema(type="string"),
+                    "success_criteria": Schema(type="array", items=Schema(type="string"))
+                },
+                required=["id", "difficulty", "grade_level", "prompt", "left_items", "right_items", "mappings", "rationale", "teaching_note", "success_criteria"]
+            )
+        ),
+
+        # Sequencing Activities
+        "sequencing_activity": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(type="string"),
+                    "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+                    "grade_level": Schema(type="string"),
+                    "instruction": Schema(type="string"),
+                    "items": Schema(type="array", items=Schema(type="string")),
+                    "rationale": Schema(type="string"),
+                    "teaching_note": Schema(type="string"),
+                    "success_criteria": Schema(type="array", items=Schema(type="string"))
+                },
+                required=["id", "difficulty", "grade_level", "instruction", "items", "rationale", "teaching_note", "success_criteria"]
+            )
+        ),
+
+        # Categorization Activities
+        "categorization_activity": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(type="string"),
+                    "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+                    "grade_level": Schema(type="string"),
+                    "instruction": Schema(type="string"),
+                    "categories": Schema(type="array", items=Schema(type="string")),
+                    "categorization_items": Schema(
+                        type="array",
+                        items=Schema(
+                            type="object",
+                            properties={
+                                "item_text": Schema(type="string"),
+                                "correct_category": Schema(type="string")
+                            },
+                            required=["item_text", "correct_category"]
+                        )
+                    ),
+                    "rationale": Schema(type="string"),
+                    "teaching_note": Schema(type="string"),
+                    "success_criteria": Schema(type="array", items=Schema(type="string"))
+                },
+                required=["id", "difficulty", "grade_level", "instruction", "categories", "categorization_items", "rationale", "teaching_note", "success_criteria"]
+            )
+        ),
+
+        # Scenario Questions
+        "scenario_question": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(type="string"),
+                    "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+                    "grade_level": Schema(type="string"),
+                    "scenario": Schema(type="string"),
+                    "scenario_question": Schema(type="string"),
+                    "scenario_answer": Schema(type="string"),
+                    "rationale": Schema(type="string"),
+                    "teaching_note": Schema(type="string"),
+                    "success_criteria": Schema(type="array", items=Schema(type="string"))
+                },
+                required=["id", "difficulty", "grade_level", "scenario", "scenario_question", "scenario_answer", "rationale", "teaching_note", "success_criteria"]
+            )
+        ),
+
+        # Short Answer Questions
+        "short_answer": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(type="string"),
+                    "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+                    "grade_level": Schema(type="string"),
+                    "question": Schema(type="string"),
+                    "rationale": Schema(type="string"),
+                    "teaching_note": Schema(type="string"),
+                    "success_criteria": Schema(type="array", items=Schema(type="string"))
+                },
+                required=["id", "difficulty", "grade_level", "question", "rationale", "teaching_note", "success_criteria"]
+            )
+        )
+    }
+)
+
 # Practice Problems Schema - Following reading content pattern with optional arrays
 PRACTICE_PROBLEMS_SCHEMA = Schema(
     type="object",
@@ -890,3 +1188,565 @@ CONTEXT_PRIMITIVES_SCHEMA = Schema(
     },
     required=["concrete_objects", "living_things", "locations", "scenarios", "characters"]
 )
+
+# ============================================================================
+# INDIVIDUAL VISUAL DATA SCHEMAS - Used in Step 2 to generate specific visuals
+# ============================================================================
+# NOTE: These schemas are defined here after CONTEXT_PRIMITIVES_SCHEMA
+# They are used by the visual generation pipeline in problems.py
+
+# Math Visual Schemas
+NUMBER_LINE_SCHEMA = Schema(
+    type="object",
+    properties={
+        "min": Schema(type="number", description="Minimum value on number line"),
+        "max": Schema(type="number", description="Maximum value on number line"),
+        "step": Schema(type="number", description="Step increment between numbers"),
+        "markers": Schema(type="array", items=Schema(type="number"), description="Numbers to mark on the line"),
+        "markerColors": Schema(type="array", items=Schema(type="string"), description="Colors for each marker"),
+        "markerLabels": Schema(type="array", items=Schema(type="string"), description="Labels for markers"),
+        "highlightRange": Schema(
+            type="object",
+            properties={
+                "start": Schema(type="number"),
+                "end": Schema(type="number"),
+                "color": Schema(type="string")
+            }
+        ),
+        "showArrows": Schema(type="boolean", description="Show arrows at ends of number line")
+    },
+    required=["min", "max", "step"]
+)
+
+FRACTION_CIRCLES_SCHEMA = Schema(
+    type="object",
+    properties={
+        "circles": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "segments": Schema(type="integer", description="Total number of segments"),
+                    "shaded": Schema(type="integer", description="Number of shaded segments"),
+                    "label": Schema(type="string", description="Fraction label (e.g., '1/4')")
+                },
+                required=["segments", "shaded", "label"]
+            )
+        ),
+        "shadedColor": Schema(type="string", description="Color for shaded segments"),
+        "unshadedColor": Schema(type="string", description="Color for unshaded segments")
+    },
+    required=["circles"]
+)
+
+BAR_MODEL_SCHEMA = Schema(
+    type="object",
+    properties={
+        "bars": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "label": Schema(type="string", description="Label for this bar"),
+                    "value": Schema(type="number", description="Numeric value represented by bar"),
+                    "color": Schema(type="string", description="Color of the bar (hex or CSS color)")
+                },
+                required=["label", "value", "color"]
+            )
+        ),
+        "showValues": Schema(type="boolean", description="Display numeric values on bars"),
+        "orientation": Schema(type="string", enum=["horizontal", "vertical"], description="Bar orientation")
+    },
+    required=["bars"]
+)
+
+GEOMETRIC_SHAPE_SCHEMA = Schema(
+    type="object",
+    properties={
+        "shape": Schema(
+            type="string",
+            enum=["rectangle", "square", "circle", "triangle"],
+            description="Type of geometric shape"
+        ),
+        "width": Schema(type="number", description="Width dimension"),
+        "height": Schema(type="number", description="Height dimension"),
+        "unit": Schema(type="string", description="Unit of measurement (e.g., 'cm', 'in')"),
+        "color": Schema(type="string", description="Fill color for shape"),
+        "showDimensions": Schema(type="boolean", description="Display dimension labels"),
+        "showGrid": Schema(type="boolean", description="Show grid overlay for area counting")
+    },
+    required=["shape", "width", "height"]
+)
+
+BASE_TEN_BLOCKS_SCHEMA = Schema(
+    type="object",
+    properties={
+        "hundreds": Schema(type="integer", description="Number of hundred blocks"),
+        "tens": Schema(type="integer", description="Number of ten rods"),
+        "ones": Schema(type="integer", description="Number of one units"),
+        "showLabels": Schema(type="boolean", description="Display labels for each place value")
+    },
+    required=["hundreds", "tens", "ones"]
+)
+
+# Science Visual Schemas
+LABELED_DIAGRAM_SCHEMA = Schema(
+    type="object",
+    properties={
+        "imageUrl": Schema(type="string", description="URL to diagram image"),
+        "labels": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "text": Schema(type="string", description="Label text"),
+                    "x": Schema(type="number", description="X position (percentage)"),
+                    "y": Schema(type="number", description="Y position (percentage)"),
+                    "lineToX": Schema(type="number", description="X coordinate where line points to"),
+                    "lineToY": Schema(type="number", description="Y coordinate where line points to")
+                },
+                required=["text", "x", "y"]
+            )
+        )
+    },
+    required=["imageUrl", "labels"]
+)
+
+CYCLE_DIAGRAM_SCHEMA = Schema(
+    type="object",
+    properties={
+        "stages": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "name": Schema(type="string", description="Stage name"),
+                    "icon": Schema(type="string", description="Emoji or icon representing stage"),
+                    "description": Schema(type="string", description="Brief description of stage")
+                },
+                required=["name", "description"]
+            )
+        ),
+        "arrangement": Schema(type="string", enum=["circular", "linear"], description="Layout arrangement")
+    },
+    required=["stages"]
+)
+
+TREE_DIAGRAM_SCHEMA = Schema(
+    type="object",
+    properties={
+        "root": Schema(
+            type="object",
+            properties={
+                "label": Schema(type="string", description="Root node label"),
+                "icon": Schema(type="string", description="Optional icon for root"),
+                "children": Schema(
+                    type="array",
+                    items=Schema(type="object"),
+                    description="Child nodes (recursive structure)"
+                )
+            },
+            required=["label"]
+        )
+    },
+    required=["root"]
+)
+
+LINE_GRAPH_SCHEMA = Schema(
+    type="object",
+    properties={
+        "title": Schema(type="string", description="Graph title"),
+        "xLabel": Schema(type="string", description="X-axis label"),
+        "yLabel": Schema(type="string", description="Y-axis label"),
+        "points": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "x": Schema(type="number"),
+                    "y": Schema(type="number")
+                },
+                required=["x", "y"]
+            )
+        )
+    },
+    required=["title", "xLabel", "yLabel", "points"]
+)
+
+THERMOMETER_SCHEMA = Schema(
+    type="object",
+    properties={
+        "min": Schema(type="number", description="Minimum temperature"),
+        "max": Schema(type="number", description="Maximum temperature"),
+        "unit": Schema(type="string", enum=["°F", "°C"], description="Temperature unit"),
+        "currentValue": Schema(type="number", description="Current temperature reading"),
+        "markers": Schema(type="array", items=Schema(type="number"), description="Important temperature markers"),
+        "markerLabels": Schema(type="array", items=Schema(type="string"), description="Labels for markers")
+    },
+    required=["min", "max", "unit", "currentValue"]
+)
+
+# Language Arts Visual Schemas
+SENTENCE_DIAGRAM_SCHEMA = Schema(
+    type="object",
+    properties={
+        "sentence": Schema(type="string", description="The sentence to diagram"),
+        "parts": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "word": Schema(type="string", description="Word in sentence"),
+                    "type": Schema(
+                        type="string",
+                        enum=["noun", "verb", "adjective", "adverb", "article", "preposition", "pronoun", "conjunction"],
+                        description="Part of speech"
+                    ),
+                    "color": Schema(type="string", description="Color for this part of speech")
+                },
+                required=["word", "type", "color"]
+            )
+        )
+    },
+    required=["sentence", "parts"]
+)
+
+STORY_SEQUENCE_SCHEMA = Schema(
+    type="object",
+    properties={
+        "events": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "stage": Schema(type="string", enum=["Beginning", "Middle", "End"], description="Story stage"),
+                    "text": Schema(type="string", description="Event description"),
+                    "image": Schema(type="string", description="Emoji or icon for event")
+                },
+                required=["stage", "text"]
+            )
+        ),
+        "layout": Schema(type="string", enum=["horizontal", "vertical"], description="Layout direction")
+    },
+    required=["events"]
+)
+
+WORD_WEB_SCHEMA = Schema(
+    type="object",
+    properties={
+        "center": Schema(
+            type="object",
+            properties={
+                "word": Schema(type="string", description="Central word"),
+                "size": Schema(type="string", enum=["small", "medium", "large"], description="Display size")
+            },
+            required=["word"]
+        ),
+        "branches": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "word": Schema(type="string", description="Related word"),
+                    "color": Schema(type="string", description="Branch color")
+                },
+                required=["word"]
+            )
+        )
+    },
+    required=["center", "branches"]
+)
+
+CHARACTER_WEB_SCHEMA = Schema(
+    type="object",
+    properties={
+        "character": Schema(
+            type="object",
+            properties={
+                "name": Schema(type="string", description="Character name"),
+                "icon": Schema(type="string", description="Emoji or icon for character")
+            },
+            required=["name"]
+        ),
+        "traits": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "trait": Schema(type="string", description="Character trait"),
+                    "evidence": Schema(type="string", description="Evidence from text")
+                },
+                required=["trait", "evidence"]
+            )
+        )
+    },
+    required=["character", "traits"]
+)
+
+VENN_DIAGRAM_SCHEMA = Schema(
+    type="object",
+    properties={
+        "circles": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "label": Schema(type="string", description="Circle label"),
+                    "color": Schema(type="string", description="Circle color"),
+                    "items": Schema(type="array", items=Schema(type="string"), description="Items unique to this circle")
+                },
+                required=["label", "items"]
+            )
+        ),
+        "overlap": Schema(type="array", items=Schema(type="string"), description="Items in the overlap")
+    },
+    required=["circles", "overlap"]
+)
+
+# ABCs Visual Schemas
+LETTER_TRACING_SCHEMA = Schema(
+    type="object",
+    properties={
+        "letter": Schema(type="string", description="Letter to trace"),
+        "case": Schema(type="string", enum=["uppercase", "lowercase"], description="Letter case"),
+        "showDirectionArrows": Schema(type="boolean", description="Show stroke direction arrows"),
+        "showDottedGuide": Schema(type="boolean", description="Show dotted tracing guide"),
+        "strokeOrder": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "path": Schema(type="string", description="SVG path data"),
+                    "number": Schema(type="integer", description="Stroke order number")
+                },
+                required=["path", "number"]
+            )
+        )
+    },
+    required=["letter", "case"]
+)
+
+LETTER_PICTURE_SCHEMA = Schema(
+    type="object",
+    properties={
+        "letter": Schema(type="string", description="Focus letter"),
+        "items": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "name": Schema(type="string", description="Item name"),
+                    "image": Schema(type="string", description="Emoji or image representing item"),
+                    "highlight": Schema(type="boolean", description="True if starts with focus letter")
+                },
+                required=["name", "image", "highlight"]
+            )
+        )
+    },
+    required=["letter", "items"]
+)
+
+ALPHABET_SEQUENCE_SCHEMA = Schema(
+    type="object",
+    properties={
+        "sequence": Schema(type="array", items=Schema(type="string"), description="Sequence with blanks as '_'"),
+        "missing": Schema(type="array", items=Schema(type="string"), description="Letters that are missing"),
+        "highlightMissing": Schema(type="boolean", description="Highlight the missing positions"),
+        "showImages": Schema(type="boolean", description="Show images for letters")
+    },
+    required=["sequence", "missing"]
+)
+
+RHYMING_PAIRS_SCHEMA = Schema(
+    type="object",
+    properties={
+        "pairs": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "word1": Schema(type="string", description="First rhyming word"),
+                    "image1": Schema(type="string", description="Emoji for first word"),
+                    "word2": Schema(type="string", description="Second rhyming word"),
+                    "image2": Schema(type="string", description="Emoji for second word")
+                },
+                required=["word1", "word2"]
+            )
+        ),
+        "showConnectingLines": Schema(type="boolean", description="Draw lines connecting pairs")
+    },
+    required=["pairs"]
+)
+
+SIGHT_WORD_CARD_SCHEMA = Schema(
+    type="object",
+    properties={
+        "word": Schema(type="string", description="The sight word"),
+        "fontSize": Schema(type="string", enum=["small", "medium", "large"], description="Text size"),
+        "showInContext": Schema(type="boolean", description="Show word in a sentence"),
+        "sentence": Schema(type="string", description="Example sentence using the word"),
+        "highlightWord": Schema(type="boolean", description="Highlight the word in sentence")
+    },
+    required=["word"]
+)
+
+SOUND_SORT_SCHEMA = Schema(
+    type="object",
+    properties={
+        "targetSound": Schema(type="string", description="The sound being sorted (e.g., 'short a')"),
+        "categories": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "label": Schema(type="string", description="Category label"),
+                    "words": Schema(type="array", items=Schema(type="string"), description="Words in category")
+                },
+                required=["label", "words"]
+            )
+        ),
+        "showPictures": Schema(type="boolean", description="Show pictures for words")
+    },
+    required=["targetSound", "categories"]
+)
+
+# Visual Type Metadata - Guidance for when to use each visual primitive
+VISUAL_TYPE_METADATA = {
+    # Math Visuals
+    "bar-model": {
+        "best_for": "Comparing 2-4 quantities side-by-side, part-whole relationships, simple addition/subtraction",
+        "avoid_for": "Abstract concepts without quantities, problems requiring precise measurement scales",
+        "example": "Comparing number of apples vs oranges, showing total vs parts"
+    },
+    "number-line": {
+        "best_for": "Ordering numbers, skip counting, number sequences, showing intervals or ranges",
+        "avoid_for": "Discrete comparisons without sequence, problems not involving order",
+        "example": "Finding numbers between 5 and 10, counting by 2s"
+    },
+    "base-ten-blocks": {
+        "best_for": "Place value understanding, regrouping, representing multi-digit numbers visually",
+        "avoid_for": "Simple single-digit problems, non-base-10 concepts",
+        "example": "Showing 23 as 2 tens and 3 ones"
+    },
+    "fraction-circles": {
+        "best_for": "Part-whole fractions, comparing fraction sizes, visual fraction equivalence",
+        "avoid_for": "Whole number problems, complex fraction operations beyond kindergarten level",
+        "example": "Showing 1/4 of a circle shaded"
+    },
+    "geometric-shape": {
+        "best_for": "Shape identification, area/perimeter concepts, spatial reasoning",
+        "avoid_for": "Problems not involving shapes or spatial properties",
+        "example": "Identifying a rectangle with labeled dimensions"
+    },
+
+    # Science Visuals
+    "labeled-diagram": {
+        "best_for": "Showing parts of complex objects, anatomy, multi-component systems, scientific structures",
+        "avoid_for": "Simple quantity comparisons, basic counting, problems without structural components",
+        "example": "Parts of a plant (roots, stem, leaves), parts of an insect"
+    },
+    "cycle-diagram": {
+        "best_for": "Repeating processes, life cycles, circular sequences that return to start",
+        "avoid_for": "Linear sequences, one-time events, simple before/after scenarios",
+        "example": "Water cycle, butterfly life cycle"
+    },
+    "tree-diagram": {
+        "best_for": "Hierarchical relationships, classification systems, branching decisions",
+        "avoid_for": "Non-hierarchical groupings, simple lists, sequential processes",
+        "example": "Animal classification (mammals → dogs/cats), family trees"
+    },
+    "line-graph": {
+        "best_for": "Showing change over time, trends, continuous data relationships",
+        "avoid_for": "Static comparisons, categorical data, problems without continuous variables",
+        "example": "Temperature throughout the day, plant growth over weeks"
+    },
+    "thermometer": {
+        "best_for": "Temperature-specific problems, reading scales, comparing hot/cold",
+        "avoid_for": "Non-temperature measurements, abstract concepts",
+        "example": "Reading temperature on a thermometer, comparing winter vs summer temps"
+    },
+
+    # Language Arts Visuals
+    "sentence-diagram": {
+        "best_for": "Parts of speech identification, sentence structure analysis",
+        "avoid_for": "Vocabulary without grammar context, simple word recognition",
+        "example": "Breaking down 'The cat ran' into noun, article, verb"
+    },
+    "story-sequence": {
+        "best_for": "Narrative structure (beginning/middle/end), event ordering in stories",
+        "avoid_for": "Non-narrative texts, single-event descriptions",
+        "example": "Sequencing events in a story about a trip to the park"
+    },
+    "word-web": {
+        "best_for": "Vocabulary expansion, word associations, brainstorming related concepts",
+        "avoid_for": "Grammar exercises, problems requiring specific definitions",
+        "example": "Words related to 'ocean' (waves, fish, sand, shells)"
+    },
+    "character-web": {
+        "best_for": "Character analysis, trait identification with evidence",
+        "avoid_for": "Plot summaries, settings, non-character-focused questions",
+        "example": "Describing a character's bravery with story evidence"
+    },
+    "venn-diagram": {
+        "best_for": "Comparing/contrasting two items, showing similarities and differences",
+        "avoid_for": "Single-item descriptions, more than 2-way comparisons (too complex for K)",
+        "example": "Comparing cats and dogs (both pets, cats meow, dogs bark)"
+    },
+
+    # ABCs/Early Literacy Visuals
+    "letter-tracing": {
+        "best_for": "Letter formation practice, handwriting instruction, stroke order",
+        "avoid_for": "Letter recognition without writing, phonics without letter formation",
+        "example": "Tracing uppercase 'A' with directional arrows"
+    },
+    "letter-picture": {
+        "best_for": "Letter-sound correspondence, initial sound identification, phonics",
+        "avoid_for": "Letter formation, problems not involving initial sounds",
+        "example": "Pictures of Apple, Ant, Alligator for letter 'A'"
+    },
+    "alphabet-sequence": {
+        "best_for": "Alphabetical order, missing letter identification, sequence completion",
+        "avoid_for": "Single letter recognition, phonics without order context",
+        "example": "A, B, _, D (finding missing C)"
+    },
+    "rhyming-pairs": {
+        "best_for": "Rhyme identification, phonological awareness, word families",
+        "avoid_for": "Non-rhyming word problems, letter recognition",
+        "example": "Matching 'cat' with 'hat', showing pictures"
+    },
+    "sight-word-card": {
+        "best_for": "High-frequency word recognition, sight word practice in context",
+        "avoid_for": "Decodable words, complex sentences beyond sight word focus",
+        "example": "Showing 'the' in large text with sentence 'The cat runs'"
+    },
+    "sound-sort": {
+        "best_for": "Phoneme categorization, sorting by initial/final sounds, vowel sounds",
+        "avoid_for": "Letter naming, problems not involving sound discrimination",
+        "example": "Sorting words by short 'a' vs short 'e' sounds"
+    }
+}
+
+# Mapping of visual types to their schemas
+VISUAL_TYPE_TO_SCHEMA = {
+    "number-line": NUMBER_LINE_SCHEMA,
+    "fraction-circles": FRACTION_CIRCLES_SCHEMA,
+    "bar-model": BAR_MODEL_SCHEMA,
+    "geometric-shape": GEOMETRIC_SHAPE_SCHEMA,
+    "base-ten-blocks": BASE_TEN_BLOCKS_SCHEMA,
+    "labeled-diagram": LABELED_DIAGRAM_SCHEMA,
+    "cycle-diagram": CYCLE_DIAGRAM_SCHEMA,
+    "tree-diagram": TREE_DIAGRAM_SCHEMA,
+    "line-graph": LINE_GRAPH_SCHEMA,
+    "thermometer": THERMOMETER_SCHEMA,
+    "sentence-diagram": SENTENCE_DIAGRAM_SCHEMA,
+    "story-sequence": STORY_SEQUENCE_SCHEMA,
+    "word-web": WORD_WEB_SCHEMA,
+    "character-web": CHARACTER_WEB_SCHEMA,
+    "venn-diagram": VENN_DIAGRAM_SCHEMA,
+    "letter-tracing": LETTER_TRACING_SCHEMA,
+    "letter-picture": LETTER_PICTURE_SCHEMA,
+    "alphabet-sequence": ALPHABET_SEQUENCE_SCHEMA,
+    "rhyming-pairs": RHYMING_PAIRS_SCHEMA,
+    "sight-word-card": SIGHT_WORD_CARD_SCHEMA,
+    "sound-sort": SOUND_SORT_SCHEMA
+}
