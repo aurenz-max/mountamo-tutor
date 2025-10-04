@@ -79,6 +79,7 @@ const TrueFalsePrimitive: React.FC<TrueFalsePrimitiveProps> = ({
           {problem.statement_visual_data && (
             <div className="my-6">
               <VisualPrimitiveRenderer
+                key={problem.id || problem.problem_id || 'visual'}
                 visualData={problem.statement_visual_data}
                 className="w-full"
               />

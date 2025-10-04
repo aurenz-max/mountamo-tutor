@@ -73,6 +73,7 @@ const MCQPrimitive: React.FC<MCQPrimitiveProps> = ({
           {(problem as any).question_visual_data && (
             <div className="my-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <VisualPrimitiveRenderer
+                key={problem.id || problem.problem_id || 'visual'}
                 visualData={(problem as any).question_visual_data}
                 className=""
               />
@@ -126,16 +127,6 @@ const MCQPrimitive: React.FC<MCQPrimitiveProps> = ({
                       }`}>
                         {option.text}
                       </span>
-
-                      {/* Option Visual (if present) */}
-                      {(option as any).visual_data && (
-                        <div className="mt-3 ml-0 p-3 bg-white rounded border border-gray-200">
-                          <VisualPrimitiveRenderer
-                            visualData={(option as any).visual_data}
-                            className=""
-                          />
-                        </div>
-                      )}
                     </div>
                     {isSubmitted && (
                       <div className="ml-2">

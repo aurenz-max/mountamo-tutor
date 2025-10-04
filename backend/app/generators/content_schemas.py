@@ -463,8 +463,12 @@ VISUAL_INTENT_SCHEMA = Schema(
             type="string",
             description="""If needs_visual is true, specify the MOST APPROPRIATE visual primitive:
 
+✨ FOUNDATIONAL VISUALS (Use FIRST for K-1 content showing/counting objects):
+• object-collection: Display groups of objects for counting, identification, simple grouping
+• comparison-panel: Side-by-side comparison of two object collections ("Who has more?")
+
 MATH VISUALS:
-• bar-model: Comparing quantities side-by-side (e.g., "8 apples vs 6 oranges - which is more?")
+• bar-model: Comparing ABSTRACT quantities/totals (e.g., "Team A: 15 points vs Team B: 12 points") - NOT for counting physical objects
 • number-line: Number sequences, ordering, skip counting
 • base-ten-blocks: Place value, multi-digit numbers
 • fraction-circles: Part-whole fractions, fraction comparison
@@ -492,8 +496,13 @@ ABC/LITERACY VISUALS:
 • sight-word-card: High-frequency word recognition
 • sound-sort: Phoneme categorization, sound discrimination
 
-⚠️ CRITICAL: Choose the simplest visual that serves the learning goal. Avoid labeled-diagram for quantity comparisons!""",
+⚠️ CRITICAL RULES:
+1. For counting/showing physical objects → USE object-collection or comparison-panel
+2. For abstract numerical data → USE bar-model
+3. Choose the SIMPLEST visual that serves the learning goal""",
             enum=[
+                # NEW Foundational Primitives (highest priority)
+                "object-collection", "comparison-panel",
                 # Math primitives
                 "bar-model", "base-ten-blocks", "number-line", "fraction-circles", "geometric-shape",
                 # Science primitives
@@ -539,10 +548,9 @@ PRACTICE_PROBLEMS_SCHEMA_STEP1 = Schema(
                             type="object",
                             properties={
                                 "id": Schema(type="string"),
-                                "text": Schema(type="string"),
-                                "option_visual_intent": VISUAL_INTENT_SCHEMA
+                                "text": Schema(type="string")
                             },
-                            required=["id", "text", "option_visual_intent"]
+                            required=["id", "text"]
                         )
                     ),
                     "correct_option_id": Schema(type="string"),
@@ -1610,13 +1618,87 @@ SOUND_SORT_SCHEMA = Schema(
     required=["targetSound", "categories"]
 )
 
+# ============================================================================
+# FOUNDATIONAL VISUAL PRIMITIVES - Simple Illustrations for Early Learning
+# ============================================================================
+# These are flexible, illustrative primitives designed for K-1 content
+# Use BEFORE specialized data visualization primitives
+
+OBJECT_COLLECTION_SCHEMA = Schema(
+    type="object",
+    properties={
+        "instruction": Schema(
+            type="string",
+            description="Optional scene-setting text describing what is shown (e.g., 'Aisha starts with 2 crackers and gets 2 more'). NEVER use directive language like 'Count', 'Show', 'Find', 'How many' - just describe the SCENARIO being illustrated."
+        ),
+        "items": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "name": Schema(type="string", description="Name of the object type (e.g., 'apple', 'ball', 'block'). Use the same name for all instances of the same object type."),
+                    "count": Schema(type="integer", description="Total number of this specific object type to display in this collection."),
+                    "icon": Schema(type="string", description="Suggested emoji or icon identifier (e.g., '🍎', '⚽️', '🧱')."),
+                    "attributes": Schema(
+                        type="array",
+                        items=Schema(type="string"),
+                        description="Visual attributes like color or pattern (e.g., ['red', 'shiny'], ['polka dots'])."
+                    )
+                },
+                required=["name", "count"]
+            ),
+            description="Array of different object types in this collection. Each item represents ONE type of object with its total count. Example: [{name: 'apple', count: 5}, {name: 'orange', count: 3}] shows 5 apples AND 3 oranges in this single collection."
+        ),
+        "layout": Schema(
+            type="string",
+            enum=["grid", "scattered", "row"],
+            default="grid",
+            description="Suggested layout for the frontend to arrange the objects."
+        )
+    },
+    required=["items"]
+)
+
+COMPARISON_PANEL_SCHEMA = Schema(
+    type="object",
+    properties={
+        "panels": Schema(
+            type="array",
+            minItems=2,
+            maxItems=2,
+            items=Schema(
+                type="object",
+                properties={
+                    "label": Schema(type="string", description="Label identifying what/who this panel represents (e.g., 'Maya's Apples', 'Tom's Tower', 'Group A'). Each panel represents ONE distinct entity being compared."),
+                    "collection": OBJECT_COLLECTION_SCHEMA
+                },
+                required=["label", "collection"]
+            ),
+            description="EXACTLY 2 panels for side-by-side comparison. CRITICAL: Each panel represents ONE separate group/person/entity. Panel 1 shows items belonging to the first entity, Panel 2 shows items belonging to the second entity. DO NOT put items from both entities in one panel. Example: If comparing Maya's 3 apples to Tom's 5 oranges, Panel 1 = Maya's collection with 3 apples, Panel 2 = Tom's collection with 5 oranges."
+        )
+    },
+    required=["panels"]
+)
+
 # Visual Type Metadata - Guidance for when to use each visual primitive
 VISUAL_TYPE_METADATA = {
+    # Foundational Visuals (USE FIRST for K-1)
+    "object-collection": {
+        "best_for": "Counting discrete objects, showing groups of items, simple identification tasks, 'how many' questions",
+        "avoid_for": "Abstract numerical data, complex data relationships, multi-step comparisons",
+        "example": "Show 5 purple balls, display 3 apples and 2 bananas, count the stars"
+    },
+    "comparison-panel": {
+        "best_for": "Side-by-side comparison of two object groups, 'who has more/less' questions, direct visual comparison of countable items",
+        "avoid_for": "Abstract totals without visual objects, single group displays, more than 2 groups",
+        "example": "Maya has 3 cookies vs Tom has 5 cookies (show actual cookies in each panel)"
+    },
+
     # Math Visuals
     "bar-model": {
-        "best_for": "Comparing 2-4 quantities side-by-side, part-whole relationships, simple addition/subtraction",
-        "avoid_for": "Abstract concepts without quantities, problems requiring precise measurement scales",
-        "example": "Comparing number of apples vs oranges, showing total vs parts"
+        "best_for": "Comparing ABSTRACT quantities/totals, part-whole relationships with large numbers, data visualization",
+        "avoid_for": "Counting discrete physical objects (use object-collection instead), problems where actual objects are more intuitive",
+        "example": "Team A scored 15 points vs Team B scored 12 points (abstract totals, not physical items)"
     },
     "number-line": {
         "best_for": "Ordering numbers, skip counting, number sequences, showing intervals or ranges",
@@ -1728,21 +1810,28 @@ VISUAL_TYPE_METADATA = {
 
 # Mapping of visual types to their schemas
 VISUAL_TYPE_TO_SCHEMA = {
+    # NEW Foundational Primitives
+    "object-collection": OBJECT_COLLECTION_SCHEMA,
+    "comparison-panel": COMPARISON_PANEL_SCHEMA,
+    # Math primitives
     "number-line": NUMBER_LINE_SCHEMA,
     "fraction-circles": FRACTION_CIRCLES_SCHEMA,
     "bar-model": BAR_MODEL_SCHEMA,
     "geometric-shape": GEOMETRIC_SHAPE_SCHEMA,
     "base-ten-blocks": BASE_TEN_BLOCKS_SCHEMA,
+    # Science primitives
     "labeled-diagram": LABELED_DIAGRAM_SCHEMA,
     "cycle-diagram": CYCLE_DIAGRAM_SCHEMA,
     "tree-diagram": TREE_DIAGRAM_SCHEMA,
     "line-graph": LINE_GRAPH_SCHEMA,
     "thermometer": THERMOMETER_SCHEMA,
+    # Language Arts primitives
     "sentence-diagram": SENTENCE_DIAGRAM_SCHEMA,
     "story-sequence": STORY_SEQUENCE_SCHEMA,
     "word-web": WORD_WEB_SCHEMA,
     "character-web": CHARACTER_WEB_SCHEMA,
     "venn-diagram": VENN_DIAGRAM_SCHEMA,
+    # ABCs primitives
     "letter-tracing": LETTER_TRACING_SCHEMA,
     "letter-picture": LETTER_PICTURE_SCHEMA,
     "alphabet-sequence": ALPHABET_SEQUENCE_SCHEMA,

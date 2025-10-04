@@ -73,7 +73,7 @@ Generate rich, varied primitives that will enable hundreds of unique problem com
             logger.info(f"Generating context primitives for {request.subject} subskill: {request.subskill}")
 
             response = await self.client.aio.models.generate_content(
-                model='gemini-2.5-flash-preview-05-20',
+                model='gemini-flash-lite-latest',
                 contents=prompt,
                 config=GenerateContentConfig(
                     response_mime_type='application/json',

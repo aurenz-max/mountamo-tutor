@@ -114,13 +114,6 @@ class ProblemService:
             if question_intent and question_intent.get("needs_visual"):
                 intents.append(question_intent)
 
-            # Check option visual intents (for MCQ)
-            if problem.get("options"):
-                for option in problem["options"]:
-                    option_intent = option.get("option_visual_intent")
-                    if option_intent and option_intent.get("needs_visual"):
-                        intents.append(option_intent)
-
             if not intents:
                 logger.info(f"No visual intents found for problem {problem.get('id', 'unknown')}")
                 return {}
@@ -150,7 +143,22 @@ class ProblemService:
                 "- Return ONLY the JSON object with these exact keys",
                 "- All visuals in this problem should be stylistically consistent",
                 "- Use appropriate colors and sizing for kindergarten students",
-                "- Keep visuals simple and clear"
+                "- Keep visuals simple and clear",
+                "",
+                "⚠️ CRITICAL - VISUAL INSTRUCTIONS MUST BE SCENE-SETTING ONLY:",
+                "- Visual instruction should ONLY describe the SCENARIO/SCENE, not ask the question",
+                "- The question/statement from Step 1 drives evaluation - visuals just illustrate",
+                "- GOOD: 'Aisha starts with 2 crackers and gets 2 more from mom'",
+                "- BAD: 'Show the total number of crackers' or 'Count how many crackers'",
+                "- NEVER include directive language (show, count, find, how many) in visual instructions",
+                "- Think: What does the student SEE, not what should they DO",
+                "",
+                "📋 SCHEMA USAGE GUIDELINES:",
+                "- Follow the schema descriptions exactly - they contain critical structural rules",
+                "- For comparison-panel: Each panel represents ONE distinct entity/group being compared",
+                "- For object-collection items: Each item entry represents ONE object type with its total count",
+                "- Pay close attention to what belongs together vs what should be separated",
+                "- Ensure each visual accurately represents the underlying problem and contains enough information to answer the question"
             ])
 
             prompt = "\n".join(prompt_parts)
@@ -218,31 +226,6 @@ class ProblemService:
         # Remove the intent field
         if intent_field in problem:
             del problem[intent_field]
-
-        # Handle option visuals (for MCQ)
-        if problem.get("options"):
-            for option in problem["options"]:
-                option_intent = option.get("option_visual_intent")
-
-                if option_intent and option_intent.get("needs_visual"):
-                    visual_id = option_intent.get("visual_id")
-                    visual_type = option_intent.get("visual_type")
-
-                    if visual_id in visual_batch:
-                        option["visual_data"] = {
-                            "type": visual_type,
-                            "data": visual_batch[visual_id]
-                        }
-                        logger.info(f"Injected {visual_type} visual for option {option.get('id')} (visual_id: {visual_id})")
-                    else:
-                        option["visual_data"] = None
-                        logger.warning(f"Visual {visual_id} not found in batch for option {option.get('id')}")
-                else:
-                    option["visual_data"] = None
-
-                # Remove the intent field
-                if "option_visual_intent" in option:
-                    del option["option_visual_intent"]
 
         return problem
 
@@ -421,10 +404,19 @@ Distribute {count} problems across 2-3 different problem types for variety.
 
 For each question and option, decide if a visual would enhance learning and select the MOST APPROPRIATE visual type:
 
+**✨ FOUNDATIONAL VISUALS (Use these FIRST for K-1 content):**
+• **Counting/Showing Objects** ("Count the purple balls", "Show 5 stars")
+  ✓ USE: object-collection (shows the actual items for counting)
+  ✗ AVOID: bar-model (too abstract for young learners counting discrete objects)
+
+• **Comparing Two Groups of Objects** ("Who has more? 3 apples vs 2 bananas", "Which group has fewer cookies?")
+  ✓ USE: comparison-panel (shows the actual objects side-by-side in labeled panels)
+  ✗ AVOID: bar-model (unless comparing abstract totals or very large numbers)
+
 **📊 MATH PROBLEMS:**
-• **Quantity Comparison** ("Who has more? 8 leaves vs 6 leaves")
-  ✓ USE: bar-model (shows quantities side-by-side for easy comparison)
-  ✗ AVOID: labeled-diagram (too complex for simple counting)
+• **Abstract Quantity Comparison** ("Team A scored 15 points, Team B scored 12 points - who scored more?")
+  ✓ USE: bar-model (great for abstract numbers, totals, and data visualization)
+  ✗ AVOID: Use ONLY when objects themselves are NOT the focus
 
 • **Number Sequences** ("What comes after 5?")
   ✓ USE: number-line (shows ordering and progression)
@@ -438,7 +430,7 @@ For each question and option, decide if a visual would enhance learning and sele
 **🔬 SCIENCE PROBLEMS:**
 • **Parts of Objects** ("Label the parts of a plant")
   ✓ USE: labeled-diagram (ONLY when problem requires identifying structural components)
-  ✗ AVOID: For quantity/counting problems - use bar-model instead!
+  ✗ AVOID: For quantity/counting problems - use object-collection or comparison-panel instead!
 
 • **Cycles & Processes** ("Butterfly life cycle")
   ✓ USE: cycle-diagram (circular repeating process)
@@ -454,9 +446,9 @@ For each question and option, decide if a visual would enhance learning and sele
   ✓ USE: rhyming-pairs (cat-hat with pictures)
 
 **⚠️ CRITICAL RULES:**
-1. **Simplicity First**: Choose the SIMPLEST visual that achieves the learning goal
-2. **Avoid Overuse of labeled-diagram**: ONLY use for structural/anatomical problems with multiple labeled parts
-3. **Quantity Comparisons = bar-model**: For "more/less/same" problems, ALWAYS use bar-model, NOT labeled-diagram
+1. **Illustrate First, Visualize Data Second**: For simple counting and showing items for young children, ALWAYS prefer object-collection or comparison-panel
+2. **Use bar-model for Abstract Data**: Reserve bar-model for when the concept is about representing numerical data, not just counting physical objects in a scene
+3. **Simplicity is Key**: Choose the simplest, most direct visual that maps to the real world for our young audience
 
 **🏷️ VISUAL METADATA:**
 - Set needs_visual=true only if visual genuinely enhances understanding
@@ -685,30 +677,31 @@ IMPORTANT:
                         print(f"[ERROR] No recommendation for problem {i+1}")
                         continue
                     
-                    # Check cache first, but only use if it has rich schema structure
-                    cached_problems = []
-                    if self.cosmos_db:
-                        cached_problems = await self.cosmos_db.get_cached_problems(
-                            subject=subject,
-                            skill_id=recommendation['skill']['id'],
-                            subskill_id=recommendation['subskill']['id']
-                        )
-                    
-                    if cached_problems:
-                        # Check if cached problem has rich schema structure (not old text problems)
-                        import random
-                        selected = random.choice(cached_problems)
-                        problem_data = selected.get("problem_data", selected)
-                        
-                        # Only use cache if it has rich schema fields (options, rationale, etc.)
-                        if (problem_data.get('options') or problem_data.get('statement') or 
-                            problem_data.get('blanks') or problem_data.get('items')):
-                            print(f"[DEBUG] Using cached rich schema problem for {recommendation['subskill']['id']}")
-                            final_problems.append(problem_data)
-                            continue
-                        else:
-                            print(f"[DEBUG] Skipping old cached problem without rich schema for {recommendation['subskill']['id']}")
-                            # Don't use old cached problems - regenerate with rich schema
+                    # DEVELOPMENT: Cache disabled - always generate fresh problems with latest schema
+                    print(f"[DEBUG] Cache disabled - generating fresh problem for {recommendation['subskill']['id']}")
+                    # cached_problems = []
+                    # if self.cosmos_db:
+                    #     cached_problems = await self.cosmos_db.get_cached_problems(
+                    #         subject=subject,
+                    #         skill_id=recommendation['skill']['id'],
+                    #         subskill_id=recommendation['subskill']['id']
+                    #     )
+                    #
+                    # if cached_problems:
+                    #     # Check if cached problem has rich schema structure (not old text problems)
+                    #     import random
+                    #     selected = random.choice(cached_problems)
+                    #     problem_data = selected.get("problem_data", selected)
+                    #
+                    #     # Only use cache if it has rich schema fields (options, rationale, etc.)
+                    #     if (problem_data.get('options') or problem_data.get('statement') or
+                    #         problem_data.get('blanks') or problem_data.get('items')):
+                    #         print(f"[DEBUG] Using cached rich schema problem for {recommendation['subskill']['id']}")
+                    #         final_problems.append(problem_data)
+                    #         continue
+                    #     else:
+                    #         print(f"[DEBUG] Skipping old cached problem without rich schema for {recommendation['subskill']['id']}")
+                    #         # Don't use old cached problems - regenerate with rich schema
                     
                     # Get detailed objectives for this recommendation
                     objectives = await self.competency_service.get_detailed_objectives(

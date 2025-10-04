@@ -1,6 +1,10 @@
 'use client';
 
 import React from 'react';
+// Foundational primitives (USE FIRST for K-1)
+import { ObjectCollection } from './ObjectCollection';
+import { ComparisonPanel } from './ComparisonPanel';
+
 // Math primitives
 import { BarModel } from './BarModel';
 import { NumberLine } from './NumberLine';
@@ -63,6 +67,13 @@ export const VisualPrimitiveRenderer: React.FC<VisualPrimitiveRendererProps> = (
 
   try {
     switch (visualData.type) {
+      // Foundational primitives (K-1 priority)
+      case 'object-collection':
+        return <ObjectCollection data={visualData.data} className={className} />;
+
+      case 'comparison-panel':
+        return <ComparisonPanel data={visualData.data} className={className} />;
+
       // Math primitives
       case 'bar-model':
         return <BarModel data={visualData.data} className={className} />;
