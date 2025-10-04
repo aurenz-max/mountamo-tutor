@@ -126,6 +126,10 @@ export interface TrueFalseProblem {
   allow_explain_why?: boolean;
   trickiness?: string;
   rationale?: string;
+  statement_visual_data?: {
+    type: string;
+    data: any;
+  };
   subject?: string;
   skill_id?: string;
   subskill_id?: string;

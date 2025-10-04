@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle } from 'lucide-react';
 import type { TrueFalsePrimitiveProps } from './types';
+import { VisualPrimitiveRenderer } from '../visuals/VisualPrimitiveRenderer';
 
 /**
  * TrueFalsePrimitive - A "dumb" UI component for True/False Questions
@@ -73,6 +74,16 @@ const TrueFalsePrimitive: React.FC<TrueFalsePrimitiveProps> = ({
               {problem.statement}
             </h3>
           </div>
+
+          {/* Visual Data */}
+          {problem.statement_visual_data && (
+            <div className="my-6">
+              <VisualPrimitiveRenderer
+                visualData={problem.statement_visual_data}
+                className="w-full"
+              />
+            </div>
+          )}
 
           {/* True/False Options */}
           <div className="space-y-3">
