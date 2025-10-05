@@ -12,13 +12,38 @@ logger = logging.getLogger(__name__)
 
 class MasterContextGenerator(BaseContentGenerator):
     """Generator for master context that provides foundation for all content"""
-    
+
+    def __init__(self, cosmos_service=None, blob_service=None):
+        super().__init__(cosmos_service=cosmos_service, blob_service=blob_service)
+        self.cosmos_db = cosmos_service  # Assign from base class parameter
+
     async def generate_master_context(self, request: ContentGenerationRequest) -> MasterContext:
-        """Generate foundational context for all content - UPDATED WITH GRADE"""
-        
+        """Generate foundational context for all content - UPDATED WITH GRADE and CACHING"""
+
+        # Try to get from cache first
+        if self.cosmos_db and request.subskill_id:
+            cached_context = await self.cosmos_db.get_cached_master_context(
+                subject=request.subject,
+                subskill_id=request.subskill_id
+            )
+            if cached_context:
+                logger.info(f"✅ Using cached master context for {request.subject}:{request.subskill_id}")
+                # Reconstruct MasterContext from cached data
+                return MasterContext(
+                    core_concepts=cached_context.get('core_concepts', []),
+                    key_terminology=cached_context.get('key_terminology', {}),
+                    learning_objectives=cached_context.get('learning_objectives', []),
+                    difficulty_level=cached_context.get('difficulty_level', request.difficulty_level),
+                    prerequisites=cached_context.get('prerequisites', request.prerequisites or []),
+                    real_world_applications=cached_context.get('real_world_applications', [])
+                )
+
+        # Cache miss - generate new master context
+        logger.info(f"🔄 Cache miss - generating new master context for {request.subject}:{request.subskill_id}")
+
         # Get grade information if available from request
         grade_info = self._extract_grade_info(request)
-        
+
         prompt = f"""
         Create a comprehensive educational foundation for teaching this topic:
 
@@ -53,15 +78,15 @@ class MasterContextGenerator(BaseContentGenerator):
             )
             
             context_data = self._safe_json_loads(response.text, "Master context generation")
-            
+
             # Convert array of term-definition objects back to dictionary
             key_terminology_dict = {}
             if 'key_terminology' in context_data:
                 for term_obj in context_data['key_terminology']:
                     if 'term' in term_obj and 'definition' in term_obj:
                         key_terminology_dict[term_obj['term']] = term_obj['definition']
-            
-            return MasterContext(
+
+            master_context = MasterContext(
                 core_concepts=context_data['core_concepts'],
                 key_terminology=key_terminology_dict,  # Convert back to dict
                 learning_objectives=context_data['learning_objectives'],
@@ -69,6 +94,34 @@ class MasterContextGenerator(BaseContentGenerator):
                 prerequisites=context_data.get('prerequisites', request.prerequisites),
                 real_world_applications=context_data['real_world_applications']
             )
+
+            # Cache the newly generated master context
+            if self.cosmos_db and request.subskill_id:
+                try:
+                    # Convert MasterContext back to dict for storage
+                    master_context_data = {
+                        'core_concepts': master_context.core_concepts,
+                        'key_terminology': master_context.key_terminology,
+                        'learning_objectives': master_context.learning_objectives,
+                        'difficulty_level': master_context.difficulty_level,
+                        'prerequisites': master_context.prerequisites,
+                        'real_world_applications': master_context.real_world_applications
+                    }
+
+                    await self.cosmos_db.save_cached_master_context(
+                        subject=request.subject,
+                        grade_level=request.grade or "Kindergarten",
+                        unit_id=request.unit_id or "",
+                        skill_id=request.skill_id or "",
+                        subskill_id=request.subskill_id,
+                        master_context_data=master_context_data
+                    )
+                    logger.info(f"Successfully cached new master context for {request.subject}:{request.subskill_id}")
+                except Exception as cache_error:
+                    logger.error(f"Failed to cache master context: {cache_error}")
+                    # Don't fail the request if caching fails - just log it
+
+            return master_context
             
         except Exception as e:
             self._handle_generation_error("Master context generation", e)

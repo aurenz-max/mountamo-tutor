@@ -1,0 +1,49 @@
+# Short Answer Problem Schema
+# Based on PRACTICE_PROBLEMS_SCHEMA_STEP1 from backend/app/generators/content_schemas.py
+
+type_name: short_answer
+
+# Required fields for all short answer problems
+required_fields:
+  - id
+  - difficulty
+  - grade_level
+  - question
+  - rationale
+  - teaching_note
+  - success_criteria
+
+# Optional fields (may be null or absent)
+optional_fields:
+  - statement_visual_intent  # Optional visual intent metadata
+  - statement_visual_data    # Optional actual visual data
+
+# Field type specifications
+field_types:
+  id: string
+  difficulty: enum
+  grade_level: string
+  question: string
+  rationale: string
+  teaching_note: string
+  success_criteria: list_of_string
+  statement_visual_intent: dict_or_null
+  statement_visual_data: dict_or_null
+
+# Enum value constraints
+enum_values:
+  difficulty:
+    - easy
+    - medium
+    - hard
+
+# Visual field configuration
+visual_field: statement_visual_intent  # Primary visual field name
+visual_field_alt: statement_visual_data  # Alternative (Step 2 output)
+
+# Validation notes
+notes: |
+  - Backend may return either statement_visual_intent (Step 1) OR statement_visual_data (Step 2)
+  - Both visual fields are optional and may be null
+  - Short answer questions expect open-ended student responses
+  - No correct_answer field since answers are evaluated by LLM or human reviewer

@@ -129,6 +129,13 @@ class CosmosDBService:
             unique_key_policy={'uniqueKeys': [{'paths': ['/student_id', '/week_start_date']}]}
         )
 
+        # 🆕 NEW: Master Contexts container for caching master contexts per subskill
+        self.master_contexts = self.database.create_container_if_not_exists(
+            id="master_contexts",
+            partition_key=PartitionKey(path="/subject"),
+            unique_key_policy={'uniqueKeys': [{'paths': ['/subskill_id']}]}
+        )
+
     # ============================================================================
     # 🔥 NEW: STUDENT MAPPING METHODS
     # ============================================================================
@@ -1501,6 +1508,77 @@ class CosmosDBService:
 
         except Exception as e:
             logger.error(f"Error saving context primitives for {subject}:{subskill_id}: {str(e)}")
+            raise
+
+    # ============================================================================
+    # MASTER CONTEXT CACHING METHODS
+    # ============================================================================
+
+    async def get_cached_master_context(self, subject: str, subskill_id: str) -> Optional[Dict[str, Any]]:
+        """Get cached master context for a specific subskill"""
+        try:
+            query = """
+            SELECT c.master_context
+            FROM c
+            WHERE c.subject = @subject
+            AND c.subskill_id = @subskill_id
+            """
+
+            params = [
+                {"name": "@subject", "value": subject},
+                {"name": "@subskill_id", "value": subskill_id}
+            ]
+
+            items = list(self.master_contexts.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=False  # Using partition key
+            ))
+
+            if items:
+                logger.info(f"Cache HIT for master context: {subject}:{subskill_id}")
+                return items[0].get("master_context", {})
+            else:
+                logger.info(f"Cache MISS for master context: {subject}:{subskill_id}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error getting cached master context for {subject}:{subskill_id}: {str(e)}")
+            return None
+
+    async def save_cached_master_context(
+        self,
+        subject: str,
+        grade_level: str,
+        unit_id: str,
+        skill_id: str,
+        subskill_id: str,
+        master_context_data: Dict[str, Any]
+    ):
+        """Save master context to cache with curriculum IDs"""
+        try:
+            # Create deterministic document ID
+            document_id = f"{subject.lower()}:{grade_level.lower()}:{subskill_id}"
+
+            # Create the document with curriculum IDs
+            document = {
+                "id": document_id,
+                "subject": subject,
+                "grade_level": grade_level,
+                "unit_id": unit_id,
+                "skill_id": skill_id,
+                "subskill_id": subskill_id,
+                "version": "1.0",
+                "created_at": datetime.utcnow().isoformat(),
+                "master_context": master_context_data
+            }
+
+            # Use upsert to handle both creation and potential updates
+            self.master_contexts.upsert_item(body=document)
+            logger.info(f"Successfully cached master context for {subject}:{unit_id}:{skill_id}:{subskill_id}")
+
+        except Exception as e:
+            logger.error(f"Error saving master context for {subject}:{subskill_id}: {str(e)}")
             raise
 
     # ============================================================================

@@ -1,0 +1,64 @@
+# Fill in the Blanks Problem Schema
+# Based on PRACTICE_PROBLEMS_SCHEMA_STEP1 from backend/app/generators/content_schemas.py
+
+type_name: fill_in_blanks
+
+# Required fields for all fill-in-the-blanks problems
+required_fields:
+  - id
+  - difficulty
+  - grade_level
+  - text_with_blanks
+  - blanks
+  - rationale
+  - teaching_note
+  - success_criteria
+
+# Optional fields (may be null or absent)
+optional_fields:
+  - statement_visual_intent  # Roadmap feature - not yet implemented
+  - statement_visual_data    # Roadmap feature - not yet implemented
+
+# Field type specifications
+field_types:
+  id: string
+  difficulty: enum
+  grade_level: string
+  text_with_blanks: string
+  blanks: list_of_dict
+  rationale: string
+  teaching_note: string
+  success_criteria: list_of_string
+  statement_visual_intent: dict_or_null
+  statement_visual_data: dict_or_null
+
+# Nested structure requirements
+nested_structures:
+  blanks:
+    required_keys:
+      - id
+      - correct_answers
+      - case_sensitive
+    key_types:
+      id: string
+      correct_answers: list_of_string
+      case_sensitive: boolean
+
+# Enum value constraints
+enum_values:
+  difficulty:
+    - easy
+    - medium
+    - hard
+
+# Visual field configuration
+visual_field: statement_visual_intent  # Roadmap feature
+visual_field_alt: statement_visual_data  # Roadmap feature
+visual_on_roadmap: true  # Visual support not yet implemented
+
+# Validation notes
+notes: |
+  - Visual fields are on the roadmap but not yet implemented
+  - Visual validation failures for this type are treated as warnings, not errors
+  - text_with_blanks should contain placeholders like {{B1}}, {{B2}}
+  - Each blank ID referenced in text must exist in blanks array
