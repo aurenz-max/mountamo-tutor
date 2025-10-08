@@ -1,12 +1,13 @@
 'use client';
 
-import { useEntityPrerequisites, useCreatePrerequisite, useDeletePrerequisite } from '@/lib/curriculum-authoring/hooks';
+import { useEntityPrerequisites, useDeletePrerequisite } from '@/lib/curriculum-authoring/hooks';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Plus, Trash2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
+import { AddPrerequisiteDialog } from './AddPrerequisiteDialog';
 import type { EntityType } from '@/types/curriculum-authoring';
 
 interface PrerequisitePanelProps {
@@ -166,6 +167,15 @@ export function PrerequisitePanel({
           </div>
         </CardContent>
       </Card>
+
+      {/* Add Prerequisite Dialog */}
+      <AddPrerequisiteDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        entityId={entityId}
+        entityType={entityType}
+        subjectId={subjectId}
+      />
     </div>
   );
 }

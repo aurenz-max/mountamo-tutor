@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useUpdateSubskill } from '@/lib/curriculum-authoring/hooks';
+import { useCreateSubskill, useUpdateSubskill } from '@/lib/curriculum-authoring/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { Subskill, SubskillUpdate } from '@/types/curriculum-authoring';
+import type { Subskill, SubskillUpdate, SubskillCreate } from '@/types/curriculum-authoring';
 
 interface SubskillFormProps {
   subskill: Subskill;
@@ -17,7 +17,13 @@ interface SubskillFormProps {
 
 export function SubskillForm({ subskill }: SubskillFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
-  const { mutate: updateSubskill, isPending, error } = useUpdateSubskill();
+  const isNewSubskill = subskill.subskill_id === 'new';
+
+  const { mutate: createSubskill, isPending: isCreating, error: createError } = useCreateSubskill();
+  const { mutate: updateSubskill, isPending: isUpdating, error: updateError } = useUpdateSubskill();
+
+  const isPending = isCreating || isUpdating;
+  const error = createError || updateError;
 
   const {
     register,
@@ -45,15 +51,37 @@ export function SubskillForm({ subskill }: SubskillFormProps) {
   }, [subskill, reset]);
 
   const onSubmit = (data: SubskillUpdate) => {
-    updateSubskill(
-      { subskillId: subskill.subskill_id, data },
-      {
+    if (isNewSubskill) {
+      // Create new subskill - generate a unique ID
+      const subskillId = `${subskill.skill_id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const createData: SubskillCreate = {
+        subskill_id: subskillId,
+        skill_id: subskill.skill_id,
+        subskill_description: data.subskill_description || '',
+        subskill_order: data.subskill_order,
+        difficulty_start: data.difficulty_start,
+        difficulty_end: data.difficulty_end,
+        target_difficulty: data.target_difficulty,
+      };
+
+      createSubskill(createData, {
         onSuccess: () => {
           setShowSuccess(true);
           setTimeout(() => setShowSuccess(false), 3000);
         },
-      }
-    );
+      });
+    } else {
+      // Update existing subskill
+      updateSubskill(
+        { subskillId: subskill.subskill_id, data },
+        {
+          onSuccess: () => {
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+          },
+        }
+      );
+    }
   };
 
   return (
@@ -142,7 +170,7 @@ export function SubskillForm({ subskill }: SubskillFormProps) {
         <Alert className="border-green-200 bg-green-50">
           <Check className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            Subskill updated successfully
+            {isNewSubskill ? 'Subskill created successfully' : 'Subskill updated successfully'}
           </AlertDescription>
         </Alert>
       )}
@@ -156,16 +184,16 @@ export function SubskillForm({ subskill }: SubskillFormProps) {
         >
           Reset
         </Button>
-        <Button type="submit" disabled={!isDirty || isPending}>
+        <Button type="submit" disabled={(!isDirty && !isNewSubskill) || isPending}>
           {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {isNewSubskill ? 'Creating...' : 'Saving...'}
             </>
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Save Changes
+              {isNewSubskill ? 'Create Subskill' : 'Save Changes'}
             </>
           )}
         </Button>

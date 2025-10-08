@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     SERVICE_PORT: int = 8001
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
+    DISABLE_AUTH: bool = False  # Set to True for local development without auth
 
     # Google Cloud Configuration
     GOOGLE_CLOUD_PROJECT: str
@@ -31,6 +32,8 @@ class Settings(BaseSettings):
     # Firebase Configuration
     FIREBASE_PROJECT_ID: str
     FIREBASE_CREDENTIALS_PATH: str = Field(default="")
+    FIREBASE_WEB_API_KEY: str = ""
+    FIREBASE_AUTH_DOMAIN: str = ""
 
     # Gemini AI Configuration
     GEMINI_API_KEY: str
@@ -39,7 +42,7 @@ class Settings(BaseSettings):
     GEMINI_MAX_TOKENS: int = 2048
 
     # CORS Configuration
-    ALLOWED_ORIGINS: str = "http://localhost:3000"
+    ALLOWED_ORIGINS: str = "http://localhost:3001"
 
     @property
     def allowed_origins_list(self) -> List[str]:

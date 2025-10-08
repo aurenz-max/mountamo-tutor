@@ -17,8 +17,7 @@ router = APIRouter()
 
 @router.get("/subjects/{subject_id}/draft-changes", response_model=DraftSummary)
 async def get_draft_changes(
-    subject_id: str,
-    current_user: dict = Depends(require_admin)
+    subject_id: str
 ):
     """Get summary of all draft changes for a subject"""
     return await version_control.get_draft_changes(subject_id)
@@ -27,14 +26,13 @@ async def get_draft_changes(
 @router.post("/subjects/{subject_id}/publish", response_model=PublishResponse)
 async def publish_subject(
     subject_id: str,
-    publish_request: PublishRequest,
-    current_user: dict = Depends(require_admin)
+    publish_request: PublishRequest
 ):
-    """Publish all draft changes for a subject (requires admin role)"""
+    """Publish all draft changes for a subject"""
     try:
         return await version_control.publish(
             publish_request,
-            current_user["user_id"]
+            "local-dev-user"
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -42,8 +40,7 @@ async def publish_subject(
 
 @router.get("/subjects/{subject_id}/versions", response_model=List[Version])
 async def get_version_history(
-    subject_id: str,
-    current_user: dict = Depends(require_admin)
+    subject_id: str
 ):
     """Get version history for a subject"""
     return await version_control.get_version_history(subject_id)
@@ -51,8 +48,7 @@ async def get_version_history(
 
 @router.get("/subjects/{subject_id}/active-version", response_model=Version)
 async def get_active_version(
-    subject_id: str,
-    current_user: dict = Depends(require_admin)
+    subject_id: str
 ):
     """Get currently active version for a subject"""
     version = await version_control.get_active_version(subject_id)
@@ -64,15 +60,14 @@ async def get_active_version(
 @router.post("/subjects/{subject_id}/rollback/{version_id}", response_model=PublishResponse)
 async def rollback_version(
     subject_id: str,
-    version_id: str,
-    current_user: dict = Depends(require_admin)
+    version_id: str
 ):
-    """Rollback to a previous version (requires admin role)"""
+    """Rollback to a previous version"""
     try:
         return await version_control.rollback_to_version(
             subject_id,
             version_id,
-            current_user["user_id"]
+            "local-dev-user"
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

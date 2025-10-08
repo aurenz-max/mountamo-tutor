@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useUpdateUnit } from '@/lib/curriculum-authoring/hooks';
+import { useCreateUnit, useUpdateUnit } from '@/lib/curriculum-authoring/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { Unit, UnitUpdate } from '@/types/curriculum-authoring';
+import type { Unit, UnitUpdate, UnitCreate } from '@/types/curriculum-authoring';
 
 interface UnitFormProps {
   unit: Unit;
@@ -17,7 +17,13 @@ interface UnitFormProps {
 
 export function UnitForm({ unit }: UnitFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
-  const { mutate: updateUnit, isPending, error } = useUpdateUnit();
+  const isNewUnit = unit.unit_id === 'new';
+
+  const { mutate: createUnit, isPending: isCreating, error: createError } = useCreateUnit();
+  const { mutate: updateUnit, isPending: isUpdating, error: updateError } = useUpdateUnit();
+
+  const isPending = isCreating || isUpdating;
+  const error = createError || updateError;
 
   const {
     register,
@@ -41,15 +47,35 @@ export function UnitForm({ unit }: UnitFormProps) {
   }, [unit, reset]);
 
   const onSubmit = (data: UnitUpdate) => {
-    updateUnit(
-      { unitId: unit.unit_id, data },
-      {
+    if (isNewUnit) {
+      // Create new unit - generate a unique ID
+      const unitId = `${unit.subject_id}-U${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const createData: UnitCreate = {
+        unit_id: unitId,
+        subject_id: unit.subject_id,
+        unit_title: data.unit_title || '',
+        unit_order: data.unit_order,
+        description: data.description,
+      };
+
+      createUnit(createData, {
         onSuccess: () => {
           setShowSuccess(true);
           setTimeout(() => setShowSuccess(false), 3000);
         },
-      }
-    );
+      });
+    } else {
+      // Update existing unit
+      updateUnit(
+        { unitId: unit.unit_id, data },
+        {
+          onSuccess: () => {
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+          },
+        }
+      );
+    }
   };
 
   return (
@@ -100,7 +126,7 @@ export function UnitForm({ unit }: UnitFormProps) {
         <Alert className="border-green-200 bg-green-50">
           <Check className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            Unit updated successfully
+            {isNewUnit ? 'Unit created successfully' : 'Unit updated successfully'}
           </AlertDescription>
         </Alert>
       )}
@@ -114,16 +140,16 @@ export function UnitForm({ unit }: UnitFormProps) {
         >
           Reset
         </Button>
-        <Button type="submit" disabled={!isDirty || isPending}>
+        <Button type="submit" disabled={(!isDirty && !isNewUnit) || isPending}>
           {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {isNewUnit ? 'Creating...' : 'Saving...'}
             </>
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Save Changes
+              {isNewUnit ? 'Create Unit' : 'Save Changes'}
             </>
           )}
         </Button>

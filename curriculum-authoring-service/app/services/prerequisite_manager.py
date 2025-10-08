@@ -54,20 +54,19 @@ class PrerequisiteManager:
         entity_type: EntityType,
         include_drafts: bool = False
     ) -> EntityPrerequisites:
-        """Get all prerequisites and unlocks for an entity"""
+        """Get all prerequisites and unlocks for an entity using optimized single query"""
 
-        # Get prerequisites (what this entity requires)
-        prerequisites_query = f"""
-        SELECT *
+        # Single query to get both prerequisites and unlocks with a relationship type indicator
+        combined_query = f"""
+        SELECT *, 'prerequisite' as relationship_type
         FROM `{settings.get_table_id(settings.TABLE_PREREQUISITES)}`
         WHERE unlocks_entity_id = @entity_id
           AND unlocks_entity_type = @entity_type
           {'' if include_drafts else 'AND is_draft = false'}
-        """
 
-        # Get unlocks (what this entity unlocks)
-        unlocks_query = f"""
-        SELECT *
+        UNION ALL
+
+        SELECT *, 'unlocks' as relationship_type
         FROM `{settings.get_table_id(settings.TABLE_PREREQUISITES)}`
         WHERE prerequisite_entity_id = @entity_id
           AND prerequisite_entity_type = @entity_type
@@ -79,14 +78,26 @@ class PrerequisiteManager:
             bigquery.ScalarQueryParameter("entity_type", "STRING", entity_type)
         ]
 
-        prerequisites_results = await db.execute_query(prerequisites_query, parameters)
-        unlocks_results = await db.execute_query(unlocks_query, parameters)
+        results = await db.execute_query(combined_query, parameters)
+
+        # Separate results by relationship type
+        prerequisites = []
+        unlocks = []
+
+        for row in results:
+            relationship_type = row.pop('relationship_type')
+            prereq = Prerequisite(**row)
+
+            if relationship_type == 'prerequisite':
+                prerequisites.append(prereq)
+            else:
+                unlocks.append(prereq)
 
         return EntityPrerequisites(
             entity_id=entity_id,
             entity_type=entity_type,
-            prerequisites=[Prerequisite(**row) for row in prerequisites_results],
-            unlocks=[Prerequisite(**row) for row in unlocks_results]
+            prerequisites=prerequisites,
+            unlocks=unlocks
         )
 
     async def get_subject_graph(
@@ -164,18 +175,28 @@ class PrerequisiteManager:
         prerequisite: PrerequisiteCreate
     ) -> tuple[bool, Optional[str]]:
         """Validate that a prerequisite doesn't create a circular dependency"""
+        logger.info(f"🔄 Starting cycle detection for prerequisite validation")
+        logger.info(f"   Checking if path exists from {prerequisite.unlocks_entity_id} → {prerequisite.prerequisite_entity_id}")
 
         # Check if creating this prerequisite would create a cycle
         # Simple check: see if target already has path to source
 
         visited = set()
+        path_count = 0
 
-        async def has_path(from_id: str, to_id: str) -> bool:
+        async def has_path(from_id: str, to_id: str, depth: int = 0) -> bool:
             """Check if there's a path from from_id to to_id"""
+            nonlocal path_count
+            indent = "  " * depth
+
+            logger.debug(f"{indent}🔍 Checking path: {from_id} → {to_id}")
+
             if from_id == to_id:
+                logger.warning(f"{indent}🔴 CYCLE DETECTED: {from_id} == {to_id}")
                 return True
 
             if from_id in visited:
+                logger.debug(f"{indent}⏭️  Already visited {from_id}, skipping")
                 return False
 
             visited.add(from_id)
@@ -190,16 +211,25 @@ class PrerequisiteManager:
             parameters = [bigquery.ScalarQueryParameter("from_id", "STRING", from_id)]
             results = await db.execute_query(query, parameters)
 
+            path_count += len(results)
+            logger.debug(f"{indent}📊 Found {len(results)} outgoing edges from {from_id}")
+
             for row in results:
-                if await has_path(row["unlocks_entity_id"], to_id):
+                next_id = row["unlocks_entity_id"]
+                logger.debug(f"{indent}➡️  Following edge: {from_id} → {next_id}")
+                if await has_path(next_id, to_id, depth + 1):
                     return True
 
             return False
 
         # Check if unlocks_entity already has path to prerequisite_entity (would create cycle)
-        if await has_path(prerequisite.unlocks_entity_id, prerequisite.prerequisite_entity_id):
+        has_cycle = await has_path(prerequisite.unlocks_entity_id, prerequisite.prerequisite_entity_id)
+
+        if has_cycle:
+            logger.warning(f"❌ Circular dependency detected! Visited {len(visited)} nodes, checked {path_count} paths")
             return False, "Creating this prerequisite would create a circular dependency"
 
+        logger.info(f"✅ No circular dependency found. Visited {len(visited)} nodes, checked {path_count} paths")
         return True, None
 
     async def get_base_skills(self, subject_id: str) -> List[Dict[str, Any]]:

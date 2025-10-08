@@ -149,6 +149,10 @@ class BigQueryDatabase:
     async def execute_query(self, query: str, parameters: Optional[List] = None) -> List[Dict[str, Any]]:
         """Execute a BigQuery query and return results"""
         try:
+            logger.info(f"🔍 Executing query: {query[:200]}...")
+            if parameters:
+                logger.info(f"📝 Parameters: {parameters}")
+
             job_config = bigquery.QueryJobConfig()
             if parameters:
                 job_config.query_parameters = parameters
@@ -156,10 +160,14 @@ class BigQueryDatabase:
             query_job = self.client.query(query, job_config=job_config)
             results = query_job.result()
 
-            return [dict(row) for row in results]
+            result_list = [dict(row) for row in results]
+            logger.info(f"✅ Query returned {len(result_list)} rows")
+
+            return result_list
 
         except Exception as e:
-            logger.error(f"Query execution failed: {e}")
+            logger.error(f"❌ Query execution failed: {e}")
+            logger.error(f"Query: {query}")
             raise
 
     async def insert_rows(self, table_name: str, rows: List[Dict[str, Any]]) -> bool:

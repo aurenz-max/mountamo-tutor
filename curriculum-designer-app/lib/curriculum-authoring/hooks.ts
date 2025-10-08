@@ -187,6 +187,18 @@ export function useUpdateSkill() {
   });
 }
 
+export function useDeleteSkill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (skillId: string) => curriculumAuthoringAPI.deleteSkill(skillId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
+    },
+  });
+}
+
 export function useCreateSubskill() {
   const queryClient = useQueryClient();
 
@@ -207,6 +219,18 @@ export function useUpdateSubskill() {
       curriculumAuthoringAPI.updateSubskill(subskillId, data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['subskills', result.skill_id] });
+      queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
+    },
+  });
+}
+
+export function useDeleteSubskill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (subskillId: string) => curriculumAuthoringAPI.deleteSubskill(subskillId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subskills'] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
     },
   });

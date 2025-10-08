@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSubjects } from '@/lib/curriculum-authoring/hooks';
 import { CurriculumTreeView } from '@/components/curriculum-designer/tree/CurriculumTreeView';
 import { EntityEditor } from '@/components/curriculum-designer/editor/EntityEditor';
@@ -21,6 +21,8 @@ export default function CurriculumDesignerPage() {
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showPrerequisites, setShowPrerequisites] = useState(false);
   const [activeTab, setActiveTab] = useState<'editor' | 'prerequisites' | 'drafts' | 'versions'>('editor');
+  const [sidebarWidth, setSidebarWidth] = useState(384); // 384px = w-96
+  const [isResizing, setIsResizing] = useState(false);
 
   const { data: subjects, isLoading: isLoadingSubjects } = useSubjects(true);
 
@@ -33,6 +35,56 @@ export default function CurriculumDesignerPage() {
     setActiveTab('prerequisites');
     setShowPrerequisites(true);
   };
+
+  const handleAddUnit = () => {
+    if (!selectedSubjectId) return;
+
+    // Create a new unit entity for editing
+    setSelectedEntity({
+      type: 'unit',
+      id: 'new',
+      data: {
+        unit_id: 'new',
+        subject_id: selectedSubjectId,
+        unit_title: '',
+        unit_order: 0, // Will be determined by backend
+        description: '',
+        is_draft: true,
+        version_id: '',
+        created_at: '',
+        updated_at: '',
+      },
+    });
+    setActiveTab('editor');
+  };
+
+  const handleMouseDown = () => {
+    setIsResizing(true);
+  };
+
+  // Add mouse event listeners
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      // Calculate new width, constrain between 240px and 800px
+      const newWidth = Math.min(Math.max(e.clientX, 240), 800);
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizing]);
 
   if (isLoadingSubjects) {
     return (
@@ -115,14 +167,26 @@ export default function CurriculumDesignerPage() {
       {selectedSubjectId ? (
         <div className="flex flex-1 overflow-hidden">
           {/* Left Panel - Curriculum Tree */}
-          <div className="w-96 border-r bg-white overflow-y-auto">
+          <div
+            className="border-r bg-white overflow-y-auto relative"
+            style={{ width: `${sidebarWidth}px` }}
+          >
             <div className="p-4">
               <h2 className="mb-3 text-sm font-semibold text-gray-700">Curriculum Structure</h2>
               <CurriculumTreeView
                 subjectId={selectedSubjectId}
                 selectedEntity={selectedEntity}
                 onSelectEntity={handleEntitySelect}
+                onAddUnit={handleAddUnit}
               />
+            </div>
+
+            {/* Resize Handle */}
+            <div
+              className="absolute top-0 right-0 w-4 h-full cursor-col-resize hover:bg-blue-500/20 transition-colors z-10"
+              onMouseDown={handleMouseDown}
+            >
+              <div className="absolute right-0 top-0 h-full w-1 bg-gray-300 hover:bg-blue-500" />
             </div>
           </div>
 
@@ -149,6 +213,7 @@ export default function CurriculumDesignerPage() {
                     <EntityEditor
                       entity={selectedEntity}
                       onPrerequisiteClick={handlePrerequisiteClick}
+                      onEntityDeleted={() => setSelectedEntity(undefined)}
                     />
                   ) : (
                     <div className="flex h-64 items-center justify-center">

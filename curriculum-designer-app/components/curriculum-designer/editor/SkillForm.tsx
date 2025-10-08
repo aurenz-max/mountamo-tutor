@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useUpdateSkill } from '@/lib/curriculum-authoring/hooks';
+import { useCreateSkill, useUpdateSkill } from '@/lib/curriculum-authoring/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { Skill, SkillUpdate } from '@/types/curriculum-authoring';
+import type { Skill, SkillUpdate, SkillCreate } from '@/types/curriculum-authoring';
 
 interface SkillFormProps {
   skill: Skill;
@@ -17,7 +17,13 @@ interface SkillFormProps {
 
 export function SkillForm({ skill }: SkillFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
-  const { mutate: updateSkill, isPending, error } = useUpdateSkill();
+  const isNewSkill = skill.skill_id === 'new';
+
+  const { mutate: createSkill, isPending: isCreating, error: createError } = useCreateSkill();
+  const { mutate: updateSkill, isPending: isUpdating, error: updateError } = useUpdateSkill();
+
+  const isPending = isCreating || isUpdating;
+  const error = createError || updateError;
 
   const {
     register,
@@ -39,15 +45,34 @@ export function SkillForm({ skill }: SkillFormProps) {
   }, [skill, reset]);
 
   const onSubmit = (data: SkillUpdate) => {
-    updateSkill(
-      { skillId: skill.skill_id, data },
-      {
+    if (isNewSkill) {
+      // Create new skill - generate a unique ID
+      const skillId = `${skill.unit_id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const createData: SkillCreate = {
+        skill_id: skillId,
+        unit_id: skill.unit_id,
+        skill_description: data.skill_description || '',
+        skill_order: data.skill_order,
+      };
+
+      createSkill(createData, {
         onSuccess: () => {
           setShowSuccess(true);
           setTimeout(() => setShowSuccess(false), 3000);
         },
-      }
-    );
+      });
+    } else {
+      // Update existing skill
+      updateSkill(
+        { skillId: skill.skill_id, data },
+        {
+          onSuccess: () => {
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+          },
+        }
+      );
+    }
   };
 
   return (
@@ -89,7 +114,7 @@ export function SkillForm({ skill }: SkillFormProps) {
         <Alert className="border-green-200 bg-green-50">
           <Check className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            Skill updated successfully
+            {isNewSkill ? 'Skill created successfully' : 'Skill updated successfully'}
           </AlertDescription>
         </Alert>
       )}
@@ -103,16 +128,16 @@ export function SkillForm({ skill }: SkillFormProps) {
         >
           Reset
         </Button>
-        <Button type="submit" disabled={!isDirty || isPending}>
+        <Button type="submit" disabled={(!isDirty && !isNewSkill) || isPending}>
           {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {isNewSkill ? 'Creating...' : 'Saving...'}
             </>
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Save Changes
+              {isNewSkill ? 'Create Skill' : 'Save Changes'}
             </>
           )}
         </Button>

@@ -13,6 +13,7 @@ interface UnitNodeProps {
   subjectId: string;
   selectedEntity?: SelectedEntity;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onAddSkill?: (unitId: string) => void;
 }
 
 export function UnitNode({
@@ -20,6 +21,7 @@ export function UnitNode({
   subjectId,
   selectedEntity,
   onSelectEntity,
+  onAddSkill,
 }: UnitNodeProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -89,8 +91,9 @@ export function UnitNode({
           className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
           onClick={(e) => {
             e.stopPropagation();
-            // Handle add skill
+            onAddSkill?.(unit.id);
           }}
+          title="Add Skill"
         >
           <Plus className="h-3 w-3" />
         </Button>
@@ -109,6 +112,25 @@ export function UnitNode({
                 unitId={unit.id}
                 selectedEntity={selectedEntity}
                 onSelectEntity={onSelectEntity}
+                onAddSubskill={(skillId) =>
+                  onSelectEntity({
+                    type: 'subskill',
+                    id: 'new',
+                    data: {
+                      subskill_id: 'new',
+                      skill_id: skillId,
+                      subskill_description: '',
+                      subskill_order: skill.subskills.length,
+                      difficulty_start: 0,
+                      difficulty_end: 10,
+                      target_difficulty: 5,
+                      is_draft: true,
+                      version_id: '',
+                      created_at: '',
+                      updated_at: '',
+                    },
+                  })
+                }
               />
             ))
           )}

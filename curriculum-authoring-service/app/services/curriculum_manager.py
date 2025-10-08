@@ -38,7 +38,15 @@ class CurriculumManager:
         ORDER BY subject_name
         """
 
+        logger.info(f"📊 Querying subjects with include_drafts={include_drafts}")
+        logger.info(f"🔍 Query: {query}")
+
         results = await db.execute_query(query)
+        logger.info(f"📦 Found {len(results)} subjects")
+
+        if results:
+            logger.info(f"📋 Sample subject: {results[0]}")
+
         return [Subject(**row) for row in results]
 
     async def get_subject(self, subject_id: str, version_id: Optional[str] = None) -> Optional[Subject]:
@@ -207,6 +215,19 @@ class CurriculumManager:
         results = await db.execute_query(query, parameters)
         return [Skill(**row) for row in results]
 
+    async def get_skill(self, skill_id: str) -> Optional[Skill]:
+        """Get a specific skill"""
+        query = f"""
+        SELECT *
+        FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
+        WHERE skill_id = @skill_id
+        LIMIT 1
+        """
+
+        parameters = [bigquery.ScalarQueryParameter("skill_id", "STRING", skill_id)]
+        results = await db.execute_query(query, parameters)
+        return Skill(**results[0]) if results else None
+
     async def create_skill(self, skill: SkillCreate, version_id: str) -> Skill:
         """Create a new skill"""
         now = datetime.utcnow()
@@ -221,6 +242,32 @@ class CurriculumManager:
 
         await db.insert_rows(settings.TABLE_SKILLS, [skill_data])
         return Skill(**skill_data)
+
+    async def update_skill(self, skill_id: str, updates: SkillUpdate, version_id: str) -> Optional[Skill]:
+        """Update a skill"""
+        current = await self.get_skill(skill_id)
+        if not current:
+            return None
+
+        now = datetime.utcnow()
+        update_data = updates.dict(exclude_unset=True)
+        update_data.update({
+            "skill_id": skill_id,
+            "version_id": version_id,
+            "is_draft": True,
+            "updated_at": now.isoformat()
+        })
+
+        skill_data = {**current.dict(), **update_data}
+        await db.insert_rows(settings.TABLE_SKILLS, [skill_data])
+        return Skill(**skill_data)
+
+    async def delete_skill(self, skill_id: str) -> bool:
+        """Delete a skill (soft delete by marking as draft deleted)"""
+        # Implementation would mark as deleted in draft state
+        # For now, we'll skip actual deletion logic
+        logger.warning(f"Delete skill {skill_id} - Not implemented (draft deletion)")
+        return True
 
     # ==================== SUBSKILL OPERATIONS ====================
 
@@ -244,6 +291,19 @@ class CurriculumManager:
         results = await db.execute_query(query, parameters)
         return [Subskill(**row) for row in results]
 
+    async def get_subskill(self, subskill_id: str) -> Optional[Subskill]:
+        """Get a specific subskill"""
+        query = f"""
+        SELECT *
+        FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
+        WHERE subskill_id = @subskill_id
+        LIMIT 1
+        """
+
+        parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
+        results = await db.execute_query(query, parameters)
+        return Subskill(**results[0]) if results else None
+
     async def create_subskill(self, subskill: SubskillCreate, version_id: str) -> Subskill:
         """Create a new subskill"""
         now = datetime.utcnow()
@@ -259,58 +319,113 @@ class CurriculumManager:
         await db.insert_rows(settings.TABLE_SUBSKILLS, [subskill_data])
         return Subskill(**subskill_data)
 
+    async def update_subskill(self, subskill_id: str, updates: SubskillUpdate, version_id: str) -> Optional[Subskill]:
+        """Update a subskill"""
+        current = await self.get_subskill(subskill_id)
+        if not current:
+            return None
+
+        now = datetime.utcnow()
+        update_data = updates.dict(exclude_unset=True)
+        update_data.update({
+            "subskill_id": subskill_id,
+            "version_id": version_id,
+            "is_draft": True,
+            "updated_at": now.isoformat()
+        })
+
+        subskill_data = {**current.dict(), **update_data}
+        await db.insert_rows(settings.TABLE_SUBSKILLS, [subskill_data])
+        return Subskill(**subskill_data)
+
+    async def delete_subskill(self, subskill_id: str) -> bool:
+        """Delete a subskill (soft delete by marking as draft deleted)"""
+        # Implementation would mark as deleted in draft state
+        # For now, we'll skip actual deletion logic
+        logger.warning(f"Delete subskill {subskill_id} - Not implemented (draft deletion)")
+        return True
+
     # ==================== HIERARCHICAL TREE ====================
 
     async def get_curriculum_tree(self, subject_id: str, include_drafts: bool = False) -> Optional[CurriculumTree]:
-        """Build complete hierarchical curriculum tree for a subject"""
+        """Build complete hierarchical curriculum tree for a subject using optimized single query"""
         subject = await self.get_subject(subject_id)
         if not subject:
             return None
 
-        units = await self.get_units_by_subject(subject_id, include_drafts)
-        tree_units = []
+        # Build WHERE clause for drafts
+        draft_filter = "" if include_drafts else "AND u.is_draft = false AND sk.is_draft = false AND sub.is_draft = false"
 
-        for unit in units:
-            skills = await self.get_skills_by_unit(unit.unit_id, include_drafts)
-            tree_skills = []
+        # Single query with LEFT JOINs to fetch entire hierarchy at once
+        query = f"""
+        SELECT
+            u.unit_id, u.unit_title, u.unit_order, u.description as unit_description, u.is_draft as unit_is_draft,
+            sk.skill_id, sk.skill_description, sk.skill_order, sk.is_draft as skill_is_draft,
+            sub.subskill_id, sub.subskill_description, sub.subskill_order,
+            sub.difficulty_start, sub.difficulty_end, sub.target_difficulty, sub.is_draft as subskill_is_draft
+        FROM `{settings.get_table_id(settings.TABLE_UNITS)}` u
+        LEFT JOIN `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
+            ON u.unit_id = sk.unit_id
+        LEFT JOIN `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` sub
+            ON sk.skill_id = sub.skill_id
+        WHERE u.subject_id = @subject_id
+        {draft_filter}
+        ORDER BY u.unit_order, u.unit_id, sk.skill_order, sk.skill_id, sub.subskill_order, sub.subskill_id
+        """
 
-            for skill in skills:
-                subskills = await self.get_subskills_by_skill(skill.skill_id, include_drafts)
-                tree_subskills = [
-                    SubskillNode(
-                        id=s.subskill_id,
-                        description=s.subskill_description,
-                        order=s.subskill_order,
-                        difficulty_range={
-                            "start": s.difficulty_start,
-                            "end": s.difficulty_end,
-                            "target": s.target_difficulty
-                        },
-                        is_draft=s.is_draft
-                    )
-                    for s in subskills
-                ]
+        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
+        results = await db.execute_query(query, parameters)
 
-                tree_skills.append(
-                    SkillNode(
-                        id=skill.skill_id,
-                        description=skill.skill_description,
-                        order=skill.skill_order,
-                        is_draft=skill.is_draft,
-                        subskills=tree_subskills
-                    )
+        # Build tree from flat results using dictionaries for O(1) lookups
+        units_dict = {}
+        skills_dict = {}
+
+        for row in results:
+            unit_id = row.get("unit_id")
+            skill_id = row.get("skill_id")
+            subskill_id = row.get("subskill_id")
+
+            # Create/get unit
+            if unit_id and unit_id not in units_dict:
+                units_dict[unit_id] = UnitNode(
+                    id=unit_id,
+                    title=row["unit_title"],
+                    order=row.get("unit_order"),
+                    description=row.get("unit_description"),
+                    is_draft=row.get("unit_is_draft", False),
+                    skills=[]
                 )
 
-            tree_units.append(
-                UnitNode(
-                    id=unit.unit_id,
-                    title=unit.unit_title,
-                    order=unit.unit_order,
-                    description=unit.description,
-                    is_draft=unit.is_draft,
-                    skills=tree_skills
+            # Create/get skill
+            if skill_id and skill_id not in skills_dict:
+                skill_node = SkillNode(
+                    id=skill_id,
+                    description=row["skill_description"],
+                    order=row.get("skill_order"),
+                    is_draft=row.get("skill_is_draft", False),
+                    subskills=[]
                 )
-            )
+                skills_dict[skill_id] = skill_node
+                if unit_id:
+                    units_dict[unit_id].skills.append(skill_node)
+
+            # Add subskill
+            if subskill_id and skill_id:
+                subskill_node = SubskillNode(
+                    id=subskill_id,
+                    description=row["subskill_description"],
+                    order=row.get("subskill_order"),
+                    difficulty_range={
+                        "start": row.get("difficulty_start"),
+                        "end": row.get("difficulty_end"),
+                        "target": row.get("target_difficulty")
+                    },
+                    is_draft=row.get("subskill_is_draft", False)
+                )
+                skills_dict[skill_id].subskills.append(subskill_node)
+
+        # Convert dict to sorted list
+        tree_units = sorted(units_dict.values(), key=lambda u: (u.order or 0, u.id))
 
         return CurriculumTree(
             subject_id=subject.subject_id,

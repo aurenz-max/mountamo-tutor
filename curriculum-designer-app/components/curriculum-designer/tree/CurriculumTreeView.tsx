@@ -11,12 +11,14 @@ interface CurriculumTreeViewProps {
   subjectId: string;
   selectedEntity?: SelectedEntity;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onAddUnit?: () => void;
 }
 
 export function CurriculumTreeView({
   subjectId,
   selectedEntity,
   onSelectEntity,
+  onAddUnit,
 }: CurriculumTreeViewProps) {
   const {
     data: tree,
@@ -70,7 +72,13 @@ export function CurriculumTreeView({
           >
             <RefreshCw className="h-3 w-3" />
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 px-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2"
+            onClick={onAddUnit}
+            title="Add Unit"
+          >
             <Plus className="h-3 w-3" />
           </Button>
         </div>
@@ -81,7 +89,12 @@ export function CurriculumTreeView({
         {tree.units.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 p-4 text-center">
             <p className="text-sm text-gray-500">No units yet</p>
-            <Button size="sm" variant="link" className="mt-2">
+            <Button
+              size="sm"
+              variant="link"
+              className="mt-2"
+              onClick={onAddUnit}
+            >
               <Plus className="mr-1 h-3 w-3" />
               Add your first unit
             </Button>
@@ -94,6 +107,22 @@ export function CurriculumTreeView({
               subjectId={subjectId}
               selectedEntity={selectedEntity}
               onSelectEntity={onSelectEntity}
+              onAddSkill={(unitId) =>
+                onSelectEntity({
+                  type: 'skill',
+                  id: 'new',
+                  data: {
+                    skill_id: 'new',
+                    unit_id: unitId,
+                    skill_description: '',
+                    skill_order: unit.skills.length,
+                    is_draft: true,
+                    version_id: '',
+                    created_at: '',
+                    updated_at: '',
+                  },
+                })
+              }
             />
           ))
         )}

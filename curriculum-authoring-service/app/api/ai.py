@@ -44,8 +44,7 @@ class ImproveDescriptionRequest(BaseModel):
 
 @router.post("/ai/generate-unit")
 async def generate_unit(
-    request: GenerateUnitRequest,
-    current_user: dict = Depends(require_designer)
+    request: GenerateUnitRequest
 ):
     """Generate a complete curriculum unit using AI"""
     try:
@@ -62,8 +61,7 @@ async def generate_unit(
 
 @router.post("/ai/generate-skill")
 async def generate_skill(
-    request: GenerateSkillRequest,
-    current_user: dict = Depends(require_designer)
+    request: GenerateSkillRequest
 ):
     """Generate a skill with subskills using AI"""
     try:
@@ -79,8 +77,7 @@ async def generate_skill(
 
 @router.post("/ai/suggest-prerequisites")
 async def suggest_prerequisites(
-    request: SuggestPrerequisitesRequest,
-    current_user: dict = Depends(require_designer)
+    request: SuggestPrerequisitesRequest
 ):
     """Get AI suggestions for prerequisite relationships"""
     try:
@@ -97,8 +94,7 @@ async def suggest_prerequisites(
 
 @router.post("/ai/improve-description")
 async def improve_description(
-    request: ImproveDescriptionRequest,
-    current_user: dict = Depends(require_designer)
+    request: ImproveDescriptionRequest
 ):
     """Improve a curriculum description using AI"""
     try:

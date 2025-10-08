@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { SubjectForm } from './SubjectForm';
 import { UnitForm } from './UnitForm';
 import { SkillForm } from './SkillForm';
@@ -7,15 +8,34 @@ import { SubskillForm } from './SubskillForm';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Link2, Trash2 } from 'lucide-react';
+import { useDeleteUnit, useDeleteSkill, useDeleteSubskill } from '@/lib/curriculum-authoring/hooks';
 import type { SelectedEntity } from '@/types/curriculum-authoring';
 
 interface EntityEditorProps {
   entity: SelectedEntity;
   onPrerequisiteClick?: () => void;
+  onEntityDeleted?: () => void;
 }
 
-export function EntityEditor({ entity, onPrerequisiteClick }: EntityEditorProps) {
+export function EntityEditor({ entity, onPrerequisiteClick, onEntityDeleted }: EntityEditorProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const { mutate: deleteUnit, isPending: isDeletingUnit } = useDeleteUnit();
+  const { mutate: deleteSkill, isPending: isDeletingSkill } = useDeleteSkill();
+  const { mutate: deleteSubskill, isPending: isDeletingSubskill } = useDeleteSubskill();
+
+  const isDeleting = isDeletingUnit || isDeletingSkill || isDeletingSubskill;
   const getEntityTypeLabel = () => {
     switch (entity.type) {
       case 'subject':
@@ -43,6 +63,41 @@ export function EntityEditor({ entity, onPrerequisiteClick }: EntityEditorProps)
         return (entity.data as any).subskill_description;
       default:
         return 'Unknown';
+    }
+  };
+
+  const handleDelete = () => {
+    if (entity.id === 'new') {
+      // Just clear selection for unsaved entities
+      onEntityDeleted?.();
+      return;
+    }
+
+    switch (entity.type) {
+      case 'unit':
+        deleteUnit(entity.id, {
+          onSuccess: () => {
+            setShowDeleteConfirm(false);
+            onEntityDeleted?.();
+          },
+        });
+        break;
+      case 'skill':
+        deleteSkill(entity.id, {
+          onSuccess: () => {
+            setShowDeleteConfirm(false);
+            onEntityDeleted?.();
+          },
+        });
+        break;
+      case 'subskill':
+        deleteSubskill(entity.id, {
+          onSuccess: () => {
+            setShowDeleteConfirm(false);
+            onEntityDeleted?.();
+          },
+        });
+        break;
     }
   };
 
@@ -84,6 +139,8 @@ export function EntityEditor({ entity, onPrerequisiteClick }: EntityEditorProps)
                 size="sm"
                 variant="outline"
                 className="text-red-600 hover:text-red-700"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isDeleting}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -98,6 +155,30 @@ export function EntityEditor({ entity, onPrerequisiteClick }: EntityEditorProps)
         {entity.type === 'skill' && <SkillForm skill={entity.data as any} />}
         {entity.type === 'subskill' && <SubskillForm subskill={entity.data as any} />}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {getEntityTypeLabel()}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this {getEntityTypeLabel().toLowerCase()}? This action cannot be undone.
+              {entity.type === 'unit' && ' All skills and subskills within this unit will also be deleted.'}
+              {entity.type === 'skill' && ' All subskills within this skill will also be deleted.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

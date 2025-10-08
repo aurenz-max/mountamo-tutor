@@ -173,6 +173,12 @@ class CurriculumAuthoringAPI {
     });
   }
 
+  async deleteSkill(skillId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/curriculum/skills/${skillId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Subskills
   async getSubskills(skillId: string, includeDrafts: boolean = false): Promise<Subskill[]> {
     const params = new URLSearchParams();
@@ -194,6 +200,12 @@ class CurriculumAuthoringAPI {
     return this.request<Subskill>(`/api/curriculum/subskills/${subskillId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSubskill(subskillId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/curriculum/subskills/${subskillId}`, {
+      method: 'DELETE',
     });
   }
 

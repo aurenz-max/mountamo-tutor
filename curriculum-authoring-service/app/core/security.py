@@ -37,6 +37,17 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Security(secu
     """
     Verify Firebase ID token and return user info
     """
+    # Bypass auth for local development
+    if settings.DISABLE_AUTH:
+        logger.warning("⚠️  Authentication disabled - local dev mode")
+        return {
+            'user_id': 'local-dev-user',
+            'email': 'dev@localhost',
+            'is_designer': True,
+            'is_admin': True,
+            'token': {}
+        }
+
     try:
         token = credentials.credentials
         decoded_token = auth.verify_id_token(token)

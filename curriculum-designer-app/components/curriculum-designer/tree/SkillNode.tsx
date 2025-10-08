@@ -13,6 +13,7 @@ interface SkillNodeProps {
   unitId: string;
   selectedEntity?: SelectedEntity;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onAddSubskill?: (skillId: string) => void;
 }
 
 export function SkillNode({
@@ -20,6 +21,7 @@ export function SkillNode({
   unitId,
   selectedEntity,
   onSelectEntity,
+  onAddSubskill,
 }: SkillNodeProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -89,8 +91,9 @@ export function SkillNode({
           className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
           onClick={(e) => {
             e.stopPropagation();
-            // Handle add subskill
+            onAddSubskill?.(skill.id);
           }}
+          title="Add Subskill"
         >
           <Plus className="h-3 w-3" />
         </Button>
