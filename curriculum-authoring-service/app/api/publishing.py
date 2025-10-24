@@ -2,15 +2,19 @@
 Publishing and version control API endpoints
 """
 
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
 from app.core.security import require_admin
 from app.services.version_control import version_control
+from app.services.graph_cache_manager import graph_cache_manager
 from app.models.versioning import (
     Version, DraftSummary,
     PublishRequest, PublishResponse
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -30,10 +34,23 @@ async def publish_subject(
 ):
     """Publish all draft changes for a subject"""
     try:
-        return await version_control.publish(
+        # Publish the curriculum changes
+        result = await version_control.publish(
             publish_request,
             "local-dev-user"
         )
+
+        # Regenerate both draft and published graph caches
+        logger.info(f"🔄 Triggering graph regeneration after publish for {subject_id}")
+        try:
+            await graph_cache_manager.regenerate_all_versions(subject_id)
+            logger.info(f"✅ Graph regeneration complete")
+        except Exception as e:
+            # Log error but don't fail the publish operation
+            logger.error(f"⚠️ Graph regeneration failed (non-critical): {e}")
+
+        return result
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -64,10 +81,23 @@ async def rollback_version(
 ):
     """Rollback to a previous version"""
     try:
-        return await version_control.rollback_to_version(
+        # Rollback to the specified version
+        result = await version_control.rollback_to_version(
             subject_id,
             version_id,
             "local-dev-user"
         )
+
+        # Regenerate graph caches after rollback
+        logger.info(f"🔄 Triggering graph regeneration after rollback for {subject_id}")
+        try:
+            await graph_cache_manager.regenerate_all_versions(subject_id)
+            logger.info(f"✅ Graph regeneration complete")
+        except Exception as e:
+            # Log error but don't fail the rollback operation
+            logger.error(f"⚠️ Graph regeneration failed (non-critical): {e}")
+
+        return result
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

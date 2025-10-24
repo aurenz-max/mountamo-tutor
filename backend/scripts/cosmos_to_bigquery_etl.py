@@ -182,59 +182,83 @@ class FullETLLoader:
             print(f"❌ Reviews data load failed: {e}")
             self.results['reviews'] = {'success': False, 'error': str(e)}
     
+    async def refresh_curriculum_views(self):
+        """Refresh curriculum compatibility views from analytics.curriculum_* tables"""
+        print(f"\n📚 Refreshing curriculum views from analytics.curriculum_* tables...")
+
+        try:
+            # Refresh the learning_paths table (materialized from prerequisites)
+            refresh_learning_paths_sql = """
+            CREATE OR REPLACE TABLE `mountamo-tutor-h7wnta.analytics.learning_paths` AS
+            SELECT DISTINCT
+              p.prerequisite_entity_id as prerequisite_skill_id,
+              p.unlocks_entity_id as unlocks_skill_id,
+              p.min_proficiency_threshold as min_score_threshold,
+              NOT EXISTS(
+                SELECT 1 FROM `mountamo-tutor-h7wnta.analytics.curriculum_prerequisites` p2
+                WHERE p2.unlocks_entity_id = p.prerequisite_entity_id
+                  AND p2.unlocks_entity_type = 'skill'
+                  AND p2.is_draft = false
+              ) as is_base_node,
+              CURRENT_TIMESTAMP() as sync_timestamp
+            FROM `mountamo-tutor-h7wnta.analytics.curriculum_prerequisites` p
+            WHERE p.prerequisite_entity_type = 'skill'
+              AND p.unlocks_entity_type = 'skill'
+              AND p.is_draft = false
+              AND p.version_id IN (
+                SELECT version_id FROM `mountamo-tutor-h7wnta.analytics.curriculum_versions`
+                WHERE is_active = true
+              )
+            """
+
+            await self.etl_service._execute_query(refresh_learning_paths_sql)
+            print("✅ Learning paths table refreshed from analytics.curriculum_prerequisites")
+
+            # Validate curriculum view (it's auto-refreshing, just check it exists)
+            validation_query = """
+            SELECT
+              COUNT(*) as total_subskills,
+              COUNT(DISTINCT subject) as total_subjects,
+              COUNT(DISTINCT skill_id) as total_skills
+            FROM `mountamo-tutor-h7wnta.analytics.curriculum`
+            """
+            result = await self.etl_service._execute_query(validation_query, return_results=True)
+
+            if result:
+                subskills = result[0].get('total_subskills', 0)
+                subjects = result[0].get('total_subjects', 0)
+                skills = result[0].get('total_skills', 0)
+                print(f"✅ Curriculum view validated: {subskills:,} subskills, {skills:,} skills, {subjects} subjects")
+
+                self.results['curriculum_views'] = {
+                    'success': True,
+                    'subskill_count': subskills,
+                    'skill_count': skills,
+                    'subject_count': subjects
+                }
+            else:
+                print("⚠️  Could not validate curriculum view")
+                self.results['curriculum_views'] = {'success': True, 'warning': 'Could not validate'}
+
+        except Exception as e:
+            print(f"❌ Failed to refresh curriculum views: {e}")
+            self.results['curriculum_views'] = {'success': False, 'error': str(e)}
+
     async def load_curriculum_data(self):
-        """Load curriculum data from blob storage"""
-        print(f"\n📚 Loading curriculum data...")
-        
-        try:
-            if not self.etl_service.curriculum_service:
-                print("⚠️  Curriculum service not configured - skipping")
-                self.results['curriculum'] = {'skipped': True, 'reason': 'Service not configured'}
-                return
-            
-            result = await self.etl_service.sync_curriculum_from_blob()
-            
-            records_processed = result.get('records_processed', 0)
-            success = result.get('success', False)
-            
-            if success:
-                print(f"✅ Curriculum data loaded: {records_processed:,} records")
-                self.results['curriculum'] = result
-            else:
-                error_msg = result.get('error', 'Unknown error')
-                print(f"❌ Curriculum data load failed: {error_msg}")
-                self.results['curriculum'] = result
-                
-        except Exception as e:
-            print(f"❌ Curriculum data load failed: {e}")
-            self.results['curriculum'] = {'success': False, 'error': str(e)}
-    
+        """DEPRECATED: Curriculum now comes from analytics.curriculum_* tables via refresh_curriculum_views()"""
+        print(f"\n📚 Skipping legacy curriculum load - using analytics.curriculum_* tables instead")
+        self.results['curriculum'] = {
+            'skipped': True,
+            'reason': 'Using analytics.curriculum_* tables (see refresh_curriculum_views)'
+        }
+
     async def load_learning_paths_data(self):
-        """Load learning paths data from blob storage"""
-        print(f"\n🛤️  Loading learning paths data...")
-        
-        try:
-            if not self.etl_service.learning_paths_service:
-                print("⚠️  Learning paths service not configured - skipping")
-                self.results['learning_paths'] = {'skipped': True, 'reason': 'Service not configured'}
-                return
-            
-            result = await self.etl_service.sync_learning_paths_from_blob()
-            
-            records_processed = result.get('records_processed', 0)
-            success = result.get('success', False)
-            
-            if success:
-                print(f"✅ Learning paths data loaded: {records_processed:,} records")
-                self.results['learning_paths'] = result
-            else:
-                error_msg = result.get('error', 'Unknown error')
-                print(f"❌ Learning paths data load failed: {error_msg}")
-                self.results['learning_paths'] = result
-                
-        except Exception as e:
-            print(f"❌ Learning paths data load failed: {e}")
-            self.results['learning_paths'] = {'success': False, 'error': str(e)}
+        """DEPRECATED: Learning paths now derived from analytics.curriculum_prerequisites via refresh_curriculum_views()"""
+        print(f"\n🛤️  Skipping legacy learning paths load - using analytics.curriculum_prerequisites instead")
+        self.results['learning_paths'] = {
+            'skipped': True,
+            'reason': 'Using analytics.curriculum_prerequisites (see refresh_curriculum_views)'
+        }
     
     async def load_user_profiles_data(self, incremental: bool = False):
         """Load user profiles data from Cosmos DB to create proper students table"""
@@ -1727,9 +1751,11 @@ class FullETLLoader:
             await self.load_user_profiles_data(incremental=incremental)
             await self.load_attempts_data(incremental=incremental)
             await self.load_reviews_data(incremental=incremental)
-            await self.load_curriculum_data()
-            await self.load_learning_paths_data()
-            
+
+            # Refresh curriculum views from analytics.curriculum_* tables
+            # This replaces load_curriculum_data() and load_learning_paths_data()
+            await self.refresh_curriculum_views()
+
             # Validate loaded data
             await self.validate_loaded_data()
             

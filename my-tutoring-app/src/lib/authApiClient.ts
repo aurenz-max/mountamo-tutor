@@ -798,6 +798,86 @@ private async getAuthToken(): Promise<string> {
   }
 
   // ============================================================================
+  // NEW LEARNING PATHS GRAPH ENDPOINTS - BigQuery-backed prerequisite system
+  // ============================================================================
+
+  /**
+   * Get learning graph visualization with student progress
+   */
+  async getLearningGraphVisualization(
+    subject?: string,
+    studentId?: number
+  ) {
+    const params = new URLSearchParams();
+    if (subject) params.append('subject', subject);
+    if (studentId) params.append('student_id', studentId.toString());
+
+    const queryString = params.toString();
+    return this.get(`/api/learning-paths/graph/visualization${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get personalized recommendations for student
+   */
+  async getLearningRecommendations(
+    studentId: number,
+    subject?: string,
+    limit: number = 5
+  ) {
+    const params = new URLSearchParams();
+    if (subject) params.append('subject', subject);
+    params.append('limit', limit.toString());
+
+    const queryString = params.toString();
+    return this.get(`/api/learning-paths/student/${studentId}/recommendations${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get detailed skill information
+   */
+  async getSkillDetails(
+    skillId: string,
+    studentId?: number
+  ) {
+    const params = new URLSearchParams();
+    if (studentId) params.append('student_id', studentId.toString());
+
+    const queryString = params.toString();
+    return this.get(`/api/learning-paths/graph/skill/${skillId}/details${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get unlocked entities for student
+   */
+  async getUnlockedEntities(
+    studentId: number,
+    entityType?: 'skill' | 'subskill',
+    subject?: string
+  ) {
+    const params = new URLSearchParams();
+    if (entityType) params.append('entity_type', entityType);
+    if (subject) params.append('subject', subject);
+
+    const queryString = params.toString();
+    return this.get(`/api/learning-paths/student/${studentId}/unlocked-entities${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Check if entity is unlocked for student
+   */
+  async checkPrerequisites(
+    studentId: number,
+    entityId: string,
+    entityType?: 'skill' | 'subskill'
+  ) {
+    const params = new URLSearchParams();
+    if (entityType) params.append('entity_type', entityType);
+
+    const queryString = params.toString();
+    return this.get(`/api/learning-paths/student/${studentId}/prerequisite-check/${entityId}${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // ============================================================================
   // UNIVERSAL PROBLEM ENDPOINTS - Handles all problem types
   // ============================================================================
 

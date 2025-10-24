@@ -77,7 +77,7 @@ class CurriculumManager:
         return Subject(**results[0]) if results else None
 
     async def create_subject(self, subject: SubjectCreate, user_id: str, version_id: str) -> Subject:
-        """Create a new subject"""
+        """Create a new subject using DML INSERT for consistency"""
         now = datetime.utcnow()
 
         subject_data = {
@@ -93,28 +93,78 @@ class CurriculumManager:
             "created_by": user_id
         }
 
-        await db.insert_rows(settings.TABLE_SUBJECTS, [subject_data])
+        table_id = settings.get_table_id(settings.TABLE_SUBJECTS)
+
+        # Build DML INSERT query
+        fields = ", ".join(subject_data.keys())
+        value_placeholders = ", ".join([f"@{key}" for key in subject_data.keys()])
+
+        insert_query = f"""
+        INSERT INTO `{table_id}` ({fields})
+        VALUES ({value_placeholders})
+        """
+
+        # Create BigQuery parameters with appropriate types
+        parameters = []
+        type_map = {'is_active': 'BOOL', 'is_draft': 'BOOL'}
+        for key, value in subject_data.items():
+            bq_type = type_map.get(key, 'STRING')
+            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
+
+        await db.execute_query(insert_query, parameters)
         return Subject(**subject_data)
 
     async def update_subject(self, subject_id: str, updates: SubjectUpdate, version_id: str) -> Optional[Subject]:
-        """Update a subject (creates draft version)"""
+        """Update a subject using atomic DML MERGE"""
         current = await self.get_subject(subject_id)
         if not current:
             return None
 
         now = datetime.utcnow()
         update_data = updates.dict(exclude_unset=True)
-        update_data.update({
+
+        # Convert current model to dict and ensure datetime fields are ISO strings
+        current_dict = current.dict(exclude_unset=True)
+        if isinstance(current_dict.get("created_at"), datetime):
+            current_dict["created_at"] = current_dict["created_at"].isoformat()
+        if isinstance(current_dict.get("updated_at"), datetime):
+            current_dict["updated_at"] = current_dict["updated_at"].isoformat()
+
+        # Merge with current data to get final state
+        subject_data = {
+            **current_dict,
+            **update_data,
             "subject_id": subject_id,
             "version_id": version_id,
             "is_draft": True,
             "updated_at": now.isoformat()
-        })
+        }
 
-        # Merge with current data
-        subject_data = {**current.dict(), **update_data}
+        table_id = settings.get_table_id(settings.TABLE_SUBJECTS)
 
-        await db.insert_rows(settings.TABLE_SUBJECTS, [subject_data])
+        # Build MERGE statement for atomic upsert
+        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in subject_data.keys()])
+        insert_fields = ", ".join(subject_data.keys())
+        insert_values = ", ".join([f"@{key}" for key in subject_data.keys()])
+
+        merge_query = f"""
+        MERGE `{table_id}` AS T
+        USING (SELECT @subject_id AS subject_id_key) AS S
+        ON T.subject_id = S.subject_id_key
+        WHEN MATCHED THEN
+          UPDATE SET {update_set_clauses}
+        WHEN NOT MATCHED THEN
+          INSERT ({insert_fields}) VALUES ({insert_values})
+        """
+
+        # Create BigQuery parameters with appropriate types
+        parameters = []
+        type_map = {'is_active': 'BOOL', 'is_draft': 'BOOL'}
+        for key, value in subject_data.items():
+            bq_type = type_map.get(key, 'STRING')
+            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
+
+        await db.execute_query(merge_query, parameters)
         return Subject(**subject_data)
 
     # ==================== UNIT OPERATIONS ====================
@@ -153,7 +203,7 @@ class CurriculumManager:
         return Unit(**results[0]) if results else None
 
     async def create_unit(self, unit: UnitCreate, version_id: str) -> Unit:
-        """Create a new unit"""
+        """Create a new unit using DML INSERT for consistency"""
         now = datetime.utcnow()
 
         unit_data = {
@@ -164,34 +214,96 @@ class CurriculumManager:
             "updated_at": now.isoformat()
         }
 
-        await db.insert_rows(settings.TABLE_UNITS, [unit_data])
+        table_id = settings.get_table_id(settings.TABLE_UNITS)
+
+        # Build DML INSERT query
+        fields = ", ".join(unit_data.keys())
+        value_placeholders = ", ".join([f"@{key}" for key in unit_data.keys()])
+
+        insert_query = f"""
+        INSERT INTO `{table_id}` ({fields})
+        VALUES ({value_placeholders})
+        """
+
+        # Create BigQuery parameters with appropriate types
+        parameters = []
+        type_map = {'unit_order': 'INT64', 'is_draft': 'BOOL'}
+        for key, value in unit_data.items():
+            bq_type = type_map.get(key, 'STRING')
+            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
+
+        await db.execute_query(insert_query, parameters)
         return Unit(**unit_data)
 
     async def update_unit(self, unit_id: str, updates: UnitUpdate, version_id: str) -> Optional[Unit]:
-        """Update a unit"""
+        """Update a unit using atomic DML MERGE"""
         current = await self.get_unit(unit_id)
         if not current:
             return None
 
         now = datetime.utcnow()
         update_data = updates.dict(exclude_unset=True)
-        update_data.update({
+
+        # Convert current model to dict and ensure datetime fields are ISO strings
+        current_dict = current.dict(exclude_unset=True)
+        if isinstance(current_dict.get("created_at"), datetime):
+            current_dict["created_at"] = current_dict["created_at"].isoformat()
+        if isinstance(current_dict.get("updated_at"), datetime):
+            current_dict["updated_at"] = current_dict["updated_at"].isoformat()
+
+        # Merge with current data to get final state
+        unit_data = {
+            **current_dict,
+            **update_data,
             "unit_id": unit_id,
             "version_id": version_id,
             "is_draft": True,
             "updated_at": now.isoformat()
-        })
+        }
 
-        unit_data = {**current.dict(), **update_data}
-        await db.insert_rows(settings.TABLE_UNITS, [unit_data])
+        table_id = settings.get_table_id(settings.TABLE_UNITS)
+
+        # Build MERGE statement for atomic upsert
+        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in unit_data.keys()])
+        insert_fields = ", ".join(unit_data.keys())
+        insert_values = ", ".join([f"@{key}" for key in unit_data.keys()])
+
+        merge_query = f"""
+        MERGE `{table_id}` AS T
+        USING (SELECT @unit_id AS unit_id_key) AS S
+        ON T.unit_id = S.unit_id_key
+        WHEN MATCHED THEN
+          UPDATE SET {update_set_clauses}
+        WHEN NOT MATCHED THEN
+          INSERT ({insert_fields}) VALUES ({insert_values})
+        """
+
+        # Create BigQuery parameters with appropriate types
+        parameters = []
+        type_map = {'unit_order': 'INT64', 'is_draft': 'BOOL'}
+        for key, value in unit_data.items():
+            bq_type = type_map.get(key, 'STRING')
+            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
+
+        await db.execute_query(merge_query, parameters)
         return Unit(**unit_data)
 
     async def delete_unit(self, unit_id: str) -> bool:
-        """Delete a unit (soft delete by marking as draft deleted)"""
-        # Implementation would mark as deleted in draft state
-        # For now, we'll skip actual deletion logic
-        logger.warning(f"Delete unit {unit_id} - Not implemented (draft deletion)")
-        return True
+        """Delete a unit by removing all rows with this ID"""
+        query = f"""
+        DELETE FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
+        WHERE unit_id = @unit_id
+        """
+
+        parameters = [bigquery.ScalarQueryParameter("unit_id", "STRING", unit_id)]
+
+        try:
+            await db.execute_query(query, parameters)
+            logger.info(f"✅ Deleted unit {unit_id}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Failed to delete unit {unit_id}: {e}")
+            return False
 
     # ==================== SKILL OPERATIONS ====================
 
@@ -229,7 +341,7 @@ class CurriculumManager:
         return Skill(**results[0]) if results else None
 
     async def create_skill(self, skill: SkillCreate, version_id: str) -> Skill:
-        """Create a new skill"""
+        """Create a new skill using DML INSERT for consistency"""
         now = datetime.utcnow()
 
         skill_data = {
@@ -240,34 +352,96 @@ class CurriculumManager:
             "updated_at": now.isoformat()
         }
 
-        await db.insert_rows(settings.TABLE_SKILLS, [skill_data])
+        table_id = settings.get_table_id(settings.TABLE_SKILLS)
+
+        # Build DML INSERT query
+        fields = ", ".join(skill_data.keys())
+        value_placeholders = ", ".join([f"@{key}" for key in skill_data.keys()])
+
+        insert_query = f"""
+        INSERT INTO `{table_id}` ({fields})
+        VALUES ({value_placeholders})
+        """
+
+        # Create BigQuery parameters with appropriate types
+        parameters = []
+        type_map = {'skill_order': 'INT64', 'is_draft': 'BOOL'}
+        for key, value in skill_data.items():
+            bq_type = type_map.get(key, 'STRING')
+            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
+
+        await db.execute_query(insert_query, parameters)
         return Skill(**skill_data)
 
     async def update_skill(self, skill_id: str, updates: SkillUpdate, version_id: str) -> Optional[Skill]:
-        """Update a skill"""
+        """Update a skill using atomic DML MERGE"""
         current = await self.get_skill(skill_id)
         if not current:
             return None
 
         now = datetime.utcnow()
         update_data = updates.dict(exclude_unset=True)
-        update_data.update({
+
+        # Convert current model to dict and ensure datetime fields are ISO strings
+        current_dict = current.dict(exclude_unset=True)
+        if isinstance(current_dict.get("created_at"), datetime):
+            current_dict["created_at"] = current_dict["created_at"].isoformat()
+        if isinstance(current_dict.get("updated_at"), datetime):
+            current_dict["updated_at"] = current_dict["updated_at"].isoformat()
+
+        # Merge with current data to get final state
+        skill_data = {
+            **current_dict,
+            **update_data,
             "skill_id": skill_id,
             "version_id": version_id,
             "is_draft": True,
             "updated_at": now.isoformat()
-        })
+        }
 
-        skill_data = {**current.dict(), **update_data}
-        await db.insert_rows(settings.TABLE_SKILLS, [skill_data])
+        table_id = settings.get_table_id(settings.TABLE_SKILLS)
+
+        # Build MERGE statement for atomic upsert
+        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in skill_data.keys()])
+        insert_fields = ", ".join(skill_data.keys())
+        insert_values = ", ".join([f"@{key}" for key in skill_data.keys()])
+
+        merge_query = f"""
+        MERGE `{table_id}` AS T
+        USING (SELECT @skill_id AS skill_id_key) AS S
+        ON T.skill_id = S.skill_id_key
+        WHEN MATCHED THEN
+          UPDATE SET {update_set_clauses}
+        WHEN NOT MATCHED THEN
+          INSERT ({insert_fields}) VALUES ({insert_values})
+        """
+
+        # Create BigQuery parameters with appropriate types
+        parameters = []
+        type_map = {'skill_order': 'INT64', 'is_draft': 'BOOL'}
+        for key, value in skill_data.items():
+            bq_type = type_map.get(key, 'STRING')
+            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
+
+        await db.execute_query(merge_query, parameters)
         return Skill(**skill_data)
 
     async def delete_skill(self, skill_id: str) -> bool:
-        """Delete a skill (soft delete by marking as draft deleted)"""
-        # Implementation would mark as deleted in draft state
-        # For now, we'll skip actual deletion logic
-        logger.warning(f"Delete skill {skill_id} - Not implemented (draft deletion)")
-        return True
+        """Delete a skill by removing all rows with this ID"""
+        query = f"""
+        DELETE FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
+        WHERE skill_id = @skill_id
+        """
+
+        parameters = [bigquery.ScalarQueryParameter("skill_id", "STRING", skill_id)]
+
+        try:
+            await db.execute_query(query, parameters)
+            logger.info(f"✅ Deleted skill {skill_id}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Failed to delete skill {skill_id}: {e}")
+            return False
 
     # ==================== SUBSKILL OPERATIONS ====================
 
@@ -305,7 +479,7 @@ class CurriculumManager:
         return Subskill(**results[0]) if results else None
 
     async def create_subskill(self, subskill: SubskillCreate, version_id: str) -> Subskill:
-        """Create a new subskill"""
+        """Create a new subskill using DML INSERT for consistency"""
         now = datetime.utcnow()
 
         subskill_data = {
@@ -316,34 +490,108 @@ class CurriculumManager:
             "updated_at": now.isoformat()
         }
 
-        await db.insert_rows(settings.TABLE_SUBSKILLS, [subskill_data])
+        table_id = settings.get_table_id(settings.TABLE_SUBSKILLS)
+
+        # Build DML INSERT query
+        fields = ", ".join(subskill_data.keys())
+        value_placeholders = ", ".join([f"@{key}" for key in subskill_data.keys()])
+
+        insert_query = f"""
+        INSERT INTO `{table_id}` ({fields})
+        VALUES ({value_placeholders})
+        """
+
+        # Create BigQuery parameters with appropriate types
+        parameters = []
+        type_map = {
+            'subskill_order': 'INT64',
+            'difficulty_start': 'FLOAT64',
+            'difficulty_end': 'FLOAT64',
+            'target_difficulty': 'FLOAT64',
+            'is_draft': 'BOOL'
+        }
+        for key, value in subskill_data.items():
+            bq_type = type_map.get(key, 'STRING')
+            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
+
+        await db.execute_query(insert_query, parameters)
         return Subskill(**subskill_data)
 
     async def update_subskill(self, subskill_id: str, updates: SubskillUpdate, version_id: str) -> Optional[Subskill]:
-        """Update a subskill"""
+        """Update a subskill using atomic DML MERGE"""
         current = await self.get_subskill(subskill_id)
         if not current:
             return None
 
         now = datetime.utcnow()
         update_data = updates.dict(exclude_unset=True)
-        update_data.update({
+
+        # Convert current model to dict and ensure datetime fields are ISO strings
+        current_dict = current.dict(exclude_unset=True)
+        if isinstance(current_dict.get("created_at"), datetime):
+            current_dict["created_at"] = current_dict["created_at"].isoformat()
+        if isinstance(current_dict.get("updated_at"), datetime):
+            current_dict["updated_at"] = current_dict["updated_at"].isoformat()
+
+        # Merge with current data to get final state
+        subskill_data = {
+            **current_dict,
+            **update_data,
             "subskill_id": subskill_id,
             "version_id": version_id,
             "is_draft": True,
             "updated_at": now.isoformat()
-        })
+        }
 
-        subskill_data = {**current.dict(), **update_data}
-        await db.insert_rows(settings.TABLE_SUBSKILLS, [subskill_data])
+        table_id = settings.get_table_id(settings.TABLE_SUBSKILLS)
+
+        # Build MERGE statement for atomic upsert
+        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in subskill_data.keys()])
+        insert_fields = ", ".join(subskill_data.keys())
+        insert_values = ", ".join([f"@{key}" for key in subskill_data.keys()])
+
+        merge_query = f"""
+        MERGE `{table_id}` AS T
+        USING (SELECT @subskill_id AS subskill_id_key) AS S
+        ON T.subskill_id = S.subskill_id_key
+        WHEN MATCHED THEN
+          UPDATE SET {update_set_clauses}
+        WHEN NOT MATCHED THEN
+          INSERT ({insert_fields}) VALUES ({insert_values})
+        """
+
+        # Create BigQuery parameters with appropriate types
+        parameters = []
+        type_map = {
+            'subskill_order': 'INT64',
+            'difficulty_start': 'FLOAT64',
+            'difficulty_end': 'FLOAT64',
+            'target_difficulty': 'FLOAT64',
+            'is_draft': 'BOOL'
+        }
+        for key, value in subskill_data.items():
+            bq_type = type_map.get(key, 'STRING')
+            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
+
+        await db.execute_query(merge_query, parameters)
         return Subskill(**subskill_data)
 
     async def delete_subskill(self, subskill_id: str) -> bool:
-        """Delete a subskill (soft delete by marking as draft deleted)"""
-        # Implementation would mark as deleted in draft state
-        # For now, we'll skip actual deletion logic
-        logger.warning(f"Delete subskill {subskill_id} - Not implemented (draft deletion)")
-        return True
+        """Delete a subskill by removing all rows with this ID"""
+        query = f"""
+        DELETE FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
+        WHERE subskill_id = @subskill_id
+        """
+
+        parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
+
+        try:
+            await db.execute_query(query, parameters)
+            logger.info(f"✅ Deleted subskill {subskill_id}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Failed to delete subskill {subskill_id}: {e}")
+            return False
 
     # ==================== HIERARCHICAL TREE ====================
 

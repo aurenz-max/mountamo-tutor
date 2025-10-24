@@ -60,16 +60,16 @@ async def create_subject(
     subject: SubjectCreate
 ):
     """Create a new subject"""
-    # Create draft version
-    version = await version_control.create_version(
-        VersionCreate(subject_id=subject.subject_id, description="Initial version"),
+    # Get or create active version (this will create version 1 if it doesn't exist)
+    version_id = await version_control.get_or_create_active_version(
+        subject.subject_id,
         "local-dev-user"
     )
 
     return await curriculum_manager.create_subject(
         subject,
         "local-dev-user",
-        version.version_id
+        version_id
     )
 
 
@@ -135,13 +135,13 @@ async def create_unit(
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
 
-    # Create draft version if needed
-    draft_version = await version_control.create_version(
-        VersionCreate(subject_id=unit.subject_id, description="Add unit"),
+    # Get or create active version (reuse existing version instead of creating new one)
+    version_id = await version_control.get_or_create_active_version(
+        unit.subject_id,
         "local-dev-user"
     )
 
-    return await curriculum_manager.create_unit(unit, draft_version.version_id)
+    return await curriculum_manager.create_unit(unit, version_id)
 
 
 @router.put("/units/{unit_id}", response_model=Unit)
@@ -205,12 +205,13 @@ async def create_skill(
         logger.error(f"❌ Unit not found: {skill.unit_id}")
         raise HTTPException(status_code=404, detail="Unit not found")
 
-    draft_version = await version_control.create_version(
-        VersionCreate(subject_id=unit.subject_id, description="Add skill"),
+    # Get or create active version (reuse existing version instead of creating new one)
+    version_id = await version_control.get_or_create_active_version(
+        unit.subject_id,
         "local-dev-user"
     )
 
-    result = await curriculum_manager.create_skill(skill, draft_version.version_id)
+    result = await curriculum_manager.create_skill(skill, version_id)
     logger.info(f"✅ Skill created: {result.skill_id}")
     return result
 
@@ -317,12 +318,13 @@ async def create_subskill(
         logger.error(f"❌ Unit not found: {skill.unit_id}")
         raise HTTPException(status_code=404, detail="Unit not found")
 
-    draft_version = await version_control.create_version(
-        VersionCreate(subject_id=unit.subject_id, description="Add subskill"),
+    # Get or create active version (reuse existing version instead of creating new one)
+    version_id = await version_control.get_or_create_active_version(
+        unit.subject_id,
         "local-dev-user"
     )
 
-    result = await curriculum_manager.create_subskill(subskill, draft_version.version_id)
+    result = await curriculum_manager.create_subskill(subskill, version_id)
     logger.info(f"✅ Subskill created: {result.subskill_id}")
     return result
 

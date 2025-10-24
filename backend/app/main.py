@@ -109,8 +109,8 @@ app.include_router(
 )
 
 app.include_router(
-    learning_paths.router, 
-    prefix="/api", 
+    learning_paths.router,
+    prefix="/api/learning-paths",
     tags=["learning-paths"],
     dependencies=[Depends(get_user_context)]
 )

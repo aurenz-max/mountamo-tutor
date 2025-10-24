@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Plus, Trash2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { AddPrerequisiteDialog } from './AddPrerequisiteDialog';
+import { GraphCachePanel } from '../graph/GraphCachePanel';
+import { GraphVisualization } from '../graph/GraphVisualization';
 import type { EntityType } from '@/types/curriculum-authoring';
 
 interface PrerequisitePanelProps {
@@ -23,13 +25,38 @@ export function PrerequisitePanel({
 }: PrerequisitePanelProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
 
+  // Only fetch prerequisites for skills and subskills (units don't have prerequisites)
+  const shouldFetchPrerequisites = entityType === 'skill' || entityType === 'subskill';
+
   const {
     data: prerequisites,
     isLoading,
     error,
-  } = useEntityPrerequisites(entityId, entityType, true);
+  } = useEntityPrerequisites(entityId, entityType, true, {
+    enabled: shouldFetchPrerequisites,
+  });
 
   const { mutate: deletePrerequisite } = useDeletePrerequisite();
+
+  // Show info message for units
+  if (entityType === 'unit') {
+    return (
+      <div className="space-y-6">
+        <Alert>
+          <AlertDescription>
+            Prerequisites are defined at the skill and subskill level. Units organize skills but don't have their own prerequisites.
+            Select a skill or subskill to manage its prerequisites.
+          </AlertDescription>
+        </Alert>
+
+        {/* Still show graph cache panel for units */}
+        <GraphCachePanel subjectId={subjectId} />
+
+        {/* Graph Visualization */}
+        <GraphVisualization subjectId={subjectId} includeDrafts={true} />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -155,18 +182,11 @@ export function PrerequisitePanel({
         </CardContent>
       </Card>
 
-      {/* Graph Visualization Placeholder */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Prerequisite Graph</CardTitle>
-          <p className="text-sm text-gray-500">Visual representation of learning paths</p>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-48 items-center justify-center rounded-lg border-2 border-dashed">
-            <p className="text-sm text-gray-400">Graph visualization coming soon</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Graph Cache Management */}
+      <GraphCachePanel subjectId={subjectId} />
+
+      {/* Graph Visualization */}
+      <GraphVisualization subjectId={subjectId} includeDrafts={true} />
 
       {/* Add Prerequisite Dialog */}
       <AddPrerequisiteDialog

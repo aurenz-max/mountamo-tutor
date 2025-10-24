@@ -171,15 +171,31 @@ export interface PrerequisiteGraphNode {
   id: string;
   type: EntityType;
   label: string;
-  is_draft: boolean;
+  is_draft?: boolean;
+  // Enriched metadata from build_enriched_graph
+  subject_id?: string;
+  unit_id?: string;
+  unit_title?: string;
+  unit_order?: number;
+  skill_id?: string;
+  skill_description?: string;
+  skill_order?: number;
+  subskill_order?: number;
+  difficulty_start?: number;
+  difficulty_end?: number;
+  target_difficulty?: number;
 }
 
 export interface PrerequisiteGraphEdge {
-  id: string;
+  id?: string;
   source: string;
   target: string;
   threshold?: number;
-  is_draft: boolean;
+  is_draft?: boolean;
+  // Additional metadata
+  source_type?: string;
+  target_type?: string;
+  version_id?: string;
 }
 
 export interface PrerequisiteGraph {

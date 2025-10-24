@@ -230,8 +230,9 @@ class CurriculumAuthoringAPI {
     const params = new URLSearchParams();
     if (includeDrafts) params.append('include_drafts', 'true');
 
+    // Use new cached graph endpoint for better performance
     return this.request<PrerequisiteGraph>(
-      `/api/prerequisites/subjects/${subjectId}/graph${params.toString() ? `?${params}` : ''}`
+      `/api/graph/${subjectId}${params.toString() ? `?${params}` : ''}`
     );
   }
 

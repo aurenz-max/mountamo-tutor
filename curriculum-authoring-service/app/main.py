@@ -9,7 +9,8 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import db
-from app.api import curriculum, prerequisites, publishing, ai
+from app.db.firestore_graph_service import firestore_graph_service
+from app.api import curriculum, prerequisites, publishing, ai, graph
 
 # Configure logging
 logging.basicConfig(
@@ -31,6 +32,9 @@ async def lifespan(app: FastAPI):
 
         # Setup database tables
         db.setup_all_tables()
+
+        # Initialize Firestore for graph caching
+        firestore_graph_service.initialize()
 
         logger.info("✅ Service startup complete")
 
@@ -96,6 +100,12 @@ app.include_router(
     tags=["AI Assistant"]
 )
 
+app.include_router(
+    graph.router,
+    prefix="/api",
+    tags=["Curriculum Graph & Caching"]
+)
+
 
 # Root endpoints
 @app.get("/")
@@ -118,7 +128,8 @@ async def root():
             "curriculum": "/api/curriculum",
             "prerequisites": "/api/prerequisites",
             "publishing": "/api/publishing",
-            "ai_assistant": "/api/ai"
+            "ai_assistant": "/api/ai",
+            "graph": "/api/graph"
         }
     }
 

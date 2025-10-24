@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { curriculumAuthoringAPI } from './api';
+import { curriculumGraphAPI } from './graphApi';
 import type {
   Subject, SubjectCreate, SubjectUpdate,
   Unit, UnitCreate, UnitUpdate,
@@ -39,6 +40,8 @@ export const QUERY_KEYS = {
   draftChanges: (subjectId: string) => ['draftChanges', subjectId] as const,
   versionHistory: (subjectId: string) => ['versionHistory', subjectId] as const,
   activeVersion: (subjectId: string) => ['activeVersion', subjectId] as const,
+  graphStatus: (subjectId: string) => ['graphStatus', subjectId] as const,
+  cachedSubjects: () => ['cachedSubjects'] as const,
 };
 
 // ==================== CURRICULUM HOOKS ====================
@@ -241,12 +244,13 @@ export function useDeleteSubskill() {
 export function useEntityPrerequisites(
   entityId: string,
   entityType: EntityType,
-  includeDrafts: boolean = false
+  includeDrafts: boolean = false,
+  options?: { enabled?: boolean }
 ) {
   return useQuery({
     queryKey: QUERY_KEYS.entityPrerequisites(entityId, entityType, includeDrafts),
     queryFn: () => curriculumAuthoringAPI.getEntityPrerequisites(entityId, entityType, includeDrafts),
-    enabled: !!entityId && !!entityType,
+    enabled: (options?.enabled ?? true) && !!entityId && !!entityType,
   });
 }
 
@@ -383,6 +387,65 @@ export function useRollbackVersion() {
       queryClient.invalidateQueries({ queryKey: ['curriculumTree', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['versionHistory', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['activeVersion', subjectId] });
+    },
+  });
+}
+
+// ==================== GRAPH CACHING HOOKS ====================
+
+export function useGraphStatus(subjectId: string) {
+  return useQuery({
+    queryKey: QUERY_KEYS.graphStatus(subjectId),
+    queryFn: () => curriculumGraphAPI.getGraphStatus(subjectId),
+    enabled: !!subjectId,
+  });
+}
+
+export function useCachedSubjects() {
+  return useQuery({
+    queryKey: QUERY_KEYS.cachedSubjects(),
+    queryFn: () => curriculumGraphAPI.listCachedSubjects(),
+  });
+}
+
+export function useRegenerateGraph() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ subjectId, includeDrafts }: { subjectId: string; includeDrafts?: boolean }) =>
+      curriculumGraphAPI.regenerateGraph(subjectId, includeDrafts),
+    onSuccess: (_, { subjectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['graphStatus', subjectId] });
+      queryClient.invalidateQueries({ queryKey: ['subjectGraph', subjectId] });
+      queryClient.invalidateQueries({ queryKey: ['cachedSubjects'] });
+    },
+  });
+}
+
+export function useRegenerateAllGraphs() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (subjectId: string) =>
+      curriculumGraphAPI.regenerateAllVersions(subjectId),
+    onSuccess: (_, subjectId) => {
+      queryClient.invalidateQueries({ queryKey: ['graphStatus', subjectId] });
+      queryClient.invalidateQueries({ queryKey: ['subjectGraph', subjectId] });
+      queryClient.invalidateQueries({ queryKey: ['cachedSubjects'] });
+    },
+  });
+}
+
+export function useInvalidateGraphCache() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ subjectId, versionType }: { subjectId: string; versionType?: 'draft' | 'published' }) =>
+      curriculumGraphAPI.invalidateCache(subjectId, versionType),
+    onSuccess: (_, { subjectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['graphStatus', subjectId] });
+      queryClient.invalidateQueries({ queryKey: ['subjectGraph', subjectId] });
+      queryClient.invalidateQueries({ queryKey: ['cachedSubjects'] });
     },
   });
 }

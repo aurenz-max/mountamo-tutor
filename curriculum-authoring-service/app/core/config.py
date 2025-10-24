@@ -29,9 +29,9 @@ class Settings(BaseSettings):
     BIGQUERY_DATASET_ID: str = "curriculum_authoring"
     GOOGLE_APPLICATION_CREDENTIALS: str
 
-    # Firebase Configuration
+    # Firebase Configuration (used for authentication and Firestore graph caching)
     FIREBASE_PROJECT_ID: str
-    FIREBASE_CREDENTIALS_PATH: str = Field(default="")
+    FIREBASE_CREDENTIALS_PATH: str = Field(default="")  # Path to Firebase service account JSON
     FIREBASE_WEB_API_KEY: str = ""
     FIREBASE_AUTH_DOMAIN: str = ""
 
@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-1.5-flash"
     GEMINI_TEMPERATURE: float = 0.7
     GEMINI_MAX_TOKENS: int = 2048
+
+    # Azure Cosmos DB Configuration (DEPRECATED - migrated to Firestore)
+    # These are kept for backward compatibility but are no longer required
+    COSMOS_ENDPOINT: str = Field(default="", env="COSMOS_ENDPOINT")
+    COSMOS_KEY: str = Field(default="", env="COSMOS_KEY")
+    COSMOS_DATABASE: str = Field(default="curriculum_authoring", env="COSMOS_DATABASE")
+    COSMOS_GRAPH_CONTAINER: str = Field(default="curriculum_graphs", env="COSMOS_GRAPH_CONTAINER")
 
     # CORS Configuration
     ALLOWED_ORIGINS: str = "http://localhost:3001"

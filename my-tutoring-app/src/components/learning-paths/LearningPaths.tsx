@@ -3,10 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, CheckCircle, LogIn, User, AlertCircle, RefreshCw, BookOpen } from 'lucide-react';
+import { RotateCcw, CheckCircle, LogIn, User, AlertCircle, RefreshCw, BookOpen, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi, AuthApiError } from '@/lib/authApiClient';
 import Link from 'next/link';
+import type {
+  VisualizationResponse,
+  Recommendation,
+  SkillDetailsResponse
+} from '@/types/learning-paths';
 
 interface CurriculumData {
     subject: string;
@@ -41,19 +46,23 @@ interface CompetencyData {
 
 const DecisionPathUI = () => {
     const { user, userProfile, loading: authLoading } = useAuth();
-    const [completedChoices, setCompletedChoices] = useState(new Set());
-    const [unlockedPaths, setUnlockedPaths] = useState<string[]>([]);
-    const [curriculumData, setCurriculumData] = useState<CurriculumData | null>(null);
+
+    // New state for prerequisite graph system
+    const [visualizationData, setVisualizationData] = useState<VisualizationResponse | null>(null);
+    const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+    const [expandedSkillDetails, setExpandedSkillDetails] = useState<SkillDetailsResponse | null>(null);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [currentSkillId, setCurrentSkillId] = useState<string | null>(null);
-    const [competencyScores, setCompetencyScores] = useState<Map<string, CompetencyData>>(new Map());
     const [expandedSkillId, setExpandedSkillId] = useState<string | null>(null);
-    
-    // New state for dynamic subject handling
+
+    // Subject handling
     const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
     const [selectedSubject, setSelectedSubject] = useState<string>('');
     const [subjectsLoading, setSubjectsLoading] = useState(true);
+
+    // Legacy state (kept for backward compatibility - used by legacy code paths)
+    const [curriculumData, setCurriculumData] = useState<CurriculumData | null>(null);
 
     const fetchAvailableSubjects = async () => {
         console.log('🔍 COMPONENT: Fetching available subjects with authApi...');
@@ -92,54 +101,80 @@ const DecisionPathUI = () => {
         }
     };
 
-    const fetchCurriculumData = async (subject: string) => {
-        console.log(`🔍 COMPONENT: Fetching curriculum for subject: ${subject} with authApi...`);
-        
-        if (!subject) {
-            console.log('🔍 COMPONENT: No subject provided, skipping curriculum fetch');
+    const fetchVisualizationData = async (subject: string) => {
+        console.log(`🔍 COMPONENT: Fetching visualization data for subject: ${subject}...`);
+
+        if (!subject || !userProfile?.student_id) {
+            console.log('🔍 COMPONENT: Missing subject or student_id, skipping fetch');
             return;
         }
 
         try {
             setError(null);
-            const curriculum = await authApi.getSubjectCurriculum(subject);
-            
-            console.log('✅ COMPONENT: Curriculum received:', curriculum);
-            setCurriculumData(curriculum);
-            
-            // Set initial unlocked paths based on curriculum structure
-            if (curriculum?.curriculum && curriculum.curriculum.length > 0) {
-                const firstUnit = curriculum.curriculum[0];
-                if (firstUnit.skills && firstUnit.skills.length > 0) {
-                    const firstSkillId = firstUnit.skills[0].id;
-                    setUnlockedPaths([firstSkillId]);
-                    console.log(`✅ COMPONENT: Set initial unlocked path: ${firstSkillId}`);
-                }
+            setLoading(true);
+
+            // Fetch visualization graph with student progress and recommendations in parallel
+            const [vizData, recsData] = await Promise.all([
+                authApi.getLearningGraphVisualization(subject, userProfile.student_id) as Promise<VisualizationResponse>,
+                authApi.getLearningRecommendations(userProfile.student_id, subject, 5) as Promise<{ recommendations: Recommendation[]; count: number }>
+            ]);
+
+            console.log('✅ COMPONENT: Visualization data received:', vizData);
+            console.log('✅ COMPONENT: Recommendations received:', recsData);
+
+            setVisualizationData(vizData);
+            setRecommendations(recsData.recommendations || []);
+
+            // Also populate legacy curriculumData for backward compatibility
+            if (vizData?.skills) {
+                const legacyCurriculum: CurriculumData = {
+                    subject: subject,
+                    curriculum: [{
+                        id: 'default-unit',
+                        title: `${subject} Skills`,
+                        skills: vizData.skills.map((skill) => ({
+                            id: skill.skill_id,
+                            description: skill.title,
+                            subskills: skill.subskills.map((subskill) => ({
+                                id: subskill.subskill_id,
+                                description: subskill.description,
+                                difficulty_range: {
+                                    start: subskill.difficulty_start || 1.0,
+                                    end: subskill.difficulty_end || 2.0,
+                                    target: ((subskill.difficulty_start || 1.0) + (subskill.difficulty_end || 2.0)) / 2
+                                }
+                            }))
+                        }))
+                    }]
+                };
+                setCurriculumData(legacyCurriculum);
             }
-            
+
         } catch (error) {
-            console.error(`❌ COMPONENT: Failed to fetch curriculum for ${subject}:`, error);
-            
-            let errorMessage = `Failed to fetch curriculum for ${subject}`;
-            
+            console.error(`❌ COMPONENT: Failed to fetch visualization data for ${subject}:`, error);
+
+            let errorMessage = `Failed to fetch learning path data for ${subject}`;
+
             if (error && typeof error === 'object' && 'status' in error) {
                 const apiError = error as AuthApiError;
                 if (apiError.status === 404) {
-                    errorMessage = `No curriculum data available for ${subject}. Please try a different subject.`;
+                    errorMessage = `No learning path data available for ${subject}. Please try a different subject.`;
                 } else {
                     errorMessage = apiError.message || errorMessage;
                 }
             } else if (error instanceof Error) {
                 errorMessage = error.message;
             }
-            
+
             setError(errorMessage);
+        } finally {
+            setLoading(false);
         }
     };
 
     const fetchLearningPaths = async () => {
         console.log('🔍 COMPONENT: Fetching learning paths with authApi...');
-        
+
         try {
             const pathsData = await authApi.getLearningPaths();
             console.log('✅ COMPONENT: Learning paths received:', pathsData);
@@ -147,36 +182,6 @@ const DecisionPathUI = () => {
         } catch (error) {
             console.error('❌ COMPONENT: Failed to fetch learning paths:', error);
             // Don't set error here as this is optional data
-        }
-    };
-
-    const fetchCompetencyForSkill = async (skillId: string, subskillId?: string) => {
-        if (!userProfile?.student_id || !selectedSubject) {
-            console.warn('Cannot fetch competency: missing student_id or subject');
-            return;
-        }
-
-        try {
-            let competency;
-            if (subskillId) {
-                competency = await authApi.getSubskillCompetency({
-                    subject: selectedSubject,
-                    skill: skillId,
-                    subskill: subskillId,
-                });
-            } else {
-                competency = await authApi.getSkillCompetency({
-                    subject: selectedSubject,
-                    skill: skillId,
-                });
-            }
-
-            if (competency) {
-                const key = subskillId ? subskillId : skillId;
-                setCompetencyScores(prevScores => new Map(prevScores).set(key, competency));
-            }
-        } catch (error) {
-            console.error(`Error fetching competency for ${subskillId || skillId}:`, error);
         }
     };
 
@@ -205,14 +210,14 @@ const DecisionPathUI = () => {
         fetchData();
     }, [user, authLoading]);
 
-    // Effect to fetch curriculum when subject changes
+    // Effect to fetch visualization data when subject changes
     useEffect(() => {
         if (selectedSubject && !subjectsLoading) {
             console.log(`🔍 COMPONENT: Subject changed to: ${selectedSubject}`);
-            fetchCurriculumData(selectedSubject);
+            fetchVisualizationData(selectedSubject);
             fetchLearningPaths();
         }
-    }, [selectedSubject, subjectsLoading]);
+    }, [selectedSubject, subjectsLoading, userProfile?.student_id]);
 
     // Effect to set loading state
     useEffect(() => {
@@ -221,68 +226,44 @@ const DecisionPathUI = () => {
         }
     }, [subjectsLoading, selectedSubject, curriculumData]);
 
-    const handleChoice = async (choice: string) => {
-        if (!user) {
-            console.warn('Cannot make choice: user not authenticated');
-            return;
-        }
-
-        setCompletedChoices(prev => new Set([...prev, choice]));
-        setCurrentSkillId(choice);
-
-        if (curriculumData) {
-            const selectedSkill = curriculumData.curriculum.flatMap(unit => unit.skills).find(skill => skill.id === choice);
-            if (selectedSkill && selectedSkill.subskills) {
-                const subskillIds = selectedSkill.subskills.map(subskill => subskill.id);
-                setUnlockedPaths(subskillIds);
-            } else {
-                setUnlockedPaths([]);
-            }
-        }
-    };
 
     const handleExpandSkill = async (skillId: string) => {
-        if (!user) {
-            console.warn('Cannot expand skill: user not authenticated');
+        if (!userProfile?.student_id) {
+            console.warn('Cannot expand skill: missing student_id');
             return;
         }
 
-        setExpandedSkillId(prevExpandedSkillId => {
-            const isExpanding = prevExpandedSkillId !== skillId;
-            if (isExpanding && curriculumData) {
-                const selectedSkill = curriculumData.curriculum
-                    .flatMap(unit => unit.skills)
-                    .find(skill => skill.id === skillId);
-                    
-                if (selectedSkill) {
-                    // Fetch skill level competency first
-                    fetchCompetencyForSkill(skillId);
-                    
-                    // Then fetch all subskill competencies
-                    if (selectedSkill.subskills) {
-                        selectedSkill.subskills.forEach(subskill => 
-                            fetchCompetencyForSkill(skillId, subskill.id)
-                        );
-                    }
-                }
-            }
-            return isExpanding ? skillId : null;
-        });
+        // Toggle expansion
+        if (expandedSkillId === skillId) {
+            setExpandedSkillId(null);
+            setExpandedSkillDetails(null);
+            return;
+        }
+
+        try {
+            // Fetch detailed skill information
+            const details = await authApi.getSkillDetails(
+                skillId,
+                userProfile.student_id
+            ) as SkillDetailsResponse;
+
+            console.log('✅ COMPONENT: Skill details received:', details);
+            setExpandedSkillDetails(details);
+            setExpandedSkillId(skillId);
+
+        } catch (error) {
+            console.error(`❌ COMPONENT: Failed to fetch skill details for ${skillId}:`, error);
+        }
     };
 
     const resetProgress = () => {
-        setCompletedChoices(new Set());
-        setCompetencyScores(new Map());
         setExpandedSkillId(null);
-        
-        // Reset to first skill of current subject
-        if (curriculumData?.curriculum && curriculumData.curriculum.length > 0) {
-            const firstUnit = curriculumData.curriculum[0];
-            if (firstUnit.skills && firstUnit.skills.length > 0) {
-                setUnlockedPaths([firstUnit.skills[0].id]);
-            }
+        setExpandedSkillDetails(null);
+
+        // Refetch visualization data to get latest state
+        if (selectedSubject) {
+            fetchVisualizationData(selectedSubject);
         }
-        setCurrentSkillId(null);
     };
 
     const handleSubjectChange = (newSubject: string) => {
@@ -298,27 +279,12 @@ const DecisionPathUI = () => {
         setError(null);
         setLoading(true);
         if (selectedSubject) {
-            fetchCurriculumData(selectedSubject);
+            fetchVisualizationData(selectedSubject);
         } else {
             fetchAvailableSubjects();
         }
     };
 
-    const getAvailableChoices = () => {
-        if (!curriculumData) return [];
-
-        return unlockedPaths.map(skillId => {
-            const skill = curriculumData.curriculum.flatMap(unit => unit.skills).find(s => s.id === skillId);
-            return {
-                path: 'skills',
-                choice: skillId,
-                description: skill?.description,
-                skill_description: skill?.description,
-                subject: curriculumData.subject,
-                subskills: skill?.subskills
-            };
-        }).filter(choice => !completedChoices.has(choice.choice));
-    };
 
     // Debug function to test auth API
     const debugAuthApi = async () => {
@@ -508,8 +474,12 @@ const DecisionPathUI = () => {
         );
     }
 
-    const allSkillsCount = curriculumData.curriculum.flatMap(unit => unit.skills).length;
-    const availableChoices = getAvailableChoices();
+    // Calculate progress based on visualization data
+    const allSkillsCount = visualizationData?.skills.length || 0;
+    const totalSubskills = visualizationData?.skills.reduce((sum, skill) => sum + skill.subskills.length, 0) || 0;
+    const masteredSubskills = visualizationData?.skills
+        .flatMap(skill => skill.subskills)
+        .filter(subskill => (subskill.student_data?.proficiency || 0) >= 0.8).length || 0;
 
     return (
         <Card className="w-full max-w-4xl mx-auto">
@@ -561,6 +531,60 @@ const DecisionPathUI = () => {
                     </div>
                 )}
 
+                {/* Recommendations Section */}
+                {recommendations.length > 0 && (
+                    <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                            🎯 Recommended for You
+                        </h3>
+                        <div className="space-y-2">
+                            {recommendations.map((rec) => (
+                                <div key={rec.entity_id} className="p-3 bg-white rounded-lg border border-yellow-100 hover:border-yellow-300 transition-colors">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-semibold text-gray-900">{rec.description}</span>
+                                                <span className={`px-2 py-0.5 text-xs rounded font-medium ${
+                                                    rec.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                    {rec.priority === 'high' ? '🔥 High Priority' : '📈 Medium Priority'}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-600 mb-1">
+                                                Part of: <span className="font-medium">{rec.skill_description}</span>
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {rec.message} • {rec.reason.replace('_', ' ')}
+                                            </p>
+                                            {rec.current_proficiency > 0 && (
+                                                <div className="mt-2">
+                                                    <div className="flex justify-between text-xs mb-1">
+                                                        <span>Current Progress</span>
+                                                        <span>{(rec.current_proficiency * 100).toFixed(0)}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                        <div
+                                                            className="bg-blue-500 rounded-full h-1.5 transition-all"
+                                                            style={{ width: `${rec.current_proficiency * 100}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => handleExpandSkill(rec.skill_id)}
+                                            className="ml-4"
+                                        >
+                                            View
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="mb-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold">
@@ -568,7 +592,7 @@ const DecisionPathUI = () => {
                         </h2>
                         <div className="flex items-center gap-4">
                             <span className="text-sm">
-                                Progress: {completedChoices.size}/{allSkillsCount} Skills
+                                Mastered: {masteredSubskills}/{totalSubskills} Subskills ({allSkillsCount} Skills)
                             </span>
                             <Button
                                 variant="outline"
@@ -576,7 +600,7 @@ const DecisionPathUI = () => {
                                 className="flex items-center gap-2"
                             >
                                 <RotateCcw className="w-4 h-4" />
-                                Reset
+                                Refresh
                             </Button>
                         </div>
                     </div>
@@ -584,95 +608,162 @@ const DecisionPathUI = () => {
                     <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                             className="bg-blue-500 rounded-full h-2 transition-all duration-300"
-                            style={{ width: `${(completedChoices.size / allSkillsCount) * 100}%` }}
+                            style={{ width: `${totalSubskills > 0 ? (masteredSubskills / totalSubskills) * 100 : 0}%` }}
                         />
                     </div>
                 </div>
 
                 <div className="space-y-6">
-                    {completedChoices.size < allSkillsCount ? (
+                    {visualizationData?.skills && visualizationData.skills.length > 0 ? (
                         <>
                             <div className="grid grid-cols-1 gap-6">
-                                {availableChoices.map((choiceItem) => (
-                                    <Card key={choiceItem.choice} className={`relative text-left border rounded-lg p-4 ${
-                                      expandedSkillId === choiceItem.choice ? 'bg-blue-50' : 'hover:bg-blue-50 cursor-pointer'
-                                  }`} onClick={() => handleExpandSkill(choiceItem.choice)}>
-                                      <CardHeader className="p-0 mb-2">
-                                          <CardTitle className="text-lg font-semibold">{choiceItem.choice}</CardTitle>
-                                      </CardHeader>
-                                      <CardContent className="p-0">
-                                          <p className="text-sm text-gray-700 mb-4">{choiceItem.description}</p>
-                                          {competencyScores.get(choiceItem.choice)?.current_score !== undefined && (
-                                              <span className="text-xs text-blue-700 mt-1">
-                                                  Competency: {(competencyScores.get(choiceItem.choice)?.current_score || 0) * 100}%
-                                              </span>
-                                          )}
-                                          
-                                          {expandedSkillId === choiceItem.choice && choiceItem.subskills && (
-                                              <div className="space-y-4 mt-4">
-                                                  <h4 className="font-semibold">Subskills:</h4>
-                                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                      {choiceItem.subskills.map((subskill) => {
-                                                          const competencyData = competencyScores.get(subskill.id);
-                                                          return (
-                                                              <Card key={subskill.id} className="p-4 relative flex flex-col justify-between h-64">
-                                                                  <CardContent className="p-0">
-                                                                      {completedChoices.has(subskill.id) && (
-                                                                          <CheckCircle className="absolute top-2 right-2 w-4 h-4 text-green-500" />
-                                                                      )}
-                                                                      <div className="flex flex-col items-start gap-1">
-                                                                          <span className="font-semibold">{subskill.id}</span>
-                                                                          <span className="text-sm text-gray-700">{subskill.description}</span>
-                                                                          {competencyData?.current_score !== undefined && (
-                                                                              <span className="text-xs text-blue-700 mt-1">
-                                                                                  Competency: {(competencyData.current_score * 100).toFixed(0)}%
-                                                                              </span>
-                                                                          )}
-                                                                      </div>
-                                                                  </CardContent>
-                                                                  <CardContent className="flex justify-around p-0 border-t mt-4 pt-2">
-                                                                      <Button variant="secondary" size="sm">Teaching</Button>
-                                                                       <Button variant="secondary" size="sm">Practice</Button>
-                                                              </CardContent>
-                                                              </Card>
-                                                          );
-                                                      })}
-                                                  </div>
-                                              </div>
-                                          )}
-                                          {expandedSkillId !== choiceItem.choice && (
-                                              <div className="mt-4 text-blue-600 text-sm">Click to see subskills</div>
-                                          )}
-                                      </CardContent>
-                                  </Card>
-                                ))}
+                                {visualizationData.skills.map((skill) => {
+                                    // Calculate skill-level progress
+                                    const unlockedSubskills = skill.subskills.filter(s => s.student_data?.unlocked);
+                                    const totalSubskills = skill.subskills.length;
+                                    const avgProficiency = skill.subskills
+                                        .filter(s => s.student_data)
+                                        .reduce((sum, s) => sum + (s.student_data?.proficiency || 0), 0) /
+                                        (skill.subskills.filter(s => s.student_data).length || 1);
+
+                                    return (
+                                        <Card key={skill.skill_id} className={`relative text-left border rounded-lg p-4 ${
+                                            expandedSkillId === skill.skill_id ? 'bg-blue-50' : 'hover:bg-blue-50 cursor-pointer'
+                                        }`} onClick={() => handleExpandSkill(skill.skill_id)}>
+                                            <CardHeader className="p-0 mb-2">
+                                                <div className="flex items-center justify-between">
+                                                    <CardTitle className="text-lg font-semibold">{skill.skill_id}</CardTitle>
+                                                    <span className="text-xs text-gray-500">
+                                                        {unlockedSubskills.length}/{totalSubskills} unlocked
+                                                    </span>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="p-0">
+                                                <p className="text-sm text-gray-700 mb-4">{skill.title}</p>
+
+                                                {/* Skill-level progress */}
+                                                <div className="mb-3">
+                                                    <div className="flex justify-between text-xs mb-1">
+                                                        <span>Overall Progress</span>
+                                                        <span>{(avgProficiency * 100).toFixed(0)}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div
+                                                            className={`rounded-full h-2 transition-all ${
+                                                                avgProficiency >= 0.8 ? 'bg-green-500' :
+                                                                avgProficiency >= 0.5 ? 'bg-yellow-500' : 'bg-blue-500'
+                                                            }`}
+                                                            style={{ width: `${avgProficiency * 100}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Show prerequisites if any */}
+                                                {skill.prerequisites.length > 0 && (
+                                                    <div className="mb-3 text-xs text-gray-600">
+                                                        Prerequisites: {skill.prerequisites.map(p => p.prerequisite_id).join(', ')}
+                                                    </div>
+                                                )}
+
+                                                {expandedSkillId === skill.skill_id && (
+                                                    <div className="space-y-4 mt-4">
+                                                        <h4 className="font-semibold">Subskills:</h4>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                            {skill.subskills.map((subskill) => {
+                                                                const isUnlocked = subskill.student_data?.unlocked ?? false;
+                                                                const proficiency = subskill.student_data?.proficiency || 0;
+                                                                const attempts = subskill.student_data?.attempts || 0;
+
+                                                                return (
+                                                                    <Card key={subskill.subskill_id} className="p-4 relative flex flex-col justify-between min-h-[16rem]">
+                                                                        <CardContent className="p-0 relative">
+                                                                            {/* Lock overlay for locked subskills */}
+                                                                            {!isUnlocked && (
+                                                                                <div className="absolute inset-0 bg-gray-900 bg-opacity-40 rounded flex items-center justify-center z-10">
+                                                                                    <Lock className="w-8 h-8 text-white" />
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Unlocked indicator */}
+                                                                            {isUnlocked && proficiency >= 0.8 && (
+                                                                                <CheckCircle className="absolute top-2 right-2 w-4 h-4 text-green-500" />
+                                                                            )}
+
+                                                                            <div className="flex flex-col items-start gap-1">
+                                                                                <span className="font-semibold text-sm">{subskill.subskill_id}</span>
+                                                                                <span className="text-sm text-gray-700">{subskill.description}</span>
+
+                                                                                {/* Prerequisites info */}
+                                                                                {subskill.prerequisites.length > 0 && (
+                                                                                    <div className="mt-2 text-xs text-gray-500">
+                                                                                        Requires: {subskill.prerequisites.map(p => p.prerequisite_id).join(', ')}
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* Progress bar */}
+                                                                                {isUnlocked && (
+                                                                                    <div className="mt-3 w-full">
+                                                                                        <div className="flex justify-between text-xs mb-1">
+                                                                                            <span>Proficiency</span>
+                                                                                            <span>{(proficiency * 100).toFixed(0)}%</span>
+                                                                                        </div>
+                                                                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                                                                            <div
+                                                                                                className={`rounded-full h-2 transition-all ${
+                                                                                                    proficiency >= 0.8 ? 'bg-green-500' :
+                                                                                                    proficiency >= 0.5 ? 'bg-yellow-500' : 'bg-blue-500'
+                                                                                                }`}
+                                                                                                style={{ width: `${proficiency * 100}%` }}
+                                                                                            />
+                                                                                        </div>
+                                                                                        {attempts > 0 && (
+                                                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                                                {attempts} attempt{attempts !== 1 ? 's' : ''}
+                                                                                            </p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {!isUnlocked && (
+                                                                                    <div className="mt-3 text-xs text-red-600 font-medium">
+                                                                                        🔒 Locked - Complete prerequisites first
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </CardContent>
+                                                                        <CardContent className="flex justify-around p-0 border-t mt-4 pt-2">
+                                                                            <Button variant="secondary" size="sm" disabled={!isUnlocked}>
+                                                                                Teaching
+                                                                            </Button>
+                                                                            <Button variant="secondary" size="sm" disabled={!isUnlocked}>
+                                                                                Practice
+                                                                            </Button>
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {expandedSkillId !== skill.skill_id && (
+                                                    <div className="mt-4 text-blue-600 text-sm">Click to see subskills</div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
                             </div>
                         </>
                     ) : (
-                        <div className="text-center p-6 bg-green-50 rounded-lg">
-                            <h3 className="text-xl font-bold text-green-600 mb-4">
-                                All Skills Complete!
+                        <div className="text-center p-6 bg-gray-50 rounded-lg">
+                            <h3 className="text-xl font-bold text-gray-600 mb-4">
+                                No skills available
                             </h3>
-                            <div className="flex flex-wrap justify-center gap-2">
-                                {Array.from(completedChoices).map((choice, index) => (
-                                    <span key={index} className="px-3 py-1 bg-green-100 rounded">
-                                        {choice}
-                                    </span>
-                                ))}
-                            </div>
+                            <p className="text-gray-500">
+                                Please select a different subject or check back later.
+                            </p>
                         </div>
                     )}
-                </div>
-
-                <div className="mt-6 pt-4 border-t">
-                    <h4 className="font-semibold mb-2">Completed Skills:</h4>
-                    <div className="flex flex-wrap gap-2">
-                        {Array.from(completedChoices).map((choice, index) => (
-                            <span key={index} className="px-2 py-1 bg-blue-100 rounded text-sm">
-                                {choice}
-                            </span>
-                        ))}
-                    </div>
                 </div>
             </CardContent>
         </Card>
