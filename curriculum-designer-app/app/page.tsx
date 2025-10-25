@@ -7,12 +7,13 @@ import { EntityEditor } from '@/components/curriculum-designer/editor/EntityEdit
 import { PrerequisitePanel } from '@/components/curriculum-designer/prerequisites/PrerequisitePanel';
 import { DraftSummary } from '@/components/curriculum-designer/publishing/DraftSummary';
 import { VersionHistory } from '@/components/curriculum-designer/publishing/VersionHistory';
+import { GraphCachePanel } from '@/components/curriculum-designer/graph/GraphCachePanel';
 import { AIUnitGenerator } from '@/components/curriculum-designer/ai/AIUnitGenerator';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Plus, Save, GitBranch, Sparkles } from 'lucide-react';
+import { Loader2, Plus, Save, GitBranch, Sparkles, Database } from 'lucide-react';
 import type { SelectedEntity } from '@/types/curriculum-authoring';
 
 export default function CurriculumDesignerPage() {
@@ -20,7 +21,7 @@ export default function CurriculumDesignerPage() {
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | undefined>();
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showPrerequisites, setShowPrerequisites] = useState(false);
-  const [activeTab, setActiveTab] = useState<'editor' | 'prerequisites' | 'drafts' | 'versions'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'prerequisites' | 'drafts' | 'versions' | 'cache'>('editor');
   const [sidebarWidth, setSidebarWidth] = useState(384); // 384px = w-96
   const [isResizing, setIsResizing] = useState(false);
 
@@ -133,6 +134,15 @@ export default function CurriculumDesignerPage() {
                   <GitBranch className="mr-2 h-4 w-4" />
                   Versions
                 </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveTab('cache')}
+                >
+                  <Database className="mr-2 h-4 w-4" />
+                  Cache
+                </Button>
               </>
             )}
           </div>
@@ -204,6 +214,7 @@ export default function CurriculumDesignerPage() {
                   </TabsTrigger>
                   <TabsTrigger value="drafts">Draft Changes</TabsTrigger>
                   <TabsTrigger value="versions">Version History</TabsTrigger>
+                  <TabsTrigger value="cache">Graph Cache</TabsTrigger>
                 </TabsList>
               </div>
 
@@ -242,6 +253,10 @@ export default function CurriculumDesignerPage() {
 
                 <TabsContent value="versions" className="mt-0">
                   <VersionHistory subjectId={selectedSubjectId} />
+                </TabsContent>
+
+                <TabsContent value="cache" className="mt-0">
+                  <GraphCachePanel subjectId={selectedSubjectId} />
                 </TabsContent>
               </div>
             </Tabs>

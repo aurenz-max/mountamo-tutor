@@ -13,6 +13,8 @@ import logging
 from ...core.config import settings
 from ...core.middleware import get_user_context
 from ...services.weekly_planner import WeeklyPlannerService
+from ...services.learning_paths import LearningPathsService
+from ...dependencies import get_learning_paths_service
 from ...models.weekly_plan import (
     WeeklyPlan, WeeklyPlanGenerationRequest,
     WeeklyPlanSummary, DayPlanSummary
@@ -23,14 +25,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def get_weekly_planner_service() -> WeeklyPlannerService:
-    """Get configured weekly planner service"""
+async def get_weekly_planner_service(
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service)
+) -> WeeklyPlannerService:
+    """
+    Get configured weekly planner service with LearningPathsService integration
+
+    PRD WP-LP-INT-001: Weekly planner now uses dynamic prerequisite-based unlocking
+    """
     cosmos_db_service = CosmosDBService()
 
     return WeeklyPlannerService(
         project_id=settings.GCP_PROJECT_ID,
         dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics'),
-        cosmos_db_service=cosmos_db_service
+        cosmos_db_service=cosmos_db_service,
+        learning_paths_service=learning_paths_service
     )
 
 

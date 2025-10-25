@@ -38,6 +38,35 @@ interface CachedSubjectsList {
   count: number;
 }
 
+interface CachedGraphDocument {
+  id: string;
+  subject_id: string;
+  version_id: string;
+  version_type: string;
+  generated_at: string;
+  last_accessed: string;
+  metadata: {
+    entity_counts: {
+      skills: number;
+      subskills: number;
+      total: number;
+    };
+    edge_count: number;
+    include_drafts: boolean;
+  };
+}
+
+interface CachedGraphsList {
+  cached_graphs: CachedGraphDocument[];
+  count: number;
+}
+
+interface DeleteGraphsResponse {
+  message: string;
+  deleted_count: number;
+  requested_ids?: string[];
+}
+
 class CurriculumGraphAPI {
   private baseURL: string;
 
@@ -225,7 +254,54 @@ class CurriculumGraphAPI {
       '/api/graph/cache/list'
     );
   }
+
+  /**
+   * List all cached graph documents with metadata
+   *
+   * Returns detailed information about all cached graphs including:
+   * - Document IDs
+   * - Subject IDs
+   * - Version types (draft/published)
+   * - Generation and access timestamps
+   * - Metadata (node counts, edge counts)
+   */
+  async listAllCachedGraphs(): Promise<CachedGraphsList> {
+    return this.request<CachedGraphsList>(
+      '/api/graph/cache/list-all'
+    );
+  }
+
+  /**
+   * Delete ALL cached graph documents (use with caution!)
+   *
+   * This is useful for cleaning up accumulated cache documents.
+   * After deletion, graphs will be regenerated on next request.
+   */
+  async deleteAllCachedGraphs(): Promise<DeleteGraphsResponse> {
+    return this.request<DeleteGraphsResponse>(
+      '/api/graph/cache/delete-all',
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Delete specific cached graphs by their document IDs
+   *
+   * @param documentIds - Array of document IDs to delete
+   * @example
+   * deleteGraphsByIds(['SCIENCE_latest_20251025_114839_draft'])
+   */
+  async deleteGraphsByIds(documentIds: string[]): Promise<DeleteGraphsResponse> {
+    return this.request<DeleteGraphsResponse>(
+      '/api/graph/cache/delete-by-ids',
+      {
+        method: 'DELETE',
+        body: JSON.stringify(documentIds)
+      }
+    );
+  }
 }
 
 export const curriculumGraphAPI = new CurriculumGraphAPI(AUTHORING_API_BASE_URL);
 export default curriculumGraphAPI;
+export type { GraphStatus, CachedSubjectsList, CachedGraphDocument, CachedGraphsList, DeleteGraphsResponse };

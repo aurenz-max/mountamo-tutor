@@ -42,6 +42,7 @@ export const QUERY_KEYS = {
   activeVersion: (subjectId: string) => ['activeVersion', subjectId] as const,
   graphStatus: (subjectId: string) => ['graphStatus', subjectId] as const,
   cachedSubjects: () => ['cachedSubjects'] as const,
+  allCachedGraphs: () => ['allCachedGraphs'] as const,
 };
 
 // ==================== CURRICULUM HOOKS ====================
@@ -446,6 +447,44 @@ export function useInvalidateGraphCache() {
       queryClient.invalidateQueries({ queryKey: ['graphStatus', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['subjectGraph', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['cachedSubjects'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.allCachedGraphs() });
+    },
+  });
+}
+
+export function useAllCachedGraphs() {
+  return useQuery({
+    queryKey: QUERY_KEYS.allCachedGraphs(),
+    queryFn: () => curriculumGraphAPI.listAllCachedGraphs(),
+  });
+}
+
+export function useDeleteAllCachedGraphs() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => curriculumGraphAPI.deleteAllCachedGraphs(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.allCachedGraphs() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.cachedSubjects() });
+      // Invalidate all graph statuses
+      queryClient.invalidateQueries({ queryKey: ['graphStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['subjectGraph'] });
+    },
+  });
+}
+
+export function useDeleteGraphsByIds() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (documentIds: string[]) => curriculumGraphAPI.deleteGraphsByIds(documentIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.allCachedGraphs() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.cachedSubjects() });
+      // Invalidate all graph statuses
+      queryClient.invalidateQueries({ queryKey: ['graphStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['subjectGraph'] });
     },
   });
 }

@@ -230,12 +230,20 @@ class CurriculumParser:
 
 class DailyActivitiesService:
     """Enhanced service with curriculum metadata support"""
-    
-    def __init__(self, analytics_service=None, ai_recommendation_service=None, curriculum_service=None, cosmos_db_service=None):
+
+    def __init__(
+        self,
+        analytics_service=None,
+        ai_recommendation_service=None,
+        curriculum_service=None,
+        cosmos_db_service=None,
+        learning_paths_service=None
+    ):
         self.analytics_service = analytics_service
         self.ai_recommendation_service = ai_recommendation_service
         self.curriculum_service = curriculum_service
         self.cosmos_db_service = cosmos_db_service
+        self.learning_paths_service = learning_paths_service
     
     async def get_or_generate_daily_plan(self, student_id: int, date: Optional[str] = None, force_refresh: bool = False) -> DailyPlan:
         """
@@ -426,11 +434,12 @@ class DailyActivitiesService:
                 try:
                     from ..services.weekly_planner import WeeklyPlannerService
 
-                    # Create weekly planner service instance
+                    # Create weekly planner service instance (PRD WP-LP-INT-001)
                     weekly_planner = WeeklyPlannerService(
                         project_id=self.analytics_service.project_id if self.analytics_service else None,
                         dataset_id=self.analytics_service.dataset_id if self.analytics_service else 'analytics',
-                        cosmos_db_service=self.cosmos_db_service
+                        cosmos_db_service=self.cosmos_db_service,
+                        learning_paths_service=self.learning_paths_service
                     )
 
                     # Generate the weekly plan (saves automatically to Cosmos DB)

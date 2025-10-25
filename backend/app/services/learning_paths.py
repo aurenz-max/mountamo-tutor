@@ -287,11 +287,19 @@ class LearningPathsService:
                 AND cp.prerequisite_entity_type = sp.entity_type
               WHERE cp.is_draft = FALSE
                 AND (@entity_type IS NULL OR cp.unlocks_entity_type = @entity_type)
-                AND (@subject IS NULL OR EXISTS (
-                  SELECT 1 FROM `{self.project_id}.{self.dataset_id}.curriculum` c
-                  WHERE (c.skill_id = cp.unlocks_entity_id OR c.subskill_id = cp.unlocks_entity_id)
-                    AND c.subject = @subject
-                ))
+                AND (
+                  @subject IS NULL
+                  OR EXISTS (
+                    SELECT 1 FROM `{self.project_id}.{self.dataset_id}.curriculum` c
+                    WHERE c.skill_id = cp.unlocks_entity_id
+                      AND c.subject = @subject
+                  )
+                  OR EXISTS (
+                    SELECT 1 FROM `{self.project_id}.{self.dataset_id}.curriculum` c
+                    WHERE c.subskill_id = cp.unlocks_entity_id
+                      AND c.subject = @subject
+                  )
+                )
             ),
             entities_with_met_prerequisites AS (
               -- Entities where ALL prerequisites are met

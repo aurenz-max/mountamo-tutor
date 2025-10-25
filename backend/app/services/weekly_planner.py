@@ -28,10 +28,17 @@ logger = logging.getLogger(__name__)
 class WeeklyPlannerService:
     """Service for generating proactive weekly learning plans"""
 
-    def __init__(self, project_id: str, dataset_id: str = "analytics", cosmos_db_service=None):
+    def __init__(
+        self,
+        project_id: str,
+        dataset_id: str = "analytics",
+        cosmos_db_service=None,
+        learning_paths_service=None
+    ):
         self.project_id = project_id
         self.dataset_id = dataset_id
         self.cosmos_db_service = cosmos_db_service
+        self.learning_paths_service = learning_paths_service
         self.bigquery_client = bigquery.Client(project=project_id)
 
         # Initialize Gemini client
@@ -41,6 +48,8 @@ class WeeklyPlannerService:
         self.gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
         logger.info("📅 WeeklyPlannerService initialized")
+        if learning_paths_service:
+            logger.info("📅 WeeklyPlannerService: LearningPathsService integration enabled (PRD: WP-LP-INT-001)")
 
     async def generate_weekly_plan(
         self,
@@ -145,15 +154,21 @@ class WeeklyPlannerService:
     async def _fetch_student_analytics_snapshot(self, student_id: int) -> Dict[str, Any]:
         """
         Fetch student's velocity metrics and available subskills from BigQuery
-        This is the input data for the LLM-based weekly planner
+
+        PRD WP-LP-INT-001 (FR2): Now uses LearningPathsService for dynamic prerequisite-based unlocking
+
+        Process:
+        1. Query student_velocity_metrics for subjects and velocity data
+        2. For each subject, call learning_paths_service.get_unlocked_entities()
+        3. Enrich unlocked subskill IDs with curriculum metadata via BigQuery
+        4. Combine into analytics_snapshot structure for LLM
         """
-        logger.info(f"📊 Fetching analytics snapshot for student {student_id}")
+        logger.info(f"📊 WEEKLY_PLANNER: Fetching analytics snapshot for student {student_id}")
 
         try:
-            # Query similar to AI recommendations service but optimized for weekly planning
-            snapshot_query = f"""
-            WITH velocity_data AS (
-              SELECT
+            # Step 1: Fetch velocity metrics for all subjects
+            velocity_query = f"""
+            SELECT
                 subject,
                 velocity_status,
                 velocity_percentage,
@@ -162,85 +177,125 @@ class WeeklyPlannerService:
                 actual_progress,
                 expected_progress,
                 total_subskills_in_subject
-              FROM `{self.project_id}.{self.dataset_id}.student_velocity_metrics`
-              WHERE student_id = @student_id
-            ),
-            available_skills AS (
-              SELECT
-                a.subject,
-                a.subskill_id,
-                a.subskill_description,
-                a.skill_description,
-                a.subskill_mastery_pct,
-                a.unlock_score,
-                a.difficulty_start,
-                a.readiness_status,
-                c.unit_id,
-                c.unit_title,
-                c.skill_id,
-                c.target_difficulty,
-                c.grade,
-                ROW_NUMBER() OVER (PARTITION BY a.subject ORDER BY a.unlock_score DESC) as skill_rank
-              FROM `{self.project_id}.{self.dataset_id}.student_available_subskills` a
-              LEFT JOIN `{self.project_id}.{self.dataset_id}.curriculum` c
-                ON a.subskill_id = c.subskill_id
-                AND a.skill_id = c.skill_id
-                AND a.subject = c.subject
-              WHERE a.student_id = @student_id AND a.is_available = TRUE
-            )
-            SELECT
-              v.subject,
-              v.velocity_status,
-              v.velocity_percentage,
-              v.days_ahead_behind,
-              v.recommendation_priority,
-              v.actual_progress,
-              v.expected_progress,
-              v.total_subskills_in_subject,
-              ARRAY_AGG(
-                STRUCT(
-                  a.subskill_id,
-                  a.subskill_description,
-                  a.skill_description,
-                  a.unit_id,
-                  a.unit_title,
-                  a.skill_id,
-                  a.subskill_mastery_pct,
-                  a.unlock_score,
-                  a.difficulty_start,
-                  a.target_difficulty,
-                  a.grade,
-                  a.readiness_status
-                )
-                ORDER BY a.skill_rank
-                LIMIT 10  -- Get top 10 available subskills per subject for weekly planning
-              ) as available_subskills
-            FROM velocity_data v
-            LEFT JOIN available_skills a ON v.subject = a.subject AND a.skill_rank <= 10
-            GROUP BY v.subject, v.velocity_status, v.velocity_percentage,
-                     v.days_ahead_behind, v.recommendation_priority,
-                     v.actual_progress, v.expected_progress, v.total_subskills_in_subject
-            ORDER BY v.recommendation_priority
+            FROM `{self.project_id}.{self.dataset_id}.student_velocity_metrics`
+            WHERE student_id = @student_id
+            ORDER BY recommendation_priority
             """
 
-            results = await self._run_query_async(snapshot_query, [
+            velocity_results = await self._run_query_async(velocity_query, [
                 bigquery.ScalarQueryParameter("student_id", "INT64", student_id)
             ])
 
-            if not results:
+            if not velocity_results:
+                logger.warning(f"❌ WEEKLY_PLANNER: No velocity data found for student {student_id}")
                 return None
 
+            logger.info(f"📊 WEEKLY_PLANNER: Found velocity data for {len(velocity_results)} subjects")
+
+            # Step 2: Get unlocked subskills for each subject using LearningPathsService
+            if not self.learning_paths_service:
+                logger.error(f"❌ WEEKLY_PLANNER: LearningPathsService not initialized (PRD NFR: fail fast)")
+                raise ValueError("LearningPathsService is required for weekly plan generation")
+
+            # Fetch unlocked entities in parallel for all subjects
+            unlock_tasks = [
+                self.learning_paths_service.get_unlocked_entities(
+                    student_id=student_id,
+                    entity_type='subskill',
+                    subject=subject_data['subject']
+                )
+                for subject_data in velocity_results
+            ]
+
+            unlocked_by_subject = await asyncio.gather(*unlock_tasks, return_exceptions=True)
+
+            # Check for failures in parallel tasks
+            for idx, result in enumerate(unlocked_by_subject):
+                if isinstance(result, Exception):
+                    subject = velocity_results[idx]['subject']
+                    logger.error(f"❌ WEEKLY_PLANNER: Failed to get unlocked entities for {subject}: {result}")
+                    raise result
+
+            logger.info(f"✅ WEEKLY_PLANNER: Retrieved unlocked entities for all subjects")
+
+            # Step 3: Enrich unlocked subskills with curriculum metadata
+            enriched_subjects = []
+
+            for subject_data, unlocked_subskill_ids in zip(velocity_results, unlocked_by_subject):
+                subject = subject_data['subject']
+
+                if not unlocked_subskill_ids:
+                    logger.warning(f"⚠️ WEEKLY_PLANNER: No unlocked subskills for {subject} (PRD Open Question: assigning no activities)")
+                    subject_data['available_subskills'] = []
+                    enriched_subjects.append(subject_data)
+                    continue
+
+                logger.info(f"📊 WEEKLY_PLANNER: {subject} has {len(unlocked_subskill_ids)} unlocked subskills")
+
+                # Query curriculum metadata for unlocked subskills
+                enrichment_query = f"""
+                SELECT
+                    subject,
+                    subskill_id,
+                    subskill_description,
+                    skill_description,
+                    skill_id,
+                    unit_id,
+                    unit_title,
+                    difficulty_start,
+                    target_difficulty,
+                    grade,
+                    subskill_order
+                FROM `{self.project_id}.{self.dataset_id}.curriculum`
+                WHERE subskill_id IN UNNEST(@unlocked_subskill_ids)
+                    AND subject = @subject
+                ORDER BY unit_order, skill_order, subskill_order
+                LIMIT 10
+                """
+
+                enrichment_results = await self._run_query_async(enrichment_query, [
+                    bigquery.ArrayQueryParameter("unlocked_subskill_ids", "STRING", list(unlocked_subskill_ids)),
+                    bigquery.ScalarQueryParameter("subject", "STRING", subject)
+                ])
+
+                # Build available_subskills array for this subject
+                available_subskills = [
+                    {
+                        "subskill_id": row["subskill_id"],
+                        "subskill_description": row["subskill_description"],
+                        "skill_description": row["skill_description"],
+                        "skill_id": row["skill_id"],
+                        "unit_id": row["unit_id"],
+                        "unit_title": row["unit_title"],
+                        "difficulty_start": row.get("difficulty_start"),
+                        "target_difficulty": row.get("target_difficulty"),
+                        "grade": row.get("grade"),
+                        "subskill_mastery_pct": 0  # Not used by LLM, placeholder for compatibility
+                    }
+                    for row in enrichment_results
+                ]
+
+                subject_data['available_subskills'] = available_subskills
+                enriched_subjects.append(subject_data)
+
+                logger.info(f"✅ WEEKLY_PLANNER: Enriched {len(available_subskills)} subskills for {subject}")
+
+            # Step 4: Return analytics snapshot
             snapshot = {
                 "student_id": student_id,
                 "snapshot_date": datetime.utcnow().isoformat(),
-                "subjects": results
+                "subjects": enriched_subjects
             }
 
-            logger.info(f"✅ Retrieved analytics snapshot for {len(results)} subjects")
+            total_available = sum(len(s.get('available_subskills', [])) for s in enriched_subjects)
+            logger.info(f"✅ WEEKLY_PLANNER: Analytics snapshot complete - {len(enriched_subjects)} subjects, {total_available} available subskills")
+
             return snapshot
 
         except Exception as e:
-            logger.error(f"❌ Error fetching analytics snapshot: {e}")
+            logger.error(f"❌ WEEKLY_PLANNER: Error fetching analytics snapshot: {e}")
+            import traceback
+            logger.error(f"❌ WEEKLY_PLANNER: Stack trace: {traceback.format_exc()}")
             raise
 
     async def _get_recent_assessment_feedback(
@@ -405,7 +460,7 @@ class WeeklyPlannerService:
                     response_mime_type='application/json',
                     response_schema=weekly_plan_schema,
                     temperature=0.5,  # Balanced creativity and consistency
-                    max_output_tokens=8000  # Larger for weekly planning
+                    max_output_tokens=15000  # Larger for weekly planning
                 )
             )
 
@@ -528,7 +583,7 @@ class WeeklyPlannerService:
             for a in subject_allocations
         ]
 
-        # Build available subskills summary
+        # Build available subskills summary (PRD FR3: removed unlock_score and readiness_status)
         available_subskills_by_subject = {
             a["subject"]: [
                 {
@@ -538,8 +593,6 @@ class WeeklyPlannerService:
                     "skill_id": s.get("skill_id"),
                     "unit_id": s.get("unit_id"),
                     "unit_title": s.get("unit_title"),
-                    "readiness_status": s["readiness_status"],
-                    "mastery_pct": s.get("subskill_mastery_pct", 0),
                     "difficulty_start": s.get("difficulty_start"),
                     "target_difficulty": s.get("target_difficulty"),
                     "grade": s.get("grade")
@@ -586,6 +639,10 @@ Recent assessments identified skills that need immediate attention. These MUST b
 3. **Balance each day:** Aim for 4-5 activities per day with variety in subjects and activity types.
 4. **Activity progression:** Start with easier/review activities early in the week, build to more challenging topics by Friday.
 5. **Use ONLY subskills from the available options provided below.**
+
+**IMPORTANT - PREREQUISITE-BASED CURRICULUM (PRD WP-LP-INT-001):**
+The available subskills listed below have been dynamically unlocked for this student based on their proven mastery of all prerequisite skills. Each subskill is definitively ready for the student - they have met all proficiency thresholds for its dependencies. You can confidently assign any of these subskills knowing the student has the foundational knowledge required.
+
 {assessment_section}
 **STUDENT VELOCITY & SUBJECT ALLOCATIONS:**
 {json.dumps(allocation_summary, indent=2)}

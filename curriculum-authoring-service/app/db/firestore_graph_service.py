@@ -270,6 +270,79 @@ class CurriculumFirestore:
             logger.error(f"❌ Failed to list cached subjects: {e}")
             raise
 
+    async def list_all_graph_documents(self) -> List[Dict[str, Any]]:
+        """List all cached graph documents with metadata"""
+        try:
+            docs = self.curriculum_graphs.stream()
+
+            graph_docs = []
+            for doc in docs:
+                doc_data = doc.to_dict()
+                graph_docs.append({
+                    "id": doc_data.get("id"),
+                    "subject_id": doc_data.get("subject_id"),
+                    "version_id": doc_data.get("version_id"),
+                    "version_type": doc_data.get("version_type"),
+                    "generated_at": doc_data.get("generated_at"),
+                    "last_accessed": doc_data.get("last_accessed"),
+                    "metadata": doc_data.get("metadata", {})
+                })
+
+            # Sort by generated_at descending
+            graph_docs.sort(key=lambda x: x.get("generated_at", ""), reverse=True)
+
+            logger.info(f"✅ Found {len(graph_docs)} cached graph documents")
+            return graph_docs
+
+        except Exception as e:
+            logger.error(f"❌ Failed to list graph documents: {e}")
+            raise
+
+    async def delete_all_graph_documents(self) -> int:
+        """Delete ALL cached graph documents (use with caution!)"""
+        try:
+            docs = list(self.curriculum_graphs.stream())
+
+            deleted_count = 0
+            batch = self.client.batch()
+
+            for doc in docs:
+                batch.delete(doc.reference)
+                deleted_count += 1
+
+            # Commit batch delete
+            if deleted_count > 0:
+                batch.commit()
+
+            logger.info(f"✅ Deleted {deleted_count} graph document(s) from cache")
+            return deleted_count
+
+        except Exception as e:
+            logger.error(f"❌ Failed to delete all graph documents: {e}")
+            raise
+
+    async def delete_graph_documents_by_ids(self, document_ids: List[str]) -> int:
+        """Delete specific graph documents by their IDs"""
+        try:
+            deleted_count = 0
+            batch = self.client.batch()
+
+            for doc_id in document_ids:
+                doc_ref = self.curriculum_graphs.document(doc_id)
+                batch.delete(doc_ref)
+                deleted_count += 1
+
+            # Commit batch delete
+            if deleted_count > 0:
+                batch.commit()
+
+            logger.info(f"✅ Deleted {deleted_count} specific graph document(s)")
+            return deleted_count
+
+        except Exception as e:
+            logger.error(f"❌ Failed to delete specific graph documents: {e}")
+            raise
+
 
 # Global instance
 firestore_graph_service = CurriculumFirestore()

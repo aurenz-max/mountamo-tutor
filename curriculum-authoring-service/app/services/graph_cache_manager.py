@@ -103,8 +103,9 @@ class GraphCacheManager:
                 "include_drafts": include_drafts
             }
 
-            # Get version_id (use "latest" for now, will be enhanced with proper versioning)
-            version_id = f"latest_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+            # Use consistent version_id so we replace instead of creating new documents
+            # For draft/published caches, we use "latest" to ensure we replace the previous cache
+            version_id = "latest"
 
             # Cache in Firestore
             await firestore_graph_service.create_graph_document(
@@ -245,6 +246,55 @@ class GraphCacheManager:
 
         except Exception as e:
             logger.error(f"❌ Error listing cached subjects: {e}")
+            raise
+
+    async def list_all_cached_graphs(self) -> list[Dict[str, Any]]:
+        """List all cached graph documents with metadata"""
+        try:
+            graphs = await firestore_graph_service.list_all_graph_documents()
+            logger.info(f"📋 Listed {len(graphs)} cached graph documents")
+            return graphs
+
+        except Exception as e:
+            logger.error(f"❌ Error listing cached graphs: {e}")
+            raise
+
+    async def delete_all_cached_graphs(self) -> int:
+        """
+        Delete ALL cached graphs from Firestore (use with caution!)
+
+        This is useful for cleaning up accumulated cache documents.
+        After deletion, graphs will be regenerated on next request.
+
+        Returns:
+            Number of documents deleted
+        """
+        try:
+            deleted_count = await firestore_graph_service.delete_all_graph_documents()
+            logger.info(f"🗑️ Deleted all {deleted_count} cached graph documents")
+            return deleted_count
+
+        except Exception as e:
+            logger.error(f"❌ Error deleting all cached graphs: {e}")
+            raise
+
+    async def delete_cached_graphs_by_ids(self, document_ids: list[str]) -> int:
+        """
+        Delete specific cached graphs by their document IDs
+
+        Args:
+            document_ids: List of document IDs to delete (e.g., ["SCIENCE_latest_draft"])
+
+        Returns:
+            Number of documents deleted
+        """
+        try:
+            deleted_count = await firestore_graph_service.delete_graph_documents_by_ids(document_ids)
+            logger.info(f"🗑️ Deleted {deleted_count} specific cached graph documents")
+            return deleted_count
+
+        except Exception as e:
+            logger.error(f"❌ Error deleting specific cached graphs: {e}")
             raise
 
 
