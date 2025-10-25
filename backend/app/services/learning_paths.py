@@ -796,6 +796,9 @@ class LearningPathsService:
               c.subject,
               c.skill_id,
               c.skill_description,
+              c.unit_order,
+              c.skill_order,
+              c.subskill_order,
               COALESCE(sp.proficiency, 0) as proficiency,
               pc.prerequisites
             FROM unlocked_subskills us
@@ -808,13 +811,9 @@ class LearningPathsService:
             WHERE (@subject IS NULL OR c.subject = @subject)
               AND COALESCE(sp.proficiency, 0) < @mastery_threshold
             ORDER BY
-              -- Priority: coverage gap > performance gap > nearly mastered
-              CASE
-                WHEN COALESCE(sp.proficiency, 0) = 0 THEN 1
-                WHEN COALESCE(sp.proficiency, 0) < 0.6 THEN 2
-                ELSE 3
-              END,
-              COALESCE(sp.proficiency, 0)
+              c.unit_order,
+              c.skill_order,
+              c.subskill_order
             LIMIT @limit
             """
 
@@ -1048,11 +1047,19 @@ class LearningPathsService:
                 cp.unlocks_entity_type,
                 LOGICAL_AND(
                   COALESCE(sp.proficiency, 0) >= cp.min_proficiency_threshold
-                ) as all_prerequisites_met
+                ) as all_prerequisites_met,
+                ARRAY_AGG(STRUCT(
+                  cp.prerequisite_entity_id as id,
+                  c.subskill_description as description,
+                  cp.min_proficiency_threshold as required,
+                  COALESCE(sp.proficiency, 0) as current_proficiency
+                )) as unlock_data
               FROM `{self.project_id}.{self.dataset_id}.curriculum_prerequisites` cp
               LEFT JOIN all_student_prof sp
                 ON cp.prerequisite_entity_id = sp.entity_id
                 AND cp.prerequisite_entity_type = sp.entity_type
+            LEFT JOIN `{self.project_id}.{self.dataset_id}.curriculum` c
+                ON cp.prerequisite_entity_id = c.subskill_id
               WHERE cp.is_draft = FALSE
                 AND cp.unlocks_entity_type = 'subskill'
               GROUP BY cp.unlocks_entity_id, cp.unlocks_entity_type
@@ -1094,13 +1101,15 @@ class LearningPathsService:
               sp_subskill.prerequisites as subskill_prerequisites,
               COALESCE(spr.proficiency, 0) as proficiency,
               COALESCE(spr.attempts, 0) as attempts,
-              CASE WHEN us.entity_id IS NOT NULL THEN TRUE ELSE FALSE END as unlocked
+              CASE WHEN us.entity_id IS NOT NULL THEN TRUE ELSE FALSE END as unlocked,
+              pc.unlock_data
             FROM curriculum_data cd
             LEFT JOIN skill_prerequisites sp_skill ON cd.skill_id = sp_skill.skill_id
             LEFT JOIN skill_unlocks su ON cd.skill_id = su.skill_id
             LEFT JOIN subskill_prerequisites sp_subskill ON cd.subskill_id = sp_subskill.subskill_id
             LEFT JOIN student_proficiencies spr ON cd.subskill_id = spr.subskill_id
             LEFT JOIN unlocked_subskills us ON cd.subskill_id = us.entity_id
+            LEFT JOIN prerequisite_checks pc ON cd.subskill_id = pc.unlocks_entity_id
             ORDER BY cd.unit_id, cd.skill_id, cd.sequence_order
             """
             else:
@@ -1216,6 +1225,16 @@ class LearningPathsService:
                         "proficiency": float(row.get('proficiency', 0)),
                         "attempts": int(row.get('attempts', 0))
                     }
+                    if not subskill_data["student_data"]["unlocked"] and row.get('unlock_data'):
+                        subskill_data["student_data"]["unlock_data"] = [
+                            {
+                                "id": d.get("id"),
+                                "description": d.get("description"),
+                                "required": d.get("required"),
+                                "current_proficiency": d.get("current_proficiency")
+                            }
+                            for d in row.get('unlock_data')
+                        ]
 
                 units_dict[unit_id]["skills"][skill_id]["subskills"].append(subskill_data)
 

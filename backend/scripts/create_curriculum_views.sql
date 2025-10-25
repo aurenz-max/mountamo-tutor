@@ -26,10 +26,13 @@ SELECT
   s.grade_level as grade,
   u.unit_id,
   u.unit_title,
+  u.unit_order,
   sk.skill_id,
   sk.skill_description,
+  sk.skill_order,
   sub.subskill_id,
   sub.subskill_description,
+  sub.subskill_order,
   sub.difficulty_start,
   sub.difficulty_end,
   sub.target_difficulty

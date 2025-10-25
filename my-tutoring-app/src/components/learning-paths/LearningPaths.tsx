@@ -24,7 +24,7 @@ import {
   useRecommendations,
   useInvalidateLearningPaths
 } from '@/lib/learning-paths/hooks';
-import type { NodeStatus, Skill, Subskill, Recommendation } from '@/types/learning-paths';
+import type { NodeStatus, Skill, Subskill, Recommendation, UnlockData } from '@/types/learning-paths';
 
 /**
  * Learning Paths Component - Refactored for Student State Engine
@@ -521,6 +521,7 @@ const LearningPaths = () => {
                           const isUnlocked = subskill.student_data?.unlocked ?? false;
                           const proficiency = subskill.student_data?.proficiency || 0;
                           const attempts = subskill.student_data?.attempts || 0;
+                          const unlockData = subskill.student_data?.unlock_data;
 
                           // Determine status (mimicking backend logic for display)
                           let status: NodeStatus = 'LOCKED';
@@ -598,10 +599,25 @@ const LearningPaths = () => {
                                     </div>
                                   )}
 
-                                  {!isUnlocked && (
-                                    <div className="mt-3 text-xs text-red-600 font-medium">
-                                      🔒 Locked - Complete prerequisites first
+                                  {!isUnlocked && unlockData && unlockData.length > 0 && (
+                                    <div className="mt-3 text-xs text-red-600 font-medium space-y-1">
+                                      <p className="font-bold">🔒 Locked - Prerequisites not met:</p>
+                                      <ul className="list-disc pl-4 text-gray-700">
+                                        {unlockData.map((d: UnlockData) => (
+                                          <li key={d.id}>
+                                            {d.description}:{' '}
+                                            <span className="font-semibold">
+                                              {Math.round(d.current_proficiency * 100)}% / {Math.round(d.required * 100)}%
+                                            </span>
+                                          </li>
+                                        ))}
+                                      </ul>
                                     </div>
+                                  )}
+                                  {!isUnlocked && (!unlockData || unlockData.length === 0) && (
+                                      <div className="mt-3 text-xs text-red-600 font-medium">
+                                          🔒 Locked - Complete prerequisites first
+                                      </div>
                                   )}
                                 </div>
 

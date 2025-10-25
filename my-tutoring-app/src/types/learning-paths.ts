@@ -35,6 +35,14 @@ export interface StudentData {
   unlocked: boolean;
   proficiency: number;
   attempts: number;
+  unlock_data?: UnlockData[];
+}
+
+export interface UnlockData {
+  id: string;
+  description: string;
+  required: number;
+  current_proficiency: number;
 }
 
 export interface Prerequisite {
