@@ -123,7 +123,8 @@ async def create_prerequisite(
 
     result = await prerequisite_manager.create_prerequisite(
         prerequisite,
-        version_id
+        version_id,
+        subject_id
     )
 
     # Invalidate draft graph cache (prerequisite changes only affect drafts)

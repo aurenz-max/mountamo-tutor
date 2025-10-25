@@ -648,7 +648,91 @@ class BigQueryAnalyticsService:
             logger.error(f"Error executing query: {str(e)}")
             raise
       
-    async def get_content_packages_for_llm(self, 
+    async def get_student_proficiency_map(
+        self,
+        student_id: int,
+        subject_id: Optional[str] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Get all student proficiencies in a single efficient query
+
+        Returns map of entity_id -> proficiency data for quick lookup
+        in the student state engine.
+
+        Args:
+            student_id: Student ID
+            subject_id: Optional subject filter
+
+        Returns:
+            {
+                "SUBSKILL-123": {
+                    "proficiency": 0.85,
+                    "attempt_count": 10,
+                    "last_attempt_at": "2025-10-24T18:30:00Z"
+                },
+                "SUBSKILL-456": {
+                    "proficiency": 0.60,
+                    "attempt_count": 5,
+                    "last_attempt_at": "2025-10-23T14:20:00Z"
+                }
+            }
+        """
+
+        # Check cache first (5 min TTL for student data)
+        cache_key = self._get_cache_key(
+            "student_proficiency_map",
+            student_id=student_id,
+            subject_id=subject_id
+        )
+
+        cached_result = self._get_cache(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached proficiency map for student {student_id}")
+            return cached_result
+
+        try:
+            # Single optimized query to get all proficiencies
+            query = f"""
+            SELECT
+                subskill_id as entity_id,
+                AVG(score / 10.0) as proficiency,
+                COUNT(*) as attempt_count,
+                MAX(timestamp) as last_attempt_at
+            FROM `{self.project_id}.{self.dataset_id}.attempts`
+            WHERE student_id = @student_id
+                AND (@subject_id IS NULL OR subject = @subject_id)
+            GROUP BY subskill_id
+            """
+
+            parameters = [
+                bigquery.ScalarQueryParameter("student_id", "INT64", student_id),
+                bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)
+            ]
+
+            results = await self._run_query_async(query, parameters)
+
+            # Convert to map for O(1) lookup
+            proficiency_map = {}
+
+            for row in results:
+                entity_id = row["entity_id"]
+                proficiency_map[entity_id] = {
+                    "proficiency": float(row["proficiency"]),
+                    "attempt_count": int(row["attempt_count"]),
+                    "last_attempt_at": row["last_attempt_at"].isoformat() if row["last_attempt_at"] else None
+                }
+
+            # Cache result (5 minute TTL)
+            self._set_cache(cache_key, proficiency_map)
+
+            logger.info(f"Retrieved proficiency map for student {student_id}: {len(proficiency_map)} entities")
+            return proficiency_map
+
+        except Exception as e:
+            logger.error(f"Error getting student proficiency map: {e}")
+            return {}
+
+    async def get_content_packages_for_llm(self,
                                          student_id: Optional[int] = None,
                                          subject: Optional[str] = None,
                                          difficulty_levels: List[str] = None,

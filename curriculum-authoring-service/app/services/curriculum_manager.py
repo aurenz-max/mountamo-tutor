@@ -16,7 +16,8 @@ from app.models.curriculum import (
     Unit, UnitCreate, UnitUpdate,
     Skill, SkillCreate, SkillUpdate,
     Subskill, SubskillCreate, SubskillUpdate,
-    CurriculumTree, UnitNode, SkillNode, SubskillNode
+    CurriculumTree, UnitNode, SkillNode, SubskillNode,
+    FlattenedCurriculumRow
 )
 
 logger = logging.getLogger(__name__)
@@ -682,6 +683,108 @@ class CurriculumManager:
             version_id=subject.version_id,
             units=tree_units
         )
+
+    # ==================== FLATTENED VIEW ====================
+
+    async def get_flattened_curriculum_view(
+        self,
+        subject_id: str,
+        version_id: Optional[str] = None
+    ) -> List[FlattenedCurriculumRow]:
+        """
+        Get flattened curriculum view matching BigQuery analytics view structure.
+        Returns published curriculum only (is_draft=false).
+        If version_id is None, gets the active version.
+        """
+        # Get subject and version info
+        subject = await self.get_subject(subject_id, version_id)
+        if not subject:
+            return []
+
+        # Determine which version to query
+        target_version_id = version_id or subject.version_id
+
+        # Get version number for metadata
+        version_query = f"""
+        SELECT version_number
+        FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
+        WHERE version_id = @version_id
+        LIMIT 1
+        """
+        version_params = [bigquery.ScalarQueryParameter("version_id", "STRING", target_version_id)]
+        version_results = await db.execute_query(version_query, version_params)
+        version_number = version_results[0]["version_number"] if version_results else 1
+
+        # Build flattened query matching the analytics view structure
+        # This mirrors the CREATE VIEW query from backend/scripts/create_curriculum_views.sql
+        query = f"""
+        SELECT
+            s.subject_name as subject,
+            s.grade_level as grade,
+            s.subject_id,
+            u.unit_id,
+            u.unit_title,
+            u.unit_order,
+            sk.skill_id,
+            sk.skill_description,
+            sk.skill_order,
+            sub.subskill_id,
+            sub.subskill_description,
+            sub.subskill_order,
+            sub.difficulty_start,
+            sub.difficulty_end,
+            sub.target_difficulty,
+            s.version_id
+        FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}` s
+        JOIN `{settings.get_table_id(settings.TABLE_UNITS)}` u
+            ON s.subject_id = u.subject_id AND s.version_id = u.version_id
+        JOIN `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
+            ON u.unit_id = sk.unit_id AND u.version_id = sk.version_id
+        JOIN `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` sub
+            ON sk.skill_id = sub.skill_id AND sk.version_id = sub.version_id
+        WHERE s.subject_id = @subject_id
+            AND s.version_id = @version_id
+            AND s.is_active = true
+            AND s.is_draft = false
+            AND u.is_draft = false
+            AND sk.is_draft = false
+            AND sub.is_draft = false
+        ORDER BY u.unit_order, sk.skill_order, sub.subskill_order
+        """
+
+        parameters = [
+            bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id),
+            bigquery.ScalarQueryParameter("version_id", "STRING", target_version_id)
+        ]
+
+        logger.info(f"📊 Querying flattened curriculum view for subject {subject_id}, version {target_version_id}")
+        results = await db.execute_query(query, parameters)
+        logger.info(f"📦 Found {len(results)} flattened curriculum rows")
+
+        # Build flattened rows with version metadata
+        flattened_rows = []
+        for row in results:
+            flattened_rows.append(FlattenedCurriculumRow(
+                subject=row["subject"],
+                grade=row.get("grade"),
+                subject_id=row["subject_id"],
+                unit_id=row["unit_id"],
+                unit_title=row["unit_title"],
+                unit_order=row.get("unit_order"),
+                skill_id=row["skill_id"],
+                skill_description=row["skill_description"],
+                skill_order=row.get("skill_order"),
+                subskill_id=row["subskill_id"],
+                subskill_description=row["subskill_description"],
+                subskill_order=row.get("subskill_order"),
+                difficulty_start=row.get("difficulty_start"),
+                difficulty_end=row.get("difficulty_end"),
+                target_difficulty=row.get("target_difficulty"),
+                version_id=row["version_id"],
+                version_number=version_number
+            ))
+
+        return flattened_rows
 
 
 # Global instance

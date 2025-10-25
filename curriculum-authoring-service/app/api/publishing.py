@@ -4,15 +4,17 @@ Publishing and version control API endpoints
 
 import logging
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from typing import List, Optional
 
 from app.core.security import require_admin
 from app.services.version_control import version_control
 from app.services.graph_cache_manager import graph_cache_manager
+from app.services.curriculum_manager import curriculum_manager
 from app.models.versioning import (
     Version, DraftSummary,
     PublishRequest, PublishResponse
 )
+from app.models.curriculum import FlattenedCurriculumRow
 
 logger = logging.getLogger(__name__)
 
@@ -101,3 +103,41 @@ async def rollback_version(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/subjects/{subject_id}/flattened-view", response_model=List[FlattenedCurriculumRow])
+async def get_flattened_curriculum_view(
+    subject_id: str,
+    version_id: Optional[str] = None
+):
+    """
+    Get flattened curriculum view matching BigQuery analytics view structure.
+
+    This endpoint returns the curriculum in a flattened format that matches
+    the structure used by the analytics view in the tutoring application.
+
+    - Returns only published content (is_draft=false, is_active=true)
+    - If version_id is not provided, returns the active version
+    - Each row represents one subskill with its complete hierarchy path
+    - Ordered by unit_order, skill_order, subskill_order
+
+    This view is useful for:
+    - Validating published curriculum structure
+    - Previewing what the tutoring app will consume
+    - Exporting curriculum data for documentation
+    - Comparing different published versions
+    """
+    try:
+        rows = await curriculum_manager.get_flattened_curriculum_view(
+            subject_id=subject_id,
+            version_id=version_id
+        )
+
+        if not rows:
+            logger.warning(f"No flattened curriculum data found for subject {subject_id}")
+
+        return rows
+
+    except Exception as e:
+        logger.error(f"Error fetching flattened curriculum view: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch flattened view: {str(e)}")

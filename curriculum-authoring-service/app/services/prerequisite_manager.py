@@ -25,7 +25,8 @@ class PrerequisiteManager:
     async def create_prerequisite(
         self,
         prerequisite: PrerequisiteCreate,
-        version_id: str
+        version_id: str,
+        subject_id: str
     ) -> Prerequisite:
         """Create a new prerequisite relationship using DML INSERT for consistency"""
         now = datetime.utcnow()
@@ -33,6 +34,7 @@ class PrerequisiteManager:
 
         prerequisite_data = {
             "prerequisite_id": prerequisite_id,
+            "subject_id": subject_id,
             **prerequisite.dict(),
             "version_id": version_id,
             "is_draft": True,

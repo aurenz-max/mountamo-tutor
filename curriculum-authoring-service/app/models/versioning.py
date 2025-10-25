@@ -44,8 +44,13 @@ class DraftChange(BaseModel):
 class DraftSummary(BaseModel):
     """Summary of all draft changes for a subject"""
     subject_id: str
+    draft_version_id: Optional[str] = None
     total_changes: int
     changes: List[DraftChange] = []
+    created_count: int = 0
+    updated_count: int = 0
+    deleted_count: int = 0
+    prerequisite_changes: int = 0
     can_publish: bool
     validation_errors: List[str] = []
 

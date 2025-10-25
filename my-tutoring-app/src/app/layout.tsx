@@ -4,8 +4,9 @@ import { Inter } from 'next/font/google';
 import NavHeader from '@/components/NavHeader';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AICoachProvider } from '@/contexts/AICoachContext';
-import { GlobalAICoachProvider } from '@/components/layout/GlobalAICoachToggle'; // Add this import
+import { GlobalAICoachProvider } from '@/components/layout/GlobalAICoachToggle';
 import { EngagementProvider } from '@/contexts/EngagementContext';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 import { Toaster } from 'sonner';
 import './globals.css';
 
@@ -24,17 +25,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-          <EngagementProvider>
-            <AICoachProvider>
-              <GlobalAICoachProvider>
-                <NavHeader />
-                {children}
-                <Toaster />
-              </GlobalAICoachProvider>
-            </AICoachProvider>
-          </EngagementProvider>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <EngagementProvider>
+              <AICoachProvider>
+                <GlobalAICoachProvider>
+                  <NavHeader />
+                  {children}
+                  <Toaster />
+                </GlobalAICoachProvider>
+              </AICoachProvider>
+            </EngagementProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

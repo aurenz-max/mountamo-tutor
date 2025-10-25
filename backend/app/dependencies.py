@@ -390,14 +390,16 @@ def get_review_service(
 
 # Keep other functions that don't need curriculum/competency services as sync
 async def get_learning_paths_service(
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service),
+    firestore_service: FirestoreService = Depends(get_firestore_service)
 ) -> LearningPathsService:
-    """Get or create LearningPathsService singleton with BigQuery."""
+    """Get or create LearningPathsService singleton with BigQuery and Firestore."""
     global _learning_paths_service
     if _learning_paths_service is None:
-        logger.info("Initializing LearningPathsService with BigQuery")
+        logger.info("Initializing LearningPathsService with BigQuery and Firestore")
         _learning_paths_service = LearningPathsService(
             analytics_service=analytics_service,
+            firestore_service=firestore_service,
             project_id=settings.GCP_PROJECT_ID,
             dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
         )
@@ -471,9 +473,9 @@ async def initialize_services():
     problem_optimizer = get_problem_optimizer(cosmos_db, problem_recommender)
     firestore_service = get_firestore_service()
     review_service = get_review_service(cosmos_db, firestore_service)
-    
-    # Initialize learning paths service
-    learning_paths_service = await get_learning_paths_service(analytics_service)
+
+    # Initialize learning paths service with Firestore
+    learning_paths_service = await get_learning_paths_service(analytics_service, firestore_service)
     
     
     # Initialize daily activities service

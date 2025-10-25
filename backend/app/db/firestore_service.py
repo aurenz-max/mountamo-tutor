@@ -42,7 +42,10 @@ class FirestoreService:
             self.attempts_collection = self.client.collection('student_attempts')
             self.reviews_collection = self.client.collection('student_reviews')
             self.competencies_collection = self.client.collection('student_competencies')
-            
+
+            # Collection reference for curriculum graphs (read-only)
+            self.curriculum_graphs = self.client.collection('curriculum_graphs')
+
             logger.info(f"Firestore service initialized for project: {self.project_id}")
             
         except Exception as e:
@@ -378,6 +381,143 @@ class FirestoreService:
         except Exception as e:
             logger.error(f"Error getting subject competencies from Firestore: {str(e)}")
             return []
+
+    # ============================================================================
+    # CURRICULUM GRAPH METHODS (READ-ONLY)
+    # ============================================================================
+
+    async def get_curriculum_graph(
+        self,
+        subject_id: str,
+        version_type: str = "published",
+        version_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get curriculum graph from Firestore
+
+        Reads the cached graph written by curriculum authoring service.
+        Returns graph structure with nodes and edges.
+
+        Args:
+            subject_id: Subject identifier (e.g., "MATHEMATICS", "LANGUAGE_ARTS")
+            version_type: "published" or "draft" (default: "published")
+            version_id: Specific version ID (optional, uses latest if not specified)
+
+        Returns:
+            {
+                "id": str,
+                "subject_id": str,
+                "version_id": str,
+                "version_type": str,
+                "graph": {
+                    "nodes": [...],
+                    "edges": [...]
+                },
+                "metadata": {...},
+                "generated_at": str,
+                "last_accessed": str
+            }
+        """
+        try:
+            # If no version_id specified, get the latest for this type
+            if not version_id:
+                query = self.curriculum_graphs \
+                    .where('subject_id', '==', subject_id) \
+                    .where('version_type', '==', version_type) \
+                    .order_by('generated_at', direction=firestore.Query.DESCENDING) \
+                    .limit(1)
+
+                docs = list(query.stream())
+
+                if docs:
+                    doc = docs[0]
+                    doc_data = doc.to_dict()
+
+                    # Update last accessed time
+                    doc_data["last_accessed"] = datetime.now(timezone.utc).isoformat()
+                    doc.reference.update({"last_accessed": doc_data["last_accessed"]})
+
+                    logger.info(f"Retrieved curriculum graph for {subject_id} (type: {version_type})")
+                    return doc_data
+                else:
+                    logger.info(f"No curriculum graph found for {subject_id} (type: {version_type})")
+                    return None
+            else:
+                # Get specific version
+                doc_id = f"{subject_id}_{version_id}_{version_type}"
+                doc_ref = self.curriculum_graphs.document(doc_id)
+                doc = doc_ref.get()
+
+                if doc.exists:
+                    doc_data = doc.to_dict()
+
+                    # Update last accessed time
+                    doc_data["last_accessed"] = datetime.now(timezone.utc).isoformat()
+                    doc_ref.update({"last_accessed": doc_data["last_accessed"]})
+
+                    logger.info(f"Retrieved curriculum graph for {subject_id} (version: {version_id})")
+                    return doc_data
+                else:
+                    logger.info(f"Curriculum graph not found for {subject_id}")
+                    return None
+
+        except Exception as e:
+            logger.error(f"Error retrieving curriculum graph: {str(e)}")
+            # On error, return None to allow fallback logic
+            return None
+
+    async def get_graph_status(
+        self,
+        subject_id: str
+    ) -> Dict[str, Any]:
+        """
+        Get status/metadata about cached graphs for a subject
+
+        Returns information about what graph versions are cached.
+
+        Args:
+            subject_id: Subject identifier
+
+        Returns:
+            {
+                "subject_id": str,
+                "cached_versions": [...],
+                "has_published": bool,
+                "has_draft": bool,
+                "total_cached": int
+            }
+        """
+        try:
+            query = self.curriculum_graphs.where('subject_id', '==', subject_id)
+            docs = list(query.stream())
+
+            cached_versions = []
+            for doc in docs:
+                doc_data = doc.to_dict()
+                cached_versions.append({
+                    "version_type": doc_data.get("version_type"),
+                    "version_id": doc_data.get("version_id"),
+                    "generated_at": doc_data.get("generated_at"),
+                    "last_accessed": doc_data.get("last_accessed"),
+                    "metadata": doc_data.get("metadata", {})
+                })
+
+            # Sort by generated_at descending
+            cached_versions.sort(key=lambda x: x.get("generated_at", ""), reverse=True)
+
+            status = {
+                "subject_id": subject_id,
+                "cached_versions": cached_versions,
+                "has_published": any(v["version_type"] == "published" for v in cached_versions),
+                "has_draft": any(v["version_type"] == "draft" for v in cached_versions),
+                "total_cached": len(cached_versions)
+            }
+
+            return status
+
+        except Exception as e:
+            logger.error(f"Error getting curriculum graph status: {str(e)}")
+            raise
 
     # ============================================================================
     # BATCH OPERATIONS FOR MIGRATION

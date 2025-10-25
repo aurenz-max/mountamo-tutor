@@ -174,3 +174,36 @@ class CurriculumTree(BaseModel):
     grade_level: Optional[str] = None
     version_id: str
     units: List[UnitNode] = []
+
+
+class FlattenedCurriculumRow(BaseModel):
+    """Flattened curriculum view matching BigQuery analytics view structure"""
+    # Subject level
+    subject: str
+    grade: Optional[str] = None
+    subject_id: str
+
+    # Unit level
+    unit_id: str
+    unit_title: str
+    unit_order: Optional[int] = None
+
+    # Skill level
+    skill_id: str
+    skill_description: str
+    skill_order: Optional[int] = None
+
+    # Subskill level
+    subskill_id: str
+    subskill_description: str
+    subskill_order: Optional[int] = None
+    difficulty_start: Optional[float] = None
+    difficulty_end: Optional[float] = None
+    target_difficulty: Optional[float] = None
+
+    # Metadata
+    version_id: str
+    version_number: int
+
+    class Config:
+        from_attributes = True

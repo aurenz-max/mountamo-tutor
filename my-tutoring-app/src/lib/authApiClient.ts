@@ -802,6 +802,36 @@ private async getAuthToken(): Promise<string> {
   // ============================================================================
 
   /**
+   * Get curriculum graph decorated with student progress (Student State Engine)
+   *
+   * This is the PRIMARY endpoint for learning paths. It returns a complete graph
+   * where each node includes a calculated status:
+   * - LOCKED: Prerequisites not met, cannot practice
+   * - UNLOCKED: Prerequisites met, ready to start (proficiency = 0)
+   * - IN_PROGRESS: Started but not mastered (0 < proficiency < 0.8)
+   * - MASTERED: Mastered (proficiency >= 0.8)
+   *
+   * Uses Firestore cache for fast loading (~50ms vs 2-5s generation)
+   *
+   * @param subjectId - Subject identifier (e.g., "MATHEMATICS")
+   * @param studentId - Student ID
+   * @param includeDrafts - Include draft curriculum (default: false)
+   */
+  async getStudentGraph(
+    subjectId: string,
+    studentId: number,
+    includeDrafts: boolean = false
+  ) {
+    const params = new URLSearchParams();
+    if (includeDrafts) params.append('include_drafts', 'true');
+
+    const queryString = params.toString();
+    return this.get(
+      `/api/learning-paths/${encodeURIComponent(subjectId)}/student-graph/${studentId}${queryString ? `?${queryString}` : ''}`
+    );
+  }
+
+  /**
    * Get learning graph visualization with student progress
    */
   async getLearningGraphVisualization(

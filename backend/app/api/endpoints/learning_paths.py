@@ -308,30 +308,35 @@ async def get_graph_visualization(
     """
     Get graph structure optimized for frontend visualization
 
-    Returns skills with nested subskills, prerequisites, unlocks, and optional
+    Returns units with nested skills and subskills, prerequisites, unlocks, and optional
     student progress data. Designed for interactive graph visualizations.
 
     Response:
     {
-        "skills": [{
-            "skill_id": str,
-            "title": str,
+        "units": [{
+            "unit_id": str,
+            "unit_title": str,
             "subject": str,
-            "subskills": [{
-                "subskill_id": str,
-                "description": str,
-                "sequence_order": int,
-                "difficulty_start": float,
-                "difficulty_end": float,
+            "skills": [{
+                "skill_id": str,
+                "skill_description": str,
+                "subject": str,
+                "subskills": [{
+                    "subskill_id": str,
+                    "description": str,
+                    "sequence_order": int,
+                    "difficulty_start": float,
+                    "difficulty_end": float,
+                    "prerequisites": [...],
+                    "student_data": {  // if student_id provided
+                        "unlocked": bool,
+                        "proficiency": float,
+                        "attempts": int
+                    }
+                }],
                 "prerequisites": [...],
-                "student_data": {  // if student_id provided
-                    "unlocked": bool,
-                    "proficiency": float,
-                    "attempts": int
-                }
-            }],
-            "prerequisites": [...],
-            "unlocks": [...]
+                "unlocks": [...]
+            }]
         }]
     }
     """
@@ -343,7 +348,7 @@ async def get_graph_visualization(
             student_id=student_id
         )
 
-        logger.info(f"Retrieved visualization graph with {len(graph['skills'])} skills")
+        logger.info(f"Retrieved visualization graph with {len(graph['units'])} units")
 
         return graph
 
@@ -401,6 +406,78 @@ async def get_skill_details(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting skill details for {skill_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Student State Engine Endpoint ====================
+
+@router.get("/{subject_id}/student-graph/{student_id}")
+async def get_student_curriculum_graph(
+    subject_id: str,
+    student_id: int,
+    include_drafts: bool = Query(
+        False,
+        description="Include draft curriculum (default: published only)"
+    ),
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service)
+):
+    """
+    Get curriculum graph decorated with student progress
+
+    This endpoint implements the "Student State Engine" that shows:
+    - Which skills/subskills are LOCKED (prerequisites not met)
+    - Which are UNLOCKED (ready to practice)
+    - Which are IN_PROGRESS (started but not mastered)
+    - Which are MASTERED (proficiency >= 80%)
+
+    Perfect for visualizing student position on curriculum graph.
+
+    Response:
+    {
+        "nodes": [{
+            // All original curriculum node fields, PLUS:
+            "student_proficiency": 0.85,
+            "status": "MASTERED" | "IN_PROGRESS" | "UNLOCKED" | "LOCKED",
+            "attempt_count": 10,
+            "last_attempt_at": "2025-10-24T18:30:00Z"
+        }],
+        "edges": [...],  // Original edges unchanged
+        "student_id": 123,
+        "subject_id": "MATHEMATICS",
+        "version_id": "uuid-...",
+        "generated_at": "2025-10-24T..."
+    }
+
+    Status Values:
+    - LOCKED: Prerequisites not met, cannot practice
+    - UNLOCKED: Prerequisites met, ready to start (proficiency = 0)
+    - IN_PROGRESS: Started but not mastered (0 < proficiency < 0.8)
+    - MASTERED: Mastered (proficiency >= 0.8)
+    """
+    try:
+        logger.info(
+            f"Getting student graph for student {student_id}, "
+            f"subject {subject_id}, include_drafts={include_drafts}"
+        )
+
+        student_graph = await learning_paths_service.get_student_graph(
+            student_id=student_id,
+            subject_id=subject_id,
+            include_drafts=include_drafts
+        )
+
+        logger.info(
+            f"Successfully generated student graph with "
+            f"{len(student_graph['nodes'])} nodes for student {student_id}"
+        )
+
+        return student_graph
+
+    except ValueError as e:
+        logger.warning(f"Graph not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting student graph: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

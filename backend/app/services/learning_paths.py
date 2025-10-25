@@ -28,6 +28,7 @@ class LearningPathsService:
     def __init__(
         self,
         analytics_service: Any,  # BigQueryAnalyticsService
+        firestore_service: Any,  # FirestoreService
         project_id: str,
         dataset_id: str = "analytics"
     ):
@@ -36,10 +37,12 @@ class LearningPathsService:
 
         Args:
             analytics_service: BigQueryAnalyticsService for student proficiency queries
+            firestore_service: FirestoreService for curriculum graph access
             project_id: Google Cloud project ID
             dataset_id: BigQuery dataset ID (default: "analytics")
         """
         self.analytics = analytics_service
+        self.firestore = firestore_service
         self.project_id = project_id
         self.dataset_id = dataset_id
         self.client = bigquery.Client(project=project_id)
@@ -899,7 +902,7 @@ class LearningPathsService:
         """
         Get graph structure optimized for frontend visualization
 
-        Returns skills with nested subskills, prerequisites, unlocks, and
+        Returns units with nested skills and subskills, prerequisites, unlocks, and
         optional student progress data.
 
         Args:
@@ -908,11 +911,14 @@ class LearningPathsService:
 
         Returns:
             {
-                "skills": [{
-                    skill_id, title, subject,
-                    subskills: [{subskill_id, description, sequence, unlocked, proficiency}],
-                    prerequisites: [...],
-                    unlocks: [...]
+                "units": [{
+                    unit_id, unit_title, subject,
+                    skills: [{
+                        skill_id, skill_description, subject,
+                        subskills: [{subskill_id, description, sequence, unlocked, proficiency}],
+                        prerequisites: [...],
+                        unlocks: [...]
+                    }]
                 }]
             }
         """
@@ -921,6 +927,8 @@ class LearningPathsService:
             base_query = f"""
             WITH curriculum_data AS (
               SELECT
+                c.unit_id,
+                c.unit_title,
                 c.skill_id,
                 c.skill_description,
                 c.subject,
@@ -1071,6 +1079,8 @@ class LearningPathsService:
 
                 main_select = """
             SELECT
+              cd.unit_id,
+              cd.unit_title,
               cd.skill_id,
               cd.skill_description,
               cd.subject,
@@ -1091,11 +1101,13 @@ class LearningPathsService:
             LEFT JOIN subskill_prerequisites sp_subskill ON cd.subskill_id = sp_subskill.subskill_id
             LEFT JOIN student_proficiencies spr ON cd.subskill_id = spr.subskill_id
             LEFT JOIN unlocked_subskills us ON cd.subskill_id = us.entity_id
-            ORDER BY cd.skill_id, cd.sequence_order
+            ORDER BY cd.unit_id, cd.skill_id, cd.sequence_order
             """
             else:
                 main_select = """
             SELECT
+              cd.unit_id,
+              cd.unit_title,
               cd.skill_id,
               cd.skill_description,
               cd.subject,
@@ -1111,7 +1123,7 @@ class LearningPathsService:
             LEFT JOIN skill_prerequisites sp_skill ON cd.skill_id = sp_skill.skill_id
             LEFT JOIN skill_unlocks su ON cd.skill_id = su.skill_id
             LEFT JOIN subskill_prerequisites sp_subskill ON cd.subskill_id = sp_subskill.subskill_id
-            ORDER BY cd.skill_id, cd.sequence_order
+            ORDER BY cd.unit_id, cd.skill_id, cd.sequence_order
             """
 
             query = base_query + main_select
@@ -1122,17 +1134,27 @@ class LearningPathsService:
 
             results = await self._run_query_async(query, parameters)
 
-            # Organize results into skills with nested subskills
-            skills_dict = {}
+            # Organize results into units -> skills -> subskills hierarchy
+            units_dict = {}
 
             for row in results:
+                unit_id = row['unit_id']
                 skill_id = row['skill_id']
 
-                # Initialize skill if not seen
-                if skill_id not in skills_dict:
-                    skills_dict[skill_id] = {
+                # Initialize unit if not seen
+                if unit_id not in units_dict:
+                    units_dict[unit_id] = {
+                        "unit_id": unit_id,
+                        "unit_title": row['unit_title'],
+                        "subject": row['subject'],
+                        "skills": {}
+                    }
+
+                # Initialize skill if not seen within this unit
+                if skill_id not in units_dict[unit_id]["skills"]:
+                    units_dict[unit_id]["skills"][skill_id] = {
                         "skill_id": skill_id,
-                        "title": row['skill_description'],
+                        "skill_description": row['skill_description'],
                         "subject": row['subject'],
                         "subskills": [],
                         "prerequisites": [],
@@ -1141,7 +1163,7 @@ class LearningPathsService:
 
                     # Add skill-level prerequisites and unlocks (only once per skill)
                     if row.get('skill_prerequisites'):
-                        skills_dict[skill_id]["prerequisites"] = [
+                        units_dict[unit_id]["skills"][skill_id]["prerequisites"] = [
                             {
                                 "prerequisite_id": p['prerequisite_id'],
                                 "prerequisite_type": p['prerequisite_type'],
@@ -1153,7 +1175,7 @@ class LearningPathsService:
                         ]
 
                     if row.get('skill_unlocks'):
-                        skills_dict[skill_id]["unlocks"] = [
+                        units_dict[unit_id]["skills"][skill_id]["unlocks"] = [
                             {
                                 "unlocks_id": u['unlocks_id'],
                                 "unlocks_type": u['unlocks_type'],
@@ -1195,13 +1217,251 @@ class LearningPathsService:
                         "attempts": int(row.get('attempts', 0))
                     }
 
-                skills_dict[skill_id]["subskills"].append(subskill_data)
+                units_dict[unit_id]["skills"][skill_id]["subskills"].append(subskill_data)
 
-            return {"skills": list(skills_dict.values())}
+            # Convert nested dict structure to list format
+            units_list = []
+            for unit in units_dict.values():
+                unit["skills"] = list(unit["skills"].values())
+                units_list.append(unit)
+
+            return {"units": units_list}
 
         except Exception as e:
             logger.error(f"Error getting graph for visualization: {e}")
             raise
+
+    # ==================== Student State Engine ====================
+
+    async def get_student_graph(
+        self,
+        student_id: int,
+        subject_id: str,
+        include_drafts: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Get curriculum graph decorated with student progress data
+
+        This is the "Student State Engine" that merges:
+        - Static curriculum structure (from Firestore)
+        - Dynamic student progress (from BigQuery)
+
+        Returns graph where each node includes:
+        - student_proficiency: float (0.0-1.0)
+        - status: "LOCKED" | "UNLOCKED" | "IN_PROGRESS" | "MASTERED"
+        - last_attempt_at: datetime (optional)
+        - attempt_count: int (optional)
+
+        Algorithm:
+        1. Fetch curriculum graph + student proficiencies in parallel
+        2. Initialize all nodes as LOCKED with 0.0 proficiency
+        3. Determine UNLOCKED nodes (prerequisites met)
+        4. Overlay IN_PROGRESS (proficiency > 0) and MASTERED (proficiency >= 0.8)
+        5. Return decorated graph
+
+        Args:
+            student_id: Student ID
+            subject_id: Subject identifier (e.g., "MATHEMATICS", "LANGUAGE_ARTS")
+            include_drafts: Include draft curriculum (default: False)
+
+        Returns:
+            {
+                "nodes": [...],  # Decorated with student data
+                "edges": [...],  # Original edges
+                "student_id": int,
+                "subject_id": str,
+                "version_id": str,
+                "generated_at": str
+            }
+        """
+        try:
+            logger.info(f"Building student graph for student {student_id}, subject {subject_id}")
+
+            # Step 1: Fetch data in parallel for performance
+            graph_data, student_prof_map = await asyncio.gather(
+                self.firestore.get_curriculum_graph(
+                    subject_id=subject_id,
+                    version_type="draft" if include_drafts else "published"
+                ),
+                self.analytics.get_student_proficiency_map(
+                    student_id=student_id,
+                    subject_id=subject_id
+                )
+            )
+
+            if not graph_data or not graph_data.get("graph"):
+                raise ValueError(f"No curriculum graph found for {subject_id}")
+
+            graph = graph_data["graph"]
+            nodes = graph["nodes"]
+            edges = graph["edges"]
+
+            logger.info(f"Retrieved graph with {len(nodes)} nodes, {len(edges)} edges")
+            logger.info(f"Student has proficiency data for {len(student_prof_map)} entities")
+
+            # Step 2: Initialize node states (all LOCKED by default)
+            student_node_states = {}
+
+            for node in nodes:
+                student_node_states[node["id"]] = {
+                    **node,  # Copy all original node data
+                    "student_proficiency": 0.0,
+                    "status": "LOCKED",
+                    "attempt_count": 0,
+                    "last_attempt_at": None
+                }
+
+            # Step 3: Determine UNLOCKED status
+            # Build prerequisites map: node_id -> [(prereq_id, threshold), ...]
+            prereqs_map = self._build_prerequisites_map(edges)
+
+            # Determine which nodes are unlocked
+            unlocked_node_ids = self._determine_unlocked_nodes(
+                nodes=nodes,
+                edges=edges,
+                prereqs_map=prereqs_map,
+                student_prof_map=student_prof_map
+            )
+
+            # Update status to UNLOCKED
+            for node_id in unlocked_node_ids:
+                student_node_states[node_id]["status"] = "UNLOCKED"
+
+            logger.info(f"Determined {len(unlocked_node_ids)} unlocked nodes")
+
+            # Step 4: Overlay student proficiency data and determine final status
+            mastered_count = 0
+            in_progress_count = 0
+
+            for node_id, prof_data in student_prof_map.items():
+                if node_id in student_node_states:
+                    node = student_node_states[node_id]
+                    proficiency = prof_data["proficiency"]
+
+                    # Update proficiency data
+                    node["student_proficiency"] = proficiency
+                    node["attempt_count"] = prof_data.get("attempt_count", 0)
+                    node["last_attempt_at"] = prof_data.get("last_attempt_at")
+
+                    # Determine final status based on proficiency
+                    if proficiency >= self.DEFAULT_MASTERY_THRESHOLD:
+                        node["status"] = "MASTERED"
+                        mastered_count += 1
+                    elif proficiency > 0:
+                        node["status"] = "IN_PROGRESS"
+                        in_progress_count += 1
+                    # else: remains "UNLOCKED" or "LOCKED" based on Step 3
+
+            logger.info(
+                f"Student state: {mastered_count} mastered, "
+                f"{in_progress_count} in progress, "
+                f"{len(unlocked_node_ids)} unlocked, "
+                f"{len(nodes) - len(unlocked_node_ids)} locked"
+            )
+
+            # Step 5: Return decorated graph
+            return {
+                "nodes": list(student_node_states.values()),
+                "edges": edges,
+                "student_id": student_id,
+                "subject_id": subject_id,
+                "version_id": graph_data.get("version_id"),
+                "generated_at": graph_data.get("generated_at")
+            }
+
+        except ValueError as e:
+            # Re-raise ValueError for 404 handling
+            logger.error(f"Graph not found: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Error building student graph: {e}")
+            raise
+
+    def _build_prerequisites_map(
+        self,
+        edges: List[Dict[str, Any]]
+    ) -> Dict[str, List[Tuple[str, float]]]:
+        """
+        Build map of node_id -> [(prerequisite_node_id, threshold), ...]
+
+        Args:
+            edges: List of edge dictionaries with source, target, threshold
+
+        Returns:
+            {
+                "target_node_id": [
+                    ("prereq_node_1", 0.8),
+                    ("prereq_node_2", 0.9)
+                ]
+            }
+        """
+        prereqs_map = {}
+
+        for edge in edges:
+            target_id = edge["target"]
+            source_id = edge["source"]
+            threshold = edge.get("threshold", self.DEFAULT_MASTERY_THRESHOLD)
+
+            if target_id not in prereqs_map:
+                prereqs_map[target_id] = []
+
+            prereqs_map[target_id].append((source_id, threshold))
+
+        return prereqs_map
+
+    def _determine_unlocked_nodes(
+        self,
+        nodes: List[Dict[str, Any]],
+        edges: List[Dict[str, Any]],
+        prereqs_map: Dict[str, List[Tuple[str, float]]],
+        student_prof_map: Dict[str, Dict[str, Any]]
+    ) -> Set[str]:
+        """
+        Determine which nodes are unlocked for the student
+
+        A node is unlocked if:
+        - It has no prerequisites (entry point), OR
+        - ALL prerequisites meet required proficiency thresholds
+
+        Args:
+            nodes: List of node dictionaries
+            edges: List of edge dictionaries
+            prereqs_map: Prerequisite map from _build_prerequisites_map
+            student_prof_map: Student proficiency map from BigQuery
+
+        Returns:
+            Set of unlocked node IDs
+        """
+        unlocked = set()
+
+        for node in nodes:
+            node_id = node["id"]
+
+            # Check if node has prerequisites
+            prerequisites = prereqs_map.get(node_id, [])
+
+            if not prerequisites:
+                # No prerequisites = entry point = always unlocked
+                unlocked.add(node_id)
+                continue
+
+            # Check if ALL prerequisites are met
+            all_met = True
+
+            for prereq_id, required_threshold in prerequisites:
+                # Get student's proficiency for this prerequisite
+                prof_data = student_prof_map.get(prereq_id, {})
+                current_proficiency = prof_data.get("proficiency", 0.0)
+
+                # Check if proficiency meets threshold
+                if current_proficiency < required_threshold:
+                    all_met = False
+                    break
+
+            if all_met:
+                unlocked.add(node_id)
+
+        return unlocked
 
     # ==================== Utility Methods ====================
 

@@ -92,6 +92,7 @@ class BigQueryDatabase:
         """Schema for curriculum_prerequisites table (polymorphic relationships)"""
         return [
             bigquery.SchemaField("prerequisite_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("subject_id", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("prerequisite_entity_id", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("prerequisite_entity_type", "STRING", mode="REQUIRED"),  # 'skill' or 'subskill'
             bigquery.SchemaField("unlocks_entity_id", "STRING", mode="REQUIRED"),
