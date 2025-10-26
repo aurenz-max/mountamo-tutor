@@ -24,11 +24,12 @@ import type { SelectedEntity } from '@/types/curriculum-authoring';
 
 interface EntityEditorProps {
   entity: SelectedEntity;
+  subjectId?: string;
   onPrerequisiteClick?: () => void;
   onEntityDeleted?: () => void;
 }
 
-export function EntityEditor({ entity, onPrerequisiteClick, onEntityDeleted }: EntityEditorProps) {
+export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityDeleted }: EntityEditorProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { mutate: deleteUnit, isPending: isDeletingUnit } = useDeleteUnit();
@@ -153,7 +154,7 @@ export function EntityEditor({ entity, onPrerequisiteClick, onEntityDeleted }: E
         {entity.type === 'subject' && <SubjectForm subject={entity.data as any} />}
         {entity.type === 'unit' && <UnitForm unit={entity.data as any} />}
         {entity.type === 'skill' && <SkillForm skill={entity.data as any} />}
-        {entity.type === 'subskill' && <SubskillForm subskill={entity.data as any} />}
+        {entity.type === 'subskill' && <SubskillForm subskill={entity.data as any} subjectId={subjectId} />}
       </CardContent>
 
       {/* Delete Confirmation Dialog */}

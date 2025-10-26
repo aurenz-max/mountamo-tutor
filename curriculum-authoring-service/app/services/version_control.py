@@ -31,7 +31,9 @@ class VersionControl:
             settings.TABLE_SKILLS: "skill_id",
             settings.TABLE_SUBSKILLS: "subskill_id",
             settings.TABLE_PREREQUISITES: "prerequisite_id",
-            settings.TABLE_VERSIONS: "version_id"
+            settings.TABLE_VERSIONS: "version_id",
+            settings.TABLE_PRIMITIVES: "primitive_id",
+            settings.TABLE_SUBSKILL_PRIMITIVES: "subskill_id"  # Composite key, but subskill_id is primary
         }
         return pk_map.get(table_name, "id")
 
@@ -379,7 +381,8 @@ class VersionControl:
             settings.TABLE_UNITS,
             settings.TABLE_SKILLS,
             settings.TABLE_SUBSKILLS,
-            settings.TABLE_PREREQUISITES
+            settings.TABLE_PREREQUISITES,
+            settings.TABLE_SUBSKILL_PRIMITIVES
         ]
 
         for table_name in tables:
@@ -471,6 +474,29 @@ class VersionControl:
                     WHERE p.subject_id = @subject_id
                 ) AS S
                 ON T.prerequisite_id = S.prerequisite_id
+                WHEN MATCHED THEN
+                  UPDATE SET T.is_draft = false, T.version_id = @version_id
+                """
+                parameters = [
+                    bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
+                    bigquery.ScalarQueryParameter("version_id", "STRING", new_version.version_id)
+                ]
+            elif table_name == settings.TABLE_SUBSKILL_PRIMITIVES:
+                # For subskill primitives, update all primitive associations for subskills of this subject
+                merge_query = f"""
+                MERGE `{settings.get_table_id(table_name)}` AS T
+                USING (
+                    SELECT sp.*
+                    FROM `{settings.get_table_id(table_name)}` sp
+                    JOIN `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` sub
+                      ON sp.subskill_id = sub.subskill_id
+                    JOIN `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
+                      ON sub.skill_id = sk.skill_id
+                    JOIN `{settings.get_table_id(settings.TABLE_UNITS)}` u
+                      ON sk.unit_id = u.unit_id
+                    WHERE u.subject_id = @subject_id
+                ) AS S
+                ON T.subskill_id = S.subskill_id AND T.primitive_id = S.primitive_id
                 WHEN MATCHED THEN
                   UPDATE SET T.is_draft = false, T.version_id = @version_id
                 """

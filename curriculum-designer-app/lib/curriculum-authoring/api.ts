@@ -11,6 +11,7 @@ import type {
   CurriculumTree,
   Prerequisite, PrerequisiteCreate, EntityPrerequisites, PrerequisiteGraph,
   EntityType,
+  Primitive, PrimitiveCategory,
   GenerateUnitRequest, GenerateSkillRequest,
   SuggestPrerequisitesRequest, ImproveDescriptionRequest,
   AIGeneratedUnit,
@@ -344,6 +345,36 @@ class CurriculumAuthoringAPI {
     return this.request<PublishResponse>(
       `/api/publishing/subjects/${subjectId}/rollback/${versionId}`,
       { method: 'POST' }
+    );
+  }
+
+  // ==================== PRIMITIVE ENDPOINTS ====================
+
+  async getPrimitives(): Promise<Primitive[]> {
+    return this.request<Primitive[]>('/api/curriculum/primitives');
+  }
+
+  async getPrimitivesByCategory(category: PrimitiveCategory): Promise<Primitive[]> {
+    return this.request<Primitive[]>(`/api/curriculum/primitives/categories/${category}`);
+  }
+
+  async getSubskillPrimitives(subskillId: string, subjectId: string): Promise<Primitive[]> {
+    return this.request<Primitive[]>(
+      `/api/curriculum/subskills/${subskillId}/primitives?subject_id=${subjectId}`
+    );
+  }
+
+  async updateSubskillPrimitives(
+    subskillId: string,
+    primitiveIds: string[],
+    subjectId: string
+  ): Promise<{ message: string; primitive_count: number }> {
+    return this.request<{ message: string; primitive_count: number }>(
+      `/api/curriculum/subskills/${subskillId}/primitives?subject_id=${subjectId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(primitiveIds),
+      }
     );
   }
 }

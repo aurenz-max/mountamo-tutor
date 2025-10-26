@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useCreateSubskill, useUpdateSubskill } from '@/lib/curriculum-authoring/hooks';
+import { useCreateSubskill, useUpdateSubskill, useSubskillPrimitives, useUpdateSubskillPrimitives } from '@/lib/curriculum-authoring/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,20 +9,30 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { PrimitiveSelector } from '../primitives/PrimitiveSelector';
 import type { Subskill, SubskillUpdate, SubskillCreate } from '@/types/curriculum-authoring';
 
 interface SubskillFormProps {
   subskill: Subskill;
+  subjectId?: string;
 }
 
-export function SubskillForm({ subskill }: SubskillFormProps) {
+export function SubskillForm({ subskill, subjectId }: SubskillFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
+  const [selectedPrimitives, setSelectedPrimitives] = useState<string[]>([]);
   const isNewSubskill = subskill.subskill_id === 'new';
 
   const { mutate: createSubskill, isPending: isCreating, error: createError } = useCreateSubskill();
   const { mutate: updateSubskill, isPending: isUpdating, error: updateError } = useUpdateSubskill();
+  const { mutate: updatePrimitives, isPending: isUpdatingPrimitives } = useUpdateSubskillPrimitives();
 
-  const isPending = isCreating || isUpdating;
+  // Fetch existing primitives for this subskill
+  const { data: existingPrimitives, isLoading: isLoadingPrimitives } = useSubskillPrimitives(
+    !isNewSubskill ? subskill.subskill_id : undefined,
+    subjectId
+  );
+
+  const isPending = isCreating || isUpdating || isUpdatingPrimitives;
   const error = createError || updateError;
 
   const {
@@ -50,6 +60,13 @@ export function SubskillForm({ subskill }: SubskillFormProps) {
     });
   }, [subskill, reset]);
 
+  // Load existing primitives when they're fetched
+  useEffect(() => {
+    if (existingPrimitives) {
+      setSelectedPrimitives(existingPrimitives.map((p) => p.primitive_id));
+    }
+  }, [existingPrimitives]);
+
   const onSubmit = (data: SubskillUpdate) => {
     if (isNewSubskill) {
       // Create new subskill - generate a unique ID
@@ -66,6 +83,14 @@ export function SubskillForm({ subskill }: SubskillFormProps) {
 
       createSubskill(createData, {
         onSuccess: () => {
+          // After creating the subskill, update primitives if any are selected
+          if (selectedPrimitives.length > 0 && subjectId) {
+            updatePrimitives({
+              subskillId,
+              primitiveIds: selectedPrimitives,
+              subjectId,
+            });
+          }
           setShowSuccess(true);
           setTimeout(() => setShowSuccess(false), 3000);
         },
@@ -76,8 +101,25 @@ export function SubskillForm({ subskill }: SubskillFormProps) {
         { subskillId: subskill.subskill_id, data },
         {
           onSuccess: () => {
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
+            // Update primitives if subjectId is available
+            if (subjectId) {
+              updatePrimitives(
+                {
+                  subskillId: subskill.subskill_id,
+                  primitiveIds: selectedPrimitives,
+                  subjectId,
+                },
+                {
+                  onSuccess: () => {
+                    setShowSuccess(true);
+                    setTimeout(() => setShowSuccess(false), 3000);
+                  },
+                }
+              );
+            } else {
+              setShowSuccess(true);
+              setTimeout(() => setShowSuccess(false), 3000);
+            }
           },
         }
       );
@@ -157,6 +199,27 @@ export function SubskillForm({ subskill }: SubskillFormProps) {
           Difficulty range for generated problems (0-10 scale)
         </p>
       </div>
+
+      {/* Visual Primitives Section */}
+      {subjectId && (
+        <div className="space-y-2 pt-2 border-t">
+          <Label>Visual Primitives</Label>
+          <p className="text-sm text-muted-foreground">
+            Select the types of interactive visuals allowed for this subskill
+          </p>
+          {isLoadingPrimitives ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              <span className="ml-2 text-sm text-gray-500">Loading primitives...</span>
+            </div>
+          ) : (
+            <PrimitiveSelector
+              selectedPrimitiveIds={selectedPrimitives}
+              onSelectionChange={setSelectedPrimitives}
+            />
+          )}
+        </div>
+      )}
 
       {error && (
         <Alert variant="destructive">

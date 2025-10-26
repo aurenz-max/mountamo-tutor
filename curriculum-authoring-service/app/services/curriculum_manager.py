@@ -16,6 +16,7 @@ from app.models.curriculum import (
     Unit, UnitCreate, UnitUpdate,
     Skill, SkillCreate, SkillUpdate,
     Subskill, SubskillCreate, SubskillUpdate,
+    Primitive, SubskillPrimitiveAssociation,
     CurriculumTree, UnitNode, SkillNode, SubskillNode,
     FlattenedCurriculumRow
 )
@@ -785,6 +786,123 @@ class CurriculumManager:
             ))
 
         return flattened_rows
+
+    # ==================== PRIMITIVE OPERATIONS ====================
+
+    async def get_all_primitives(self) -> List[Dict[str, Any]]:
+        """Get all primitives from the library"""
+        query = f"""
+        SELECT *
+        FROM `{settings.get_table_id(settings.TABLE_PRIMITIVES)}`
+        ORDER BY category, primitive_name
+        """
+
+        logger.info("📊 Querying all primitives")
+        results = await db.execute_query(query)
+        logger.info(f"📦 Found {len(results)} primitives")
+
+        return results
+
+    async def get_primitives_by_category(self, category: str) -> List[Dict[str, Any]]:
+        """Get primitives filtered by category"""
+        query = f"""
+        SELECT *
+        FROM `{settings.get_table_id(settings.TABLE_PRIMITIVES)}`
+        WHERE category = @category
+        ORDER BY primitive_name
+        """
+
+        parameters = [
+            bigquery.ScalarQueryParameter("category", "STRING", category)
+        ]
+
+        logger.info(f"📊 Querying primitives for category: {category}")
+        results = await db.execute_query(query, parameters)
+        logger.info(f"📦 Found {len(results)} primitives in category {category}")
+
+        return results
+
+    async def get_subskill_primitives(self, subskill_id: str, version_id: str) -> List[Dict[str, Any]]:
+        """Get all primitives associated with a subskill"""
+        query = f"""
+        SELECT p.*
+        FROM `{settings.get_table_id(settings.TABLE_SUBSKILL_PRIMITIVES)}` sp
+        JOIN `{settings.get_table_id(settings.TABLE_PRIMITIVES)}` p
+            ON sp.primitive_id = p.primitive_id
+        WHERE sp.subskill_id = @subskill_id
+            AND sp.version_id = @version_id
+            AND sp.is_draft = false
+        ORDER BY p.category, p.primitive_name
+        """
+
+        parameters = [
+            bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id),
+            bigquery.ScalarQueryParameter("version_id", "STRING", version_id)
+        ]
+
+        logger.info(f"📊 Querying primitives for subskill {subskill_id}, version {version_id}")
+        results = await db.execute_query(query, parameters)
+        logger.info(f"📦 Found {len(results)} primitives for subskill")
+
+        return results
+
+    async def update_subskill_primitives(
+        self,
+        subskill_id: str,
+        primitive_ids: List[str],
+        version_id: str
+    ) -> bool:
+        """
+        Update the primitives associated with a subskill.
+        Creates draft records in the junction table.
+        """
+        try:
+            now = datetime.utcnow()
+
+            # Step 1: Delete existing draft associations for this subskill
+            delete_query = f"""
+            DELETE FROM `{settings.get_table_id(settings.TABLE_SUBSKILL_PRIMITIVES)}`
+            WHERE subskill_id = @subskill_id
+                AND version_id = @version_id
+                AND is_draft = true
+            """
+
+            delete_params = [
+                bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id),
+                bigquery.ScalarQueryParameter("version_id", "STRING", version_id)
+            ]
+
+            logger.info(f"🗑️ Deleting existing draft primitive associations for subskill {subskill_id}")
+            await db.execute_query(delete_query, delete_params)
+
+            # Step 2: Insert new draft associations
+            if primitive_ids:
+                rows_to_insert = []
+                for primitive_id in primitive_ids:
+                    rows_to_insert.append({
+                        "subskill_id": subskill_id,
+                        "primitive_id": primitive_id,
+                        "version_id": version_id,
+                        "is_draft": True,
+                        "created_at": now.isoformat()
+                    })
+
+                logger.info(f"💾 Inserting {len(rows_to_insert)} draft primitive associations")
+                success = await db.insert_rows(settings.TABLE_SUBSKILL_PRIMITIVES, rows_to_insert)
+
+                if not success:
+                    logger.error("❌ Failed to insert primitive associations")
+                    return False
+
+                logger.info(f"✅ Successfully updated primitives for subskill {subskill_id}")
+            else:
+                logger.info(f"✅ Removed all primitives from subskill {subskill_id}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ Failed to update subskill primitives: {e}")
+            raise
 
 
 # Global instance

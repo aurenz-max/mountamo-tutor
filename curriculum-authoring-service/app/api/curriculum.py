@@ -3,7 +3,7 @@ Curriculum CRUD API endpoints
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 
 from app.core.security import get_current_user, require_designer
@@ -405,3 +405,83 @@ async def delete_subskill(
 
     logger.info(f"✅ Subskill deleted: {subskill_id}")
     return {"message": "Subskill deleted successfully"}
+
+
+# ==================== PRIMITIVE ENDPOINTS ====================
+
+@router.get("/primitives")
+async def get_all_primitives():
+    """Get all visual primitives from the library"""
+    logger.info("📊 Fetching all primitives")
+
+    primitives = await curriculum_manager.get_all_primitives()
+    logger.info(f"✅ Retrieved {len(primitives)} primitives")
+
+    return primitives
+
+
+@router.get("/primitives/categories/{category}")
+async def get_primitives_by_category(category: str):
+    """Get primitives filtered by category"""
+    logger.info(f"📊 Fetching primitives for category: {category}")
+
+    valid_categories = ["foundational", "math", "science", "language-arts", "abcs"]
+    if category not in valid_categories:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid category. Must be one of: {', '.join(valid_categories)}"
+        )
+
+    primitives = await curriculum_manager.get_primitives_by_category(category)
+    logger.info(f"✅ Retrieved {len(primitives)} primitives for category {category}")
+
+    return primitives
+
+
+@router.get("/subskills/{subskill_id}/primitives")
+async def get_subskill_primitives(
+    subskill_id: str,
+    subject_id: str = Query(..., description="Subject ID for version lookup")
+):
+    """Get all primitives associated with a subskill"""
+    logger.info(f"📊 Fetching primitives for subskill: {subskill_id}")
+
+    # Use a simple draft version ID based on subject
+    # This matches the pattern used in update_subskill_primitives
+    version_id = f"{subject_id}-draft"
+
+    primitives = await curriculum_manager.get_subskill_primitives(
+        subskill_id,
+        version_id
+    )
+
+    logger.info(f"✅ Retrieved {len(primitives)} primitives for subskill {subskill_id}")
+    return primitives
+
+
+@router.put("/subskills/{subskill_id}/primitives")
+async def update_subskill_primitives(
+    subskill_id: str,
+    primitive_ids: List[str],
+    subject_id: str = Query(..., description="Subject ID for version lookup")
+):
+    """Update the primitives associated with a subskill"""
+    logger.info(f"📝 Updating primitives for subskill: {subskill_id}")
+    logger.info(f"   New primitive IDs: {primitive_ids}")
+
+    # Use a simple draft version ID
+    version_id = f"{subject_id}-draft"
+
+    # Update primitive associations
+    success = await curriculum_manager.update_subskill_primitives(
+        subskill_id,
+        primitive_ids,
+        version_id
+    )
+
+    if not success:
+        logger.error(f"❌ Failed to update primitives for subskill: {subskill_id}")
+        raise HTTPException(status_code=500, detail="Failed to update primitives")
+
+    logger.info(f"✅ Primitives updated for subskill: {subskill_id}")
+    return {"message": "Primitives updated successfully", "primitive_count": len(primitive_ids)}

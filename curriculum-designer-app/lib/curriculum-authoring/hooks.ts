@@ -15,7 +15,8 @@ import type {
   PrerequisiteCreate, EntityType,
   GenerateUnitRequest, GenerateSkillRequest,
   SuggestPrerequisitesRequest, ImproveDescriptionRequest,
-  PublishRequest
+  PublishRequest,
+  Primitive, PrimitiveCategory
 } from '@/types/curriculum-authoring';
 
 // ==================== QUERY KEYS ====================
@@ -43,6 +44,9 @@ export const QUERY_KEYS = {
   graphStatus: (subjectId: string) => ['graphStatus', subjectId] as const,
   cachedSubjects: () => ['cachedSubjects'] as const,
   allCachedGraphs: () => ['allCachedGraphs'] as const,
+  primitives: () => ['primitives'] as const,
+  subskillPrimitives: (subskillId: string, subjectId: string) =>
+    ['subskillPrimitives', subskillId, subjectId] as const,
 };
 
 // ==================== CURRICULUM HOOKS ====================
@@ -388,6 +392,42 @@ export function useRollbackVersion() {
       queryClient.invalidateQueries({ queryKey: ['curriculumTree', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['versionHistory', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['activeVersion', subjectId] });
+    },
+  });
+}
+
+// ==================== PRIMITIVE HOOKS ====================
+
+export function usePrimitives() {
+  return useQuery({
+    queryKey: QUERY_KEYS.primitives(),
+    queryFn: () => curriculumAuthoringAPI.getPrimitives(),
+    staleTime: 1000 * 60 * 60, // 1 hour - primitives rarely change
+  });
+}
+
+export function useSubskillPrimitives(subskillId: string | undefined, subjectId: string | undefined) {
+  return useQuery({
+    queryKey: QUERY_KEYS.subskillPrimitives(subskillId!, subjectId!),
+    queryFn: () => curriculumAuthoringAPI.getSubskillPrimitives(subskillId!, subjectId!),
+    enabled: !!subskillId && !!subjectId,
+  });
+}
+
+export function useUpdateSubskillPrimitives() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ subskillId, primitiveIds, subjectId }: {
+      subskillId: string;
+      primitiveIds: string[];
+      subjectId: string;
+    }) => curriculumAuthoringAPI.updateSubskillPrimitives(subskillId, primitiveIds, subjectId),
+    onSuccess: (_, variables) => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.subskillPrimitives(variables.subskillId, variables.subjectId) });
+      queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
+      queryClient.invalidateQueries({ queryKey: ['subskill', variables.subskillId] });
     },
   });
 }

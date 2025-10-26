@@ -33,6 +33,8 @@ def main():
     print(f"  - {settings.TABLE_SUBSKILLS}")
     print(f"  - {settings.TABLE_PREREQUISITES}")
     print(f"  - {settings.TABLE_VERSIONS}")
+    print(f"  - {settings.TABLE_PRIMITIVES}")
+    print(f"  - {settings.TABLE_SUBSKILL_PRIMITIVES}")
     print("\n" + "=" * 80)
 
     response = input("\nProceed with table creation? (yes/no): ")

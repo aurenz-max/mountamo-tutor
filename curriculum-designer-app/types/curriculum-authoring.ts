@@ -93,6 +93,7 @@ export interface SubskillUpdate {
   difficulty_start?: number;
   difficulty_end?: number;
   target_difficulty?: number;
+  primitive_ids?: string[];
 }
 
 export interface Subskill extends SubskillBase {
@@ -100,6 +101,32 @@ export interface Subskill extends SubskillBase {
   is_draft: boolean;
   created_at: string;
   updated_at: string;
+  primitives?: Primitive[];
+}
+
+// ==================== PRIMITIVE TYPES ====================
+
+export type PrimitiveCategory = 'foundational' | 'math' | 'science' | 'language-arts' | 'abcs';
+
+export interface PrimitiveBase {
+  primitive_id: string;
+  primitive_name: string;
+  category: PrimitiveCategory;
+  best_for?: string;
+  avoid_for?: string;
+  example?: string;
+}
+
+export interface Primitive extends PrimitiveBase {
+  created_at: string;
+}
+
+export interface SubskillPrimitiveAssociation {
+  subskill_id: string;
+  primitive_id: string;
+  version_id: string;
+  is_draft: boolean;
+  created_at: string;
 }
 
 // ==================== TREE VIEW TYPES ====================
@@ -114,6 +141,7 @@ export interface SubskillNode {
     target?: number;
   };
   is_draft: boolean;
+  primitives?: Primitive[];
 }
 
 export interface SkillNode {

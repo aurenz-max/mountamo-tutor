@@ -117,6 +117,28 @@ class BigQueryDatabase:
             bigquery.SchemaField("change_summary", "STRING", mode="NULLABLE"),
         ]
 
+    def get_primitives_schema(self) -> List[bigquery.SchemaField]:
+        """Schema for curriculum_primitives table (visual primitive library)"""
+        return [
+            bigquery.SchemaField("primitive_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("primitive_name", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("category", "STRING", mode="REQUIRED"),  # foundational, math, science, language-arts, abcs
+            bigquery.SchemaField("best_for", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("avoid_for", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("example", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED"),
+        ]
+
+    def get_subskill_primitives_schema(self) -> List[bigquery.SchemaField]:
+        """Schema for curriculum_subskill_primitives table (junction table)"""
+        return [
+            bigquery.SchemaField("subskill_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("primitive_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("version_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("is_draft", "BOOLEAN", mode="REQUIRED"),
+            bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED"),
+        ]
+
     def create_table_if_not_exists(self, table_name: str, schema: List[bigquery.SchemaField]):
         """Create a BigQuery table if it doesn't exist"""
         table_id = settings.get_table_id(table_name)
@@ -140,6 +162,8 @@ class BigQueryDatabase:
             (settings.TABLE_SUBSKILLS, self.get_subskills_schema()),
             (settings.TABLE_PREREQUISITES, self.get_prerequisites_schema()),
             (settings.TABLE_VERSIONS, self.get_versions_schema()),
+            (settings.TABLE_PRIMITIVES, self.get_primitives_schema()),
+            (settings.TABLE_SUBSKILL_PRIMITIVES, self.get_subskill_primitives_schema()),
         ]
 
         for table_name, schema in tables_config:

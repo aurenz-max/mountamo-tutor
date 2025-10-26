@@ -223,6 +223,7 @@ export default function CurriculumDesignerPage() {
                   {selectedEntity ? (
                     <EntityEditor
                       entity={selectedEntity}
+                      subjectId={selectedSubjectId}
                       onPrerequisiteClick={handlePrerequisiteClick}
                       onEntityDeleted={() => setSelectedEntity(undefined)}
                     />
