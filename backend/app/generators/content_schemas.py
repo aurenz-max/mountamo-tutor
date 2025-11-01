@@ -526,8 +526,547 @@ ABC/LITERACY VISUALS:
     required=["needs_visual"]
 )
 
-# Practice Problems Schema Step 1 - WITH VISUAL INTENTS (for heavy model)
-# This is used in Step 1 to generate problems with visual intent metadata
+# ============================================================================
+# CARD GRID SCHEMA - Simple grid layout for live interactions
+# ============================================================================
+CARD_GRID_SCHEMA = Schema(
+    type="object",
+    properties={
+        "cards": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(
+                        type="string",
+                        description="""Unique card identifier. CRITICAL: This ID MUST match the target IDs specified in interaction_config.targets.
+Examples: 'card_A', 'card_B', 'card_1', 'card_yes', 'card_no'
+The frontend will use these IDs to detect which card was clicked and evaluate correctness."""
+                    ),
+                    "content_type": Schema(
+                        type="string",
+                        enum=["text", "image", "image_with_label"],
+                        description="""Type of content to display on this card:
+- "text": Display text only (e.g., "Yes", "No", "A", "Cat")
+- "image": Display an emoji or image only (e.g., "🍎", "🐱")
+- "image_with_label": Display both image and text label"""
+                    ),
+                    "primary_value": Schema(
+                        type="string",
+                        description="""Main content to display on the card:
+- For content_type="text": The text to show (e.g., "Yes", "No", "The cat ran")
+- For content_type="image": An emoji or image identifier (e.g., "🍎", "🚗", "letter_A")
+- For content_type="image_with_label": The image/emoji to show above the label"""
+                    ),
+                    "label": Schema(
+                        type="string",
+                        description="""Optional label/caption text:
+- Required when content_type="image_with_label"
+- Shows below the image as a caption (e.g., image="🍎", label="Apple")
+- Omit for "text" and "image" content types"""
+                    ),
+                    "style": Schema(
+                        type="string",
+                        enum=["default", "large", "small"],
+                        default="default",
+                        description="Size variant for the card (default is recommended for most cases)"
+                    )
+                },
+                required=["id", "content_type", "primary_value"]
+            ),
+            description="""Array of clickable cards. Each card represents one choice/option.
+CRITICAL: The number of cards and their IDs must match interaction_config.targets exactly.
+Example for Yes/No question: [
+  {"id": "card_A", "content_type": "text", "primary_value": "Yes"},
+  {"id": "card_B", "content_type": "text", "primary_value": "No"}
+]"""
+        ),
+        "layout": Schema(
+            type="string",
+            enum=["grid", "row", "column"],
+            default="grid",
+            description="Layout arrangement: 'row' for horizontal, 'column' for vertical, 'grid' for auto-wrapping"
+        ),
+        "grid_columns": Schema(
+            type="integer",
+            description="Number of columns for grid layout (2-4 typical). Use 2 for Yes/No, 3-4 for multiple choice",
+            minimum=1,
+            maximum=6
+        )
+    },
+    required=["cards"]
+)
+
+# ============================================================================
+# COMPOSITE VISUAL CONTENT SCHEMA - Multi-layer visuals for live interactions
+# ============================================================================
+
+# Composite visual structure supporting display + interaction layers
+COMPOSITE_VISUAL_CONTENT_SCHEMA = Schema(
+    type="object",
+    properties={
+        # Display Visual Layer (optional) - Shows informational content
+        "display_visual": Schema(
+            type="object",
+            properties={
+                "visual_type": Schema(
+                    type="string",
+                    description="Type of display visual (rhyming-pairs, object-collection, etc.)"
+                ),
+                "visual_data": Schema(
+                    type="object",
+                    description="Data for the display visual matching its schema"
+                )
+            },
+            required=["visual_type", "visual_data"],
+            description="Optional informational visual layer (e.g., rhyming pairs to observe)"
+        ),
+        # Interaction Visual Layer (optional) - Provides answer interface
+        "interaction_visual": Schema(
+            type="object",
+            properties={
+                "visual_type": Schema(
+                    type="string",
+                    description="Type of interaction visual (typically card-grid for click mode)"
+                ),
+                "visual_data": Schema(
+                    type="object",
+                    description="Data for the interaction visual matching its schema"
+                )
+            },
+            required=["visual_type", "visual_data"],
+            description="Optional clickable interface layer (e.g., Yes/No cards)"
+        )
+    },
+    description="""Composite visual structure for live interactions with multiple layers.
+
+USAGE PATTERNS:
+- Display + Interaction: Show content + provide answer buttons (e.g., rhyming-pairs + Yes/No cards)
+- Interaction Only: Just answer interface, no separate content display (e.g., letter selection cards)
+- Display Only: Just content, student answers via speech (e.g., describe what you see)
+
+BACKWARD COMPATIBILITY:
+- Legacy single visual format still supported via visual_type/visual_data at root level
+- Frontend checks for display_visual/interaction_visual first, falls back to legacy format"""
+)
+
+# Composite visual intent for Phase 1 generation
+# NOTE: interaction_visual_intent has been MOVED to interaction_config (see below)
+# This now only contains display_visual_intent for informational content
+COMPOSITE_VISUAL_INTENT_SCHEMA = Schema(
+    type="object",
+    properties={
+        "display_visual_intent": VISUAL_INTENT_SCHEMA
+    },
+    description="Visual intent for display layer (informational content). Interaction visuals are now part of interaction_config."
+)
+
+# ============================================================================
+# LIVE INTERACTION SCHEMAS - Real-time AI-guided interactive problems
+# ============================================================================
+
+# STEP 1 Schema: Live interaction with visual intent (for Phase 1 generation)
+LIVE_INTERACTION_SCHEMA_STEP1 = Schema(
+    type="object",
+    properties={
+        "id": Schema(type="string", description="Unique identifier for this live interaction problem"),
+        "problem_type": Schema(type="string", enum=["live_interaction"], description="Problem type identifier"),
+        "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+        "grade_level": Schema(type="string"),
+
+        # AI Tutor Configuration
+        "prompt": Schema(
+            type="object",
+            properties={
+                "system": Schema(
+                    type="string",
+                    description="System prompt defining the AI tutor's persona and role for this specific interaction"
+                ),
+                "instruction": Schema(
+                    type="string",
+                    description="The initial verbal instruction/question the AI tutor will speak to start the problem"
+                ),
+                "voice": Schema(
+                    type="string",
+                    default="Leda",
+                    description="Voice style for the AI tutor (e.g., 'Leda', 'Kore')"
+                )
+            },
+            required=["system", "instruction"]
+        ),
+
+        # Visual Intent (what visuals are needed - actual data generated in Phase 2)
+        # COMPOSITE STRUCTURE: Now only contains display_visual_intent
+        # interaction_visual_intent has been MOVED to interaction_config below
+        "visual_intent": COMPOSITE_VISUAL_INTENT_SCHEMA,
+
+        # Interaction Configuration (NOW INCLUDES INTERACTION VISUAL)
+        "interaction_config": Schema(
+            type="object",
+            properties={
+                "mode": Schema(
+                    type="string",
+                    enum=["click", "speech", "drag", "trace"],
+                    description="How the student interacts with the visual"
+                ),
+                "interaction_visual_intent": Schema(
+                    type="object",
+                    properties={
+                        "needs_visual": Schema(
+                            type="boolean",
+                            description="""Set to true if this interaction requires a clickable visual interface.
+CRITICAL RULES:
+- For mode='click': MUST set needs_visual=true and use visual_type='card-grid'
+- For mode='speech': Set needs_visual=false (student speaks answer)
+- For mode='drag' or 'trace': Set needs_visual=true with appropriate visual type"""
+                        ),
+                        "visual_type": Schema(
+                            type="string",
+                            description="""Type of interaction visual:
+- 'card-grid': For click mode (Yes/No buttons, multiple choice cards, etc.) - REQUIRED for click mode
+- Other types may be added for drag/trace modes in future""",
+                            enum=["card-grid"]
+                        ),
+                        "visual_purpose": Schema(
+                            type="string",
+                            description="""Clear description of what cards/options to display.
+EXAMPLES:
+- 'Display two cards: Yes and No for student to click'
+- 'Display three cards: A, B, C with answer choices'
+- 'Display four cards with images: apple, banana, cat, dog'"""
+                        ),
+                        "visual_id": Schema(
+                            type="string",
+                            description="Unique identifier for this interaction visual (e.g., 'interaction_1')"
+                        )
+                    },
+                    required=["needs_visual"],
+                    description="""CRITICAL: This defines the clickable answer interface.
+For click mode, this MUST be a card-grid with cards matching the targets below.
+The visual generation phase will create cards with IDs that match the target IDs."""
+                ),
+                "targets": Schema(
+                    type="array",
+                    items=Schema(
+                        type="object",
+                        properties={
+                            "id": Schema(
+                                type="string",
+                                description="""ID of the interactive element.
+CRITICAL: For click mode with card-grid, this MUST match the card ID that will be generated.
+Examples: 'card_yes', 'card_no', 'card_A', 'card_B', 'card_1', 'card_2'"""
+                            ),
+                            "is_correct": Schema(
+                                type="boolean",
+                                description="Whether selecting/clicking this element is a correct answer"
+                            )
+                        },
+                        required=["id", "is_correct"]
+                    ),
+                    description="""List of interactive elements and their correctness.
+CRITICAL: For click mode, card IDs generated in interaction_visual will match these target IDs exactly."""
+                )
+            },
+            required=["mode", "interaction_visual_intent", "targets"]
+        ),
+
+        # Evaluation and Feedback
+        "evaluation": Schema(
+            type="object",
+            properties={
+                "feedback": Schema(
+                    type="object",
+                    properties={
+                        "correct": Schema(
+                            type="object",
+                            properties={
+                                "audio": Schema(
+                                    type="string",
+                                    description="What the AI tutor should say for a correct answer"
+                                ),
+                                "visual_effect": Schema(
+                                    type="string",
+                                    enum=["highlight", "celebrate", "bounce", "pulse"],
+                                    description="Visual effect to apply on the frontend"
+                                )
+                            },
+                            required=["audio"]
+                        ),
+                        "incorrect": Schema(
+                            type="object",
+                            properties={
+                                "audio": Schema(
+                                    type="string",
+                                    description="What the AI tutor should say for an incorrect answer"
+                                ),
+                                "visual_effect": Schema(
+                                    type="string",
+                                    enum=["shake", "dim", "fade"],
+                                    description="Visual effect to apply on the frontend"
+                                ),
+                                "hint": Schema(
+                                    type="string",
+                                    description="Optional hint to guide the student toward the correct answer"
+                                )
+                            },
+                            required=["audio"]
+                        )
+                    },
+                    required=["correct", "incorrect"]
+                )
+            },
+            required=["feedback"]
+        ),
+
+        # Metadata
+        "metadata": Schema(
+            type="object",
+            properties={
+                "subject": Schema(type="string"),
+                "skill": Schema(
+                    type="object",
+                    properties={
+                        "id": Schema(type="string", description="Skill ID"),
+                        "description": Schema(type="string", description="Skill description")
+                    }
+                ),
+                "subskill": Schema(
+                    type="object",
+                    properties={
+                        "id": Schema(type="string", description="Subskill ID"),
+                        "description": Schema(type="string", description="Subskill description")
+                    }
+                ),
+                "expected_duration_seconds": Schema(
+                    type="integer",
+                    description="Expected time to complete this interaction"
+                )
+            }
+        ),
+
+        # Educational Context
+        "rationale": Schema(
+            type="string",
+            description="Educational reasoning behind this problem"
+        ),
+        "teaching_note": Schema(
+            type="string",
+            description="Tips for educators about this problem"
+        ),
+        "success_criteria": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="What student should demonstrate to succeed"
+        )
+    },
+    required=["id", "problem_type", "difficulty", "grade_level", "prompt", "visual_intent", "interaction_config", "evaluation"]
+)
+
+# FINAL Schema: Live interaction with actual visual data (for Phase 2 output)
+LIVE_INTERACTION_SCHEMA = Schema(
+    type="object",
+    properties={
+        "id": Schema(type="string", description="Unique identifier for this live interaction problem"),
+        "problem_type": Schema(type="string", enum=["live_interaction"], description="Problem type identifier"),
+        "difficulty": Schema(type="string", enum=["easy", "medium", "hard"]),
+        "grade_level": Schema(type="string"),
+
+        # AI Tutor Configuration
+        "prompt": Schema(
+            type="object",
+            properties={
+                "system": Schema(
+                    type="string",
+                    description="System prompt defining the AI tutor's persona and role for this specific interaction"
+                ),
+                "instruction": Schema(
+                    type="string",
+                    description="The initial verbal instruction/question the AI tutor will speak to start the problem"
+                ),
+                "voice": Schema(
+                    type="string",
+                    default="Leda",
+                    description="Voice style for the AI tutor (e.g., 'Leda', 'Kore')"
+                )
+            },
+            required=["system", "instruction"]
+        ),
+
+        # Visual Content (COMPOSITE STRUCTURE for multi-layer visuals)
+        # NOTE: interaction_visual has been MOVED to interaction_config
+        # This now only contains display_visual (informational layer)
+        "visual_content": Schema(
+            type="object",
+            properties={
+                "display_visual": Schema(
+                    type="object",
+                    properties={
+                        "visual_type": Schema(
+                            type="string",
+                            description="Type of display visual (rhyming-pairs, object-collection, etc.)"
+                        ),
+                        "visual_data": Schema(
+                            type="object",
+                            description="Data for the display visual matching its schema"
+                        )
+                    },
+                    required=["visual_type", "visual_data"],
+                    description="Optional informational visual layer (e.g., rhyming pairs to observe)"
+                )
+            },
+            description="Display visual content (informational only). Interaction visuals are now in interaction_config."
+        ),
+
+        # Interaction Configuration (NOW INCLUDES INTERACTION VISUAL)
+        "interaction_config": Schema(
+            type="object",
+            properties={
+                "mode": Schema(
+                    type="string",
+                    enum=["click", "speech", "drag", "trace"],
+                    description="How the student interacts with the visual"
+                ),
+                "interaction_visual": Schema(
+                    type="object",
+                    properties={
+                        "visual_type": Schema(
+                            type="string",
+                            description="Type of interaction visual (typically card-grid for click mode)"
+                        ),
+                        "visual_data": Schema(
+                            type="object",
+                            description="Data for the interaction visual matching its schema"
+                        )
+                    },
+                    required=["visual_type", "visual_data"],
+                    description="Clickable interface visual (e.g., Yes/No cards)"
+                ),
+                "targets": Schema(
+                    type="array",
+                    items=Schema(
+                        type="object",
+                        properties={
+                            "id": Schema(
+                                type="string",
+                                description="ID of the interactive element matching card IDs in interaction_visual"
+                            ),
+                            "is_correct": Schema(
+                                type="boolean",
+                                description="Whether selecting/clicking this element is a correct answer"
+                            )
+                        },
+                        required=["id", "is_correct"]
+                    ),
+                    description="List of interactive elements and their correctness"
+                )
+            },
+            required=["mode", "targets"]
+        ),
+
+        # Evaluation and Feedback
+        "evaluation": Schema(
+            type="object",
+            properties={
+                "feedback": Schema(
+                    type="object",
+                    properties={
+                        "correct": Schema(
+                            type="object",
+                            properties={
+                                "audio": Schema(
+                                    type="string",
+                                    description="What the AI tutor should say for a correct answer"
+                                ),
+                                "visual_effect": Schema(
+                                    type="string",
+                                    enum=["highlight", "celebrate", "bounce", "pulse"],
+                                    description="Visual effect to apply on the frontend"
+                                )
+                            },
+                            required=["audio"]
+                        ),
+                        "incorrect": Schema(
+                            type="object",
+                            properties={
+                                "audio": Schema(
+                                    type="string",
+                                    description="What the AI tutor should say for an incorrect answer"
+                                ),
+                                "visual_effect": Schema(
+                                    type="string",
+                                    enum=["shake", "dim", "fade"],
+                                    description="Visual effect to apply on the frontend"
+                                ),
+                                "hint": Schema(
+                                    type="string",
+                                    description="Optional hint to guide the student toward the correct answer"
+                                )
+                            },
+                            required=["audio"]
+                        )
+                    },
+                    required=["correct", "incorrect"]
+                )
+            },
+            required=["feedback"]
+        ),
+
+        # Metadata
+        "metadata": Schema(
+            type="object",
+            properties={
+                "subject": Schema(type="string"),
+                "skill": Schema(
+                    type="object",
+                    properties={
+                        "id": Schema(type="string", description="Skill ID"),
+                        "description": Schema(type="string", description="Skill description")
+                    }
+                ),
+                "subskill": Schema(
+                    type="object",
+                    properties={
+                        "id": Schema(type="string", description="Subskill ID"),
+                        "description": Schema(type="string", description="Subskill description")
+                    }
+                ),
+                "expected_duration_seconds": Schema(
+                    type="integer",
+                    description="Expected time to complete this interaction"
+                )
+            }
+        ),
+
+        # Educational Context
+        "rationale": Schema(
+            type="string",
+            description="Educational reasoning behind this problem"
+        ),
+        "teaching_note": Schema(
+            type="string",
+            description="Tips for educators about this problem"
+        ),
+        "success_criteria": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="What student should demonstrate to succeed"
+        )
+    },
+    required=["id", "problem_type", "difficulty", "grade_level", "prompt", "visual_content", "interaction_config", "evaluation"]
+)
+
+# ============================================================================
+# DEPRECATED: Monolithic Schema (Kept for Reference Only)
+# ============================================================================
+# This schema is NO LONGER USED due to Gemini complexity limits (400 errors).
+# It has been replaced by individual per-type schemas in problem_type_schemas.py
+# with a three-phase generation architecture:
+#   Phase 1: LLM selects problem types
+#   Phase 2: Generate each type with focused schemas
+#   Phase 3: Visual generation (unchanged)
+# ============================================================================
+
+# Practice Problems Schema Step 1 - WITH VISUAL INTENTS (DEPRECATED)
 PRACTICE_PROBLEMS_SCHEMA_STEP1 = Schema(
     type="object",
     properties={
@@ -748,6 +1287,12 @@ PRACTICE_PROBLEMS_SCHEMA_STEP1 = Schema(
                 },
                 required=["id", "difficulty", "grade_level", "question", "rationale", "teaching_note", "success_criteria"]
             )
+        ),
+
+        # Live Interaction Problems (Step 1 - with visual intent)
+        "live_interaction": Schema(
+            type="array",
+            items=LIVE_INTERACTION_SCHEMA_STEP1
         )
     }
 )
@@ -971,6 +1516,12 @@ PRACTICE_PROBLEMS_SCHEMA = Schema(
                 },
                 required=["id", "difficulty", "grade_level", "question", "rationale", "teaching_note", "success_criteria"]
             )
+        ),
+
+        # Live Interaction Problems
+        "live_interaction": Schema(
+            type="array",
+            items=LIVE_INTERACTION_SCHEMA
         )
     }
 )
@@ -1810,6 +2361,8 @@ VISUAL_TYPE_METADATA = {
 
 # Mapping of visual types to their schemas
 VISUAL_TYPE_TO_SCHEMA = {
+    # NEW: Card grid for live interactions
+    "card-grid": CARD_GRID_SCHEMA,
     # NEW Foundational Primitives
     "object-collection": OBJECT_COLLECTION_SCHEMA,
     "comparison-panel": COMPARISON_PANEL_SCHEMA,

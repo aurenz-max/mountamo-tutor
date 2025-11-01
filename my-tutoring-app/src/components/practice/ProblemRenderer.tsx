@@ -13,7 +13,8 @@ import {
   SequencingPrimitive,
   CategorizationPrimitive,
   ScenarioQuestionPrimitive,
-  ShortAnswerPrimitive
+  ShortAnswerPrimitive,
+  LiveInteractionPrimitive
 } from './primitives';
 
 interface Problem {
@@ -143,6 +144,8 @@ const getProblemType = (problem: Problem): string => {
         return 'scenarioQuestion';
       case 'short_answer':
         return 'shortAnswer';
+      case 'live_interaction':
+        return 'liveInteraction';
       case 'composable':
       case 'interactive':
         return 'composable';
@@ -291,6 +294,18 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
       case 'shortAnswer':
         return (
           <ShortAnswerPrimitive
+            problem={problem}
+            onUpdate={handleUpdate}
+            isSubmitted={isSubmitted}
+            feedback={feedback}
+            currentResponse={currentResponse}
+            disableFeedback={isAssessmentMode}
+          />
+        );
+
+      case 'liveInteraction':
+        return (
+          <LiveInteractionPrimitive
             problem={problem}
             onUpdate={handleUpdate}
             isSubmitted={isSubmitted}

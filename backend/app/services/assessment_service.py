@@ -551,7 +551,7 @@ class AssessmentService:
 
         # Handle different problem types from the rich schema
         problem_types = ['multiple_choice', 'true_false', 'fill_in_blanks', 'matching_activity',
-                        'sequencing_activity', 'categorization_activity', 'scenario_question', 'short_answer']
+                        'sequencing_activity', 'categorization_activity', 'scenario_question', 'short_answer', 'live_interaction']
 
         subskill_index = 0
         for problem_type in problem_types:

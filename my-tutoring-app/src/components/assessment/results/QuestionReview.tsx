@@ -149,6 +149,9 @@ const QuestionReview: React.FC<QuestionReviewProps> = ({ problemReviews, onClose
           </div>
 
           {/* Answer Comparison */}
+          {/* Note: This component works for all problem types including live_interaction.
+              Future enhancement: Could add special UI for live_interaction showing visual effects,
+              interaction mode, and target descriptions from detailed_results. */}
           <div className="space-y-6">
             {/* Student's Answer */}
             <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-l-blue-500">

@@ -13,10 +13,10 @@ from ..shared.question_types import (
     Question, StudentResponse, QuestionEvaluation, QuestionType,
     MultipleChoiceQuestion, TrueFalseQuestion, CategorizationQuestion,
     SequencingQuestion, ShortAnswerQuestion, ScenarioQuestion,
-    FillInBlanksQuestion, MatchingQuestion,
+    FillInBlanksQuestion, MatchingQuestion, LiveInteractionQuestion,
     MultipleChoiceResponse, TrueFalseResponse, CategorizationResponse,
     SequencingResponse, ShortAnswerResponse, ScenarioResponse,
-    FillInBlanksResponse, MatchingResponse
+    FillInBlanksResponse, MatchingResponse, LiveInteractionResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -70,6 +70,7 @@ class UniversalValidator:
                 QuestionType.SCENARIO: UniversalValidator._validate_scenario,
                 QuestionType.FILL_IN_BLANKS: UniversalValidator._validate_fill_in_blanks,
                 QuestionType.MATCHING: UniversalValidator._validate_matching,
+                QuestionType.LIVE_INTERACTION: UniversalValidator._validate_live_interaction,
             }
 
             validator = validator_map.get(question.type)
@@ -340,6 +341,32 @@ class UniversalValidator:
                         )
                     except:
                         logger.warning(f"[UNIVERSAL_VALIDATOR] Could not parse matching data: {student_answer}")
+                elif question_type == QuestionType.LIVE_INTERACTION:
+                    # Parse live interaction response - get selected_target_id
+                    selected_target_id = None
+                    interaction_mode = "click"
+
+                    # Check primitive_response first
+                    if primitive_response:
+                        selected_target_id = primitive_response.get('selected_target_id') or primitive_response.get('target_id')
+                        interaction_mode = primitive_response.get('interaction_mode', 'click')
+
+                    # Fallback to student_answer
+                    if not selected_target_id and isinstance(student_answer, str):
+                        selected_target_id = student_answer
+                    elif not selected_target_id and isinstance(student_answer, dict):
+                        selected_target_id = student_answer.get('selected_target_id') or student_answer.get('target_id')
+                        interaction_mode = student_answer.get('interaction_mode', 'click')
+
+                    if selected_target_id:
+                        logger.info(f"[UNIVERSAL_VALIDATOR] Live interaction - selected target: {selected_target_id}")
+                        return LiveInteractionResponse(
+                            question_id=question_id,
+                            selected_target_id=selected_target_id,
+                            interaction_mode=interaction_mode
+                        )
+                    else:
+                        logger.warning(f"[UNIVERSAL_VALIDATOR] No target_id found in live interaction response")
 
             logger.warning(f"[UNIVERSAL_VALIDATOR] Could not parse any response format for {question_type}")
             return None
@@ -657,6 +684,112 @@ class UniversalValidator:
             correct_answer=str(question.correct_answer),
             explanation=question.teaching_note
         )
+
+    @staticmethod
+    def _validate_live_interaction(
+        question: LiveInteractionQuestion,
+        response: LiveInteractionResponse
+    ) -> QuestionEvaluation:
+        """Validate live interaction response"""
+        logger.debug(f"[UNIVERSAL_VALIDATOR] Live Interaction Validation Details:")
+        logger.debug(f"[UNIVERSAL_VALIDATOR]   Student selected target: {response.selected_target_id}")
+        logger.debug(f"[UNIVERSAL_VALIDATOR]   Correct target IDs: {question.correct_target_ids}")
+
+        # Check if the selected target is in the correct targets list
+        is_correct = response.selected_target_id in question.correct_target_ids
+        score = 10.0 if is_correct else 3.0
+
+        # Find the target details from interaction_config
+        interaction_config = question.interaction_config
+        targets = interaction_config.get('targets', [])
+        selected_target = None
+
+        for target in targets:
+            if target.get('id') == response.selected_target_id:
+                selected_target = target
+                break
+
+        # Get feedback from evaluation config
+        evaluation = question.evaluation
+        feedback_config = evaluation.get('feedback', {})
+
+        if is_correct:
+            feedback_data = feedback_config.get('correct', {})
+            feedback = feedback_data.get('audio', 'Correct! Well done!')
+            visual_effect = feedback_data.get('visual_effect', 'success')
+        else:
+            feedback_data = feedback_config.get('incorrect', {})
+            feedback = feedback_data.get('audio', question.rationale if question.rationale else 'Try again!')
+            hint = feedback_data.get('hint', '')
+            if hint:
+                feedback += f" Hint: {hint}"
+            visual_effect = feedback_data.get('visual_effect', 'error')
+
+        logger.info(f"[UNIVERSAL_VALIDATOR] Live Interaction Result: {'CORRECT' if is_correct else 'INCORRECT'} - Score: {score}")
+        logger.debug(f"[UNIVERSAL_VALIDATOR]   Visual effect: {visual_effect}")
+
+        # Build detailed results for the evaluation
+        detailed_results = {
+            'selected_target_id': response.selected_target_id,
+            'target_description': selected_target.get('description', '') if selected_target else '',
+            'is_target_correct': selected_target.get('is_correct', False) if selected_target else False,
+            'visual_effect': visual_effect,
+            'interaction_mode': response.interaction_mode
+        }
+
+        return QuestionEvaluation(
+            question_id=question.id,
+            question_type=question.type,
+            is_correct=is_correct,
+            score=score,
+            feedback=feedback,
+            student_answer=f"Selected: {response.selected_target_id}",
+            correct_answer=f"Correct target(s): {', '.join(question.correct_target_ids)}",
+            explanation=question.teaching_note,
+            detailed_results=detailed_results
+        )
+
+    @staticmethod
+    def _validate_live_interaction_visual_structure(question: LiveInteractionQuestion) -> Optional[str]:
+        """
+        Validate composite visual structure for live interaction questions.
+        Returns error message if invalid, None if valid.
+        """
+        visual_content = question.visual_content
+        if not visual_content:
+            return None  # Visual content is optional
+
+        interaction_config = question.interaction_config
+        mode = interaction_config.get('mode')
+        targets = interaction_config.get('targets', [])
+
+        # Check for composite structure
+        has_display = 'display_visual' in visual_content
+        has_interaction = 'interaction_visual' in visual_content
+        has_legacy = 'visual_type' in visual_content
+
+        # If click mode, should have interaction visual (either composite or legacy)
+        if mode == 'click':
+            if has_interaction:
+                # Validate interaction_visual is card-grid
+                interaction_visual = visual_content.get('interaction_visual', {})
+                visual_type = interaction_visual.get('visual_type')
+                if visual_type != 'card-grid':
+                    logger.warning(f"Click mode should use card-grid for interaction_visual, got: {visual_type}")
+
+                # Validate card IDs match targets
+                visual_data = interaction_visual.get('visual_data', {})
+                cards = visual_data.get('cards', [])
+                card_ids = {card.get('id') for card in cards if isinstance(card, dict)}
+                target_ids = {target.get('id') for target in targets}
+
+                if card_ids != target_ids:
+                    return f"Card IDs {card_ids} don't match target IDs {target_ids}"
+
+            elif not has_legacy:
+                logger.warning(f"Click mode question {question.id} has no interaction_visual or legacy visual")
+
+        return None  # Valid
 
     @staticmethod
     def _find_matching_text(item_id: str, items: List[Dict[str, Any]]) -> Optional[str]:

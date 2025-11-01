@@ -25,6 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useAICoach } from '@/contexts/AICoachContext';
+import { formatFeedbackForAudio, type StructuredFeedback, type Feedback } from '@/lib/feedbackUtils';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -43,7 +44,7 @@ interface ProblemContext {
 interface SubmissionResult {
   is_correct: boolean;
   score: number;
-  feedback: any;
+  feedback: Feedback;  // Now properly typed
 }
 
 interface PracticeAICoachState {
@@ -462,14 +463,40 @@ const PracticeAICoach = React.forwardRef<{ sendSubmissionResult: (result: any) =
     dispatch({ type: 'SET_RESPONDING', isResponding: true });
   };
 
+  const sendTargetSelection = (targetId: string) => {
+    if (!isAIConnected) return;
+
+    sendMessage({
+      type: 'target_selected',
+      target_id: targetId
+    });
+
+    // Add user action to chat
+    dispatch({
+      type: 'ADD_MESSAGE',
+      message: {
+        role: 'user',
+        content: `Selected target: ${targetId}`,
+        timestamp: new Date(),
+        action: 'target-selection'
+      }
+    });
+
+    dispatch({ type: 'SET_RESPONDING', isResponding: true });
+  };
+
   const sendSubmissionResult = (result: SubmissionResult) => {
     if (!isAIConnected) return;
+
+    // Convert feedback to string format for audio-optimized output
+    // Handles both string and structured {praise, guidance, encouragement, next_steps} formats
+    const feedbackText = formatFeedbackForAudio(result.feedback);
 
     sendMessage({
       type: 'result_feedback',
       is_correct: result.is_correct,
       score: result.score,
-      content: result.feedback
+      content: feedbackText
     });
 
     dispatch({ type: 'SET_RESPONDING', isResponding: true });
@@ -503,8 +530,22 @@ const PracticeAICoach = React.forwardRef<{ sendSubmissionResult: (result: any) =
     if (!context || !context.currentProblem) return null;
 
     const problem = context.currentProblem;
-    const problemText = problem.question || problem.problem || problem.prompt || problem.statement || problem.text_with_blanks;
-    
+
+    // Handle different problem types - prompt can be a string or object
+    let problemText;
+    if (problem.question) {
+      problemText = problem.question;
+    } else if (problem.problem) {
+      problemText = problem.problem;
+    } else if (problem.prompt) {
+      // Check if prompt is an object (live_interaction) or string (other types)
+      problemText = typeof problem.prompt === 'object' ? problem.prompt.instruction : problem.prompt;
+    } else if (problem.statement) {
+      problemText = problem.statement;
+    } else if (problem.text_with_blanks) {
+      problemText = problem.text_with_blanks;
+    }
+
     return {
       text: problemText,
       number: (context.currentIndex || 0) + 1,
@@ -513,9 +554,10 @@ const PracticeAICoach = React.forwardRef<{ sendSubmissionResult: (result: any) =
     };
   };
 
-  // Expose method for parent components to send submission results
+  // Expose methods for parent components to send submission results and target selections
   React.useImperativeHandle(ref, () => ({
-    sendSubmissionResult
+    sendSubmissionResult,
+    sendTargetSelection
   }));
 
   const problemInfo = getCurrentProblemInfo();

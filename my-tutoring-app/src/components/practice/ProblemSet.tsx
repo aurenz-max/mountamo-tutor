@@ -9,6 +9,7 @@ import { authApi } from '@/lib/authApiClient';
 import { useEngagement } from '@/contexts/EngagementContext';
 import LoadingOverlay from './LoadingOverlay';
 import ProblemRenderer, { type ProblemRendererRef } from './ProblemRenderer';
+import PracticeAICoach from './PracticeAICoach';
 
 interface MCQResponseBatch {
   questions: any[];
@@ -103,8 +104,10 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   const [primitiveResponses, setPrimitiveResponses] = useState<any[]>([]);
   const [usingRecommendations, setUsingRecommendations] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+  const [showAICoach, setShowAICoach] = useState(false);
   const problemRendererRef = useRef<ProblemRendererRef>(null);
-  
+  const aiCoachRef = useRef<{ sendSubmissionResult: (result: any) => void; sendTargetSelection: (targetId: string) => void } | null>(null);
+
   // Engagement system hook
   const { processEngagementResponse } = useEngagement();
 
@@ -119,6 +122,15 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   // When the current problem changes, we'll handle this through the practice mode actions
   // The new problem will be communicated via context
   const currentProblem = problems.length > 0 ? problems[currentIndex] : null;
+
+  // Check if current problem is live_interaction type
+  useEffect(() => {
+    if (currentProblem && currentProblem.problem_type === 'live_interaction') {
+      setShowAICoach(true);
+    } else {
+      setShowAICoach(false);
+    }
+  }, [currentProblem]);
 
 
   // Remove the manual start tutor function since it's now always active
@@ -337,7 +349,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
         const evaluation = response.review.evaluation;
         let score = 0;
         let isCorrect = false;
-        
+
         if (typeof evaluation === 'object' && evaluation.score !== undefined) {
           score = evaluation.score;
           isCorrect = score >= 8; // Consider 8+ out of 10 as correct
@@ -345,12 +357,24 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
           score = evaluation;
           isCorrect = score >= 8;
         }
-        
-        onSubmissionResult({
+
+        const submissionResult = {
           is_correct: isCorrect,
           score: score,
           feedback: response.review
-        });
+        };
+
+        onSubmissionResult(submissionResult);
+
+        // Send submission result to AI Coach if active
+        // Pass the raw feedback - PracticeAICoach will handle formatting via feedbackUtils
+        if (showAICoach && aiCoachRef.current) {
+          aiCoachRef.current.sendSubmissionResult({
+            is_correct: isCorrect,
+            score: score,
+            feedback: response.review.feedback  // Pass raw feedback (string or structured object)
+          });
+        }
       }
       
     } catch (error: any) {
@@ -520,15 +544,38 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   return (
     <>
       {showLoadingOverlay && (
-        <LoadingOverlay 
+        <LoadingOverlay
           isRecommended={usingRecommendations}
-          message={usingRecommendations 
-            ? "Creating personalized problems based on your learning history..." 
+          message={usingRecommendations
+            ? "Creating personalized problems based on your learning history..."
             : "Creating problem set for your selected topic..."}
         />
       )}
-      
-      <div className="w-full max-w-4xl mx-auto">
+
+      {/* Practice AI Coach - shown for live_interaction problems */}
+      {showAICoach && currentProblem && (
+        <div className="fixed right-4 top-20 bottom-4 w-96 z-40">
+          <PracticeAICoach
+            ref={aiCoachRef}
+            studentId={studentId}
+            practiceContext={{
+              subject: currentTopic.subject || 'mathematics',
+              skill_id: currentTopic.selection?.skill,
+              subskill_id: currentTopic.selection?.subskill,
+              skill_description: currentTopic.skill?.description,
+              subskill_description: currentTopic.subskill?.description
+            }}
+            problemContext={{
+              currentProblem: currentProblem,
+              currentIndex: currentIndex,
+              totalProblems: problems.length,
+              isSubmitted: problemAttempted[currentIndex]
+            }}
+          />
+        </div>
+      )}
+
+      <div className={`w-full mx-auto transition-all ${showAICoach ? 'max-w-2xl mr-[420px]' : 'max-w-4xl'}`}>
         <Card className="w-full">
         <CardContent className="p-6">
           {error && (
@@ -694,10 +741,12 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 </div>
                 <div className="mt-2">
                   {/* Display question for MCQ, text_with_blanks for Fill-in-the-Blank, statement for True/False, or prompt/problem for other types */}
-                  {problems[currentIndex]?.question || 
-                   problems[currentIndex]?.text_with_blanks || 
-                   problems[currentIndex]?.statement || 
-                   problems[currentIndex]?.prompt || 
+                  {problems[currentIndex]?.question ||
+                   problems[currentIndex]?.text_with_blanks ||
+                   problems[currentIndex]?.statement ||
+                   (typeof problems[currentIndex]?.prompt === 'object' && problems[currentIndex]?.prompt !== null
+                     ? (problems[currentIndex]?.prompt as any)?.instruction
+                     : problems[currentIndex]?.prompt) ||
                    problems[currentIndex]?.problem}
                 </div>
               </div>

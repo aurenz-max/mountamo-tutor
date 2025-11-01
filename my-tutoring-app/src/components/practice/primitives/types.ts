@@ -72,6 +72,11 @@ export interface ShortAnswerResponse {
   student_answer: string;
 }
 
+export interface LiveInteractionResponse {
+  selected_target_id: string;
+  interaction_mode: string;
+}
+
 // Problem data types (these should match backend schemas)
 export interface MCQProblem {
   id?: string;
@@ -207,6 +212,65 @@ export interface ShortAnswerProblem {
   metadata?: any;
 }
 
+export interface LiveInteractionProblem {
+  id?: string;
+  problem_type: 'live_interaction';
+  prompt: {
+    system: string;
+    instruction: string;
+    voice?: string;
+  };
+  // VISUAL CONTENT: Now only contains display_visual (informational content)
+  visual_content?: {
+    // Display visual (informational layer)
+    display_visual?: {
+      visual_type: string;
+      visual_data: any;
+    };
+    // LEGACY: Old composite structure (backward compatibility)
+    interaction_visual?: {
+      visual_type: string;
+      visual_data: any;
+    };
+    // LEGACY: Single visual format (oldest backward compatibility)
+    visual_type?: string;
+    visual_data?: any;
+  };
+  // INTERACTION CONFIG: Now includes interaction_visual (NEW LOCATION)
+  interaction_config: {
+    mode: 'click' | 'speech' | 'drag' | 'trace';
+    // NEW: Interaction visual is now part of interaction_config
+    interaction_visual?: {
+      visual_type: string;
+      visual_data: any;
+    };
+    targets: Array<{
+      id: string;
+      is_correct: boolean;
+      description?: string;
+    }>;
+  };
+  evaluation: {
+    success_criteria?: string[];
+    feedback: {
+      correct: {
+        audio: string;
+        visual_effect?: string;
+      };
+      incorrect: {
+        audio: string;
+        hint?: string;
+        visual_effect?: string;
+      };
+    };
+  };
+  subject?: string;
+  skill_id?: string;
+  subskill_id?: string;
+  difficulty?: string;
+  metadata?: any;
+}
+
 // Specific primitive props interfaces
 export interface MCQPrimitiveProps extends ProblemPrimitiveProps<MCQProblem, MCQResponse> {}
 export interface MatchingPrimitiveProps extends ProblemPrimitiveProps<MatchingProblem, MatchingResponse> {}
@@ -216,3 +280,6 @@ export interface SequencingPrimitiveProps extends ProblemPrimitiveProps<Sequenci
 export interface CategorizationPrimitiveProps extends ProblemPrimitiveProps<CategorizationProblem, CategorizationResponse> {}
 export interface ScenarioQuestionPrimitiveProps extends ProblemPrimitiveProps<ScenarioQuestionProblem, ScenarioQuestionResponse> {}
 export interface ShortAnswerPrimitiveProps extends ProblemPrimitiveProps<ShortAnswerProblem, ShortAnswerResponse> {}
+export interface LiveInteractionPrimitiveProps extends ProblemPrimitiveProps<LiveInteractionProblem, LiveInteractionResponse> {
+  aiCoachRef?: React.RefObject<{ sendTargetSelection: (targetId: string) => void }>;
+}

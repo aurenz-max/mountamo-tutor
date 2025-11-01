@@ -4,6 +4,7 @@ import React from 'react';
 // Foundational primitives (USE FIRST for K-1)
 import { ObjectCollection } from './ObjectCollection';
 import { ComparisonPanel } from './ComparisonPanel';
+import { CardGrid } from './CardGrid';
 
 // Math primitives
 import { BarModel } from './BarModel';
@@ -42,6 +43,15 @@ interface VisualData {
 interface VisualPrimitiveRendererProps {
   visualData: VisualData | null;
   className?: string;
+  // Pass-through props for interactive visuals
+  interactionConfig?: {
+    mode: string;
+    targets: Array<{ id: string; is_correct: boolean; description?: string }>;
+  };
+  selectedTargetId?: string | null;
+  onTargetClick?: (targetId: string) => void;
+  isSubmitted?: boolean;
+  getTargetState?: (targetId: string) => 'default' | 'selected' | 'correct' | 'incorrect';
 }
 
 /**
@@ -52,7 +62,12 @@ interface VisualPrimitiveRendererProps {
  */
 export const VisualPrimitiveRenderer: React.FC<VisualPrimitiveRendererProps> = ({
   visualData,
-  className = ''
+  className = '',
+  interactionConfig,
+  selectedTargetId,
+  onTargetClick,
+  isSubmitted,
+  getTargetState
 }) => {
   // Null check
   if (!visualData) {
@@ -73,6 +88,18 @@ export const VisualPrimitiveRenderer: React.FC<VisualPrimitiveRendererProps> = (
 
       case 'comparison-panel':
         return <ComparisonPanel data={visualData.data} className={className} />;
+
+      case 'card-grid':
+        return (
+          <CardGrid
+            data={visualData.data}
+            className={className}
+            selectedTargetId={selectedTargetId}
+            onTargetClick={onTargetClick}
+            isSubmitted={isSubmitted}
+            getTargetState={getTargetState}
+          />
+        );
 
       // Math primitives
       case 'bar-model':
@@ -133,7 +160,17 @@ export const VisualPrimitiveRenderer: React.FC<VisualPrimitiveRendererProps> = (
         return <AlphabetSequence data={visualData.data} className={className} />;
 
       case 'rhyming-pairs':
-        return <RhymingPairs data={visualData.data} className={className} />;
+        return (
+          <RhymingPairs
+            data={visualData.data}
+            className={className}
+            interactionConfig={interactionConfig}
+            selectedTargetId={selectedTargetId}
+            onTargetClick={onTargetClick}
+            isSubmitted={isSubmitted}
+            getTargetState={getTargetState}
+          />
+        );
 
       case 'sight-word-card':
         return <SightWordCard data={visualData.data} className={className} />;

@@ -12,6 +12,7 @@ class QuestionType(str, Enum):
     SCENARIO = "scenario"
     FILL_IN_BLANKS = "fill_in_blanks"
     MATCHING = "matching"
+    LIVE_INTERACTION = "live_interaction"
 
 # Base class
 class BaseQuestion(BaseModel):
@@ -77,6 +78,14 @@ class MatchingQuestion(BaseQuestion):
     correct_answer: Dict[str, str]  # left_item -> right_item mapping
     instruction: str = ""
 
+class LiveInteractionQuestion(BaseQuestion):
+    type: Literal[QuestionType.LIVE_INTERACTION] = QuestionType.LIVE_INTERACTION
+    interaction_config: Dict[str, Any]  # Contains mode, targets list
+    visual_content: Dict[str, Any]  # Contains type and data for visual rendering
+    prompt: Dict[str, Any]  # Contains system, first_message, session_intro
+    evaluation: Dict[str, Any]  # Contains success_criteria and feedback
+    correct_target_ids: List[str] = Field(default_factory=list)  # IDs of correct targets
+
 # Discriminated union for all question types
 Question = Union[
     MultipleChoiceQuestion,
@@ -86,7 +95,8 @@ Question = Union[
     ShortAnswerQuestion,
     ScenarioQuestion,
     FillInBlanksQuestion,
-    MatchingQuestion
+    MatchingQuestion,
+    LiveInteractionQuestion
 ]
 
 # Student responses also need to be polymorphic
@@ -128,6 +138,11 @@ class MatchingResponse(BaseResponse):
     question_type: Literal[QuestionType.MATCHING] = QuestionType.MATCHING
     answer: Dict[str, str]  # left_item -> right_item mapping
 
+class LiveInteractionResponse(BaseResponse):
+    question_type: Literal[QuestionType.LIVE_INTERACTION] = QuestionType.LIVE_INTERACTION
+    selected_target_id: str  # The ID of the target the student selected
+    interaction_mode: str = "click"  # click, speech, drag, trace
+
 # Discriminated union for all response types
 StudentResponse = Union[
     MultipleChoiceResponse,
@@ -137,7 +152,8 @@ StudentResponse = Union[
     ShortAnswerResponse,
     ScenarioResponse,
     FillInBlanksResponse,
-    MatchingResponse
+    MatchingResponse,
+    LiveInteractionResponse
 ]
 
 # Evaluation result
@@ -150,3 +166,4 @@ class QuestionEvaluation(BaseModel):
     student_answer: str
     correct_answer: str
     explanation: str = ""
+    detailed_results: Dict[str, Any] = Field(default_factory=dict)  # Optional extra data for specific question types

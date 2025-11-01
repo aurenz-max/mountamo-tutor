@@ -163,8 +163,8 @@ VARIETY INSTRUCTIONS:
             
             # Handle new schema structure with separate arrays for each problem type
             problem_counter = 0
-            problem_types = ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity", 
-                           "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"]
+            problem_types = ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity",
+                           "sequencing_activity", "categorization_activity", "scenario_question", "short_answer", "live_interaction"]
             
             for problem_type in problem_types:
                 if problem_type in problems_data:

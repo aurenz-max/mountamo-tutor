@@ -12,7 +12,7 @@ from ..shared.question_types import (
     Question, QuestionType,
     MultipleChoiceQuestion, TrueFalseQuestion, CategorizationQuestion,
     SequencingQuestion, ShortAnswerQuestion, ScenarioQuestion,
-    FillInBlanksQuestion, MatchingQuestion
+    FillInBlanksQuestion, MatchingQuestion, LiveInteractionQuestion
 )
 
 logger = logging.getLogger(__name__)
@@ -59,6 +59,7 @@ class ProblemConverter:
                 "scenario_question": ProblemConverter._convert_scenario,
                 "fill_in_blanks": ProblemConverter._convert_fill_in_blanks,
                 "matching_activity": ProblemConverter._convert_matching,
+                "live_interaction": ProblemConverter._convert_live_interaction,
             }
 
             converter = converter_map.get(problem_type)
@@ -141,7 +142,7 @@ class ProblemConverter:
         # Check if this is a problem generated directly from problems.py (rich schema format)
         # These come as arrays by type
         problem_types = ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity",
-                        "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"]
+                        "sequencing_activity", "categorization_activity", "scenario_question", "short_answer", "live_interaction"]
 
         for problem_type in problem_types:
             if problem_type in problem_data and problem_data[problem_type]:
@@ -423,3 +424,49 @@ class ProblemConverter:
             if isinstance(item, dict) and item.get('id') == item_id:
                 return item.get('text', '')
         return None
+
+    @staticmethod
+    def _convert_live_interaction(source_data: Dict[str, Any], metadata: Dict[str, Any]) -> LiveInteractionQuestion:
+        """Convert live_interaction primitive to standard format"""
+        # Extract interaction config and find correct targets
+        interaction_config = source_data.get('interaction_config', {})
+        targets = interaction_config.get('targets', [])
+
+        # Build list of correct target IDs
+        correct_target_ids = [
+            target['id'] for target in targets
+            if target.get('is_correct', False)
+        ]
+
+        logger.debug(f"[PROBLEM_CONVERTER] Live interaction targets: {len(targets)}")
+        logger.debug(f"[PROBLEM_CONVERTER] Correct targets: {correct_target_ids}")
+
+        # Extract prompt information
+        prompt = source_data.get('prompt', {})
+        question_text = prompt.get('first_message', '')
+
+        # If no first_message, try to build from visual content
+        if not question_text:
+            visual_content = source_data.get('visual_content', {})
+            visual_type = visual_content.get('type', 'interactive')
+            question_text = f"Interact with the {visual_type} to answer the question."
+
+        # Extract visual content and evaluation
+        visual_content = source_data.get('visual_content', {})
+        evaluation = source_data.get('evaluation', {})
+
+        logger.info(f"[PROBLEM_CONVERTER] Live interaction - {len(correct_target_ids)} correct targets")
+
+        return LiveInteractionQuestion(
+            id=source_data.get('id', 'live_interaction_question'),
+            question_text=question_text,
+            interaction_config=interaction_config,
+            visual_content=visual_content,
+            prompt=prompt,
+            evaluation=evaluation,
+            correct_target_ids=correct_target_ids,
+            metadata=metadata,
+            rationale=source_data.get('rationale', ''),
+            teaching_note=source_data.get('teaching_note', ''),
+            success_criteria=evaluation.get('success_criteria', [])
+        )

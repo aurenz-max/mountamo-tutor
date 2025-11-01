@@ -184,7 +184,9 @@ const ComposableProblemComponent: React.FC<ComposableProblemComponentProps> = ({
           </div>
         </div>
         <div className="mt-2">
-          {problem.prompt || problem.problem}
+          {(typeof problem.prompt === 'object' && problem.prompt !== null
+            ? (problem.prompt as any)?.instruction
+            : problem.prompt) || problem.problem}
         </div>
       </div>
       

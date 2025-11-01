@@ -9,8 +9,13 @@ from google import genai
 from google.genai.types import GenerateContentConfig, Schema
 from ..generators.content_schemas import (
     PRACTICE_PROBLEMS_SCHEMA,
-    PRACTICE_PROBLEMS_SCHEMA_STEP1,
+    PRACTICE_PROBLEMS_SCHEMA_STEP1,  # DEPRECATED - kept for reference only
     VISUAL_TYPE_TO_SCHEMA
+)
+from ..generators.problem_type_schemas import (
+    TYPE_SELECTION_SCHEMA,
+    PROBLEM_TYPE_METADATA,
+    ALL_PROBLEM_TYPES
 )
 from ..generators.content import ContentGenerationRequest
 from ..core.config import settings
@@ -109,10 +114,38 @@ class ProblemService:
             # Collect all visual intents from the problem
             intents = []
 
-            # Check question/statement visual intent
-            question_intent = problem.get("question_visual_intent") or problem.get("statement_visual_intent")
-            if question_intent and question_intent.get("needs_visual"):
-                intents.append(question_intent)
+            # Check for live_interaction visual intent (NEW STRUCTURE)
+            if problem.get('problem_type') == 'live_interaction':
+                visual_intent = problem.get("visual_intent", {})
+                interaction_config = problem.get("interaction_config", {})
+
+                # Check for display_visual_intent in visual_intent
+                display_intent = visual_intent.get("display_visual_intent")
+                if display_intent and display_intent.get("needs_visual"):
+                    intents.append(display_intent)
+                    logger.info(f"Found display_visual_intent for live_interaction problem {problem.get('id', 'unknown')}")
+
+                # Check for interaction_visual_intent in interaction_config (NEW LOCATION)
+                interaction_intent = interaction_config.get("interaction_visual_intent")
+                if interaction_intent and interaction_intent.get("needs_visual"):
+                    intents.append(interaction_intent)
+                    logger.info(f"Found interaction_visual_intent in interaction_config for live_interaction problem {problem.get('id', 'unknown')}")
+
+                # LEGACY FALLBACK: Check old location for backward compatibility
+                legacy_interaction_intent = visual_intent.get("interaction_visual_intent")
+                if not interaction_intent and legacy_interaction_intent and legacy_interaction_intent.get("needs_visual"):
+                    intents.append(legacy_interaction_intent)
+                    logger.info(f"Found legacy interaction_visual_intent in visual_intent for problem {problem.get('id', 'unknown')}")
+
+                # LEGACY FALLBACK: Single visual_intent (oldest format)
+                if not display_intent and not interaction_intent and not legacy_interaction_intent and visual_intent.get("needs_visual"):
+                    intents.append(visual_intent)
+                    logger.info(f"Found legacy single visual_intent for live_interaction problem {problem.get('id', 'unknown')}")
+            else:
+                # Check question/statement visual intent (for other problem types)
+                question_intent = problem.get("question_visual_intent") or problem.get("statement_visual_intent")
+                if question_intent and question_intent.get("needs_visual"):
+                    intents.append(question_intent)
 
             if not intents:
                 logger.info(f"No visual intents found for problem {problem.get('id', 'unknown')}")
@@ -127,9 +160,33 @@ class ProblemService:
             prompt_parts = [
                 f"Generate visual data for this {problem.get('problem_type', 'problem')}:",
                 f"Problem: {problem_context}",
-                "",
-                "You must generate JSON with these exact keys and visual types:"
+                ""
             ]
+
+            # For live_interaction, include critical context about interaction targets
+            if problem.get('problem_type') == 'live_interaction':
+                interaction_config = problem.get('interaction_config', {})
+                targets = interaction_config.get('targets', [])
+                mode = interaction_config.get('mode', 'unknown')
+
+                prompt_parts.extend([
+                    "🎯 LIVE INTERACTION CONTEXT:",
+                    f"- Interaction mode: {mode}",
+                    f"- Number of targets: {len(targets)}",
+                    f"- Target IDs that MUST exist in visual: {[t.get('id') for t in targets]}",
+                    ""
+                ])
+
+                if mode == 'click' and targets:
+                    # Extract what the targets represent from their IDs
+                    prompt_parts.append("⚠️ CRITICAL FOR CARD-GRID:")
+                    prompt_parts.append(f"- You MUST create exactly {len(targets)} cards")
+                    prompt_parts.append(f"- Card IDs MUST be: {', '.join([t.get('id') for t in targets])}")
+                    prompt_parts.append("- Each card must have: id, content_type, primary_value fields")
+                    prompt_parts.append(f"- Instruction from problem: {problem.get('prompt', {}).get('instruction', '')}")
+                    prompt_parts.append("")
+
+            prompt_parts.append("You must generate JSON with these exact keys and visual types:")
 
             for intent in intents:
                 visual_id = intent.get("visual_id")
@@ -155,6 +212,7 @@ class ProblemService:
                 "",
                 "📋 SCHEMA USAGE GUIDELINES:",
                 "- Follow the schema descriptions exactly - they contain critical structural rules",
+                "- For card-grid: Each card MUST have the exact id specified in the targets list above",
                 "- For comparison-panel: Each panel represents ONE distinct entity/group being compared",
                 "- For object-collection items: Each item entry represents ONE object type with its total count",
                 "- Pay close attention to what belongs together vs what should be separated",
@@ -163,7 +221,7 @@ class ProblemService:
 
             prompt = "\n".join(prompt_parts)
 
-            logger.info(f"Calling Gemini Flash for batch visual generation (model: gemini-1.5-flash)")
+            logger.info(f"Calling Gemini Flash for batch visual generation (model: gemini-flash-lite)")
 
             # Call Gemini 1.5 Flash for visual generation (cheaper, faster model)
             response = await self.client.aio.models.generate_content(
@@ -202,7 +260,89 @@ class ProblemService:
         Returns:
             Problem with visual_data fields (intents removed)
         """
-        # Handle question visual
+        # Handle live_interaction separately (NEW STRUCTURE)
+        if problem.get('problem_type') == 'live_interaction':
+            visual_intent = problem.get('visual_intent', {})
+            interaction_config = problem.get('interaction_config', {})
+
+            # Handle display_visual (goes in visual_content)
+            display_intent = visual_intent.get('display_visual_intent')
+            if display_intent and display_intent.get('needs_visual'):
+                display_id = display_intent.get('visual_id')
+                display_type = display_intent.get('visual_type')
+
+                if display_id in visual_batch:
+                    problem['visual_content'] = {
+                        'display_visual': {
+                            'visual_type': display_type,
+                            'visual_data': visual_batch[display_id]
+                        }
+                    }
+                    logger.info(f"Injected display_visual ({display_type}) into visual_content")
+                else:
+                    problem['visual_content'] = None
+                    logger.warning(f"Display visual {display_id} not found in batch")
+            else:
+                problem['visual_content'] = None
+
+            # Handle interaction_visual (NEW: goes in interaction_config)
+            interaction_intent = interaction_config.get('interaction_visual_intent')
+            if interaction_intent and interaction_intent.get('needs_visual'):
+                interaction_id = interaction_intent.get('visual_id')
+                interaction_type = interaction_intent.get('visual_type')
+
+                if interaction_id in visual_batch:
+                    problem['interaction_config']['interaction_visual'] = {
+                        'visual_type': interaction_type,
+                        'visual_data': visual_batch[interaction_id]
+                    }
+                    logger.info(f"Injected interaction_visual ({interaction_type}) into interaction_config")
+
+                    # Remove the intent after injecting data
+                    if 'interaction_visual_intent' in problem['interaction_config']:
+                        del problem['interaction_config']['interaction_visual_intent']
+                else:
+                    logger.warning(f"Interaction visual {interaction_id} not found in batch")
+
+            # LEGACY FALLBACK: Check old location for backward compatibility
+            else:
+                legacy_interaction_intent = visual_intent.get('interaction_visual_intent')
+                if legacy_interaction_intent and legacy_interaction_intent.get('needs_visual'):
+                    interaction_id = legacy_interaction_intent.get('visual_id')
+                    interaction_type = legacy_interaction_intent.get('visual_type')
+
+                    if interaction_id in visual_batch:
+                        # Place in NEW location even though intent was in old location
+                        problem['interaction_config']['interaction_visual'] = {
+                            'visual_type': interaction_type,
+                            'visual_data': visual_batch[interaction_id]
+                        }
+                        logger.info(f"Migrated legacy interaction_visual ({interaction_type}) to interaction_config")
+                    else:
+                        logger.warning(f"Legacy interaction visual {interaction_id} not found in batch")
+
+            # LEGACY FALLBACK: Single visual (oldest format)
+            if not display_intent and not interaction_intent:
+                if visual_intent.get('needs_visual'):
+                    visual_id = visual_intent.get('visual_id')
+                    visual_type = visual_intent.get('visual_type')
+
+                    if visual_id in visual_batch:
+                        problem['visual_content'] = {
+                            'visual_type': visual_type,
+                            'visual_data': visual_batch[visual_id]
+                        }
+                        logger.info(f"Injected legacy single visual ({visual_type}) for live_interaction")
+                    else:
+                        logger.warning(f"Legacy visual {visual_id} not found in batch")
+
+            # Remove the visual_intent field
+            if 'visual_intent' in problem:
+                del problem['visual_intent']
+
+            return problem
+
+        # Handle standard problem types (multiple_choice, true_false, etc.)
         question_intent = problem.get("question_visual_intent") or problem.get("statement_visual_intent")
         intent_field = "question_visual_intent" if "question_visual_intent" in problem else "statement_visual_intent"
         data_field = "question_visual_data" if "question_visual_intent" in problem else "statement_visual_data"
@@ -295,13 +435,427 @@ class ProblemService:
     def get_current_ai_service(self) -> BaseAIService:
         """
         Get the current AI service based on the set service type
-        
+
         Returns:
             The current AI service instance implementing BaseAIService
         """
         if not self.ai_service:
             self.ai_service = AIServiceFactory.get_service(self._current_ai_service_type)
         return self.ai_service
+
+    # ============================================================================
+    # THREE-PHASE PROBLEM GENERATION - Scalable Per-Type Architecture
+    # ============================================================================
+
+    async def _select_problem_types(
+        self,
+        subject: str,
+        recommendations: List[Dict[str, Any]],
+        count: int,
+        context_primitives: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        PHASE 1: Use LLM to select optimal problem types for the learning objectives.
+
+        This phase calls Gemini Flash Fast to intelligently choose which problem types
+        to generate based on subject, learning objectives, and pedagogical best practices.
+
+        Args:
+            subject: The subject area (e.g., "Language Arts", "Math")
+            recommendations: List of recommendation objects with learning objectives
+            count: Total number of problems to generate
+            context_primitives: Optional context primitives for problem variety
+
+        Returns:
+            List of selected types with counts and reasoning:
+            [
+                {"type": "multiple_choice", "count": 2, "reasoning": "..."},
+                {"type": "live_interaction", "count": 3, "reasoning": "..."}
+            ]
+        """
+        try:
+            logger.info(f"[PHASE_1] Selecting problem types for {count} {subject} problems")
+
+            # Build prompt for type selection
+            objectives_summary = []
+            for i, rec in enumerate(recommendations[:count]):
+                skill_desc = rec.get('skill', {}).get('description', 'Unknown skill')
+                subskill_desc = rec.get('subskill', {}).get('description', 'Unknown subskill')
+                detailed_obj = rec.get('detailed_objectives', {}).get('DetailedObjective', '')
+                misconception = rec.get('misconception_to_address')
+
+                obj_text = f"Problem {i+1}: {skill_desc} → {subskill_desc}"
+                if detailed_obj:
+                    obj_text += f" ({detailed_obj})"
+                if misconception:
+                    obj_text += f" [REMEDIATION: {misconception}]"
+                objectives_summary.append(obj_text)
+
+            # Build context section
+            context_section = ""
+            if context_primitives:
+                objects_count = len(context_primitives.get('concrete_objects', []))
+                scenarios_count = len(context_primitives.get('scenarios', []))
+                context_section = f"\n\nAvailable Context Primitives: {objects_count} objects, {scenarios_count} scenarios available for variety"
+
+            prompt = f"""You are an expert educational content designer selecting the optimal mix of problem types for kindergarten students.
+
+Subject: {subject}
+Total Problems to Generate: {count}
+Grade Level: Kindergarten (ages 5-6)
+
+Learning Objectives:
+{chr(10).join(objectives_summary)}
+{context_section}
+
+Available Problem Types:
+"""
+            # Add problem type descriptions
+            for ptype, metadata in PROBLEM_TYPE_METADATA.items():
+                prompt += f"\n• {ptype}: {metadata['best_for']}"
+
+            prompt += f"""
+
+Your Task:
+1. Select 1-{min(count, 5)} different problem types that best align with the learning objectives
+2. Distribute the {count} problems across your selected types
+3. Explain your pedagogical reasoning for each selection
+
+Guidelines:
+- Prioritize interactive types (live_interaction) for phonics, letter recognition, and verbal practice
+- Use variety to maintain engagement (but focus on 2-3 types for coherence)
+- Consider remediation needs (if misconceptions are flagged, choose types that directly address them)
+- Match problem types to the nature of skills (e.g., categorization for classification, sequencing for processes)
+- For Language Arts phonics/ABC: strongly favor live_interaction and letter-based activities
+- Ensure total count adds up to exactly {count}
+
+Think about what will be most effective and engaging for 5-6 year olds learning these specific concepts."""
+
+            logger.info(f"[PHASE_1] Calling Gemini Flash Fast for type selection")
+
+            # Call Gemini Flash Fast (cheapest, fastest model for this simple task)
+            response = await self.client.aio.models.generate_content(
+                model='gemini-flash-lite-latest',
+                contents=prompt,
+                config=GenerateContentConfig(
+                    response_mime_type='application/json',
+                    response_schema=TYPE_SELECTION_SCHEMA,
+                    temperature=0.7,
+                    max_output_tokens=1000
+                )
+            )
+
+            result = json.loads(response.text)
+            selected_types = result.get('selected_types', [])
+            overall_reasoning = result.get('overall_reasoning', '')
+
+            # Validate total count
+            total_selected = sum(t['count'] for t in selected_types)
+            if total_selected != count:
+                logger.warning(f"[PHASE_1] Type selection returned {total_selected} problems, expected {count}. Adjusting...")
+                # Simple adjustment: scale proportionally
+                scale_factor = count / total_selected
+                for t in selected_types:
+                    t['count'] = max(1, round(t['count'] * scale_factor))
+                # Final correction
+                diff = count - sum(t['count'] for t in selected_types)
+                if diff != 0:
+                    selected_types[0]['count'] += diff
+
+            logger.info(f"[PHASE_1] ✅ Selected types: {[(t['type'], t['count']) for t in selected_types]}")
+            logger.info(f"[PHASE_1] Overall reasoning: {overall_reasoning}")
+
+            for t in selected_types:
+                logger.info(f"[PHASE_1]   • {t['type']} ({t['count']}): {t['reasoning']}")
+
+            return selected_types
+
+        except Exception as e:
+            logger.error(f"[PHASE_1] ❌ Type selection failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise  # Fail fast in development mode
+
+    async def _generate_single_type(
+        self,
+        problem_type: str,
+        subject: str,
+        recommendations: List[Dict[str, Any]],
+        num_problems: int,
+        context_primitives: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        PHASE 2: Generate problems of a single type using focused schema.
+
+        This phase generates problems for one specific type, using the appropriate
+        Gemini model (Flash Fast for simple, Flash for complex) and focused schema.
+
+        Args:
+            problem_type: The specific problem type to generate (e.g., "multiple_choice")
+            subject: The subject area
+            recommendations: List of recommendation objects for this batch
+            num_problems: Number of problems of this type to generate
+            context_primitives: Optional context primitives for variety
+
+        Returns:
+            Dict with type and generated problems:
+            {"type": "multiple_choice", "problems": [...]}
+        """
+        try:
+            metadata = PROBLEM_TYPE_METADATA[problem_type]
+            schema = metadata['schema']
+            model = metadata['model']
+            max_tokens = metadata['max_tokens']
+
+            logger.info(f"[PHASE_2] Generating {num_problems} {problem_type} problems using {model}")
+
+            # Build context section
+            context_section = ""
+            if context_primitives:
+                all_objects = context_primitives.get('concrete_objects', [])
+                all_characters = context_primitives.get('characters', [])
+                all_scenarios = context_primitives.get('scenarios', [])
+                all_locations = context_primitives.get('locations', [])
+
+                # Random sample for variety
+                sampled_objects = random.sample(all_objects, min(10, len(all_objects)))
+                sampled_characters = random.sample(all_characters, min(5, len(all_characters)))
+                sampled_scenarios = random.sample(all_scenarios, min(8, len(all_scenarios)))
+                sampled_locations = random.sample(all_locations, min(6, len(all_locations)))
+
+                objects_sample = ', '.join(sampled_objects)
+                characters_sample = [f"{c.get('name', 'Unknown')} ({c.get('age', 'child')})"
+                                   for c in sampled_characters]
+                scenarios_sample = ', '.join(sampled_scenarios)
+                locations_sample = ', '.join(sampled_locations)
+
+                context_section = f"""
+
+CONTEXT PRIMITIVES FOR VARIETY:
+✓ Objects: {objects_sample}
+✓ Characters: {', '.join(characters_sample)}
+✓ Scenarios: {scenarios_sample}
+✓ Locations: {locations_sample}
+
+VARIETY INSTRUCTIONS:
+- Use DIFFERENT combinations from the context primitives for each problem
+- Never reuse the same object-character-scenario combination
+- Ensure each problem feels unique and engaging"""
+
+            # Build focused prompt for this specific problem type
+            prompt = f"""Generate {num_problems} {problem_type} problems for kindergarten students (ages 5-6) in {subject}.
+{context_section}
+
+Learning Objectives:
+"""
+            # Add recommendations
+            for i, rec in enumerate(recommendations[:num_problems]):
+                misconception_section = ""
+                if rec.get('misconception_to_address'):
+                    misconception_section = f"""
+🎯 CRITICAL: This problem must address the misconception: "{rec.get('misconception_to_address')}"
+- Design the problem to directly challenge this misunderstanding
+- Include clear rationale explaining why the misconception is wrong"""
+
+                prompt += f"""
+Problem {i+1}:
+- Skill: {rec.get('skill', {}).get('description', '')}
+- Subskill: {rec.get('subskill', {}).get('description', '')}
+- Objective: {rec.get('detailed_objectives', {}).get('DetailedObjective', '')}
+- Difficulty: {rec.get('difficulty', 5.0)}/10
+{misconception_section}
+"""
+
+            # Add type-specific visual guidance based on the problem type
+            visual_guidance = self._get_visual_guidance_for_type(problem_type, subject)
+            prompt += f"\n{visual_guidance}"
+
+            prompt += f"""
+
+CRITICAL REQUIREMENTS:
+- Each problem MUST have a unique id (e.g., "{problem_type[:3]}_001", "{problem_type[:3]}_002")
+- Set grade_level as "Kindergarten"
+- Set difficulty as "easy" or "medium"
+- Include comprehensive rationale and teaching notes
+- Provide encouraging success_criteria
+- Use simple, clear language appropriate for ages 5-6
+"""
+
+            logger.info(f"[PHASE_2] Calling {model} for {problem_type} generation")
+
+            # Call appropriate Gemini model
+            response = await self.client.aio.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=GenerateContentConfig(
+                    response_mime_type='application/json',
+                    response_schema=schema,
+                    temperature=0.7,
+                    max_output_tokens=max_tokens
+                )
+            )
+
+            result = json.loads(response.text)
+            problems = result.get('problems', [])
+
+            logger.info(f"[PHASE_2] ✅ Generated {len(problems)} {problem_type} problems")
+
+            return {
+                "type": problem_type,
+                "problems": problems
+            }
+
+        except Exception as e:
+            logger.error(f"[PHASE_2] ❌ Failed to generate {problem_type}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise  # Fail fast in development mode
+
+    def _get_visual_guidance_for_type(self, problem_type: str, subject: str) -> str:
+        """
+        Get type-specific visual generation guidance.
+
+        Args:
+            problem_type: The problem type
+            subject: The subject area
+
+        Returns:
+            Visual guidance text for the prompt
+        """
+        # Common visual guidance for types that support visuals
+        if problem_type in ['multiple_choice', 'true_false']:
+            return """
+🎨 VISUAL GENERATION INSTRUCTIONS:
+For questions that would benefit from visuals:
+- Set needs_visual=true in question_visual_intent (or statement_visual_intent for true/false)
+- Choose the MOST APPROPRIATE visual type from: object-collection, comparison-panel, bar-model, letter-picture, etc.
+- Provide clear visual_purpose describing what the visual should show
+- Use unique visual_id (e.g., "q_1", "q_2")
+
+VISUAL SELECTION RULES:
+• For counting/showing objects → object-collection or comparison-panel
+• For abstract data → bar-model
+• For letter/phonics → letter-picture, letter-tracing, rhyming-pairs
+• For shapes → geometric-shape
+• Keep visuals simple and age-appropriate"""
+        elif problem_type == 'live_interaction':
+            return """
+🎨 VISUAL GENERATION INSTRUCTIONS FOR LIVE INTERACTION - NEW STRUCTURE:
+
+CRITICAL ARCHITECTURAL CHANGE:
+• display_visual_intent: Lives in visual_intent (informational content)
+• interaction_visual_intent: NOW LIVES IN interaction_config (tightly coupled with targets)
+
+This ensures the clickable interface is always consistent with the interaction logic.
+
+⚡ STRUCTURE PATTERNS:
+
+PATTERN 1: Display + Interaction (Most Common)
+```json
+{
+  "visual_intent": {
+    "display_visual_intent": {
+      "needs_visual": true,
+      "visual_type": "rhyming-pairs",
+      "visual_purpose": "Show the words 'cat' and 'hat' with connecting line",
+      "visual_id": "display_1"
+    }
+  },
+  "interaction_config": {
+    "mode": "click",
+    "interaction_visual_intent": {
+      "needs_visual": true,
+      "visual_type": "card-grid",
+      "visual_purpose": "Display two cards: 'Yes' and 'No' for student to click",
+      "visual_id": "interaction_1"
+    },
+    "targets": [
+      {"id": "card_yes", "is_correct": true},
+      {"id": "card_no", "is_correct": false}
+    ]
+  }
+}
+```
+
+PATTERN 2: Interaction Only (No Display Visual)
+• visual_intent.display_visual_intent: Set needs_visual=false
+• interaction_config.interaction_visual_intent: card-grid with all content
+
+PATTERN 3: Display Only (Speech Mode)
+• visual_intent.display_visual_intent: Shows content
+• interaction_config.interaction_visual_intent: Set needs_visual=false (student speaks)
+
+🎯 CRITICAL RULES:
+• For mode='click': interaction_visual_intent MUST use visual_type='card-grid'
+• Card IDs in the generated card-grid MUST match interaction_config.targets IDs exactly
+• Card ID format: 'card_yes', 'card_no', 'card_A', 'card_B', 'card_1', 'card_2', etc.
+• Each card needs: id, content_type ("text"/"image"/"image_with_label"), primary_value
+
+WHY THIS STRUCTURE:
+• Eliminates creative divergence - LLM can't invent wrong interaction visuals
+• The interaction visual is generated in the same context as the targets
+• Forces consistency between card IDs and target IDs
+
+💬 FEEDBACK DESIGN:
+• feedback.correct.audio: Enthusiastic praise
+• feedback.incorrect.audio: Gentle encouragement with hint"""
+        else:
+            return """
+🎨 VISUAL NOTES:
+This problem type typically doesn't use complex visuals, but simple illustrations may enhance understanding where appropriate."""
+
+    def _aggregate_problem_results(
+        self,
+        results: List[Dict[str, Any]],
+        selected_types: List[Dict[str, Any]]
+    ) -> Dict[str, List[Dict]]:
+        """
+        PHASE 2.5: Aggregate results from parallel/sequential generation into unified structure.
+
+        Args:
+            results: List of results from _generate_single_type calls
+            selected_types: Original type selection from Phase 1 (for logging/debugging)
+
+        Returns:
+            Unified structure matching expected format:
+            {
+                "multiple_choice": [...],
+                "live_interaction": [...],
+                ...
+            }
+        """
+        try:
+            logger.info(f"[PHASE_2.5] Aggregating {len(results)} result batches")
+
+            # Initialize structure with all possible types
+            aggregated = {ptype: [] for ptype in ALL_PROBLEM_TYPES}
+
+            # Merge results
+            for result in results:
+                if isinstance(result, Exception):
+                    logger.error(f"[PHASE_2.5] ❌ Skipping failed result: {result}")
+                    continue
+
+                problem_type = result.get('type')
+                problems = result.get('problems', [])
+
+                if problem_type and problems:
+                    aggregated[problem_type].extend(problems)
+                    logger.info(f"[PHASE_2.5]   ✅ Added {len(problems)} {problem_type} problems")
+
+            # Remove empty arrays for cleaner output
+            aggregated = {k: v for k, v in aggregated.items() if v}
+
+            total_problems = sum(len(v) for v in aggregated.values())
+            logger.info(f"[PHASE_2.5] ✅ Aggregated {total_problems} total problems across {len(aggregated)} types")
+
+            return aggregated
+
+        except Exception as e:
+            logger.error(f"[PHASE_2.5] ❌ Aggregation failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     async def generate_problem(
         self,
@@ -311,7 +865,11 @@ class ProblemService:
         context_primitives: Optional[Dict[str, Any]] = None
     ) -> Optional[str]:
         """
-        Universal problem generation method using Gemini with JSON schema and context primitives.
+        THREE-PHASE problem generation using scalable per-type architecture.
+
+        PHASE 1: LLM selects optimal problem types (Gemini Flash Fast)
+        PHASE 2: Generate each type with focused schemas (Sequential - Dev Mode)
+        PHASE 3: Visual generation (UNCHANGED - existing pipeline)
 
         Args:
             subject: The subject area
@@ -320,276 +878,108 @@ class ProblemService:
             context_primitives: Optional context primitives for problem variety
 
         Returns:
-            JSON string with problems array
+            JSON string with problems array organized by type
         """
         try:
-            print(f"[DEBUG] Generating {count} problems for {subject}")
-            
+            logger.info(f"[GENERATE_PROBLEM] Starting three-phase generation: {count} {subject} problems")
+            print(f"[DEBUG] THREE-PHASE GENERATION: {count} problems for {subject}")
+
             # Handle single recommendation for backward compatibility
             if isinstance(recommendations, dict):
                 recommendations = [recommendations]
-            
+
             # Ensure we have enough recommendations
             if len(recommendations) < count:
-                # Duplicate the last recommendation if needed
                 while len(recommendations) < count:
                     recommendations.append(recommendations[-1])
-            
-            # Build enhanced prompt with context primitives for variety
-            context_section = ""
-            if context_primitives:
-                # Randomly sample from primitives for variety in each generation
-                all_objects = context_primitives.get('concrete_objects', [])
-                all_characters = context_primitives.get('characters', [])
-                all_scenarios = context_primitives.get('scenarios', [])
-                all_locations = context_primitives.get('locations', [])
 
-                # Random sample to ensure different combinations each time
-                sampled_objects = random.sample(all_objects, min(10, len(all_objects)))
-                sampled_characters = random.sample(all_characters, min(5, len(all_characters)))
-                sampled_scenarios = random.sample(all_scenarios, min(8, len(all_scenarios)))
-                sampled_locations = random.sample(all_locations, min(6, len(all_locations)))
-
-                # Log the selected primitives for debugging
-                logger.info(f"[CONTEXT_PRIMITIVES] Selected objects: {sampled_objects}")
-                logger.info(f"[CONTEXT_PRIMITIVES] Selected characters: {[c.get('name', 'Unknown') for c in sampled_characters]}")
-                logger.info(f"[CONTEXT_PRIMITIVES] Selected scenarios: {sampled_scenarios}")
-                logger.info(f"[CONTEXT_PRIMITIVES] Selected locations: {sampled_locations}")
-
-                # Format for prompt
-                objects_sample = ', '.join(sampled_objects)
-                characters_sample = [f"{c.get('name', 'Unknown')} ({c.get('age', 'child')})"
-                                   for c in sampled_characters]
-                scenarios_sample = ', '.join(sampled_scenarios)
-                locations_sample = ', '.join(sampled_locations)
-
-                context_section = f"""
-
-CONTEXT PRIMITIVES FOR VARIETY (Use these to create diverse problems):
-✓ Objects: {objects_sample}
-✓ Characters: {', '.join(characters_sample)}
-✓ Scenarios: {scenarios_sample}
-✓ Locations: {locations_sample}
-
-VARIETY INSTRUCTIONS:
-- For each problem, select DIFFERENT combinations from the context primitives above
-- Never reuse the same object-character-scenario combination
-- Distribute problems across different locations and contexts
-- Ensure each problem feels unique and engaging
-"""
-            else:
-                logger.info("[CONTEXT_PRIMITIVES] No context primitives provided - using default generation")
-
-            # Build the prompt for multiple problems using the new rich schema WITH VISUAL INTENTS
-            prompt = f"""Generate {count} different age-appropriate {subject} problems for kindergarten students using a variety of problem types.
-
-{context_section}
-
-Your response must use the rich problem schema with separate arrays for each problem type:
-
-### PRACTICE PROBLEM PRIMITIVES (Choose the best types for your material):
-- **multiple_choice**: 4-6 option questions - excellent for testing comprehension
-- **true_false**: Statement evaluation with rationale - perfect for testing understanding
-- **fill_in_blanks**: Interactive sentences with missing key terms - ideal for vocabulary
-- **matching_activity**: Connect related items - great for building relationships
-- **sequencing_activity**: Arrange items in correct order - perfect for processes
-- **categorization_activity**: Sort items into groups - excellent for classification
-- **scenario_question**: Real-world application problems - ideal for connecting theory to practice
-- **short_answer**: Open-ended questions requiring brief explanations
-
-Generate problems as separate arrays by type (e.g., "multiple_choice": [...], "true_false": [...]).
-Distribute {count} problems across 2-3 different problem types for variety.
-
-### 🎨 VISUAL GENERATION INSTRUCTIONS - CHOOSE THE RIGHT VISUAL FOR THE JOB:
-
-For each question and option, decide if a visual would enhance learning and select the MOST APPROPRIATE visual type:
-
-**✨ FOUNDATIONAL VISUALS (Use these FIRST for K-1 content):**
-• **Counting/Showing Objects** ("Count the purple balls", "Show 5 stars")
-  ✓ USE: object-collection (shows the actual items for counting)
-  ✗ AVOID: bar-model (too abstract for young learners counting discrete objects)
-
-• **Comparing Two Groups of Objects** ("Who has more? 3 apples vs 2 bananas", "Which group has fewer cookies?")
-  ✓ USE: comparison-panel (shows the actual objects side-by-side in labeled panels)
-  ✗ AVOID: bar-model (unless comparing abstract totals or very large numbers)
-
-**📊 MATH PROBLEMS:**
-• **Abstract Quantity Comparison** ("Team A scored 15 points, Team B scored 12 points - who scored more?")
-  ✓ USE: bar-model (great for abstract numbers, totals, and data visualization)
-  ✗ AVOID: Use ONLY when objects themselves are NOT the focus
-
-• **Number Sequences** ("What comes after 5?")
-  ✓ USE: number-line (shows ordering and progression)
-
-• **Place Value** ("Show the number 23")
-  ✓ USE: base-ten-blocks (2 tens, 3 ones)
-
-• **Shapes & Spatial** ("Which shape is a rectangle?")
-  ✓ USE: geometric-shape (clear shape visualization)
-
-**🔬 SCIENCE PROBLEMS:**
-• **Parts of Objects** ("Label the parts of a plant")
-  ✓ USE: labeled-diagram (ONLY when problem requires identifying structural components)
-  ✗ AVOID: For quantity/counting problems - use object-collection or comparison-panel instead!
-
-• **Cycles & Processes** ("Butterfly life cycle")
-  ✓ USE: cycle-diagram (circular repeating process)
-
-**📚 ABC/LITERACY PROBLEMS:**
-• **Letter Sounds** ("What starts with 'B'?")
-  ✓ USE: letter-picture (pictures of Ball, Bat, Banana)
-
-• **Letter Writing** ("Trace the letter A")
-  ✓ USE: letter-tracing (stroke order with arrows)
-
-• **Rhyming** ("Which word rhymes with cat?")
-  ✓ USE: rhyming-pairs (cat-hat with pictures)
-
-**⚠️ CRITICAL RULES:**
-1. **Illustrate First, Visualize Data Second**: For simple counting and showing items for young children, ALWAYS prefer object-collection or comparison-panel
-2. **Use bar-model for Abstract Data**: Reserve bar-model for when the concept is about representing numerical data, not just counting physical objects in a scene
-3. **Simplicity is Key**: Choose the simplest, most direct visual that maps to the real world for our young audience
-
-**🏷️ VISUAL METADATA:**
-- Set needs_visual=true only if visual genuinely enhances understanding
-- Assign unique visual_id:
-  * Question/statement visual: "q_N" (e.g., "q_1", "q_2")
-  * Option visuals: "opt_A_N", "opt_B_N", etc. (e.g., "opt_A_1", "opt_B_1")
-- Provide visual_purpose: Clear instruction (e.g., "Show 8 big leaves in one bar, 6 small leaves in another bar for comparison")
-
-**🎯 MULTIPLE CHOICE VISUAL STRATEGY:**
-- Correct answer options: Show the accurate concept/quantity
-- Incorrect options (distractors): Show plausible mistakes or different values
-- Consistency: Use same visual_type for all options when possible (e.g., all bar-models or all letter-pictures)
-
-Here are the specific learning objectives for each problem:
-
-"""
-            # Add each recommendation to the prompt
-            for i, rec in enumerate(recommendations[:count]):
-                # MISCONCEPTION-DRIVEN PRACTICE ENGINE
-                # Check if this recommendation has a misconception to address
-                misconception_section = ""
-                if rec.get('misconception_to_address'):
-                    misconception_section = f"""
-### 🎯 CRITICAL REMEDIATION TASK ###
-This student has a specific misconception: "{rec.get('misconception_to_address')}"
-Your PRIMARY goal for this problem is to directly challenge and correct this misunderstanding.
-
-EFFECTIVE REMEDIATION STRATEGIES:
-- Create a True/False question that is FALSE *because* of the misconception
-- Design a Multiple Choice question where the misconception is a compelling distractor
-- Build a Categorization activity forcing differentiation between confused categories
-- Craft a Scenario that highlights why the misconception leads to errors
-
-Ensure the 'rationale' and 'teaching_note' EXPLICITLY explain why the misconception is incorrect
-and guide the student toward the correct understanding.
-###################################
-"""
-                    logger.info(f"[MISCONCEPTION_ENGINE] Problem #{i+1} will target: {rec.get('misconception_to_address')}")
-
-                prompt += f"""
-PROBLEM #{i+1}:
-Subject: {subject}
-Unit: {rec.get('unit', {}).get('title', '')}
-Skill: {rec.get('skill', {}).get('description', '')}
-Subskill: {rec.get('subskill', {}).get('description', '')}
-Concept Group: {rec.get('detailed_objectives', {}).get('ConceptGroup', 'General')}
-Specific Learning Objective: {rec.get('detailed_objectives', {}).get('DetailedObjective', 'Basic understanding')}
-Difficulty Level: {rec.get('difficulty', 5.0)} (1-10 scale)
-{misconception_section}
-"""
-
-            # Add generation instructions
-            prompt += f"""
-Each problem should:
-1. Be appropriate for kindergarten students (ages 5-6)
-2. Use simple, clear language and familiar contexts
-3. Include all required fields for the chosen problem type
-4. Have educational value beyond just assessment
-5. Provide comprehensive rationale and teaching notes
-6. Include encouraging, positive success criteria
-
-For multiple choice: Provide 3-4 options with one clearly correct answer
-For true/false: Make statements that test key concepts, not trick questions
-For fill-in-blanks: Use context that helps students understand the missing word
-For matching: Connect terms to definitions or examples to concepts
-For sequencing: Use logical or chronological order that makes sense
-For categorization: Use clear categories that students can understand
-For scenarios: Use familiar, age-appropriate situations
-For short answer: Ask questions that allow for brief, simple responses
-
-IMPORTANT: 
-- Generate exactly {count} problems total across multiple problem types
-- Each problem must have a unique id (e.g., "mc_001", "tf_001", "fib_001")
-- Include grade_level as "Kindergarten" for all problems
-- Set difficulty as "easy" or "medium" for kindergarten level
-"""
-
-            print(f"[DEBUG] Using TWO-STEP VISUAL GENERATION with {count} problems across multiple types")
-            logger.info(f"[PROBLEMS_SERVICE] STEP 1: Generating {count} problems with visual intents using rich schema for subject: {subject}")
-
-            # Log the schema structure for debugging
-            logger.info(f"[SCHEMA_DEBUG] Schema properties: {list(PRACTICE_PROBLEMS_SCHEMA_STEP1.properties.keys())}")
-            for prop_name, prop_schema in PRACTICE_PROBLEMS_SCHEMA_STEP1.properties.items():
-                logger.info(f"[SCHEMA_DEBUG] Property '{prop_name}': type={prop_schema.type}, has_items={hasattr(prop_schema, 'items')}")
-                if hasattr(prop_schema, 'items') and hasattr(prop_schema.items, 'properties'):
-                    logger.info(f"[SCHEMA_DEBUG]   Items properties: {list(prop_schema.items.properties.keys()) if prop_schema.items.properties else 'EMPTY'}")
-
-            # STEP 1: Generate problems with visual intents (heavy model)
-            response = await self.client.aio.models.generate_content(
-                model='gemini-2.5-flash-preview-05-20',
-                contents=prompt,
-                config=GenerateContentConfig(
-                    response_mime_type='application/json',
-                    response_schema=PRACTICE_PROBLEMS_SCHEMA_STEP1,  # Use Step 1 schema with intents
-                    temperature=0.5,
-                    max_output_tokens=15000
-                )
+            # ========================================================================
+            # PHASE 1: LLM-Driven Type Selection
+            # ========================================================================
+            logger.info(f"[GENERATE_PROBLEM] ========== PHASE 1: TYPE SELECTION ==========")
+            selected_types = await self._select_problem_types(
+                subject=subject,
+                recommendations=recommendations,
+                count=count,
+                context_primitives=context_primitives
             )
 
-            print(f"[DEBUG] STEP 1 complete: Generated {count} problems with visual intents")
-            logger.info(f"[PROBLEMS_SERVICE] STEP 1 complete. Received response with intents.")
+            # ========================================================================
+            # PHASE 2: Sequential Per-Type Generation (Dev Mode)
+            # ========================================================================
+            logger.info(f"[GENERATE_PROBLEM] ========== PHASE 2: PROBLEM GENERATION ==========")
 
-            # STEP 2: Generate actual visual data and inject into problems
+            generation_results = []
+            rec_index = 0  # Track which recommendations we've used
+
+            for type_selection in selected_types:
+                problem_type = type_selection['type']
+                num_problems = type_selection['count']
+                reasoning = type_selection['reasoning']
+
+                logger.info(f"[GENERATE_PROBLEM] Generating {num_problems} {problem_type} problems ({reasoning})")
+
+                # Get recommendations for this batch
+                batch_recs = recommendations[rec_index:rec_index + num_problems]
+                rec_index += num_problems
+
+                # Generate this type (sequential for dev mode)
+                result = await self._generate_single_type(
+                    problem_type=problem_type,
+                    subject=subject,
+                    recommendations=batch_recs,
+                    num_problems=num_problems,
+                    context_primitives=context_primitives
+                )
+
+                generation_results.append(result)
+
+            # Aggregate results into unified structure
+            problems_with_intents = self._aggregate_problem_results(
+                results=generation_results,
+                selected_types=selected_types
+            )
+
+            # ========================================================================
+            # PHASE 3: Visual Generation (UNCHANGED)
+            # ========================================================================
+            logger.info(f"[GENERATE_PROBLEM] ========== PHASE 3: VISUAL GENERATION ==========")
+
             try:
-                problems_with_intents = json.loads(response.text)
-                logger.info(f"[PROBLEMS_SERVICE] STEP 2: Orchestrating visual generation for all problems")
-
                 # Collect all problems across all types
                 all_problems = []
-                for problem_type in ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity",
-                                    "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"]:
+                for problem_type in ALL_PROBLEM_TYPES:
                     if problem_type in problems_with_intents and problems_with_intents[problem_type]:
                         for problem in problems_with_intents[problem_type]:
                             problem['problem_type'] = problem_type
                             all_problems.append(problem)
 
-                logger.info(f"[PROBLEMS_SERVICE] Found {len(all_problems)} total problems to process for visuals")
+                logger.info(f"[GENERATE_PROBLEM] Found {len(all_problems)} total problems to process for visuals")
 
-                # Generate visuals for all problems (batched per problem, parallelized across problems)
+                # Generate visuals (existing pipeline - UNCHANGED)
                 problems_with_visuals = await self._orchestrate_visual_generation(all_problems)
 
                 # Reassemble the response structure
                 final_response = {problem_type: [] for problem_type in problems_with_intents.keys()}
                 for problem in problems_with_visuals:
-                    problem_type = problem.pop('problem_type', None)  # Remove temporary field
+                    problem_type = problem.pop('problem_type', None)
                     if problem_type and problem_type in final_response:
                         final_response[problem_type].append(problem)
 
-                print(f"[DEBUG] STEP 2 complete: Visual generation finished, returning assembled problems")
-                logger.info(f"[PROBLEMS_SERVICE] STEP 2 complete. Visual generation orchestration finished.")
+                logger.info(f"[GENERATE_PROBLEM] ✅ THREE-PHASE GENERATION COMPLETE")
+                logger.info(f"[GENERATE_PROBLEM] Final result: {sum(len(v) for v in final_response.values())} problems across {len(final_response)} types")
 
+                print(f"[DEBUG] ✅ Generation complete: {list(final_response.keys())}")
                 return json.dumps(final_response)
 
             except Exception as e:
-                # If visual generation fails, fall back to text-only problems
-                logger.error(f"[PROBLEMS_SERVICE] Visual generation failed, falling back to text-only: {str(e)}")
+                # If visual generation fails, fall back to text-only problems (graceful degradation)
+                logger.error(f"[GENERATE_PROBLEM] Visual generation failed, falling back to text-only: {str(e)}")
                 print(f"[WARNING] Visual generation failed, returning text-only problems: {str(e)}")
-                # Return original response without visuals (graceful degradation)
-                return response.text
-            
+                return json.dumps(problems_with_intents)
+
         except Exception as e:
+            logger.error(f"[GENERATE_PROBLEM] ❌ Generation failed: {str(e)}")
             print(f"[ERROR] Error generating problems: {str(e)}")
             import traceback
             traceback.print_exc()
@@ -765,8 +1155,9 @@ IMPORTANT:
                         logger.info(f"[PROBLEMS_SERVICE] Generated problems with types: {list(response_data.keys())}")
                         
                         # Use Gemini's structured response directly - just add our metadata
-                        problem_types = ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity", 
-                                       "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"]
+                        problem_types = ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity",
+                                       "sequencing_activity", "categorization_activity", "scenario_question",
+                                       "short_answer", "live_interaction"]
                         
                         problem_counter = 0
                         for problem_type in problem_types:
@@ -969,8 +1360,8 @@ IMPORTANT:
                 logger.info(f"[PROBLEMS_SERVICE] generate_and_parse_problem response types: {list(schema_data.keys())}")
                 
                 # Find the first problem from any type
-                problem_types = ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity", 
-                               "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"]
+                problem_types = ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity",
+                               "sequencing_activity", "categorization_activity", "scenario_question", "short_answer", "live_interaction"]
                 
                 for problem_type in problem_types:
                     if problem_type in schema_data and schema_data[problem_type]:

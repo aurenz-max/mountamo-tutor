@@ -16,3 +16,4 @@ export { default as SequencingPrimitive } from './SequencingPrimitive';
 export { default as CategorizationPrimitive } from './CategorizationPrimitive';
 export { default as ScenarioQuestionPrimitive } from './ScenarioQuestionPrimitive';
 export { default as ShortAnswerPrimitive } from './ShortAnswerPrimitive';
+export { default as LiveInteractionPrimitive } from './LiveInteractionPrimitive';

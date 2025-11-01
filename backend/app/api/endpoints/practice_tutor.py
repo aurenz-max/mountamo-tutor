@@ -35,11 +35,11 @@ google_genai_logger.setLevel(logging.WARNING)
 # Gemini configuration
 client = genai.Client(
     api_key=settings.GEMINI_API_KEY,
-    http_options={"api_version": "v1alpha"},
+    http_options={"api_version": "v1beta"},
 )
 
 DEFAULT_VOICE = "Leda"
-MODEL = "gemini-2.5-flash-preview-native-audio-dialog"
+MODEL = "gemini-2.5-flash-native-audio-preview-09-2025"
 
 # Audio constants
 FORMAT = "audio/pcm"
@@ -52,6 +52,41 @@ router = APIRouter()
 
 # Initialize Cosmos DB service
 cosmos_db = CosmosDBService()
+
+# Helper function for evaluating live interaction targets
+def evaluate_target_interaction(problem: Optional[dict], selected_target_id: str) -> dict:
+    """
+    Evaluates if the selected target is correct based on interaction_config.
+
+    Args:
+        problem: The live_interaction problem object
+        selected_target_id: The ID of the element the student clicked/selected
+
+    Returns:
+        Dict with: correct (bool), feedback_audio (str), visual_effect (str), hint (str)
+    """
+    if not problem or problem.get('problem_type') != 'live_interaction':
+        return {"error": "Not a live interaction problem"}
+
+    interaction_config = problem.get('interaction_config', {})
+    targets = interaction_config.get('targets', [])
+
+    # Find the target that was selected
+    for target in targets:
+        if target['id'] == selected_target_id:
+            is_correct = target['is_correct']
+            feedback_key = "correct" if is_correct else "incorrect"
+            feedback = problem['evaluation']['feedback'][feedback_key]
+
+            return {
+                "correct": is_correct,
+                "feedback_audio": feedback['audio'],
+                "visual_effect": feedback.get('visual_effect', 'none'),
+                "target_id": selected_target_id,
+                "hint": feedback.get('hint') if not is_correct else None
+            }
+
+    return {"error": f"Target '{selected_target_id}' not found in interaction_config"}
 
 # Helper function to authenticate WebSocket connections
 async def authenticate_websocket_token(token: str) -> dict:
@@ -70,8 +105,17 @@ async def authenticate_websocket_token(token: str) -> dict:
         logger.error(f"❌ Practice Tutor WebSocket authentication error: {str(e)}")
         raise Exception("Invalid authentication token")
 
-async def build_topic_tutor_instruction(topic_context: dict) -> str:
-    """Builds the main system instruction based on the educational hierarchy."""
+async def build_topic_tutor_instruction(topic_context: dict, live_problem: Optional[dict] = None) -> str:
+    """Builds the system instruction, prioritizing live problem's prompt if available."""
+
+    # PRIORITY 1: If this is a live interaction problem, use its specific system prompt
+    if live_problem and live_problem.get('problem_type') == 'live_interaction':
+        problem_prompt = live_problem.get('prompt', {})
+        system_instruction = problem_prompt.get('system', "You are an expert AI Practice Tutor.")
+        logger.info(f"✅ Using LIVE INTERACTION system prompt: {system_instruction[:100]}...")
+        return system_instruction
+
+    # PRIORITY 2: Fall back to topic-based instruction
     subject = topic_context.get("subject", "learning")
     skill_desc = topic_context.get("skill_description", "the current topic")
     subskill_desc = topic_context.get("subskill_description", "the specific concepts")
@@ -158,22 +202,39 @@ async def practice_tutor_session(websocket: WebSocket):
         user_id = decoded_token['uid']
         user_email = decoded_token.get('email', 'Unknown')
         logger.info(f"✅ Authentication successful for user {user_id} ({user_email})")
-        
-        # Get topic context from the authentication message
-        topic_context = auth_data.get("topic_context", {
-            "subject": "mathematics",
-            "skill_id": "",
-            "subskill_id": ""
-        })
-        
+
+        # Extract live problem context if provided
+        live_problem = auth_data.get("problem_context")
+        topic_context = {}
+
+        if live_problem and live_problem.get('problem_type') == 'live_interaction':
+            logger.info("🚀 Initializing LIVE INTERACTION session")
+            # Extract topic context from problem metadata
+            metadata = live_problem.get('metadata', {})
+            topic_context = {
+                "subject": metadata.get("subject", "General"),
+                "skill_description": metadata.get("skill", {}).get("description", "live skill"),
+                "subskill_description": metadata.get("subskill", {}).get("description", "live subskill"),
+                "skill_id": metadata.get("skill", {}).get("id", ""),
+                "subskill_id": metadata.get("subskill", {}).get("id", "")
+            }
+        else:
+            logger.info("🚀 Initializing standard TOPIC TUTOR session")
+            live_problem = None
+            topic_context = auth_data.get("topic_context", {
+                "subject": "mathematics",
+                "skill_id": "",
+                "subskill_id": ""
+            })
+
         await websocket.send_json({
             "type": "auth_success",
             "message": "Practice Tutor connected and ready for the session."
         })
         logger.info("✅ Authentication complete for practice tutor")
 
-        # Step 2: Build system instruction  
-        system_instruction = await build_topic_tutor_instruction(topic_context)
+        # Step 2: Build system instruction (now problem-aware)
+        system_instruction = await build_topic_tutor_instruction(topic_context, live_problem)
         logger.info(f"📋 System instruction built for {topic_context.get('subject', 'unknown')} - {topic_context.get('skill_description', 'unknown skill')}")
 
         # Step 3: Configure Gemini session
@@ -208,14 +269,31 @@ async def practice_tutor_session(websocket: WebSocket):
                 "type": "session_ready",
                 "message": "AI Tutor session is ready"
             }))
-            
+
             # Create queues for communication
             text_queue = asyncio.Queue()
             audio_queue = asyncio.Queue()
-            
+
+            # NEW: If this is a live interaction, send the initial instruction
+            if live_problem and live_problem.get('prompt', {}).get('instruction'):
+                initial_instruction = live_problem['prompt']['instruction']
+                await text_queue.put(
+                    f"Your first and only task is to read this instruction to the student exactly as written, "
+                    f"then wait for their response. Do not add anything else. "
+                    f"Instruction: '{initial_instruction}'"
+                )
+                logger.info(f"✅ Initial LIVE INTERACTION prompt queued: '{initial_instruction}'")
+            else:
+                # Standard greeting for topic tutoring
+                await text_queue.put(
+                    "Start the session by greeting the student warmly and letting them "
+                    "know you're ready to help with their practice problems."
+                )
+                logger.info("✅ Initial generic greeting prompt queued")
+
             # Task management
             tasks = []
-            
+
             async def handle_client_messages():
                 """Handle messages from the frontend client"""
                 try:
@@ -224,7 +302,44 @@ async def practice_tutor_session(websocket: WebSocket):
                         message_type = message.get("type")
                         
                         logger.info(f"📨 Received client message: {message_type}")
-                        
+
+                        # NEW: Handle live interaction target selection
+                        if message_type == "target_selected":
+                            target_id = message.get("target_id")
+                            result = evaluate_target_interaction(live_problem, target_id)
+
+                            if result.get("error"):
+                                logger.error(f"❌ Target evaluation error: {result['error']}")
+                                await websocket.send_json({
+                                    "type": "error",
+                                    "message": result["error"]
+                                })
+                            elif result["correct"]:
+                                # Correct answer - tell AI and send visual feedback
+                                await text_queue.put(
+                                    f"The student selected the correct answer! {result['feedback_audio']}"
+                                )
+                                await websocket.send_json({
+                                    "type": "visual_feedback",
+                                    "effect": result["visual_effect"],
+                                    "target_id": target_id,
+                                    "correct": True
+                                })
+                            else:
+                                # Incorrect answer - give feedback and hint
+                                feedback_msg = result['feedback_audio']
+                                if result.get('hint'):
+                                    feedback_msg += f" {result['hint']}"
+
+                                await text_queue.put(feedback_msg)
+                                await websocket.send_json({
+                                    "type": "visual_feedback",
+                                    "effect": result["visual_effect"],
+                                    "target_id": target_id,
+                                    "correct": False
+                                })
+                            continue
+
                         if message_type == "new_problem":
                             # Handle new problem introduction
                             problem = message.get("problem_context", {})

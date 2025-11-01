@@ -1024,6 +1024,7 @@ private async getAuthToken(): Promise<string> {
 
   async generatePracticeSet(data: {
     subject: string;
+    unit_id: string;
     skill_id: string;
     subskill_id: string;
     count?: number;
@@ -1032,12 +1033,12 @@ private async getAuthToken(): Promise<string> {
     // Use the generate endpoint and pass the count parameter
     const problem = await this.post('/api/problems/generate', {
       subject: data.subject,
+      unit_id: data.unit_id, // Use the provided unit_id directly
       skill_id: data.skill_id,
       subskill_id: data.subskill_id,
-      unit_id: data.skill_id.split('-')[0], // Extract unit from skill_id if needed
       count: data.count || 5, // Pass the count parameter, default to 5 if not provided
     });
-    
+
     // The backend may return a single problem or multiple problems based on the schema
     // Wrap single problem in array for consistent frontend handling
     return Array.isArray(problem) ? problem : [problem];
