@@ -162,6 +162,7 @@ const PracticeAICoach = React.forwardRef<{ sendSubmissionResult: (result: any) =
   const isPlayingRef = useRef(false);
   const responseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastScheduledTimeRef = useRef<number>(0);
+  const previousProblemIdRef = useRef<string | null>(null);
 
   // Audio constants
   const PLAYBACK_SAMPLE_RATE = 24000;
@@ -172,10 +173,15 @@ const PracticeAICoach = React.forwardRef<{ sendSubmissionResult: (result: any) =
   useEffect(() => {
     if (problemContext) {
       dispatch({ type: 'SET_PROBLEM_CONTEXT', context: problemContext });
-      
-      // If we have a new problem and we're connected, notify the AI
+
+      // Only notify AI if the actual problem ID has changed (not just other context properties)
       if (isAIConnected && problemContext.currentProblem) {
-        notifyAIOfNewProblem(problemContext.currentProblem);
+        const currentProblemId = problemContext.currentProblem?.problem_id || problemContext.currentProblem?.id;
+
+        if (currentProblemId && currentProblemId !== previousProblemIdRef.current) {
+          notifyAIOfNewProblem(problemContext.currentProblem);
+          previousProblemIdRef.current = currentProblemId;
+        }
       }
     }
   }, [problemContext, isAIConnected]);

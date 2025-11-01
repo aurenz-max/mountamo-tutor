@@ -23,11 +23,17 @@ const MCQPrimitive: React.FC<MCQPrimitiveProps> = ({
   feedback,
   onUpdate,
   disabled = false,
-  disableFeedback = false
+  disableFeedback = false,
+  aiCoachRef
 }) => {
   const handleOptionChange = (optionId: string) => {
     if (disabled || isSubmitted) return;
     onUpdate({ selected_option_id: optionId });
+
+    // If live interaction is enabled, notify AI Coach of the selection
+    if (aiCoachRef?.current && (problem as any).live_interaction_config && !isSubmitted) {
+      aiCoachRef.current.sendTargetSelection(optionId);
+    }
   };
 
   const getOptionLetter = (index: number) => {

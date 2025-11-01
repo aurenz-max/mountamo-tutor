@@ -18,12 +18,23 @@ const SequencingPrimitive: React.FC<SequencingPrimitiveProps> = ({
   feedback,
   onUpdate,
   disabled = false,
-  disableFeedback = false
+  disableFeedback = false,
+  aiCoachRef
 }) => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
-  
+
   // Initialize sequence if not provided
   const currentSequence = currentResponse?.student_sequence || [...problem.items];
+
+  // Helper to notify AI coach when sequence is complete
+  const notifyAICoach = (sequence: string[]) => {
+    // Only send to AI coach when sequence is complete (all items placed)
+    if (aiCoachRef?.current && (problem as any).live_interaction_config && !isSubmitted) {
+      if (sequence.length === problem.items.length) {
+        aiCoachRef.current.sendTargetSelection(JSON.stringify(sequence));
+      }
+    }
+  };
 
   const handleDragStart = (e: React.DragEvent, item: string) => {
     if (disabled || isSubmitted) return;
@@ -50,23 +61,29 @@ const SequencingPrimitive: React.FC<SequencingPrimitiveProps> = ({
 
     onUpdate({ student_sequence: newSequence });
     setDraggedItem(null);
+
+    // NEW: Notify AI coach when sequence is complete
+    notifyAICoach(newSequence);
   };
 
   const moveItem = (item: string, direction: 'up' | 'down') => {
     if (disabled || isSubmitted) return;
-    
+
     const newSequence = [...currentSequence];
     const currentIndex = newSequence.indexOf(item);
-    
+
     if (direction === 'up' && currentIndex > 0) {
-      [newSequence[currentIndex], newSequence[currentIndex - 1]] = 
+      [newSequence[currentIndex], newSequence[currentIndex - 1]] =
       [newSequence[currentIndex - 1], newSequence[currentIndex]];
     } else if (direction === 'down' && currentIndex < newSequence.length - 1) {
-      [newSequence[currentIndex], newSequence[currentIndex + 1]] = 
+      [newSequence[currentIndex], newSequence[currentIndex + 1]] =
       [newSequence[currentIndex + 1], newSequence[currentIndex]];
     }
-    
+
     onUpdate({ student_sequence: newSequence });
+
+    // NEW: Notify AI coach when sequence is complete
+    notifyAICoach(newSequence);
   };
 
   const getItemFeedback = (item: string) => {

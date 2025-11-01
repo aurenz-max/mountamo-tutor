@@ -20,15 +20,21 @@ const TrueFalsePrimitive: React.FC<TrueFalsePrimitiveProps> = ({
   feedback,
   onUpdate,
   disabled = false,
-  disableFeedback = false
+  disableFeedback = false,
+  aiCoachRef
 }) => {
   const handleAnswerChange = (value: boolean) => {
     if (disabled || isSubmitted) return;
-    
+
     onUpdate({
       selected_answer: value,
       explanation: currentResponse?.explanation || ''
     });
+
+    // If live interaction is enabled, notify AI Coach of the selection
+    if (aiCoachRef?.current && (problem as any).live_interaction_config && !isSubmitted) {
+      aiCoachRef.current.sendTargetSelection(value ? 'true' : 'false');
+    }
   };
 
   const handleExplanationChange = (explanation: string) => {

@@ -121,6 +121,7 @@ interface ProblemRendererProps {
   feedback: any;
   submitting: boolean;
   isAssessmentMode?: boolean; // New prop for assessment mode
+  aiCoachRef?: React.RefObject<{ sendTargetSelection: (targetId: string) => void; sendSubmissionResult: (result: any) => void }>;
 }
 
 // Helper function to map backend problem types to frontend component keys
@@ -173,7 +174,7 @@ const getProblemType = (problem: Problem): string => {
 
 const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
   (
-    { problem, isSubmitted, onSubmit, onUpdate, currentResponse, feedback, submitting, isAssessmentMode = false },
+    { problem, isSubmitted, onSubmit, onUpdate, currentResponse, feedback, submitting, isAssessmentMode = false, aiCoachRef },
     ref
   ) => {
     const problemType = getProblemType(problem);
@@ -216,6 +217,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             feedback={feedback}
             currentResponse={currentResponse}
             disableFeedback={isAssessmentMode}
+            aiCoachRef={aiCoachRef}
           />
         );
 
@@ -228,6 +230,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             feedback={feedback}
             currentResponse={currentResponse}
             disableFeedback={isAssessmentMode}
+            aiCoachRef={aiCoachRef}
           />
         );
 
@@ -240,6 +243,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             feedback={feedback}
             currentResponse={currentResponse}
             disableFeedback={isAssessmentMode}
+            aiCoachRef={aiCoachRef}
           />
         );
 
@@ -252,6 +256,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             feedback={feedback}
             currentResponse={currentResponse}
             disableFeedback={isAssessmentMode}
+            aiCoachRef={aiCoachRef}
           />
         );
 
@@ -264,6 +269,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             feedback={feedback}
             currentResponse={currentResponse}
             disableFeedback={isAssessmentMode}
+            aiCoachRef={aiCoachRef}
           />
         );
 
@@ -276,6 +282,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             feedback={feedback}
             currentResponse={currentResponse}
             disableFeedback={isAssessmentMode}
+            aiCoachRef={aiCoachRef}
           />
         );
 
@@ -288,6 +295,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             feedback={feedback}
             currentResponse={currentResponse}
             disableFeedback={isAssessmentMode}
+            aiCoachRef={aiCoachRef}
           />
         );
 
@@ -300,6 +308,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             feedback={feedback}
             currentResponse={currentResponse}
             disableFeedback={isAssessmentMode}
+            aiCoachRef={aiCoachRef}
           />
         );
 
@@ -312,6 +321,7 @@ const ProblemRenderer = forwardRef<ProblemRendererRef, ProblemRendererProps>(
             feedback={feedback}
             currentResponse={currentResponse}
             disableFeedback={isAssessmentMode}
+            aiCoachRef={aiCoachRef}
           />
         );
 

@@ -18,17 +18,26 @@ const CategorizationPrimitive: React.FC<CategorizationPrimitiveProps> = ({
   feedback,
   onUpdate,
   disabled = false,
-  disableFeedback = false
+  disableFeedback = false,
+  aiCoachRef
 }) => {
   const handleCategorize = (itemText: string, category: string) => {
     if (disabled || isSubmitted) return;
-    
+
     const newCategorization = {
       ...currentResponse?.student_categorization,
       [itemText]: category
     };
-    
+
     onUpdate({ student_categorization: newCategorization });
+
+    // NEW: Notify AI coach when student categorizes an item (if AI coach is enabled)
+    // Format: "item_text:category" for categorization validation
+    // Find the item ID from the problem
+    const item = problem.categorization_items.find(i => i.item_text === itemText);
+    if (item && aiCoachRef?.current && (problem as any).live_interaction_config && !isSubmitted) {
+      aiCoachRef.current.sendTargetSelection(`${item.id || itemText}:${category}`);
+    }
   };
 
   const getItemCategory = (itemText: string): string | undefined => {

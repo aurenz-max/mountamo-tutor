@@ -123,10 +123,15 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   // The new problem will be communicated via context
   const currentProblem = problems.length > 0 ? problems[currentIndex] : null;
 
-  // Check if current problem is live_interaction type
+  // Check if current problem has live interaction enabled (cross-cutting feature)
   useEffect(() => {
-    if (currentProblem && currentProblem.problem_type === 'live_interaction') {
-      setShowAICoach(true);
+    if (currentProblem) {
+      // Check for live_interaction_config (works with ANY problem type)
+      const hasLiveConfig = !!(currentProblem as any).live_interaction_config;
+      // Fallback: legacy live_interaction problem type
+      const isLegacyLiveInteraction = currentProblem.problem_type === 'live_interaction';
+
+      setShowAICoach(hasLiveConfig || isLegacyLiveInteraction);
     } else {
       setShowAICoach(false);
     }
@@ -761,6 +766,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 currentResponse={primitiveResponses[currentIndex]}
                 feedback={problemFeedback[currentIndex]}
                 submitting={submitting}
+                aiCoachRef={aiCoachRef}
               />
 
               {/* Submit button */}

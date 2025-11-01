@@ -11,7 +11,8 @@ This module provides focused schemas for each problem type, enabling:
 from google.genai.types import Schema
 from .content_schemas import (
     VISUAL_INTENT_SCHEMA,
-    LIVE_INTERACTION_SCHEMA_STEP1
+    LIVE_INTERACTION_SCHEMA_STEP1,
+    LIVE_INTERACTION_CONFIG_SCHEMA
 )
 
 # ============================================================================
@@ -41,7 +42,8 @@ MULTIPLE_CHOICE_ITEM_SCHEMA = Schema(
         "correct_option_id": Schema(type="string"),
         "rationale": Schema(type="string"),
         "teaching_note": Schema(type="string"),
-        "success_criteria": Schema(type="array", items=Schema(type="string"))
+        "success_criteria": Schema(type="array", items=Schema(type="string")),
+        "live_interaction_config": LIVE_INTERACTION_CONFIG_SCHEMA
     },
     required=["id", "difficulty", "grade_level", "question", "question_visual_intent", "options", "correct_option_id", "rationale", "teaching_note", "success_criteria"]
 )
@@ -66,7 +68,8 @@ TRUE_FALSE_ITEM_SCHEMA = Schema(
         "correct": Schema(type="boolean"),
         "rationale": Schema(type="string"),
         "teaching_note": Schema(type="string"),
-        "success_criteria": Schema(type="array", items=Schema(type="string"))
+        "success_criteria": Schema(type="array", items=Schema(type="string")),
+        "live_interaction_config": LIVE_INTERACTION_CONFIG_SCHEMA
     },
     required=["id", "difficulty", "grade_level", "statement", "statement_visual_intent", "correct", "rationale", "teaching_note", "success_criteria"]
 )
@@ -101,7 +104,8 @@ FILL_IN_BLANKS_ITEM_SCHEMA = Schema(
         ),
         "rationale": Schema(type="string"),
         "teaching_note": Schema(type="string"),
-        "success_criteria": Schema(type="array", items=Schema(type="string"))
+        "success_criteria": Schema(type="array", items=Schema(type="string")),
+        "live_interaction_config": LIVE_INTERACTION_CONFIG_SCHEMA
     },
     required=["id", "difficulty", "grade_level", "text_with_blanks", "blanks", "rationale", "teaching_note", "success_criteria"]
 )
@@ -157,7 +161,8 @@ MATCHING_ACTIVITY_ITEM_SCHEMA = Schema(
         ),
         "rationale": Schema(type="string"),
         "teaching_note": Schema(type="string"),
-        "success_criteria": Schema(type="array", items=Schema(type="string"))
+        "success_criteria": Schema(type="array", items=Schema(type="string")),
+        "live_interaction_config": LIVE_INTERACTION_CONFIG_SCHEMA
     },
     required=["id", "difficulty", "grade_level", "prompt", "left_items", "right_items", "mappings", "rationale", "teaching_note", "success_criteria"]
 )
@@ -181,7 +186,8 @@ SEQUENCING_ACTIVITY_ITEM_SCHEMA = Schema(
         "items": Schema(type="array", items=Schema(type="string")),
         "rationale": Schema(type="string"),
         "teaching_note": Schema(type="string"),
-        "success_criteria": Schema(type="array", items=Schema(type="string"))
+        "success_criteria": Schema(type="array", items=Schema(type="string")),
+        "live_interaction_config": LIVE_INTERACTION_CONFIG_SCHEMA
     },
     required=["id", "difficulty", "grade_level", "instruction", "items", "rationale", "teaching_note", "success_criteria"]
 )
@@ -216,7 +222,8 @@ CATEGORIZATION_ACTIVITY_ITEM_SCHEMA = Schema(
         ),
         "rationale": Schema(type="string"),
         "teaching_note": Schema(type="string"),
-        "success_criteria": Schema(type="array", items=Schema(type="string"))
+        "success_criteria": Schema(type="array", items=Schema(type="string")),
+        "live_interaction_config": LIVE_INTERACTION_CONFIG_SCHEMA
     },
     required=["id", "difficulty", "grade_level", "instruction", "categories", "categorization_items", "rationale", "teaching_note", "success_criteria"]
 )
@@ -241,7 +248,8 @@ SCENARIO_QUESTION_ITEM_SCHEMA = Schema(
         "scenario_answer": Schema(type="string"),
         "rationale": Schema(type="string"),
         "teaching_note": Schema(type="string"),
-        "success_criteria": Schema(type="array", items=Schema(type="string"))
+        "success_criteria": Schema(type="array", items=Schema(type="string")),
+        "live_interaction_config": LIVE_INTERACTION_CONFIG_SCHEMA
     },
     required=["id", "difficulty", "grade_level", "scenario", "scenario_question", "scenario_answer", "rationale", "teaching_note", "success_criteria"]
 )
@@ -264,7 +272,8 @@ SHORT_ANSWER_ITEM_SCHEMA = Schema(
         "question": Schema(type="string"),
         "rationale": Schema(type="string"),
         "teaching_note": Schema(type="string"),
-        "success_criteria": Schema(type="array", items=Schema(type="string"))
+        "success_criteria": Schema(type="array", items=Schema(type="string")),
+        "live_interaction_config": LIVE_INTERACTION_CONFIG_SCHEMA
     },
     required=["id", "difficulty", "grade_level", "question", "rationale", "teaching_note", "success_criteria"]
 )
@@ -321,11 +330,19 @@ TYPE_SELECTION_SCHEMA = Schema(
                     "reasoning": Schema(
                         type="string",
                         description="Brief explanation of why this type is appropriate for the learning objectives"
+                    ),
+                    "enable_ai_coach": Schema(
+                        type="boolean",
+                        description="Whether to enable live AI coaching for these problems. Consider: K-2 students (strongly favor), phonics/reading/ABC content (strongly favor), problem complexity (simpler problems benefit more), skill type (concepts requiring verbal explanation benefit most)"
+                    ),
+                    "ai_coach_rationale": Schema(
+                        type="string",
+                        description="Brief explanation of why AI coach was enabled or disabled for this problem type"
                     )
                 },
-                required=["type", "count", "reasoning"]
+                required=["type", "count", "reasoning", "enable_ai_coach", "ai_coach_rationale"]
             ),
-            description="List of problem types to generate with counts"
+            description="List of problem types to generate with counts and AI coach configuration"
         ),
         "overall_reasoning": Schema(
             type="string",

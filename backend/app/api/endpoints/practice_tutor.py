@@ -13,6 +13,8 @@ from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, Pre
 from ...core.config import settings
 from ...core.middleware import get_user_context
 from ...db.cosmos_db import CosmosDBService
+from ...services.universal_validator import UniversalValidator
+from ...services.problem_converter import ProblemConverter
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -56,37 +58,67 @@ cosmos_db = CosmosDBService()
 # Helper function for evaluating live interaction targets
 def evaluate_target_interaction(problem: Optional[dict], selected_target_id: str) -> dict:
     """
-    Evaluates if the selected target is correct based on interaction_config.
+    Evaluates if the selected target is correct based on live_interaction_config.
+    Works with ANY problem type that has live_interaction_config enabled.
+
+    Leverages UniversalValidator and ProblemConverter for robust, reusable validation.
 
     Args:
-        problem: The live_interaction problem object
+        problem: Any problem object with live_interaction_config
         selected_target_id: The ID of the element the student clicked/selected
 
     Returns:
-        Dict with: correct (bool), feedback_audio (str), visual_effect (str), hint (str)
+        Dict with: correct (bool), feedback_audio (str), visual_effect (str), hint (str), score (float)
     """
-    if not problem or problem.get('problem_type') != 'live_interaction':
-        return {"error": "Not a live interaction problem"}
+    if not problem:
+        return {"error": "No problem provided"}
 
-    interaction_config = problem.get('interaction_config', {})
-    targets = interaction_config.get('targets', [])
+    try:
+        # Convert problem to standard format using ProblemConverter
+        standard_question = ProblemConverter.convert_to_standard_question(problem)
 
-    # Find the target that was selected
-    for target in targets:
-        if target['id'] == selected_target_id:
-            is_correct = target['is_correct']
-            feedback_key = "correct" if is_correct else "incorrect"
-            feedback = problem['evaluation']['feedback'][feedback_key]
+        # Prepare student response in format expected by UniversalValidator
+        primitive_response = {
+            'selected_target_id': selected_target_id,
+            'interaction_mode': 'click'
+        }
 
-            return {
-                "correct": is_correct,
-                "feedback_audio": feedback['audio'],
-                "visual_effect": feedback.get('visual_effect', 'none'),
-                "target_id": selected_target_id,
-                "hint": feedback.get('hint') if not is_correct else None
-            }
+        # Use UniversalValidator for validation (reuses battle-tested logic)
+        evaluation = UniversalValidator.validate_submission(
+            question=standard_question,
+            student_response_data={'student_answer': selected_target_id},
+            primitive_response=primitive_response
+        )
 
-    return {"error": f"Target '{selected_target_id}' not found in interaction_config"}
+        # Extract visual effect from detailed results if available
+        visual_effect = 'none'
+        hint = None
+        if evaluation.detailed_results:
+            visual_effect = evaluation.detailed_results.get('visual_effect', 'none')
+            hint = evaluation.detailed_results.get('hint')
+
+        # Return in expected format for practice_tutor WebSocket
+        return {
+            "correct": evaluation.is_correct,
+            "feedback_audio": evaluation.feedback,
+            "visual_effect": visual_effect,
+            "score": evaluation.score,
+            "target_id": selected_target_id,
+            "hint": hint
+        }
+
+    except Exception as e:
+        logger.error(f"Error evaluating target interaction: {str(e)}")
+        logger.error(traceback.format_exc())
+
+        # Fallback: If conversion/validation fails, return basic error
+        return {
+            "error": f"Failed to evaluate target: {str(e)}",
+            "correct": False,
+            "feedback_audio": "Sorry, I couldn't evaluate that answer. Please try again.",
+            "visual_effect": "none",
+            "target_id": selected_target_id
+        }
 
 # Helper function to authenticate WebSocket connections
 async def authenticate_websocket_token(token: str) -> dict:
@@ -106,14 +138,20 @@ async def authenticate_websocket_token(token: str) -> dict:
         raise Exception("Invalid authentication token")
 
 async def build_topic_tutor_instruction(topic_context: dict, live_problem: Optional[dict] = None) -> str:
-    """Builds the system instruction, prioritizing live problem's prompt if available."""
+    """Builds the system instruction, prioritizing live interaction config's prompt if available."""
 
-    # PRIORITY 1: If this is a live interaction problem, use its specific system prompt
-    if live_problem and live_problem.get('problem_type') == 'live_interaction':
-        problem_prompt = live_problem.get('prompt', {})
-        system_instruction = problem_prompt.get('system', "You are an expert AI Practice Tutor.")
-        logger.info(f"✅ Using LIVE INTERACTION system prompt: {system_instruction[:100]}...")
-        return system_instruction
+    # PRIORITY 1: If problem has live_interaction_config, use its specific system prompt
+    if live_problem:
+        live_config = live_problem.get('live_interaction_config')
+        # Fallback to legacy live_interaction problem type
+        if not live_config and live_problem.get('problem_type') == 'live_interaction':
+            live_config = live_problem
+
+        if live_config and live_config.get('prompt'):
+            problem_prompt = live_config['prompt']
+            system_instruction = problem_prompt.get('system', "You are an expert AI Practice Tutor.")
+            logger.info(f"✅ Using LIVE INTERACTION system prompt: {system_instruction[:100]}...")
+            return system_instruction
 
     # PRIORITY 2: Fall back to topic-based instruction
     subject = topic_context.get("subject", "learning")
@@ -203,12 +241,22 @@ async def practice_tutor_session(websocket: WebSocket):
         user_email = decoded_token.get('email', 'Unknown')
         logger.info(f"✅ Authentication successful for user {user_id} ({user_email})")
 
-        # Extract live problem context if provided
+        # Extract problem context if provided
         live_problem = auth_data.get("problem_context")
         topic_context = {}
 
-        if live_problem and live_problem.get('problem_type') == 'live_interaction':
-            logger.info("🚀 Initializing LIVE INTERACTION session")
+        # Check if this problem has live interaction enabled (works with ANY problem type)
+        has_live_interaction = False
+        if live_problem:
+            has_live_interaction = bool(live_problem.get('live_interaction_config'))
+            # Fallback: legacy live_interaction problem type
+            if not has_live_interaction and live_problem.get('problem_type') == 'live_interaction':
+                has_live_interaction = True
+
+        if live_problem and has_live_interaction:
+            logger.info("🚀 Initializing LIVE INTERACTION session (problem type: {})".format(
+                live_problem.get('problem_type', 'unknown')
+            ))
             # Extract topic context from problem metadata
             metadata = live_problem.get('metadata', {})
             topic_context = {
@@ -275,8 +323,17 @@ async def practice_tutor_session(websocket: WebSocket):
             audio_queue = asyncio.Queue()
 
             # NEW: If this is a live interaction, send the initial instruction
-            if live_problem and live_problem.get('prompt', {}).get('instruction'):
-                initial_instruction = live_problem['prompt']['instruction']
+            initial_instruction = None
+            if live_problem:
+                # Check for live_interaction_config
+                live_config = live_problem.get('live_interaction_config')
+                if not live_config and live_problem.get('problem_type') == 'live_interaction':
+                    live_config = live_problem
+
+                if live_config and live_config.get('prompt', {}).get('instruction'):
+                    initial_instruction = live_config['prompt']['instruction']
+
+            if initial_instruction:
                 await text_queue.put(
                     f"Your first and only task is to read this instruction to the student exactly as written, "
                     f"then wait for their response. Do not add anything else. "

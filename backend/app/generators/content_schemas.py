@@ -662,8 +662,146 @@ COMPOSITE_VISUAL_INTENT_SCHEMA = Schema(
 )
 
 # ============================================================================
+# SHARED LIVE INTERACTION CONFIG - Cross-cutting AI tutor feature
+# ============================================================================
+# This schema defines the optional live interaction configuration that can be
+# added to ANY problem type to enable real-time AI tutoring with voice feedback.
+
+LIVE_INTERACTION_CONFIG_SCHEMA = Schema(
+    type="object",
+    properties={
+        # AI Tutor Configuration
+        "prompt": Schema(
+            type="object",
+            properties={
+                "system": Schema(
+                    type="string",
+                    description="System prompt defining the AI tutor's persona and role for this specific problem"
+                ),
+                "instruction": Schema(
+                    type="string",
+                    description="The initial verbal instruction/question the AI tutor will speak to start the problem"
+                ),
+                "voice": Schema(
+                    type="string",
+                    default="Leda",
+                    description="Voice style for the AI tutor (e.g., 'Leda', 'Kore')"
+                )
+            },
+            required=["system", "instruction"],
+            description="AI tutor persona and initial spoken instruction"
+        ),
+
+        # Interaction Mode (optional - some problem types have implicit modes)
+        "interaction_mode": Schema(
+            type="string",
+            enum=["click", "speech", "drag", "trace"],
+            description="How the student interacts. If omitted, inferred from problem type (e.g., MCQ = click)"
+        ),
+
+        # Target Mapping (maps problem answers to target IDs for evaluation)
+        "targets": Schema(
+            type="array",
+            items=Schema(
+                type="object",
+                properties={
+                    "id": Schema(
+                        type="string",
+                        description="ID of the interactive element (e.g., 'option_0', 'option_A', 'card_yes')"
+                    ),
+                    "is_correct": Schema(
+                        type="boolean",
+                        description="Whether selecting this element is a correct answer"
+                    ),
+                    "description": Schema(
+                        type="string",
+                        description="Optional description of what this target represents"
+                    )
+                },
+                required=["id", "is_correct"]
+            ),
+            description="Maps interactive elements to correctness. IDs must match problem's answer structure."
+        ),
+
+        # Audio Feedback and Visual Effects
+        "evaluation": Schema(
+            type="object",
+            properties={
+                "mode": Schema(
+                    type="string",
+                    enum=["real_time", "post_submission"],
+                    default="real_time",
+                    description="When to provide feedback: immediately on selection or after submit"
+                ),
+                "feedback": Schema(
+                    type="object",
+                    properties={
+                        "correct": Schema(
+                            type="object",
+                            properties={
+                                "audio": Schema(
+                                    type="string",
+                                    description="What the AI tutor should say for a correct answer"
+                                ),
+                                "visual_effect": Schema(
+                                    type="string",
+                                    enum=["highlight", "celebrate", "bounce", "pulse"],
+                                    description="Visual effect to apply on the frontend"
+                                )
+                            },
+                            required=["audio"],
+                            description="Feedback for correct answers"
+                        ),
+                        "incorrect": Schema(
+                            type="object",
+                            properties={
+                                "audio": Schema(
+                                    type="string",
+                                    description="What the AI tutor should say for an incorrect answer"
+                                ),
+                                "visual_effect": Schema(
+                                    type="string",
+                                    enum=["shake", "dim", "fade"],
+                                    description="Visual effect to apply on the frontend"
+                                ),
+                                "hint": Schema(
+                                    type="string",
+                                    description="Optional hint to guide the student toward the correct answer"
+                                )
+                            },
+                            required=["audio"],
+                            description="Feedback for incorrect answers"
+                        )
+                    },
+                    required=["correct", "incorrect"],
+                    description="Audio and visual feedback for student responses"
+                )
+            },
+            required=["feedback"],
+            description="Evaluation mode and feedback configuration"
+        )
+    },
+    required=["prompt", "evaluation"],
+    description="""Cross-cutting live interaction configuration that can be added to ANY problem type.
+When present, enables real-time AI tutoring with voice feedback and visual effects.
+
+USAGE EXAMPLES:
+- Multiple Choice + Live Interaction: AI reads question, student clicks, AI provides audio feedback
+- True/False + Live Interaction: AI poses question, student selects, AI responds with encouragement
+- Fill in Blanks + Live Interaction: AI guides student through each blank with hints
+
+INTEGRATION:
+- Problem types can include optional 'live_interaction_config' field
+- Backend checks for this config to enable AI coach WebSocket connection
+- Frontend conditionally renders PracticeAICoach component when config present"""
+)
+
+# ============================================================================
 # LIVE INTERACTION SCHEMAS - Real-time AI-guided interactive problems
 # ============================================================================
+# NOTE: The dedicated live_interaction problem type is being deprecated in favor
+# of the cross-cutting LIVE_INTERACTION_CONFIG_SCHEMA above. These schemas are
+# kept for backward compatibility with existing problems.
 
 # STEP 1 Schema: Live interaction with visual intent (for Phase 1 generation)
 LIVE_INTERACTION_SCHEMA_STEP1 = Schema(

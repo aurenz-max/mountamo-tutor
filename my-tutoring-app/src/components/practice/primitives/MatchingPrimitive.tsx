@@ -21,20 +21,27 @@ const MatchingPrimitive: React.FC<MatchingPrimitiveProps> = ({
   feedback,
   onUpdate,
   disabled = false,
-  disableFeedback = false
+  disableFeedback = false,
+  aiCoachRef
 }) => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   const handleMatch = (leftId: string, rightId: string) => {
     if (disabled || isSubmitted) return;
-    
+
     const currentMatches = currentResponse?.student_matches || [];
     const newMatches = [
       ...currentMatches.filter(m => m.left_id !== leftId && m.right_id !== rightId),
       { left_id: leftId, right_id: rightId }
     ];
-    
+
     onUpdate({ student_matches: newMatches });
+
+    // NEW: Notify AI coach when student makes a match (if AI coach is enabled)
+    // Format: "left_id:right_id" for matching pair validation
+    if (aiCoachRef?.current && (problem as any).live_interaction_config && !isSubmitted) {
+      aiCoachRef.current.sendTargetSelection(`${leftId}:${rightId}`);
+    }
   };
 
   const handleClearMatch = (leftId: string) => {

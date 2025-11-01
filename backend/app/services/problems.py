@@ -520,6 +520,7 @@ Your Task:
 1. Select 1-{min(count, 5)} different problem types that best align with the learning objectives
 2. Distribute the {count} problems across your selected types
 3. Explain your pedagogical reasoning for each selection
+4. For EACH problem type, decide whether to enable AI Coach (live interaction coaching)
 
 Guidelines:
 - Prioritize interactive types (live_interaction) for phonics, letter recognition, and verbal practice
@@ -528,6 +529,21 @@ Guidelines:
 - Match problem types to the nature of skills (e.g., categorization for classification, sequencing for processes)
 - For Language Arts phonics/ABC: strongly favor live_interaction and letter-based activities
 - Ensure total count adds up to exactly {count}
+
+AI Coach Decision Guidelines:
+For each problem type you select, also decide whether to enable the AI Coach feature:
+- **STRONGLY FAVOR AI COACH** for:
+  * K-2 students (current grade level is Kindergarten)
+  * Phonics, reading, letter recognition, rhyming content
+  * Simple conceptual problems that benefit from verbal guidance
+  * Problems requiring step-by-step support
+- **OPTIONALLY ENABLE** for:
+  * Skills requiring verbal explanation (e.g., "Why is this the answer?")
+  * Problems where immediate feedback enhances learning
+- **DISABLE** for:
+  * Very simple problems where AI coach may be distracting
+  * Problems where independent thinking is the goal
+  * Advanced/complex problems better suited for older students
 
 Think about what will be most effective and engaging for 5-6 year olds learning these specific concepts."""
 
@@ -562,11 +578,13 @@ Think about what will be most effective and engaging for 5-6 year olds learning 
                 if diff != 0:
                     selected_types[0]['count'] += diff
 
-            logger.info(f"[PHASE_1] ✅ Selected types: {[(t['type'], t['count']) for t in selected_types]}")
+            logger.info(f"[PHASE_1] ✅ Selected types: {[(t['type'], t['count'], '🎤' if t.get('enable_ai_coach') else '📝') for t in selected_types]}")
             logger.info(f"[PHASE_1] Overall reasoning: {overall_reasoning}")
 
             for t in selected_types:
+                ai_coach_status = "✅ AI Coach ENABLED" if t.get('enable_ai_coach') else "❌ AI Coach disabled"
                 logger.info(f"[PHASE_1]   • {t['type']} ({t['count']}): {t['reasoning']}")
+                logger.info(f"[PHASE_1]     {ai_coach_status}: {t.get('ai_coach_rationale', 'No rationale provided')}")
 
             return selected_types
 
@@ -582,7 +600,8 @@ Think about what will be most effective and engaging for 5-6 year olds learning 
         subject: str,
         recommendations: List[Dict[str, Any]],
         num_problems: int,
-        context_primitives: Optional[Dict[str, Any]] = None
+        context_primitives: Optional[Dict[str, Any]] = None,
+        enable_ai_coach: bool = False
     ) -> Dict[str, Any]:
         """
         PHASE 2: Generate problems of a single type using focused schema.
@@ -596,6 +615,7 @@ Think about what will be most effective and engaging for 5-6 year olds learning 
             recommendations: List of recommendation objects for this batch
             num_problems: Number of problems of this type to generate
             context_primitives: Optional context primitives for variety
+            enable_ai_coach: Whether to add live_interaction_config for AI coaching
 
         Returns:
             Dict with type and generated problems:
@@ -699,6 +719,31 @@ CRITICAL REQUIREMENTS:
             problems = result.get('problems', [])
 
             logger.info(f"[PHASE_2] ✅ Generated {len(problems)} {problem_type} problems")
+
+            # POST-PROCESSING: Add AI coach config if enabled
+            if enable_ai_coach:
+                logger.info(f"[PHASE_2] 🎤 Adding AI coach config to {len(problems)} problems")
+
+                # Build topic context for AI coach config generation
+                topic_context = {
+                    'skill_description': subject,
+                    'grade_level': 'Kindergarten',
+                    'recommendations': recommendations
+                }
+
+                # Add live_interaction_config to each problem
+                for i, problem in enumerate(problems):
+                    try:
+                        live_config = self.generate_ai_coach_config(
+                            problem_type=problem_type,
+                            problem_data=problem,
+                            topic_context=topic_context
+                        )
+                        problem['live_interaction_config'] = live_config
+                        logger.info(f"[PHASE_2]   ✅ Added AI coach to problem {i+1}/{len(problems)}")
+                    except Exception as e:
+                        logger.error(f"[PHASE_2]   ❌ Failed to add AI coach to problem {i+1}: {str(e)}")
+                        # Continue without AI coach for this problem rather than failing
 
             return {
                 "type": problem_type,
@@ -916,8 +961,13 @@ This problem type typically doesn't use complex visuals, but simple illustration
                 problem_type = type_selection['type']
                 num_problems = type_selection['count']
                 reasoning = type_selection['reasoning']
+                enable_ai_coach = type_selection.get('enable_ai_coach', False)
+                ai_coach_rationale = type_selection.get('ai_coach_rationale', '')
 
-                logger.info(f"[GENERATE_PROBLEM] Generating {num_problems} {problem_type} problems ({reasoning})")
+                ai_coach_indicator = "🎤 with AI Coach" if enable_ai_coach else "📝 without AI Coach"
+                logger.info(f"[GENERATE_PROBLEM] Generating {num_problems} {problem_type} problems {ai_coach_indicator} ({reasoning})")
+                if enable_ai_coach:
+                    logger.info(f"[GENERATE_PROBLEM]   AI Coach rationale: {ai_coach_rationale}")
 
                 # Get recommendations for this batch
                 batch_recs = recommendations[rec_index:rec_index + num_problems]
@@ -929,7 +979,8 @@ This problem type typically doesn't use complex visuals, but simple illustration
                     subject=subject,
                     recommendations=batch_recs,
                     num_problems=num_problems,
-                    context_primitives=context_primitives
+                    context_primitives=context_primitives,
+                    enable_ai_coach=enable_ai_coach
                 )
 
                 generation_results.append(result)
@@ -1381,3 +1432,231 @@ This problem type typically doesn't use complex visuals, but simple illustration
         except Exception as e:
             logger.error(f"Error in generate_and_parse_problem: {e}")
             return None
+
+    # ============================================================================
+    # LIVE INTERACTION AI COACH - Helper Functions
+    # ============================================================================
+
+    def generate_feedback_messages(self, problem_type: str, topic_context: dict) -> dict:
+        """
+        Generate age-appropriate feedback messages for correct and incorrect answers.
+
+        Args:
+            problem_type: The type of problem (multiple_choice, true_false, etc.)
+            topic_context: Context including grade_level, skill_description
+
+        Returns:
+            Dict with 'correct' and 'incorrect' feedback configurations
+        """
+        grade_level = topic_context.get('grade_level', 'Kindergarten')
+        skill_desc = topic_context.get('skill_description', 'this skill')
+
+        # Determine enthusiasm level based on grade
+        grade_lower = grade_level.lower()
+        is_early_learner = any(g in grade_lower for g in ['k', 'kindergarten', '1', 'first', '2', 'second'])
+
+        if is_early_learner:
+            # K-2: Very enthusiastic, simple language
+            correct_responses = [
+                "Amazing job! You got it right!",
+                "Excellent work! That's correct!",
+                "Fantastic! You're doing so well!",
+                "Perfect! You really understand this!",
+                "Great thinking! That's exactly right!"
+            ]
+            incorrect_responses = [
+                "Not quite, but that's okay! Let's try again together.",
+                "Good try! Let me help you think about this.",
+                "Almost! Let's look at this one more time.",
+                "Nice effort! I'll give you a hint to help."
+            ]
+        else:
+            # 3+: More mature, encouraging
+            correct_responses = [
+                "Excellent! You've got it!",
+                "Correct! Well done!",
+                "That's right! Great reasoning!",
+                "Perfect! You're mastering this concept!",
+                "Yes! That's the right answer!"
+            ]
+            incorrect_responses = [
+                "Not quite. Let's think about this together.",
+                "That's not correct, but I can help you figure it out.",
+                "Try again. Think about what we learned about this.",
+                "Good effort! Let me give you a hint."
+            ]
+
+        return {
+            "correct": {
+                "audio": random.choice(correct_responses),
+                "visual_effect": "celebrate"
+            },
+            "incorrect": {
+                "audio": random.choice(incorrect_responses),
+                "visual_effect": "shake",
+                "hint": f"Think carefully about {skill_desc}."
+            }
+        }
+
+    def extract_targets_from_problem(self, problem_type: str, problem_data: dict) -> List[dict]:
+        """
+        Auto-extract interaction targets from problem structure.
+
+        Targets define what the student can click/select and whether each option is correct.
+
+        Args:
+            problem_type: Type of problem (multiple_choice, true_false, etc.)
+            problem_data: The problem data structure
+
+        Returns:
+            List of target dicts with: id, is_correct, description
+        """
+        targets = []
+
+        if problem_type == "multiple_choice":
+            # Extract from options array
+            options = problem_data.get('options', [])
+            correct_option_id = problem_data.get('correct_option_id')
+
+            for option in options:
+                targets.append({
+                    "id": option.get('id'),
+                    "is_correct": option.get('id') == correct_option_id,
+                    "description": option.get('text', '')
+                })
+
+        elif problem_type == "true_false":
+            # Generate True/False targets
+            correct_answer = problem_data.get('correct', False)
+            targets = [
+                {
+                    "id": "true",
+                    "is_correct": correct_answer == True,
+                    "description": "True"
+                },
+                {
+                    "id": "false",
+                    "is_correct": correct_answer == False,
+                    "description": "False"
+                }
+            ]
+
+        elif problem_type == "fill_in_blanks":
+            # Each blank is a target with its correct answers
+            blanks = problem_data.get('blanks', [])
+            for i, blank in enumerate(blanks):
+                targets.append({
+                    "id": blank.get('id', f'blank_{i}'),
+                    "is_correct": True,  # Evaluated differently (text matching)
+                    "description": f"Blank {i+1}",
+                    "correct_answers": blank.get('correct_answers', [])
+                })
+
+        elif problem_type == "matching_activity":
+            # Extract pairs from mappings
+            mappings = problem_data.get('mappings', [])
+            for mapping in mappings:
+                left_id = mapping.get('left_id')
+                right_ids = mapping.get('right_ids', [])
+                # Each valid pair is a target
+                for right_id in right_ids:
+                    targets.append({
+                        "id": f"{left_id}:{right_id}",
+                        "is_correct": True,
+                        "description": f"Match {left_id} to {right_id}"
+                    })
+
+        elif problem_type == "sequencing_activity":
+            # Correct sequence
+            correct_sequence = problem_data.get('correct_sequence', [])
+            targets.append({
+                "id": "sequence",
+                "is_correct": True,
+                "description": "Correct sequence",
+                "correct_sequence": correct_sequence
+            })
+
+        elif problem_type == "categorization_activity":
+            # Extract item-category pairs
+            items = problem_data.get('items', [])
+            for item in items:
+                item_id = item.get('id')
+                correct_category = item.get('category')
+                targets.append({
+                    "id": f"{item_id}:{correct_category}",
+                    "is_correct": True,
+                    "description": f"{item.get('text', item_id)} belongs to {correct_category}"
+                })
+
+        logger.info(f"Extracted {len(targets)} targets for {problem_type}")
+        return targets
+
+    def generate_ai_coach_config(
+        self,
+        problem_type: str,
+        problem_data: dict,
+        topic_context: dict
+    ) -> dict:
+        """
+        Generate complete live_interaction_config for a problem.
+
+        This config enables real-time AI tutoring for any problem type.
+
+        Args:
+            problem_type: Type of problem (multiple_choice, true_false, etc.)
+            problem_data: The complete problem data
+            topic_context: Context including skill_description, grade_level, recommendations
+
+        Returns:
+            Complete live_interaction_config dict with prompt, targets, evaluation
+        """
+        skill_desc = topic_context.get('skill_description', 'this skill')
+        grade_level = topic_context.get('grade_level', 'Kindergarten')
+
+        # Build system prompt based on topic context
+        system_prompt = f"""You are a patient, encouraging AI tutor helping a {grade_level} student learn {skill_desc}.
+
+Your role is to:
+- Provide gentle guidance without giving away answers
+- Celebrate correct responses enthusiastically
+- Offer helpful hints for incorrect responses
+- Use age-appropriate language for {grade_level}
+- Keep responses brief and conversational
+- Make learning fun and engaging"""
+
+        # Build instruction based on problem type
+        question_text = problem_data.get('question', problem_data.get('question_text', ''))
+
+        instruction_map = {
+            "multiple_choice": f"Let's work on this multiple choice question together! {question_text}",
+            "true_false": f"Think carefully about whether this is true or false: {question_text}",
+            "fill_in_blanks": f"Let's fill in the blanks together! {question_text}",
+            "matching_activity": "Let's match these items together!",
+            "sequencing_activity": "Let's put these in the right order!",
+            "categorization_activity": "Let's sort these items into the correct categories!"
+        }
+
+        instruction = instruction_map.get(problem_type, f"Let's work on this together! {question_text}")
+
+        # Extract targets from problem structure
+        targets = self.extract_targets_from_problem(problem_type, problem_data)
+
+        # Generate feedback messages
+        feedback = self.generate_feedback_messages(problem_type, topic_context)
+
+        # Build complete config
+        live_interaction_config = {
+            "prompt": {
+                "system": system_prompt,
+                "instruction": instruction,
+                "voice": "Leda"  # Default voice for AI coach
+            },
+            "targets": targets,
+            "evaluation": {
+                "mode": "real_time",
+                "feedback": feedback
+            }
+        }
+
+        logger.info(f"Generated AI coach config for {problem_type} with {len(targets)} targets")
+        return live_interaction_config

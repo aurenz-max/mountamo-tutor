@@ -1,9 +1,10 @@
 /**
  * Unified Problem Primitive Types
- * 
+ *
  * This file defines the standard interfaces for all problem primitives to ensure consistency
  * across the unified practice system. All primitives should use these interfaces.
  */
+import React from 'react';
 
 // Base problem primitive props interface
 export interface ProblemPrimitiveProps<TProblem = any, TResponse = any> {
@@ -30,6 +31,12 @@ export interface ProblemPrimitiveProps<TProblem = any, TResponse = any> {
 
   /** Whether to disable immediate feedback (for assessments) */
   disableFeedback?: boolean;
+
+  /** Ref to AI Coach for live interaction (optional - present when live_interaction_config is enabled) */
+  aiCoachRef?: React.RefObject<{
+    sendTargetSelection: (targetId: string) => void;
+    sendSubmissionResult: (result: any) => void
+  }>;
 }
 
 // Specific response types for different problem types

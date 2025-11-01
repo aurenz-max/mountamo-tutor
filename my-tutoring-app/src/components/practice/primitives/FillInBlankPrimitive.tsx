@@ -18,7 +18,8 @@ const FillInBlankPrimitive: React.FC<FillInBlankPrimitiveProps> = ({
   feedback,
   onUpdate,
   disabled = false,
-  disableFeedback = false
+  disableFeedback = false,
+  aiCoachRef
 }) => {
   const handleBlankChange = (blankId: string, value: string) => {
     if (disabled || isSubmitted) return;
@@ -30,6 +31,12 @@ const FillInBlankPrimitive: React.FC<FillInBlankPrimitiveProps> = ({
     ];
 
     onUpdate({ student_answers: newAnswers });
+
+    // NEW: Notify AI coach when student fills a blank (if AI coach is enabled)
+    // Format: "blank_id:answer_text" so backend can evaluate the text answer
+    if (aiCoachRef?.current && (problem as any).live_interaction_config && !isSubmitted && value.trim()) {
+      aiCoachRef.current.sendTargetSelection(`${blankId}:${value}`);
+    }
   };
 
   const getBlankValue = (blankId: string): string => {
