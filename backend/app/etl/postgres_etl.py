@@ -1,9 +1,15 @@
 # backend/app/db/postgresql_db.py
+#
+# DEPRECATED: PostgreSQL ETL has been replaced by BigQuery.
+# This file contains legacy ETL code for migrating data from Cosmos DB to PostgreSQL.
+# PostgreSQL dependencies (psycopg2, asyncpg) have been removed from requirements.txt
+# This code is kept for reference only and will not function in production.
+#
 
 import json
 import os
 import pandas as pd
-import psycopg2
+import psycopg2  # DEPRECATED: No longer in requirements.txt
 from psycopg2.extras import execute_values
 import logging
 from pathlib import Path

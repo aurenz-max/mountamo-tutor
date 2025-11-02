@@ -1,6 +1,12 @@
 # refactored_analytics.py
+#
+# DEPRECATED: This file uses PostgreSQL which has been replaced by BigQuery.
+# PostgreSQL dependencies (asyncpg, psycopg2) have been removed from requirements.txt
+# This code is kept for reference but will not function in production.
+# See BigQueryAnalyticsService for the current analytics implementation.
+#
 
-import asyncpg
+import asyncpg  # DEPRECATED: PostgreSQL has been replaced by BigQuery
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
