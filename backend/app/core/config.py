@@ -72,13 +72,6 @@ class Settings(BaseSettings):
     DAILY_QUERY_BUDGET_USD: float = Field(default=1.0, env="DAILY_QUERY_BUDGET_USD")
     ALERT_ON_HIGH_COSTS: bool = Field(default=True, env="ALERT_ON_HIGH_COSTS")
 
-    # # PostgreSQL settings
-    PG_HOST: str 
-    PG_DATABASE: str 
-    PG_USER: str 
-    PG_PASSWORD: str 
-    PG_PORT: str 
-
 
     # ================================
     # 🔥 FIREBASE AUTHENTICATION CONFIG
