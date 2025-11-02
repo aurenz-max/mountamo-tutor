@@ -19,6 +19,7 @@ COPY . .
 # Expose port 8080 (Cloud Run default)
 EXPOSE 8080
 
+
 # Set environment variables
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
