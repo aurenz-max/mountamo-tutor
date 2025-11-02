@@ -5,7 +5,6 @@ from typing import Optional
 from fastapi import Depends, BackgroundTasks
 
 from .services.azure_tts import AzureSpeechService
-from .services.audio_service import AudioService
 from .services.anthropic import AnthropicService
 from .services.problems import ProblemService
 from .services.competency import CompetencyService
@@ -45,7 +44,6 @@ logger.setLevel(logging.INFO)
 _cosmos_db: Optional[CosmosDBService] = None
 _firestore_service: Optional[FirestoreService] = None
 _curriculum_service: Optional[CurriculumService] = None
-_audio_service: Optional[AudioService] = None 
 _anthropic_service: Optional[AnthropicService] = None
 _gemini_generate_service: Optional[GeminiGenerateService] = None
 _visual_content_service: Optional[VisualContentService] = None
@@ -142,14 +140,6 @@ def get_blob_storage_service():
     return blob_storage_service
 
 
-
-def get_audio_service() -> AudioService:
-    """Get or create AudioService singleton."""
-    global _audio_service
-    if _audio_service is None:
-        logger.info("Initializing AudioService")
-        _audio_service = AudioService()
-    return _audio_service
 
 def get_ai_service(service_type: str = None) -> BaseAIService:
     """Get AI service instance based on type or default configuration"""
