@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy requirements first (for better caching)
+COPY requirements.txt .
+
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -18,7 +21,6 @@ COPY . .
 
 # Expose port 8080 (Cloud Run default)
 EXPOSE 8080
-
 
 # Set environment variables
 ENV PORT=8080
