@@ -17,7 +17,6 @@ from .services.base_ai_service import BaseAIService
 from .services.ai_service_factory import AIServiceFactory
 
 from .services.gemini_problem import GeminiProblemIntegration
-from .services.analytics import AnalyticsExtension
 from .services.learning_paths import LearningPathsService
 from .services.gemini_read_along import GeminiReadAlongIntegration
 from .services.review import ReviewService
@@ -396,16 +395,6 @@ async def get_learning_paths_service(
         logger.info("✅ LearningPathsService initialized successfully")
 
     return _learning_paths_service
-
-async def get_analytics_extension(competency_service: CompetencyService = Depends(get_competency_service)):
-    """Get or create AnalyticsExtension instance."""
-    from .services.analytics import AnalyticsExtension
-    
-    extension = AnalyticsExtension(competency_service)
-    if competency_service.cosmos_db:
-        extension.cosmos_db = competency_service.cosmos_db
-    
-    return extension
 
 def get_daily_activities_service(
     analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service),
