@@ -8,9 +8,6 @@
     "NEXT_PUBLIC_WS_URL": "wss://mountamo-education-869605204378.us-east5.run.app",
     "NEXT_PUBLIC_FIREBASE_API_KEY": "AIzaSyBs3SSRurLp1cS0LrpbfLwfmWXlnMxjmv8",
     "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN": "mountamo-tutor-h7wnta.firebaseapp.com",
-    "NEXT_PUBLIC_FIREBASE_PROJECT_ID": "mountamo-tutor-h7wnta",
-    "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET": "@firebase-storage-bucket",
-    "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "@firebase-messaging-sender-id",
-    "NEXT_PUBLIC_FIREBASE_APP_ID": "@firebase-app-id"
+    "NEXT_PUBLIC_FIREBASE_PROJECT_ID": "mountamo-tutor-h7wnta"
   }
 }
