@@ -115,12 +115,6 @@ app.include_router(
     dependencies=[Depends(get_user_context)]
 )
 
-app.include_router(
-    gemini.router, 
-    prefix="/api/gemini", 
-    tags=["gemini"],
-    dependencies=[Depends(get_user_context)]
-)
 
 app.include_router(
     analytics.router, 

@@ -8,22 +8,19 @@ from typing import AsyncGenerator, Dict, Optional, Any
 from datetime import datetime
 
 from ..db.cosmos_db import CosmosDBService
-from ..services.audio_service import AudioService
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class BaseSession(abc.ABC):
     """Abstract base class for all session types."""
-    
+
     def __init__(
         self,
-        audio_service: AudioService,
         cosmos_db: CosmosDBService,
         student_id: int,
     ):
         self.id = str(uuid.uuid4())
-        self.audio_service = audio_service
         self.cosmos_db = cosmos_db
         self.student_id = student_id
         
@@ -81,19 +78,6 @@ class BaseSession(abc.ABC):
             logger.error(f"Error getting responses for session {self.id}: {e}")
             raise
     
-    async def get_audio(self) -> AsyncGenerator[bytes, None]:
-        """Get processed audio from the audio service"""
-        session_data = self.audio_service.sessions.get(self.id)
-        if not session_data:
-            raise ValueError(f"No audio session found for {self.id}")
-            
-        output_queue = session_data['output_queue']
-        while not self.quit_event.is_set():
-            try:
-                audio_chunk = await output_queue.get()
-                yield audio_chunk
-            except asyncio.CancelledError:
-                break
     
     async def get_transcripts(self) -> AsyncGenerator[Dict[str, Any], None]:
         """Get speech transcripts from the session"""
@@ -145,11 +129,5 @@ class BaseSession(abc.ABC):
         self._active = False
         self.quit_event.set()
         self._initialization_event.clear()
-        
-        # Clean up audio service
-        try:
-            self.audio_service.remove_session(self.id)
-        except Exception as e:
-            logger.error(f"Error cleaning up audio service for session {self.id}: {e}")
-        
+
         logger.info(f"Basic cleanup done for session {self.id}")

@@ -7,7 +7,6 @@ from typing import AsyncGenerator, Dict, Optional, Union, Any
 from datetime import datetime
 
 from ..db.cosmos_db import CosmosDBService
-from ..services.audio_service import AudioService
 from app.services.gemini import GeminiService
 from app.services.tutoring import TutoringService
 from app.services.azure_tts import AzureSpeechService
@@ -23,7 +22,6 @@ logger.setLevel(logging.DEBUG)
 class TutoringSession:
     def __init__(
         self,
-        audio_service: AudioService,
         cosmos_db: CosmosDBService,
         visual_content_manager: VisualContentManager,
         subject: str,
@@ -39,9 +37,8 @@ class TutoringSession:
         subskill_id: Optional[str] = None,
         unit_id: Optional[str] = None,  # Add unit_id parameter
     ):
-       
+
         self.id = str(uuid.uuid4())
-        self.audio_service = audio_service
         self.cosmos_db = cosmos_db
         self.visual_content_manager = visual_content_manager
         
@@ -132,13 +129,6 @@ class TutoringSession:
             # Store the event loop that we're running in
             self._event_loop = asyncio.get_running_loop()
             logger.debug(f"[Session {self.id}] Stored event loop: {self._event_loop}")
-            
-            # Initialize audio service first
-            try:
-                self.audio_service.create_session(self.id)
-            except Exception as e:
-                logger.error(f"Failed to initialize audio service for session {self.id}: {e}")
-                raise
 
             # Initialize visual content manager for this session
             try:
@@ -361,20 +351,6 @@ class TutoringSession:
             logger.error(f"Error processing message in session {self.id}: {e}")
             raise
 
-    async def get_audio(self) -> AsyncGenerator[bytes, None]:
-        """Get processed audio from the audio service"""
-        session_data = self.audio_service.sessions.get(self.id)
-        if not session_data:
-            raise ValueError(f"No audio session found for {self.id}")
-            
-        output_queue = session_data['output_queue']
-        while not self.quit_event.is_set():
-            try:
-                audio_chunk = await output_queue.get()
-                yield audio_chunk
-            except asyncio.CancelledError:
-                break
-
     # NEW: Add method to generate read-along content
     async def generate_read_along(self, complexity_level: int = 1, theme: Optional[str] = None, with_image: bool = True) -> Optional[Dict[str, Any]]:
         """Generate a read-along experience for the student"""
@@ -587,12 +563,10 @@ class TutoringSession:
 
 class SessionManager:
     def __init__(
-        self, 
-        audio_service: AudioService,
+        self,
         cosmos_db: CosmosDBService,
         visual_content_service: VisualContentService
     ):
-        self.audio_service = audio_service
         self.cosmos_db = cosmos_db
         self.visual_content_service = visual_content_service
         
@@ -621,7 +595,6 @@ class SessionManager:
         """Create and initialize a new tutoring session with pre-loaded data."""
         # 1. Create the session with all dependencies
         session = TutoringSession(
-            audio_service=self.audio_service,
             cosmos_db=self.cosmos_db,
             visual_content_manager=self.visual_content_manager,
             subject=subject,
@@ -680,13 +653,7 @@ class SessionManager:
             try:
                 # Clean up the session (which now handles all service cleanup internally)
                 await session.cleanup()
-                
-                # Clean up audio service separately since it's shared
-                try:
-                    self.audio_service.remove_session(session_id)
-                except Exception as e:
-                    logger.error(f"Error cleaning up audio service for session {session_id}: {e}")
-                
+
                 # Clean up visual content session
                 try:
                     await self.visual_content_manager.cleanup_session(session_id)
