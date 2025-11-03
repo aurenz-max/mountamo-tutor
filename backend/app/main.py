@@ -53,11 +53,15 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Add your frontend URL
+    allow_origins=[
+        "http://localhost:3000",  # Local development
+        "https://*.vercel.app",    # Vercel preview/production deployments
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"], 
+    expose_headers=["*"],
+    allow_origin_regex=r"https://.*\.vercel\.app"  # Allow all Vercel domains
 )
 
 # 3. Basic logging middleware (removing rate limiting for now)
