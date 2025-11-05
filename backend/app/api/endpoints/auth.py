@@ -8,6 +8,8 @@ import firebase_admin
 from firebase_admin import auth, credentials
 import logging
 import json
+import os
+from pathlib import Path
 
 # Import your existing config
 from ...core.config import settings
@@ -31,7 +33,7 @@ logger = logging.getLogger(__name__)
 _firebase_app = None
 
 def initialize_firebase():
-    """Initialize Firebase Admin SDK with credentials from JSON env var or file"""
+    """Initialize Firebase Admin SDK with credentials from mounted secret, JSON env var, or file"""
     global _firebase_app
 
     if _firebase_app is not None:
@@ -40,9 +42,28 @@ def initialize_firebase():
     try:
         cred = None
 
-        # Option 1: Use JSON credentials from environment variable (Cloud Run + Secret Manager)
-        if settings.FIREBASE_ADMIN_CREDENTIALS_JSON:
-            logger.info("🔥 Loading Firebase credentials from environment variable (Secret Manager)")
+        # Option 1: Check for mounted secret file (Cloud Run volume mount)
+        # Common paths: /secrets/<secret-name>/<key> or from FIREBASE_ADMIN_CREDENTIALS_PATH env var
+        mounted_secret_paths = [
+            "/secrets/firebase-admin-credentials/latest",  # Standard Cloud Run mount
+            "/secrets/firebase-admin-credentials/firebase-admin-credentials",
+            os.getenv("FIREBASE_ADMIN_CREDENTIALS_PATH", ""),  # Check if env var points to mounted secret
+        ]
+
+        for secret_path in mounted_secret_paths:
+            if secret_path and Path(secret_path).exists():
+                logger.info(f"🔥 Loading Firebase credentials from mounted secret: {secret_path}")
+                try:
+                    cred = credentials.Certificate(secret_path)
+                    logger.info(f"✅ Firebase credentials loaded from mounted secret file")
+                    break
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to load from {secret_path}: {str(e)}")
+                    continue
+
+        # Option 2: Use JSON credentials from environment variable (alternative Cloud Run setup)
+        if cred is None and settings.FIREBASE_ADMIN_CREDENTIALS_JSON:
+            logger.info("🔥 Loading Firebase credentials from JSON environment variable")
             try:
                 credentials_dict = json.loads(settings.FIREBASE_ADMIN_CREDENTIALS_JSON)
                 cred = credentials.Certificate(credentials_dict)
@@ -51,16 +72,19 @@ def initialize_firebase():
                 logger.error(f"❌ Failed to parse FIREBASE_ADMIN_CREDENTIALS_JSON: {str(e)}")
                 raise ValueError(f"Invalid JSON in FIREBASE_ADMIN_CREDENTIALS_JSON: {str(e)}")
 
-        # Option 2: Use credentials file (Local development)
-        elif settings.firebase_credentials_exist:
-            logger.info(f"🔥 Loading Firebase credentials from file: {settings.FIREBASE_ADMIN_CREDENTIALS_PATH}")
+        # Option 3: Use credentials file (Local development)
+        if cred is None and settings.firebase_credentials_exist:
+            logger.info(f"🔥 Loading Firebase credentials from local file: {settings.FIREBASE_ADMIN_CREDENTIALS_PATH}")
             cred = credentials.Certificate(settings.firebase_admin_credentials_full_path)
-            logger.info(f"✅ Firebase credentials loaded from file")
+            logger.info(f"✅ Firebase credentials loaded from local file")
 
-        else:
+        # If no credentials found, raise error
+        if cred is None:
             raise FileNotFoundError(
-                f"Firebase credentials not found. Either set FIREBASE_ADMIN_CREDENTIALS_JSON "
-                f"environment variable or ensure file exists at: {settings.firebase_admin_credentials_full_path}"
+                f"Firebase credentials not found. Checked:\n"
+                f"  1. Mounted secrets: {mounted_secret_paths}\n"
+                f"  2. FIREBASE_ADMIN_CREDENTIALS_JSON env var: {bool(settings.FIREBASE_ADMIN_CREDENTIALS_JSON)}\n"
+                f"  3. Local file: {settings.firebase_admin_credentials_full_path} (exists: {settings.firebase_credentials_exist})"
             )
 
         # Initialize Firebase Admin SDK
@@ -75,9 +99,10 @@ def initialize_firebase():
 
     except Exception as e:
         logger.error(f"❌ Failed to initialize Firebase: {str(e)}")
+        logger.error(f"📁 Mounted secret paths checked: {[p for p in ['/secrets/firebase-admin-credentials/latest', '/secrets/firebase-admin-credentials/firebase-admin-credentials', os.getenv('FIREBASE_ADMIN_CREDENTIALS_PATH', '')] if p]}")
         logger.error(f"📁 FIREBASE_ADMIN_CREDENTIALS_JSON set: {bool(settings.FIREBASE_ADMIN_CREDENTIALS_JSON)}")
-        logger.error(f"📁 Credentials file path: {settings.firebase_admin_credentials_full_path}")
-        logger.error(f"📁 Credentials file exists: {settings.firebase_credentials_exist}")
+        logger.error(f"📁 Local credentials path: {settings.firebase_admin_credentials_full_path}")
+        logger.error(f"📁 Local credentials exists: {settings.firebase_credentials_exist}")
         raise HTTPException(
             status_code=500,
             detail=f"Firebase initialization failed: {str(e)}"
