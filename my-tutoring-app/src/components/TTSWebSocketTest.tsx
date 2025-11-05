@@ -183,7 +183,8 @@ const TTSWebSocketTest = () => {
     
     try {
       addLog('Attempting to connect to WebSocket...');
-      const ws = new WebSocket('ws://localhost:8000/api/tts/stream');
+      const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+      const ws = new WebSocket(`${wsBaseUrl}/api/tts/stream`);
       websocketRef.current = ws;
       
       ws.onopen = () => {

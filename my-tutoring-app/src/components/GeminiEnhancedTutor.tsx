@@ -44,7 +44,7 @@ const EnhancedGeminiTutor: React.FC<EnhancedGeminiTutorProps> = ({
   skill,
   subskill,
   simulationContainerId = 'simulation-container',
-  apiUrl = 'ws://localhost:8000/api/gemini/bidirectional',
+  apiUrl = process.env.NEXT_PUBLIC_WS_URL ? `${process.env.NEXT_PUBLIC_WS_URL}/api/gemini/bidirectional` : 'ws://localhost:8000/api/gemini/bidirectional',
   expanded = true,
   onClose,
   className = '',

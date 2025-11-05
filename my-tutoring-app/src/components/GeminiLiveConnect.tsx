@@ -22,7 +22,7 @@ interface GeminiLiveConnectProps {
 }
 
 const GeminiLiveConnect: React.FC<GeminiLiveConnectProps> = ({
-  apiUrl = 'ws://localhost:8000/api/gemini/bidirectional', // Default endpoint
+  apiUrl = process.env.NEXT_PUBLIC_WS_URL ? `${process.env.NEXT_PUBLIC_WS_URL}/api/gemini/bidirectional` : 'ws://localhost:8000/api/gemini/bidirectional', // Default endpoint
   onConnect,
   onDisconnect,
   onError,

@@ -9,8 +9,9 @@ export function ScreenCapture() {
   const [error, setError] = useState<string>('');
   const [transcription, setTranscription] = useState<string>('');
   
+  const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
   const { startCapture, stopCapture, isCapturing } = useScreenCapture({
-    websocketUrl: 'ws://localhost:8000/ws/capture', // Replace with your backend URL
+    websocketUrl: `${wsBaseUrl}/ws/capture`,
     onTranscription: (text) => {
       setTranscription(text);
     },

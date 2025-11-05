@@ -95,13 +95,15 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
         onError: (error) => console.error('Audio capture error:', error)
       });
 
+      // Use environment variable for WebSocket base URL
+      const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
       let socket: WebSocket;
-      
+
       if (endpointType === 'practice-tutor') {
-        // Use direct WebSocket connection like daily planning (FIXED)
-        const wsUrl = `ws://localhost:8000/api/practice-tutor`;
+        // Use direct WebSocket connection like daily planning
+        const wsUrl = `${wsBaseUrl}/api/practice-tutor`;
         console.log(`AI Coach connecting to practice tutor: ${wsUrl}`);
-        
+
         socket = new WebSocket(wsUrl);
       } else if (endpointType === 'education') {
         // Education endpoint - requires packageId from context
@@ -109,19 +111,19 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (!packageId) {
           throw new Error('Education endpoint requires packageId in endpointContext');
         }
-        
+
         // Store the full context BEFORE connecting to avoid race condition
         setLastContext(endpointContext);
-        
-        const wsUrl = `ws://localhost:8000/api/packages/${packageId}/learn`;
+
+        const wsUrl = `${wsBaseUrl}/api/packages/${packageId}/learn`;
         console.log(`AI Coach connecting to education endpoint: ${wsUrl} with context:`, endpointContext);
-        
+
         socket = new WebSocket(wsUrl);
       } else {
         // Daily planning connection
-        const wsUrl = `ws://localhost:8000/api/daily-briefing?student_id=${studentId}`;
+        const wsUrl = `${wsBaseUrl}/api/daily-briefing?student_id=${studentId}`;
         console.log(`AI Coach connecting to ${wsUrl}`);
-        
+
         socket = new WebSocket(wsUrl);
       }
 

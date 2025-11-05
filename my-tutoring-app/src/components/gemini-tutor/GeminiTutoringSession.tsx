@@ -33,7 +33,7 @@ interface GeminiTutoringSessionProps {
 const GeminiTutoringSession: React.FC<GeminiTutoringSessionProps> = ({
   initialCurriculum,
   ageGroup,
-  apiUrl = 'ws://localhost:8000/api/gemini/bidirectional',
+  apiUrl = process.env.NEXT_PUBLIC_WS_URL ? `${process.env.NEXT_PUBLIC_WS_URL}/api/gemini/bidirectional` : 'ws://localhost:8000/api/gemini/bidirectional',
   onSessionEnd,
   studentId = 1,
   packageId, // NEW: Content package ID prop
