@@ -82,7 +82,10 @@ class Settings(BaseSettings):
         default="backend/credentials/firebase-admin.json",
         env="FIREBASE_ADMIN_CREDENTIALS_PATH"
     )
-    
+
+    # Firebase credentials as JSON string (for Cloud Run with Secret Manager)
+    FIREBASE_ADMIN_CREDENTIALS_JSON: Optional[str] = Field(None, env="FIREBASE_ADMIN_CREDENTIALS_JSON")
+
     # Firebase Project Configuration
     FIREBASE_PROJECT_ID: Optional[str] = Field(None, env="FIREBASE_PROJECT_ID")
     FIREBASE_WEB_API_KEY: Optional[str] = Field(None, env="FIREBASE_WEB_API_KEY")

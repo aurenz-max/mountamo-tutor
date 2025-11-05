@@ -7,6 +7,7 @@ from typing import Optional
 import firebase_admin
 from firebase_admin import auth, credentials
 import logging
+import json
 
 # Import your existing config
 from ...core.config import settings
@@ -30,32 +31,53 @@ logger = logging.getLogger(__name__)
 _firebase_app = None
 
 def initialize_firebase():
-    """Initialize Firebase Admin SDK with your credentials"""
+    """Initialize Firebase Admin SDK with credentials from JSON env var or file"""
     global _firebase_app
-    
+
     if _firebase_app is not None:
         return _firebase_app
-    
+
     try:
-        # Check if credentials file exists
-        if not settings.firebase_credentials_exist:
-            raise FileNotFoundError(f"Firebase credentials not found at: {settings.firebase_admin_credentials_full_path}")
-        
+        cred = None
+
+        # Option 1: Use JSON credentials from environment variable (Cloud Run + Secret Manager)
+        if settings.FIREBASE_ADMIN_CREDENTIALS_JSON:
+            logger.info("🔥 Loading Firebase credentials from environment variable (Secret Manager)")
+            try:
+                credentials_dict = json.loads(settings.FIREBASE_ADMIN_CREDENTIALS_JSON)
+                cred = credentials.Certificate(credentials_dict)
+                logger.info("✅ Firebase credentials loaded from JSON environment variable")
+            except json.JSONDecodeError as e:
+                logger.error(f"❌ Failed to parse FIREBASE_ADMIN_CREDENTIALS_JSON: {str(e)}")
+                raise ValueError(f"Invalid JSON in FIREBASE_ADMIN_CREDENTIALS_JSON: {str(e)}")
+
+        # Option 2: Use credentials file (Local development)
+        elif settings.firebase_credentials_exist:
+            logger.info(f"🔥 Loading Firebase credentials from file: {settings.FIREBASE_ADMIN_CREDENTIALS_PATH}")
+            cred = credentials.Certificate(settings.firebase_admin_credentials_full_path)
+            logger.info(f"✅ Firebase credentials loaded from file")
+
+        else:
+            raise FileNotFoundError(
+                f"Firebase credentials not found. Either set FIREBASE_ADMIN_CREDENTIALS_JSON "
+                f"environment variable or ensure file exists at: {settings.firebase_admin_credentials_full_path}"
+            )
+
         # Initialize Firebase Admin SDK
-        cred = credentials.Certificate(settings.firebase_admin_credentials_full_path)
         _firebase_app = firebase_admin.initialize_app(cred, {
             'projectId': settings.FIREBASE_PROJECT_ID,
         })
-        
+
         logger.info("🔥 Firebase Admin SDK initialized successfully")
-        logger.info(f"📁 Using credentials from: {settings.FIREBASE_ADMIN_CREDENTIALS_PATH}")
-        
+        logger.info(f"📁 Project ID: {settings.FIREBASE_PROJECT_ID}")
+
         return _firebase_app
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to initialize Firebase: {str(e)}")
-        logger.error(f"📁 Credentials path: {settings.firebase_admin_credentials_full_path}")
-        logger.error(f"📁 File exists: {settings.firebase_credentials_exist}")
+        logger.error(f"📁 FIREBASE_ADMIN_CREDENTIALS_JSON set: {bool(settings.FIREBASE_ADMIN_CREDENTIALS_JSON)}")
+        logger.error(f"📁 Credentials file path: {settings.firebase_admin_credentials_full_path}")
+        logger.error(f"📁 Credentials file exists: {settings.firebase_credentials_exist}")
         raise HTTPException(
             status_code=500,
             detail=f"Firebase initialization failed: {str(e)}"
