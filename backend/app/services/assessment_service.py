@@ -24,6 +24,7 @@ from ..schemas.assessment_problems import (
     AssessmentCategorizationActivity,
     AssessmentScenarioQuestion,
     AssessmentShortAnswer,
+    AssessmentLiveInteraction,
     AssessmentMCQOption,
     AssessmentBlankItem,
     AssessmentMatchingItem,
@@ -579,7 +580,13 @@ class AssessmentService:
                                 success_criteria=problem.get('success_criteria', []),
                                 skill_id=subskill.get('skill_id', 'default_skill'),
                                 subskill_id=subskill.get('subskill_id', 'default_subskill'),
-                                subject=subject
+                                subject=subject,
+                                # Preserve visual and interaction fields
+                                visual_content=problem.get('visual_content'),
+                                question_visual_data=problem.get('question_visual_data'),
+                                statement_visual_data=problem.get('statement_visual_data'),
+                                interaction_config=problem.get('interaction_config'),
+                                live_interaction_config=problem.get('live_interaction_config')
                             )
                         elif problem_type == "true_false":
                             assessment_problem = AssessmentTrueFalse(
@@ -593,7 +600,13 @@ class AssessmentService:
                                 success_criteria=problem.get('success_criteria', []),
                                 skill_id=subskill.get('skill_id', 'default_skill'),
                                 subskill_id=subskill.get('subskill_id', 'default_subskill'),
-                                subject=subject
+                                subject=subject,
+                                # Preserve visual and interaction fields
+                                visual_content=problem.get('visual_content'),
+                                question_visual_data=problem.get('question_visual_data'),
+                                statement_visual_data=problem.get('statement_visual_data'),
+                                interaction_config=problem.get('interaction_config'),
+                                live_interaction_config=problem.get('live_interaction_config')
                             )
                         elif problem_type == "fill_in_blanks":
                             assessment_problem = AssessmentFillInBlanks(
@@ -614,7 +627,13 @@ class AssessmentService:
                                 success_criteria=problem.get('success_criteria', []),
                                 skill_id=subskill.get('skill_id', 'default_skill'),
                                 subskill_id=subskill.get('subskill_id', 'default_subskill'),
-                                subject=subject
+                                subject=subject,
+                                # Preserve visual and interaction fields
+                                visual_content=problem.get('visual_content'),
+                                question_visual_data=problem.get('question_visual_data'),
+                                statement_visual_data=problem.get('statement_visual_data'),
+                                interaction_config=problem.get('interaction_config'),
+                                live_interaction_config=problem.get('live_interaction_config')
                             )
                         elif problem_type == "matching_activity":
                             assessment_problem = AssessmentMatchingActivity(
@@ -642,7 +661,13 @@ class AssessmentService:
                                 success_criteria=problem.get('success_criteria', []),
                                 skill_id=subskill.get('skill_id', 'default_skill'),
                                 subskill_id=subskill.get('subskill_id', 'default_subskill'),
-                                subject=subject
+                                subject=subject,
+                                # Preserve visual and interaction fields
+                                visual_content=problem.get('visual_content'),
+                                question_visual_data=problem.get('question_visual_data'),
+                                statement_visual_data=problem.get('statement_visual_data'),
+                                interaction_config=problem.get('interaction_config'),
+                                live_interaction_config=problem.get('live_interaction_config')
                             )
                         elif problem_type == "sequencing_activity":
                             assessment_problem = AssessmentSequencingActivity(
@@ -656,7 +681,13 @@ class AssessmentService:
                                 success_criteria=problem.get('success_criteria', []),
                                 skill_id=subskill.get('skill_id', 'default_skill'),
                                 subskill_id=subskill.get('subskill_id', 'default_subskill'),
-                                subject=subject
+                                subject=subject,
+                                # Preserve visual and interaction fields
+                                visual_content=problem.get('visual_content'),
+                                question_visual_data=problem.get('question_visual_data'),
+                                statement_visual_data=problem.get('statement_visual_data'),
+                                interaction_config=problem.get('interaction_config'),
+                                live_interaction_config=problem.get('live_interaction_config')
                             )
                         elif problem_type == "categorization_activity":
                             assessment_problem = AssessmentCategorizationActivity(
@@ -677,7 +708,13 @@ class AssessmentService:
                                 success_criteria=problem.get('success_criteria', []),
                                 skill_id=subskill.get('skill_id', 'default_skill'),
                                 subskill_id=subskill.get('subskill_id', 'default_subskill'),
-                                subject=subject
+                                subject=subject,
+                                # Preserve visual and interaction fields
+                                visual_content=problem.get('visual_content'),
+                                question_visual_data=problem.get('question_visual_data'),
+                                statement_visual_data=problem.get('statement_visual_data'),
+                                interaction_config=problem.get('interaction_config'),
+                                live_interaction_config=problem.get('live_interaction_config')
                             )
                         elif problem_type == "scenario_question":
                             assessment_problem = AssessmentScenarioQuestion(
@@ -692,7 +729,13 @@ class AssessmentService:
                                 success_criteria=problem.get('success_criteria', []),
                                 skill_id=subskill.get('skill_id', 'default_skill'),
                                 subskill_id=subskill.get('subskill_id', 'default_subskill'),
-                                subject=subject
+                                subject=subject,
+                                # Preserve visual and interaction fields
+                                visual_content=problem.get('visual_content'),
+                                question_visual_data=problem.get('question_visual_data'),
+                                statement_visual_data=problem.get('statement_visual_data'),
+                                interaction_config=problem.get('interaction_config'),
+                                live_interaction_config=problem.get('live_interaction_config')
                             )
                         elif problem_type == "short_answer":
                             assessment_problem = AssessmentShortAnswer(
@@ -705,7 +748,32 @@ class AssessmentService:
                                 success_criteria=problem.get('success_criteria', []),
                                 skill_id=subskill.get('skill_id', 'default_skill'),
                                 subskill_id=subskill.get('subskill_id', 'default_subskill'),
-                                subject=subject
+                                subject=subject,
+                                # Preserve visual and interaction fields
+                                visual_content=problem.get('visual_content'),
+                                question_visual_data=problem.get('question_visual_data'),
+                                statement_visual_data=problem.get('statement_visual_data'),
+                                interaction_config=problem.get('interaction_config'),
+                                live_interaction_config=problem.get('live_interaction_config')
+                            )
+                        elif problem_type == "live_interaction":
+                            assessment_problem = AssessmentLiveInteraction(
+                                id=problem.get('id', f"live_{subskill_index + 1}"),
+                                difficulty=DifficultyLevel(problem.get('difficulty', 'medium')),
+                                grade_level=problem.get('grade_level', 'K'),
+                                prompt=problem.get('prompt', {}),
+                                rationale=problem.get('rationale', ''),
+                                teaching_note=problem.get('teaching_note', ''),
+                                success_criteria=problem.get('success_criteria', []),
+                                skill_id=subskill.get('skill_id', 'default_skill'),
+                                subskill_id=subskill.get('subskill_id', 'default_subskill'),
+                                subject=subject,
+                                # Preserve visual and interaction fields
+                                visual_content=problem.get('visual_content'),
+                                question_visual_data=problem.get('question_visual_data'),
+                                statement_visual_data=problem.get('statement_visual_data'),
+                                interaction_config=problem.get('interaction_config'),
+                                live_interaction_config=problem.get('live_interaction_config')
                             )
                         else:
                             # Skip unknown problem types

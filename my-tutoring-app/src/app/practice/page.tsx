@@ -3,26 +3,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import SyllabusSelector from '@/components/tutoring/SyllabusSelector';
 import ProblemSet from '@/components/practice/ProblemSet';
 import PracticeAICoach from '@/components/practice/PracticeAICoach';
+import { QuickStartSection } from '@/components/practice/QuickStartSection';
+import CurriculumExplorer from '@/components/practice/explorer/CurriculumExplorer';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, RefreshCw, Home, MessageCircle } from 'lucide-react';
-import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronLeft, RefreshCw, Home, MessageCircle, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import { DailyActivity } from '@/lib/dailyActivitiesAPI';
+import { useToast } from "@/components/ui/use-toast";
 
 const PracticePage = () => {
   const router = useRouter();
-  const { userProfile } = useAuth();
-  const [selectedTopic, setSelectedTopic] = useState(null);
+  const { userProfile, getAuthToken } = useAuth();
+  const { toast } = useToast();
+  const [selectedTopic, setSelectedTopic] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [autoStarted, setAutoStarted] = useState(false);
-  
+
   // AI Coach state
   const [showAICoach, setShowAICoach] = useState(false);
-  
+
   // Communication state between ProblemSet and PracticeAICoach
   const [currentProblemContext, setCurrentProblemContext] = useState(null);
   const practiceAICoachRef = useRef(null);
+
+  // Quick Start and Browse Curriculum state
+  const [showBrowseCurriculum, setShowBrowseCurriculum] = useState(false);
+  const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
+  const [sessionCompleted, setSessionCompleted] = useState(false);
   
   useEffect(() => {
     // Check if there's a saved practice selection in localStorage
@@ -48,11 +63,7 @@ const PracticePage = () => {
     
     setLoading(false);
   }, []);
-  
-  const handleTopicSelect = (topic) => {
-    setSelectedTopic(topic);
-  };
-  
+
   const handleBackToSelector = () => {
     setSelectedTopic(null);
     setAutoStarted(false);
@@ -81,6 +92,80 @@ const PracticePage = () => {
         console.error('Error sending submission result to PracticeAICoach:', error);
       }
     }
+  };
+
+  // Handler for Quick Start activity selection
+  const handleActivitySelect = (activity: DailyActivity) => {
+    // Convert DailyActivity to the format expected by ProblemSet
+    if (activity.curriculum_metadata) {
+      const { subject, unit, skill, subskill } = activity.curriculum_metadata;
+
+      const topicFormat = {
+        subject: subject,
+        unit: unit,
+        skill: skill,
+        subskill: subskill,
+        selection: {
+          subject: subject,
+          unit: unit.id,
+          skill: skill.id,
+          subskill: subskill.id
+        },
+        autoStart: true
+      };
+
+      setCurrentActivityId(activity.id);
+      setSelectedTopic(topicFormat);
+      setAutoStarted(true);
+      setSessionCompleted(false);
+
+      toast({
+        title: "Starting Practice",
+        description: `${activity.title} - ${activity.description}`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Unable to start practice - missing curriculum information",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handler for marking activity as complete
+  const handleMarkComplete = async (activityId: string, pointsEarned?: number) => {
+    try {
+      toast({
+        title: "Activity Completed!",
+        description: pointsEarned ? `You earned ${pointsEarned} points!` : "Great job!",
+      });
+
+      // If this was from a problem set session, mark the current activity as complete
+      if (currentActivityId === activityId) {
+        setSessionCompleted(true);
+      }
+    } catch (error) {
+      console.error('Error marking activity complete:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark activity as complete",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handler for curriculum explorer selection
+  const handleCurriculumSelect = (selection: any) => {
+    // Convert curriculum selection to topic format
+    const topicFormat = {
+      ...selection,
+      autoStart: false
+    };
+
+    setSelectedTopic(topicFormat);
+    setCurrentActivityId(null); // Not from Quick Start
+    setAutoStarted(false);
+    setSessionCompleted(false);
   };
 
   // Create AI Coach context for this practice session
@@ -167,8 +252,51 @@ const PracticePage = () => {
           ) : (
             <>
               {!selectedTopic ? (
-                <div className="max-w-xl mx-auto">
-                  <SyllabusSelector onSelect={handleTopicSelect} />
+                <div className="space-y-8">
+                  {/* Quick Start Section - No extra wrapper, component handles its own styling */}
+                  <QuickStartSection
+                    studentId={userProfile.student_id}
+                    getAuthToken={getAuthToken}
+                    onActivitySelect={handleActivitySelect}
+                    onMarkComplete={handleMarkComplete}
+                  />
+
+                  {/* Divider with proper separator */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-gray-50 px-2 text-muted-foreground">or explore</span>
+                    </div>
+                  </div>
+
+                  {/* Browse Curriculum Section using Collapsible */}
+                  <Collapsible
+                    open={showBrowseCurriculum}
+                    onOpenChange={setShowBrowseCurriculum}
+                    className="space-y-2"
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full flex items-center justify-between h-auto py-4"
+                      >
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="h-5 w-5" />
+                          <span className="font-semibold">Browse Curriculum</span>
+                        </div>
+                        {showBrowseCurriculum ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-2">
+                      <CurriculumExplorer onSelect={handleCurriculumSelect} />
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -183,10 +311,10 @@ const PracticePage = () => {
                       </Button>
                     </div>
                   )}
-                  
-                  <ProblemSet 
-                    currentTopic={selectedTopic} 
-                    numProblems={5} 
+
+                  <ProblemSet
+                    currentTopic={selectedTopic}
+                    numProblems={5}
                     autoStart={selectedTopic.autoStart}
                     studentId={userProfile.student_id}
                     onProblemChange={handleProblemChange}

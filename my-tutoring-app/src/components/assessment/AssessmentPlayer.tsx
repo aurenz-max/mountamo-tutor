@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChevronLeft, ChevronRight, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import ProblemRenderer from '@/components/practice/ProblemRenderer';
+import PracticeAICoach from '@/components/practice/PracticeAICoach';
 import { authApi } from '@/lib/authApiClient';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -35,6 +36,9 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
   const [startTime] = useState(new Date());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAICoach, setShowAICoach] = useState(false);
+  const aiCoachRef = useRef<{ sendSubmissionResult: (result: any) => void; sendTargetSelection: (targetId: string) => void } | null>(null);
+  const problemRendererRef = useRef<any>(null);
 
   const currentProblem = assessmentData.problems[currentIndex];
   const progress = ((currentIndex + 1) / assessmentData.total_questions) * 100;
@@ -50,6 +54,18 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
+
+  // Detect live interaction config for AI Coach
+  useEffect(() => {
+    if (currentProblem) {
+      // Check for live_interaction_config (works with ANY problem type)
+      const hasLiveConfig = !!(currentProblem as any).live_interaction_config;
+      // Fallback: legacy live_interaction problem type
+      const isLegacyLiveInteraction = currentProblem.problem_type === 'live_interaction';
+
+      setShowAICoach(hasLiveConfig || isLegacyLiveInteraction);
+    }
+  }, [currentProblem]);
 
   const handleUpdate = (data: any) => {
     const problemId = currentProblem.id || currentProblem.problem_id || `problem_${currentIndex}`;
@@ -171,9 +187,31 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+    <>
+      {/* AI Coach Sidebar */}
+      {showAICoach && currentProblem && (
+        <div className="fixed right-4 top-20 bottom-4 w-96 z-40">
+          <PracticeAICoach
+            ref={aiCoachRef}
+            studentId={assessmentData.student_id}
+            practiceContext={{
+              subject: assessmentData.subject,
+              skill_id: currentProblem.skill_id,
+              subskill_id: currentProblem.subskill_id
+            }}
+            problemContext={{
+              currentProblem: currentProblem,
+              currentIndex: currentIndex,
+              totalProblems: assessmentData.total_questions,
+              isSubmitted: false
+            }}
+          />
+        </div>
+      )}
+
+      <div className={`min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 ${showAICoach ? 'pr-[420px]' : ''}`}>
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -216,6 +254,7 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
           </CardHeader>
           <CardContent className="pt-0">
             <ProblemRenderer
+              ref={problemRendererRef}
               problem={getProblemForRenderer(currentProblem)}
               isSubmitted={false}
               onSubmit={async () => {}} // No submission during assessment
@@ -224,6 +263,7 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
               feedback={null}
               submitting={false}
               isAssessmentMode={true} // This is the key prop for assessment mode
+              aiCoachRef={aiCoachRef} // Pass AI coach reference for live interaction
             />
           </CardContent>
         </Card>
@@ -340,7 +380,8 @@ const AssessmentPlayer: React.FC<AssessmentPlayerProps> = ({ assessmentData }) =
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 

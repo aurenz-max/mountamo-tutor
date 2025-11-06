@@ -26,6 +26,13 @@ class BaseAssessmentProblem(BaseModel):
     subskill_id: str
     subject: str
 
+    # Visual and interaction fields (optional for all problem types)
+    visual_content: Optional[Dict[str, Any]] = None
+    question_visual_data: Optional[Dict[str, Any]] = None
+    statement_visual_data: Optional[Dict[str, Any]] = None
+    interaction_config: Optional[Dict[str, Any]] = None
+    live_interaction_config: Optional[Dict[str, Any]] = None
+
 class AssessmentMCQOption(BaseModel):
     id: str
     text: str
@@ -99,6 +106,11 @@ class AssessmentShortAnswer(BaseAssessmentProblem):
     problem_type: Literal["short_answer"] = "short_answer"
     question: str
 
+class AssessmentLiveInteraction(BaseAssessmentProblem):
+    """Live interaction assessment problem with AI coach support"""
+    problem_type: Literal["live_interaction"] = "live_interaction"
+    prompt: Dict[str, Any]  # Structured prompt with instruction and context
+
 # Union type for all assessment problem types
 AssessmentProblemType = Union[
     AssessmentMultipleChoice,
@@ -108,5 +120,6 @@ AssessmentProblemType = Union[
     AssessmentSequencingActivity,
     AssessmentCategorizationActivity,
     AssessmentScenarioQuestion,
-    AssessmentShortAnswer
+    AssessmentShortAnswer,
+    AssessmentLiveInteraction
 ]
