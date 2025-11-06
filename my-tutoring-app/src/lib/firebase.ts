@@ -1,6 +1,6 @@
 // lib/firebase.ts
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 // Your Firebase config - get this from your backend /api/auth/config endpoint
 // or directly from Firebase Console
@@ -18,4 +18,13 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
+
+// Set persistence to LOCAL (survives browser restarts)
+// This ensures auth state is immediately available on page load
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error('Failed to set auth persistence:', error);
+  });
+}
+
 export default app;

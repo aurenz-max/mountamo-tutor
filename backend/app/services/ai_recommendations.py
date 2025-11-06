@@ -434,7 +434,7 @@ Select specific subskill_ids for each activity type. Provide brief, student-frie
         placeholders = ",".join([f"@id_{i}" for i in range(len(subskill_ids))])
         curriculum_query = f"""
         SELECT
-          subject, subskill_id, subskill_description, skill_description,
+          subject, unit_id, skill_id, subskill_id, subskill_description, skill_description,
           difficulty_start, target_difficulty, grade, unit_title
         FROM `{self.project_id}.{self.dataset_id}.curriculum`
         WHERE subskill_id IN ({placeholders})
@@ -478,6 +478,8 @@ Select specific subskill_ids for each activity type. Provide brief, student-frie
 
             enriched_activity = {
                 **activity,
+                "unit_id": curriculum.get("unit_id", ""),
+                "skill_id": curriculum.get("skill_id", ""),
                 "skill_description": curriculum.get("skill_description", ""),
                 "subskill_description": curriculum.get("subskill_description", ""),
                 "difficulty_start": curriculum.get("difficulty_start"),

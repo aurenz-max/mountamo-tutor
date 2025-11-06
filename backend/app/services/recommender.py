@@ -144,7 +144,7 @@ class ProblemRecommender:
             }
 
     async def _filter_curriculum_async(
-        self, 
+        self,
         curriculum: List[Dict],
         student_id: int,
         subject: str,
@@ -158,17 +158,26 @@ class ProblemRecommender:
             if not self.competency_service:
                 print("[ERROR] CompetencyService not initialized")
                 return []
-                
+
             filtered = []
             tasks = []
 
             print(f"[DEBUG] Filtering curriculum - filters: unit={unit_filter}, skill={skill_filter}, subskill={subskill_filter}")
 
+            # Safety net: If skill_filter looks like a subskill ID (3+ parts), extract parent skill
+            # This handles legacy cases where subskill_id was incorrectly used as skill_id
+            original_skill_filter = skill_filter
+            if skill_filter and len(skill_filter.split('-')) >= 3:
+                # Extract parent skill ID: "SCI001-01-A" -> "SCI001-01"
+                parsed_skill_filter = '-'.join(skill_filter.split('-')[:2])
+                print(f"[DEBUG] Detected potential subskill ID in skill_filter. Parsed '{skill_filter}' -> '{parsed_skill_filter}'")
+                skill_filter = parsed_skill_filter
+
             # Create tasks for all potential items
             for unit in curriculum:
                 if unit_filter and unit["id"] != unit_filter:
                     continue
-                    
+
                 for skill in unit["skills"]:
                     if skill_filter and skill["id"] != skill_filter:
                         continue

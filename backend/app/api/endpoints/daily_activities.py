@@ -40,8 +40,10 @@ def _extract_plan_completion_metadata(kwargs: dict, result: dict) -> dict:
     }
 
 def get_daily_activities_service() -> DailyActivitiesService:
-    """Get configured daily activities service with BigQuery, AI recommendations, and Cosmos DB integration"""
+    """Get configured daily activities service with BigQuery, AI recommendations, Cosmos DB, and LearningPaths integration"""
     from ...db.cosmos_db import CosmosDBService
+    from ...db.firestore_service import FirestoreService
+    from ...services.learning_paths import LearningPathsService
 
     analytics_service = BigQueryAnalyticsService(
         project_id=settings.GCP_PROJECT_ID,
@@ -55,10 +57,24 @@ def get_daily_activities_service() -> DailyActivitiesService:
 
     cosmos_db_service = CosmosDBService()
 
+    # Initialize FirestoreService for curriculum graph access
+    firestore_service = FirestoreService(
+        project_id=settings.GCP_PROJECT_ID
+    )
+
+    # Initialize LearningPathsService for prerequisite-based skill unlocking
+    learning_paths_service = LearningPathsService(
+        analytics_service=analytics_service,
+        firestore_service=firestore_service,
+        project_id=settings.GCP_PROJECT_ID,
+        dataset_id=getattr(settings, 'BIGQUERY_DATASET_ID', 'analytics')
+    )
+
     return DailyActivitiesService(
         analytics_service=analytics_service,
         ai_recommendation_service=ai_recommendation_service,
-        cosmos_db_service=cosmos_db_service
+        cosmos_db_service=cosmos_db_service,
+        learning_paths_service=learning_paths_service
     )
 
 @router.get("/daily-plan/{student_id}", response_model=DailyPlan)

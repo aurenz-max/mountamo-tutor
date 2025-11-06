@@ -1113,11 +1113,18 @@ class DailyActivitiesService:
                 # Convert playlist activities to basic recommendation format for compatibility
                 converted_recommendations = []
                 for activity in activities:
+                    # Get skill_id with fallback: try activity's skill_id, or parse from subskill_id
+                    skill_id = activity.get('skill_id', '')
+                    if not skill_id:
+                        # Fallback: extract parent skill from subskill_id (e.g., "SCI001-01-A" -> "SCI001-01")
+                        subskill_id = activity.get('subskill_id', '')
+                        skill_id = '-'.join(subskill_id.split('-')[:2]) if subskill_id else ''
+
                     basic_rec = {
                         'subskill_id': activity.get('subskill_id', ''),
                         'subskill_description': activity.get('subskill_description', ''),
                         'subject': activity.get('subject', 'Mathematics'),
-                        'skill_id': activity.get('subskill_id', ''),  # Use subskill_id as skill_id for compatibility
+                        'skill_id': skill_id,
                         'skill_description': activity.get('skill_description', ''),
                         'priority': 'high' if activity.get('activity_type') == 'core_challenge' else 'medium',
                         'priority_level': activity.get('activity_type', 'practice'),
@@ -1129,6 +1136,7 @@ class DailyActivitiesService:
                         'estimated_time': activity.get('estimated_time', 5),
                         'from_ai_recommendations': True,
                         # Add rich curriculum metadata from AI service
+                        'unit_id': activity.get('unit_id', ''),
                         'unit_title': activity.get('unit_title', ''),
                         'difficulty_start': activity.get('difficulty_start'),
                         'difficulty_end': activity.get('difficulty_end'),
@@ -1181,11 +1189,18 @@ class DailyActivitiesService:
                 # Convert playlist activities to basic recommendation format for compatibility
                 converted_recommendations = []
                 for activity in activities:
+                    # Get skill_id with fallback: try activity's skill_id, or parse from subskill_id
+                    skill_id = activity.get('skill_id', '')
+                    if not skill_id:
+                        # Fallback: extract parent skill from subskill_id (e.g., "SCI001-01-A" -> "SCI001-01")
+                        subskill_id = activity.get('subskill_id', '')
+                        skill_id = '-'.join(subskill_id.split('-')[:2]) if subskill_id else ''
+
                     basic_rec = {
                         'subskill_id': activity.get('subskill_id', ''),
                         'subskill_description': activity.get('subskill_description', ''),
                         'subject': activity.get('subject', 'Mathematics'),
-                        'skill_id': activity.get('subskill_id', ''),  
+                        'skill_id': skill_id,
                         'skill_description': activity.get('skill_description', ''),
                         'priority': 'high' if activity.get('activity_type') == 'core_challenge' else 'medium',
                         'priority_level': activity.get('activity_type', 'practice'),
@@ -1195,10 +1210,12 @@ class DailyActivitiesService:
                         'ai_reason': activity.get('reason', ''),
                         'priority_rank': 1,
                         'estimated_time': activity.get('estimated_time', 5),
-                        'from_ai_recommendations': True
+                        'from_ai_recommendations': True,
+                        # Add unit_id if available
+                        'unit_id': activity.get('unit_id', '')
                     }
                     converted_recommendations.append(basic_rec)
-                
+
                 return converted_recommendations
             else:
                 logger.info("No playlist activities returned (legacy)")

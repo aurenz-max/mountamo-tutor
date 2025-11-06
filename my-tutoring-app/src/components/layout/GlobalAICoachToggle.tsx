@@ -1,7 +1,7 @@
 // components/layout/GlobalAICoachToggle.tsx
 'use client';
 
-import React, { useState, createContext, useContext, useEffect } from 'react';
+import React, { useState, createContext, useContext, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAICoach } from '@/contexts/AICoachContext';
 import AICoach from '@/components/dashboard/AICoach';
@@ -24,59 +24,86 @@ const GlobalAICoachUIContext = createContext<GlobalAICoachUIType | null>(null);
 export const GlobalAICoachProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [showAICoach, setShowAICoach] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [hasShownLoginNotification, setHasShownLoginNotification] = useState(false);
-  
+
   const { userProfile, user } = useAuth();
-  
+
   // Use the main AICoachContext as the source of truth
   const { setContext, connection, isAIConnected } = useAICoach();
 
+  // Use refs to track if notifications have been shown (avoids re-renders)
+  const hasShownLoginNotificationRef = useRef(false);
+  const hasShownAIConnectedNotificationRef = useRef(false);
+  const loginTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const aiConnectedTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Add notification when user logs in
   useEffect(() => {
-    if (user && userProfile && !hasShownLoginNotification) {
+    if (user && userProfile && !hasShownLoginNotificationRef.current) {
       // Add a small delay to ensure the UI is ready
-      const timer = setTimeout(() => {
+      loginTimerRef.current = setTimeout(() => {
         setNotificationCount(prev => prev + 1);
-        setHasShownLoginNotification(true);
+        hasShownLoginNotificationRef.current = true;
       }, 1000);
-
-      return () => clearTimeout(timer);
     }
-    
+
     // Reset when user logs out
     if (!user) {
-      setHasShownLoginNotification(false);
+      hasShownLoginNotificationRef.current = false;
+      hasShownAIConnectedNotificationRef.current = false;
       setNotificationCount(0);
+
+      // Clear any pending timers
+      if (loginTimerRef.current) {
+        clearTimeout(loginTimerRef.current);
+        loginTimerRef.current = null;
+      }
+      if (aiConnectedTimerRef.current) {
+        clearTimeout(aiConnectedTimerRef.current);
+        aiConnectedTimerRef.current = null;
+      }
     }
-  }, [user, userProfile, hasShownLoginNotification]);
+
+    return () => {
+      if (loginTimerRef.current) {
+        clearTimeout(loginTimerRef.current);
+      }
+    };
+  }, [user, userProfile]);
 
   // Optional: Add notification when AI connects
   useEffect(() => {
-    if (isAIConnected && user && hasShownLoginNotification) {
-      // Only add connection notification if we haven't already shown login notification
-      const timer = setTimeout(() => {
+    if (isAIConnected && user && hasShownLoginNotificationRef.current && !hasShownAIConnectedNotificationRef.current) {
+      // Only add connection notification if we've shown login notification
+      aiConnectedTimerRef.current = setTimeout(() => {
         setNotificationCount(prev => prev + 1);
+        hasShownAIConnectedNotificationRef.current = true;
       }, 2000);
-
-      return () => clearTimeout(timer);
     }
-  }, [isAIConnected, user, hasShownLoginNotification]);
 
-  const toggleAICoach = () => {
-    setShowAICoach(prev => !prev);
-    // Clear notifications when opening the coach
-    if (!showAICoach) {
-      setNotificationCount(0);
-    }
-  };
+    return () => {
+      if (aiConnectedTimerRef.current) {
+        clearTimeout(aiConnectedTimerRef.current);
+      }
+    };
+  }, [isAIConnected, user]);
 
-  const clearNotifications = () => {
+  const toggleAICoach = useCallback(() => {
+    setShowAICoach(prev => {
+      // Clear notifications when opening the coach
+      if (!prev) {
+        setNotificationCount(0);
+      }
+      return !prev;
+    });
+  }, []);
+
+  const clearNotifications = useCallback(() => {
     setNotificationCount(0);
-  };
+  }, []);
 
-  const addNotification = () => {
+  const addNotification = useCallback(() => {
     setNotificationCount(prev => prev + 1);
-  };
+  }, []);
 
   // Listen for keyboard shortcuts (optional enhancement)
   useEffect(() => {
@@ -94,7 +121,7 @@ export const GlobalAICoachProvider: React.FC<{ children: React.ReactNode }> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showAICoach]);
+  }, [showAICoach, toggleAICoach]);
 
   return (
     <GlobalAICoachUIContext.Provider value={{ 

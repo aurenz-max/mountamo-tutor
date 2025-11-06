@@ -1,7 +1,7 @@
 // contexts/AuthContext.tsx - FIXED VERSION
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { 
   User, 
   signInWithEmailAndPassword, 
@@ -75,22 +75,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     timestamp: new Date().toISOString()
   });
 
-  const getApiUrl = () => {
+  const getApiUrl = useCallback(() => {
     const url = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
     console.log('🌐 API URL:', url);
     return url;
-  };
+  }, []);
 
   // FIXED: Accept user parameter instead of relying on state
-  const getAuthToken = async (userParam?: User): Promise<string | null> => {
+  const getAuthToken = useCallback(async (userParam?: User): Promise<string | null> => {
     const currentUser = userParam || user;
     console.log('🔑 getAuthToken called, user exists:', !!currentUser);
-    
+
     if (!currentUser) {
       console.warn('❌ No user available for token generation');
       return null;
     }
-    
+
     try {
       console.log('🎫 Calling Firebase getIdToken...');
       const token = await currentUser.getIdToken();
@@ -104,12 +104,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('❌ Failed to get token:', error);
       return null;
     }
-  };
+  }, [user]);
 
   // FIXED: Accept user parameter to avoid race condition
-  const fetchUserProfile = async (userParam: User): Promise<UserProfile | null> => {
+  const fetchUserProfile = useCallback(async (userParam: User): Promise<UserProfile | null> => {
     console.log('📊 Fetching user profile for:', userParam.email);
-    
+
     try {
       const token = await getAuthToken(userParam);
       if (!token) {
@@ -119,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const apiUrl = getApiUrl();
       const profileUrl = `${apiUrl}/api/user-profiles/profile`;
-      
+
       console.log('🌐 Fetching from:', profileUrl);
       console.log('🔑 Using token preview:', token.substring(0, 20) + '...');
 
@@ -139,12 +139,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.ok) {
         const profile = await response.json();
         console.log('✅ Profile data received:', profile);
-        
+
         // Ensure student_id is a number
         if (profile.student_id && typeof profile.student_id === 'string') {
           profile.student_id = parseInt(profile.student_id, 10);
         }
-        
+
         return profile as UserProfile;
       } else if (response.status === 404) {
         console.log('ℹ️ Profile not found - will be created automatically');
@@ -161,12 +161,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('❌ Error fetching user profile:', error);
       return null;
     }
-  };
+  }, [getAuthToken, getApiUrl]);
 
-  const refreshUserProfile = async () => {
+  const refreshUserProfile = useCallback(async () => {
     console.log('🔄 Refreshing user profile...');
     if (!user) return;
-    
+
     try {
       const profile = await fetchUserProfile(user);
       setUserProfile(profile);
@@ -174,15 +174,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('❌ Error refreshing user profile:', error);
     }
-  };
+  }, [user, fetchUserProfile]);
 
-  const updateUserProfile = (updates: Partial<UserProfile>) => {
+  const updateUserProfile = useCallback((updates: Partial<UserProfile>) => {
     console.log('🔄 Updating user profile with:', updates);
     if (!userProfile) return;
-    
+
     setUserProfile(prev => prev ? { ...prev, ...updates } : null);
     console.log('✅ Profile updated locally');
-  };
+  }, [userProfile]);
 
   const register = async (email: string, password: string, displayName: string, gradeLevel?: string) => {
     try {
@@ -250,10 +250,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // FIXED: Auth state listener that passes user directly to avoid race conditions
+  // Auth state listener - set up immediately on component mount
   useEffect(() => {
-    console.log('🎯 Setting up auth state listener...');
-    
+    console.log('🎯 Setting up auth state listener immediately...');
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log('🔔 Auth state changed:', {
         hasUser: !!firebaseUser,
@@ -262,14 +262,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         emailVerified: firebaseUser?.emailVerified,
         timestamp: new Date().toISOString()
       });
-      
+
       if (firebaseUser) {
         console.log('👤 User signed in, setting user state...');
         setUser(firebaseUser);
-        
+
         console.log('📊 Fetching user profile with firebaseUser...');
-        
-        // FIXED: Pass firebaseUser directly instead of waiting for state update
+
+        // Pass firebaseUser directly to avoid race condition
         try {
           const profile = await fetchUserProfile(firebaseUser);
           console.log('📊 Profile fetch result:', !!profile);
@@ -293,7 +293,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🧹 Cleaning up auth listener');
       unsubscribe();
     };
-  }, []); // No dependencies to avoid re-running
+  }, []); // Empty dependency array - set up once on mount
 
   const value: AuthContextType = {
     user,
