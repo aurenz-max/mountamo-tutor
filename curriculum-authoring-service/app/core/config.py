@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     GEMINI_TEMPERATURE: float = 0.7
     GEMINI_MAX_TOKENS: int = 2048
 
+    # Visual Schema Recommender Configuration
+    SCHEMA_RECOMMENDER_USE_LLM: bool = True  # Set to False to use legacy rule-based system
+    SCHEMA_RECOMMENDER_MODEL: str = "gemini-flash-lite-latest"  # Use lite model for cost efficiency
+    SCHEMA_RECOMMENDER_TEMPERATURE: float = 0.3  # Lower temperature for more consistent recommendations
+    SCHEMA_RECOMMENDER_MAX_SCHEMAS: int = 7  # Maximum schemas to recommend
+    SCHEMA_RECOMMENDER_CACHE_TTL_MINUTES: int = 60  # Cache recommendations per subskill
+
     # Azure Cosmos DB Configuration (DEPRECATED - migrated to Firestore)
     # These are kept for backward compatibility but are no longer required
     COSMOS_ENDPOINT: str = Field(default="", env="COSMOS_ENDPOINT")
@@ -72,6 +79,9 @@ class Settings(BaseSettings):
     TABLE_VERSIONS: str = "curriculum_versions"
     TABLE_PRIMITIVES: str = "curriculum_primitives"
     TABLE_SUBSKILL_PRIMITIVES: str = "curriculum_subskill_primitives"
+    TABLE_SUBSKILL_FOUNDATIONS: str = "curriculum_subskill_foundations"
+    TABLE_READING_CONTENT: str = "subskill_reading_content"
+    TABLE_VISUAL_SNIPPETS: str = "visual_snippets"
 
     def get_table_id(self, table_name: str) -> str:
         """Get fully qualified BigQuery table ID"""

@@ -18,8 +18,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Link2, Trash2 } from 'lucide-react';
+import { Link2, Trash2, Sparkles, FileText } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useDeleteUnit, useDeleteSkill, useDeleteSubskill } from '@/lib/curriculum-authoring/hooks';
+import { FoundationsEditor } from '../foundations/FoundationsEditor';
+import { ContentGenerationEditor } from '../content/ContentGenerationEditor';
 import type { SelectedEntity } from '@/types/curriculum-authoring';
 
 interface EntityEditorProps {
@@ -31,6 +40,8 @@ interface EntityEditorProps {
 
 export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityDeleted }: EntityEditorProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFoundationsEditor, setShowFoundationsEditor] = useState(false);
+  const [showContentEditor, setShowContentEditor] = useState(false);
 
   const { mutate: deleteUnit, isPending: isDeletingUnit } = useDeleteUnit();
   const { mutate: deleteSkill, isPending: isDeletingSkill } = useDeleteSkill();
@@ -124,6 +135,27 @@ export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityD
           </div>
 
           <div className="flex items-center gap-2">
+            {entity.type === 'subskill' && entity.id !== 'new' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowFoundationsEditor(true)}
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  AI Foundations
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowContentEditor(true)}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate Content
+                </Button>
+              </>
+            )}
+
             {(entity.type === 'skill' || entity.type === 'subskill') && (
               <Button
                 size="sm"
@@ -180,6 +212,46 @@ export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityD
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* AI Foundations Editor Dialog */}
+      {entity.type === 'subskill' && subjectId && (
+        <Dialog open={showFoundationsEditor} onOpenChange={setShowFoundationsEditor}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>AI Foundations Editor</DialogTitle>
+              <DialogDescription>
+                Manage foundational elements for AI content generation
+              </DialogDescription>
+            </DialogHeader>
+            <FoundationsEditor
+              subskillId={entity.id}
+              versionId="v1"
+              subjectId={subjectId}
+              onClose={() => setShowFoundationsEditor(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Content Generation Editor Dialog */}
+      {entity.type === 'subskill' && subjectId && (
+        <Dialog open={showContentEditor} onOpenChange={setShowContentEditor}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Reading Content Editor</DialogTitle>
+              <DialogDescription>
+                Generate and edit reading content with interactive elements
+              </DialogDescription>
+            </DialogHeader>
+            <ContentGenerationEditor
+              subskillId={entity.id}
+              versionId="v1"
+              subjectId={subjectId}
+              onClose={() => setShowContentEditor(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }

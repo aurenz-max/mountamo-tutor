@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import db
 from app.db.firestore_graph_service import firestore_graph_service
-from app.api import curriculum, prerequisites, publishing, ai, graph
+from app.api import curriculum, prerequisites, publishing, ai, graph, foundations, content
 
 # Configure logging
 logging.basicConfig(
@@ -106,6 +106,18 @@ app.include_router(
     tags=["Curriculum Graph & Caching"]
 )
 
+app.include_router(
+    foundations.router,
+    prefix="/api",
+    tags=["AI Foundations"]
+)
+
+app.include_router(
+    content.router,
+    prefix="/api",
+    tags=["Content Generation"]
+)
+
 
 # Root endpoints
 @app.get("/")
@@ -121,6 +133,10 @@ async def root():
             "Visual curriculum editor",
             "Prerequisite graph management",
             "AI-assisted content generation",
+            "AI Foundations (Master Context, Context Primitives)",
+            "Reading content generation with interactive primitives",
+            "Visual snippet generation (interactive HTML)",
+            "Section-level content editing",
             "Version control and publishing",
             "RESTful API"
         ],
@@ -129,7 +145,9 @@ async def root():
             "prerequisites": "/api/prerequisites",
             "publishing": "/api/publishing",
             "ai_assistant": "/api/ai",
-            "graph": "/api/graph"
+            "graph": "/api/graph",
+            "foundations": "/api/subskills/{subskill_id}/foundations",
+            "content": "/api/subskills/{subskill_id}/content"
         }
     }
 

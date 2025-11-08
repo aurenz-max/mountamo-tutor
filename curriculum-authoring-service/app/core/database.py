@@ -139,6 +139,25 @@ class BigQueryDatabase:
             bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED"),
         ]
 
+    def get_subskill_foundations_schema(self) -> List[bigquery.SchemaField]:
+        """Schema for curriculum_subskill_foundations table (AI-generated foundational content)"""
+        return [
+            bigquery.SchemaField("subskill_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("version_id", "STRING", mode="REQUIRED"),
+            # Master Context stored as JSON
+            bigquery.SchemaField("master_context", "JSON", mode="NULLABLE"),
+            # Context Primitives stored as JSON
+            bigquery.SchemaField("context_primitives", "JSON", mode="NULLABLE"),
+            # Approved Visual Schemas stored as array of strings
+            bigquery.SchemaField("approved_visual_schemas", "STRING", mode="REPEATED"),
+            # Metadata
+            bigquery.SchemaField("generation_status", "STRING", mode="REQUIRED"),  # 'pending' | 'generated' | 'edited'
+            bigquery.SchemaField("is_draft", "BOOLEAN", mode="REQUIRED"),
+            bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("last_edited_by", "STRING", mode="NULLABLE"),
+        ]
+
     def create_table_if_not_exists(self, table_name: str, schema: List[bigquery.SchemaField]):
         """Create a BigQuery table if it doesn't exist"""
         table_id = settings.get_table_id(table_name)
@@ -164,6 +183,7 @@ class BigQueryDatabase:
             (settings.TABLE_VERSIONS, self.get_versions_schema()),
             (settings.TABLE_PRIMITIVES, self.get_primitives_schema()),
             (settings.TABLE_SUBSKILL_PRIMITIVES, self.get_subskill_primitives_schema()),
+            (settings.TABLE_SUBSKILL_FOUNDATIONS, self.get_subskill_foundations_schema()),
         ]
 
         for table_name, schema in tables_config:
@@ -211,6 +231,34 @@ class BigQueryDatabase:
         except Exception as e:
             logger.error(f"Failed to insert rows into {table_name}: {e}")
             raise
+
+    async def get_all_visual_schemas_with_metadata(self) -> List[Dict[str, Any]]:
+        """
+        Fetch all visual schemas with their metadata from curriculum_primitives table.
+        Returns list of schemas with fields: primitive_id, primitive_name, category,
+        best_for, avoid_for, example
+        """
+        try:
+            query = f"""
+            SELECT
+                primitive_id,
+                primitive_name,
+                category,
+                best_for,
+                avoid_for,
+                example
+            FROM `{settings.get_table_id(settings.TABLE_PRIMITIVES)}`
+            ORDER BY category, primitive_id
+            """
+
+            results = await self.execute_query(query)
+            logger.info(f"✅ Retrieved {len(results)} visual schemas with metadata")
+            return results
+
+        except Exception as e:
+            logger.error(f"❌ Failed to fetch visual schemas metadata: {e}")
+            # Return empty list as fallback
+            return []
 
 
 # Global database instance
