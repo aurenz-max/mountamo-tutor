@@ -1,4 +1,12 @@
 // lib/packages/types.ts
+
+export interface VisualMetadata {
+  walk_through: string;
+  focus_points: string;
+  generated_at?: string;
+  model?: string;
+}
+
 export interface ContentPackage {
   id: string;
   subskill_id?: string;
@@ -20,6 +28,8 @@ export interface ContentPackage {
         content: string;
         key_terms_used: string[];
         concepts_covered: string[];
+        visual_html?: string;
+        visual_metadata?: VisualMetadata;
       }>;
       word_count: number;
       reading_level: string;

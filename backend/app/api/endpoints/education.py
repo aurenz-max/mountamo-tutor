@@ -200,8 +200,30 @@ async def build_package_instruction(package_id: str, user_id: str, user_email: s
         if content.get('practice', {}).get('problems'):
             problem_count = len(content['practice']['problems'])
             resources.append(f"{problem_count} practice problems")
-        
+
         resources_text = ", ".join(resources) if resources else "educational content"
+
+        # Extract visual metadata from reading sections (NEW)
+        visual_guidance = []
+        reading_sections = content.get('reading', {}).get('sections', [])
+        for section in reading_sections:
+            if 'visual_metadata' in section and 'visual_html' in section:
+                visual_metadata = section['visual_metadata']
+                visual_guidance.append({
+                    "section": section.get('heading', 'Visual Section'),
+                    "walk_through": visual_metadata.get('walk_through', ''),
+                    "focus_points": visual_metadata.get('focus_points', '')
+                })
+
+        # Build visual guidance section if available
+        visual_guidance_text = ""
+        if visual_guidance:
+            visual_guidance_text = "\n\nVISUAL LEARNING ELEMENTS:\n"
+            for idx, vg in enumerate(visual_guidance, 1):
+                visual_guidance_text += f"\n{idx}. {vg['section']}\n"
+                visual_guidance_text += f"   Walk-through: {vg['walk_through']}\n"
+                visual_guidance_text += f"   Focus on: {vg['focus_points']}\n"
+            visual_guidance_text += "\nUSE THESE VISUAL EXPLANATIONS when students ask about the interactive elements or visuals. Reference what they should see and focus on."
         
         instruction = f"""You are an AI tutor for "{reading_title}" - a {package.get('subject', 'general')} lesson on {package.get('subskill', 'core concepts')}.
 
@@ -218,7 +240,7 @@ KEY CONCEPTS TO COVER:
 IMPORTANT TERMS:
 {terms_text}
 
-AVAILABLE RESOURCES: {resources_text}
+AVAILABLE RESOURCES: {resources_text}{visual_guidance_text}
 
 IMPORTANT AUDIO INTERACTION RULES:
 • Keep your responses concise and engaging (30-60 seconds max per response)

@@ -25,13 +25,13 @@ discovery_service = DiscoveryThreadService()
 # Initialize content generation service (lazy load to avoid circular imports)
 content_generator = None
 
-def get_content_generator():
-    """Lazy initialization of content generation service"""
+def get_content_generator(curriculum_service=None):
+    """Lazy initialization of content generation service with curriculum service dependency"""
     global content_generator
     if content_generator is None:
         try:
             from ...services.content_generation_service import ContentGenerationService
-            content_generator = ContentGenerationService()
+            content_generator = ContentGenerationService(curriculum_service=curriculum_service)
         except ImportError as e:
             logger.warning(f"Content generation service not available: {e}")
     return content_generator
@@ -411,66 +411,64 @@ async def get_content_package_for_subskill(
 ):
     """
     Get or generate content package for a specific curriculum subskill
-    
-    Implements the product spec orchestration logic:
-    1. Check for existing package with subskill_id (Phase 1 - Manual Fast Lane)
-    2. If no mapping, trigger dynamic generation (Phase 2)
-    3. Return package ID for frontend navigation
-    
+
+    Implements 3-tier cascade orchestration:
+    1. TIER 1: Check BigQuery for authored content
+    2. TIER 2: Check Cosmos DB for cached/manual packages
+    3. TIER 3: Trigger dynamic AI generation
+
     Args:
         subskill_id: Curriculum subskill identifier (e.g., "rec-COUNT001-01-A")
-        
+
     Returns:
         {"packageId": "pkg_uuid_for_the_session"}
     """
-    
+
     logger.info(f"🎯 User {user_context['email']} requesting content for subskill: {subskill_id}")
-    
+
     try:
-        # Step 1: Check for existing package with subskill_id (Manual Fast Lane)
-        logger.info("🔍 Checking for existing content package...")
-        
-        existing_package = await find_existing_package_for_subskill(subskill_id)
-        if existing_package:
-            logger.info(f"✅ Found existing package: {existing_package['id']}")
-            return {"packageId": existing_package["id"]}
-        
-        # Step 2: No mapping found - Dynamic Generation Flow
-        logger.info("🚀 No existing package found, starting dynamic generation...")
-        
-        generator = get_content_generator()
+        # Initialize content generator with curriculum service dependency
+        generator = get_content_generator(curriculum_service)
         if not generator:
             raise HTTPException(
                 status_code=503,
                 detail="Content generation service unavailable"
             )
-        
-        # Get subskill context from curriculum service
-        subskill_context = await get_subskill_context_from_curriculum(subskill_id, curriculum_service)
-        
-        # Generate new package
-        logger.info(f"🎨 Generating content package for: {subskill_context.get('description', subskill_id)}")
-        
-        new_package = await generator.generate_package_from_subskill(
-            subskill_id, subskill_context
+
+        # Use the new 3-tier cascade orchestrator
+        package_id = await generator.get_or_create_package_for_subskill(
+            subskill_id=subskill_id,
+            user_id=user_context.get("uid")
         )
-        
-        logger.info(f"✅ Content package generated successfully: {new_package['id']}")
-        
-        return {"packageId": new_package["id"]}
-        
+
+        logger.info(f"✅ Content package ready: {package_id}")
+
+        return {"packageId": package_id}
+
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
         logger.error(f"❌ Error processing subskill {subskill_id}: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Content generation failed: {str(e)}"
         )
 
+# ============================================================================
+# LEGACY HELPER FUNCTIONS (Deprecated - moved to ContentGenerationService)
+# Kept for backward compatibility with debug/test endpoints
+# ============================================================================
+
 async def find_existing_package_for_subskill(subskill_id: str) -> Optional[Dict[str, Any]]:
-    """Find existing content package mapped to subskill ID"""
+    """
+    [DEPRECATED] Find existing content package mapped to subskill ID
+
+    This function is deprecated. New code should use:
+    ContentGenerationService.get_or_create_package_for_subskill()
+
+    Kept only for backward compatibility with test/debug endpoints.
+    """
     try:
         # Query for packages with matching subskill_id (removed ORDER BY to avoid index issues)
         query = """

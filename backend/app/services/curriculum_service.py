@@ -427,3 +427,202 @@ class CurriculumService:
         """Clear all cached data"""
         self._cache.clear()
         self._cache_timestamps.clear()
+
+    # ============================================================================
+    # BIGQUERY AUTHORED CONTENT METHODS (for content package generation)
+    # ============================================================================
+
+    async def get_subskill_foundations(
+        self,
+        subskill_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get authored foundational content for a subskill from BigQuery
+
+        Returns master_context, context_primitives, and approved_visual_schemas
+        from the curriculum_subskill_foundations table
+
+        Args:
+            subskill_id: Curriculum subskill identifier
+
+        Returns:
+            Dictionary with master_context, context_primitives, approved_visual_schemas
+            or None if not found
+        """
+        cache_key = f"subskill_foundations_{subskill_id}"
+
+        # Check cache
+        if cache_key in self._cache and self._is_cache_valid(cache_key):
+            return self._cache[cache_key]
+
+        query = f"""
+        SELECT
+            subskill_id,
+            version_id,
+            master_context,
+            context_primitives,
+            approved_visual_schemas,
+            generation_status,
+            created_at,
+            updated_at
+        FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.curriculum_subskill_foundations`
+        WHERE subskill_id = @subskill_id
+        LIMIT 1
+        """
+
+        from google.cloud import bigquery
+        parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
+
+        try:
+            results = await self.bigquery_service._run_query_async(query, parameters)
+
+            if results and len(results) > 0:
+                foundation = results[0]
+
+                result = {
+                    "subskill_id": foundation.get("subskill_id"),
+                    "version_id": foundation.get("version_id"),
+                    "master_context": foundation.get("master_context"),
+                    "context_primitives": foundation.get("context_primitives"),
+                    "approved_visual_schemas": foundation.get("approved_visual_schemas", []),
+                    "generation_status": foundation.get("generation_status"),
+                    "created_at": foundation.get("created_at"),
+                    "updated_at": foundation.get("updated_at")
+                }
+
+                # Cache the result
+                self._cache[cache_key] = result
+                self._cache_timestamps[cache_key] = datetime.now(timezone.utc)
+
+                logger.info(f"✅ Found authored foundations for subskill {subskill_id}")
+                return result
+            else:
+                logger.info(f"ℹ️ No authored foundations found for subskill {subskill_id}")
+                return None
+
+        except Exception as e:
+            logger.error(f"❌ Error fetching subskill foundations for {subskill_id}: {e}")
+            return None
+
+    async def get_reading_content_by_subskill(
+        self,
+        subskill_id: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get authored reading content sections for a subskill from BigQuery
+
+        Returns all reading content sections ordered by section_order
+        from the subskill_reading_content table
+
+        Args:
+            subskill_id: Curriculum subskill identifier
+
+        Returns:
+            List of reading content sections (empty list if none found)
+        """
+        cache_key = f"reading_content_{subskill_id}"
+
+        # Check cache
+        if cache_key in self._cache and self._is_cache_valid(cache_key):
+            return self._cache[cache_key]
+
+        query = f"""
+        SELECT
+            subskill_id,
+            version_id,
+            section_id,
+            section_order,
+            title,
+            heading,
+            content_text,
+            key_terms,
+            concepts_covered,
+            interactive_primitives,
+            has_visual_snippet,
+            generation_status,
+            created_at,
+            updated_at
+        FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.subskill_reading_content`
+        WHERE subskill_id = @subskill_id
+        ORDER BY section_order ASC
+        """
+
+        from google.cloud import bigquery
+        parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
+
+        try:
+            results = await self.bigquery_service._run_query_async(query, parameters)
+
+            if results:
+                # Cache the result
+                self._cache[cache_key] = results
+                self._cache_timestamps[cache_key] = datetime.now(timezone.utc)
+
+                logger.info(f"✅ Found {len(results)} reading sections for subskill {subskill_id}")
+                return results
+            else:
+                logger.info(f"ℹ️ No reading content found for subskill {subskill_id}")
+                return []
+
+        except Exception as e:
+            logger.error(f"❌ Error fetching reading content for {subskill_id}: {e}")
+            return []
+
+    async def get_visual_snippets_by_subskill(
+        self,
+        subskill_id: str
+    ) -> Dict[str, str]:
+        """
+        Get authored visual snippets for a subskill from BigQuery
+
+        Returns a dictionary mapping section_id to html_content
+        from the visual_snippets table
+
+        Args:
+            subskill_id: Curriculum subskill identifier
+
+        Returns:
+            Dictionary mapping section_id → html_content (empty dict if none found)
+        """
+        cache_key = f"visual_snippets_{subskill_id}"
+
+        # Check cache
+        if cache_key in self._cache and self._is_cache_valid(cache_key):
+            return self._cache[cache_key]
+
+        query = f"""
+        SELECT
+            section_id,
+            html_content,
+            snippet_id,
+            generation_prompt
+        FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.visual_snippets`
+        WHERE subskill_id = @subskill_id
+        """
+
+        from google.cloud import bigquery
+        parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
+
+        try:
+            results = await self.bigquery_service._run_query_async(query, parameters)
+
+            if results:
+                # Build dictionary mapping section_id to html_content
+                visual_map = {
+                    row['section_id']: row['html_content']
+                    for row in results
+                }
+
+                # Cache the result
+                self._cache[cache_key] = visual_map
+                self._cache_timestamps[cache_key] = datetime.now(timezone.utc)
+
+                logger.info(f"✅ Found {len(visual_map)} visual snippets for subskill {subskill_id}")
+                return visual_map
+            else:
+                logger.info(f"ℹ️ No visual snippets found for subskill {subskill_id}")
+                return {}
+
+        except Exception as e:
+            logger.error(f"❌ Error fetching visual snippets for {subskill_id}: {e}")
+            return {}

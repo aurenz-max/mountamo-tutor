@@ -158,6 +158,64 @@ class BigQueryDatabase:
             bigquery.SchemaField("last_edited_by", "STRING", mode="NULLABLE"),
         ]
 
+    def get_reading_content_schema(self) -> List[bigquery.SchemaField]:
+        """
+        Schema for subskill_reading_content table (AI-generated reading content sections).
+
+        Stores reading content sections with interactive primitives for each subskill.
+        Table is partitioned by DATE(created_at) and clustered by subskill_id, version_id
+        for efficient querying by subskill and time range.
+        """
+        return [
+            # Identifiers
+            bigquery.SchemaField("subskill_id", "STRING", mode="REQUIRED", description="Subskill identifier"),
+            bigquery.SchemaField("version_id", "STRING", mode="REQUIRED", description="Version identifier"),
+            bigquery.SchemaField("section_id", "STRING", mode="REQUIRED", description="Unique section identifier"),
+            bigquery.SchemaField("section_order", "INTEGER", mode="REQUIRED", description="Order of section in content"),
+            # Content
+            bigquery.SchemaField("title", "STRING", mode="REQUIRED", description="Title of the reading content package"),
+            bigquery.SchemaField("heading", "STRING", mode="REQUIRED", description="Section heading"),
+            bigquery.SchemaField("content_text", "STRING", mode="REQUIRED", description="Main section content text"),
+            bigquery.SchemaField("key_terms", "STRING", mode="REPEATED", description="Key terms used in this section"),
+            bigquery.SchemaField("concepts_covered", "STRING", mode="REPEATED", description="Core concepts covered"),
+            # Interactive primitives stored as JSON array
+            # Supports: alerts, expandables, quizzes, definitions, checklists, tables, keyvalues,
+            # interactive_timelines, carousels, flip_cards, categorization_activities,
+            # fill_in_the_blanks, scenario_questions, tabbed_content, matching_activities,
+            # sequencing_activities, accordions
+            bigquery.SchemaField("interactive_primitives", "JSON", mode="NULLABLE", description="Array of interactive learning primitives"),
+            # Visual snippet reference
+            bigquery.SchemaField("has_visual_snippet", "BOOLEAN", mode="NULLABLE", description="Whether section has associated visual snippet"),
+            # Status and metadata
+            bigquery.SchemaField("generation_status", "STRING", mode="NULLABLE", description="Generation status: pending, generated, edited"),
+            bigquery.SchemaField("is_draft", "BOOLEAN", mode="NULLABLE", description="Whether content is in draft state"),
+            bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED", description="Timestamp of creation"),
+            bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED", description="Timestamp of last update"),
+            bigquery.SchemaField("last_edited_by", "STRING", mode="NULLABLE", description="User who last edited the content"),
+        ]
+
+    def get_visual_snippets_schema(self) -> List[bigquery.SchemaField]:
+        """
+        Schema for visual_snippets table (HTML visual content for reading sections).
+
+        Stores interactive HTML visual snippets that accompany reading content sections.
+        Table is partitioned by DATE(created_at) and clustered by subskill_id, section_id
+        for efficient retrieval of visuals for specific sections.
+        """
+        return [
+            # Identifiers
+            bigquery.SchemaField("snippet_id", "STRING", mode="REQUIRED", description="Unique snippet identifier"),
+            bigquery.SchemaField("subskill_id", "STRING", mode="REQUIRED", description="Associated subskill identifier"),
+            bigquery.SchemaField("section_id", "STRING", mode="REQUIRED", description="Associated section identifier"),
+            # Content
+            bigquery.SchemaField("html_content", "STRING", mode="REQUIRED", description="Complete HTML file with embedded CSS/JS"),
+            bigquery.SchemaField("generation_prompt", "STRING", mode="NULLABLE", description="Prompt used to generate this visual"),
+            # Metadata
+            bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED", description="Timestamp of creation"),
+            bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED", description="Timestamp of last update"),
+            bigquery.SchemaField("last_edited_by", "STRING", mode="NULLABLE", description="User who last edited the snippet"),
+        ]
+
     def create_table_if_not_exists(self, table_name: str, schema: List[bigquery.SchemaField]):
         """Create a BigQuery table if it doesn't exist"""
         table_id = settings.get_table_id(table_name)
@@ -169,6 +227,27 @@ class BigQueryDatabase:
             table = bigquery.Table(table_id, schema=schema)
             table = self.client.create_table(table)
             logger.info(f"✅ Created table {table_name}")
+
+    def _setup_content_table_optimizations(self):
+        """
+        Setup partitioning and clustering for content tables.
+
+        Note: BigQuery table partitioning and clustering cannot be added after table creation
+        via the Python client. These optimizations are best applied during initial table creation
+        using SQL DDL statements (see docs/bigquery_content_tables.sql).
+
+        This method exists as a placeholder for future optimization logic and serves as
+        documentation that these tables should be partitioned and clustered.
+
+        Recommended optimizations (apply via SQL):
+        - subskill_reading_content: PARTITION BY DATE(created_at), CLUSTER BY subskill_id, version_id
+        - visual_snippets: PARTITION BY DATE(created_at), CLUSTER BY subskill_id, section_id
+        """
+        logger.info("📊 Content table partitioning/clustering should be configured via SQL DDL")
+        logger.info("   See docs/bigquery_content_tables.sql for recommended optimizations")
+
+        # Future: Could add logic here to check if tables have proper partitioning
+        # and warn if they don't, or to recreate tables with proper settings if needed
 
     def setup_all_tables(self):
         """Create all curriculum authoring tables"""
@@ -184,10 +263,15 @@ class BigQueryDatabase:
             (settings.TABLE_PRIMITIVES, self.get_primitives_schema()),
             (settings.TABLE_SUBSKILL_PRIMITIVES, self.get_subskill_primitives_schema()),
             (settings.TABLE_SUBSKILL_FOUNDATIONS, self.get_subskill_foundations_schema()),
+            (settings.TABLE_READING_CONTENT, self.get_reading_content_schema()),
+            (settings.TABLE_VISUAL_SNIPPETS, self.get_visual_snippets_schema()),
         ]
 
         for table_name, schema in tables_config:
             self.create_table_if_not_exists(table_name, schema)
+
+        # Setup partitioning and clustering for content tables
+        self._setup_content_table_optimizations()
 
         logger.info("✅ All curriculum authoring tables are ready")
 

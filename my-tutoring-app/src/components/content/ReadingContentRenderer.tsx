@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { 
+import {
   AlertPrimitive,
   ExpandablePrimitive,
   QuizPrimitive,
@@ -21,9 +21,10 @@ import {
   PrimitiveData
 } from './InteractiveContentPrimitives';
 import { PackagePrimitiveCompletions, SectionPrimitiveCompletions, PrimitiveCompletionState } from './primitiveCompletionTypes';
+import { VisualSnippet } from './VisualSnippet';
+import { VisualMetadata } from '@/lib/packages/types';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { MessageCircle, Sparkles, Eye, Lightbulb, Loader2, X, CheckCircle } from 'lucide-react';
+import { MessageCircle, Sparkles, Eye, Lightbulb, CheckCircle, Loader2 } from 'lucide-react';
 
 // Types for reading content structure - Updated with enhanced primitives
 export interface ReadingSection {
@@ -31,6 +32,9 @@ export interface ReadingSection {
   content: string;
   key_terms_used: string[];
   concepts_covered: string[];
+  // Visual content with metadata
+  visual_html?: string;
+  visual_metadata?: VisualMetadata;
   // Basic Interactive primitives (optional)
   alerts?: Array<{ type: 'alert'; style: 'info' | 'warning' | 'success' | 'tip'; title: string; content: string; }>;
   expandables?: Array<{ type: 'expandable'; title: string; content: string; }>;
@@ -67,10 +71,7 @@ interface ReadingContentRendererProps {
   onAskAI?: (message: string) => void;
   // AI Features props
   discoveryThreads?: {[sectionIndex: number]: {threads: string[]; loading: boolean; error?: string;}};
-  visualContent?: {[sectionIndex: number]: {htmlContent: string | null; loading: boolean; error?: string; isOpen: boolean;}};
   onDiscoveryThreadClick?: (sectionIndex: number, threadIndex: number, thread: string) => void;
-  onVisualizeClick?: (sectionIndex: number, heading: string, content: string) => void;
-  onCloseVisualModal?: (sectionIndex: number) => void;
   onPrimitiveComplete?: (sectionIndex: number, primitiveType: string, primitiveIndex: number, score?: number) => void;
   subskillId?: string;
   // Primitive completion state
@@ -118,15 +119,12 @@ const renderContentWithDefinitions = (
   );
 };
 
-export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({ 
-  content, 
+export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
+  content,
   className = '',
   onAskAI,
   discoveryThreads,
-  visualContent,
   onDiscoveryThreadClick,
-  onVisualizeClick,
-  onCloseVisualModal,
   onPrimitiveComplete,
   subskillId,
   primitiveCompletions = {}
@@ -184,11 +182,6 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
               <Button size="sm" variant="outline" onClick={() => onAskAI(`What are the most important things I should learn from "${content.title}"?`)}>
                 <Eye className="w-4 h-4 mr-2" /> What should I focus on?
               </Button>
-              {onVisualizeClick && (
-                <Button size="sm" variant="outline" onClick={() => onVisualizeClick && onVisualizeClick(0, content.title, `Overview of ${content.title}`)}>
-                  <Sparkles className="w-4 h-4 mr-2" /> Create visual demo
-                </Button>
-              )}
             </div>
           </div>
         )}
@@ -198,8 +191,44 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
       <div className="space-y-8">
         {content.sections.map((section, sectionIndex) => (
           <section key={sectionIndex} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">{section.heading}</h2>
-            
+            {/* Section Header with AI Buttons */}
+            <div className="flex items-start justify-between mb-4 gap-4">
+              <h2 className="text-2xl font-semibold text-gray-900 flex-1">{section.heading}</h2>
+
+              {/* AI Co-pilot buttons for this section */}
+              {onAskAI && (
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onAskAI(`Summarize the section "${section.heading}" for me in simple terms.`)}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <MessageCircle className="w-3 h-3 mr-1" />
+                    Summarize
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onAskAI(`Walk me through the section "${section.heading}" step by step, explaining each key idea.`)}
+                    className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                  >
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Walk me through
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onAskAI(`What should I focus on in the section "${section.heading}"? What are the key takeaways?`)}
+                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                  >
+                    <Eye className="w-3 h-3 mr-1" />
+                    Focus
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {/* Main content with inline definitions */}
             {renderContentWithDefinitions(section.content, section.definitions)}
 
@@ -508,110 +537,16 @@ export const ReadingContentRenderer: React.FC<ReadingContentRendererProps> = ({
               </div>
             )}
 
-            {/* Visual Demo Integration */}
-            {onAskAI && onVisualizeClick && (
-              <div className="mt-4">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-purple-300 bg-white text-purple-700 hover:bg-purple-100 hover:border-purple-400 text-sm shadow-sm hover:shadow-md transition-all duration-200"
-                  onClick={() => onVisualizeClick(sectionIndex, section.heading, section.content)}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Create visual demo for "{section.heading}"
-                </Button>
-                
-                {/* Visual Content Modal */}
-                {visualContent?.[sectionIndex]?.isOpen && (
-                  <Dialog 
-                    open={visualContent[sectionIndex]?.isOpen || false}
-                    onOpenChange={(open) => {
-                      if (!open && onCloseVisualModal) onCloseVisualModal(sectionIndex);
-                    }}
-                  >
-                    <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <Eye className="w-5 h-5" />
-                          Interactive Demo: {section.heading}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="mt-4">
-                        {visualContent[sectionIndex]?.loading && (
-                          <div className="flex flex-col items-center justify-center py-12">
-                            <Loader2 className="w-8 h-8 mb-4 animate-spin text-purple-600" />
-                            <p className="text-sm text-muted-foreground">Generating interactive demonstration...</p>
-                          </div>
-                        )}
-                        
-                        {visualContent[sectionIndex]?.error && (
-                          <div className="text-center py-12">
-                            <div className="text-red-600 mb-4">{visualContent[sectionIndex]?.error}</div>
-                            <Button 
-                              variant="outline" 
-                              onClick={() => onVisualizeClick && onVisualizeClick(sectionIndex, section.heading, section.content)}
-                            >
-                              Try Again
-                            </Button>
-                          </div>
-                        )}
-                        
-                        {visualContent[sectionIndex]?.htmlContent && (
-                          <div className="space-y-4">
-                            <iframe
-                              srcDoc={visualContent[sectionIndex]?.htmlContent || ''}
-                              sandbox="allow-scripts"
-                              className="w-full h-[500px] border border-gray-200 rounded-lg"
-                              title={`Interactive Demo for ${section.heading}`}
-                            />
-                            
-                            {/* AI Walkthrough Questions for Visual */}
-                            <div className="border-t pt-4">
-                              <h4 className="text-sm font-medium text-gray-700 flex items-center mb-3">
-                                <MessageCircle className="w-4 h-4 mr-2" />
-                                Ask AI about this visual:
-                              </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <Button
-                                  variant="ghost"
-                                  className="justify-start text-left h-auto py-3 px-3 border border-purple-100 hover:border-purple-200 hover:bg-purple-50 transition-colors"
-                                  onClick={() => onAskAI(`Walk me through this visual demonstration of "${section.heading}" step by step`)}
-                                >
-                                  <span className="whitespace-normal text-sm">Walk me through this step by step</span>
-                                </Button>
-                                
-                                <Button
-                                  variant="ghost"
-                                  className="justify-start text-left h-auto py-3 px-3 border border-purple-100 hover:border-purple-200 hover:bg-purple-50 transition-colors"
-                                  onClick={() => onAskAI(`Explain what I should focus on in this visual demonstration of "${section.heading}"`)}
-                                >
-                                  <span className="whitespace-normal text-sm">What should I focus on here?</span>
-                                </Button>
-                                
-                                <Button
-                                  variant="ghost"
-                                  className="justify-start text-left h-auto py-3 px-3 border border-purple-100 hover:border-purple-200 hover:bg-purple-50 transition-colors"
-                                  onClick={() => onAskAI(`How does this visual help me understand the concept of "${section.heading}"?`)}
-                                >
-                                  <span className="whitespace-normal text-sm">How does this help me understand?</span>
-                                </Button>
-                                
-                                <Button
-                                  variant="ghost"
-                                  className="justify-start text-left h-auto py-3 px-3 border border-purple-100 hover:border-purple-200 hover:bg-purple-50 transition-colors"
-                                  onClick={() => onAskAI(`Can you guide me through interacting with this visual demonstration of "${section.heading}"?`)}
-                                >
-                                  <span className="whitespace-normal text-sm">Guide me through the interaction</span>
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
+            {/* Visual Snippet with Metadata */}
+            {section.visual_html && (
+              <VisualSnippet
+                sectionHeading={section.heading}
+                visualHtml={section.visual_html}
+                visualMetadata={section.visual_metadata}
+                isCompleted={isPrimitiveCompleted(sectionIndex, 'visual_snippet', 0)}
+                onComplete={onPrimitiveComplete ? () => onPrimitiveComplete(sectionIndex, 'visual_snippet', 0, 100) : undefined}
+                onAskAI={onAskAI}
+              />
             )}
           </section>
         ))}
