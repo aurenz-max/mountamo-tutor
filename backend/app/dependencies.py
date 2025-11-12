@@ -299,13 +299,14 @@ async def get_problem_service(
     recommender: ProblemRecommender = Depends(get_problem_recommender),
     cosmos_db: CosmosDBService = Depends(get_cosmos_db),
     competency_service: CompetencyService = Depends(get_competency_service),
-    problem_optimizer: ProblemOptimizer = Depends(get_problem_optimizer)
+    problem_optimizer: ProblemOptimizer = Depends(get_problem_optimizer),
+    curriculum_service: CurriculumService = Depends(get_curriculum_service)
 ) -> ProblemService:
-    """Get or create ProblemService singleton."""
+    """Get or create ProblemService singleton with curriculum service for BigQuery TIER 1."""
     global _problem_service
     if _problem_service is None:
-        logger.info("Initializing ProblemService")
-        _problem_service = ProblemService()
+        logger.info("Initializing ProblemService with curriculum_service for 3-tier fallback")
+        _problem_service = ProblemService(curriculum_service=curriculum_service)
     
     # Set required dependencies on the problem service
     if _problem_service.recommender is None:
@@ -465,11 +466,12 @@ async def initialize_services():
     )
     
     # Initialize problem service with all dependencies
-    problem_service = get_problem_service(
-        problem_recommender, 
-        cosmos_db, 
-        competency_service, 
-        problem_optimizer
+    problem_service = await get_problem_service(
+        problem_recommender,
+        cosmos_db,
+        competency_service,
+        problem_optimizer,
+        curriculum_service
     )
     
     # Return the services in case they're needed

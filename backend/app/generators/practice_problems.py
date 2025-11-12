@@ -2,7 +2,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from google.genai.types import GenerateContentConfig
 
 from .base_generator import BaseContentGenerator
@@ -26,25 +26,33 @@ class PracticeProblemsGenerator(BaseContentGenerator):
         master_context: MasterContext,
         reading_comp: ContentComponent,
         visual_comp: ContentComponent,
-        package_id: str
+        package_id: str,
+        context_primitives: Optional[dict] = None
     ) -> ContentComponent:
-        """Generate practice problems integrating all content with context primitives for variety"""
+        """Generate practice problems integrating all content with context primitives for variety
+
+        Args:
+            context_primitives: Optional pre-generated primitives (to avoid duplicate generation)
+        """
 
         reading_concepts = [concept for section in reading_comp.content.get('sections', [])
                           for concept in section.get('concepts_covered', [])]
         visual_elements = visual_comp.content.get('interactive_elements', [])
         grade_info = self._extract_grade_info(request)
 
-        # Generate context primitives for enhanced problem variety
-        logger.info(f"🎯 Generating context primitives for enhanced problem variety in {request.subject}")
-        try:
-            context_primitives = await self.context_primitives_generator.generate_context_primitives(
-                request, master_context
-            )
-            logger.info(f"✅ Context primitives generated with {len(context_primitives.get('concrete_objects', []))} objects, {len(context_primitives.get('scenarios', []))} scenarios")
-        except Exception as e:
-            logger.warning(f"⚠️ Context primitives generation failed, using default variety: {str(e)}")
-            context_primitives = None
+        # Use provided primitives or generate new ones (with 3-tier fallback in generator)
+        if context_primitives:
+            logger.info(f"✅ Using provided context primitives (skipping duplicate generation)")
+        else:
+            logger.info(f"🎯 Generating context primitives for enhanced problem variety in {request.subject}")
+            try:
+                context_primitives = await self.context_primitives_generator.generate_context_primitives(
+                    request, master_context
+                )
+                logger.info(f"✅ Context primitives generated with {len(context_primitives.get('concrete_objects', []))} objects, {len(context_primitives.get('scenarios', []))} scenarios")
+            except Exception as e:
+                logger.warning(f"⚠️ Context primitives generation failed, using default variety: {str(e)}")
+                context_primitives = None
         
         # Build context primitives section for enhanced variety
         context_section = ""

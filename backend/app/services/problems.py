@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProblemService:
-    def __init__(self):
+    def __init__(self, curriculum_service=None):
         # Dependencies will be injected - don't initialize here
         self.ai_service = None  # Will be set by dependency injection
         self.competency_service = None  # Will be set by dependency injection
@@ -35,6 +35,7 @@ class ProblemService:
         self.master_context_generator = None  # Will be set by dependency injection
         self.context_primitives_generator = None  # Will be set by dependency injection
         self.user_profiles_service = None  # Will be set by dependency injection (for misconceptions)
+        self.curriculum_service = curriculum_service  # For BigQuery TIER 1 foundations
         self._problem_history = {}  # In-memory storage for now
         self._current_ai_service_type = "gemini"  # Default to Gemini for JSON schema support
 
@@ -1278,7 +1279,7 @@ This problem type typically doesn't use complex visuals, but simple illustration
 
     async def get_or_generate_context_primitives(self, subject: str, recommendation: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
-        Get cached context primitives or generate new ones for a subskill.
+        Get context primitives with 3-tier fallback: BigQuery → CosmosDB → AI generation
 
         Args:
             subject: The subject area
@@ -1293,18 +1294,34 @@ This problem type typically doesn't use complex visuals, but simple illustration
                 logger.error("No subskill ID found in recommendation")
                 return None
 
-            # Try to get cached primitives first
+            # TIER 1: Try to get BigQuery foundations first (highest priority)
+            bigquery_foundations = None
+            if self.curriculum_service:
+                try:
+                    bigquery_foundations = await self.curriculum_service.get_subskill_foundations(subskill_id)
+                    if bigquery_foundations and bigquery_foundations.get('generation_status') == 'approved':
+                        # Check if we have context_primitives in BigQuery
+                        if bigquery_foundations.get('context_primitives'):
+                            logger.info(f"✅ [TIER 1] Using BigQuery authored context primitives for {subskill_id}")
+                            return bigquery_foundations['context_primitives']
+                        logger.info(f"ℹ️ [TIER 1] BigQuery foundations found but no context_primitives - checking lower tiers")
+                    else:
+                        logger.info(f"ℹ️ [TIER 1] No approved BigQuery foundations for {subskill_id}")
+                except Exception as e:
+                    logger.warning(f"⚠️ [TIER 1] Could not fetch BigQuery foundations: {e}")
+
+            # TIER 2: Try to get cached primitives from CosmosDB
             if self.cosmos_db:
                 cached_primitives = await self.cosmos_db.get_cached_context_primitives(
                     subject=subject,
                     subskill_id=subskill_id
                 )
                 if cached_primitives:
-                    logger.info(f"Using cached context primitives for {subject}:{subskill_id}")
+                    logger.info(f"✅ [TIER 2] Using CosmosDB cached context primitives for {subject}:{subskill_id}")
                     return cached_primitives
 
-            # Cache miss - generate new primitives
-            logger.info(f"🔄 Cache miss - generating new context primitives for {subject}:{subskill_id}")
+            # TIER 3: Generate new primitives with AI
+            logger.info(f"🔄 [TIER 3] Generating new context primitives with AI for {subject}:{subskill_id}")
 
             if not self.master_context_generator or not self.context_primitives_generator:
                 logger.error("❌ Context generators not initialized - Dynamic Problem Variety Engine disabled")
@@ -1330,15 +1347,20 @@ This problem type typically doesn't use complex visuals, but simple illustration
                 prerequisites=[]
             )
 
-            # Generate master context first
-            logger.info(f"🧠 Generating master context for {subskill.get('description', 'unknown subskill')}")
-            master_context = await self.master_context_generator.generate_master_context(request)
-            logger.info(f"✅ Master context generated with {len(master_context.core_concepts)} core concepts")
+            # Generate master context first (with 3-tier fallback in generator)
+            logger.info(f"🧠 Retrieving/generating master context for {subskill.get('description', 'unknown subskill')}")
+            master_context = await self.master_context_generator.generate_master_context(
+                request,
+                bigquery_foundations=bigquery_foundations  # Pass foundations for TIER 1 fallback
+            )
+            logger.info(f"✅ Master context retrieved with {len(master_context.core_concepts)} core concepts")
 
-            # Generate context primitives using master context
-            logger.info(f"🎯 Generating context primitives using master context")
+            # Generate context primitives using master context (with 3-tier fallback in generator)
+            logger.info(f"🎯 Retrieving/generating context primitives using master context")
             primitives_data = await self.context_primitives_generator.generate_context_primitives(
-                request, master_context
+                request,
+                master_context,
+                bigquery_foundations=bigquery_foundations  # Pass foundations for TIER 1 fallback
             )
 
             if primitives_data:

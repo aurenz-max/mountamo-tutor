@@ -12,6 +12,7 @@ from ..db.cosmos_db import CosmosDBService
 from ..generators.master_context import MasterContextGenerator
 from ..generators.reading_content import ReadingContentGenerator
 from ..generators.practice_problems import PracticeProblemsGenerator
+from ..generators.context_primitives import ContextPrimitivesGenerator
 from ..generators.content import ContentGenerationRequest, DifficultyLevel
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ class ContentGenerationService:
 
         # Initialize generators
         self.master_context_generator = MasterContextGenerator(cosmos_service=self.cosmos_db)
+        self.context_primitives_generator = ContextPrimitivesGenerator(cosmos_service=self.cosmos_db)
         self.reading_generator = ReadingContentGenerator(cosmos_service=self.cosmos_db)
         self.practice_generator = PracticeProblemsGenerator(cosmos_service=self.cosmos_db)
 
@@ -40,32 +42,50 @@ class ContentGenerationService:
         self.flash_lite_model = genai.GenerativeModel("gemini-flash-lite-latest")
     
     async def generate_package_from_subskill(
-        self, 
+        self,
         subskill_id: str,
-        subskill_context: Dict[str, Any]
+        subskill_context: Dict[str, Any],
+        bigquery_foundations: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Generate a complete content package for a subskill"""
-        
+        """Generate a complete content package for a subskill with 3-tier fallback
+
+        Args:
+            subskill_id: Curriculum subskill identifier
+            subskill_context: Metadata about the subskill
+            bigquery_foundations: Optional BigQuery foundations (master_context, context_primitives)
+        """
+
         logger.info(f"🎯 Starting package generation for subskill: {subskill_id}")
-        
+
         try:
             # Generate package ID
             package_id = f"pkg_{int(datetime.now().timestamp())}"
-            
+
             # Create content generation request from subskill context
             request = self._build_generation_request(subskill_context)
-            
-            # Step 1: Generate master context (foundation)
-            logger.info("📋 Generating master context...")
-            master_context = await self.master_context_generator.generate_master_context(request)
-            
-            # Step 2: Generate reading content
+
+            # Step 1: Generate/retrieve master context (with 3-tier fallback)
+            logger.info("📋 Retrieving/generating master context...")
+            master_context = await self.master_context_generator.generate_master_context(
+                request,
+                bigquery_foundations=bigquery_foundations
+            )
+
+            # Step 2: Generate/retrieve context primitives (with 3-tier fallback)
+            logger.info("🎲 Retrieving/generating context primitives...")
+            context_primitives = await self.context_primitives_generator.generate_context_primitives(
+                request,
+                master_context,
+                bigquery_foundations=bigquery_foundations
+            )
+
+            # Step 3: Generate reading content
             logger.info("📖 Generating reading content...")
             reading_component = await self.reading_generator.generate_reading_content(
                 request, master_context, package_id
             )
-            
-            # Step 3: Generate practice problems
+
+            # Step 4: Generate practice problems (using context primitives for variety)
             logger.info("🧩 Generating practice problems...")
             # Create minimal visual component for practice generator (it expects one)
             minimal_visual_comp = type('obj', (object,), {
@@ -74,9 +94,10 @@ class ContentGenerationService:
                     'concepts_demonstrated': master_context.core_concepts
                 }
             })()
-            
+
             practice_component = await self.practice_generator.generate_practice_problems(
-                request, master_context, reading_component, minimal_visual_comp, package_id
+                request, master_context, reading_component, minimal_visual_comp, package_id,
+                context_primitives=context_primitives  # Pass primitives for problem variety
             )
             
             # Step 4: Assemble complete package
@@ -237,9 +258,24 @@ class ContentGenerationService:
         # TIER 3: Dynamic generation (fallback)
         logger.info("🚀 TIER 3: Triggering dynamic generation...")
         try:
-            # Need to get subskill context for generation
+            # Get subskill context AND check for BigQuery foundations (even if no complete package)
             subskill_context = await self._get_subskill_context(subskill_id)
-            new_package = await self.generate_package_from_subskill(subskill_id, subskill_context)
+
+            # Try to get foundations from BigQuery to pass to generators (for TIER 1 fallback within generators)
+            bigquery_foundations = None
+            if self.curriculum_service:
+                try:
+                    bigquery_foundations = await self.curriculum_service.get_subskill_foundations(subskill_id)
+                    if bigquery_foundations:
+                        logger.info(f"📚 Found BigQuery foundations for TIER 3 generation (will use in generators)")
+                except Exception as e:
+                    logger.warning(f"Could not fetch foundations from BigQuery: {e}")
+
+            new_package = await self.generate_package_from_subskill(
+                subskill_id,
+                subskill_context,
+                bigquery_foundations=bigquery_foundations
+            )
             logger.info(f"✅ TIER 3 SUCCESS: Generated new package: {new_package['id']}")
             return new_package['id']
         except Exception as e:

@@ -72,7 +72,48 @@ Requirements:
 9. Make it educational and engaging for learners
 10. The visualization should help users understand the concept better than text alone
 
-Focus on creating something that would make a learner think "Wow, that makes it so much clearer!"
+Design Style Requirements (MUST FOLLOW FOR CONSISTENT APPEARANCE):
+- Use these CSS custom properties in your :root selector:
+  --primary: #3b82f6;
+  --secondary: #10b981;
+  --accent: #8b5cf6;
+  --bg-main: #f8fafc;
+  --bg-surface: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+
+- Typography:
+  * Font family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
+  * Headings: 24-32px, font-weight: 600, color: var(--text-primary)
+  * Body text: 14-16px, line-height: 1.6, color: var(--text-secondary)
+  * Instructions: 14px, font-weight: 500, color: var(--text-primary)
+
+- Layout and Spacing:
+  * Container padding: 24px
+  * Element margins: 16px between sections, 12px between related items
+  * Max-width for content: 1200px, centered with margin: 0 auto
+
+- Visual Elements:
+  * Border radius: 8-12px for all containers, cards, and buttons
+  * Shadows: box-shadow: 0 1px 3px rgba(0,0,0,0.1) for cards/containers
+  * Deeper shadows for elevated elements: 0 4px 6px rgba(0,0,0,0.1)
+  * Borders: 1px solid var(--border-color)
+
+- Interactive Elements:
+  * Buttons: padding: 10px 20px, border-radius: 8px, background: var(--primary), color: white
+  * Button hover: opacity: 0.9, add transition: all 0.3s ease
+  * Interactive areas: Add cursor: pointer and subtle hover effects (transform: scale(1.05) or opacity change)
+  * All transitions: transition: all 0.3s ease
+
+- Color Usage:
+  * Primary color (blue) for main actions and key interactive elements
+  * Secondary color (green) for success states and positive feedback
+  * Accent color (purple) for highlights and special features
+  * Use color gradients sparingly for visual interest
+  * Ensure sufficient contrast for accessibility (WCAG AA minimum)
+
+Focus on creating something that would make a learner think "Wow, that makes it so much clearer!" while maintaining a consistent, modern, clean design aesthetic.
 """
 
         if custom_prompt:
@@ -83,7 +124,7 @@ Focus on creating something that would make a learner think "Wow, that makes it 
         try:
             # Generate the HTML content
             response = await self.client.aio.models.generate_content(
-                model='gemini-2.5-flash-preview-05-20',
+                model='gemini-flash-latest',
                 contents=base_prompt,
                 config=GenerateContentConfig(
                     temperature=0.7,  # Higher temp for more creative visuals

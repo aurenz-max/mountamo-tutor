@@ -53,9 +53,10 @@ class ProblemPreloaderETL:
         
         # Initialize the recommender with competency service
         self.recommender = ProblemRecommender(self.competency_service)
-        
-        # Initialize problem service and set dependencies
-        self.problem_service = ProblemService()
+
+        # Initialize problem service with curriculum_service=None (ETL doesn't need BigQuery TIER 1)
+        # This is an ETL process, not a runtime service, so TIER 2 (CosmosDB) and TIER 3 (AI gen) are sufficient
+        self.problem_service = ProblemService(curriculum_service=None)
         self.problem_service.recommender = self.recommender
         self.problem_service.competency_service = self.competency_service
         self.problem_service.cosmos_db = self.cosmos_db

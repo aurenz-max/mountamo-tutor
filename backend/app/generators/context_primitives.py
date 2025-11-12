@@ -12,8 +12,41 @@ logger = logging.getLogger(__name__)
 class ContextPrimitivesGenerator(BaseContentGenerator):
     """Generator for context primitives that provide variety for problem generation"""
 
-    async def generate_context_primitives(self, request: ContentGenerationRequest, master_context: MasterContext) -> dict:
-        """Generate context primitives based on skill and master context"""
+    def __init__(self, cosmos_service=None, blob_service=None):
+        super().__init__(cosmos_service=cosmos_service, blob_service=blob_service)
+        self.cosmos_db = cosmos_service
+
+    async def generate_context_primitives(
+        self,
+        request: ContentGenerationRequest,
+        master_context: MasterContext,
+        bigquery_foundations: dict = None
+    ) -> dict:
+        """Generate context primitives with 3-tier fallback
+
+        TIER 1: BigQuery authored primitives (if provided)
+        TIER 2: CosmosDB cached primitives
+        TIER 3: Generate new with Gemini AI
+        """
+
+        # TIER 1: Check BigQuery foundations first (highest priority)
+        if bigquery_foundations and bigquery_foundations.get('context_primitives'):
+            if bigquery_foundations.get('generation_status') == 'approved':
+                logger.info(f"✅ [TIER 1] Using BigQuery authored context primitives for {request.subskill_id}")
+                return bigquery_foundations['context_primitives']
+
+        # TIER 2: Try to get from CosmosDB cache
+        if self.cosmos_db and request.subskill_id:
+            cached_primitives = await self.cosmos_db.get_cached_context_primitives(
+                subject=request.subject,
+                subskill_id=request.subskill_id
+            )
+            if cached_primitives:
+                logger.info(f"✅ [TIER 2] Using CosmosDB cached context primitives for {request.subject}:{request.subskill_id}")
+                return cached_primitives
+
+        # TIER 3: Generate new context primitives with AI
+        logger.info(f"🔄 [TIER 3] Generating new context primitives with AI for {request.subject}:{request.subskill_id}")
 
         grade_info = self._extract_grade_info(request)
 
@@ -85,6 +118,22 @@ Generate rich, varied primitives that will enable hundreds of unique problem com
 
             result = self._safe_json_loads(response.text, "Context primitives generation")
             logger.info(f"Successfully generated context primitives with {len(result.get('concrete_objects', []))} objects, {len(result.get('scenarios', []))} scenarios")
+
+            # Cache the newly generated primitives to CosmosDB
+            if self.cosmos_db and request.subskill_id:
+                try:
+                    await self.cosmos_db.save_cached_context_primitives(
+                        subject=request.subject,
+                        grade_level=request.grade or "Kindergarten",
+                        unit_id=request.unit_id or "",
+                        skill_id=request.skill_id or "",
+                        subskill_id=request.subskill_id,
+                        primitives_data=result
+                    )
+                    logger.info(f"Successfully cached new context primitives for {request.subject}:{request.subskill_id}")
+                except Exception as cache_error:
+                    logger.error(f"Failed to cache context primitives: {cache_error}")
+                    # Don't fail the request if caching fails - just log it
 
             return result
 

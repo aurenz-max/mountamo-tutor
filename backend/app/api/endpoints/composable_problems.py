@@ -80,22 +80,35 @@ def get_problem_generation_service() -> ComposableProblemGenerationService:
     """Get ComposableProblemGenerationService instance with fully configured dependencies"""
     # Initialize the new three-step chain service
     service = ComposableProblemGenerationService()
-    
-    # Initialize and inject ProblemService for Step 1
-    problem_service = ProblemService()
-    problem_service.set_ai_service("gemini")  # Use Gemini Flash for composable problems
-    
+
     # Initialize dependencies for ProblemService to get rich metadata
     from ...dependencies import (
         get_competency_service, get_problem_recommender,
-        get_cosmos_db, get_problem_optimizer
+        get_cosmos_db, get_problem_optimizer, get_curriculum_service
     )
-    
+
+    # Get curriculum service for 3-tier fallback
+    curriculum_service = None
+    try:
+        import asyncio
+        # Try to get existing curriculum service from singleton
+        if '_curriculum_service' in globals() and globals()['_curriculum_service'] is not None:
+            curriculum_service = globals()['_curriculum_service']
+        else:
+            # Need to initialize async - this is a limitation of sync function
+            logger.warning("CurriculumService not initialized yet - ProblemService will skip BigQuery TIER 1")
+    except Exception as e:
+        logger.warning(f"Could not get curriculum service: {e}")
+
+    # Initialize and inject ProblemService for Step 1
+    problem_service = ProblemService(curriculum_service=curriculum_service)
+    problem_service.set_ai_service("gemini")  # Use Gemini Flash for composable problems
+
     # Set up all the dependencies that ProblemService needs for rich metadata
     try:
         problem_service.competency_service = get_competency_service()
         problem_service.recommender = get_problem_recommender()
-        problem_service.cosmos_db = get_cosmos_db() 
+        problem_service.cosmos_db = get_cosmos_db()
         problem_service.problem_optimizer = get_problem_optimizer()
     except Exception as e:
         logger.warning(f"Some ProblemService dependencies unavailable: {e}")

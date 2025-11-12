@@ -17,17 +17,40 @@ class MasterContextGenerator(BaseContentGenerator):
         super().__init__(cosmos_service=cosmos_service, blob_service=blob_service)
         self.cosmos_db = cosmos_service  # Assign from base class parameter
 
-    async def generate_master_context(self, request: ContentGenerationRequest) -> MasterContext:
-        """Generate foundational context for all content - UPDATED WITH GRADE and CACHING"""
+    async def generate_master_context(
+        self,
+        request: ContentGenerationRequest,
+        bigquery_foundations: dict = None
+    ) -> MasterContext:
+        """Generate foundational context for all content with 3-tier fallback
 
-        # Try to get from cache first
+        TIER 1: BigQuery authored foundations (if provided)
+        TIER 2: CosmosDB cached context
+        TIER 3: Generate new with Gemini AI
+        """
+
+        # TIER 1: Check BigQuery foundations first (highest priority)
+        if bigquery_foundations and bigquery_foundations.get('master_context'):
+            mc_data = bigquery_foundations['master_context']
+            if bigquery_foundations.get('generation_status') == 'approved':
+                logger.info(f"✅ [TIER 1] Using BigQuery authored master context for {request.subskill_id}")
+                return MasterContext(
+                    core_concepts=mc_data.get('core_concepts', []),
+                    key_terminology=mc_data.get('key_terminology', {}),
+                    learning_objectives=mc_data.get('learning_objectives', []),
+                    difficulty_level=mc_data.get('difficulty_level', request.difficulty_level),
+                    prerequisites=mc_data.get('prerequisites', request.prerequisites or []),
+                    real_world_applications=mc_data.get('real_world_applications', [])
+                )
+
+        # TIER 2: Try to get from CosmosDB cache
         if self.cosmos_db and request.subskill_id:
             cached_context = await self.cosmos_db.get_cached_master_context(
                 subject=request.subject,
                 subskill_id=request.subskill_id
             )
             if cached_context:
-                logger.info(f"✅ Using cached master context for {request.subject}:{request.subskill_id}")
+                logger.info(f"✅ [TIER 2] Using CosmosDB cached master context for {request.subject}:{request.subskill_id}")
                 # Reconstruct MasterContext from cached data
                 return MasterContext(
                     core_concepts=cached_context.get('core_concepts', []),
@@ -38,8 +61,8 @@ class MasterContextGenerator(BaseContentGenerator):
                     real_world_applications=cached_context.get('real_world_applications', [])
                 )
 
-        # Cache miss - generate new master context
-        logger.info(f"🔄 Cache miss - generating new master context for {request.subject}:{request.subskill_id}")
+        # TIER 3: Generate new master context with AI
+        logger.info(f"🔄 [TIER 3] Generating new master context with AI for {request.subject}:{request.subskill_id}")
 
         # Get grade information if available from request
         grade_info = self._extract_grade_info(request)

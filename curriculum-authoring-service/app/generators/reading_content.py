@@ -632,7 +632,7 @@ class ReadingContentGenerator:
             )
 
             response = await self.client.aio.models.generate_content(
-                model='gemini-2.5-flash-preview-05-20',
+                model='gemini-flash-latest',
                 contents=prompt,
                 config=GenerateContentConfig(
                     response_mime_type='application/json',
