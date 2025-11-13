@@ -74,14 +74,15 @@ class ContentService:
             # Generate fresh foundations without saving
             foundations = await foundations_service.generate_foundations(subskill_id, version_id)
 
-        # Generate reading content
+        # Generate reading content with 3-tier architecture
         package = await self.reading_generator.generate_reading_content(
             subskill_id=subskill_id,
             version_id=version_id,
             subskill_description=subskill.subskill_description,
             subject=subject.subject_name,
             grade_level=subject.grade_level or "Kindergarten",
-            master_context=foundations.master_context
+            master_context=foundations.master_context,
+            context_primitives=foundations.context_primitives  # Pass primitives for concrete examples
         )
 
         # Save to BigQuery

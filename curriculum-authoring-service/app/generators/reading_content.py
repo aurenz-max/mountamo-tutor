@@ -12,8 +12,12 @@ from google import genai
 from google.genai.types import GenerateContentConfig, Schema
 
 from app.core.config import settings
-from app.models.foundations import MasterContext
+from app.models.foundations import MasterContext, ContextPrimitives
 from app.models.content import ReadingContentPackage, ReadingSection
+from app.generators.learning_plan import LearningPlanGenerator, TeachingPlan
+from app.generators.section_generator import SectionGenerator
+from app.generators.content_integrator import ContentIntegrator
+from app.schemas.interactive_primitives import get_primitive_schemas_as_genai_schema
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +25,28 @@ logger = logging.getLogger(__name__)
 # Define the reading content schema for Gemini
 def get_reading_content_schema() -> Schema:
     """Get the schema for reading content generation with all interactive primitive types"""
+    # Get all primitive schemas from shared module
+    primitive_schemas = get_primitive_schemas_as_genai_schema()
+
+    # Build section properties
+    section_properties = {
+        "heading": Schema(type="string", description="Section heading"),
+        "content": Schema(type="string", description="Section content text"),
+        "key_terms_used": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="Key terms used in this section"
+        ),
+        "concepts_covered": Schema(
+            type="array",
+            items=Schema(type="string"),
+            description="Core concepts covered in this section"
+        )
+    }
+
+    # Add all interactive primitive schemas (no duplication!)
+    section_properties.update(primitive_schemas)
+
     return Schema(
         type="object",
         properties={
@@ -29,339 +55,7 @@ def get_reading_content_schema() -> Schema:
                 type="array",
                 items=Schema(
                     type="object",
-                    properties={
-                        "heading": Schema(type="string", description="Section heading"),
-                        "content": Schema(type="string", description="Section content text"),
-                        "key_terms_used": Schema(
-                            type="array",
-                            items=Schema(type="string"),
-                            description="Key terms used in this section"
-                        ),
-                        "concepts_covered": Schema(
-                            type="array",
-                            items=Schema(type="string"),
-                            description="Core concepts covered in this section"
-                        ),
-                        # Interactive Primitives (all optional)
-                        "alerts": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["alert"], description="Primitive type identifier"),
-                                    "style": Schema(type="string", enum=["info", "warning", "success", "tip"], description="Alert visual style"),
-                                    "title": Schema(type="string", description="Alert title/heading"),
-                                    "content": Schema(type="string", description="Alert body content")
-                                },
-                                required=["type", "style", "title", "content"]
-                            ),
-                            description="Alert/callout boxes for important information"
-                        ),
-                        "expandables": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["expandable"], description="Primitive type identifier"),
-                                    "title": Schema(type="string", description="Expandable section title"),
-                                    "content": Schema(type="string", description="Hidden content revealed on expansion")
-                                },
-                                required=["type", "title", "content"]
-                            ),
-                            description="Expandable sections for optional deeper information"
-                        ),
-                        "quizzes": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["quiz"], description="Primitive type identifier"),
-                                    "question": Schema(type="string", description="Quiz question text"),
-                                    "answer": Schema(type="string", description="Correct answer"),
-                                    "explanation": Schema(type="string", description="Optional explanation of the answer")
-                                },
-                                required=["type", "question", "answer"]
-                            ),
-                            description="Quick knowledge check questions"
-                        ),
-                        "definitions": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["definition"], description="Primitive type identifier"),
-                                    "term": Schema(type="string", description="Term to be defined"),
-                                    "definition": Schema(type="string", description="Definition of the term")
-                                },
-                                required=["type", "term", "definition"]
-                            ),
-                            description="Inline term definitions for contextual learning"
-                        ),
-                        "checklists": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["checklist"], description="Primitive type identifier"),
-                                    "text": Schema(type="string", description="Checklist item text"),
-                                    "completed": Schema(type="boolean", default=False, description="Initial completion state")
-                                },
-                                required=["type", "text"]
-                            ),
-                            description="Progress tracking checklist items"
-                        ),
-                        "tables": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["table"], description="Primitive type identifier"),
-                                    "headers": Schema(
-                                        type="array",
-                                        items=Schema(type="string"),
-                                        description="Table column headers"
-                                    ),
-                                    "rows": Schema(
-                                        type="array",
-                                        items=Schema(
-                                            type="array",
-                                            items=Schema(type="string")
-                                        ),
-                                        description="Table row data (array of arrays)"
-                                    )
-                                },
-                                required=["type", "headers", "rows"]
-                            ),
-                            description="Structured data tables"
-                        ),
-                        "keyvalues": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["keyvalue"], description="Primitive type identifier"),
-                                    "key": Schema(type="string", description="Fact or statistic label"),
-                                    "value": Schema(type="string", description="Corresponding value or data")
-                                },
-                                required=["type", "key", "value"]
-                            ),
-                            description="Key-value pairs for important facts and statistics"
-                        ),
-                        "interactive_timelines": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["interactive_timeline"], description="Primitive type identifier"),
-                                    "title": Schema(type="string", description="Title of the timeline"),
-                                    "events": Schema(
-                                        type="array",
-                                        items=Schema(
-                                            type="object",
-                                            properties={
-                                                "date": Schema(type="string", description="Date or time point of the event"),
-                                                "title": Schema(type="string", description="Title of the event"),
-                                                "description": Schema(type="string", description="Detailed description of the event")
-                                            },
-                                            required=["date", "title", "description"]
-                                        ),
-                                        description="A list of events on the timeline"
-                                    )
-                                },
-                                required=["type", "title", "events"]
-                            ),
-                            description="Interactive timelines to visualize sequences of events"
-                        ),
-                        "carousels": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["carousel"], description="Primitive type identifier"),
-                                    "title": Schema(type="string", description="Optional title for the carousel"),
-                                    "items": Schema(
-                                        type="array",
-                                        items=Schema(
-                                            type="object",
-                                            properties={
-                                                "image_url": Schema(type="string", description="URL for the carousel image"),
-                                                "alt_text": Schema(type="string", description="Accessibility text for the image"),
-                                                "caption": Schema(type="string", description="A brief caption for the image"),
-                                                "description": Schema(type="string", description="Optional detailed description")
-                                            },
-                                            required=["image_url", "alt_text"]
-                                        )
-                                    )
-                                },
-                                required=["type", "items"]
-                            ),
-                            description="Carousels or sliders for displaying a sequence of images or cards"
-                        ),
-                        "flip_cards": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["flip_card"], description="Primitive type identifier"),
-                                    "front_content": Schema(type="string", description="Content for the front of the card"),
-                                    "back_content": Schema(type="string", description="Content for the back of the card")
-                                },
-                                required=["type", "front_content", "back_content"]
-                            ),
-                            description="Interactive flip cards for self-assessment and vocabulary"
-                        ),
-                        "categorization_activities": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["categorization"], description="Primitive type identifier"),
-                                    "instruction": Schema(type="string", description="Instruction for the activity"),
-                                    "categories": Schema(
-                                        type="array",
-                                        items=Schema(type="string"),
-                                        description="The categories to sort items into"
-                                    ),
-                                    "items": Schema(
-                                        type="array",
-                                        items=Schema(
-                                            type="object",
-                                            properties={
-                                                "item_text": Schema(type="string", description="The text of the item to be categorized"),
-                                                "correct_category": Schema(type="string", description="The correct category for this item")
-                                            },
-                                            required=["item_text", "correct_category"]
-                                        ),
-                                        description="The items that need to be sorted"
-                                    )
-                                },
-                                required=["type", "instruction", "categories", "items"]
-                            ),
-                            description="Activities where users sort items into categories"
-                        ),
-                        "fill_in_the_blanks": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["fill_in_the_blank"], description="Primitive type identifier"),
-                                    "sentence": Schema(type="string", description="The sentence with a blank, represented by '__'"),
-                                    "correct_answer": Schema(type="string", description="The word that correctly fills the blank"),
-                                    "hint": Schema(type="string", description="Optional hint for the student")
-                                },
-                                required=["type", "sentence", "correct_answer"]
-                            ),
-                            description="Fill-in-the-blank exercises to test knowledge in context"
-                        ),
-                        "scenario_questions": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["scenario_question"], description="Primitive type identifier"),
-                                    "scenario": Schema(type="string", description="A real-world scenario or problem description"),
-                                    "question": Schema(type="string", description="The question related to the scenario"),
-                                    "answer_options": Schema(
-                                        type="array",
-                                        items=Schema(type="string"),
-                                        description="A list of possible answers for multiple choice scenarios"
-                                    ),
-                                    "correct_answer": Schema(type="string", description="The correct answer"),
-                                    "explanation": Schema(type="string", description="Explanation of why the answer is correct")
-                                },
-                                required=["type", "scenario", "question", "correct_answer"]
-                            ),
-                            description="Questions based on real-world scenarios to promote application of knowledge"
-                        ),
-                        "tabbed_content": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["tabbed_content"], description="Primitive type identifier"),
-                                    "tabs": Schema(
-                                        type="array",
-                                        items=Schema(
-                                            type="object",
-                                            properties={
-                                                "title": Schema(type="string", description="The title of the tab"),
-                                                "content": Schema(type="string", description="The content within the tab")
-                                            },
-                                            required=["title", "content"]
-                                        ),
-                                        description="A list of tab objects, each with a title and content."
-                                    )
-                                },
-                                required=["type", "tabs"]
-                            ),
-                            description="Tabbed interface for comparing and contrasting related topics."
-                        ),
-                        "matching_activities": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["matching_activity"], description="Primitive type identifier"),
-                                    "instruction": Schema(type="string", description="Instruction for the activity, e.g., 'Match the term to its definition.'"),
-                                    "pairs": Schema(
-                                        type="array",
-                                        items=Schema(
-                                            type="object",
-                                            properties={
-                                                "prompt": Schema(type="string", description="The item in the first column (e.g., the term)"),
-                                                "answer": Schema(type="string", description="The corresponding item in the second column (e.g., the definition)")
-                                            },
-                                            required=["prompt", "answer"]
-                                        ),
-                                        description="The list of correct pairs. The front-end will shuffle the answer column."
-                                    )
-                                },
-                                required=["type", "instruction", "pairs"]
-                            ),
-                            description="Interactive matching games to connect concepts."
-                        ),
-                        "sequencing_activities": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["sequencing_activity"], description="Primitive type identifier"),
-                                    "instruction": Schema(type="string", description="Instruction for the activity, e.g., 'Arrange the steps of photosynthesis in the correct order.'"),
-                                    "items": Schema(
-                                        type="array",
-                                        items=Schema(type="string"),
-                                        description="The list of items to be sequenced, provided in the correct order. The front-end will display them shuffled."
-                                    )
-                                },
-                                required=["type", "instruction", "items"]
-                            ),
-                            description="Activities where students must arrange items in the correct order."
-                        ),
-                        "accordions": Schema(
-                            type="array",
-                            items=Schema(
-                                type="object",
-                                properties={
-                                    "type": Schema(type="string", enum=["accordion"], description="Primitive type identifier"),
-                                    "title": Schema(type="string", description="Optional title for the accordion group, e.g., 'Frequently Asked Questions'"),
-                                    "items": Schema(
-                                        type="array",
-                                        items=Schema(
-                                            type="object",
-                                            properties={
-                                                "question": Schema(type="string", description="The question or heading for the expandable item"),
-                                                "answer": Schema(type="string", description="The content that is revealed")
-                                            },
-                                            required=["question", "answer"]
-                                        ),
-                                        description="A list of question/answer pairs."
-                                    )
-                                },
-                                required=["type", "items"]
-                            ),
-                            description="An accordion-style list for FAQs or question-and-answer breakdowns."
-                        )
-                    },
+                    properties=section_properties,
                     required=["heading", "content", "key_terms_used", "concepts_covered"]
                 ),
                 description="Array of content sections"
@@ -372,19 +66,30 @@ def get_reading_content_schema() -> Schema:
 
 
 class ReadingContentGenerator:
-    """Generator for structured reading content"""
+    """Generator for structured reading content using 3-tier architecture"""
 
     def __init__(self):
         self.client = None
         self._initialize_gemini()
+        self._initialize_tier_generators()
 
     def _initialize_gemini(self):
-        """Initialize Gemini client"""
+        """Initialize Gemini client (for legacy single-call method)"""
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY is required")
 
         self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
         logger.info("Gemini client initialized for ReadingContentGenerator")
+
+    def _initialize_tier_generators(self):
+        """Initialize the 3-tier generators"""
+        if not settings.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is required")
+
+        self.learning_plan_generator = LearningPlanGenerator(api_key=settings.GEMINI_API_KEY)
+        self.section_generator = SectionGenerator(api_key=settings.GEMINI_API_KEY)
+        self.content_integrator = ContentIntegrator(api_key=settings.GEMINI_API_KEY)
+        logger.info("3-tier content generation architecture initialized")
 
     def _format_terminology_string(self, key_terminology: Dict[str, str]) -> str:
         """Format terminology dictionary into readable string"""
@@ -397,10 +102,160 @@ class ReadingContentGenerator:
         subskill_description: str,
         subject: str,
         grade_level: str,
+        master_context: MasterContext,
+        context_primitives: Optional[ContextPrimitives] = None
+    ) -> ReadingContentPackage:
+        """
+        Generate structured reading content using 3-tier architecture.
+
+        Args:
+            subskill_id: Subskill identifier
+            version_id: Version identifier
+            subskill_description: Description of the subskill
+            subject: Subject area
+            grade_level: Target grade level
+            master_context: Master context with concepts, terminology, etc.
+            context_primitives: Context primitives for concrete examples (optional)
+
+        Returns:
+            ReadingContentPackage with generated sections that explicitly teach learning objectives
+        """
+        logger.info(f"📖 Generating reading content for {subskill_id} using 3-tier architecture")
+
+        # If no context primitives provided, use empty dict
+        if context_primitives is None:
+            logger.warning(f"No context primitives provided for {subskill_id}, using empty primitives")
+            primitives_dict = {}
+        else:
+            # Convert ContextPrimitives to dict for generators
+            primitives_dict = context_primitives.model_dump() if hasattr(context_primitives, 'model_dump') else context_primitives.dict()
+
+        try:
+            # ==================================================================
+            # TIER 1: Generate Teaching Plan
+            # ==================================================================
+            logger.info("🎯 TIER 1: Generating teaching plan...")
+            teaching_plan = await self.learning_plan_generator.generate_teaching_plan(
+                learning_objectives=master_context.learning_objectives,
+                core_concepts=master_context.core_concepts,
+                key_terminology=master_context.key_terminology,
+                context_primitives=primitives_dict,
+                grade_level=grade_level,
+                subskill_description=subskill_description
+            )
+            logger.info(f"✅ Teaching plan created with {len(teaching_plan.section_plans)} sections")
+
+            # ==================================================================
+            # TIER 2: Generate Sections Sequentially
+            # ==================================================================
+            logger.info("📝 TIER 2: Generating sections...")
+            section_data_list = []
+            prior_sections_summary = ""
+
+            for section_plan in teaching_plan.section_plans:
+                section_data = await self.section_generator.generate_section(
+                    section_number=section_plan.section_number,
+                    primary_objective=section_plan.primary_objective,
+                    teaching_strategy=section_plan.teaching_strategy,
+                    key_concepts=section_plan.key_concepts_to_cover,
+                    key_terminology=master_context.key_terminology,
+                    recommended_primitives=section_plan.recommended_primitives,
+                    interactive_elements_focus=section_plan.interactive_elements_focus,
+                    grade_level=grade_level,
+                    subskill_description=subskill_description,
+                    prior_sections_context=prior_sections_summary if prior_sections_summary else None
+                )
+                section_data_list.append(section_data)
+
+                # Build context for next section
+                prior_sections_summary += f"\nSection {section_plan.section_number}: {section_data['heading']} - taught {section_plan.primary_objective}"
+
+            logger.info(f"✅ Generated {len(section_data_list)} focused sections")
+
+            # ==================================================================
+            # TIER 3: Integrate and Validate
+            # ==================================================================
+            logger.info("🔍 TIER 3: Integrating and validating...")
+            integrated_content = await self.content_integrator.integrate_and_validate(
+                subskill_id=subskill_id,
+                version_id=version_id,
+                subskill_description=subskill_description,
+                learning_objectives=master_context.learning_objectives,
+                section_data_list=section_data_list,
+                overall_narrative=teaching_plan.overall_narrative_arc,
+                grade_level=grade_level
+            )
+            logger.info(f"✅ Content validated and integrated: {integrated_content['title']}")
+
+            # ==================================================================
+            # Convert to ReadingContentPackage (Same Schema as Before)
+            # ==================================================================
+            now = datetime.utcnow()
+            sections = []
+
+            for idx, section_data in enumerate(integrated_content['sections']):
+                # Collect all interactive primitives from all supported types
+                interactive_primitives = []
+
+                # List of all primitive type keys
+                primitive_keys = [
+                    'alerts', 'expandables', 'quizzes', 'definitions', 'checklists',
+                    'tables', 'keyvalues', 'interactive_timelines', 'carousels',
+                    'flip_cards', 'categorization_activities', 'fill_in_the_blanks',
+                    'scenario_questions', 'tabbed_content', 'matching_activities',
+                    'sequencing_activities', 'accordions'
+                ]
+
+                # Collect primitives from all types present in section
+                for key in primitive_keys:
+                    if key in section_data and section_data[key]:
+                        interactive_primitives.extend(section_data[key])
+
+                section = ReadingSection(
+                    section_id=f"{subskill_id}_section_{idx+1}",
+                    section_order=idx + 1,
+                    heading=section_data['heading'],
+                    content_text=section_data['content'],
+                    key_terms=section_data.get('key_terms_used', []),
+                    concepts_covered=section_data.get('concepts_covered', []),
+                    interactive_primitives=interactive_primitives,
+                    has_visual_snippet=False,
+                    created_at=now,
+                    updated_at=now
+                )
+                sections.append(section)
+
+            package = ReadingContentPackage(
+                subskill_id=subskill_id,
+                version_id=version_id,
+                title=integrated_content['title'],
+                sections=sections,
+                generation_status='generated',
+                is_draft=True,
+                created_at=now,
+                updated_at=now
+            )
+
+            logger.info(f"✅ Successfully created reading content package for {subskill_id}")
+            return package
+
+        except Exception as e:
+            error_msg = f"3-tier reading content generation failed: {str(e)}"
+            logger.error(error_msg)
+            raise RuntimeError(error_msg) from e
+
+    async def _generate_reading_content_legacy(
+        self,
+        subskill_id: str,
+        version_id: str,
+        subskill_description: str,
+        subject: str,
+        grade_level: str,
         master_context: MasterContext
     ) -> ReadingContentPackage:
         """
-        Generate structured reading content for a subskill.
+        LEGACY: Generate structured reading content in a single LLM call.
+        Kept for fallback purposes only.
 
         Args:
             subskill_id: Subskill identifier
@@ -413,7 +268,7 @@ class ReadingContentGenerator:
         Returns:
             ReadingContentPackage with generated sections
         """
-        logger.info(f"📖 Generating reading content for {subskill_id}")
+        logger.info(f"📖 [LEGACY] Generating reading content for {subskill_id}")
 
         terminology_str = self._format_terminology_string(master_context.key_terminology)
 
@@ -484,7 +339,7 @@ class ReadingContentGenerator:
 
         try:
             response = await self.client.aio.models.generate_content(
-                model='gemini-2.5-flash-preview-05-20',
+                model='gemini-flash-latest',
                 contents=prompt,
                 config=GenerateContentConfig(
                     response_mime_type='application/json',
