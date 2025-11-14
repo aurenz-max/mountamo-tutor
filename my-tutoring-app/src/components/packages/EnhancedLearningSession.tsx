@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAICoach } from '@/contexts/AICoachContext';
 import { useEngagement } from '@/contexts/EngagementContext';
 import { authApi } from '@/lib/authApiClient';
+import { createDailyActivitiesApi } from '@/lib/dailyActivitiesAPI';
 
 // Import primitive completion types
 import { 
@@ -36,11 +37,12 @@ import PackageLearningAICoach from './PackageLearningAICoach';
 interface EnhancedLearningSessionProps {
   packageId: string;
   studentId?: number;
+  activityId?: string | null;
 }
 
-export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearningSessionProps) {
+export function EnhancedLearningSession({ packageId, studentId, activityId }: EnhancedLearningSessionProps) {
   // Auth context
-  const { user, userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading, getAuthToken } = useAuth();
   
   // AI Coach context
   const { isAIConnected } = useAICoach();
@@ -199,15 +201,15 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
       ...prev,
       [section]: true
     }));
-    
+
     // Update AI coach that this section was completed
     updateAICoachContext(section, { sectionCompleted: true });
 
     try {
       // Call backend to track completion and get XP
       const response = await authApi.completePackageSection(
-        packageId, 
-        section, 
+        packageId,
+        section,
         undefined // time spent - could be tracked in future
       );
 
@@ -242,6 +244,55 @@ export function EnhancedLearningSession({ packageId, studentId }: EnhancedLearni
           }
         } catch (error) {
           console.error('Error completing package:', error);
+        }
+      }
+
+      // Check if both reading and practice sections are complete for daily activity completion
+      // Only mark daily activity complete if BOTH reading AND practice are done
+      if (activityId && (userProfile?.student_id || studentId)) {
+        const readingComplete = newCompletedSections['reading'];
+        const practiceComplete = newCompletedSections['practice'];
+
+        if (readingComplete && practiceComplete) {
+          console.log('🎯 Both reading and practice complete - marking daily activity as complete:', activityId);
+
+          try {
+            const dailyActivitiesApi = createDailyActivitiesApi(getAuthToken);
+            const dailyActivityResponse = await dailyActivitiesApi.markActivityCompleted(
+              userProfile?.student_id || studentId!,
+              activityId,
+              undefined // points earned from package sections
+            );
+
+            console.log('✅ Daily activity completion response:', dailyActivityResponse);
+
+            // Process engagement response from daily activity completion
+            const engagementData = dailyActivityResponse as any;
+            if (engagementData && 'xp_earned' in engagementData) {
+              processEngagementResponse({
+                success: true,
+                xp_earned: engagementData.xp_earned || 0,
+                base_xp: engagementData.base_xp || engagementData.xp_earned || 0,
+                streak_bonus_xp: engagementData.streak_bonus_xp || 0,
+                total_xp: engagementData.total_xp || 0,
+                level_up: engagementData.level_up || false,
+                new_level: engagementData.new_level || 1,
+                previous_level: engagementData.previous_level || 1,
+                current_streak: engagementData.current_streak || 0,
+                previous_streak: engagementData.previous_streak || 0,
+                points_earned: engagementData.points_earned || engagementData.xp_earned || 0,
+                engagement_transaction: engagementData.engagement_transaction || null
+              });
+            }
+          } catch (error) {
+            console.error('❌ Error marking daily activity complete:', error);
+            // Continue - don't block package completion
+          }
+        } else {
+          console.log('📋 Package section complete, but waiting for both reading and practice to mark daily activity complete', {
+            reading: readingComplete,
+            practice: practiceComplete
+          });
         }
       }
 

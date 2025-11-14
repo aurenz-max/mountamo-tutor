@@ -232,24 +232,32 @@ export function useDailyActivities({
   // Fetch daily plan with enhanced transparency data
   const fetchDailyPlan = useCallback(async () => {
     if (!api) return;
-    
+
     try {
       setError(null);
       // Use the enhanced activities endpoint that includes transparency metadata
       const enhancedPlan = await api.getDailyActivities(studentId, date);
-      
-      // Calculate actual completion stats from activities using backend's is_complete field
-      const completedActivities = enhancedPlan.activities.filter(
-        (activity: any) => activity.is_complete === true
-      ).length;
-      const totalActivities = enhancedPlan.activities.length;
 
-      // Convert the enhanced response to the expected DailyPlan format
-      const plan: DailyPlan = {
+      // 🔍 DEBUG LOGGING: Log raw backend response
+      console.log('📥 Raw backend response:', {
         student_id: enhancedPlan.student_id,
-        date: enhancedPlan.date,
-        activities: enhancedPlan.activities,
-        progress: {
+        has_progress: !!enhancedPlan.progress,
+        progress: enhancedPlan.progress,
+        activities_count: enhancedPlan.activities?.length,
+        first_activity_completion: enhancedPlan.activities?.[0]?.is_complete,
+        completed_activities: enhancedPlan.activities?.filter((a: any) => a.is_complete).length
+      });
+
+      // Use backend's progress field if available, otherwise calculate as fallback
+      const progress = enhancedPlan.progress || (() => {
+        console.warn('⚠️ Backend did not provide progress field, calculating fallback');
+        // Fallback calculation only if backend doesn't provide progress
+        const completedActivities = enhancedPlan.activities.filter(
+          (activity: any) => activity.is_complete === true
+        ).length;
+        const totalActivities = enhancedPlan.activities.length;
+
+        return {
           completed_activities: completedActivities,
           total_activities: totalActivities,
           points_earned_today: enhancedPlan.activities
@@ -258,16 +266,33 @@ export function useDailyActivities({
           daily_goal: 60,
           current_streak: 1,
           progress_percentage: totalActivities > 0 ? (completedActivities / totalActivities) * 100 : 0
-        },
+        };
+      })();
+
+      console.log('📊 Final progress being set:', progress);
+
+      // Convert the enhanced response to the expected DailyPlan format
+      const plan: DailyPlan = {
+        student_id: enhancedPlan.student_id,
+        date: enhancedPlan.date,
+        activities: enhancedPlan.activities,
+        progress: progress, // Use backend progress or fallback
         personalization_source: enhancedPlan.summary?.personalization_source || 'unknown',
         total_points: enhancedPlan.summary?.total_points || 0,
         summary: enhancedPlan.summary,
         transparency: enhancedPlan.transparency
       };
-      
+
+      console.log('✅ Setting daily plan state:', {
+        activities: plan.activities.length,
+        progress: plan.progress,
+        completed_count: plan.activities.filter(a => a.is_complete).length
+      });
+
       setDailyPlan(plan);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch daily plan');
+      console.error('❌ Error fetching daily plan:', err);
     }
   }, [api, studentId, date]);
 

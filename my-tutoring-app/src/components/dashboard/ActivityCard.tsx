@@ -90,23 +90,34 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   expanded = false,
   onExpand
 }) => {
+  const [isCardExpanded, setIsCardExpanded] = React.useState(false);
+
   // Extract metadata from the properly structured backend data
-  const subject = activityData.curriculum_metadata?.subject || 
-                  activityData.metadata?.subject || 
-                  activityData.category || 
+  const subject = activityData.curriculum_metadata?.subject ||
+                  activityData.metadata?.subject ||
+                  activityData.category ||
                   'Learning';
-  
+
   // Create separate unit and skill display instead of combined
   const unitDescription = activityData.curriculum_metadata?.unit?.description || null;
   const skillDescription = activityData.curriculum_metadata?.skill?.description || null;
 
   // Get the clean learning objective (subskill description)
-  const subskillDescription = activityData.curriculum_metadata?.subskill?.description || 
+  const subskillDescription = activityData.curriculum_metadata?.subskill?.description ||
                              activityData.title.replace(/^(Learn|Practice|Review):\s*/, '') ||
                              'Learning Activity';
 
   const isCompleted = activityData.is_complete || false;
   const aiRecommended = activityData.metadata?.from_recommendations || false;
+
+  // 🔍 DEBUG LOGGING: Log activity card render state
+  console.log(`🃏 ActivityCard ${activityData.id}:`, {
+    is_complete: activityData.is_complete,
+    isCompleted,
+    isCardExpanded,
+    shouldShowMinimized: isCompleted && !isCardExpanded,
+    title: activityData.title
+  });
   
   // New transparency data
   const sourceType = activityData.source_type;
@@ -165,6 +176,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   // doesn't have to parse the activity ID
   const buildPracticeRoute = () => {
     const params = new URLSearchParams();
+    params.append('activity_id', activityData.id); // ADD: activity ID for completion tracking
     params.append('subject', subject);
 
     if (activityData.curriculum_metadata) {
@@ -176,7 +188,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       params.append('subskill_description', activityData.curriculum_metadata.subskill.description);
     }
 
-    return `/practice/${activityData.id}?${params.toString()}`;
+    return `/practice?${params.toString()}`;
   };
 
   const learningOptions: LearningOption[] = [
@@ -217,16 +229,93 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     }
   ];
 
+  // Minimized completion state
+  if (isCompleted && !isCardExpanded) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-300 shadow-sm hover:shadow-md transition-all cursor-pointer"
+        onClick={() => setIsCardExpanded(true)}
+      >
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 flex-1">
+              {/* Completion checkmark */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="flex-shrink-0"
+              >
+                <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-white" />
+                </div>
+              </motion.div>
+
+              {/* Activity info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-green-700">{subject}</span>
+                  <Badge className="bg-green-600 text-white text-xs px-2 py-0.5">
+                    ✓ Complete
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-700 truncate">
+                  {subskillDescription}
+                </p>
+              </div>
+
+              {/* Points earned - prominent display */}
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.3, type: "spring", stiffness: 150 }}
+                className="flex-shrink-0"
+              >
+                <div className="flex flex-col items-center bg-yellow-100 rounded-lg px-3 py-2 border-2 border-yellow-400">
+                  <Star className="h-5 w-5 text-yellow-600 fill-yellow-500 mb-1" />
+                  <span className="text-lg font-bold text-yellow-700">+{activityData.points}</span>
+                  <span className="text-xs text-yellow-600">earned</span>
+                </div>
+              </motion.div>
+
+              {/* Expand hint */}
+              <div className="flex-shrink-0 text-gray-400">
+                <RotateCcw className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Full card display (either not completed, or completed but expanded)
   return (
     <div className={`bg-white rounded-lg border-l-4 transition-all ${
-      isCompleted 
-        ? 'border-l-green-500 border-r border-t border-b border-green-200 bg-green-50/50' 
-        : `${pedagogicalTag.color.includes('green') ? 'border-l-green-500' : 
-             pedagogicalTag.color.includes('purple') ? 'border-l-purple-500' : 
-             pedagogicalTag.color.includes('blue') ? 'border-l-blue-500' : 
+      isCompleted
+        ? 'border-l-green-500 border-r border-t border-b border-green-200 bg-green-50/50'
+        : `${pedagogicalTag.color.includes('green') ? 'border-l-green-500' :
+             pedagogicalTag.color.includes('purple') ? 'border-l-purple-500' :
+             pedagogicalTag.color.includes('blue') ? 'border-l-blue-500' :
              pedagogicalTag.color.includes('orange') ? 'border-l-orange-500' : 'border-l-gray-500'} border-r border-t border-b border-gray-200 hover:border-gray-300 hover:shadow-sm`
     }`}>
       <div className="p-6">
+        {/* Collapse button for completed activities */}
+        {isCompleted && (
+          <div className="mb-3 flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCardExpanded(false)}
+              className="text-xs text-gray-600 hover:text-green-600"
+            >
+              Minimize
+            </Button>
+          </div>
+        )}
+
         {/* Pedagogical Tag - Most Prominent */}
         <div className="mb-3">
           <Badge className={`${pedagogicalTag.color} text-xs font-semibold px-3 py-1 border`}>
@@ -242,26 +331,26 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             <div className="text-base text-blue-600 font-semibold mb-2">
               {subject}
             </div>
-            
+
             {/* Unit Display */}
             {unitDescription && (
               <h3 className="text-sm font-semibold text-gray-800 mb-1 leading-tight">
                 {unitDescription}
               </h3>
             )}
-            
+
             {/* Skill Display - Slightly Smaller */}
             {skillDescription && (
               <div className="text-xs font-medium text-gray-600 mb-2">
                 {skillDescription}
               </div>
             )}
-            
+
             {/* Learning Objective (supporting detail) */}
             <div className="text-sm text-gray-600 mb-2 leading-relaxed">
               {subskillDescription}
             </div>
-            
+
             {/* AI Insight - Direct Display */}
             {aiReason && (
               <div className="flex items-start gap-2 mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
@@ -272,7 +361,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-3 text-sm text-gray-600 ml-4 flex-shrink-0">
             <div className="flex items-center">
               <Star className="h-4 w-4 text-yellow-500 mr-1" />
@@ -292,7 +381,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
               ✓ Complete
             </Badge>
           )}
-          
+
           {/* Source transparency badge */}
           {sourceType && (
             <Badge variant="secondary" className={`text-xs ${sourceInfo.color} flex items-center gap-1`}>
@@ -305,9 +394,9 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         {/* Expandable transparency details - only show if no direct AI reason */}
         {sourceDetails && onExpand && !aiReason && (
           <div className="mb-3">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onExpand}
               className="text-xs text-gray-600 hover:text-blue-600 p-0 h-auto font-normal"
             >
@@ -321,7 +410,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         {expanded && sourceDetails && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs">
             <div className="font-medium text-gray-700 mb-2">Recommendation Details:</div>
-            
+
             {sourceType === 'ai_recommendations' && (
               <>
                 {sourceDetails.ai_reason && (
@@ -337,7 +426,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                 )}
               </>
             )}
-            
+
             {sourceType === 'bigquery_recommendations' && (
               <>
                 {sourceDetails.readiness_status && (
@@ -352,7 +441,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                 )}
               </>
             )}
-            
+
             {sourceType === 'fallback' && sourceDetails.reason && (
               <div className="text-gray-600">{sourceDetails.reason}</div>
             )}
@@ -361,10 +450,14 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
         {/* Always visible action buttons */}
         {isCompleted ? (
-          <div className="text-center text-green-600 font-medium">
-            <div className="flex items-center justify-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Activity completed!
+          <div className="text-center text-green-600 font-medium py-2">
+            <div className="flex items-center justify-center gap-3">
+              <CheckCircle className="h-5 w-5" />
+              <span>Activity completed!</span>
+              <div className="flex items-center gap-1 text-yellow-600">
+                <Star className="h-4 w-4 fill-yellow-500" />
+                <span className="font-bold">+{activityData.points} points earned</span>
+              </div>
             </div>
           </div>
         ) : (

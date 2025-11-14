@@ -7,6 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, RefreshCw, Sparkles, Home, BookOpen, HelpCircle, Edit3, CheckCircle2, MessageCircle } from 'lucide-react';
 import { authApi } from '@/lib/authApiClient';
 import { useEngagement } from '@/contexts/EngagementContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { createDailyActivitiesApi } from '@/lib/dailyActivitiesAPI';
 import LoadingOverlay from './LoadingOverlay';
 import ProblemRenderer, { type ProblemRendererRef } from './ProblemRenderer';
 import PracticeAICoach from './PracticeAICoach';
@@ -74,6 +76,7 @@ interface ProblemSetProps {
   numProblems?: number;
   autoStart?: boolean;
   fromDashboard?: boolean;
+  activityId?: string | null;
   onProblemChange?: (problem: any, index: number, isSubmitted: boolean) => void;
   onSubmissionResult?: (result: any) => void;
 }
@@ -83,12 +86,13 @@ interface ProblemSetProps {
 // the curriculum_metadata provided by the backend. No parsing or string manipulation needed!
 
 
-const ProblemSet: React.FC<ProblemSetProps> = ({ 
-  currentTopic, 
-  studentId = 1, 
+const ProblemSet: React.FC<ProblemSetProps> = ({
+  currentTopic,
+  studentId = 1,
   numProblems = 5,
   autoStart = false,
   fromDashboard = false,
+  activityId = null,
   onProblemChange,
   onSubmissionResult
 }) => {
@@ -111,6 +115,9 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
   // Engagement system hook
   const { processEngagementResponse } = useEngagement();
 
+  // Auth hook for daily activities API
+  const { getAuthToken } = useAuth();
+
   // Auto-start problem generation if specified
   useEffect(() => {
     if (autoStart && currentTopic && problems.length === 0 && !loadingSet) {
@@ -118,6 +125,49 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       generateProblemSet();
     }
   }, [currentTopic, autoStart]);
+
+  // Handle daily activity completion when all problems are done
+  useEffect(() => {
+    const markActivityComplete = async () => {
+      if (activityId && studentId && problems.length > 0 && problemAttempted.every(Boolean)) {
+        try {
+          console.log('🎯 Marking daily activity as complete:', activityId);
+          const dailyActivitiesApi = createDailyActivitiesApi(getAuthToken);
+          const totalScore = calculateTotalScore();
+          const response = await dailyActivitiesApi.markActivityCompleted(
+            studentId,
+            activityId,
+            totalScore
+          );
+
+          console.log('✅ Activity completion response:', response);
+
+          // Process engagement response (XP, streaks, level-ups)
+          const engagementData = response as any;
+          if (engagementData && 'xp_earned' in engagementData) {
+            processEngagementResponse({
+              success: true,
+              xp_earned: engagementData.xp_earned || 0,
+              base_xp: engagementData.base_xp || engagementData.xp_earned || 0,
+              streak_bonus_xp: engagementData.streak_bonus_xp || 0,
+              total_xp: engagementData.total_xp || 0,
+              level_up: engagementData.level_up || false,
+              new_level: engagementData.new_level || 1,
+              previous_level: engagementData.previous_level || 1,
+              current_streak: engagementData.current_streak || 0,
+              previous_streak: engagementData.previous_streak || 0,
+              points_earned: engagementData.points_earned || engagementData.xp_earned || 0,
+              engagement_transaction: engagementData.engagement_transaction || null
+            });
+          }
+        } catch (error) {
+          console.error('❌ Error marking activity complete:', error);
+        }
+      }
+    };
+
+    markActivityComplete();
+  }, [activityId, studentId, problems.length, problemAttempted, getAuthToken, processEngagementResponse]);
 
   // When the current problem changes, we'll handle this through the practice mode actions
   // The new problem will be communicated via context
@@ -456,7 +506,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
       if (fromDashboard) {
         // Use subskill ID directly (no parsing needed)
         const subskillId = currentTopic.selection?.subskill || '';
-        
+
         return (
           <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
             <div className="flex items-center mb-3">
@@ -465,6 +515,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
             </div>
             <p className="text-green-700 mb-4">
               Outstanding work! You've successfully completed the practice problems for this learning objective.
+              {activityId && <span className="block mt-2 text-sm">✨ Daily activity marked complete! Check your XP notifications above.</span>}
             </p>
             <div className="bg-white p-4 rounded-lg border border-green-200 mb-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -487,8 +538,8 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 <BookOpen className="h-4 w-4 mr-2" />
                 Back to Learning Hub
               </Button>
-              <Button 
-                onClick={() => window.location.href = '/'} 
+              <Button
+                onClick={() => window.location.href = '/'}
                 className="bg-blue-600 hover:bg-blue-700 flex items-center"
               >
                 <Home className="h-4 w-4 mr-2" />
@@ -503,9 +554,10 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
             <h3 className="font-medium text-green-800 mb-2">Problem Set Complete!</h3>
             <p className="text-green-700 mb-4">
               You've completed all problems with a total score of {calculateTotalScore()} out of {problems.length * 10}.
+              {activityId && <span className="block mt-2 text-sm">✨ Daily activity marked complete! Check your XP notifications above.</span>}
             </p>
             <div className="space-y-4">
-              <Button 
+              <Button
                 onClick={() => {
                   setShowLoadingOverlay(true);
                   generateProblemSet();
@@ -516,9 +568,9 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Start New Practice Set
               </Button>
-              
+
               <div className="grid grid-cols-2 gap-4">
-                <Button 
+                <Button
                   onClick={() => {
                     setShowLoadingOverlay(true);
                     generateProblemSet();
@@ -527,7 +579,7 @@ const ProblemSet: React.FC<ProblemSetProps> = ({
                 >
                   Start New Set
                 </Button>
-                <Button 
+                <Button
                   onClick={() => {
                     setShowLoadingOverlay(true);
                     generateRecommendedProblems();

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import ProblemSet from '@/components/practice/ProblemSet';
 import PracticeAICoach from '@/components/practice/PracticeAICoach';
@@ -21,6 +21,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 const PracticePage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { userProfile, getAuthToken } = useAuth();
   const { toast } = useToast();
   const [selectedTopic, setSelectedTopic] = useState<any>(null);
@@ -40,18 +41,64 @@ const PracticePage = () => {
   const [sessionCompleted, setSessionCompleted] = useState(false);
   
   useEffect(() => {
+    // Parse activity_id from URL if coming from daily activities
+    const activityIdFromUrl = searchParams.get('activity_id');
+    const subjectFromUrl = searchParams.get('subject');
+    const unitIdFromUrl = searchParams.get('unit_id');
+    const skillIdFromUrl = searchParams.get('skill_id');
+    const subskillIdFromUrl = searchParams.get('subskill_id');
+    const unitTitleFromUrl = searchParams.get('unit_title');
+    const skillDescriptionFromUrl = searchParams.get('skill_description');
+    const subskillDescriptionFromUrl = searchParams.get('subskill_description');
+
+    // If coming from daily activities with full curriculum metadata, auto-start practice
+    if (activityIdFromUrl && subjectFromUrl && skillIdFromUrl && subskillIdFromUrl) {
+      setCurrentActivityId(activityIdFromUrl);
+      console.log('🎯 Practice session from daily activity:', activityIdFromUrl);
+
+      // Build topic object from URL parameters
+      const topicFromUrl = {
+        subject: subjectFromUrl,
+        unit: {
+          id: unitIdFromUrl || '',
+          title: unitTitleFromUrl || '',
+          description: unitTitleFromUrl || ''
+        },
+        skill: {
+          id: skillIdFromUrl,
+          description: skillDescriptionFromUrl || ''
+        },
+        subskill: {
+          id: subskillIdFromUrl,
+          description: subskillDescriptionFromUrl || ''
+        },
+        selection: {
+          subject: subjectFromUrl,
+          unit: unitIdFromUrl || '',
+          skill: skillIdFromUrl,
+          subskill: subskillIdFromUrl
+        },
+        autoStart: true
+      };
+
+      setSelectedTopic(topicFromUrl);
+      setAutoStarted(true);
+      setLoading(false);
+      return;
+    }
+
     // Check if there's a saved practice selection in localStorage
     const savedSelection = localStorage.getItem('selectedPractice');
-    
+
     if (savedSelection) {
       try {
         const parsedSelection = JSON.parse(savedSelection);
         setSelectedTopic(parsedSelection);
-        
+
         // Clear the localStorage item to prevent auto-loading on future visits
         // unless we want to maintain state across page refreshes
         localStorage.removeItem('selectedPractice');
-        
+
         // Set flag to track if we auto-started
         if (parsedSelection.autoStart) {
           setAutoStarted(true);
@@ -60,9 +107,9 @@ const PracticePage = () => {
         console.error('Error parsing saved selection:', e);
       }
     }
-    
+
     setLoading(false);
-  }, []);
+  }, [searchParams]);
 
   const handleBackToSelector = () => {
     setSelectedTopic(null);
@@ -317,6 +364,7 @@ const PracticePage = () => {
                     numProblems={5}
                     autoStart={selectedTopic.autoStart}
                     studentId={userProfile.student_id}
+                    activityId={currentActivityId}
                     onProblemChange={handleProblemChange}
                     onSubmissionResult={handleSubmissionResult}
                   />

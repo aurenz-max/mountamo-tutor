@@ -416,6 +416,27 @@ class CosmosDBService:
                 logger.warning(f"Activity {activity_id} not found in plan {plan_id}")
                 return False
 
+            # Recalculate progress metrics
+            activities = plan.get("activities", [])
+            completed_count = sum(1 for act in activities if act.get("is_complete", False))
+            total_count = len(activities)
+            points_earned = sum(act.get("points", 0) for act in activities if act.get("is_complete", False))
+
+            # Update the progress field
+            current_streak = plan.get("progress", {}).get("current_streak", 1)
+            daily_goal = plan.get("progress", {}).get("daily_goal", 60)
+
+            plan["progress"] = {
+                "completed_activities": completed_count,
+                "total_activities": total_count,
+                "points_earned_today": points_earned,
+                "daily_goal": daily_goal,
+                "current_streak": current_streak,
+                "progress_percentage": round((completed_count / total_count * 100), 1) if total_count > 0 else 0.0
+            }
+
+            logger.info(f"Updated progress: {completed_count}/{total_count} activities completed, {points_earned} points earned")
+
             # Update timestamp and save
             plan["updatedAt"] = datetime.utcnow().isoformat()
             self.daily_plans.upsert_item(body=plan)

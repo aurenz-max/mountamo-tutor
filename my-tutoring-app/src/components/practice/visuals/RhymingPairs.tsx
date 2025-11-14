@@ -148,13 +148,6 @@ export const RhymingPairs: React.FC<RhymingPairsProps> = ({
             );
           })}
         </div>
-
-        {/* Summary */}
-        <div className="mt-6 p-3 bg-purple-100 rounded border border-purple-300">
-          <p className="text-sm text-purple-900 text-center">
-            <strong>{pairs.length}</strong> rhyming pair{pairs.length > 1 ? 's' : ''} shown
-          </p>
-        </div>
       </div>
     </div>
   );

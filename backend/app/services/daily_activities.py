@@ -28,6 +28,7 @@ class DailyActivity(BaseModel):
     action: str
     endpoint: str
     icon_type: str
+    is_complete: bool = False  # Track completion status
     metadata: Dict[str, Any] = {}
     curriculum_metadata: Optional[CurriculumMetadata] = None
 

@@ -157,6 +157,7 @@ async def get_daily_activities(student_id: int, date: Optional[str] = Query(None
             "student_id": student_id,
             "date": daily_plan.date,
             "activities": enhanced_activities,
+            "progress": daily_plan.progress.dict() if daily_plan.progress else None,  # ✅ ADDED: Include progress field
             "summary": {
                 "total_activities": len(daily_plan.activities),
                 "total_points": daily_plan.total_points,
@@ -174,11 +175,17 @@ async def get_daily_activities(student_id: int, date: Optional[str] = Query(None
                 "bigquery_enabled": service.analytics_service is not None
             }
         }
-        
+
         # Add session plan details if available from AI
         if hasattr(daily_plan, 'session_plan') and daily_plan.session_plan:
             response["transparency"]["session_plan"] = daily_plan.session_plan
-        
+
+        # 🔍 DEBUG LOGGING: Log progress data being sent to frontend
+        logger.info(f"📊 Sending daily plan response for student {student_id}:")
+        logger.info(f"   - Activities: {len(enhanced_activities)}")
+        logger.info(f"   - Progress: {response['progress']}")
+        logger.info(f"   - Activity completion states: {[(a['id'], a.get('is_complete', False)) for a in enhanced_activities[:3]]}")
+
         return response
         
     except Exception as e:

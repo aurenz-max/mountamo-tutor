@@ -45,11 +45,11 @@ google_genai_logger.setLevel(logging.WARNING)
 # Updated Gemini configuration (from daily_briefing_live.py)
 client = genai.Client(
     api_key=settings.GEMINI_API_KEY,
-    http_options={"api_version": "v1alpha"},  # Updated API version
+    http_options={"api_version": "v1beta"},  # Updated API version
 )
 
 DEFAULT_VOICE = "Leda"
-MODEL = "gemini-2.5-flash-preview-native-audio-dialog"
+MODEL = "gemini-2.5-flash-native-audio-preview-09-2025"
 
 # Audio constants
 FORMAT = "audio/pcm"

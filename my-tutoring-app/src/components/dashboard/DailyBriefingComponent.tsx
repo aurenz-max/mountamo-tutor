@@ -82,9 +82,9 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
           console.log('✅ Content package response:', response);
           
           if (response.packageId) {
-            // Navigate to the learning session
+            // Navigate to the learning session with activity_id for completion tracking
             console.log('🎯 Navigating to packages session:', response.packageId);
-            router.push(`/packages/${response.packageId}/learn`);
+            router.push(`/packages/${response.packageId}/learn?activity_id=${activityId}`);
           } else {
             throw new Error('No package ID returned from server');
           }
@@ -181,7 +181,15 @@ const DailyBriefingComponent: React.FC<DailyBriefingProps> = ({
 
   const completedCount = dailyPlan.progress?.completed_activities || 0;
   const totalCount = dailyPlan.activities.length;
-  
+
+  // 🔍 DEBUG LOGGING: Log rendering data
+  console.log('🎨 DailyBriefingComponent rendering:', {
+    completedCount,
+    totalCount,
+    progress: dailyPlan.progress,
+    activities: dailyPlan.activities.map(a => ({ id: a.id, is_complete: a.is_complete }))
+  });
+
   // Transparency information
   const sourceBreakdown = dailyPlan.summary?.source_breakdown;
   const transparency = dailyPlan.transparency;
