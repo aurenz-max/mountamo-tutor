@@ -103,7 +103,9 @@ class ReadingContentGenerator:
         subject: str,
         grade_level: str,
         master_context: MasterContext,
-        context_primitives: Optional[ContextPrimitives] = None
+        context_primitives: Optional[ContextPrimitives] = None,
+        unit: Optional[str] = None,
+        skill: Optional[str] = None
     ) -> ReadingContentPackage:
         """
         Generate structured reading content using 3-tier architecture.
@@ -116,6 +118,8 @@ class ReadingContentGenerator:
             grade_level: Target grade level
             master_context: Master context with concepts, terminology, etc.
             context_primitives: Context primitives for concrete examples (optional)
+            unit: Unit within subject (optional)
+            skill: Skill within unit (optional)
 
         Returns:
             ReadingContentPackage with generated sections that explicitly teach learning objectives
@@ -141,7 +145,10 @@ class ReadingContentGenerator:
                 key_terminology=master_context.key_terminology,
                 context_primitives=primitives_dict,
                 grade_level=grade_level,
-                subskill_description=subskill_description
+                subskill_description=subskill_description,
+                subject=subject,
+                unit=unit,
+                skill=skill
             )
             logger.info(f"✅ Teaching plan created with {len(teaching_plan.section_plans)} sections")
 
@@ -155,20 +162,26 @@ class ReadingContentGenerator:
             for section_plan in teaching_plan.section_plans:
                 section_data = await self.section_generator.generate_section(
                     section_number=section_plan.section_number,
+                    section_type=section_plan.section_type,
                     primary_objective=section_plan.primary_objective,
                     teaching_strategy=section_plan.teaching_strategy,
                     key_concepts=section_plan.key_concepts_to_cover,
                     key_terminology=master_context.key_terminology,
                     recommended_primitives=section_plan.recommended_primitives,
-                    interactive_elements_focus=section_plan.interactive_elements_focus,
+                    selected_primitive_schemas=section_plan.selected_primitive_schemas,
                     grade_level=grade_level,
                     subskill_description=subskill_description,
-                    prior_sections_context=prior_sections_summary if prior_sections_summary else None
+                    subject=subject,
+                    unit=unit,
+                    skill=skill,
+                    prior_sections_context=prior_sections_summary if prior_sections_summary else None,
+                    related_concepts=master_context.core_concepts if hasattr(master_context, 'core_concepts') else None,
+                    future_topics=None  # Could be extracted from curriculum if available
                 )
                 section_data_list.append(section_data)
 
                 # Build context for next section
-                prior_sections_summary += f"\nSection {section_plan.section_number}: {section_data['heading']} - taught {section_plan.primary_objective}"
+                prior_sections_summary += f"\nSection {section_plan.section_number} ({section_plan.section_type.value}): {section_data['heading']} - taught {section_plan.primary_objective}"
 
             logger.info(f"✅ Generated {len(section_data_list)} focused sections")
 
@@ -176,6 +189,7 @@ class ReadingContentGenerator:
             # TIER 3: Integrate and Validate
             # ==================================================================
             logger.info("🔍 TIER 3: Integrating and validating...")
+            section_types = [plan.section_type for plan in teaching_plan.section_plans]
             integrated_content = await self.content_integrator.integrate_and_validate(
                 subskill_id=subskill_id,
                 version_id=version_id,
@@ -183,7 +197,8 @@ class ReadingContentGenerator:
                 learning_objectives=master_context.learning_objectives,
                 section_data_list=section_data_list,
                 overall_narrative=teaching_plan.overall_narrative_arc,
-                grade_level=grade_level
+                grade_level=grade_level,
+                section_types=section_types
             )
             logger.info(f"✅ Content validated and integrated: {integrated_content['title']}")
 

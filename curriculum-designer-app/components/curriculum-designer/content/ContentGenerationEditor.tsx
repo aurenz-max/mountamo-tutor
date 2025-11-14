@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { Sparkles, Loader2, AlertCircle, FileText, RotateCcw, X } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, FileText, RotateCcw, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   useContent,
   useGenerateContent,
+  useDeleteContent,
 } from '@/lib/curriculum-authoring/content-hooks';
 import { SectionCard } from './SectionCard';
 import { SectionEditor } from './SectionEditor';
@@ -37,6 +38,7 @@ export function ContentGenerationEditor({
 }: ContentGenerationEditorProps) {
   const [editingSection, setEditingSection] = useState<ReadingSection | null>(null);
   const [visualSection, setVisualSection] = useState<ReadingSection | null>(null);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   // Queries and mutations
   const {
@@ -47,6 +49,7 @@ export function ContentGenerationEditor({
   } = useContent(subskillId, versionId);
 
   const generateMutation = useGenerateContent();
+  const deleteMutation = useDeleteContent();
 
   // Handle generate
   const handleGenerate = async () => {
@@ -75,6 +78,28 @@ export function ContentGenerationEditor({
       });
     } catch (err) {
       console.error('Failed to reset content:', err);
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (!confirm(
+      'Are you sure you want to delete all reading content? This will permanently remove all sections and associated visual snippets. This action cannot be undone.'
+    )) {
+      return;
+    }
+
+    try {
+      await deleteMutation.mutateAsync({
+        subskillId,
+        versionId,
+        cascadeDeleteVisuals: true,
+      });
+      setShowDeleteSuccess(true);
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => setShowDeleteSuccess(false), 3000);
+    } catch (err) {
+      console.error('Failed to delete content:', err);
     }
   };
 
@@ -204,10 +229,19 @@ export function ContentGenerationEditor({
             variant="outline"
             size="sm"
             onClick={handleReset}
-            disabled={generateMutation.isPending}
+            disabled={generateMutation.isPending || deleteMutation.isPending}
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Regenerate All
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            disabled={generateMutation.isPending || deleteMutation.isPending}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Content
           </Button>
           {onClose && (
             <Button variant="ghost" size="sm" onClick={onClose}>
@@ -234,10 +268,25 @@ export function ContentGenerationEditor({
         </Card>
       )}
 
-      {/* Success message */}
+      {/* Success messages */}
       {generateMutation.isSuccess && (
         <Alert>
           <AlertDescription>Content generated successfully!</AlertDescription>
+        </Alert>
+      )}
+      {showDeleteSuccess && (
+        <Alert>
+          <AlertDescription>Content deleted successfully!</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Error message for delete */}
+      {deleteMutation.isError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to delete content: {(deleteMutation.error as Error)?.message || 'Unknown error'}
+          </AlertDescription>
         </Alert>
       )}
 

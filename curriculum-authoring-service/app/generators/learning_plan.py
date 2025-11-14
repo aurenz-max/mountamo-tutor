@@ -3,23 +3,26 @@ Tier 1: Learning Plan Generator
 Decomposes learning objectives into a structured teaching plan with section strategies.
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai.types import GenerateContentConfig
+from app.models.section_types import SectionType
 
 
 class SectionPlan(BaseModel):
     """Plan for a single content section targeting specific learning objective(s)"""
     section_number: int = Field(description="Order of this section (1-based)")
+    section_type: SectionType = Field(description="Meta section type (e.g., intuitive_explanation, worked_examples)")
     primary_objective: str = Field(description="The main learning objective this section teaches")
     teaching_strategy: str = Field(description="How to teach this objective (e.g., 'explicit instruction', 'guided practice', 'application')")
     key_concepts_to_cover: List[str] = Field(description="Core concepts from master context relevant to this objective")
     recommended_primitives: Dict[str, List[str]] = Field(
         description="Specific primitives to use (e.g., {'concrete_objects': ['cat', 'hat'], 'characters': ['Maya']})"
     )
-    interactive_elements_focus: List[str] = Field(
-        description="Types of interactive elements best suited for this objective"
+    selected_primitive_schemas: List[str] = Field(
+        description="Interactive primitive schema types needed for this section (e.g., ['quizzes', 'definitions', 'flip_cards'])",
+        default_factory=list
     )
     builds_on_prior: bool = Field(
         description="Whether this section requires understanding from previous sections"
@@ -32,7 +35,7 @@ class SectionPlan(BaseModel):
 class TeachingPlan(BaseModel):
     """Complete teaching plan for reading content"""
     section_plans: List[SectionPlan] = Field(
-        description="Ordered list of section plans (typically 4 sections)"
+        description="Ordered list of section plans (2-6 sections based on pedagogical needs)"
     )
     overall_narrative_arc: str = Field(
         description="The story/flow connecting all sections"
@@ -55,7 +58,10 @@ class LearningPlanGenerator:
         key_terminology: Dict[str, str],
         context_primitives: Dict[str, Any],
         grade_level: str,
-        subskill_description: str
+        subskill_description: str,
+        subject: Optional[str] = None,
+        unit: Optional[str] = None,
+        skill: Optional[str] = None
     ) -> TeachingPlan:
         """
         Generate a structured teaching plan that maps learning objectives to sections.
@@ -67,16 +73,41 @@ class LearningPlanGenerator:
             context_primitives: Available examples (characters, objects, scenarios, etc.)
             grade_level: Target grade level
             subskill_description: Description of the subskill
+            subject: Subject area (e.g., "Mathematics", "Reading")
+            unit: Unit within subject (e.g., "Phonics", "Number Sense")
+            skill: Skill within unit (e.g., "Rhyming", "Addition")
 
         Returns:
-            TeachingPlan with section strategies and primitive assignments
+            TeachingPlan with section strategies, types, and primitive assignments
         """
 
         # Format primitives for prompt
         primitives_summary = self._format_primitives(context_primitives)
 
+        # Build hierarchical context
+        context_parts = []
+        if subject:
+            context_parts.append(f"Subject: {subject}")
+        if unit:
+            context_parts.append(f"Unit: {unit}")
+        if skill:
+            context_parts.append(f"Skill: {skill}")
+        hierarchical_context = " | ".join(context_parts) if context_parts else "General Education"
+
+        # Available section types
+        section_types_desc = """
+AVAILABLE SECTION TYPES (choose 2-6 based on pedagogical needs):
+1. introduction_motivation - Hook the learner, establish why this matters (150-250 words)
+2. intuitive_explanation - Build conceptual understanding before formalism (300-500 words)
+3. formal_definition - Provide precise technical definitions (200-400 words)
+4. worked_examples - Show concept in action with step-by-step examples (400-800 words)
+5. common_errors - Identify and address misconceptions (300-500 words)
+6. connections_extensions - Show relationships to other concepts (200-400 words)
+"""
+
         prompt = f"""You are an expert educational content planner for {grade_level} students.
 
+CURRICULUM CONTEXT: {hierarchical_context}
 SUBSKILL: {subskill_description}
 
 LEARNING OBJECTIVES (must ALL be explicitly taught):
@@ -91,22 +122,38 @@ KEY TERMINOLOGY:
 AVAILABLE CONTEXT PRIMITIVES (use these for concrete examples):
 {primitives_summary}
 
+{section_types_desc}
+
 YOUR TASK:
-Create a teaching plan that breaks down these learning objectives into 4 content sections.
-Each section should:
-1. Focus on teaching one specific learning objective explicitly
-2. Use a clear teaching strategy (introduction, explicit instruction, guided practice, or application)
-3. Select specific context primitives that make the objective concrete and engaging
-4. Build logically on prior sections (progression from simple to complex)
-5. Include clear success criteria for that objective
+Create a teaching plan that selects the most appropriate 2-6 section types to teach these learning objectives.
+The LLM should intelligently choose which section types are pedagogically necessary.
+
+For each section you plan:
+1. Choose the appropriate section_type from the 6 available types
+2. Define the primary_objective this section will teach
+3. Select specific context primitives that make the objective concrete
+4. Choose which interactive_primitive_schemas are needed (e.g., ['quizzes', 'definitions', 'flip_cards'])
+5. Ensure logical pedagogical flow
+
+SECTION TYPE SELECTION GUIDANCE:
+- Not all lessons need all 6 section types - choose based on content
+- Conceptual content benefits from: introduction_motivation → intuitive_explanation → formal_definition → connections_extensions
+- Procedural content benefits from: introduction_motivation → worked_examples → common_errors
+- Choose section types that create a coherent learning arc
+- Must include at least 2 sections, maximum 6 sections
+
+INTERACTIVE PRIMITIVE SCHEMAS (choose relevant ones for each section):
+Available types: 'alerts', 'expandables', 'quizzes', 'definitions', 'checklists', 'tables',
+'keyvalues', 'interactive_timelines', 'carousels', 'flip_cards', 'categorization_activities',
+'fill_in_the_blanks', 'scenario_questions', 'tabbed_content', 'matching_activities',
+'sequencing_activities', 'accordions'
 
 REQUIREMENTS:
-- Create exactly 4 sections
-- Every learning objective must be covered by at least one section
-- Complex objectives may span multiple sections (e.g., introduction → practice → mastery)
-- Use grade-appropriate teaching strategies for {grade_level}
-- Select primitives that are culturally relevant and engaging
-- Ensure logical flow (e.g., understand concept → recognize examples → produce own examples → apply in context)
+- Create 2-6 sections (choose optimal number for content)
+- Every learning objective must be covered
+- Use grade-appropriate strategies for {grade_level}
+- Select section types that form a coherent pedagogical progression
+- For each section, specify which primitive schemas are needed
 
 Return your plan as structured JSON following the TeachingPlan schema."""
 
@@ -195,7 +242,19 @@ Return your plan as structured JSON following the TeachingPlan schema."""
                         "properties": {
                             "section_number": {
                                 "type": "integer",
-                                "description": "Order of this section (1-4)"
+                                "description": "Order of this section (1-6)"
+                            },
+                            "section_type": {
+                                "type": "string",
+                                "enum": [
+                                    "introduction_motivation",
+                                    "intuitive_explanation",
+                                    "formal_definition",
+                                    "worked_examples",
+                                    "common_errors",
+                                    "connections_extensions"
+                                ],
+                                "description": "Meta section type that defines pedagogical approach"
                             },
                             "primary_objective": {
                                 "type": "string",
@@ -236,10 +295,10 @@ Return your plan as structured JSON following the TeachingPlan schema."""
                                     }
                                 }
                             },
-                            "interactive_elements_focus": {
+                            "selected_primitive_schemas": {
                                 "type": "array",
                                 "items": {"type": "string"},
-                                "description": "Types of interactive elements best for this objective (e.g., 'audio-example', 'practice-prompt', 'concept-box')"
+                                "description": "Interactive primitive schema types needed for this section (e.g., ['quizzes', 'definitions', 'flip_cards'])"
                             },
                             "builds_on_prior": {
                                 "type": "boolean",
@@ -252,16 +311,17 @@ Return your plan as structured JSON following the TeachingPlan schema."""
                         },
                         "required": [
                             "section_number",
+                            "section_type",
                             "primary_objective",
                             "teaching_strategy",
                             "key_concepts_to_cover",
                             "recommended_primitives",
-                            "interactive_elements_focus",
+                            "selected_primitive_schemas",
                             "builds_on_prior",
                             "success_criteria"
                         ]
                     },
-                    "description": "Ordered list of 4 section plans"
+                    "description": "Ordered list of 2-6 section plans"
                 },
                 "overall_narrative_arc": {
                     "type": "string",

@@ -82,7 +82,9 @@ class ContentService:
             subject=subject.subject_name,
             grade_level=subject.grade_level or "Kindergarten",
             master_context=foundations.master_context,
-            context_primitives=foundations.context_primitives  # Pass primitives for concrete examples
+            context_primitives=foundations.context_primitives,  # Pass primitives for concrete examples
+            unit=unit.unit_title if unit else None,
+            skill=skill.skill_description if skill else None
         )
 
         # Save to BigQuery
@@ -262,6 +264,63 @@ class ContentService:
 
         logger.info(f"✅ Successfully updated section {section_id}")
         return updated_section
+
+    async def delete_reading_content(
+        self,
+        subskill_id: str,
+        version_id: str,
+        cascade_delete_visuals: bool = True
+    ) -> bool:
+        """
+        Delete all reading content for a subskill.
+
+        Args:
+            subskill_id: Subskill identifier
+            version_id: Version identifier
+            cascade_delete_visuals: If True, also delete associated visual snippets
+
+        Returns:
+            True if successful, raises exception otherwise
+        """
+        logger.info(f"🗑️ Deleting reading content for {subskill_id}")
+
+        try:
+            # Delete reading content sections
+            content_table_id = settings.get_table_id(settings.TABLE_READING_CONTENT)
+            delete_content_query = f"""
+            DELETE FROM `{content_table_id}`
+            WHERE subskill_id = @subskill_id AND version_id = @version_id
+            """
+
+            delete_params = [
+                bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id),
+                bigquery.ScalarQueryParameter("version_id", "STRING", version_id)
+            ]
+
+            await db.execute_query(delete_content_query, delete_params)
+            logger.info(f"✅ Deleted reading content sections for {subskill_id}")
+
+            # Optionally cascade delete visual snippets
+            if cascade_delete_visuals:
+                visual_table_id = settings.get_table_id(settings.TABLE_VISUAL_SNIPPETS)
+                delete_visuals_query = f"""
+                DELETE FROM `{visual_table_id}`
+                WHERE subskill_id = @subskill_id
+                """
+
+                visual_params = [
+                    bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)
+                ]
+
+                await db.execute_query(delete_visuals_query, visual_params)
+                logger.info(f"✅ Deleted associated visual snippets for {subskill_id}")
+
+            logger.info(f"✅ Successfully deleted all reading content for {subskill_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ Error deleting reading content: {str(e)}")
+            raise
 
     async def generate_visual_snippet(
         self,

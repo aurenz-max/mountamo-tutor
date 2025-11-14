@@ -97,6 +97,37 @@ export function useGenerateContent() {
 }
 
 /**
+ * Hook to delete all reading content for a subskill
+ * This action cannot be undone
+ */
+export function useDeleteContent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      subskillId,
+      versionId = 'v1',
+      cascadeDeleteVisuals = true,
+    }: {
+      subskillId: string;
+      versionId?: string;
+      cascadeDeleteVisuals?: boolean;
+    }) => contentAPI.deleteContent(subskillId, versionId, cascadeDeleteVisuals),
+    onSuccess: (_, { subskillId, versionId = 'v1' }) => {
+      // Remove content from cache
+      queryClient.removeQueries({
+        queryKey: CONTENT_QUERY_KEYS.content(subskillId, versionId),
+      });
+
+      // Also remove all visual snippets for this subskill
+      queryClient.removeQueries({
+        queryKey: ['visual', subskillId],
+      });
+    },
+  });
+}
+
+/**
  * Hook to regenerate a single section
  * Takes 10-20 seconds to complete
  */

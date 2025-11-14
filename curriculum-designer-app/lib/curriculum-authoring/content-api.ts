@@ -107,6 +107,24 @@ class ContentAPI {
     );
   }
 
+  /**
+   * Delete all reading content for a subskill
+   * This action cannot be undone
+   * @param subskillId - Subskill identifier
+   * @param versionId - Version identifier (default: 'v1')
+   * @param cascadeDeleteVisuals - Also delete associated visual snippets (default: true)
+   */
+  async deleteContent(
+    subskillId: string,
+    versionId: string = 'v1',
+    cascadeDeleteVisuals: boolean = true
+  ): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(
+      `/api/subskills/${subskillId}/content?version_id=${versionId}&cascade_delete_visuals=${cascadeDeleteVisuals}`,
+      { method: 'DELETE' }
+    );
+  }
+
   // ==================== SECTION OPERATIONS ====================
 
   /**

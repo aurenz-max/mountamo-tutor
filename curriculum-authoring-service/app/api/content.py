@@ -103,6 +103,43 @@ async def get_reading_content(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve reading content: {str(e)}")
 
 
+@router.delete("/subskills/{subskill_id}/content")
+async def delete_reading_content(
+    subskill_id: str,
+    version_id: str = Query(..., description="Version ID for the curriculum"),
+    cascade_delete_visuals: bool = Query(True, description="Also delete associated visual snippets")
+):
+    """
+    Delete all reading content for a subskill.
+
+    This will:
+    - Remove all reading sections from BigQuery
+    - Optionally remove associated visual snippets (default: True)
+
+    Use with caution - this action cannot be undone.
+    """
+    logger.info(f"🗑️ DELETE reading content for subskill {subskill_id}, version {version_id}")
+
+    try:
+        success = await content_service.delete_reading_content(
+            subskill_id=subskill_id,
+            version_id=version_id,
+            cascade_delete_visuals=cascade_delete_visuals
+        )
+
+        if success:
+            return {
+                "success": True,
+                "message": f"Reading content deleted successfully for subskill {subskill_id}"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete reading content")
+
+    except Exception as e:
+        logger.error(f"Error deleting reading content: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete reading content: {str(e)}")
+
+
 # ==================== SECTION-LEVEL ENDPOINTS ====================
 
 @router.post("/subskills/{subskill_id}/content/sections/{section_id}/regenerate", response_model=ReadingSectionResponse)

@@ -13,6 +13,7 @@ from google import genai
 from google.genai.types import GenerateContentConfig
 
 from app.models.content import ReadingContentPackage, ReadingSection
+from app.models.section_types import SectionType, validate_section_word_count, get_section_spec
 from app.schemas.interactive_primitives import get_all_primitive_schemas
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,11 @@ class ContentIntegrator:
         learning_objectives: List[str],
         section_data_list: List[Dict[str, Any]],
         overall_narrative: str,
-        grade_level: str
+        grade_level: str,
+        section_types: List[SectionType] = None
     ) -> Dict[str, Any]:
         """
-        Validate that all learning objectives are taught and integrate sections.
+        Validate that all learning objectives are taught, section types meet quality criteria, and integrate sections.
 
         Args:
             subskill_id: Subskill identifier
@@ -45,11 +47,16 @@ class ContentIntegrator:
             section_data_list: List of generated section dictionaries
             overall_narrative: The planned narrative arc
             grade_level: Target grade level
+            section_types: List of section types (optional, for validation)
 
         Returns:
             Dictionary with final content (title, sections with transitions)
         """
-        logger.info(f"🔍 Validating objective coverage for {subskill_id}")
+        logger.info(f"🔍 Validating objective coverage and section quality for {subskill_id}")
+
+        # Validate section word counts against section type specifications
+        if section_types:
+            self._validate_section_quality(section_data_list, section_types)
 
         # Format sections for review
         sections_summary = self._format_sections_summary(section_data_list)
@@ -105,7 +112,7 @@ Return the complete content with:
         schema = self._get_integration_schema()
 
         response = await self.client.aio.models.generate_content(
-            model='gemini-flash-latest',  # Use better model for validation
+            model='gemini-flash-lite-latest',  # Use better model for validation
             contents=prompt,
             config=GenerateContentConfig(
                 response_mime_type='application/json',
@@ -197,3 +204,33 @@ Return the complete content with:
             },
             "required": ["title", "sections", "validation_notes"]
         }
+
+    def _validate_section_quality(self, sections: List[Dict[str, Any]], section_types: List[SectionType]) -> None:
+        """
+        Validate that each section meets its section type quality criteria.
+
+        Args:
+            sections: List of generated section dictionaries
+            section_types: List of section types corresponding to each section
+
+        Logs warnings for sections that don't meet quality criteria.
+        """
+        logger.info("🔍 Validating section quality against type specifications...")
+
+        for idx, (section, section_type) in enumerate(zip(sections, section_types), 1):
+            section_content = section.get('content', '')
+            word_count = len(section_content.split())
+
+            # Validate word count
+            is_valid, message = validate_section_word_count(section_type, word_count)
+            if not is_valid:
+                logger.warning(f"⚠️ Section {idx} ({section_type.value}): {message}")
+            else:
+                logger.info(f"✅ Section {idx} ({section_type.value}): {message}")
+
+            # Get section spec for additional validation
+            spec = get_section_spec(section_type)
+
+            # Log recommended vs. actual primitive usage
+            # This could be enhanced to validate that recommended primitives are present
+            logger.info(f"📋 Section {idx} recommended primitives: {', '.join(spec.recommended_primitives)}")
