@@ -4,6 +4,7 @@ import asyncio
 import logging
 import json
 import os
+import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Union
 from pathlib import Path
@@ -312,9 +313,150 @@ class BigQueryETLService:
             logger.error(f"Error syncing user profiles: {e}")
             return {"success": False, "error": str(e)}
 
+    async def sync_assessments_from_cosmos(self, incremental: bool = True, limit: Optional[int] = None) -> Dict[str, Any]:
+        """Sync assessment data from Cosmos DB to BigQuery"""
+
+        try:
+            logger.info("Starting assessments sync from Cosmos DB")
+
+            # Initialize Cosmos DB service
+            cosmos_db = self._initialize_cosmos_service()
+
+            # Fetch assessments from Cosmos DB
+            assessments = await self._fetch_assessments_from_cosmos(cosmos_db, None, limit)
+
+            if not assessments:
+                logger.info("No assessments found in Cosmos DB")
+                return {"success": True, "records_processed": 0, "message": "No data"}
+
+            logger.info(f"Fetched {len(assessments)} assessments from Cosmos DB")
+
+            # Process each assessment table separately
+            results = {}
+
+            # 1. Main assessments table
+            transformed_assessments = self._transform_assessment_data(assessments)
+            if transformed_assessments:
+                await self._ensure_table_exists("assessments", self._get_assessments_schema())
+                table_id = f"{self.project_id}.{self.dataset_id}.assessments"
+                loaded = await self._load_data_to_bigquery(transformed_assessments, table_id, "assessments")
+                results["assessments"] = {"success": True, "records": loaded}
+                logger.info(f"Loaded {loaded} assessments to BigQuery")
+            else:
+                results["assessments"] = {"success": True, "records": 0, "message": "No completed assessments"}
+
+            # 2. Assessment subskill attempts
+            subskill_attempts = self._extract_subskill_attempts(assessments)
+            if subskill_attempts:
+                await self._ensure_table_exists("assessment_subskill_attempts", self._get_assessment_subskill_attempts_schema())
+                table_id = f"{self.project_id}.{self.dataset_id}.assessment_subskill_attempts"
+                loaded = await self._load_data_to_bigquery(subskill_attempts, table_id, "assessment_subskill_attempts")
+                results["subskill_attempts"] = {"success": True, "records": loaded}
+                logger.info(f"Loaded {loaded} subskill attempts to BigQuery")
+            else:
+                results["subskill_attempts"] = {"success": True, "records": 0}
+
+            # 3. Assessment problem reviews
+            problem_reviews = self._extract_problem_reviews(assessments)
+            if problem_reviews:
+                await self._ensure_table_exists("assessment_problem_reviews", self._get_assessment_problem_reviews_schema())
+                table_id = f"{self.project_id}.{self.dataset_id}.assessment_problem_reviews"
+                loaded = await self._load_data_to_bigquery(problem_reviews, table_id, "assessment_problem_reviews")
+                results["problem_reviews"] = {"success": True, "records": loaded}
+                logger.info(f"Loaded {loaded} problem reviews to BigQuery")
+            else:
+                results["problem_reviews"] = {"success": True, "records": 0}
+
+            # 4. Assessment skill insights
+            skill_insights = self._extract_skill_insights(assessments)
+            if skill_insights:
+                await self._ensure_table_exists("assessment_skill_insights", self._get_assessment_skill_insights_schema())
+                table_id = f"{self.project_id}.{self.dataset_id}.assessment_skill_insights"
+                loaded = await self._load_data_to_bigquery(skill_insights, table_id, "assessment_skill_insights")
+                results["skill_insights"] = {"success": True, "records": loaded}
+                logger.info(f"Loaded {loaded} skill insights to BigQuery")
+            else:
+                results["skill_insights"] = {"success": True, "records": 0}
+
+            # Calculate total records
+            total_records = sum(r.get("records", 0) for r in results.values())
+
+            logger.info(f"Successfully synced {total_records} total assessment records to BigQuery")
+
+            return {
+                "success": True,
+                "records_processed": total_records,
+                "sync_type": "incremental" if incremental else "full",
+                "details": results
+            }
+
+        except Exception as e:
+            logger.error(f"Error syncing assessments: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "records_processed": 0
+            }
+
+    async def _fetch_assessments_from_cosmos(self, cosmos_db: CosmosDBService, since: Optional[datetime] = None, limit: Optional[int] = None) -> List[Dict]:
+        """Fetch assessment data from Cosmos DB"""
+
+        try:
+            # Try to access assessments container
+            if hasattr(cosmos_db, 'assessments'):
+                assessments_container = cosmos_db.assessments
+            else:
+                # Fallback to manual container access
+                database = cosmos_db.client.get_database_client(cosmos_db.database_id)
+                assessments_container = database.get_container_client('assessments')
+
+            if since:
+                query = """
+                SELECT * FROM c
+                WHERE c.document_type = 'assessment'
+                AND c._ts > @since_timestamp
+                ORDER BY c._ts
+                """
+                parameters = [{"name": "@since_timestamp", "value": int(since.timestamp())}]
+            else:
+                query = """
+                SELECT * FROM c
+                WHERE c.document_type = 'assessment'
+                ORDER BY c._ts
+                """
+                parameters = []
+
+            # Add limit if specified
+            if limit:
+                query = query.replace("SELECT *", f"SELECT TOP {limit} *")
+
+            assessments = []
+            try:
+                async for item in assessments_container.query_items(
+                    query=query,
+                    parameters=parameters,
+                    enable_cross_partition_query=True
+                ):
+                    assessments.append(item)
+            except Exception as query_error:
+                # Fallback to synchronous iteration
+                logger.warning(f"Async iteration failed, falling back to sync: {query_error}")
+                for item in assessments_container.query_items(
+                    query=query,
+                    parameters=parameters,
+                    enable_cross_partition_query=True
+                ):
+                    assessments.append(item)
+
+            return assessments
+
+        except Exception as e:
+            logger.error(f"Error fetching assessments from Cosmos DB: {e}")
+            raise
+
     async def sync_curriculum_from_blob(self, subject: Optional[str] = None) -> Dict[str, Any]:
         """Sync curriculum data from blob storage to BigQuery"""
-        
+
         try:
             logger.info(f"Starting curriculum sync for subject: {subject or 'all'}")
             
@@ -448,7 +590,10 @@ class BigQueryETLService:
             
             # Sync reviews (full)
             results["reviews"] = await self.sync_reviews_from_cosmos(incremental=False, limit=limit)
-            
+
+            # Sync assessments (full)
+            results["assessments"] = await self.sync_assessments_from_cosmos(incremental=False, limit=limit)
+
             # Calculate totals
             total_records = sum(
                 result.get("records_processed", 0) 
@@ -1746,24 +1891,24 @@ class BigQueryETLService:
             bigquery.SchemaField("email", "STRING", mode="NULLABLE"),
             bigquery.SchemaField("grade", "STRING", mode="NULLABLE"),
             bigquery.SchemaField("firebase_uid", "STRING", mode="NULLABLE"),
-            
+
             # Engagement metrics
             bigquery.SchemaField("total_points", "INTEGER", mode="NULLABLE"),
             bigquery.SchemaField("current_streak", "INTEGER", mode="NULLABLE"),
             bigquery.SchemaField("longest_streak", "INTEGER", mode="NULLABLE"),
             bigquery.SchemaField("level", "INTEGER", mode="NULLABLE"),
             bigquery.SchemaField("badges", "STRING", mode="REPEATED"),
-            
+
             # Learning preferences (arrays)
             bigquery.SchemaField("selected_subjects", "STRING", mode="REPEATED"),
             bigquery.SchemaField("selected_packages", "STRING", mode="REPEATED"),
             bigquery.SchemaField("learning_goals", "STRING", mode="REPEATED"),
             bigquery.SchemaField("preferred_learning_style", "STRING", mode="REPEATED"),
-            
+
             # Status flags
             bigquery.SchemaField("email_verified", "BOOLEAN", mode="NULLABLE"),
             bigquery.SchemaField("onboarding_completed", "BOOLEAN", mode="NULLABLE"),
-            
+
             # Timestamps
             bigquery.SchemaField("last_login", "TIMESTAMP", mode="NULLABLE"),
             bigquery.SchemaField("last_activity", "TIMESTAMP", mode="NULLABLE"),
@@ -1772,6 +1917,604 @@ class BigQueryETLService:
             bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"),
             bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
         ]
+
+    def _get_assessments_schema(self) -> List[bigquery.SchemaField]:
+        """Get BigQuery schema for assessments table"""
+        return [
+            # Primary Keys
+            bigquery.SchemaField("assessment_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("student_id", "INTEGER", mode="REQUIRED"),
+
+            # Core Metadata
+            bigquery.SchemaField("subject", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("status", "STRING", mode="REQUIRED"),  # created, in_progress, completed
+            bigquery.SchemaField("total_questions", "INTEGER", mode="NULLABLE"),
+
+            # Timing
+            bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("started_at", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("completed_at", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("expires_at", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("time_taken_minutes", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("estimated_duration_minutes", "INTEGER", mode="NULLABLE"),
+
+            # High-Level Metrics (denormalized for performance)
+            bigquery.SchemaField("score_percentage", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("correct_count", "INTEGER", mode="NULLABLE"),
+
+            # Category Breakdown (denormalized)
+            bigquery.SchemaField("weak_spots_count", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("recent_practice_count", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("foundational_review_count", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("new_frontiers_count", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("total_available_subskills", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("is_cold_start", "BOOLEAN", mode="NULLABLE"),
+
+            # Performance by Problem Type (RECORD for structured data)
+            bigquery.SchemaField("performance_by_type", "RECORD", mode="REPEATED", fields=[
+                bigquery.SchemaField("problem_type", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("total", "INTEGER", mode="NULLABLE"),
+                bigquery.SchemaField("correct", "INTEGER", mode="NULLABLE"),
+                bigquery.SchemaField("percentage", "FLOAT", mode="NULLABLE"),
+            ]),
+
+            # Performance by Category (RECORD for structured data)
+            bigquery.SchemaField("performance_by_category", "RECORD", mode="REPEATED", fields=[
+                bigquery.SchemaField("category", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("total", "INTEGER", mode="NULLABLE"),
+                bigquery.SchemaField("correct", "INTEGER", mode="NULLABLE"),
+                bigquery.SchemaField("percentage", "FLOAT", mode="NULLABLE"),
+                bigquery.SchemaField("unique_skills", "INTEGER", mode="NULLABLE"),
+            ]),
+
+            # Detailed Metrics (from summary.detailed_metrics)
+            bigquery.SchemaField("average_score_per_skill", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("skills_mastered", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("skills_struggling", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("total_skills_assessed", "INTEGER", mode="NULLABLE"),
+
+            # AI Insights Summary (top-level only)
+            bigquery.SchemaField("ai_summary", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("performance_quote", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("common_misconceptions", "STRING", mode="REPEATED"),
+
+            # Metadata
+            bigquery.SchemaField("firebase_uid", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("cosmos_id", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("cosmos_ts", "INTEGER", mode="NULLABLE"),
+
+            # ETL Metadata
+            bigquery.SchemaField("etl_loaded_at", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("etl_batch_id", "STRING", mode="NULLABLE"),
+        ]
+
+    def _get_assessment_subskill_attempts_schema(self) -> List[bigquery.SchemaField]:
+        """Get BigQuery schema for assessment subskill attempts table"""
+        return [
+            # Primary Keys
+            bigquery.SchemaField("assessment_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("student_id", "INTEGER", mode="REQUIRED"),
+            bigquery.SchemaField("subskill_id", "STRING", mode="REQUIRED"),
+
+            # Hierarchy Context (denormalized for performance)
+            bigquery.SchemaField("subject", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("skill_id", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("skill_description", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("unit_id", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("unit_title", "STRING", mode="NULLABLE"),
+
+            # Subskill Details
+            bigquery.SchemaField("subskill_description", "STRING", mode="NULLABLE"),
+
+            # Assessment Context
+            bigquery.SchemaField("category", "STRING", mode="NULLABLE"),  # weak_spots, recent_practice, etc.
+
+            # Performance Metrics (from blueprint)
+            bigquery.SchemaField("mastery", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("avg_score", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("proficiency", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("completion", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("attempt_count", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("is_attempted", "BOOLEAN", mode="NULLABLE"),
+            bigquery.SchemaField("readiness_status", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("priority_level", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("priority_order", "INTEGER", mode="NULLABLE"),
+
+            # Timing
+            bigquery.SchemaField("assessment_created_at", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("assessment_completed_at", "TIMESTAMP", mode="NULLABLE"),
+
+            # Metadata
+            bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("cosmos_ts", "INTEGER", mode="NULLABLE"),
+
+            # ETL Metadata
+            bigquery.SchemaField("etl_loaded_at", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("etl_batch_id", "STRING", mode="NULLABLE"),
+        ]
+
+    def _get_assessment_problem_reviews_schema(self) -> List[bigquery.SchemaField]:
+        """Get BigQuery schema for assessment problem reviews table"""
+        return [
+            # Primary Keys
+            bigquery.SchemaField("assessment_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("problem_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("student_id", "INTEGER", mode="REQUIRED"),
+
+            # Hierarchy Context (denormalized)
+            bigquery.SchemaField("subject", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("skill_id", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("skill_name", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("subskill_id", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("subskill_name", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("unit_id", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("unit_title", "STRING", mode="NULLABLE"),
+
+            # Problem Details
+            bigquery.SchemaField("problem_type", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("difficulty", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("grade_level", "STRING", mode="NULLABLE"),
+
+            # Performance
+            bigquery.SchemaField("is_correct", "BOOLEAN", mode="REQUIRED"),
+            bigquery.SchemaField("score", "INTEGER", mode="NULLABLE"),  # 0-10 scale
+
+            # Answers (for review)
+            bigquery.SchemaField("student_answer_text", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("correct_answer_text", "STRING", mode="NULLABLE"),
+
+            # Misconception Engine
+            bigquery.SchemaField("misconception", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("misconception_addressed", "BOOLEAN", mode="NULLABLE"),
+
+            # Timing
+            bigquery.SchemaField("assessment_created_at", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("assessment_completed_at", "TIMESTAMP", mode="NULLABLE"),
+
+            # Metadata
+            bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("cosmos_ts", "INTEGER", mode="NULLABLE"),
+
+            # ETL Metadata
+            bigquery.SchemaField("etl_loaded_at", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("etl_batch_id", "STRING", mode="NULLABLE"),
+        ]
+
+    def _get_assessment_skill_insights_schema(self) -> List[bigquery.SchemaField]:
+        """Get BigQuery schema for assessment skill insights table"""
+        return [
+            # Primary Keys
+            bigquery.SchemaField("assessment_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("skill_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("student_id", "INTEGER", mode="REQUIRED"),
+
+            # Hierarchy Context (denormalized)
+            bigquery.SchemaField("subject", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("skill_name", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("unit_id", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("unit_title", "STRING", mode="NULLABLE"),
+
+            # Assessment Context
+            bigquery.SchemaField("category", "STRING", mode="NULLABLE"),  # From blueprint
+
+            # Performance Metrics
+            bigquery.SchemaField("total_questions", "INTEGER", mode="REQUIRED"),
+            bigquery.SchemaField("correct_count", "INTEGER", mode="REQUIRED"),
+            bigquery.SchemaField("percentage", "FLOAT", mode="REQUIRED"),
+
+            # AI-Enhanced Fields
+            bigquery.SchemaField("assessment_focus_tag", "STRING", mode="NULLABLE"),  # "🎯 Weak Spot", etc.
+            bigquery.SchemaField("performance_label", "STRING", mode="NULLABLE"),     # "Mastered", "Proficient", etc.
+            bigquery.SchemaField("insight_text", "STRING", mode="NULLABLE"),          # Context-aware insight
+
+            # Next Step Recommendation (RECORD for structured data)
+            bigquery.SchemaField("next_step", "RECORD", mode="NULLABLE", fields=[
+                bigquery.SchemaField("text", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("link", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("action_type", "STRING", mode="NULLABLE"),  # learn, practice, challenge, review
+            ]),
+
+            # Subskill Breakdown (ARRAY for drill-down)
+            bigquery.SchemaField("subskills", "RECORD", mode="REPEATED", fields=[
+                bigquery.SchemaField("subskill_id", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("subskill_description", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("questions", "INTEGER", mode="NULLABLE"),
+                bigquery.SchemaField("correct", "INTEGER", mode="NULLABLE"),
+            ]),
+
+            # Timing
+            bigquery.SchemaField("assessment_created_at", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("assessment_completed_at", "TIMESTAMP", mode="NULLABLE"),
+
+            # Metadata
+            bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("cosmos_ts", "INTEGER", mode="NULLABLE"),
+
+            # ETL Metadata
+            bigquery.SchemaField("etl_loaded_at", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("etl_batch_id", "STRING", mode="NULLABLE"),
+        ]
+
+    def _transform_assessment_data(self, assessments: List[Dict]) -> List[Dict]:
+        """Transform assessment data for BigQuery assessments table"""
+
+        transformed = []
+
+        for assessment in assessments:
+            try:
+                # Skip if not a completed assessment (we only want completed assessments with results)
+                if assessment.get('status') != 'completed' or 'results' not in assessment:
+                    continue
+
+                # Extract results structure
+                results = assessment.get('results', {})
+                summary = results.get('summary', {})
+                ai_insights = results.get('ai_insights', {})
+                blueprint = assessment.get('blueprint', {})
+                category_breakdown = blueprint.get('category_breakdown', {})
+
+                # Parse timestamps
+                created_at = self._parse_timestamp(assessment.get('created_at'))
+                started_at = self._parse_timestamp(assessment.get('started_at'))
+                completed_at = self._parse_timestamp(assessment.get('completed_at'))
+                expires_at = self._parse_timestamp(assessment.get('expires_at'))
+
+                # Transform performance_by_problem_type to list of dicts
+                performance_by_type = []
+                for prob_type, stats in summary.get('performance_by_problem_type', {}).items():
+                    performance_by_type.append({
+                        'problem_type': prob_type,
+                        'total': stats.get('total'),
+                        'correct': stats.get('correct'),
+                        'percentage': stats.get('percentage')
+                    })
+
+                # Transform performance_by_category to list of dicts
+                performance_by_category = []
+                for category, stats in summary.get('performance_by_category', {}).items():
+                    performance_by_category.append({
+                        'category': category,
+                        'total': stats.get('total'),
+                        'correct': stats.get('correct'),
+                        'percentage': stats.get('percentage'),
+                        'unique_skills': stats.get('unique_skills')
+                    })
+
+                # Get detailed metrics
+                detailed_metrics = summary.get('detailed_metrics', {})
+
+                transformed_record = {
+                    # Primary Keys
+                    'assessment_id': assessment.get('assessment_id'),
+                    'student_id': int(assessment.get('student_id')),
+
+                    # Core Metadata
+                    'subject': assessment.get('subject'),
+                    'status': assessment.get('status'),
+                    'total_questions': assessment.get('total_questions'),
+
+                    # Timing
+                    'created_at': created_at.isoformat() if created_at else None,
+                    'started_at': started_at.isoformat() if started_at else None,
+                    'completed_at': completed_at.isoformat() if completed_at else None,
+                    'expires_at': expires_at.isoformat() if expires_at else None,
+                    'time_taken_minutes': assessment.get('time_taken_minutes'),
+                    'estimated_duration_minutes': assessment.get('estimated_duration_minutes'),
+
+                    # High-Level Metrics
+                    'score_percentage': summary.get('score_percentage'),
+                    'correct_count': summary.get('correct_count'),
+
+                    # Category Breakdown
+                    'weak_spots_count': category_breakdown.get('weak_spots', 0),
+                    'recent_practice_count': category_breakdown.get('recent_practice', 0),
+                    'foundational_review_count': category_breakdown.get('foundational_review', 0),
+                    'new_frontiers_count': category_breakdown.get('new_frontiers', 0),
+                    'total_available_subskills': blueprint.get('total_available_subskills'),
+                    'is_cold_start': blueprint.get('is_cold_start', False),
+
+                    # Performance arrays
+                    'performance_by_type': performance_by_type,
+                    'performance_by_category': performance_by_category,
+
+                    # Detailed Metrics
+                    'average_score_per_skill': detailed_metrics.get('average_score_per_skill'),
+                    'skills_mastered': detailed_metrics.get('skills_mastered'),
+                    'skills_struggling': detailed_metrics.get('skills_struggling'),
+                    'total_skills_assessed': detailed_metrics.get('total_skills_assessed'),
+
+                    # AI Insights
+                    'ai_summary': ai_insights.get('ai_summary'),
+                    'performance_quote': ai_insights.get('performance_quote'),
+                    'common_misconceptions': ai_insights.get('common_misconceptions', []),
+
+                    # Metadata
+                    'firebase_uid': assessment.get('firebase_uid'),
+                    'sync_timestamp': datetime.now().isoformat(),
+                    'cosmos_id': assessment.get('id'),
+                    'cosmos_ts': assessment.get('_ts', 0),
+
+                    # ETL Metadata
+                    'etl_loaded_at': datetime.now().isoformat(),
+                    'etl_batch_id': str(uuid.uuid4())
+                }
+
+                transformed.append(transformed_record)
+
+            except Exception as e:
+                logger.error(f"Error transforming assessment {assessment.get('assessment_id', 'unknown')}: {e}")
+                continue
+
+        logger.info(f"Transformed {len(transformed)}/{len(assessments)} assessments successfully")
+        return transformed
+
+    def _extract_subskill_attempts(self, assessments: List[Dict]) -> List[Dict]:
+        """Extract and flatten blueprint subskills into separate records"""
+
+        flattened = []
+
+        for assessment in assessments:
+            try:
+                assessment_id = assessment.get('assessment_id')
+                student_id = assessment.get('student_id')
+                subject = assessment.get('subject')
+                created_at = self._parse_timestamp(assessment.get('created_at'))
+                completed_at = self._parse_timestamp(assessment.get('completed_at'))
+                cosmos_ts = assessment.get('_ts', 0)
+
+                # Get blueprint subskills
+                blueprint = assessment.get('blueprint', {})
+                selected_subskills = blueprint.get('selected_subskills', [])
+
+                for subskill in selected_subskills:
+                    record = {
+                        # Primary Keys
+                        'assessment_id': assessment_id,
+                        'student_id': int(student_id),
+                        'subskill_id': subskill.get('subskill_id'),
+
+                        # Hierarchy Context
+                        'subject': subject,
+                        'skill_id': subskill.get('skill_id'),
+                        'skill_description': subskill.get('skill_description'),
+                        'unit_id': subskill.get('unit_id'),
+                        'unit_title': subskill.get('unit_title'),
+
+                        # Subskill Details
+                        'subskill_description': subskill.get('subskill_description'),
+
+                        # Assessment Context
+                        'category': subskill.get('category'),
+
+                        # Performance Metrics
+                        'mastery': subskill.get('mastery'),
+                        'avg_score': subskill.get('avg_score'),
+                        'proficiency': subskill.get('proficiency'),
+                        'completion': subskill.get('completion'),
+                        'attempt_count': subskill.get('attempt_count'),
+                        'is_attempted': subskill.get('is_attempted', False),
+                        'readiness_status': subskill.get('readiness_status'),
+                        'priority_level': subskill.get('priority_level'),
+                        'priority_order': subskill.get('priority_order'),
+
+                        # Timing
+                        'assessment_created_at': created_at.isoformat() if created_at else None,
+                        'assessment_completed_at': completed_at.isoformat() if completed_at else None,
+
+                        # Metadata
+                        'sync_timestamp': datetime.now().isoformat(),
+                        'cosmos_ts': cosmos_ts,
+
+                        # ETL Metadata
+                        'etl_loaded_at': datetime.now().isoformat(),
+                        'etl_batch_id': str(uuid.uuid4())
+                    }
+
+                    flattened.append(record)
+
+            except Exception as e:
+                logger.error(f"Error extracting subskills from assessment {assessment.get('assessment_id', 'unknown')}: {e}")
+                continue
+
+        logger.info(f"Extracted {len(flattened)} subskill attempts from {len(assessments)} assessments")
+        return flattened
+
+    def _extract_problem_reviews(self, assessments: List[Dict]) -> List[Dict]:
+        """Extract and flatten problem reviews into separate records"""
+
+        flattened = []
+
+        for assessment in assessments:
+            try:
+                # Skip if no results
+                if 'results' not in assessment:
+                    continue
+
+                assessment_id = assessment.get('assessment_id')
+                student_id = assessment.get('student_id')
+                subject = assessment.get('subject')
+                created_at = self._parse_timestamp(assessment.get('created_at'))
+                completed_at = self._parse_timestamp(assessment.get('completed_at'))
+                cosmos_ts = assessment.get('_ts', 0)
+
+                # Get problem reviews
+                results = assessment.get('results', {})
+                problem_reviews = results.get('problem_reviews', [])
+
+                for review in problem_reviews:
+                    record = {
+                        # Primary Keys
+                        'assessment_id': assessment_id,
+                        'problem_id': review.get('problem_id'),
+                        'student_id': int(student_id),
+
+                        # Hierarchy Context
+                        'subject': subject,
+                        'skill_id': review.get('skill_id'),
+                        'skill_name': review.get('skill_name'),
+                        'subskill_id': review.get('subskill_id'),
+                        'subskill_name': review.get('subskill_name'),
+                        'unit_id': review.get('unit_id'),
+                        'unit_title': review.get('unit_title'),
+
+                        # Problem Details
+                        'problem_type': review.get('problem_type'),
+                        'difficulty': review.get('difficulty'),
+                        'grade_level': review.get('grade_level'),
+
+                        # Performance
+                        'is_correct': review.get('is_correct', False),
+                        'score': review.get('score'),
+
+                        # Answers
+                        'student_answer_text': review.get('student_answer_text'),
+                        'correct_answer_text': review.get('correct_answer_text'),
+
+                        # Misconception (if available)
+                        'misconception': review.get('misconception'),
+                        'misconception_addressed': review.get('misconception_addressed'),
+
+                        # Timing
+                        'assessment_created_at': created_at.isoformat() if created_at else None,
+                        'assessment_completed_at': completed_at.isoformat() if completed_at else None,
+
+                        # Metadata
+                        'sync_timestamp': datetime.now().isoformat(),
+                        'cosmos_ts': cosmos_ts,
+
+                        # ETL Metadata
+                        'etl_loaded_at': datetime.now().isoformat(),
+                        'etl_batch_id': str(uuid.uuid4())
+                    }
+
+                    flattened.append(record)
+
+            except Exception as e:
+                logger.error(f"Error extracting problem reviews from assessment {assessment.get('assessment_id', 'unknown')}: {e}")
+                continue
+
+        logger.info(f"Extracted {len(flattened)} problem reviews from {len(assessments)} assessments")
+        return flattened
+
+    def _extract_skill_insights(self, assessments: List[Dict]) -> List[Dict]:
+        """Extract and flatten skill insights into separate records"""
+
+        flattened = []
+
+        for assessment in assessments:
+            try:
+                # Skip if no results
+                if 'results' not in assessment:
+                    continue
+
+                assessment_id = assessment.get('assessment_id')
+                student_id = assessment.get('student_id')
+                subject = assessment.get('subject')
+                created_at = self._parse_timestamp(assessment.get('created_at'))
+                completed_at = self._parse_timestamp(assessment.get('completed_at'))
+                cosmos_ts = assessment.get('_ts', 0)
+
+                # Get skill insights from AI insights
+                results = assessment.get('results', {})
+                ai_insights = results.get('ai_insights', {})
+                skill_insights = ai_insights.get('skill_insights', [])
+
+                for insight in skill_insights:
+                    # Transform next_step to proper format
+                    next_step = insight.get('next_step')
+                    if next_step and isinstance(next_step, dict):
+                        next_step_record = {
+                            'text': next_step.get('text'),
+                            'link': next_step.get('link'),
+                            'action_type': next_step.get('action_type')
+                        }
+                    else:
+                        next_step_record = None
+
+                    # Transform subskills array
+                    subskills = []
+                    for subskill in insight.get('subskills', []):
+                        subskills.append({
+                            'subskill_id': subskill.get('subskill_id'),
+                            'subskill_description': subskill.get('subskill_description'),
+                            'questions': subskill.get('questions'),
+                            'correct': subskill.get('correct')
+                        })
+
+                    record = {
+                        # Primary Keys
+                        'assessment_id': assessment_id,
+                        'skill_id': insight.get('skill_id'),
+                        'student_id': int(student_id),
+
+                        # Hierarchy Context
+                        'subject': subject,
+                        'skill_name': insight.get('skill_name'),
+                        'unit_id': insight.get('unit_id'),
+                        'unit_title': insight.get('unit_title'),
+
+                        # Assessment Context
+                        'category': insight.get('category'),
+
+                        # Performance Metrics
+                        'total_questions': insight.get('total_questions'),
+                        'correct_count': insight.get('correct_count'),
+                        'percentage': insight.get('percentage'),
+
+                        # AI-Enhanced Fields
+                        'assessment_focus_tag': insight.get('assessment_focus_tag'),
+                        'performance_label': insight.get('performance_label'),
+                        'insight_text': insight.get('insight_text'),
+
+                        # Next Step Recommendation
+                        'next_step': next_step_record,
+
+                        # Subskill Breakdown
+                        'subskills': subskills,
+
+                        # Timing
+                        'assessment_created_at': created_at.isoformat() if created_at else None,
+                        'assessment_completed_at': completed_at.isoformat() if completed_at else None,
+
+                        # Metadata
+                        'sync_timestamp': datetime.now().isoformat(),
+                        'cosmos_ts': cosmos_ts,
+
+                        # ETL Metadata
+                        'etl_loaded_at': datetime.now().isoformat(),
+                        'etl_batch_id': str(uuid.uuid4())
+                    }
+
+                    flattened.append(record)
+
+            except Exception as e:
+                logger.error(f"Error extracting skill insights from assessment {assessment.get('assessment_id', 'unknown')}: {e}")
+                continue
+
+        logger.info(f"Extracted {len(flattened)} skill insights from {len(assessments)} assessments")
+        return flattened
+
+    def _parse_timestamp(self, timestamp_str: Any) -> Optional[datetime]:
+        """Parse timestamp string to datetime object"""
+        if not timestamp_str:
+            return None
+
+        if isinstance(timestamp_str, datetime):
+            return timestamp_str
+
+        if isinstance(timestamp_str, str):
+            try:
+                # Handle different timestamp formats
+                if timestamp_str.endswith('Z'):
+                    return datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                else:
+                    return datetime.fromisoformat(timestamp_str)
+            except ValueError:
+                logger.warning(f"Could not parse timestamp: {timestamp_str}")
+                return None
+
+        return None
 
     async def _upsert_curriculum_data(self, curriculum_records: List[Dict], subject: str):
         """Upsert curriculum data for a specific subject"""

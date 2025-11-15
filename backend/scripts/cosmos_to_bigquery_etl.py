@@ -92,15 +92,20 @@ class FullETLLoader:
     async def ensure_tables_exist(self):
         """Ensure all required BigQuery tables exist"""
         print("\n🏗️  Ensuring BigQuery tables exist...")
-        
+
         tables_to_create = [
             ("students", self.etl_service._get_students_schema()),
             ("attempts", self.etl_service._get_attempts_schema()),
             ("reviews", self.etl_service._get_reviews_schema()),
             ("curriculum", self.etl_service._get_curriculum_schema()),
-            ("learning_paths", self.etl_service._get_learning_paths_schema())
+            ("learning_paths", self.etl_service._get_learning_paths_schema()),
+            # Assessment tables
+            ("assessments", self.etl_service._get_assessments_schema()),
+            ("assessment_subskill_attempts", self.etl_service._get_assessment_subskill_attempts_schema()),
+            ("assessment_problem_reviews", self.etl_service._get_assessment_problem_reviews_schema()),
+            ("assessment_skill_insights", self.etl_service._get_assessment_skill_insights_schema())
         ]
-        
+
         for table_name, schema in tables_to_create:
             try:
                 await self.etl_service._ensure_table_exists(table_name, schema)
@@ -181,7 +186,39 @@ class FullETLLoader:
         except Exception as e:
             print(f"❌ Reviews data load failed: {e}")
             self.results['reviews'] = {'success': False, 'error': str(e)}
-    
+
+    async def load_assessments_data(self, incremental: bool = False):
+        """Load all assessment data from Cosmos DB to BigQuery"""
+        print(f"\n📋 Loading assessment data {'(incremental)' if incremental else '(full load)'}...")
+
+        try:
+            # Load assessments using the ETL service
+            result = await self.etl_service.sync_assessments_from_cosmos(
+                incremental=False,  # Always do full load for now
+                limit=None
+            )
+
+            records_processed = result.get('records_processed', 0)
+            success = result.get('success', False)
+            details = result.get('details', {})
+
+            if success:
+                print(f"✅ Assessment data loaded: {records_processed:,} total records")
+                # Print breakdown by table
+                if details:
+                    for table_name, table_result in details.items():
+                        table_records = table_result.get('records', 0)
+                        print(f"   - {table_name}: {table_records:,} records")
+                self.results['assessments'] = result
+            else:
+                error_msg = result.get('error', 'Unknown error')
+                print(f"❌ Assessment data load failed: {error_msg}")
+                self.results['assessments'] = result
+
+        except Exception as e:
+            print(f"❌ Assessment data load failed: {e}")
+            self.results['assessments'] = {'success': False, 'error': str(e)}
+
     async def refresh_curriculum_views(self):
         """Refresh curriculum compatibility views from analytics.curriculum_* tables"""
         print(f"\n📚 Refreshing curriculum views from analytics.curriculum_* tables...")
@@ -1751,6 +1788,7 @@ class FullETLLoader:
             await self.load_user_profiles_data(incremental=incremental)
             await self.load_attempts_data(incremental=incremental)
             await self.load_reviews_data(incremental=incremental)
+            await self.load_assessments_data(incremental=incremental)
 
             # Refresh curriculum views from analytics.curriculum_* tables
             # This replaces load_curriculum_data() and load_learning_paths_data()
