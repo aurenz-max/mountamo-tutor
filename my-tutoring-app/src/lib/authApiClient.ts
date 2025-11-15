@@ -401,6 +401,48 @@ class AuthenticatedApiClient {
   }
 
   /**
+   * Get score distribution histograms for a student
+   * Returns hierarchical score distributions at subject, unit, and skill levels
+   */
+  async getScoreDistribution(
+    studentId: number,
+    params: {
+      subject: string;
+      start_date?: string;
+      end_date?: string;
+    }
+  ) {
+    const queryParams = new URLSearchParams();
+    queryParams.append('subject', params.subject);
+    if (params.start_date) queryParams.append('start_date', params.start_date);
+    if (params.end_date) queryParams.append('end_date', params.end_date);
+
+    return this.get(`/api/analytics/student/${studentId}/score-distribution?${queryParams.toString()}`);
+  }
+
+  /**
+   * Get score trends over time for a student
+   * Returns weekly or monthly score trends by subject
+   */
+  async getScoreTrends(
+    studentId: number,
+    params: {
+      granularity: 'weekly' | 'monthly';
+      lookback_weeks?: number;
+      lookback_months?: number;
+      subjects?: string;
+    }
+  ) {
+    const queryParams = new URLSearchParams();
+    queryParams.append('granularity', params.granularity);
+    if (params.lookback_weeks) queryParams.append('lookback_weeks', params.lookback_weeks.toString());
+    if (params.lookback_months) queryParams.append('lookback_months', params.lookback_months.toString());
+    if (params.subjects) queryParams.append('subjects', params.subjects);
+
+    return this.get(`/api/analytics/student/${studentId}/score-trends?${queryParams.toString()}`);
+  }
+
+  /**
    * Trigger ETL sync (admin function)
    */
   async triggerAnalyticsSync(syncType: 'incremental' | 'full' = 'incremental') {

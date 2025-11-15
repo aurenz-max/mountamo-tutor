@@ -185,6 +185,47 @@ class VelocityMetricsResponse(BaseModel):
     generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
     cached: bool = False
 
+class ScoreDistributionItem(BaseModel):
+    level: str  # "subject", "unit", or "skill"
+    id: str
+    name: str
+    parent_unit_id: Optional[str] = None
+    score_histogram: Dict[str, int]  # Score (0-10) -> count
+    attempt_histogram: Dict[str, int]  # Attempt number -> count
+    total_reviews: int
+    avg_score: float
+    avg_score_pct: float
+
+class ScoreDistributionResponse(BaseModel):
+    student_id: int
+    subject: str
+    date_range: Dict
+    distributions: List[ScoreDistributionItem]
+    cached: bool = False
+    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+class TrendPeriod(BaseModel):
+    period_key: str  # e.g., "2025-W01" or "2025-01"
+    period_label: str  # e.g., "Week 1, 2025" or "January 2025"
+    start_date: str
+    end_date: str
+    avg_score: float
+    avg_score_pct: float
+    total_reviews: int
+    score_sum: float
+
+class SubjectTrend(BaseModel):
+    subject: str
+    periods: List[TrendPeriod]
+
+class ScoreTrendsResponse(BaseModel):
+    student_id: int
+    granularity: str  # "weekly" or "monthly"
+    date_range: Dict
+    trends: List[SubjectTrend]
+    cached: bool = False
+    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
 # ============================================================================
 # DEPENDENCY INJECTION - Simplified
 # ============================================================================
@@ -563,8 +604,153 @@ async def get_student_velocity_metrics(
     except Exception as e:        
         logger.error(f"Velocity metrics error for user {user_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving velocity metrics: {str(e)}"
+        )
+
+@router.get("/student/{student_id}/score-distribution", response_model=ScoreDistributionResponse)
+async def get_score_distribution(
+    student_id: int,
+    subject: str = Query(..., description="Subject to analyze (e.g., 'Language Arts')"),
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Get score distribution histograms across subject, units, and skills"""
+
+    user_id = user_context["user_id"]
+
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} score distribution"
+            )
+
+    # Check cache (10 minute TTL)
+    cache_key = get_cache_key(
+        "score_distribution",
+        student_id=student_id,
+        subject=subject,
+        start_date=start_date,
+        end_date=end_date
+    )
+
+    cached_result = get_from_cache(cache_key, ttl_minutes=10)
+    if cached_result:
+        cached_result["cached"] = True
+        return ScoreDistributionResponse(**cached_result)
+
+    try:
+        logger.info(f"User {user_context['email']} retrieving score distribution for student {student_id}, subject {subject}")
+
+        # Fetch from BigQuery
+        distribution_data = await analytics_service.get_score_distribution(
+            student_id=student_id,
+            subject=subject,
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        result = ScoreDistributionResponse(
+            student_id=student_id,
+            subject=subject,
+            date_range=distribution_data["date_range"],
+            distributions=distribution_data["distributions"],
+            cached=False
+        )
+
+        # Cache the result
+        set_cache(cache_key, result.dict())
+
+        logger.info(f"Score distribution retrieved: {len(distribution_data['distributions'])} items for student {student_id}")
+        return result
+
+    except Exception as e:
+        logger.error(f"Score distribution error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving score distribution: {str(e)}"
+        )
+
+@router.get("/student/{student_id}/score-trends", response_model=ScoreTrendsResponse)
+async def get_score_trends(
+    student_id: int,
+    granularity: str = Query(..., regex="^(weekly|monthly)$", description="Time granularity: 'weekly' or 'monthly'"),
+    lookback_weeks: Optional[int] = Query(52, ge=1, le=104, description="Weeks to look back (for weekly granularity)"),
+    lookback_months: Optional[int] = Query(12, ge=1, le=24, description="Months to look back (for monthly granularity)"),
+    subjects: Optional[str] = Query(None, description="Comma-separated list of subjects to filter"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Get score trends over time at subject level"""
+
+    user_id = user_context["user_id"]
+
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} score trends"
+            )
+
+    # Parse subjects if provided
+    subjects_list = None
+    if subjects:
+        subjects_list = [s.strip() for s in subjects.split(",")]
+
+    # Check cache (15 minute TTL)
+    cache_key = get_cache_key(
+        "score_trends",
+        student_id=student_id,
+        granularity=granularity,
+        lookback_weeks=lookback_weeks,
+        lookback_months=lookback_months,
+        subjects=subjects
+    )
+
+    cached_result = get_from_cache(cache_key, ttl_minutes=15)
+    if cached_result:
+        cached_result["cached"] = True
+        return ScoreTrendsResponse(**cached_result)
+
+    try:
+        logger.info(f"User {user_context['email']} retrieving score trends for student {student_id}, granularity {granularity}")
+
+        # Fetch from BigQuery
+        trends_data = await analytics_service.get_score_trends(
+            student_id=student_id,
+            granularity=granularity,
+            lookback_weeks=lookback_weeks if granularity == "weekly" else None,
+            lookback_months=lookback_months if granularity == "monthly" else None,
+            subjects=subjects_list
+        )
+
+        result = ScoreTrendsResponse(
+            student_id=student_id,
+            granularity=granularity,
+            date_range=trends_data["date_range"],
+            trends=trends_data["trends"],
+            cached=False
+        )
+
+        # Cache the result
+        set_cache(cache_key, result.dict())
+
+        total_periods = sum(len(t["periods"]) for t in trends_data["trends"])
+        logger.info(f"Score trends retrieved: {len(trends_data['trends'])} subjects, {total_periods} total periods for student {student_id}")
+        return result
+
+    except Exception as e:
+        logger.error(f"Score trends error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving score trends: {str(e)}"
         )
 
 # ============================================================================

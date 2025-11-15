@@ -1,18 +1,18 @@
 // components/curriculum/CurriculumExplorer.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  ChevronDown, 
-  ChevronRight, 
-  BookOpen, 
-  Target, 
-  CheckCircle, 
-  Circle, 
-  User, 
-  AlertCircle, 
+import {
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+  Target,
+  CheckCircle,
+  Circle,
+  User,
+  AlertCircle,
   RefreshCw,
   BarChart3,
   TreePine,
@@ -20,10 +20,13 @@ import {
   GraduationCap,
   LogIn,
   Play,
-  Loader2
+  Loader2,
+  Star
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi, AuthApiError } from '@/lib/authApiClient';
+import { analyticsApi } from '@/lib/studentAnalyticsAPI';
+import type { StudentMetrics, SubskillData } from '@/lib/studentAnalyticsAPI';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -60,36 +63,82 @@ interface CompetencyData {
   total_attempts: number;
 }
 
+// Skeleton loader components
+const SkeletonSubjectButton = () => (
+  <div className="h-9 w-32 bg-gray-200 rounded animate-pulse"></div>
+);
+
+const SkeletonProgressCard = () => (
+  <div className="p-4 bg-gray-50 rounded-lg animate-pulse">
+    <div className="h-6 w-40 bg-gray-200 rounded mb-3"></div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="text-center space-y-2">
+          <div className="h-8 w-16 bg-gray-300 rounded mx-auto"></div>
+          <div className="h-4 w-24 bg-gray-200 rounded mx-auto"></div>
+        </div>
+      ))}
+    </div>
+    <div className="space-y-2">
+      <div className="h-4 w-full bg-gray-200 rounded"></div>
+      <div className="h-2 w-full bg-gray-200 rounded"></div>
+      <div className="h-4 w-full bg-gray-200 rounded mt-2"></div>
+      <div className="h-2 w-full bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
+const SkeletonCurriculumTree = () => (
+  <div className="space-y-4">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="border rounded-lg animate-pulse">
+        <div className="p-4 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-5 bg-gray-300 rounded"></div>
+            <div className="h-5 w-5 bg-gray-300 rounded"></div>
+            <div className="h-5 w-48 bg-gray-300 rounded"></div>
+            <div className="h-4 w-20 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const CurriculumExplorer = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [curriculumData, setCurriculumData] = useState<CurriculumData | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // Granular loading states
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
+  const [loadingCurriculum, setLoadingCurriculum] = useState(false);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Expanded states for tree navigation
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   const [expandedSkills, setExpandedSkills] = useState<Set<string>>(new Set());
-  
-  // Competency data
-  const [competencyScores, setCompetencyScores] = useState<Map<string, CompetencyData>>(new Map());
+
+  // Analytics data from BigQuery
+  const [analyticsData, setAnalyticsData] = useState<StudentMetrics | null>(null);
 
   // Content package loading states
   const [loadingSubskills, setLoadingSubskills] = useState<Set<string>>(new Set());
   const [packageErrors, setPackageErrors] = useState<Map<string, string>>(new Map());
 
-  // Fetch available subjects
-  const fetchAvailableSubjects = async () => {
+  // Fetch available subjects with memoization
+  const fetchAvailableSubjects = useCallback(async () => {
     console.log('🔍 COMPONENT: Fetching available subjects...');
-    
+
     try {
-      setLoading(true);
+      setLoadingSubjects(true);
       const subjects = await authApi.getSubjects();
       console.log('✅ COMPONENT: Subjects received:', subjects);
       setAvailableSubjects(subjects);
-      
+
       if (subjects && subjects.length > 0) {
         const firstSubject = subjects[0];
         setSelectedSubject(firstSubject);
@@ -103,29 +152,30 @@ const CurriculumExplorer = () => {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch subjects';
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setLoadingSubjects(false);
     }
-  };
+  }, []);
 
-  // Fetch curriculum data for selected subject
-  const fetchCurriculumData = async (subject: string) => {
+  // Fetch curriculum data for selected subject with memoization
+  const fetchCurriculumData = useCallback(async (subject: string) => {
     console.log(`🔍 COMPONENT: Fetching curriculum for subject: ${subject}...`);
-    
+
     if (!subject) {
       console.log('🔍 COMPONENT: No subject provided, skipping curriculum fetch');
       return;
     }
 
     try {
+      setLoadingCurriculum(true);
       setError(null);
       const curriculum = await authApi.getSubjectCurriculum(subject);
       console.log('✅ COMPONENT: Curriculum received:', curriculum);
       setCurriculumData(curriculum);
     } catch (error) {
       console.error(`❌ COMPONENT: Failed to fetch curriculum for ${subject}:`, error);
-      
+
       let errorMessage = `Failed to fetch curriculum for ${subject}`;
-      
+
       if (error && typeof error === 'object' && 'status' in error) {
         const apiError = error as AuthApiError;
         if (apiError.status === 404) {
@@ -136,41 +186,37 @@ const CurriculumExplorer = () => {
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
-      
-      setError(errorMessage);
-    }
-  };
 
-  // Fetch competency for a skill or subskill
-  const fetchCompetencyForItem = async (skillId: string, subskillId?: string) => {
-    if (!userProfile?.student_id || !selectedSubject) {
-      console.warn('Cannot fetch competency: missing student_id or subject');
+      setError(errorMessage);
+      setCurriculumData(null);
+    } finally {
+      setLoadingCurriculum(false);
+    }
+  }, []);
+
+  // Fetch analytics data from BigQuery for selected subject with memoization
+  const fetchAnalyticsForSubject = useCallback(async (subject: string) => {
+    if (!userProfile?.student_id) {
+      console.warn('Cannot fetch analytics: missing student_id');
       return;
     }
 
     try {
-      let competency;
-      if (subskillId) {
-        competency = await authApi.getSubskillCompetency({
-          subject: selectedSubject,
-          skill: skillId,
-          subskill: subskillId,
-        });
-      } else {
-        competency = await authApi.getSkillCompetency({
-          subject: selectedSubject,
-          skill: skillId,
-        });
-      }
-
-      if (competency) {
-        const key = subskillId ? subskillId : skillId;
-        setCompetencyScores(prevScores => new Map(prevScores).set(key, competency));
-      }
+      setLoadingAnalytics(true);
+      console.log(`🔍 Fetching analytics for student ${userProfile.student_id}, subject: ${subject}`);
+      const data = await analyticsApi.getStudentMetrics(userProfile.student_id, {
+        subject: subject
+      });
+      console.log('✅ Analytics data received:', data);
+      setAnalyticsData(data);
     } catch (error) {
-      console.error(`Error fetching competency for ${subskillId || skillId}:`, error);
+      console.error(`Error fetching analytics for ${subject}:`, error);
+      // Set empty analytics data on error so UI doesn't break
+      setAnalyticsData(null);
+    } finally {
+      setLoadingAnalytics(false);
     }
-  };
+  }, [userProfile?.student_id]);
 
   // Toggle unit expansion
   const toggleUnit = (unitId: string) => {
@@ -193,16 +239,41 @@ const CurriculumExplorer = () => {
         newSet.delete(skillId);
       } else {
         newSet.add(skillId);
-        // Fetch competency data when expanding
-        fetchCompetencyForItem(skillId);
       }
       return newSet;
     });
   };
 
-  // Load competency for subskill
-  const loadSubskillCompetency = (skillId: string, subskillId: string) => {
-    fetchCompetencyForItem(skillId, subskillId);
+  // Helper function to find unit analytics from hierarchical data
+  const getUnitAnalytics = (unitId: string) => {
+    if (!analyticsData) return null;
+
+    const unit = analyticsData.hierarchical_data.find(u => u.unit_id === unitId);
+    return unit || null;
+  };
+
+  // Helper function to find skill analytics from hierarchical data
+  const getSkillAnalytics = (skillId: string) => {
+    if (!analyticsData) return null;
+
+    for (const unit of analyticsData.hierarchical_data) {
+      const skill = unit.skills.find(s => s.skill_id === skillId);
+      if (skill) return skill;
+    }
+    return null;
+  };
+
+  // Helper function to find subskill analytics from hierarchical data
+  const getSubskillAnalytics = (subskillId: string): SubskillData | null => {
+    if (!analyticsData) return null;
+
+    for (const unit of analyticsData.hierarchical_data) {
+      for (const skill of unit.skills) {
+        const subskill = skill.subskills.find(s => s.subskill_id === subskillId);
+        if (subskill) return subskill;
+      }
+    }
+    return null;
   };
 
   // Handle "Start Learning" button click
@@ -261,31 +332,55 @@ const CurriculumExplorer = () => {
     }
   };
 
-  // Calculate progress statistics
-  const getProgressStats = () => {
-    if (!curriculumData) return { total: 0, attempted: 0, mastered: 0 };
-    
-    let total = 0;
-    let attempted = 0;
+  // Handle practice navigation
+  const handlePractice = (subskill: SubSkill, skill: Skill, unit: Unit) => {
+    console.log('🎯 Starting practice session for subskill:', subskill.id);
+
+    const params = new URLSearchParams();
+    params.append('subject', selectedSubject);
+    params.append('unit_id', unit.id);
+    params.append('skill_id', skill.id);
+    params.append('subskill_id', subskill.id);
+    params.append('unit_title', unit.title);
+    params.append('skill_description', skill.description);
+    params.append('subskill_description', subskill.description);
+
+    router.push(`/practice?${params.toString()}`);
+  };
+
+  // Calculate progress statistics from BigQuery analytics (memoized)
+  const stats = useMemo(() => {
+    if (!analyticsData) {
+      // Fallback: count from curriculum structure
+      if (!curriculumData) return { total: 0, attempted: 0, mastered: 0 };
+
+      let total = 0;
+      curriculumData.curriculum.forEach(unit => {
+        unit.skills.forEach(skill => {
+          total += skill.subskills.length;
+        });
+      });
+      return { total, attempted: 0, mastered: 0 };
+    }
+
+    // Use BigQuery summary data
+    const total = analyticsData.summary.total_items;
+    const attempted = analyticsData.summary.attempted_items;
+
+    // Count mastered from hierarchical data (mastery > 0.8)
     let mastered = 0;
-    
-    curriculumData.curriculum.forEach(unit => {
+    analyticsData.hierarchical_data.forEach(unit => {
       unit.skills.forEach(skill => {
         skill.subskills.forEach(subskill => {
-          total++;
-          const competency = competencyScores.get(subskill.id);
-          if (competency && competency.total_attempts > 0) {
-            attempted++;
-            if (competency.current_score && competency.current_score > 0.8) {
-              mastered++;
-            }
+          if (subskill.mastery > 0.8) {
+            mastered++;
           }
         });
       });
     });
-    
+
     return { total, attempted, mastered };
-  };
+  }, [analyticsData, curriculumData]);
 
   // Get competency color
   const getCompetencyColor = (score?: number) => {
@@ -307,27 +402,40 @@ const CurriculumExplorer = () => {
     if (!authLoading && user) {
       fetchAvailableSubjects();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, fetchAvailableSubjects]);
 
   useEffect(() => {
-    if (selectedSubject && !loading) {
+    if (selectedSubject) {
       fetchCurriculumData(selectedSubject);
     }
-  }, [selectedSubject]);
+  }, [selectedSubject, fetchCurriculumData]);
 
-  // Handle subject change
-  const handleSubjectChange = (newSubject: string) => {
+  // Fetch analytics when curriculum and user profile are ready
+  useEffect(() => {
+    if (selectedSubject && curriculumData && userProfile?.student_id) {
+      fetchAnalyticsForSubject(selectedSubject);
+    }
+  }, [selectedSubject, curriculumData, userProfile?.student_id, fetchAnalyticsForSubject]);
+
+  // Handle subject change with optimistic UI updates
+  const handleSubjectChange = useCallback((newSubject: string) => {
     console.log(`🔍 COMPONENT: Changing subject to: ${newSubject}`);
+
+    // Immediately update the selected subject (optimistic update)
     setSelectedSubject(newSubject);
-    setCurriculumData(null);
-    setCompetencyScores(new Map());
+
+    // Clear previous data but don't set loading states - let useEffects handle that
+    // Keep curriculum/analytics visible with opacity during transition
     setExpandedUnits(new Set());
     setExpandedSkills(new Set());
     setError(null);
+
     // Clear content package states
     setLoadingSubskills(new Set());
     setPackageErrors(new Map());
-  };
+
+    // The useEffects will trigger based on selectedSubject change
+  }, []);
 
   // Expand all items
   const expandAll = () => {
@@ -352,7 +460,6 @@ const CurriculumExplorer = () => {
   const retryDataFetch = () => {
     console.log('🔍 COMPONENT: Retrying data fetch...');
     setError(null);
-    setLoading(true);
     if (selectedSubject) {
       fetchCurriculumData(selectedSubject);
     } else {
@@ -416,11 +523,39 @@ const CurriculumExplorer = () => {
     );
   }
 
-  if (loading) {
+  // Initial loading state (only when subjects are loading for the first time)
+  if (loadingSubjects && availableSubjects.length === 0) {
     return (
-      <div className="flex items-center justify-center space-x-2 p-6">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-        <span>Loading curriculum data...</span>
+      <div className="space-y-6">
+        {/* User Info Header - Keep visible during loading */}
+        {user && (
+          <div className="p-4 bg-blue-50 rounded-lg transition-all duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <User className="w-5 h-5 text-blue-600" />
+                <span className="font-medium">
+                  Welcome, {userProfile?.displayName || user.email}
+                </span>
+                {userProfile?.grade_level && (
+                  <span className="text-sm text-gray-600">
+                    (Grade {userProfile.grade_level})
+                  </span>
+                )}
+              </div>
+              {userProfile?.total_points && (
+                <div className="text-sm text-blue-600 font-medium">
+                  Points: {userProfile.total_points}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Loading indicator */}
+        <div className="flex items-center justify-center space-x-2 p-6">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+          <span>Loading curriculum data...</span>
+        </div>
       </div>
     );
   }
@@ -460,7 +595,66 @@ const CurriculumExplorer = () => {
     );
   }
 
-  if (!curriculumData) {
+  // Show loading state if curriculum is being fetched and we don't have data yet
+  if (loadingCurriculum && !curriculumData) {
+    return (
+      <div className="space-y-6">
+        {/* User Info Header - Keep visible during loading */}
+        {user && (
+          <div className="p-4 bg-blue-50 rounded-lg transition-all duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <User className="w-5 h-5 text-blue-600" />
+                <span className="font-medium">
+                  Welcome, {userProfile?.displayName || user.email}
+                </span>
+                {userProfile?.grade_level && (
+                  <span className="text-sm text-gray-600">
+                    (Grade {userProfile.grade_level})
+                  </span>
+                )}
+              </div>
+              {userProfile?.total_points && (
+                <div className="text-sm text-blue-600 font-medium">
+                  Points: {userProfile.total_points}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Subject Selection - Show if available */}
+        {availableSubjects.length > 0 && (
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h3 className="text-sm font-medium mb-2">Subject:</h3>
+            <div className="flex flex-wrap gap-2">
+              {availableSubjects.map(subject => (
+                <Button
+                  key={subject}
+                  variant={subject === selectedSubject ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleSubjectChange(subject)}
+                  disabled={loadingCurriculum}
+                >
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  {subject}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Loading indicator */}
+        <div className="flex items-center justify-center space-x-2 p-6">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+          <span>Loading {selectedSubject || 'curriculum'} data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Only show "No Curriculum Data" if we're NOT loading and there's no data
+  if (!curriculumData && !loadingCurriculum) {
     return (
       <div className="text-center space-y-4 p-6">
         <AlertCircle className="w-16 h-16 mx-auto text-gray-400" />
@@ -468,7 +662,7 @@ const CurriculumExplorer = () => {
         <p className="text-gray-600">
           No curriculum data available for {selectedSubject || 'the selected subject'}.
         </p>
-        
+
         {/* Subject selection */}
         {availableSubjects.length > 0 && (
           <div className="space-y-4">
@@ -492,14 +686,20 @@ const CurriculumExplorer = () => {
     );
   }
 
-  const stats = getProgressStats();
+  // At this point, curriculumData is guaranteed to exist (all early returns handled above)
+  if (!curriculumData) {
+    // This should never happen, but TypeScript needs the check
+    return null;
+  }
+
+  // Calculate percentages based on memoized stats
   const progressPercentage = stats.total > 0 ? (stats.attempted / stats.total) * 100 : 0;
   const masteryPercentage = stats.total > 0 ? (stats.mastered / stats.total) * 100 : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-300">
       {/* User Info Header */}
-      <div className="p-4 bg-blue-50 rounded-lg">
+      <div className="p-4 bg-blue-50 rounded-lg transition-all duration-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <User className="w-5 h-5 text-blue-600" />
@@ -525,63 +725,84 @@ const CurriculumExplorer = () => {
         <div className="p-4 bg-gray-50 rounded-lg">
           <h3 className="text-sm font-medium mb-2">Subject:</h3>
           <div className="flex flex-wrap gap-2">
-            {availableSubjects.map(subject => (
-              <Button
-                key={subject}
-                variant={subject === selectedSubject ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleSubjectChange(subject)}
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                {subject}
-              </Button>
-            ))}
+            {loadingSubjects ? (
+              <>
+                <SkeletonSubjectButton />
+                <SkeletonSubjectButton />
+                <SkeletonSubjectButton />
+              </>
+            ) : (
+              availableSubjects.map(subject => (
+                <Button
+                  key={subject}
+                  variant={subject === selectedSubject ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleSubjectChange(subject)}
+                  disabled={loadingCurriculum}
+                >
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  {subject}
+                </Button>
+              ))
+            )}
           </div>
         </div>
       )}
 
       {/* Progress Overview */}
-      <div className="p-4 bg-gray-50 rounded-lg">
-        <h3 className="font-semibold mb-3">Progress Overview</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-            <div className="text-sm text-gray-600">Total Subskills</div>
+      {loadingCurriculum && !curriculumData ? (
+        <SkeletonProgressCard />
+      ) : (
+        <div className="p-4 bg-gray-50 rounded-lg transition-opacity duration-300" style={{ opacity: loadingAnalytics ? 0.6 : 1 }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">Progress Overview</h3>
+            {loadingAnalytics && (
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Updating...</span>
+              </div>
+            )}
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.attempted}</div>
-            <div className="text-sm text-gray-600">Attempted</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+              <div className="text-sm text-gray-600">Total Subskills</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">{stats.attempted}</div>
+              <div className="text-sm text-gray-600">Attempted</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.mastered}</div>
+              <div className="text-sm text-gray-600">Mastered</div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.mastered}</div>
-            <div className="text-sm text-gray-600">Mastered</div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Progress</span>
+              <span>{progressPercentage.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-500 rounded-full h-2 transition-all duration-300"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+
+            <div className="flex justify-between text-sm">
+              <span>Mastery</span>
+              <span>{masteryPercentage.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-green-500 rounded-full h-2 transition-all duration-300"
+                style={{ width: `${masteryPercentage}%` }}
+              />
+            </div>
           </div>
         </div>
-        
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Progress</span>
-            <span>{progressPercentage.toFixed(1)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-500 rounded-full h-2 transition-all duration-300"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-          
-          <div className="flex justify-between text-sm">
-            <span>Mastery</span>
-            <span>{masteryPercentage.toFixed(1)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-green-500 rounded-full h-2 transition-all duration-300"
-              style={{ width: `${masteryPercentage}%` }}
-            />
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* View Controls */}
       <div className="flex justify-between items-center">
@@ -599,117 +820,226 @@ const CurriculumExplorer = () => {
       </div>
 
       {/* Curriculum Tree */}
-      <div className="space-y-4">
-        {curriculumData.curriculum.map(unit => (
-          <div key={unit.id} className="border rounded-lg">
-            {/* Unit Header */}
-            <div
-              className="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-              onClick={() => toggleUnit(unit.id)}
-            >
-              <div className="flex items-center gap-2">
-                {expandedUnits.has(unit.id) ? (
-                  <ChevronDown className="w-5 h-5" />
-                ) : (
-                  <ChevronRight className="w-5 h-5" />
-                )}
-                <BookOpen className="w-5 h-5 text-blue-600" />
-                <span className="font-semibold text-lg">{unit.title}</span>
-                <span className="text-sm text-gray-500">({unit.skills.length} skills)</span>
+      {loadingCurriculum && !curriculumData ? (
+        <SkeletonCurriculumTree />
+      ) : (
+        <div className="space-y-4 transition-opacity duration-300" style={{ opacity: loadingCurriculum ? 0.6 : 1 }}>
+          {curriculumData.curriculum.map(unit => {
+          const unitAnalytics = getUnitAnalytics(unit.id);
+
+          return (
+            <div key={unit.id} className="border rounded-lg transition-all duration-200 hover:shadow-md">
+              {/* Unit Header */}
+              <div
+                className="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => toggleUnit(unit.id)}
+              >
+                <div className="flex items-center gap-2">
+                  {expandedUnits.has(unit.id) ? (
+                    <ChevronDown className="w-5 h-5" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5" />
+                  )}
+                  <BookOpen className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-lg">{unit.title}</span>
+                  <span className="text-sm text-gray-500">({unit.skills.length} skills)</span>
+                </div>
               </div>
-            </div>
 
-            {/* Unit Content */}
-            {expandedUnits.has(unit.id) && (
-              <div className="p-4 border-t">
-                <div className="space-y-3">
-                  {unit.skills.map(skill => (
-                    <div key={skill.id} className="ml-4 border-l-2 border-gray-200 pl-4">
-                      {/* Skill Header */}
-                      <div
-                        className="p-3 bg-blue-50 rounded cursor-pointer hover:bg-blue-100 transition-colors"
-                        onClick={() => toggleSkill(skill.id)}
-                      >
-                        <div className="flex items-center gap-2">
-                          {expandedSkills.has(skill.id) ? (
-                            <ChevronDown className="w-4 h-4" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4" />
-                          )}
-                          <Target className="w-4 h-4 text-green-600" />
-                          <span className="font-medium">{skill.description}</span>
-                          <span className="text-sm text-gray-600">
-                            ({skill.subskills.length} subskills)
-                          </span>
-                          {competencyScores.get(skill.id) && (
-                            <span className={`text-xs font-medium ${getCompetencyColor(competencyScores.get(skill.id)?.current_score)}`}>
-                              {((competencyScores.get(skill.id)?.current_score || 0) * 100).toFixed(0)}%
-                            </span>
-                          )}
-                        </div>
+              {/* Unit Analytics Summary - Always visible */}
+              {unitAnalytics && unitAnalytics.attempt_count > 0 && (
+                <div className="px-4 py-2 bg-blue-50 border-t border-blue-100">
+                  <div className="flex items-center justify-around text-center">
+                    <div>
+                      <div className="text-xs text-gray-600">Attempts</div>
+                      <div className="text-sm font-bold text-blue-600">{unitAnalytics.attempt_count}</div>
+                    </div>
+                    <div className="h-8 w-px bg-blue-200" />
+                    <div>
+                      <div className="text-xs text-gray-600">Mastery</div>
+                      <div className={`text-sm font-bold ${getCompetencyColor(unitAnalytics.mastery)}`}>
+                        {(unitAnalytics.mastery * 100).toFixed(1)}%
                       </div>
+                    </div>
+                    <div className="h-8 w-px bg-blue-200" />
+                    <div>
+                      <div className="text-xs text-gray-600">Completion</div>
+                      <div className="text-sm font-bold text-purple-600">
+                        {unitAnalytics.completion.toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                      {/* Subskills */}
-                      {expandedSkills.has(skill.id) && (
+              {/* Unit Content */}
+              {expandedUnits.has(unit.id) && (
+                <div className="p-4 border-t">
+                  <div className="space-y-3">
+                  {unit.skills.map(skill => {
+                    const skillAnalytics = getSkillAnalytics(skill.id);
+
+                    return (
+                      <div key={skill.id} className="ml-4 border-l-2 border-gray-200 pl-4 transition-all duration-150">
+                        {/* Skill Header */}
+                        <div
+                          className="p-3 bg-blue-50 rounded cursor-pointer hover:bg-blue-100 transition-all duration-150"
+                          onClick={() => toggleSkill(skill.id)}
+                        >
+                          <div className="flex items-center gap-2">
+                            {expandedSkills.has(skill.id) ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                            <Target className="w-4 h-4 text-green-600" />
+                            <span className="font-medium">{skill.description}</span>
+                            <span className="text-sm text-gray-600">
+                              ({skill.subskills.length} subskills)
+                            </span>
+                            {skillAnalytics && skillAnalytics.attempt_count > 0 && (
+                              <span className={`text-xs font-medium ${getCompetencyColor(skillAnalytics.mastery)}`}>
+                                {(skillAnalytics.mastery * 100).toFixed(1)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Skill Analytics Summary - Always visible */}
+                        {skillAnalytics && skillAnalytics.attempt_count > 0 && (
+                          <div className="mt-2 px-3 py-1.5 bg-green-50 rounded border border-green-100">
+                            <div className="flex items-center justify-around text-center">
+                              <div>
+                                <div className="text-xs text-gray-600">Attempts</div>
+                                <div className="text-xs font-bold text-blue-600">{skillAnalytics.attempt_count}</div>
+                              </div>
+                              <div className="h-6 w-px bg-green-200" />
+                              <div>
+                                <div className="text-xs text-gray-600">Mastery</div>
+                                <div className={`text-xs font-bold ${getCompetencyColor(skillAnalytics.mastery)}`}>
+                                  {(skillAnalytics.mastery * 100).toFixed(1)}%
+                                </div>
+                              </div>
+                              <div className="h-6 w-px bg-green-200" />
+                              <div>
+                                <div className="text-xs text-gray-600">Completion</div>
+                                <div className="text-xs font-bold text-purple-600">
+                                  {skillAnalytics.completion.toFixed(1)}%
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Subskills */}
+                        {expandedSkills.has(skill.id) && (
                         <div className="mt-3 ml-6 space-y-2">
                           {skill.subskills.map(subskill => {
-                            const competency = competencyScores.get(subskill.id);
+                            const subskillAnalytics = getSubskillAnalytics(subskill.id);
                             const isLoading = loadingSubskills.has(subskill.id);
                             const error = packageErrors.get(subskill.id);
-                            
+
                             return (
                               <div
                                 key={subskill.id}
-                                className="p-3 bg-white border rounded hover:bg-gray-50 transition-colors"
+                                className="p-3 bg-white border rounded hover:bg-gray-50 transition-all duration-150 hover:shadow-sm"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <div 
-                                    className="flex items-center gap-2 flex-1 cursor-pointer"
-                                    onClick={() => loadSubskillCompetency(skill.id, subskill.id)}
-                                  >
-                                    {getCompetencyIcon(competency?.current_score, competency?.total_attempts || 0)}
+                                  <div className="flex items-center gap-2 flex-1">
+                                    {getCompetencyIcon(
+                                      subskillAnalytics?.mastery,
+                                      subskillAnalytics?.attempt_count || 0
+                                    )}
                                     <span className="font-medium text-sm">{subskill.description}</span>
-                                    {competency && (
-                                      <span className={`text-xs font-medium ${getCompetencyColor(competency.current_score)}`}>
-                                        {((competency.current_score || 0) * 100).toFixed(0)}%
-                                      </span>
+                                    {subskillAnalytics && subskillAnalytics.attempt_count > 0 && (
+                                      <>
+                                        <span className={`text-xs font-medium ${getCompetencyColor(subskillAnalytics.proficiency)}`}>
+                                          {(subskillAnalytics.proficiency * 100).toFixed(1)}%
+                                        </span>
+                                        {subskillAnalytics.readiness_status && (
+                                          <span className={`text-xs px-2 py-0.5 rounded ${
+                                            subskillAnalytics.readiness_status === 'Ready'
+                                              ? 'bg-green-100 text-green-700'
+                                              : 'bg-gray-100 text-gray-600'
+                                          }`}>
+                                            {subskillAnalytics.readiness_status}
+                                          </span>
+                                        )}
+                                        {subskillAnalytics.priority_level && subskillAnalytics.priority_level !== 'Not Started' && (
+                                          <span className={`text-xs px-2 py-0.5 rounded ${
+                                            subskillAnalytics.priority_level === 'Mastered'
+                                              ? 'bg-blue-100 text-blue-700'
+                                              : subskillAnalytics.priority_level === 'High Priority'
+                                              ? 'bg-red-100 text-red-700'
+                                              : 'bg-yellow-100 text-yellow-700'
+                                          }`}>
+                                            {subskillAnalytics.priority_level}
+                                          </span>
+                                        )}
+                                      </>
                                     )}
                                     <span className="text-xs text-gray-500">
                                       Difficulty: {subskill.difficulty_range.start}-{subskill.difficulty_range.end}
                                     </span>
                                   </div>
-                                  
-                                  {/* Start Learning Button */}
-                                  <Button
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleStartLearning(subskill.id);
-                                    }}
-                                    disabled={isLoading}
-                                    className="shrink-0"
-                                  >
-                                    {isLoading ? (
-                                      <>
-                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                        Generating...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Play className="w-3 h-3 mr-1" />
-                                        Start Learning
-                                      </>
-                                    )}
-                                  </Button>
+
+                                  {/* Dual-Action Buttons: Learn & Practice */}
+                                  <div className="flex gap-2 shrink-0">
+                                    {/* Learn Button - Always on the left */}
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStartLearning(subskill.id);
+                                      }}
+                                      disabled={isLoading}
+                                      variant={subskillAnalytics && subskillAnalytics.mastery > 0.6 ? "outline" : undefined}
+                                      className={subskillAnalytics && subskillAnalytics.mastery > 0.6 ? "" : "bg-blue-600 text-white hover:bg-blue-700"}
+                                    >
+                                      {isLoading ? (
+                                        <>
+                                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                          Generating...
+                                        </>
+                                      ) : (
+                                        <>
+                                          {(!subskillAnalytics || subskillAnalytics.mastery <= 0.6) && (
+                                            <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />
+                                          )}
+                                          <Play className="w-3 h-3 mr-1" />
+                                          Learn
+                                        </>
+                                      )}
+                                    </Button>
+
+                                    {/* Practice Button - Always on the right */}
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePractice(subskill, skill, unit);
+                                      }}
+                                      variant={subskillAnalytics && subskillAnalytics.mastery > 0.6 ? undefined : "outline"}
+                                      className={subskillAnalytics && subskillAnalytics.mastery > 0.6 ? "bg-blue-600 text-white hover:bg-blue-700" : ""}
+                                    >
+                                      {subskillAnalytics && subskillAnalytics.mastery > 0.6 && (
+                                        <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />
+                                      )}
+                                      <Target className="w-3 h-3 mr-1" />
+                                      Practice
+                                    </Button>
+                                  </div>
                                 </div>
-                                
-                                {/* Competency Info Row */}
-                                {competency && competency.total_attempts > 0 && (
+
+                                {/* Analytics Info Row */}
+                                {subskillAnalytics && subskillAnalytics.attempt_count > 0 && (
                                   <div className="text-xs text-gray-500 mt-2">
-                                    {competency.total_attempts} attempts • Credibility: {(competency.credibility * 100).toFixed(0)}%
+                                    {subskillAnalytics.attempt_count} attempts •
+                                    Mastery: {(subskillAnalytics.mastery * 100).toFixed(1)}% •
+                                    Avg Score: {(subskillAnalytics.avg_score * 100).toFixed(1)}%
                                   </div>
                                 )}
-                                
+
                                 {/* Error Display */}
                                 {error && (
                                   <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600 flex items-center gap-1">
@@ -731,13 +1061,16 @@ const CurriculumExplorer = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
           </div>
-        ))}
-      </div>
+          );
+        })}
+        </div>
+      )}
     </div>
   );
 };

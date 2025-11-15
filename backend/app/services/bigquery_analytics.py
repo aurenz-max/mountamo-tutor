@@ -1389,6 +1389,367 @@ class BigQueryAnalyticsService:
             logger.error(f"Error getting student competency for {subskill_id}: {e}")
             return None
 
+    async def get_score_distribution(
+        self,
+        student_id: int,
+        subject: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> Dict:
+        """Get score distribution histograms across subject, units, and skills"""
+
+        # Check cache first
+        cache_key = self._get_cache_key(
+            "score_distribution",
+            student_id=student_id,
+            subject=subject,
+            start_date=start_date.isoformat() if start_date else None,
+            end_date=end_date.isoformat() if end_date else None
+        )
+
+        cached_result = self._get_cache(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached score distribution for student {student_id}")
+            return cached_result
+
+        try:
+            distributions = []
+
+            # Query 1: Subject-level distribution
+            subject_query = f"""
+            SELECT
+                'subject' as level,
+                subject as id,
+                subject as name,
+                NULL as parent_unit_id,
+                CAST(score AS INT64) as score,
+                COUNT(*) as count,
+                AVG(CAST(score AS FLOAT64)) as avg_score
+            FROM `{self.project_id}.{self.dataset_id}.reviews`
+            WHERE student_id = @student_id
+                AND subject = @subject
+                AND (@start_date IS NULL OR timestamp >= @start_date)
+                AND (@end_date IS NULL OR timestamp <= @end_date)
+            GROUP BY subject, score
+            """
+
+            # Query 2: Unit-level distribution
+            unit_query = f"""
+            SELECT
+                'unit' as level,
+                c.unit_id as id,
+                c.unit_title as name,
+                NULL as parent_unit_id,
+                CAST(r.score AS INT64) as score,
+                COUNT(*) as count,
+                AVG(CAST(r.score AS FLOAT64)) as avg_score
+            FROM `{self.project_id}.{self.dataset_id}.reviews` r
+            JOIN `{self.project_id}.{self.dataset_id}.curriculum` c
+                ON r.skill_id = c.skill_id
+            WHERE r.student_id = @student_id
+                AND r.subject = @subject
+                AND (@start_date IS NULL OR r.timestamp >= @start_date)
+                AND (@end_date IS NULL OR r.timestamp <= @end_date)
+            GROUP BY c.unit_id, c.unit_title, score
+            """
+
+            # Query 3: Skill-level distribution
+            skill_query = f"""
+            SELECT
+                'skill' as level,
+                c.skill_id as id,
+                c.skill_description as name,
+                c.unit_id as parent_unit_id,
+                CAST(r.score AS INT64) as score,
+                COUNT(*) as count,
+                AVG(CAST(r.score AS FLOAT64)) as avg_score
+            FROM `{self.project_id}.{self.dataset_id}.reviews` r
+            JOIN `{self.project_id}.{self.dataset_id}.curriculum` c
+                ON r.skill_id = c.skill_id
+            WHERE r.student_id = @student_id
+                AND r.subject = @subject
+                AND (@start_date IS NULL OR r.timestamp >= @start_date)
+                AND (@end_date IS NULL OR r.timestamp <= @end_date)
+            GROUP BY c.skill_id, c.skill_description, c.unit_id, score
+            """
+
+            parameters = [
+                bigquery.ScalarQueryParameter("student_id", "INT64", student_id),
+                bigquery.ScalarQueryParameter("subject", "STRING", subject),
+                bigquery.ScalarQueryParameter("start_date", "TIMESTAMP", start_date),
+                bigquery.ScalarQueryParameter("end_date", "TIMESTAMP", end_date)
+            ]
+
+            # Execute all three queries
+            subject_results = await self._run_query_async(subject_query, parameters)
+            unit_results = await self._run_query_async(unit_query, parameters)
+            skill_results = await self._run_query_async(skill_query, parameters)
+
+            # Process subject-level results
+            if subject_results:
+                score_histogram = {}
+                total_reviews = 0
+                total_score = 0
+
+                for row in subject_results:
+                    score = str(row['score'])
+                    count = int(row['count'])
+                    score_histogram[score] = count
+                    total_reviews += count
+                    total_score += row['score'] * count
+
+                # Fill in missing scores with 0
+                for i in range(11):
+                    if str(i) not in score_histogram:
+                        score_histogram[str(i)] = 0
+
+                avg_score = total_score / total_reviews if total_reviews > 0 else 0
+
+                distributions.append({
+                    'level': 'subject',
+                    'id': subject,
+                    'name': subject,
+                    'parent_unit_id': None,
+                    'score_histogram': score_histogram,
+                    'attempt_histogram': {},  # Not calculated at subject level
+                    'total_reviews': total_reviews,
+                    'avg_score': avg_score,
+                    'avg_score_pct': avg_score / 10.0
+                })
+
+            # Process unit-level results
+            unit_data = {}
+            for row in unit_results:
+                unit_id = row['id']
+                if unit_id not in unit_data:
+                    unit_data[unit_id] = {
+                        'level': 'unit',
+                        'id': unit_id,
+                        'name': row['name'],
+                        'parent_unit_id': None,
+                        'scores': {},
+                        'total_reviews': 0,
+                        'total_score': 0
+                    }
+
+                score = str(row['score'])
+                count = int(row['count'])
+                unit_data[unit_id]['scores'][score] = count
+                unit_data[unit_id]['total_reviews'] += count
+                unit_data[unit_id]['total_score'] += row['score'] * count
+
+            for unit_id, data in unit_data.items():
+                # Fill in missing scores
+                score_histogram = {}
+                for i in range(11):
+                    score_histogram[str(i)] = data['scores'].get(str(i), 0)
+
+                avg_score = data['total_score'] / data['total_reviews'] if data['total_reviews'] > 0 else 0
+
+                distributions.append({
+                    'level': 'unit',
+                    'id': unit_id,
+                    'name': data['name'],
+                    'parent_unit_id': None,
+                    'score_histogram': score_histogram,
+                    'attempt_histogram': {},
+                    'total_reviews': data['total_reviews'],
+                    'avg_score': avg_score,
+                    'avg_score_pct': avg_score / 10.0
+                })
+
+            # Process skill-level results
+            skill_data = {}
+            for row in skill_results:
+                skill_id = row['id']
+                if skill_id not in skill_data:
+                    skill_data[skill_id] = {
+                        'level': 'skill',
+                        'id': skill_id,
+                        'name': row['name'],
+                        'parent_unit_id': row['parent_unit_id'],
+                        'scores': {},
+                        'total_reviews': 0,
+                        'total_score': 0
+                    }
+
+                score = str(row['score'])
+                count = int(row['count'])
+                skill_data[skill_id]['scores'][score] = count
+                skill_data[skill_id]['total_reviews'] += count
+                skill_data[skill_id]['total_score'] += row['score'] * count
+
+            for skill_id, data in skill_data.items():
+                # Fill in missing scores
+                score_histogram = {}
+                for i in range(11):
+                    score_histogram[str(i)] = data['scores'].get(str(i), 0)
+
+                avg_score = data['total_score'] / data['total_reviews'] if data['total_reviews'] > 0 else 0
+
+                distributions.append({
+                    'level': 'skill',
+                    'id': skill_id,
+                    'name': data['name'],
+                    'parent_unit_id': data['parent_unit_id'],
+                    'score_histogram': score_histogram,
+                    'attempt_histogram': {},
+                    'total_reviews': data['total_reviews'],
+                    'avg_score': avg_score,
+                    'avg_score_pct': avg_score / 10.0
+                })
+
+            result = {
+                'distributions': distributions,
+                'date_range': {
+                    'start_date': start_date.isoformat() if start_date else None,
+                    'end_date': end_date.isoformat() if end_date else None
+                }
+            }
+
+            # Cache the result
+            self._set_cache(cache_key, result)
+
+            logger.info(f"Score distribution computed for student {student_id}: {len(distributions)} items")
+            return result
+
+        except Exception as e:
+            logger.error(f"Error in get_score_distribution for student {student_id}: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            raise
+
+    async def get_score_trends(
+        self,
+        student_id: int,
+        granularity: str,
+        lookback_weeks: Optional[int] = None,
+        lookback_months: Optional[int] = None,
+        subjects: Optional[List[str]] = None
+    ) -> Dict:
+        """Get score trends over time at subject level"""
+
+        # Check cache first
+        cache_key = self._get_cache_key(
+            "score_trends",
+            student_id=student_id,
+            granularity=granularity,
+            lookback_weeks=lookback_weeks,
+            lookback_months=lookback_months,
+            subjects=",".join(subjects) if subjects else None
+        )
+
+        cached_result = self._get_cache(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached score trends for student {student_id}")
+            return cached_result
+
+        try:
+            # Determine lookback period
+            if granularity == "weekly":
+                lookback = lookback_weeks if lookback_weeks else 52
+                lookback_clause = f"INTERVAL {lookback} WEEK"
+            else:  # monthly
+                lookback = lookback_months if lookback_months else 12
+                lookback_clause = f"INTERVAL {lookback} MONTH"
+
+            # Build subject filter
+            subject_filter = ""
+            if subjects:
+                subject_list = "', '".join(subjects)
+                subject_filter = f"AND subject IN ('{subject_list}')"
+
+            if granularity == "weekly":
+                query = f"""
+                SELECT
+                    subject,
+                    FORMAT_DATE('%G-W%V', DATE(timestamp)) as period_key,
+                    CONCAT('Week ', FORMAT_DATE('%V', DATE(timestamp)), ', ', FORMAT_DATE('%G', DATE(timestamp))) as period_label,
+                    MIN(DATE(timestamp)) as start_date,
+                    MAX(DATE(timestamp)) as end_date,
+                    AVG(CAST(score AS FLOAT64)) as avg_score,
+                    AVG(CAST(score AS FLOAT64)) / 10.0 as avg_score_pct,
+                    COUNT(*) as total_reviews,
+                    SUM(CAST(score AS FLOAT64)) as score_sum
+                FROM `{self.project_id}.{self.dataset_id}.reviews`
+                WHERE student_id = @student_id
+                    AND DATE(timestamp) >= DATE_SUB(CURRENT_DATE(), {lookback_clause})
+                    {subject_filter}
+                GROUP BY subject, period_key, period_label
+                ORDER BY subject, period_key
+                """
+            else:  # monthly
+                query = f"""
+                SELECT
+                    subject,
+                    FORMAT_DATE('%Y-%m', DATE(timestamp)) as period_key,
+                    FORMAT_DATE('%B %Y', DATE(timestamp)) as period_label,
+                    MIN(DATE(timestamp)) as start_date,
+                    MAX(DATE(timestamp)) as end_date,
+                    AVG(CAST(score AS FLOAT64)) as avg_score,
+                    AVG(CAST(score AS FLOAT64)) / 10.0 as avg_score_pct,
+                    COUNT(*) as total_reviews,
+                    SUM(CAST(score AS FLOAT64)) as score_sum
+                FROM `{self.project_id}.{self.dataset_id}.reviews`
+                WHERE student_id = @student_id
+                    AND DATE(timestamp) >= DATE_SUB(CURRENT_DATE(), {lookback_clause})
+                    {subject_filter}
+                GROUP BY subject, period_key, period_label
+                ORDER BY subject, period_key
+                """
+
+            parameters = [
+                bigquery.ScalarQueryParameter("student_id", "INT64", student_id)
+            ]
+
+            results = await self._run_query_async(query, parameters)
+
+            # Group by subject
+            subject_trends = {}
+            for row in results:
+                subject = row['subject']
+                if subject not in subject_trends:
+                    subject_trends[subject] = []
+
+                subject_trends[subject].append({
+                    'period_key': row['period_key'],
+                    'period_label': row['period_label'],
+                    'start_date': row['start_date'].isoformat() if row['start_date'] else None,
+                    'end_date': row['end_date'].isoformat() if row['end_date'] else None,
+                    'avg_score': float(row['avg_score']),
+                    'avg_score_pct': float(row['avg_score_pct']),
+                    'total_reviews': int(row['total_reviews']),
+                    'score_sum': float(row['score_sum'])
+                })
+
+            # Convert to list format
+            trends = []
+            for subject, periods in subject_trends.items():
+                trends.append({
+                    'subject': subject,
+                    'periods': periods
+                })
+
+            result = {
+                'trends': trends,
+                'date_range': {
+                    'lookback': lookback,
+                    'granularity': granularity
+                }
+            }
+
+            # Cache the result
+            self._set_cache(cache_key, result)
+
+            logger.info(f"Score trends computed for student {student_id}: {len(trends)} subjects, {sum(len(t['periods']) for t in trends)} total periods")
+            return result
+
+        except Exception as e:
+            logger.error(f"Error in get_score_trends for student {student_id}: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            raise
+
     def clear_cache(self):
         """Clear the analytics cache"""
         self._cache.clear()

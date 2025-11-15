@@ -716,21 +716,36 @@ class BigQueryETLService:
                     except (ValueError, TypeError):
                         score = None
                 
-                # Extract problem and feedback text
-                problem_text = None
-                answer_text = None
+                # Extract problem identification and type from problem_content
+                problem_id = None
+                problem_type = None
                 if 'problem_content' in review and isinstance(review['problem_content'], dict):
                     problem_content = review['problem_content']
-                    problem_text = problem_content.get('problem')
-                    answer_text = problem_content.get('answer')
-                
+                    problem_id = problem_content.get('id')
+                    problem_type = problem_content.get('type')
+
+                # Extract problem and answer text from full_review (standardized across all problem types)
+                problem_text = None
+                answer_text = None
+                correct_answer = None
+                if 'full_review' in review and isinstance(review['full_review'], dict):
+                    full_review = review['full_review']
+                    problem_text = full_review.get('question_text')
+                    answer_text = full_review.get('your_answer_text')
+                    correct_answer = full_review.get('correct_answer_text')
+
+                # Extract all feedback fields from full_review
                 feedback_praise = None
                 feedback_guidance = None
+                feedback_encouragement = None
+                feedback_next_steps = None
                 if 'full_review' in review and isinstance(review['full_review'], dict) and 'feedback' in review['full_review']:
                     feedback = review['full_review']['feedback']
                     if isinstance(feedback, dict):
                         feedback_praise = feedback.get('praise')
                         feedback_guidance = feedback.get('guidance')
+                        feedback_encouragement = feedback.get('encouragement')
+                        feedback_next_steps = feedback.get('next_steps')
                 
                 # Parse timestamp
                 timestamp_str = review.get('timestamp')
@@ -760,10 +775,19 @@ class BigQueryETLService:
                     'subskill_id': str(review['subskill_id']),
                     'score': score,
                     'timestamp': timestamp.isoformat(),
+                    # Problem identification and type
+                    'problem_id': problem_id,
+                    'problem_type': problem_type,
+                    # Problem and answer text
                     'problem_text': problem_text,
                     'answer_text': answer_text,
+                    'correct_answer': correct_answer,
+                    # Feedback fields
                     'feedback_praise': feedback_praise,
                     'feedback_guidance': feedback_guidance,
+                    'feedback_encouragement': feedback_encouragement,
+                    'feedback_next_steps': feedback_next_steps,
+                    # Sync metadata
                     'sync_timestamp': datetime.now().isoformat(),
                     'cosmos_ts': review.get('_ts', 0)
                 }
@@ -773,8 +797,26 @@ class BigQueryETLService:
             except Exception as e:
                 logger.error(f"Error transforming review {review.get('id', 'unknown')}: {e}")
                 continue
-        
-        logger.info(f"Transformed {len(transformed)}/{len(reviews)} reviews successfully")
+
+        # Log data quality metrics for the new fields
+        if transformed:
+            total_records = len(transformed)
+            problem_type_count = sum(1 for r in transformed if r.get('problem_type'))
+            problem_id_count = sum(1 for r in transformed if r.get('problem_id'))
+            problem_text_count = sum(1 for r in transformed if r.get('problem_text'))
+            answer_text_count = sum(1 for r in transformed if r.get('answer_text'))
+            correct_answer_count = sum(1 for r in transformed if r.get('correct_answer'))
+            encouragement_count = sum(1 for r in transformed if r.get('feedback_encouragement'))
+            next_steps_count = sum(1 for r in transformed if r.get('feedback_next_steps'))
+
+            logger.info(f"Transformed {total_records}/{len(reviews)} reviews successfully")
+            logger.info(f"Data quality - problem_type: {problem_type_count}/{total_records} ({problem_type_count/total_records*100:.1f}%)")
+            logger.info(f"Data quality - problem_text: {problem_text_count}/{total_records} ({problem_text_count/total_records*100:.1f}%)")
+            logger.info(f"Data quality - answer_text: {answer_text_count}/{total_records} ({answer_text_count/total_records*100:.1f}%)")
+            logger.info(f"Data quality - correct_answer: {correct_answer_count}/{total_records} ({correct_answer_count/total_records*100:.1f}%)")
+        else:
+            logger.warning("No reviews were transformed successfully")
+
         return transformed
 
     def _transform_user_profiles_data(self, profiles: List[Dict]) -> List[Dict]:
@@ -1161,19 +1203,27 @@ class BigQueryETLService:
         try:
             # Try to get the table
             existing_table = self.client.get_table(table_id)
-            
-            # For students table specifically, check if schema needs updating
-            if table_name == "students":
+
+            # For tables that may have schema updates, check if schema needs updating
+            if table_name in ["students", "reviews"]:
                 existing_fields = {field.name for field in existing_table.schema}
                 new_fields = {field.name for field in schema}
-                
-                # If schema is significantly different, recreate the table
-                if not new_fields.issubset(existing_fields):
-                    logger.info(f"Students table schema outdated, recreating...")
-                    self.client.delete_table(table_id)
-                    table = bigquery.Table(table_id, schema=schema)
-                    table = self.client.create_table(table)
-                    logger.info(f"Recreated students table with new schema")
+
+                # Check if new fields have been added
+                missing_fields = new_fields - existing_fields
+
+                if missing_fields:
+                    logger.info(f"Table {table_name} missing new fields: {missing_fields}")
+                    logger.info(f"Adding new columns to {table_name} table (preserving existing data)...")
+
+                    # Get the new field definitions
+                    new_field_schemas = [field for field in schema if field.name in missing_fields]
+
+                    # Add new columns to existing table (preserves data)
+                    existing_table.schema = list(existing_table.schema) + new_field_schemas
+                    updated_table = self.client.update_table(existing_table, ["schema"])
+
+                    logger.info(f"Successfully added {len(missing_fields)} new columns to {table_name} table")
                 else:
                     logger.info(f"Table {table_name} already exists with compatible schema")
             else:
@@ -1643,10 +1693,19 @@ class BigQueryETLService:
             bigquery.SchemaField("subskill_id", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("score", "FLOAT", mode="NULLABLE"),
             bigquery.SchemaField("timestamp", "TIMESTAMP", mode="REQUIRED"),
+            # Problem identification and type
+            bigquery.SchemaField("problem_id", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("problem_type", "STRING", mode="NULLABLE"),
+            # Problem and answer text (from full_review for consistency)
             bigquery.SchemaField("problem_text", "STRING", mode="NULLABLE"),
             bigquery.SchemaField("answer_text", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("correct_answer", "STRING", mode="NULLABLE"),
+            # Feedback fields (expanded)
             bigquery.SchemaField("feedback_praise", "STRING", mode="NULLABLE"),
             bigquery.SchemaField("feedback_guidance", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("feedback_encouragement", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("feedback_next_steps", "STRING", mode="NULLABLE"),
+            # Sync metadata
             bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
             bigquery.SchemaField("cosmos_ts", "INTEGER", mode="NULLABLE"),
         ]
