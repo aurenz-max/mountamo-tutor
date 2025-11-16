@@ -3,11 +3,12 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, BookOpen, ClipboardList } from 'lucide-react';
+import { BarChart3, BookOpen, ClipboardList, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import VelocityMetricsCard from '@/components/analytics/VelocityMetricsCard';
 import ProblemReviews from '@/components/analytics/ProblemReviews';
+import AssessmentAnalytics from '@/components/analytics/AssessmentAnalytics';
 import CurriculumExplorer from '@/components/curriculum/CurriculumExplorer';
 import { useVelocityMetrics } from '@/hooks/useVelocityMetrics';
 import { authApi } from '@/lib/authApiClient';
@@ -80,10 +81,14 @@ export default function AnalyticsPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               <span>Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="assessments" className="flex items-center gap-2">
+              <ClipboardCheck className="h-4 w-4" />
+              <span>Assessments</span>
             </TabsTrigger>
             <TabsTrigger value="curriculum" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
@@ -104,6 +109,11 @@ export default function AnalyticsPage() {
               studentId={studentId}
               onActivitySelect={handleActivitySelect}
             />
+          </TabsContent>
+
+          {/* Assessments Tab */}
+          <TabsContent value="assessments" className="space-y-6">
+            <AssessmentAnalytics studentId={studentId} />
           </TabsContent>
 
           {/* Curriculum Tab - Full CurriculumExplorer */}

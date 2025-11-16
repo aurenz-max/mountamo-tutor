@@ -464,6 +464,82 @@ class AuthenticatedApiClient {
   }
 
   // ============================================================================
+  // ASSESSMENT ANALYTICS ENDPOINTS
+  // ============================================================================
+
+  /**
+   * Get assessment overview with summary stats and recent assessments
+   */
+  async getAssessmentOverview(
+    studentId: number,
+    params?: {
+      subject?: string;
+      start_date?: string;
+      end_date?: string;
+    }
+  ) {
+    const queryParams = new URLSearchParams();
+    if (params?.subject) queryParams.append('subject', params.subject);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+
+    const queryString = queryParams.toString();
+    return this.get(`/api/analytics/student/${studentId}/assessments/overview${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get assessment performance with strengths and weaknesses
+   */
+  async getAssessmentPerformance(
+    studentId: number,
+    params?: {
+      subject?: string;
+      start_date?: string;
+      end_date?: string;
+    }
+  ) {
+    const queryParams = new URLSearchParams();
+    if (params?.subject) queryParams.append('subject', params.subject);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+
+    const queryString = queryParams.toString();
+    return this.get(`/api/analytics/student/${studentId}/assessments/performance${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get assessment history with pagination
+   */
+  async getAssessmentHistoryAnalytics(
+    studentId: number,
+    params?: {
+      subject?: string;
+      start_date?: string;
+      end_date?: string;
+      limit?: number;
+    }
+  ) {
+    const queryParams = new URLSearchParams();
+    if (params?.subject) queryParams.append('subject', params.subject);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const queryString = queryParams.toString();
+    return this.get(`/api/analytics/student/${studentId}/assessments/history${queryString ? `?${queryString}` : ''}`);
+  }
+
+  /**
+   * Get detailed assessment breakdown
+   */
+  async getAssessmentDetailsAnalytics(
+    studentId: number,
+    assessmentId: string
+  ) {
+    return this.get(`/api/analytics/student/${studentId}/assessments/${assessmentId}`);
+  }
+
+  // ============================================================================
   // ASSESSMENT ENDPOINTS
   // ============================================================================
 

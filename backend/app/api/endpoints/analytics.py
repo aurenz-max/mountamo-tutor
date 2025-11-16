@@ -227,6 +227,136 @@ class ScoreTrendsResponse(BaseModel):
     generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 # ============================================================================
+# ASSESSMENT ANALYTICS RESPONSE MODELS
+# ============================================================================
+
+class RecentAssessmentItem(BaseModel):
+    assessment_id: str
+    subject: str
+    score_percentage: float
+    correct_count: int
+    total_questions: int
+    completed_at: str
+    time_taken_minutes: Optional[int]
+
+class AssessmentOverviewResponse(BaseModel):
+    student_id: int
+    subject: Optional[str] = None
+    date_range: Dict = Field(default_factory=dict)
+    total_assessments_by_subject: Dict[str, int]
+    avg_score_by_subject: Dict[str, float]
+    total_time_minutes_by_subject: Dict[str, int]
+    trend_status_by_subject: Dict[str, str]  # improving/declining/stable/insufficient_data
+    recent_assessments: List[RecentAssessmentItem]
+    cached: bool = False
+    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+class PerformanceZone(BaseModel):
+    metric_type: str  # skill_performance, problem_type, category_performance
+    subject: str
+    identifier: str
+    name: str
+    context: str
+    percentage: float
+    consistency_score: Optional[float]
+    sample_size: int
+    performance_zone: str  # high_performance, medium_performance, low_performance
+    category: Optional[str]
+
+class AssessmentPerformanceResponse(BaseModel):
+    student_id: int
+    subject: Optional[str] = None
+    date_range: Dict = Field(default_factory=dict)
+    high_performance_areas: List[PerformanceZone]
+    low_performance_areas: List[PerformanceZone]
+    all_performance_zones: List[PerformanceZone]
+    cached: bool = False
+    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+class AssessmentHistoryItem(BaseModel):
+    assessment_id: str
+    subject: str
+    status: str
+    created_at: str
+    completed_at: Optional[str]
+    time_taken_minutes: Optional[int]
+    total_questions: int
+    correct_count: int
+    score_percentage: float
+    weak_spots_count: int
+    foundational_review_count: int
+    new_frontiers_count: int
+    skills_mastered: int
+    skills_struggling: int
+    total_skills_assessed: int
+    average_score_per_skill: float
+    ai_summary: Optional[str]
+    performance_quote: Optional[str]
+    performance_by_type: List[Dict] = Field(default_factory=list)
+    performance_by_category: List[Dict] = Field(default_factory=list)
+    common_misconceptions: List[str] = Field(default_factory=list)
+    performance_vs_average: str  # above_average, average, below_average
+
+class AssessmentHistoryResponse(BaseModel):
+    student_id: int
+    subject: Optional[str] = None
+    date_range: Dict = Field(default_factory=dict)
+    total_count: int
+    assessments: List[AssessmentHistoryItem]
+    cached: bool = False
+    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+class SkillInsightDetail(BaseModel):
+    skill_id: str
+    skill_name: str
+    unit_title: str
+    category: str
+    total_questions: int
+    correct_count: int
+    percentage: float
+    assessment_focus_tag: str
+    performance_label: str
+    insight_text: str
+    next_step: Dict
+    subskills: List[Dict]
+
+class ProblemReviewDetail(BaseModel):
+    problem_id: str
+    skill_name: str
+    subskill_name: str
+    problem_type: str
+    difficulty: Optional[str]
+    is_correct: bool
+    score: int
+    student_answer_text: str
+    correct_answer_text: str
+    misconception: Optional[str]
+
+class AssessmentDetailsResponse(BaseModel):
+    assessment_id: str
+    student_id: int
+    subject: str
+    created_at: str
+    completed_at: Optional[str]
+    time_taken_minutes: Optional[int]
+    total_questions: int
+    correct_count: int
+    score_percentage: float
+    performance_by_type: List[Dict]
+    performance_by_category: List[Dict]
+    average_score_per_skill: float
+    skills_mastered: int
+    skills_struggling: int
+    total_skills_assessed: int
+    ai_summary: Optional[str]
+    performance_quote: Optional[str]
+    common_misconceptions: List[str]
+    skill_insights: List[SkillInsightDetail]
+    problem_reviews: List[ProblemReviewDetail]
+    cached: bool = False
+    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+# ============================================================================
 # DEPENDENCY INJECTION - Simplified
 # ============================================================================
 
@@ -1071,6 +1201,225 @@ async def get_engagement_metrics(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail=f"Error retrieving engagement metrics: {str(e)}"
         )
+
+# ============================================================================
+# ASSESSMENT ANALYTICS ENDPOINTS
+# ============================================================================
+
+@router.get("/student/{student_id}/assessments/overview", response_model=AssessmentOverviewResponse)
+async def get_assessment_overview(
+    student_id: int,
+    subject: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Get assessment overview with trends and recent assessments"""
+
+    user_id = user_context["user_id"]
+
+    # Validate user can access this student's data
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} analytics"
+            )
+
+    # Check cache first (20 minute TTL)
+    cache_key = get_cache_key("assessment_overview", student_id=student_id,
+                             subject=subject, start_date=start_date, end_date=end_date)
+
+    cached_result = get_from_cache(cache_key, ttl_minutes=20)
+    if cached_result:
+        cached_result["cached"] = True
+        return AssessmentOverviewResponse(**cached_result)
+
+    try:
+        logger.info(f"User {user_context['email']} generating assessment overview for student {student_id}")
+
+        # Fetch from BigQuery
+        overview = await analytics_service.get_assessment_overview(
+            student_id, subject, start_date, end_date
+        )
+
+        result = AssessmentOverviewResponse(**overview, cached=False)
+
+        # Cache the result
+        set_cache(cache_key, result.dict())
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Assessment overview error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving assessment overview: {str(e)}"
+        )
+
+@router.get("/student/{student_id}/assessments/performance", response_model=AssessmentPerformanceResponse)
+async def get_assessment_performance(
+    student_id: int,
+    subject: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Get performance analysis showing high and low performance areas"""
+
+    user_id = user_context["user_id"]
+
+    # Validate user can access this student's data
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} analytics"
+            )
+
+    # Check cache first (20 minute TTL)
+    cache_key = get_cache_key("assessment_performance", student_id=student_id,
+                             subject=subject, start_date=start_date, end_date=end_date)
+
+    cached_result = get_from_cache(cache_key, ttl_minutes=20)
+    if cached_result:
+        cached_result["cached"] = True
+        return AssessmentPerformanceResponse(**cached_result)
+
+    try:
+        logger.info(f"User {user_context['email']} generating assessment performance for student {student_id}")
+
+        # Fetch from BigQuery
+        performance = await analytics_service.get_assessment_performance(
+            student_id, subject, start_date, end_date
+        )
+
+        result = AssessmentPerformanceResponse(**performance, cached=False)
+
+        # Cache the result
+        set_cache(cache_key, result.dict())
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Assessment performance error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving assessment performance: {str(e)}"
+        )
+
+@router.get("/student/{student_id}/assessments/history", response_model=List[AssessmentHistoryItem])
+async def get_assessment_history(
+    student_id: int,
+    subject: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    limit: int = Query(20, ge=1, le=100),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Get filterable list of all assessments"""
+
+    user_id = user_context["user_id"]
+
+    # Validate user can access this student's data
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} analytics"
+            )
+
+    # Check cache first (10 minute TTL)
+    cache_key = get_cache_key("assessment_history", student_id=student_id,
+                             subject=subject, start_date=start_date, end_date=end_date, limit=limit)
+
+    cached_result = get_from_cache(cache_key, ttl_minutes=10)
+    if cached_result:
+        return [AssessmentHistoryItem(**item) for item in cached_result]
+
+    try:
+        logger.info(f"User {user_context['email']} generating assessment history for student {student_id}")
+
+        # Fetch from BigQuery
+        history = await analytics_service.get_assessment_history(
+            student_id, subject, start_date, end_date, limit
+        )
+
+        result = [AssessmentHistoryItem(**item) for item in history]
+
+        # Cache the result
+        set_cache(cache_key, [item.dict() for item in result])
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Assessment history error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving assessment history: {str(e)}"
+        )
+
+@router.get("/student/{student_id}/assessments/{assessment_id}", response_model=AssessmentDetailsResponse)
+async def get_assessment_details(
+    student_id: int,
+    assessment_id: str,
+    user_context: dict = Depends(get_user_context),
+    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+):
+    """Get detailed drill-down for a single assessment"""
+
+    user_id = user_context["user_id"]
+
+    # Validate user can access this student's data
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} analytics"
+            )
+
+    # Check cache first (20 minute TTL)
+    cache_key = get_cache_key("assessment_details", student_id=student_id, assessment_id=assessment_id)
+
+    cached_result = get_from_cache(cache_key, ttl_minutes=20)
+    if cached_result:
+        cached_result["cached"] = True
+        return AssessmentDetailsResponse(**cached_result)
+
+    try:
+        logger.info(f"User {user_context['email']} generating assessment details for {assessment_id}")
+
+        # Fetch from BigQuery
+        details = await analytics_service.get_assessment_details(student_id, assessment_id)
+
+        if not details:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Assessment {assessment_id} not found for student {student_id}"
+            )
+
+        result = AssessmentDetailsResponse(**details, cached=False)
+
+        # Cache the result
+        set_cache(cache_key, result.dict())
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Assessment details error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving assessment details: {str(e)}"
+        )
+
+# ============================================================================
+# HEALTH CHECK ENDPOINT
+# ============================================================================
 
 @router.get("/health")
 async def analytics_health_check(

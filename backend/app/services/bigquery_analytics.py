@@ -1,6 +1,7 @@
 # services/bigquery_analytics.py
 
 import asyncio
+import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional, Any
@@ -1760,3 +1761,696 @@ class BigQueryAnalyticsService:
         # Note: BigQuery doesn't have traditional materialized views
         # but we could implement scheduled queries or manual refresh logic here
         pass
+
+    # ========== ASSESSMENT ANALYTICS METHODS ==========
+
+    async def get_assessment_overview(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> Dict:
+        """Get assessment overview with trends and recent assessments"""
+
+        # Check cache first (20 min TTL)
+        cache_key = self._get_cache_key(
+            "assessment_overview",
+            student_id=student_id,
+            subject=subject,
+            start_date=start_date.isoformat() if start_date else None,
+            end_date=end_date.isoformat() if end_date else None
+        )
+
+        cached_result = self._get_cache(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached assessment overview for student {student_id}")
+            return cached_result
+
+        try:
+            query = f"""
+            WITH recent_assessments AS (
+              SELECT
+                assessment_id,
+                subject,
+                completed_at,
+                total_questions,
+                correct_count,
+                score_percentage,
+                time_taken_minutes
+              FROM `{self.project_id}.{self.dataset_id}.assessments`
+              WHERE student_id = @student_id
+                AND completed_at IS NOT NULL
+                AND (@subject IS NULL OR subject = @subject)
+                AND (@start_date IS NULL OR completed_at >= @start_date)
+                AND (@end_date IS NULL OR completed_at <= @end_date)
+              ORDER BY completed_at DESC
+              LIMIT 5
+            ),
+            summary_stats AS (
+              SELECT
+                subject,
+                COUNT(*) as total_assessments,
+                ROUND(AVG(CAST(score_percentage AS FLOAT64)), 1) as avg_score,
+                SUM(CAST(time_taken_minutes AS INT64)) as total_time
+              FROM `{self.project_id}.{self.dataset_id}.assessments`
+              WHERE student_id = @student_id
+                AND completed_at IS NOT NULL
+                AND (@subject IS NULL OR subject = @subject)
+                AND (@start_date IS NULL OR completed_at >= @start_date)
+                AND (@end_date IS NULL OR completed_at <= @end_date)
+              GROUP BY subject
+            ),
+            trend_calculation AS (
+              SELECT
+                subject,
+                assessment_date,
+                avg_score,
+                AVG(avg_score) OVER (
+                  PARTITION BY subject
+                  ORDER BY assessment_date
+                  ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+                ) as moving_avg
+              FROM (
+                SELECT
+                  subject,
+                  DATE(completed_at) as assessment_date,
+                  AVG(CAST(score_percentage AS FLOAT64)) as avg_score
+                FROM `{self.project_id}.{self.dataset_id}.assessments`
+                WHERE student_id = @student_id
+                  AND completed_at IS NOT NULL
+                  AND (@subject IS NULL OR subject = @subject)
+                  AND (@start_date IS NULL OR completed_at >= @start_date)
+                  AND (@end_date IS NULL OR completed_at <= @end_date)
+                GROUP BY subject, DATE(completed_at)
+              )
+            ),
+            trend_status AS (
+              SELECT
+                subject,
+                CASE
+                  WHEN AVG(avg_score - moving_avg) > 5 THEN 'Improving'
+                  WHEN AVG(avg_score - moving_avg) < -5 THEN 'Declining'
+                  ELSE 'Stable'
+                END as trend_status
+              FROM trend_calculation
+              GROUP BY subject
+            ),
+            recent_assessments_agg AS (
+              SELECT
+                subject,
+                ARRAY_AGG(
+                  STRUCT(
+                    assessment_id,
+                    subject,
+                    CAST(score_percentage AS FLOAT64) as score_percentage,
+                    CAST(correct_count AS INT64) as correct_count,
+                    CAST(total_questions AS INT64) as total_questions,
+                    completed_at,
+                    CAST(time_taken_minutes AS INT64) as time_taken_minutes
+                  )
+                  ORDER BY completed_at DESC
+                ) as recent_assessments
+              FROM recent_assessments
+              GROUP BY subject
+            )
+            SELECT
+              ss.subject,
+              ss.total_assessments,
+              ss.avg_score,
+              ss.total_time,
+              COALESCE(ts.trend_status, 'Stable') as trend_status,
+              COALESCE(ra.recent_assessments, []) as recent_assessments
+            FROM summary_stats ss
+            LEFT JOIN trend_status ts ON ss.subject = ts.subject
+            LEFT JOIN recent_assessments_agg ra ON ss.subject = ra.subject
+            ORDER BY ss.subject
+            """
+
+            parameters = [
+                bigquery.ScalarQueryParameter("student_id", "INT64", student_id),
+                bigquery.ScalarQueryParameter("subject", "STRING", subject),
+                bigquery.ScalarQueryParameter("start_date", "TIMESTAMP", start_date),
+                bigquery.ScalarQueryParameter("end_date", "TIMESTAMP", end_date)
+            ]
+
+            results = await self._run_query_async(query, parameters)
+
+            # Structure the response
+            result = {
+                'student_id': student_id,
+                'subject': subject,
+                'date_range': {
+                    'start_date': start_date.isoformat() if start_date else None,
+                    'end_date': end_date.isoformat() if end_date else None
+                },
+                'total_assessments_by_subject': {},
+                'avg_score_by_subject': {},
+                'total_time_minutes_by_subject': {},
+                'trend_status_by_subject': {},
+                'recent_assessments': []
+            }
+
+            for row in results:
+                subj = row['subject']
+                result['total_assessments_by_subject'][subj] = int(row['total_assessments'])
+                result['avg_score_by_subject'][subj] = float(row['avg_score'])
+                result['total_time_minutes_by_subject'][subj] = int(row['total_time']) if row['total_time'] else 0
+                result['trend_status_by_subject'][subj] = row['trend_status']
+
+                # Add recent assessments
+                for assessment in row['recent_assessments']:
+                    result['recent_assessments'].append({
+                        'assessment_id': assessment['assessment_id'],
+                        'subject': assessment['subject'],
+                        'score_percentage': float(assessment['score_percentage']),
+                        'correct_count': int(assessment['correct_count']),
+                        'total_questions': int(assessment['total_questions']),
+                        'completed_at': assessment['completed_at'].isoformat() if assessment['completed_at'] else None,
+                        'time_taken_minutes': int(assessment['time_taken_minutes']) if assessment['time_taken_minutes'] else None
+                    })
+
+            # Cache the result
+            self._set_cache(cache_key, result)
+
+            logger.info(f"Retrieved assessment overview for student {student_id}")
+            return result
+
+        except Exception as e:
+            logger.error(f"Error in get_assessment_overview: {e}")
+            raise
+
+    async def get_assessment_performance(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> Dict:
+        """Get performance analysis showing high and low performance areas"""
+
+        # Check cache first (20 min TTL)
+        cache_key = self._get_cache_key(
+            "assessment_performance",
+            student_id=student_id,
+            subject=subject,
+            start_date=start_date.isoformat() if start_date else None,
+            end_date=end_date.isoformat() if end_date else None
+        )
+
+        cached_result = self._get_cache(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached assessment performance for student {student_id}")
+            return cached_result
+
+        try:
+            query = f"""
+            WITH skill_performance AS (
+              SELECT
+                'skill' as metric_type,
+                asi.subject,
+                asi.skill_id as identifier,
+                asi.skill_name as name,
+                asi.skill_name as context,
+                ROUND(AVG(CAST(asi.percentage AS FLOAT64)), 1) as percentage,
+                ROUND(STDDEV(CAST(asi.percentage AS FLOAT64)), 1) as consistency_score,
+                COUNT(*) as sample_size,
+                asi.category
+              FROM `{self.project_id}.{self.dataset_id}.assessment_skill_insights` asi
+              JOIN `{self.project_id}.{self.dataset_id}.assessments` a
+                ON asi.assessment_id = a.assessment_id
+                AND asi.student_id = a.student_id
+              WHERE asi.student_id = @student_id
+                AND (@subject IS NULL OR asi.subject = @subject)
+                AND (@start_date IS NULL OR a.created_at >= @start_date)
+                AND (@end_date IS NULL OR a.created_at <= @end_date)
+              GROUP BY asi.subject, asi.skill_id, asi.skill_name, asi.category
+              HAVING COUNT(*) >= 2
+            ),
+            type_performance AS (
+              SELECT
+                'problem_type' as metric_type,
+                a.subject,
+                pbt.type as identifier,
+                pbt.type as name,
+                CONCAT(pbt.type, ' problems') as context,
+                ROUND(AVG(pbt.percentage), 1) as percentage,
+                NULL as consistency_score,
+                SUM(pbt.count) as sample_size,
+                NULL as category
+              FROM `{self.project_id}.{self.dataset_id}.assessments` a,
+              UNNEST(performance_by_type) pbt
+              WHERE a.student_id = @student_id
+                AND a.completed_at IS NOT NULL
+                AND (@subject IS NULL OR a.subject = @subject)
+                AND (@start_date IS NULL OR a.completed_at >= @start_date)
+                AND (@end_date IS NULL OR a.completed_at <= @end_date)
+              GROUP BY a.subject, pbt.type
+              HAVING SUM(pbt.count) >= 3
+            ),
+            category_performance AS (
+              SELECT
+                'category' as metric_type,
+                a.subject,
+                pbc.category as identifier,
+                pbc.category as name,
+                CONCAT(pbc.category, ' category') as context,
+                ROUND(AVG(pbc.percentage), 1) as percentage,
+                NULL as consistency_score,
+                SUM(pbc.count) as sample_size,
+                pbc.category as category
+              FROM `{self.project_id}.{self.dataset_id}.assessments` a,
+              UNNEST(performance_by_category) pbc
+              WHERE a.student_id = @student_id
+                AND a.completed_at IS NOT NULL
+                AND (@subject IS NULL OR a.subject = @subject)
+                AND (@start_date IS NULL OR a.completed_at >= @start_date)
+                AND (@end_date IS NULL OR a.completed_at <= @end_date)
+              GROUP BY a.subject, pbc.category
+              HAVING SUM(pbc.count) >= 3
+            ),
+            all_metrics AS (
+              SELECT * FROM skill_performance
+              UNION ALL
+              SELECT * FROM type_performance
+              UNION ALL
+              SELECT * FROM category_performance
+            )
+            SELECT
+              metric_type,
+              subject,
+              identifier,
+              name,
+              context,
+              percentage,
+              consistency_score,
+              sample_size,
+              category,
+              CASE
+                WHEN percentage >= 80 THEN 'Mastered'
+                WHEN percentage >= 60 THEN 'Proficient'
+                WHEN percentage >= 40 THEN 'Developing'
+                ELSE 'Needs Review'
+              END as performance_zone
+            FROM all_metrics
+            ORDER BY percentage DESC
+            """
+
+            parameters = [
+                bigquery.ScalarQueryParameter("student_id", "INT64", student_id),
+                bigquery.ScalarQueryParameter("subject", "STRING", subject),
+                bigquery.ScalarQueryParameter("start_date", "TIMESTAMP", start_date),
+                bigquery.ScalarQueryParameter("end_date", "TIMESTAMP", end_date)
+            ]
+
+            results = await self._run_query_async(query, parameters)
+
+            # Categorize results
+            high_performance = []
+            low_performance = []
+            all_zones = []
+
+            for row in results:
+                zone_data = {
+                    'metric_type': row['metric_type'],
+                    'subject': row['subject'],
+                    'identifier': row['identifier'],
+                    'name': row['name'],
+                    'context': row['context'],
+                    'percentage': float(row['percentage']),
+                    'consistency_score': float(row['consistency_score']) if row['consistency_score'] else None,
+                    'sample_size': int(row['sample_size']),
+                    'performance_zone': row['performance_zone'],
+                    'category': row['category']
+                }
+
+                all_zones.append(zone_data)
+
+                if row['percentage'] >= 80:
+                    high_performance.append(zone_data)
+                elif row['percentage'] < 60:
+                    low_performance.append(zone_data)
+
+            result = {
+                'student_id': student_id,
+                'subject': subject,
+                'date_range': {
+                    'start_date': start_date.isoformat() if start_date else None,
+                    'end_date': end_date.isoformat() if end_date else None
+                },
+                'high_performance_areas': high_performance,
+                'low_performance_areas': low_performance,
+                'all_performance_zones': all_zones
+            }
+
+            # Cache the result
+            self._set_cache(cache_key, result)
+
+            logger.info(f"Retrieved assessment performance for student {student_id}: {len(high_performance)} high, {len(low_performance)} low")
+            return result
+
+        except Exception as e:
+            logger.error(f"Error in get_assessment_performance: {e}")
+            raise
+
+    async def get_assessment_history(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: int = 20
+    ) -> List[Dict]:
+        """Get filterable list of all assessments"""
+
+        # Check cache first (10 min TTL for shorter-lived data)
+        cache_key = self._get_cache_key(
+            "assessment_history",
+            student_id=student_id,
+            subject=subject,
+            start_date=start_date.isoformat() if start_date else None,
+            end_date=end_date.isoformat() if end_date else None,
+            limit=limit
+        )
+
+        cached_result = self._get_cache(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached assessment history for student {student_id}")
+            return cached_result
+
+        try:
+            query = f"""
+            SELECT
+              assessment_id,
+              subject,
+              status,
+              created_at,
+              completed_at,
+              time_taken_minutes,
+              total_questions,
+              correct_count,
+              score_percentage,
+              weak_spots_count,
+              foundational_review_count,
+              new_frontiers_count,
+              average_score_per_skill,
+              skills_mastered,
+              skills_struggling,
+              total_skills_assessed,
+              ai_summary,
+              performance_quote,
+              performance_by_type,
+              performance_by_category,
+              common_misconceptions
+            FROM `{self.project_id}.{self.dataset_id}.assessments`
+            WHERE student_id = @student_id
+              AND completed_at IS NOT NULL
+              AND (@subject IS NULL OR subject = @subject)
+              AND (@start_date IS NULL OR completed_at >= @start_date)
+              AND (@end_date IS NULL OR completed_at <= @end_date)
+            ORDER BY completed_at DESC
+            LIMIT @limit
+            """
+
+            parameters = [
+                bigquery.ScalarQueryParameter("student_id", "INT64", student_id),
+                bigquery.ScalarQueryParameter("subject", "STRING", subject),
+                bigquery.ScalarQueryParameter("start_date", "TIMESTAMP", start_date),
+                bigquery.ScalarQueryParameter("end_date", "TIMESTAMP", end_date),
+                bigquery.ScalarQueryParameter("limit", "INT64", limit)
+            ]
+
+            results = await self._run_query_async(query, parameters)
+
+            # Calculate average score for performance comparison
+            avg_score = sum(float(row['score_percentage']) for row in results) / len(results) if results else 0
+
+            # Format results
+            assessments = []
+            for row in results:
+                score = float(row['score_percentage'])
+
+                # Determine performance vs average
+                if score > avg_score + 10:
+                    performance_vs_average = 'above_average'
+                elif score < avg_score - 10:
+                    performance_vs_average = 'below_average'
+                else:
+                    performance_vs_average = 'average'
+
+                # BigQuery Python client returns JSON fields as parsed Python objects (lists/dicts)
+                # If they're strings, parse them; otherwise use as-is
+                def safe_json_field(field_value):
+                    if field_value is None:
+                        return []
+                    if isinstance(field_value, str):
+                        return json.loads(field_value)
+                    return field_value
+
+                performance_by_type = safe_json_field(row.get('performance_by_type'))
+                performance_by_category = safe_json_field(row.get('performance_by_category'))
+                common_misconceptions = safe_json_field(row.get('common_misconceptions'))
+
+                assessments.append({
+                    'assessment_id': row['assessment_id'],
+                    'subject': row['subject'],
+                    'status': row['status'],
+                    'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                    'completed_at': row['completed_at'].isoformat() if row['completed_at'] else None,
+                    'time_taken_minutes': int(row['time_taken_minutes']) if row['time_taken_minutes'] else None,
+                    'total_questions': int(row['total_questions']),
+                    'correct_count': int(row['correct_count']),
+                    'score_percentage': score,
+                    'weak_spots_count': int(row['weak_spots_count']) if row['weak_spots_count'] else 0,
+                    'foundational_review_count': int(row['foundational_review_count']) if row['foundational_review_count'] else 0,
+                    'new_frontiers_count': int(row['new_frontiers_count']) if row['new_frontiers_count'] else 0,
+                    'average_score_per_skill': float(row['average_score_per_skill']) if row['average_score_per_skill'] else 0.0,
+                    'skills_mastered': int(row['skills_mastered']) if row['skills_mastered'] else 0,
+                    'skills_struggling': int(row['skills_struggling']) if row['skills_struggling'] else 0,
+                    'total_skills_assessed': int(row['total_skills_assessed']) if row['total_skills_assessed'] else 0,
+                    'ai_summary': row['ai_summary'],
+                    'performance_quote': row['performance_quote'],
+                    'performance_by_type': performance_by_type,
+                    'performance_by_category': performance_by_category,
+                    'common_misconceptions': common_misconceptions,
+                    'performance_vs_average': performance_vs_average
+                })
+
+            # Cache the result
+            self._set_cache(cache_key, assessments)
+
+            logger.info(f"Retrieved {len(assessments)} assessments for student {student_id}")
+            return assessments
+
+        except Exception as e:
+            logger.error(f"Error in get_assessment_history: {e}")
+            raise
+
+    async def get_assessment_details(
+        self,
+        student_id: int,
+        assessment_id: str
+    ) -> Optional[Dict]:
+        """Get detailed drill-down for a single assessment"""
+
+        # Check cache first (20 min TTL)
+        cache_key = self._get_cache_key(
+            "assessment_details",
+            student_id=student_id,
+            assessment_id=assessment_id
+        )
+
+        cached_result = self._get_cache(cache_key)
+        if cached_result:
+            logger.info(f"Returning cached assessment details for {assessment_id}")
+            return cached_result
+
+        try:
+            query = f"""
+            WITH assessment_base AS (
+              SELECT
+                assessment_id,
+                student_id,
+                subject,
+                created_at,
+                completed_at,
+                time_taken_minutes,
+                total_questions,
+                correct_count,
+                score_percentage,
+                performance_by_type,
+                performance_by_category,
+                average_score_per_skill,
+                skills_mastered,
+                skills_struggling,
+                total_skills_assessed,
+                ai_summary,
+                performance_quote,
+                common_misconceptions
+              FROM `{self.project_id}.{self.dataset_id}.assessments`
+              WHERE assessment_id = @assessment_id
+                AND student_id = @student_id
+            ),
+            skill_insights_agg AS (
+              SELECT
+                assessment_id,
+                ARRAY_AGG(
+                  STRUCT(
+                    skill_id,
+                    skill_name,
+                    percentage,
+                    performance_label,
+                    total_questions,
+                    correct_count,
+                    category,
+                    insight_text
+                  )
+                  ORDER BY CAST(percentage AS FLOAT64) ASC
+                ) as skill_insights
+              FROM `{self.project_id}.{self.dataset_id}.assessment_skill_insights`
+              WHERE assessment_id = @assessment_id
+                AND student_id = @student_id
+              GROUP BY assessment_id
+            ),
+            problem_reviews_agg AS (
+              SELECT
+                assessment_id,
+                ARRAY_AGG(
+                  STRUCT(
+                    problem_id,
+                    problem_type,
+                    skill_id,
+                    skill_name,
+                    difficulty,
+                    student_answer_text,
+                    correct_answer_text,
+                    is_correct,
+                    score,
+                    misconception
+                  )
+                  ORDER BY problem_id
+                ) as problem_reviews
+              FROM `{self.project_id}.{self.dataset_id}.assessment_problem_reviews`
+              WHERE assessment_id = @assessment_id
+                AND student_id = @student_id
+              GROUP BY assessment_id
+            )
+            SELECT
+              ab.*,
+              COALESCE(si.skill_insights, []) as skill_insights,
+              COALESCE(pr.problem_reviews, []) as problem_reviews
+            FROM assessment_base ab
+            LEFT JOIN skill_insights_agg si ON ab.assessment_id = si.assessment_id
+            LEFT JOIN problem_reviews_agg pr ON ab.assessment_id = pr.assessment_id
+            """
+
+            parameters = [
+                bigquery.ScalarQueryParameter("assessment_id", "STRING", assessment_id),
+                bigquery.ScalarQueryParameter("student_id", "INT64", student_id)
+            ]
+
+            results = await self._run_query_async(query, parameters)
+
+            if not results:
+                logger.warning(f"No assessment found for {assessment_id} and student {student_id}")
+                return None
+
+            row = results[0]
+
+            # Format performance_by_type
+            performance_by_type = []
+            if row.get('performance_by_type'):
+                for pbt in row['performance_by_type']:
+                    performance_by_type.append({
+                        'type': pbt['type'],
+                        'count': int(pbt['count']),
+                        'correct': int(pbt['correct']),
+                        'percentage': float(pbt['percentage'])
+                    })
+
+            # Format performance_by_category
+            performance_by_category = []
+            if row.get('performance_by_category'):
+                for pbc in row['performance_by_category']:
+                    performance_by_category.append({
+                        'category': pbc['category'],
+                        'count': int(pbc['count']),
+                        'correct': int(pbc['correct']),
+                        'percentage': float(pbc['percentage'])
+                    })
+
+            # Format skill_insights
+            skill_insights = []
+            if row.get('skill_insights'):
+                for si in row['skill_insights']:
+                    skill_insights.append({
+                        'skill_id': si['skill_id'],
+                        'skill_name': si['skill_name'],
+                        'score_percentage': float(si['percentage']),
+                        'performance_label': si['performance_label'],
+                        'questions_attempted': int(si['total_questions']),
+                        'questions_correct': int(si['correct_count']),
+                        'category': si['category'],
+                        'recommendation': si['insight_text']
+                    })
+
+            # Format problem_reviews
+            problem_reviews = []
+            if row.get('problem_reviews'):
+                for pr in row['problem_reviews']:
+                    problem_reviews.append({
+                        'problem_id': pr['problem_id'],
+                        'problem_type': pr['problem_type'],
+                        'skill_id': pr['skill_id'],
+                        'skill_name': pr['skill_name'],
+                        'difficulty': int(pr['difficulty']) if pr['difficulty'] else None,
+                        'student_answer': pr['student_answer_text'],
+                        'correct_answer': pr['correct_answer_text'],
+                        'is_correct': bool(pr['is_correct']),
+                        'time_spent_seconds': int(pr['score']) if pr['score'] else None,
+                        'feedback': pr['misconception']
+                    })
+
+            # Format common_misconceptions
+            common_misconceptions = []
+            if row.get('common_misconceptions'):
+                common_misconceptions = list(row['common_misconceptions'])
+
+            result = {
+                'assessment_id': row['assessment_id'],
+                'student_id': int(row['student_id']),
+                'subject': row['subject'],
+                'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                'completed_at': row['completed_at'].isoformat() if row['completed_at'] else None,
+                'time_taken_minutes': int(row['time_taken_minutes']) if row['time_taken_minutes'] else None,
+                'total_questions': int(row['total_questions']),
+                'correct_count': int(row['correct_count']),
+                'score_percentage': float(row['score_percentage']),
+                'performance_by_type': performance_by_type,
+                'performance_by_category': performance_by_category,
+                'average_score_per_skill': float(row['average_score_per_skill']) if row['average_score_per_skill'] else None,
+                'skills_mastered': int(row['skills_mastered']) if row['skills_mastered'] else 0,
+                'skills_struggling': int(row['skills_struggling']) if row['skills_struggling'] else 0,
+                'total_skills_assessed': int(row['total_skills_assessed']) if row['total_skills_assessed'] else 0,
+                'ai_summary': row['ai_summary'],
+                'performance_quote': row['performance_quote'],
+                'common_misconceptions': common_misconceptions,
+                'skill_insights': skill_insights,
+                'problem_reviews': problem_reviews
+            }
+
+            # Cache the result
+            self._set_cache(cache_key, result)
+
+            logger.info(f"Retrieved details for assessment {assessment_id}")
+            return result
+
+        except Exception as e:
+            logger.error(f"Error in get_assessment_details: {e}")
+            raise
+
+    def _safe_list_field(self, value):
+        """Safely convert BigQuery repeated field to Python list"""
+        if value is None:
+            return []
+        return list(value)
