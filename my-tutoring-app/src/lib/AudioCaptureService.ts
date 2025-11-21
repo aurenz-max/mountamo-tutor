@@ -138,21 +138,21 @@ class AudioCaptureService {
         if (fromRate === toRate) return audioData;
 
         const ratio = fromRate / toRate;
-        const newLength = Math.round(audioData.length / ratio);
+        const newLength = Math.ceil(audioData.length / ratio);
         const result = new Float32Array(newLength);
 
+        // Use linear interpolation for better quality (especially for non-integer ratios)
         for (let i = 0; i < newLength; i++) {
-            const start = Math.floor(i * ratio);
-            const end = Math.floor((i + 1) * ratio);
-            let sum = 0;
-            let count = 0;
+            const originalIndex = i * ratio;
+            const index1 = Math.floor(originalIndex);
+            const index2 = Math.min(Math.ceil(originalIndex), audioData.length - 1);
+            const fraction = originalIndex - index1;
 
-            for (let j = start; j < end && j < audioData.length; j++) {
-                sum += audioData[j];
-                count++;
-            }
+            const val1 = audioData[index1] || 0;
+            const val2 = audioData[index2] || 0;
 
-            result[i] = count > 0 ? sum / count : 0;
+            // Linear interpolation for smoother audio
+            result[i] = val1 * (1 - fraction) + val2 * fraction;
         }
 
         return result;
@@ -174,13 +174,17 @@ class AudioCaptureService {
     private convertToBase64(pcmData: Int16Array): string {
         // Create Uint8Array view of the Int16Array's buffer
         const uint8Array = new Uint8Array(pcmData.buffer);
-        
-        // Convert to binary string
+
+        // Optimized: Process in chunks to avoid stack overflow and slow string concatenation
+        const CHUNK_SIZE = 8192;
         let binary = '';
-        uint8Array.forEach(byte => {
-            binary += String.fromCharCode(byte);
-        });
-        
+
+        for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
+            const chunk = uint8Array.subarray(i, Math.min(i + CHUNK_SIZE, uint8Array.length));
+            // @ts-ignore - apply accepts Uint8Array but TS definitions sometimes complain
+            binary += String.fromCharCode.apply(null, Array.from(chunk));
+        }
+
         // Convert to base64
         return btoa(binary);
     }

@@ -7,7 +7,7 @@ from datetime import datetime
 import uuid
 
 from google import genai
-from google.genai.types import GenerateContentConfig
+from google.genai import types
 
 from app.core.config import settings
 from app.models.content import VisualSnippet
@@ -36,6 +36,13 @@ class VisualContentGenerator:
         section_id: str,
         section_heading: str,
         section_content: str,
+        subject_name: str = None,
+        grade_level: str = None,
+        unit_title: str = None,
+        skill_description: str = None,
+        subskill_description: str = None,
+        key_terms: list = None,
+        concepts_covered: list = None,
         custom_prompt: str = None
     ) -> VisualSnippet:
         """
@@ -46,6 +53,13 @@ class VisualContentGenerator:
             section_id: Section identifier
             section_heading: The heading of the content section
             section_content: The content text of the section
+            subject_name: Subject name (e.g., "Mathematics", "Science")
+            grade_level: Grade level (e.g., "Kindergarten", "Grade 3")
+            unit_title: Unit title for broader context
+            skill_description: Parent skill description
+            subskill_description: Detailed subskill description
+            key_terms: Key vocabulary terms to emphasize
+            concepts_covered: Core concepts to illustrate
             custom_prompt: Optional custom instructions
 
         Returns:
@@ -53,27 +67,96 @@ class VisualContentGenerator:
         """
         logger.info(f"🎨 Generating visual snippet for section: {section_heading}")
 
+        # Build educational context section
+        context_section = ""
+        if any([subject_name, grade_level, unit_title, skill_description, subskill_description]):
+            context_section = "\n🎓 EDUCATIONAL CONTEXT:\n"
+            if grade_level:
+                context_section += f"Grade Level: {grade_level}\n"
+            if subject_name:
+                context_section += f"Subject: {subject_name}\n"
+            if unit_title:
+                context_section += f"Unit: {unit_title}\n"
+            if skill_description:
+                context_section += f"Skill: {skill_description}\n"
+            if subskill_description:
+                context_section += f"Subskill: {subskill_description}\n"
+
+        # Build key terms section
+        key_terms_section = ""
+        if key_terms and len(key_terms) > 0:
+            key_terms_section = f"\n📚 KEY TERMS TO EMPHASIZE: {', '.join(key_terms)}\n"
+
+        # Build concepts section
+        concepts_section = ""
+        if concepts_covered and len(concepts_covered) > 0:
+            concepts_section = f"\n💡 CORE CONCEPTS TO ILLUSTRATE: {', '.join(concepts_covered)}\n"
+
         # Create the prompt for visual generation
         base_prompt = f"""
-You are an expert educational programmer. Based on the following section heading and content, generate a single, self-contained HTML file that provides a simple, interactive visual demonstration of the core concept.
+You are an expert educational experience designer creating interactive learning visualizations that bring concepts to life.
 
+Your mission: Create a delightful, engaging HTML experience that makes learners think "WOW! That makes it so much clearer!"
+
+🎯 CONTENT TO VISUALIZE:
 Section Heading: {section_heading}
 Section Content: {section_content}
+{context_section}{key_terms_section}{concepts_section}
 
-Requirements:
-1. Create a complete HTML document with embedded CSS and JavaScript
-2. Use vanilla JavaScript or simple libraries like p5.js (via CDN)
-3. The visualization must be clear, simple, and directly related to the content
-4. Make it interactive - users should be able to click, hover, or manipulate elements
-5. Use appropriate colors, animations, and visual metaphors
-6. Include clear instructions for the user on how to interact
-7. Keep the code clean and well-commented
-8. Ensure it works in modern browsers without external dependencies (except CDN links)
-9. Make it educational and engaging for learners
-10. The visualization should help users understand the concept better than text alone
+🌟 PEDAGOGICAL PRINCIPLES - CREATE AN EXPERIENCE THAT:
 
-Design Style Requirements (MUST FOLLOW FOR CONSISTENT APPEARANCE):
-- Use these CSS custom properties in your :root selector:
+1. TELLS A STORY
+   - Don't just show information - create a narrative journey
+   - Guide learners through the concept step-by-step with progressive revelation
+   - Build from simple to complex, letting them discover patterns
+
+2. USES POWERFUL METAPHORS & REAL-WORLD CONNECTIONS
+   - Ground abstract concepts in concrete, relatable scenarios
+   - For young learners ({grade_level if grade_level else 'students'}): use familiar objects, animals, everyday scenarios
+   - For older learners: use realistic simulations, real-world applications
+   - Make it feel relevant to their lives
+
+3. ENCOURAGES HANDS-ON DISCOVERY
+   - Let learners manipulate, experiment, and discover
+   - Include "What if..." moments where they can test ideas
+   - Create "aha!" moments where patterns suddenly become clear
+   - Make interactions feel responsive and meaningful
+
+4. CELEBRATES ENGAGEMENT
+   - Add delightful micro-interactions (subtle animations, color changes, particle effects)
+   - Celebrate correct insights with positive feedback
+   - Make every click, hover, or interaction feel rewarding
+   - Keep it playful and encouraging
+
+5. BUILDS UNDERSTANDING PROGRESSIVELY
+   - Start with the simplest form of the concept
+   - Add layers of complexity that learners can reveal
+   - Include optional "dig deeper" areas for curious minds
+   - Let them control the pace of exploration
+
+6. **Make it Interactive**: The output MUST NOT be static. It needs buttons, sliders, drag-and-drop, or dynamic visualizations.
+
+7. EMPHASIZES KEY VOCABULARY
+   - Make key terms ({', '.join(key_terms) if key_terms else 'important vocabulary'}) prominent and interactive
+   - Clicking terms should reveal definitions, examples, or demonstrations
+   - Use visual cues to highlight important concepts
+
+💻 TECHNICAL REQUIREMENTS:
+1. Create a complete, self-contained HTML document with embedded CSS and JavaScript
+2. Use vanilla JavaScript or simple libraries like p5.js, Chart.js, or Three.js (via CDN only)
+3. Works in modern browsers without external dependencies (except CDN links)
+4. Include clear, friendly instructions on how to interact
+5. Keep code clean, well-commented, and maintainable
+6. Ensure accessibility (keyboard navigation, screen reader support where appropriate)
+
+2. **NO EXTERNAL IMAGES**:
+    - **CRITICAL**: Do NOT use <img src="..."> with external URLs (like imgur, placeholder.com, or generic internet URLs). They will fail.
+    - **INSTEAD**: Use **CSS shapes**, **inline SVGs**, **Emojis**, or **CSS gradients** to visually represent the elements you see in the input.
+    - If you see a "coffee cup" in the input, render a ☕ emoji or draw a cup with CSS. Do not try to load a jpg of a coffee cup.
+
+🎨 DESIGN STYLE (MUST FOLLOW FOR CONSISTENT APPEARANCE):
+
+CSS Custom Properties (use in :root):
   --primary: #3b82f6;
   --secondary: #10b981;
   --accent: #8b5cf6;
@@ -83,37 +166,37 @@ Design Style Requirements (MUST FOLLOW FOR CONSISTENT APPEARANCE):
   --text-secondary: #64748b;
   --border-color: #e2e8f0;
 
-- Typography:
-  * Font family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
-  * Headings: 24-32px, font-weight: 600, color: var(--text-primary)
-  * Body text: 14-16px, line-height: 1.6, color: var(--text-secondary)
-  * Instructions: 14px, font-weight: 500, color: var(--text-primary)
+Typography:
+  - Font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
+  - Headings: 24-32px, font-weight: 600, color: var(--text-primary)
+  - Body: 14-16px, line-height: 1.6, color: var(--text-secondary)
+  - Instructions: 14px, font-weight: 500, color: var(--text-primary)
 
-- Layout and Spacing:
-  * Container padding: 24px
-  * Element margins: 16px between sections, 12px between related items
-  * Max-width for content: 1200px, centered with margin: 0 auto
+Layout:
+  - Container padding: 24px
+  - Margins: 16px between sections, 12px between related items
+  - Max-width: 1200px, centered
 
-- Visual Elements:
-  * Border radius: 8-12px for all containers, cards, and buttons
-  * Shadows: box-shadow: 0 1px 3px rgba(0,0,0,0.1) for cards/containers
-  * Deeper shadows for elevated elements: 0 4px 6px rgba(0,0,0,0.1)
-  * Borders: 1px solid var(--border-color)
+Visual Elements:
+  - Border radius: 8-12px
+  - Card shadows: 0 1px 3px rgba(0,0,0,0.1)
+  - Elevated shadows: 0 4px 6px rgba(0,0,0,0.1)
+  - Borders: 1px solid var(--border-color)
 
-- Interactive Elements:
-  * Buttons: padding: 10px 20px, border-radius: 8px, background: var(--primary), color: white
-  * Button hover: opacity: 0.9, add transition: all 0.3s ease
-  * Interactive areas: Add cursor: pointer and subtle hover effects (transform: scale(1.05) or opacity change)
-  * All transitions: transition: all 0.3s ease
+Interactive Elements:
+  - Buttons: padding 10px 20px, border-radius 8px, background var(--primary), color white
+  - Hover states: opacity 0.9, transform scale(1.05), transition all 0.3s ease
+  - Cursor: pointer on all interactive elements
 
-- Color Usage:
-  * Primary color (blue) for main actions and key interactive elements
-  * Secondary color (green) for success states and positive feedback
-  * Accent color (purple) for highlights and special features
-  * Use color gradients sparingly for visual interest
-  * Ensure sufficient contrast for accessibility (WCAG AA minimum)
+Color Usage:
+  - Primary (blue): main actions, key elements
+  - Secondary (green): success, positive feedback
+  - Accent (purple): highlights, special features
+  - Use gradients sparingly for visual interest
+  - Ensure WCAG AA contrast for accessibility
 
-Focus on creating something that would make a learner think "Wow, that makes it so much clearer!" while maintaining a consistent, modern, clean design aesthetic.
+✨ YOUR GOAL:
+Create something magical that makes learners light up with understanding. This isn't just a visualization - it's a learning experience that should feel alive, responsive, and genuinely helpful. Make them excited to explore and discover!
 """
 
         if custom_prompt:
@@ -124,11 +207,12 @@ Focus on creating something that would make a learner think "Wow, that makes it 
         try:
             # Generate the HTML content
             response = await self.client.aio.models.generate_content(
-                model='gemini-flash-latest',
+                model='gemini-3-pro-preview',
                 contents=base_prompt,
-                config=GenerateContentConfig(
-                    temperature=0.7,  # Higher temp for more creative visuals
-                    max_output_tokens=15000
+                config=types.GenerateContentConfig(
+                    temperature=1.0,  # Higher temp for more creative visuals
+                    max_output_tokens=15000,
+                    thinking_config={"thinking_level": "HIGH"}   # ← keyword, not positional
                 )
             )
 

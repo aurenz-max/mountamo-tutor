@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional, List
 import traceback
 
 from google import genai
-from google.genai import types  # Add this import for types module
+from google.genai import types
 from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, PrebuiltVoiceConfig, Content
 
 from ...core.config import settings
@@ -48,6 +48,30 @@ FORMAT = "audio/pcm"
 SEND_SAMPLE_RATE = 16000
 RECEIVE_SAMPLE_RATE = 24000
 CHANNELS = 1
+
+# Define the send_answer_feedback tool for Gemini Live
+send_answer_feedback_tool = types.Tool(
+    function_declarations=[
+        types.FunctionDeclaration(
+            name='send_answer_feedback',
+            description="Sends a notification to the user interface about the correctness of their answer. Use this tool ONLY when you have evaluated the user's spoken response and determined if it is correct or incorrect.",
+            parameters=types.Schema(
+                type=types.Type.OBJECT,
+                properties={
+                    'is_correct': types.Schema(
+                        type=types.Type.BOOLEAN,
+                        description="True if the answer is correct, false otherwise"
+                    ),
+                    'feedback_message': types.Schema(
+                        type=types.Type.STRING,
+                        description="A brief, encouraging message for the student (e.g., 'Great job!', 'That's it!')"
+                    )
+                },
+                required=['is_correct']
+            )
+        )
+    ]
+)
 
 # Router setup
 router = APIRouter()
@@ -140,6 +164,38 @@ async def authenticate_websocket_token(token: str) -> dict:
 async def build_topic_tutor_instruction(topic_context: dict, live_problem: Optional[dict] = None) -> str:
     """Builds the system instruction, prioritizing live interaction config's prompt if available."""
 
+    # Build tool instruction for answer validation if problem has answer criteria
+    tool_instruction = ""
+    if live_problem:
+        problem_data = live_problem.get("problem_data", {})
+
+        # Extract question text
+        question_text = (
+            problem_data.get("question") or
+            problem_data.get("problem") or
+            problem_data.get("prompt") or
+            problem_data.get("statement") or
+            "the current question"
+        )
+
+        # Extract correct answer (supports multiple formats)
+        correct_answer = (
+            problem_data.get("correct_answer") or
+            problem_data.get("answer") or
+            problem_data.get("solution")
+        )
+
+        if correct_answer:
+            tool_instruction = f"""
+
+**REAL-TIME ANSWER VALIDATION:**
+The user is solving the following question: "{question_text}".
+The correct spoken answer is "{correct_answer}".
+When you hear the user say the correct answer "{correct_answer}", you MUST immediately call the `send_answer_feedback` tool with the parameter `is_correct` set to `true` and include an encouraging message.
+Do not give away the answer yourself - wait for the student to say it, then validate it using the tool.
+If they say something incorrect, provide gentle guidance toward the correct answer without revealing it directly.
+"""
+
     # PRIORITY 1: If problem has live_interaction_config, use its specific system prompt
     if live_problem:
         live_config = live_problem.get('live_interaction_config')
@@ -150,6 +206,9 @@ async def build_topic_tutor_instruction(topic_context: dict, live_problem: Optio
         if live_config and live_config.get('prompt'):
             problem_prompt = live_config['prompt']
             system_instruction = problem_prompt.get('system', "You are an expert AI Practice Tutor.")
+            # Append tool instruction if available
+            if tool_instruction:
+                system_instruction = system_instruction + tool_instruction
             logger.info(f"✅ Using LIVE INTERACTION system prompt: {system_instruction[:100]}...")
             return system_instruction
 
@@ -161,7 +220,7 @@ async def build_topic_tutor_instruction(topic_context: dict, live_problem: Optio
     subskill_id = topic_context.get("subskill_id", "")
 
     instruction = f"""You are an expert AI Practice Tutor for a K-12 student.
-
+{tool_instruction}
 **SESSION TOPIC:**
 - **Subject:** {subject}
 - **Skill:** {skill_desc} (ID: {skill_id})
@@ -301,10 +360,11 @@ async def practice_tutor_session(websocket: WebSocket):
                 trigger_tokens=25600,
                 sliding_window=types.SlidingWindow(target_tokens=12800),
             ),
-            system_instruction=Content(parts=[{"text": system_instruction}])
+            system_instruction=Content(parts=[{"text": system_instruction}]),
+            #tools=[send_answer_feedback_tool]
         )
-        
-        logger.info("🎤 Starting Gemini Live session for practice tutoring...")
+
+        logger.info("🎤 Starting Gemini Live session with tool calling enabled for practice tutoring...")
         
         logger.info("🔄 About to create Gemini Live session...")
         
@@ -358,7 +418,7 @@ async def practice_tutor_session(websocket: WebSocket):
                         message = await websocket.receive_json()
                         message_type = message.get("type")
                         
-                        logger.info(f"📨 Received client message: {message_type}")
+                        #logger.info(f"📨 Received client message: {message_type}")
 
                         # NEW: Handle live interaction target selection
                         if message_type == "target_selected":
@@ -463,10 +523,11 @@ Problem: "{problem_text}" """
                             await text_queue.put(prompt)
                             
                         elif message_type == "audio":
-                            # Handle audio input
-                            audio_data = message.get("audio_data")
+                            # Handle audio input - frontend sends it as "data" field
+                            audio_data = message.get("data") or message.get("audio_data")
                             if audio_data:
                                 await audio_queue.put(audio_data)
+                                logger.debug(f"📨 Queued audio data for Gemini ({len(audio_data)} bytes base64)")
                                 
                 except WebSocketDisconnect:
                     logger.info("🔌 Client disconnected")
@@ -489,13 +550,16 @@ Problem: "{problem_text}" """
                 try:
                     while True:
                         audio_data = await audio_queue.get()
-                        if isinstance(audio_data, str):
-                            # Decode base64 audio data
-                            import base64
-                            audio_bytes = base64.b64decode(audio_data)
-                            await session.send(input={"mime_type": FORMAT, "data": audio_bytes})
-                        else:
-                            await session.send(input={"mime_type": FORMAT, "data": audio_data})
+                        # ✅ CORRECT WAY: Send base64 string directly with MIME type
+                        # Gemini's v1 SDK expects the base64 string, NOT decoded bytes
+                        await session.send(
+                            input={
+                                "data": audio_data,
+                                "mime_type": f"{FORMAT};rate={SEND_SAMPLE_RATE}"
+                            },
+                            end_of_turn=False  # Keep turn open for streaming
+                        )
+                        logger.debug(f"📤 Sent audio chunk to Gemini ({len(audio_data)} bytes base64)")
                 except Exception as e:
                     logger.error(f"❌ Error sending audio to Gemini: {e}")
 
@@ -511,17 +575,57 @@ Problem: "{problem_text}" """
                                 # Handle model turn (AI speaking)
                                 if hasattr(response.server_content, 'model_turn') and response.server_content.model_turn:
                                     model_turn = response.server_content.model_turn
+                                    #logger.info("MODEL TURN RECEIVED → dumping full model_turn structure for debugging")
+
                                     if hasattr(model_turn, 'parts') and model_turn.parts:
                                         for part in model_turn.parts:
-                                            # Handle text parts
-                                            if hasattr(part, 'text') and part.text:
-                                                gemini_logger.info(f"📥 Received text from Gemini: {part.text[:100]}...")
+                                            # Handle tool calls
+                                            if hasattr(part, 'tool_call') and part.tool_call:
+                                                tool_call = part.tool_call
+                                                function_name = tool_call.name
+                                                args = tool_call.args
 
-                                                # Send without awaiting to prevent blocking
-                                                asyncio.create_task(websocket.send_json({
-                                                    "type": "ai_text",
-                                                    "content": part.text
-                                                }))
+                                                gemini_logger.info(f"🛠️ Received tool call: {function_name} with args: {args}")
+
+                                                if function_name == 'send_answer_feedback':
+                                                    # This is where you execute your tool's logic
+                                                    is_correct = args.get('is_correct', False)
+                                                    message = args.get('feedback_message', 'Correct!' if is_correct else 'Try again.')
+
+                                                    # 1. Send feedback to the frontend client
+                                                    await websocket.send_json({
+                                                        "type": "answer_feedback",
+                                                        "payload": {
+                                                            "is_correct": is_correct,
+                                                            "message": message
+                                                        }
+                                                    })
+                                                    logger.info(f"✅ Sent answer_feedback to frontend: is_correct={is_correct}")
+
+                                                    # 2. Send the result back to Gemini
+                                                    tool_response = types.ToolCallResult(
+                                                        name=function_name,
+                                                        output=json.dumps({"status": "success", "message_sent": message})
+                                                    )
+                                                    await session.send(input=tool_response)
+                                                    logger.info("✅ Sent tool execution result back to Gemini.")
+
+                                                    # 🔥 THIS IS THE MISSING LINE THAT FIXES EVERYTHING
+                                                    await session.send(input="Continue please", end_of_turn=True)
+                                                    logger.info("🔥 Sent explicit 'Continue please' nudge after tool response")
+
+                                            # Handle text parts
+                                            elif hasattr(part, 'text') and part.text:
+                                                gemini_logger.info(f"📥 Received text from Gemini: {part.text[:100]}...")
+                                                clean_text = part.text.strip()
+                                                if clean_text:
+                                                    logger.info(f"🎯 AI speaking: {clean_text}")
+
+                                                    # Send without awaiting to prevent blocking
+                                                    asyncio.create_task(websocket.send_json({
+                                                        "type": "ai_transcription",
+                                                        "content": clean_text
+                                                    }))
 
                                             # Handle audio data
                                             elif hasattr(part, 'inline_data') and part.inline_data and hasattr(part.inline_data, 'data') and part.inline_data.data:

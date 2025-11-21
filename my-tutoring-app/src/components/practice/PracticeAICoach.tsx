@@ -26,6 +26,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAuth } from '@/contexts/AuthContext';
 import { useAICoach } from '@/contexts/AICoachContext';
 import { formatFeedbackForAudio, type StructuredFeedback, type Feedback } from '@/lib/feedbackUtils';
+import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -240,11 +242,16 @@ const PracticeAICoach = React.forwardRef<{ sendSubmissionResult: (result: any) =
 
           case 'user_transcription':
             if (data.content) {
-              dispatch({ 
-                type: 'ADD_MESSAGE', 
+              dispatch({
+                type: 'ADD_MESSAGE',
                 message: { role: 'user', content: data.content, timestamp: new Date() }
               });
             }
+            break;
+
+          case 'answer_feedback':
+            // Handle real-time spoken answer validation from Gemini Live
+            handleAnswerFeedback(data.payload);
             break;
 
           case 'error':
@@ -284,6 +291,44 @@ const PracticeAICoach = React.forwardRef<{ sendSubmissionResult: (result: any) =
       }
     };
   }, []);
+
+  // Answer feedback handler - triggers celebration when student answers correctly
+  const handleAnswerFeedback = (payload: { is_correct: boolean; message: string }) => {
+    console.log('✅ Answer feedback received:', payload);
+
+    if (payload.is_correct) {
+      // Trigger confetti celebration
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+
+      // Show success toast with the AI's encouraging message
+      toast.success(payload.message || 'Correct!', {
+        duration: 2000,
+        icon: '✅',
+        className: 'text-lg font-semibold'
+      });
+
+      // Optional: Play success sound (gracefully handle if file doesn't exist)
+      try {
+        const audio = new Audio('/sounds/success.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(() => {
+          // Silently ignore if sound file doesn't exist
+        });
+      } catch {
+        // Silently ignore sound errors
+      }
+    } else {
+      // Handle incorrect answer with gentle feedback
+      toast.error(payload.message || 'Not quite right, try again!', {
+        duration: 2000,
+        icon: '💭'
+      });
+    }
+  };
 
   // Audio processing methods (copied from main AICoach)
   const processAndPlayRawAudio = (base64Data: string, sampleRate: number = PLAYBACK_SAMPLE_RATE): void => {

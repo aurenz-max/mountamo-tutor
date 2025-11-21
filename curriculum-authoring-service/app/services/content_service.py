@@ -328,6 +328,8 @@ class ContentService:
         section_id: str,
         section_heading: str,
         section_content: str,
+        key_terms: Optional[List[str]] = None,
+        concepts_covered: Optional[List[str]] = None,
         custom_prompt: Optional[str] = None
     ) -> VisualSnippet:
         """
@@ -338,6 +340,8 @@ class ContentService:
             section_id: Section identifier
             section_heading: Section heading
             section_content: Section content text
+            key_terms: Key vocabulary terms from the section
+            concepts_covered: Core concepts from the section
             custom_prompt: Optional custom instructions
 
         Returns:
@@ -345,12 +349,28 @@ class ContentService:
         """
         logger.info(f"🎨 Generating visual snippet for section {section_id}")
 
-        # Generate the visual snippet
+        # Get curriculum hierarchy for educational context
+        subskill = await curriculum_manager.get_subskill(subskill_id)
+        if not subskill:
+            raise ValueError(f"Subskill {subskill_id} not found")
+
+        skill = await curriculum_manager.get_skill(subskill.skill_id)
+        unit = await curriculum_manager.get_unit(skill.unit_id) if skill else None
+        subject = await curriculum_manager.get_subject(unit.subject_id) if unit else None
+
+        # Generate the visual snippet with full educational context
         snippet = await self.visual_generator.generate_visual_snippet(
             subskill_id=subskill_id,
             section_id=section_id,
             section_heading=section_heading,
             section_content=section_content,
+            subject_name=subject.subject_name if subject else None,
+            grade_level=subject.grade_level if subject else None,
+            unit_title=unit.unit_title if unit else None,
+            skill_description=skill.skill_description if skill else None,
+            subskill_description=subskill.subskill_description,
+            key_terms=key_terms,
+            concepts_covered=concepts_covered,
             custom_prompt=custom_prompt
         )
 

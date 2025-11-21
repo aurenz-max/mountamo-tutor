@@ -260,12 +260,14 @@ async def generate_visual_snippet(
         if not section:
             raise ValueError(f"Section {section_id} not found")
 
-        # Generate the visual snippet
+        # Generate the visual snippet with section metadata
         snippet = await content_service.generate_visual_snippet(
             subskill_id=subskill_id,
             section_id=section_id,
             section_heading=section.heading,
             section_content=section.content_text,
+            key_terms=section.key_terms if hasattr(section, 'key_terms') else None,
+            concepts_covered=section.concepts_covered if hasattr(section, 'concepts_covered') else None,
             custom_prompt=request.custom_prompt
         )
 
