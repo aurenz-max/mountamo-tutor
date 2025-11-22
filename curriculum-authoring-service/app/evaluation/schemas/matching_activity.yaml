@@ -1,0 +1,80 @@
+# Matching Activity Problem Schema
+# Based on PRACTICE_PROBLEMS_SCHEMA_STEP1 from backend/app/generators/content_schemas.py
+
+type_name: matching_activity
+
+# Required fields for all matching activity problems
+required_fields:
+  - id
+  - difficulty
+  - grade_level
+  - prompt
+  - left_items
+  - right_items
+  - mappings
+  - rationale
+  - teaching_note
+  - success_criteria
+
+# Optional fields (may be null or absent)
+optional_fields:
+  - statement_visual_intent  # Roadmap feature - not yet implemented
+  - statement_visual_data    # Roadmap feature - not yet implemented
+
+# Field type specifications
+field_types:
+  id: string
+  difficulty: enum
+  grade_level: string
+  prompt: string
+  left_items: list_of_dict
+  right_items: list_of_dict
+  mappings: list_of_dict
+  rationale: string
+  teaching_note: string
+  success_criteria: list_of_string
+  statement_visual_intent: dict_or_null
+  statement_visual_data: dict_or_null
+
+# Nested structure requirements
+nested_structures:
+  left_items:
+    required_keys:
+      - id
+      - text
+    key_types:
+      id: string
+      text: string
+  right_items:
+    required_keys:
+      - id
+      - text
+    key_types:
+      id: string
+      text: string
+  mappings:
+    required_keys:
+      - left_id
+      - right_ids
+    key_types:
+      left_id: string
+      right_ids: list_of_string
+
+# Enum value constraints
+enum_values:
+  difficulty:
+    - easy
+    - medium
+    - hard
+
+# Visual field configuration
+visual_field: statement_visual_intent  # Roadmap feature
+visual_field_alt: statement_visual_data  # Roadmap feature
+visual_on_roadmap: true  # Visual support not yet implemented
+
+# Validation notes
+notes: |
+  - Visual fields are on the roadmap but not yet implemented
+  - Visual validation failures for this type are treated as warnings, not errors
+  - All left_id values in mappings must reference valid left_items[].id
+  - All right_ids values in mappings must reference valid right_items[].id

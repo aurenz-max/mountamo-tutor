@@ -1,0 +1,161 @@
+# Live Interaction Problem Schema
+# Based on LIVE_INTERACTION_SCHEMA_STEP1 and LIVE_INTERACTION_SCHEMA from backend/app/generators/problem_type_schemas.py
+
+type_name: live_interaction
+
+# Required fields for all live interaction problems
+required_fields:
+  - id
+  - problem_type
+  - difficulty
+  - grade_level
+  - prompt
+  - interaction_config
+  - evaluation
+
+# Optional fields (may be null or absent)
+optional_fields:
+  - visual_intent          # Step 1 output - visual intent metadata
+  - visual_content         # Step 2 output - actual visual data
+  - metadata
+  - rationale
+  - teaching_note
+  - success_criteria
+
+# Field type specifications
+field_types:
+  id: string
+  problem_type: string
+  difficulty: enum
+  grade_level: string
+  prompt: dict
+  visual_intent: dict_or_null
+  visual_content: dict_or_null
+  interaction_config: dict
+  evaluation: dict
+  metadata: dict_or_null
+  rationale: string_or_null
+  teaching_note: string_or_null
+  success_criteria: list_of_string_or_null
+
+# Nested structure requirements
+nested_structures:
+  prompt:
+    required_keys:
+      - system
+      - instruction
+    optional_keys:
+      - voice
+    key_types:
+      system: string
+      instruction: string
+      voice: string
+
+  visual_intent:
+    optional_keys:
+      - display_visual_intent
+      - interaction_visual_intent
+    key_types:
+      display_visual_intent: dict
+      interaction_visual_intent: dict
+
+  visual_content:
+    optional_keys:
+      - display_visual
+    key_types:
+      display_visual: dict
+
+  interaction_config:
+    required_keys:
+      - mode
+      - targets
+    optional_keys:
+      - interaction_visual_intent  # Step 1
+      - interaction_visual          # Step 2
+    key_types:
+      mode: string
+      targets: list
+      interaction_visual_intent: dict
+      interaction_visual: dict
+
+  evaluation:
+    required_keys:
+      - feedback
+    key_types:
+      feedback: dict
+
+  evaluation.feedback:
+    required_keys:
+      - correct
+      - incorrect
+    key_types:
+      correct: dict
+      incorrect: dict
+
+  evaluation.feedback.correct:
+    required_keys:
+      - audio
+    optional_keys:
+      - visual_effect
+    key_types:
+      audio: string
+      visual_effect: string
+
+  evaluation.feedback.incorrect:
+    required_keys:
+      - audio
+    optional_keys:
+      - visual_effect
+      - hint
+    key_types:
+      audio: string
+      visual_effect: string
+      hint: string
+
+  metadata:
+    optional_keys:
+      - subject
+      - skill
+      - subskill
+      - expected_duration_seconds
+    key_types:
+      subject: string
+      skill: dict
+      subskill: dict
+      expected_duration_seconds: int
+
+# Enum value constraints
+enum_values:
+  problem_type:
+    - live_interaction
+  difficulty:
+    - easy
+    - medium
+    - hard
+  interaction_config.mode:
+    - click
+    - speech
+    - drag
+    - trace
+  evaluation.feedback.correct.visual_effect:
+    - highlight
+    - celebrate
+    - bounce
+    - pulse
+  evaluation.feedback.incorrect.visual_effect:
+    - shake
+    - dim
+    - fade
+
+# Visual field configuration
+visual_field: visual_intent              # Primary visual field name (Step 1)
+visual_field_alt: visual_content         # Alternative (Step 2 output)
+
+# Validation notes
+notes: |
+  - Backend may return either visual_intent (Step 1) OR visual_content (Step 2)
+  - Both visual fields are optional and may be null
+  - interaction_config.targets must be a list of objects with 'id' and 'is_correct' fields
+  - For click mode, interaction_visual_intent.visual_type should be 'card-grid'
+  - Target IDs in interaction_config.targets should match card IDs in the interaction visual
+  - The problem_type field MUST be 'live_interaction'

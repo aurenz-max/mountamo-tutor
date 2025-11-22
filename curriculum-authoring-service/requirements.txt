@@ -25,6 +25,7 @@ aiofiles==23.2.1
 # Data Processing
 pandas==2.2.0
 numpy==1.26.3
+textstat==0.7.3
 
 # Development
 pytest==8.0.0

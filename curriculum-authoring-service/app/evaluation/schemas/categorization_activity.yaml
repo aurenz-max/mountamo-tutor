@@ -1,0 +1,63 @@
+# Categorization Activity Problem Schema
+# Based on PRACTICE_PROBLEMS_SCHEMA_STEP1 from backend/app/generators/content_schemas.py
+
+type_name: categorization_activity
+
+# Required fields for all categorization activity problems
+required_fields:
+  - id
+  - difficulty
+  - grade_level
+  - instruction
+  - categories
+  - categorization_items
+  - rationale
+  - teaching_note
+  - success_criteria
+
+# Optional fields (may be null or absent)
+optional_fields:
+  - statement_visual_intent  # Optional visual intent metadata
+  - statement_visual_data    # Optional actual visual data
+
+# Field type specifications
+field_types:
+  id: string
+  difficulty: enum
+  grade_level: string
+  instruction: string
+  categories: list_of_string
+  categorization_items: list_of_dict
+  rationale: string
+  teaching_note: string
+  success_criteria: list_of_string
+  statement_visual_intent: dict_or_null
+  statement_visual_data: dict_or_null
+
+# Nested structure requirements
+nested_structures:
+  categorization_items:
+    required_keys:
+      - item_text
+      - correct_category
+    key_types:
+      item_text: string
+      correct_category: string
+
+# Enum value constraints
+enum_values:
+  difficulty:
+    - easy
+    - medium
+    - hard
+
+# Visual field configuration
+visual_field: statement_visual_intent  # Primary visual field name
+visual_field_alt: statement_visual_data  # Alternative (Step 2 output)
+
+# Validation notes
+notes: |
+  - Backend may return either statement_visual_intent (Step 1) OR statement_visual_data (Step 2)
+  - Both visual fields are optional and may be null
+  - categories is a list of category names
+  - Each categorization_items[].correct_category should match one of the categories
