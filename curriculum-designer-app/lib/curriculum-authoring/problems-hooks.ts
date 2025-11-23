@@ -39,6 +39,12 @@ export const PROBLEMS_QUERY_KEYS = {
     ['activePrompt', name, type] as const,
   promptPerformance: (templateId: string) => ['promptPerformance', templateId] as const,
   promptTypes: () => ['promptTypes'] as const,
+  bestPerformingTemplate: (filters: {
+    template_type: PromptTemplateType;
+    subskill_id?: string;
+    problem_type?: string;
+    min_approval_rate?: number;
+  }) => ['bestPerformingTemplate', filters] as const,
 };
 
 // ==================== PROBLEM HOOKS ====================
@@ -406,5 +412,105 @@ export function useActivatePrompt() {
         queryKey: ['activePrompt'],
       });
     },
+  });
+}
+
+// ==================== FEEDBACK LOOP HOOKS ====================
+
+/**
+ * Query hook to get feedback report for a template
+ */
+export function useFeedbackReport(templateId: string, minEvaluations: number = 3) {
+  return useQuery({
+    queryKey: ['feedbackReport', templateId, minEvaluations],
+    queryFn: () => problemsAPI.getFeedbackReport(templateId, minEvaluations),
+    enabled: !!templateId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Mutation hook to generate improvement suggestions
+ */
+export function useSuggestImprovements() {
+  return useMutation({
+    mutationFn: ({
+      templateId,
+      focusAreas,
+    }: {
+      templateId: string;
+      focusAreas?: string[];
+    }) => problemsAPI.suggestImprovements(templateId, focusAreas),
+  });
+}
+
+/**
+ * Query hook to compare template versions
+ */
+export function useCompareTemplateVersions(
+  templateIdA: string,
+  templateIdB: string
+) {
+  return useQuery({
+    queryKey: ['compareTemplates', templateIdA, templateIdB],
+    queryFn: () => problemsAPI.compareTemplateVersions(templateIdA, templateIdB),
+    enabled: !!templateIdA && !!templateIdB,
+  });
+}
+
+/**
+ * Query hook to get performance dashboard
+ */
+export function usePerformanceDashboard(filters?: {
+  template_type?: import('@/types/problems').PromptTemplateType;
+  min_approval_rate?: number;
+  only_active?: boolean;
+}) {
+  return useQuery({
+    queryKey: ['performanceDashboard', filters],
+    queryFn: () => problemsAPI.getPerformanceDashboard(filters),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Mutation hook to trigger feedback aggregation job
+ */
+export function useTriggerFeedbackAggregation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (options?: {
+      template_id?: string;
+      all_templates?: boolean;
+      recent_only?: boolean;
+      hours?: number;
+    }) => problemsAPI.triggerFeedbackAggregation(options),
+    onSuccess: () => {
+      // Invalidate all feedback-related queries
+      queryClient.invalidateQueries({ queryKey: ['feedbackReport'] });
+      queryClient.invalidateQueries({ queryKey: ['performanceDashboard'] });
+    },
+  });
+}
+
+// ==================== PRODUCTION HOOKS ====================
+
+/**
+ * Query hook to get the best-performing template for production use
+ * Returns a template with high approval rate (weighted random selection)
+ */
+export function useBestPerformingTemplate(filters: {
+  template_type: PromptTemplateType;
+  subskill_id?: string;
+  problem_type?: string;
+  min_approval_rate?: number;
+}) {
+  return useQuery({
+    queryKey: PROBLEMS_QUERY_KEYS.bestPerformingTemplate(filters),
+    queryFn: () => problemsAPI.getBestPerformingTemplate(filters),
+    enabled: !!filters.template_type,
+    staleTime: 10 * 60 * 1000, // 10 minutes - templates don't change often
+    retry: false, // Don't retry if no high-performing templates exist
   });
 }

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Edit, RefreshCw, Trash2, Eye, CheckCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, RefreshCw, Trash2, Eye, CheckCircle, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useDeleteProblem, useRegenerateProblem, useEvaluation, useEvaluateProblem } from '@/lib/curriculum-authoring/problems-hooks';
+import { useDeleteProblem, useRegenerateProblem, useEvaluation, useEvaluateProblem, useCreatePrompt } from '@/lib/curriculum-authoring/problems-hooks';
 import type {
   ProblemInDB,
   MultipleChoiceProblem,
@@ -21,6 +21,8 @@ import type {
 } from '@/types/problems';
 import { EvaluationResults } from './EvaluationResults';
 import { ProblemEditor } from './ProblemEditor';
+import { EvaluationBadge, TierProgress } from './EvaluationBadge';
+import { PromoteToTemplateDialog } from './PromoteToTemplateDialog';
 
 interface ProblemCardProps {
   problem: ProblemInDB;
@@ -31,6 +33,7 @@ export function ProblemCard({ problem, subskillId }: ProblemCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [showEvaluation, setShowEvaluation] = useState(false);
+  const [showPromoteDialog, setShowPromoteDialog] = useState(false);
 
   // Fetch evaluation if it exists
   const { data: evaluation, isLoading: isLoadingEvaluation, refetch: refetchEvaluation } = useEvaluation(problem.problem_id);
@@ -81,6 +84,10 @@ export function ProblemCard({ problem, subskillId }: ProblemCardProps) {
     }
   };
 
+  const handlePromoteToTemplate = () => {
+    setShowPromoteDialog(true);
+  };
+
   // Get problem type badge color
   const getTypeBadgeVariant = (type: string) => {
     switch (type) {
@@ -121,33 +128,9 @@ export function ProblemCard({ problem, subskillId }: ProblemCardProps) {
     }
   };
 
-  // Get evaluation score badge
-  const getEvaluationBadge = () => {
-    if (!evaluation) return null;
-
-    const score = evaluation.overall_score;
-    const recommendation = evaluation.final_recommendation;
-
-    let variant: 'default' | 'secondary' | 'destructive' = 'default';
-    let emoji = '🟢';
-
-    if (recommendation === 'approve') {
-      variant = 'default';
-      emoji = '🟢';
-    } else if (recommendation === 'revise') {
-      variant = 'secondary';
-      emoji = '🟡';
-    } else {
-      variant = 'destructive';
-      emoji = '🔴';
-    }
-
-    return (
-      <Badge variant={variant}>
-        {emoji} {score.toFixed(1)}/10
-      </Badge>
-    );
-  };
+  // Check if evaluation has LLM scores
+  const hasLlmEvaluation = evaluation?.pedagogical_approach_score !== null &&
+                          evaluation?.pedagogical_approach_score !== undefined;
 
   // Get question text preview
   const getQuestionPreview = () => {
@@ -528,17 +511,32 @@ export function ProblemCard({ problem, subskillId }: ProblemCardProps) {
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <Badge variant={getTypeBadgeVariant(problem.problem_type)}>
-                    {problem.problem_type.replace('_', ' ')}
-                  </Badge>
-                  <Badge variant={getDifficultyBadgeVariant(difficulty)}>
-                    {difficulty}
-                  </Badge>
-                  {evaluation && getEvaluationBadge()}
-                  {problem.is_draft && <Badge variant="outline">Draft</Badge>}
-                  {problem.is_active && !problem.is_draft && (
-                    <Badge variant="default">Active</Badge>
+                <div className="space-y-2 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant={getTypeBadgeVariant(problem.problem_type)}>
+                      {problem.problem_type.replace('_', ' ')}
+                    </Badge>
+                    <Badge variant={getDifficultyBadgeVariant(difficulty)}>
+                      {difficulty}
+                    </Badge>
+                    {evaluation && (
+                      <EvaluationBadge
+                        recommendation={evaluation.final_recommendation}
+                        score={evaluation.overall_score}
+                        size="default"
+                      />
+                    )}
+                    {problem.is_draft && <Badge variant="outline">Draft</Badge>}
+                    {problem.is_active && !problem.is_draft && (
+                      <Badge variant="default">Active</Badge>
+                    )}
+                  </div>
+                  {evaluation && (
+                    <TierProgress
+                      tier1Passed={evaluation.tier1_passed}
+                      tier2Passed={evaluation.tier2_passed}
+                      hasLlmEvaluation={hasLlmEvaluation}
+                    />
                   )}
                 </div>
                 <CollapsibleTrigger asChild>
@@ -607,15 +605,29 @@ export function ProblemCard({ problem, subskillId }: ProblemCardProps) {
               <div>
                 {evaluation ? (
                   <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowEvaluation(!showEvaluation)}
-                      className="mb-3"
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      {showEvaluation ? 'Hide' : 'View'} Evaluation Results
-                    </Button>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowEvaluation(!showEvaluation)}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        {showEvaluation ? 'Hide' : 'View'} Evaluation Results
+                      </Button>
+
+                      {/* Promote to Template button - only show for high-scoring problems */}
+                      {evaluation.overall_score >= 8.5 && problem.generation_prompt && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handlePromoteToTemplate}
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
+                          <Star className="mr-2 h-4 w-4" />
+                          Promote to Template
+                        </Button>
+                      )}
+                    </div>
 
                     {showEvaluation && <EvaluationResults evaluation={evaluation} />}
                   </>
@@ -731,6 +743,15 @@ export function ProblemCard({ problem, subskillId }: ProblemCardProps) {
           onClose={() => setShowEditor(false)}
         />
       )}
+
+      {/* Promote to Template Dialog */}
+      <PromoteToTemplateDialog
+        open={showPromoteDialog}
+        onOpenChange={setShowPromoteDialog}
+        problem={problem}
+        evaluation={evaluation}
+        subskillId={subskillId}
+      />
     </>
   );
 }

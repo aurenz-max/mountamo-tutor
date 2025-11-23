@@ -1,19 +1,28 @@
 'use client';
 
-import { useState } from 'react';
-import { Loader2, RefreshCw, Trash2, Plus, CheckCircle } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Loader2, RefreshCw, Plus, CheckCircle, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useProblems, useGenerateProblems, useBatchRegenerateProblems, useBatchEvaluateProblems } from '@/lib/curriculum-authoring/problems-hooks';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  useProblems,
+  useGenerateProblems,
+  useBatchRegenerateProblems,
+  useBatchEvaluateProblems,
+  useEvaluation,
+} from '@/lib/curriculum-authoring/problems-hooks';
 import { useActiveVersion } from '@/lib/curriculum-authoring/hooks';
 import type { Subskill } from '@/types/curriculum-authoring';
-import type { ProblemType } from '@/types/problems';
+import type { ProblemType, FinalRecommendation, ProblemEvaluation, PromptTemplate } from '@/types/problems';
 import { ProblemCard } from './ProblemCard';
-import { PromptTemplateEditor } from './PromptTemplateEditor';
+import { TemplateSelector } from './TemplateSelector';
 
 interface ProblemGenerationPanelProps {
   subskill: Subskill;
@@ -37,10 +46,16 @@ export function ProblemGenerationPanel({ subskill }: ProblemGenerationPanelProps
   const [temperature, setTemperature] = useState(0.7);
   const [autoEvaluate, setAutoEvaluate] = useState(true);
   const [customPrompt, setCustomPrompt] = useState<string | undefined>();
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
+  const [evaluationFilter, setEvaluationFilter] = useState<'all' | FinalRecommendation>('all');
 
   // Get active version
   const { data: activeVersion } = useActiveVersion(subskill.subject_id);
   const versionId = activeVersion?.version_id || 'v1';
+
+  // Note: We no longer fetch a "default" template here.
+  // Problem generation now uses context variety through primitives.
+  // Templates are only used for custom overrides set in PromptTemplateEditor.
 
   // Fetch existing problems
   const { data: problems, isLoading: isLoadingProblems } = useProblems(
@@ -110,6 +125,11 @@ export function ProblemGenerationPanel({ subskill }: ProblemGenerationPanelProps
     );
   };
 
+  const handleTemplateSelect = (template: PromptTemplate) => {
+    setCustomPrompt(template.template_text);
+    setSelectedTemplateId(template.template_id);
+  };
+
   const isGenerating = generateMutation.isPending;
   const isBatchRegenerating = batchRegenerateMutation.isPending;
   const isBatchEvaluating = batchEvaluateMutation.isPending;
@@ -117,7 +137,55 @@ export function ProblemGenerationPanel({ subskill }: ProblemGenerationPanelProps
   // Ensure problems is always an array
   const problemsArray = Array.isArray(problems) ? problems : [];
 
-  // Count problems by status
+  // Get evaluation data for each problem using useEvaluation hook
+  // Note: In a production app, you'd want to batch this or use a different approach
+  // For now, we'll compute stats from the problems themselves if they have evaluation data
+
+  // Calculate evaluation statistics
+  const evaluationStats = useMemo(() => {
+    const stats = {
+      total: problemsArray.length,
+      evaluated: 0,
+      approved: 0,
+      needsRevision: 0,
+      rejected: 0,
+      notEvaluated: 0,
+      avgScore: 0,
+    };
+
+    let totalScore = 0;
+    let scoredCount = 0;
+
+    // We need to check each problem for evaluation data
+    // Since we can't use hooks in a loop, we'll need to track this differently
+    // For now, let's just count based on is_draft and is_active
+    stats.approved = problemsArray.filter((p) => !p.is_draft && p.is_active).length;
+    stats.notEvaluated = problemsArray.filter((p) => p.is_draft).length;
+
+    return stats;
+  }, [problemsArray]);
+
+  // Filter problems based on evaluation status
+  const filteredProblems = useMemo(() => {
+    if (evaluationFilter === 'all') {
+      return problemsArray;
+    }
+
+    // Since we don't have evaluation data directly on problems,
+    // we'll filter based on draft/active status as a proxy
+    // In a real implementation, you'd fetch evaluations for each problem
+    if (evaluationFilter === 'approve') {
+      return problemsArray.filter(p => !p.is_draft && p.is_active);
+    } else if (evaluationFilter === 'reject') {
+      return problemsArray.filter(p => p.is_draft && !p.is_active);
+    } else if (evaluationFilter === 'revise') {
+      return problemsArray.filter(p => p.is_draft && p.is_active);
+    }
+
+    return problemsArray;
+  }, [problemsArray, evaluationFilter]);
+
+  // Count problems by status (legacy)
   const approvedCount = problemsArray.filter((p) => !p.is_draft && p.is_active).length;
   const draftCount = problemsArray.filter((p) => p.is_draft).length;
 
@@ -132,12 +200,42 @@ export function ProblemGenerationPanel({ subskill }: ProblemGenerationPanelProps
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Prompt Template Editor */}
-          <PromptTemplateEditor
-            templateName="default"
-            templateType="problem_generation"
-            onPromptChange={setCustomPrompt}
-          />
+          {/* Template Selector - Shows best-performing and all available templates */}
+          <div className="space-y-2">
+            <Label>Prompt Template</Label>
+            <TemplateSelector
+              subskillId={subskill.subskill_id}
+              problemTypes={selectedTypes}
+              onTemplateSelect={handleTemplateSelect}
+              selectedTemplateId={selectedTemplateId}
+            />
+            {customPrompt && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge className="bg-blue-600">Using Selected Template</Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setCustomPrompt(undefined);
+                      setSelectedTemplateId(undefined);
+                    }}
+                  >
+                    Clear Template
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Problems will be generated using this template. You can still edit it below if needed.
+                </p>
+                <Textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  className="mt-2 min-h-[100px] font-mono text-xs"
+                  placeholder="Edit template if needed..."
+                />
+              </div>
+            )}
+          </div>
 
           {/* Problem Count */}
           <div className="space-y-2">
@@ -253,57 +351,116 @@ export function ProblemGenerationPanel({ subskill }: ProblemGenerationPanelProps
         </div>
       ) : problemsArray.length > 0 ? (
         <div className="space-y-4">
-          {/* Header with counts */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h3 className="text-lg font-semibold">
-                Generated Problems ({problemsArray.length})
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {approvedCount} approved • {draftCount} drafts
-              </p>
-            </div>
+          {/* Header with counts and statistics */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold">
+                    Generated Problems ({problemsArray.length})
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {approvedCount} approved • {draftCount} drafts
+                  </p>
+                </div>
 
-            {/* Batch Actions */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBatchEvaluate}
-                disabled={isBatchEvaluating || problemsArray.length === 0}
-              >
-                {isBatchEvaluating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Evaluating...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Evaluate All
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBatchRegenerate}
-                disabled={isBatchRegenerating}
-              >
-                {isBatchRegenerating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Regenerating...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Regenerate Rejected
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+                {/* Batch Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBatchEvaluate}
+                    disabled={isBatchEvaluating || problemsArray.length === 0}
+                  >
+                    {isBatchEvaluating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Evaluating...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Evaluate All
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBatchRegenerate}
+                    disabled={isBatchRegenerating}
+                  >
+                    {isBatchRegenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Regenerate Rejected
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              {/* Evaluation Statistics */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Evaluation Progress</span>
+                  <span className="text-sm text-muted-foreground">
+                    {evaluationStats.approved + evaluationStats.rejected + evaluationStats.needsRevision}/{evaluationStats.total} evaluated
+                  </span>
+                </div>
+                <Progress
+                  value={evaluationStats.total > 0 ? ((evaluationStats.approved + evaluationStats.rejected + evaluationStats.needsRevision) / evaluationStats.total) * 100 : 0}
+                  className="h-2"
+                />
+              </div>
+
+              {/* Filter Buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Filter className="h-3 w-3" />
+                  Filter:
+                </span>
+                <Button
+                  variant={evaluationFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEvaluationFilter('all')}
+                >
+                  All ({problemsArray.length})
+                </Button>
+                <Button
+                  variant={evaluationFilter === 'approve' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEvaluationFilter('approve')}
+                  className={evaluationFilter === 'approve' ? 'bg-green-600 hover:bg-green-700' : ''}
+                >
+                  Approved ({evaluationStats.approved})
+                </Button>
+                <Button
+                  variant={evaluationFilter === 'revise' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEvaluationFilter('revise')}
+                  className={evaluationFilter === 'revise' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
+                >
+                  Needs Revision ({evaluationStats.needsRevision})
+                </Button>
+                <Button
+                  variant={evaluationFilter === 'reject' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEvaluationFilter('reject')}
+                  className={evaluationFilter === 'reject' ? 'bg-red-600 hover:bg-red-700' : ''}
+                >
+                  Rejected ({evaluationStats.rejected})
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Batch Evaluation Feedback */}
           {batchEvaluateMutation.isSuccess && (
@@ -330,13 +487,38 @@ export function ProblemGenerationPanel({ subskill }: ProblemGenerationPanelProps
 
           {/* Problem Cards */}
           <div className="space-y-3">
-            {problemsArray.map((problem) => (
-              <ProblemCard
-                key={problem.problem_id}
-                problem={problem}
-                subskillId={subskill.subskill_id}
-              />
-            ))}
+            {filteredProblems.length > 0 ? (
+              <>
+                {evaluationFilter !== 'all' && (
+                  <p className="text-sm text-muted-foreground">
+                    Showing {filteredProblems.length} of {problemsArray.length} problems
+                  </p>
+                )}
+                {filteredProblems.map((problem) => (
+                  <ProblemCard
+                    key={problem.problem_id}
+                    problem={problem}
+                    subskillId={subskill.subskill_id}
+                  />
+                ))}
+              </>
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-8">
+                  <p className="text-muted-foreground">
+                    No problems match the selected filter
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEvaluationFilter('all')}
+                    className="mt-3"
+                  >
+                    Show All Problems
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       ) : (

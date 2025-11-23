@@ -13,6 +13,10 @@ import type {
   CreatePromptTemplateRequest,
   UpdatePromptTemplateRequest,
   PromptTemplateType,
+  FeedbackReport,
+  PromptSuggestion,
+  TemplateComparison,
+  PerformanceDashboardData,
 } from '@/types/problems';
 
 const AUTHORING_API_BASE_URL = process.env.NEXT_PUBLIC_AUTHORING_API_URL || 'http://localhost:8001';
@@ -272,16 +276,20 @@ class ProblemsAPI {
     }
 
     const queryString = params.toString();
-    return this.request<PromptTemplate[]>(
+    const response = await this.request<{ success: boolean; data: PromptTemplate[]; message: string }>(
       `/api/prompts${queryString ? `?${queryString}` : ''}`
     );
+    return response.data;
   }
 
   /**
    * Get a specific prompt template
    */
   async getPrompt(templateId: string): Promise<PromptTemplate> {
-    return this.request<PromptTemplate>(`/api/prompts/${templateId}`);
+    const response = await this.request<{ success: boolean; data: PromptTemplate; message: string }>(
+      `/api/prompts/${templateId}`
+    );
+    return response.data;
   }
 
   /**
@@ -291,7 +299,10 @@ class ProblemsAPI {
     name: string,
     type: PromptTemplateType
   ): Promise<PromptTemplate> {
-    return this.request<PromptTemplate>(`/api/prompts/active/${name}/${type}`);
+    const response = await this.request<{ success: boolean; data: PromptTemplate; message: string }>(
+      `/api/prompts/active/${name}/${type}`
+    );
+    return response.data;
   }
 
   /**
@@ -300,10 +311,14 @@ class ProblemsAPI {
   async createPrompt(
     request: CreatePromptTemplateRequest
   ): Promise<PromptTemplate> {
-    return this.request<PromptTemplate>(`/api/prompts`, {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
+    const response = await this.request<{ success: boolean; data: PromptTemplate; message: string }>(
+      `/api/prompts`,
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }
+    );
+    return response.data;
   }
 
   /**
@@ -313,19 +328,27 @@ class ProblemsAPI {
     templateId: string,
     updates: UpdatePromptTemplateRequest
   ): Promise<PromptTemplate> {
-    return this.request<PromptTemplate>(`/api/prompts/${templateId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    const response = await this.request<{ success: boolean; data: PromptTemplate; message: string }>(
+      `/api/prompts/${templateId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      }
+    );
+    return response.data;
   }
 
   /**
    * Activate a specific prompt template version
    */
   async activatePrompt(templateId: string): Promise<PromptTemplate> {
-    return this.request<PromptTemplate>(`/api/prompts/${templateId}/activate`, {
-      method: 'POST',
-    });
+    const response = await this.request<{ success: boolean; data: PromptTemplate; message: string }>(
+      `/api/prompts/${templateId}/activate`,
+      {
+        method: 'POST',
+      }
+    );
+    return response.data;
   }
 
   /**
@@ -348,6 +371,166 @@ class ProblemsAPI {
    */
   async getPromptTypes(): Promise<string[]> {
     return this.request<string[]>(`/api/prompts/types`);
+  }
+
+  // ==================== FEEDBACK LOOP OPERATIONS ====================
+
+  /**
+   * Get aggregated feedback report for a template
+   */
+  async getFeedbackReport(
+    templateId: string,
+    minEvaluations: number = 3
+  ): Promise<FeedbackReport> {
+    const params = new URLSearchParams({
+      min_evaluations: minEvaluations.toString(),
+    });
+    const response = await this.request<{ success: boolean; data: FeedbackReport; message: string }>(
+      `/api/prompts/${templateId}/feedback-report?${params}`
+    );
+    return response.data;
+  }
+
+  /**
+   * Generate AI-powered improvement suggestions for a template
+   */
+  async suggestImprovements(
+    templateId: string,
+    focusAreas?: string[]
+  ): Promise<PromptSuggestion> {
+    const params = focusAreas?.length
+      ? `?${focusAreas.map((a) => `focus_areas=${a}`).join('&')}`
+      : '';
+    const response = await this.request<{ success: boolean; data: PromptSuggestion; message: string }>(
+      `/api/prompts/${templateId}/suggest-improvements${params}`,
+      { method: 'POST' }
+    );
+    return response.data;
+  }
+
+  /**
+   * Compare two template versions
+   */
+  async compareTemplateVersions(
+    templateIdA: string,
+    templateIdB: string
+  ): Promise<TemplateComparison> {
+    const response = await this.request<{ success: boolean; data: TemplateComparison; message: string }>(
+      `/api/prompts/${templateIdA}/compare/${templateIdB}`
+    );
+    return response.data;
+  }
+
+  /**
+   * Get performance dashboard for all templates
+   */
+  async getPerformanceDashboard(filters?: {
+    template_type?: PromptTemplateType;
+    min_approval_rate?: number;
+    only_active?: boolean;
+  }): Promise<PerformanceDashboardData> {
+    const params = new URLSearchParams();
+    if (filters?.template_type) {
+      params.append('template_type', filters.template_type);
+    }
+    if (filters?.min_approval_rate !== undefined) {
+      params.append('min_approval_rate', filters.min_approval_rate.toString());
+    }
+    if (filters?.only_active) {
+      params.append('only_active', 'true');
+    }
+
+    const queryString = params.toString();
+    const response = await this.request<{ success: boolean; data: PerformanceDashboardData; message: string }>(
+      `/api/prompts/performance-dashboard${queryString ? `?${queryString}` : ''}`
+    );
+    return response.data;
+  }
+
+  /**
+   * Trigger feedback aggregation job (admin feature)
+   */
+  async triggerFeedbackAggregation(options?: {
+    template_id?: string;
+    all_templates?: boolean;
+    recent_only?: boolean;
+    hours?: number;
+  }): Promise<{
+    total_templates: number;
+    successful: number;
+    skipped: number;
+    failed: number;
+    processed_templates: Array<{
+      template_id: string;
+      template_name: string;
+      problem_count: number;
+    }>;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.template_id) {
+      params.append('template_id', options.template_id);
+    }
+    if (options?.all_templates) {
+      params.append('all_templates', 'true');
+    }
+    if (options?.recent_only) {
+      params.append('recent_only', 'true');
+    }
+    if (options?.hours !== undefined) {
+      params.append('hours', options.hours.toString());
+    }
+
+    const queryString = params.toString();
+    const response = await this.request<{
+      success: boolean;
+      data: {
+        total_templates: number;
+        successful: number;
+        skipped: number;
+        failed: number;
+        processed_templates: Array<{
+          template_id: string;
+          template_name: string;
+          problem_count: number;
+        }>;
+      };
+      message: string;
+    }>(
+      `/api/prompts/jobs/aggregate-feedback${queryString ? `?${queryString}` : ''}`,
+      { method: 'POST' }
+    );
+    return response.data;
+  }
+
+  // ==================== PRODUCTION OPERATIONS ====================
+
+  /**
+   * Get best-performing template for production use
+   * Returns a template with high approval rate (weighted random selection)
+   */
+  async getBestPerformingTemplate(filters: {
+    template_type: PromptTemplateType;
+    subskill_id?: string;
+    problem_type?: string;
+    min_approval_rate?: number;
+  }): Promise<PromptTemplate> {
+    const params = new URLSearchParams({
+      template_type: filters.template_type,
+    });
+    if (filters.subskill_id) {
+      params.append('subskill_id', filters.subskill_id);
+    }
+    if (filters.problem_type) {
+      params.append('problem_type', filters.problem_type);
+    }
+    if (filters.min_approval_rate !== undefined) {
+      params.append('min_approval_rate', filters.min_approval_rate.toString());
+    }
+
+    const response = await this.request<{ success: boolean; data: { template: PromptTemplate }; message: string }>(
+      `/api/production/prompts/best-performing?${params}`
+    );
+    return response.data.template;
   }
 }
 

@@ -384,6 +384,205 @@ export interface UpdatePromptTemplateRequest {
 }
 
 // ============================================================================
+// Feedback Loop System Types
+// ============================================================================
+
+// Performance Flags
+export type PerformanceFlag =
+  | 'PERFORMING_WELL'
+  | 'BELOW_TARGET_APPROVAL'
+  | 'LOW_APPROVAL_RATE'
+  | 'BELOW_TARGET_SCORE'
+  | 'LOW_OVERALL_SCORE'
+  | 'NO_EVALUATION_DATA'
+  | 'CRITICAL_PEDAGOGICAL_APPROACH_SCORE'
+  | 'CRITICAL_ALIGNMENT_SCORE'
+  | 'CRITICAL_CLARITY_SCORE'
+  | 'CRITICAL_CORRECTNESS_SCORE'
+  | 'CRITICAL_BIAS_SCORE'
+  | 'WEAK_PEDAGOGICAL_APPROACH_SCORE'
+  | 'WEAK_ALIGNMENT_SCORE'
+  | 'WEAK_CLARITY_SCORE'
+  | 'WEAK_CORRECTNESS_SCORE'
+  | 'WEAK_BIAS_SCORE';
+
+// Dimension Analysis
+export interface DimensionAnalysis {
+  [dimension: string]: {
+    average: number;
+    min: number;
+    max: number;
+    count: number;
+    is_weak: boolean;
+    severity: 'excellent' | 'good' | 'needs_attention' | 'critical';
+  };
+  weakest_dimension?: string;
+  weakest_score?: number;
+}
+
+// Feedback Themes
+export interface FeedbackTheme {
+  theme_name: string;
+  description: string;
+  count: number;
+  percentage: number;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  examples: string[];
+}
+
+export interface FeedbackThemes {
+  themes: FeedbackTheme[];
+  summary: string;
+  primary_concern: string;
+}
+
+// Improvement Suggestions
+export interface ImprovementSuggestion {
+  suggestion_id: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  category: 'pedagogical' | 'alignment' | 'clarity' | 'correctness' | 'bias' | 'overall';
+  title: string;
+  description: string;
+  proposed_change: string;
+  expected_impact: string;
+  addresses_themes: string[];
+}
+
+// Feedback Report
+export interface FeedbackReport {
+  template_id: string;
+  template_name: string;
+  template_version: number;
+  analysis_timestamp: string;
+  total_evaluations: number;
+  performance_metrics: PerformanceMetrics;
+  dimension_analysis: DimensionAnalysis;
+  feedback_themes: FeedbackThemes;
+  performance_flags: PerformanceFlag[];
+  improvement_suggestions: ImprovementSuggestion[];
+}
+
+// Diff Types
+export interface DiffHunk {
+  header: string;
+  removals: string[];
+  additions: string[];
+  context: string[];
+}
+
+export interface DiffResult {
+  unified_diff: string;
+  changes: DiffHunk[];
+  stats: {
+    total_additions: number;
+    total_removals: number;
+    total_hunks: number;
+  };
+  has_changes: boolean;
+}
+
+// Expected Improvements
+export interface ExpectedImprovements {
+  approval_rate_target: number;
+  score_improvements: {
+    pedagogical_approach_score: number;
+    alignment_score: number;
+    clarity_score: number;
+    correctness_score: number;
+    bias_score: number;
+  };
+}
+
+// Performance Context
+export interface PerformanceContext {
+  current_approval_rate: number;
+  current_avg_score: number;
+  total_evaluations: number;
+  performance_flags: PerformanceFlag[];
+}
+
+// Prompt Suggestion
+export interface PromptSuggestion {
+  template_id: string;
+  template_name: string;
+  template_version: number;
+  original_prompt: string;
+  improved_prompt: string;
+  diff: DiffResult;
+  rationale: string;
+  key_changes: string[];
+  expected_improvements: ExpectedImprovements;
+  feedback_addressed: string[];
+  performance_context: PerformanceContext;
+}
+
+// Version Comparison
+export interface TemplateWithMetrics {
+  id: string;
+  name: string;
+  version: number;
+  metrics: PerformanceMetrics;
+}
+
+export interface DimensionChange {
+  before: number;
+  after: number;
+  change: number;
+  percent_change: number;
+}
+
+export interface ImprovementAnalysis {
+  approval_rate_change: number | null;
+  score_change: number | null;
+  dimension_changes: {
+    [dimension: string]: DimensionChange;
+  };
+}
+
+export interface VersionRecommendation {
+  decision: 'activate_b' | 'keep_a' | 'needs_more_data';
+  confidence: 'high' | 'medium' | 'low';
+  rationale: string;
+  approval_winner: 'a' | 'b' | null;
+  score_winner: 'a' | 'b' | null;
+  dimension_improvements: {
+    version_a: number;
+    version_b: number;
+  };
+}
+
+export interface TemplateComparison {
+  template_a: TemplateWithMetrics;
+  template_b: TemplateWithMetrics;
+  improvement_analysis: ImprovementAnalysis;
+  diff: DiffResult;
+  recommendation: VersionRecommendation;
+}
+
+// Performance Dashboard
+export interface PerformanceDashboardTemplate {
+  template_id: string;
+  template_name: string;
+  template_type: PromptTemplateType;
+  version: number;
+  is_active: boolean;
+  metrics: PerformanceMetrics | null;
+  performance_flags: PerformanceFlag[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PerformanceDashboardData {
+  templates: PerformanceDashboardTemplate[];
+  total_count: number;
+  filters_applied: {
+    template_type?: string;
+    min_approval_rate?: number;
+    only_active: boolean;
+  };
+}
+
+// ============================================================================
 // UI Helper Types
 // ============================================================================
 

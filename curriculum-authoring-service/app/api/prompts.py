@@ -8,6 +8,9 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 from app.services.prompt_manager_service import prompt_manager_service
+from app.services.feedback_aggregator_service import feedback_aggregator_service
+from app.services.prompt_suggestion_service import prompt_suggestion_service
+from app.jobs.aggregate_feedback_job import aggregate_feedback_job
 from app.models.problems import (
     PromptTemplateCreate,
     PromptTemplateUpdate,
@@ -361,3 +364,461 @@ async def get_template_types():
         },
         "message": "Template types retrieved successfully"
     }
+
+
+# ==================== FEEDBACK AGGREGATION & IMPROVEMENT ENDPOINTS ====================
+
+@router.get("/prompts/{template_id}/feedback-report", response_model=dict)
+async def get_feedback_report(
+    template_id: str,
+    min_evaluations: int = Query(3, description="Minimum evaluations required")
+):
+    """
+    Get aggregated feedback report for a prompt template.
+
+    This endpoint:
+    - Analyzes all evaluations for problems generated with this template
+    - Uses Gemini to cluster improvement suggestions into themes
+    - Identifies dimension weaknesses and performance flags
+    - Returns structured feedback with actionable insights
+
+    Returns:
+    - Feedback themes with examples
+    - Dimension analysis (which scores are weak)
+    - Performance flags (LOW_APPROVAL_RATE, etc.)
+    - Structured improvement suggestions
+    - Performance metrics summary
+
+    Use case:
+    - View aggregated feedback after evaluating multiple problems
+    - Understand common patterns in evaluation feedback
+    - Identify which prompt aspects need improvement
+    """
+    logger.info(f"📊 GET feedback report for template {template_id}")
+
+    try:
+        feedback_report = await feedback_aggregator_service.aggregate_template_feedback(
+            template_id,
+            min_evaluations=min_evaluations
+        )
+
+        return {
+            "success": True,
+            "data": feedback_report,
+            "message": f"Feedback report generated for {feedback_report['total_evaluations']} evaluations"
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating feedback report: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate feedback report: {str(e)}")
+
+
+@router.post("/prompts/{template_id}/suggest-improvements", response_model=dict)
+async def suggest_prompt_improvements(
+    template_id: str,
+    focus_areas: Optional[List[str]] = Query(
+        None,
+        description="Specific areas to focus on (e.g., pedagogical_approach, clarity)"
+    )
+):
+    """
+    Generate LLM-powered prompt improvement suggestions.
+
+    This endpoint:
+    - Analyzes aggregated feedback for the template
+    - Uses Gemini to generate an improved version of the prompt
+    - Provides side-by-side diff of changes
+    - Explains rationale for each change
+    - Shows expected performance improvements
+
+    Returns:
+    - Original prompt text
+    - Improved prompt text
+    - Unified diff showing changes
+    - Rationale for improvements
+    - Expected impact on metrics
+    - Current performance context
+
+    Use case:
+    - One-click prompt improvement suggestions
+    - Understand what to change and why
+    - Preview changes before creating new version
+    - See expected performance gains
+    """
+    logger.info(f"💡 POST suggest improvements for template {template_id}")
+
+    try:
+        suggestions = await prompt_suggestion_service.suggest_prompt_improvements(
+            template_id,
+            focus_areas=focus_areas
+        )
+
+        return {
+            "success": True,
+            "data": suggestions,
+            "message": "Prompt improvement suggestions generated"
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate suggestions: {str(e)}")
+
+
+@router.get("/prompts/{template_id_a}/compare/{template_id_b}", response_model=dict)
+async def compare_template_versions(
+    template_id_a: str,
+    template_id_b: str
+):
+    """
+    Compare performance between two template versions.
+
+    This endpoint:
+    - Fetches performance metrics for both templates
+    - Calculates improvement/regression in each dimension
+    - Generates recommendation on which version to use
+    - Shows side-by-side diff
+
+    Returns:
+    - Metrics for both templates
+    - Improvement analysis (which metrics improved)
+    - Diff showing prompt changes
+    - Recommendation on which version to activate
+
+    Use case:
+    - Compare new version against previous version
+    - Validate that improvements worked
+    - Decide whether to activate new version
+    - A/B test results visualization
+    """
+    logger.info(f"📊 GET compare templates: {template_id_a} vs {template_id_b}")
+
+    try:
+        comparison = await prompt_suggestion_service.compare_template_versions(
+            template_id_a,
+            template_id_b
+        )
+
+        return {
+            "success": True,
+            "data": comparison,
+            "message": "Template comparison complete"
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error comparing templates: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to compare templates: {str(e)}")
+
+
+@router.get("/prompts/performance-dashboard", response_model=dict)
+async def get_performance_dashboard(
+    template_type: Optional[str] = Query(None, description="Filter by template type"),
+    min_approval_rate: Optional[float] = Query(None, description="Filter by minimum approval rate"),
+    only_active: bool = Query(False, description="Only show active versions")
+):
+    """
+    Get performance dashboard data for all templates.
+
+    This endpoint:
+    - Lists all templates with their performance metrics
+    - Flags underperforming templates (approval < 85%)
+    - Shows key metrics at a glance
+    - Enables filtering by type, approval rate, active status
+
+    Returns:
+    - List of templates with:
+      - Basic template info (name, version, active status)
+      - Performance metrics (approval rate, avg score)
+      - Performance flags (if any issues)
+      - Total evaluations
+      - Last updated timestamp
+
+    Use case:
+    - Overview of all prompt performance
+    - Identify templates that need attention
+    - Track improvements over time
+    - Filter to focus on specific areas
+    """
+    logger.info(f"📊 GET performance dashboard (type={template_type}, active={only_active})")
+
+    try:
+        # Get all templates
+        templates = await prompt_manager_service.list_templates(
+            template_type=template_type,
+            active_only=only_active
+        )
+
+        # Build dashboard data
+        dashboard_data = []
+
+        for template in templates:
+            # Get metrics
+            try:
+                metrics = await prompt_manager_service.calculate_performance_metrics(
+                    template.template_id
+                )
+
+                # Check performance flags
+                flags = []
+                if metrics.approval_rate is not None:
+                    if metrics.approval_rate < 0.5:
+                        flags.append("LOW_APPROVAL_RATE")
+                    elif metrics.approval_rate < 0.85:
+                        flags.append("BELOW_TARGET_APPROVAL")
+
+                if metrics.avg_evaluation_score is not None:
+                    if metrics.avg_evaluation_score < 6.0:
+                        flags.append("LOW_OVERALL_SCORE")
+                    elif metrics.avg_evaluation_score < 7.5:
+                        flags.append("BELOW_TARGET_SCORE")
+
+                # Filter by min_approval_rate if specified
+                if min_approval_rate is not None:
+                    if metrics.approval_rate is None or metrics.approval_rate < min_approval_rate:
+                        continue
+
+                dashboard_data.append({
+                    "template_id": template.template_id,
+                    "template_name": template.template_name,
+                    "template_type": template.template_type,
+                    "version": template.version,
+                    "is_active": template.is_active,
+                    "metrics": metrics.dict(),
+                    "performance_flags": flags if flags else ["PERFORMING_WELL"],
+                    "created_at": template.created_at,
+                    "updated_at": template.updated_at
+                })
+
+            except Exception as e:
+                logger.warning(f"Could not get metrics for {template.template_id}: {str(e)}")
+                # Include template with no metrics
+                dashboard_data.append({
+                    "template_id": template.template_id,
+                    "template_name": template.template_name,
+                    "template_type": template.template_type,
+                    "version": template.version,
+                    "is_active": template.is_active,
+                    "metrics": None,
+                    "performance_flags": ["NO_EVALUATION_DATA"],
+                    "created_at": template.created_at,
+                    "updated_at": template.updated_at
+                })
+
+        # Sort by approval rate (descending), with null values last
+        dashboard_data.sort(
+            key=lambda x: (
+                x["metrics"]["approval_rate"] if x["metrics"] and x["metrics"]["approval_rate"] is not None else -1
+            ),
+            reverse=True
+        )
+
+        return {
+            "success": True,
+            "data": {
+                "templates": dashboard_data,
+                "total_count": len(dashboard_data),
+                "filters_applied": {
+                    "template_type": template_type,
+                    "min_approval_rate": min_approval_rate,
+                    "only_active": only_active
+                }
+            },
+            "message": f"Found {len(dashboard_data)} templates"
+        }
+
+    except Exception as e:
+        logger.error(f"Error generating dashboard: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate dashboard: {str(e)}")
+
+
+# ==================== BACKGROUND JOB ENDPOINTS ====================
+
+@router.post("/prompts/jobs/aggregate-feedback", response_model=dict)
+async def trigger_feedback_aggregation(
+    template_id: Optional[str] = Query(None, description="Specific template to process"),
+    all_templates: bool = Query(False, description="Process all templates"),
+    recent_only: bool = Query(False, description="Only process recently evaluated templates"),
+    hours: int = Query(24, description="Hours to look back for recent evaluations"),
+    min_evaluations: int = Query(3, description="Minimum evaluations required")
+):
+    """
+    Trigger feedback aggregation job.
+
+    This endpoint allows manual triggering of the feedback aggregation process.
+
+    Options:
+    - Single template: Provide template_id
+    - All templates: Set all_templates=true
+    - Recent evaluations: Set recent_only=true with hours lookback
+
+    Returns:
+    - Job execution summary
+    - Number of templates processed
+    - Success/skip/failure counts
+    """
+    logger.info("🔄 POST trigger feedback aggregation job")
+
+    try:
+        if template_id:
+            # Process single template
+            success = await aggregate_feedback_job.run_for_template(
+                template_id,
+                min_evaluations=min_evaluations
+            )
+
+            return {
+                "success": True,
+                "data": {
+                    "template_id": template_id,
+                    "processed": success
+                },
+                "message": f"Feedback aggregation {'complete' if success else 'skipped'} for {template_id}"
+            }
+
+        elif all_templates:
+            # Process all templates
+            results = await aggregate_feedback_job.run_for_all_templates(
+                min_evaluations=min_evaluations
+            )
+
+            return {
+                "success": True,
+                "data": results,
+                "message": f"Processed {results['successful']} templates"
+            }
+
+        elif recent_only:
+            # Process recently evaluated templates
+            results = await aggregate_feedback_job.run_for_recently_evaluated_templates(
+                hours=hours,
+                min_evaluations=min_evaluations
+            )
+
+            return {
+                "success": True,
+                "data": results,
+                "message": f"Processed {results['successful']} templates with recent evaluations"
+            }
+
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Must specify template_id, all_templates=true, or recent_only=true"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error running feedback aggregation job: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to run job: {str(e)}")
+
+
+# ==================== PRODUCTION APP ENDPOINTS ====================
+
+@router.get("/production/prompts/best-performing", response_model=dict)
+async def get_best_performing_prompt(
+    subskill_id: Optional[str] = Query(None, description="Filter by subskill"),
+    problem_type: Optional[str] = Query(None, description="Filter by problem type"),
+    template_type: str = Query("problem_generation", description="Template type"),
+    min_approval_rate: float = Query(0.85, description="Minimum approval rate"),
+    min_evaluations: int = Query(5, description="Minimum evaluations required")
+):
+    """
+    Get best-performing prompt for production use.
+
+    This endpoint is used by the production app to select high-quality prompts.
+
+    Logic:
+    - Filters templates by type, subskill, problem type (if specified)
+    - Only returns templates with approval_rate >= min_approval_rate
+    - Only returns templates with >= min_evaluations
+    - Returns random selection from qualifying templates (weighted by approval rate)
+
+    Returns:
+    - Selected template
+    - Performance metrics
+    - Rationale for selection
+
+    Use case:
+    - Production app queries for best prompt to use
+    - Gets random variation from high-performers (for diversity)
+    - Ensures quality threshold (85%+ approval)
+    """
+    logger.info(
+        f"🎯 GET best performing prompt (type={template_type}, "
+        f"subskill={subskill_id}, problem_type={problem_type})"
+    )
+
+    try:
+        # Get all active templates of this type
+        templates = await prompt_manager_service.list_templates(
+            template_type=template_type,
+            active_only=True
+        )
+
+        # Filter and score templates
+        candidates = []
+
+        for template in templates:
+            try:
+                metrics = await prompt_manager_service.calculate_performance_metrics(
+                    template.template_id
+                )
+
+                # Check minimum criteria
+                if (
+                    metrics.total_generations >= min_evaluations
+                    and metrics.approval_rate is not None
+                    and metrics.approval_rate >= min_approval_rate
+                ):
+                    candidates.append({
+                        "template": template,
+                        "metrics": metrics,
+                        "score": metrics.approval_rate  # Use approval rate as selection weight
+                    })
+
+            except Exception as e:
+                logger.warning(f"Could not evaluate template {template.template_id}: {str(e)}")
+                continue
+
+        if not candidates:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No templates found meeting criteria (min_approval={min_approval_rate}, min_evals={min_evaluations})"
+            )
+
+        # Weighted random selection
+        import random
+        total_score = sum(c["score"] for c in candidates)
+        rand_val = random.uniform(0, total_score)
+
+        cumulative = 0
+        selected = candidates[0]
+
+        for candidate in candidates:
+            cumulative += candidate["score"]
+            if cumulative >= rand_val:
+                selected = candidate
+                break
+
+        return {
+            "success": True,
+            "data": {
+                "template": selected["template"].dict(),
+                "metrics": selected["metrics"].dict(),
+                "selection_pool_size": len(candidates),
+                "rationale": f"Selected from {len(candidates)} qualifying templates (weighted by approval rate)"
+            },
+            "message": "Best-performing prompt retrieved"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting best prompt: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get best prompt: {str(e)}")

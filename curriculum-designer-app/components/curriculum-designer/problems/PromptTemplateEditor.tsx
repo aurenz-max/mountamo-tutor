@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, RotateCcw, Copy, CheckCheck } from 'lucide-react';
+import { ChevronDown, ChevronRight, RotateCcw, Copy, CheckCheck, AlertTriangle, TrendingUp, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
-import { useActivePrompt } from '@/lib/curriculum-authoring/problems-hooks';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useActivePrompt, useFeedbackReport } from '@/lib/curriculum-authoring/problems-hooks';
+import { FeedbackReportDialog } from './FeedbackReportDialog';
 import type { PromptTemplateType } from '@/types/problems';
 
 interface PromptTemplateEditorProps {
@@ -24,9 +26,16 @@ export function PromptTemplateEditor({
   const [isOpen, setIsOpen] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState<string>('');
   const [isCopied, setIsCopied] = useState(false);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
 
   // Fetch active prompt template
   const { data: activePrompt, isLoading } = useActivePrompt(templateName, templateType);
+
+  // Fetch feedback report (only if template exists and has metrics)
+  const { data: feedbackReport } = useFeedbackReport(
+    activePrompt?.template_id || '',
+    3,
+  );
 
   // Initialize edited prompt when active prompt loads
   useEffect(() => {
@@ -105,7 +114,7 @@ export function PromptTemplateEditor({
                   placeholder="Enter prompt template..."
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Variables: {activePrompt.template_variables.join(', ')}
+                  Variables: {activePrompt.template_variables?.join(', ') || 'None'}
                 </p>
               </div>
 
@@ -138,21 +147,76 @@ export function PromptTemplateEditor({
 
               {/* Performance Metrics */}
               {activePrompt.performance_metrics && (
-                <div className="p-3 bg-muted rounded-lg text-xs space-y-1">
-                  <p className="font-medium">Performance Metrics</p>
-                  {activePrompt.performance_metrics.avg_evaluation_score !== undefined && (
-                    <p>
-                      Avg Score: {activePrompt.performance_metrics.avg_evaluation_score.toFixed(1)}/10
-                    </p>
+                <div className="space-y-3">
+                  {/* Performance Alert */}
+                  {feedbackReport && feedbackReport.performance_flags.some(flag =>
+                    flag.includes('LOW') || flag.includes('BELOW_TARGET')
+                  ) && (
+                    <Alert variant="default" className="border-yellow-200 bg-yellow-50">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <strong>Performance Alert:</strong> This template has{' '}
+                            {feedbackReport.performance_metrics.approval_rate !== undefined && (
+                              <>{(feedbackReport.performance_metrics.approval_rate * 100).toFixed(0)}% approval</>
+                            )}
+                            {feedbackReport.feedback_themes.primary_concern && (
+                              <> • Main issue: {feedbackReport.feedback_themes.primary_concern}</>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowFeedbackDialog(true)}
+                            className="ml-2 gap-1"
+                          >
+                            <Sparkles className="h-3 w-3" />
+                            View Feedback & Get Suggestions
+                          </Button>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
                   )}
-                  {activePrompt.performance_metrics.approval_rate !== undefined && (
+
+                  {/* Performance Metrics */}
+                  <div className="p-3 bg-muted rounded-lg text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">Performance Metrics</p>
+                      {feedbackReport && feedbackReport.performance_flags.includes('PERFORMING_WELL') && (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          Performing Well
+                        </Badge>
+                      )}
+                    </div>
+
+                    {activePrompt.performance_metrics.avg_evaluation_score !== undefined && (
+                      <p>
+                        Avg Score: {activePrompt.performance_metrics.avg_evaluation_score.toFixed(1)}/10
+                      </p>
+                    )}
+                    {activePrompt.performance_metrics.approval_rate !== undefined && (
+                      <p>
+                        Approval Rate: {(activePrompt.performance_metrics.approval_rate * 100).toFixed(0)}%
+                        {activePrompt.performance_metrics.approval_rate >= 0.85 ? ' ✓' : activePrompt.performance_metrics.approval_rate >= 0.5 ? ' ⚠' : ' ⚠️'}
+                      </p>
+                    )}
                     <p>
-                      Approval Rate: {(activePrompt.performance_metrics.approval_rate * 100).toFixed(0)}%
+                      Generations: {activePrompt.performance_metrics.total_generations}
                     </p>
-                  )}
-                  <p>
-                    Generations: {activePrompt.performance_metrics.total_generations}
-                  </p>
+
+                    {feedbackReport && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => setShowFeedbackDialog(true)}
+                        className="p-0 h-auto text-xs"
+                      >
+                        View detailed feedback →
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -163,12 +227,48 @@ export function PromptTemplateEditor({
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              No active prompt template found for "{templateName}"
-            </p>
+            <div className="space-y-3 pt-2">
+              <Alert>
+                <AlertDescription className="text-sm">
+                  <strong>Context Variety Mode:</strong> Problem generation uses automatic context variety through primitives
+                  (objects, characters, scenarios, locations). This creates natural variation without requiring a template.
+                </AlertDescription>
+              </Alert>
+
+              {/* Optional custom prompt override */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1">Optional: Paste custom prompt to override</Label>
+                <Textarea
+                  value={editedPrompt}
+                  onChange={(e) => handlePromptChange(e.target.value)}
+                  rows={8}
+                  className="font-mono text-sm"
+                  placeholder="Leave empty to use context variety generation, or paste a custom prompt here..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  High-scoring prompts (&gt;85%) from evaluations can be promoted to templates for reuse.
+                </p>
+              </div>
+
+              {editedPrompt && (
+                <Button variant="outline" size="sm" onClick={() => { setEditedPrompt(''); onPromptChange?.(undefined); }}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Clear Custom Prompt
+                </Button>
+              )}
+            </div>
           )}
         </CollapsibleContent>
       </div>
+
+      {/* Feedback Report Dialog */}
+      <FeedbackReportDialog
+        open={showFeedbackDialog}
+        onOpenChange={setShowFeedbackDialog}
+        feedbackReport={feedbackReport || null}
+        isLoading={false}
+        templateId={activePrompt?.template_id || ''}
+      />
     </Collapsible>
   );
 }

@@ -162,33 +162,10 @@ class ProblemGeneratorService:
             logger.info("No foundations found, generating new ones...")
             foundations = await foundations_service.generate_foundations(subskill_id, version_id)
 
-        # Build or get generation prompt
-        if custom_prompt:
-            generation_prompt = custom_prompt
-        else:
-            # Try to get active template
-            template = await prompt_manager_service.get_active_template(
-                template_name="default_problem_generation",
-                template_type="problem_generation"
-            )
-
-            if template:
-                # Render template with variables
-                variables = {
-                    "subskill_description": subskill.subskill_description,
-                    "grade_level": subject.grade_level if subject else "Kindergarten",
-                    "subject": subject.subject_name if subject else "Unknown",
-                    "core_concepts": ", ".join(foundations.master_context.core_concepts) if foundations.master_context else "",
-                    "learning_objectives": ", ".join(foundations.master_context.learning_objectives) if foundations.master_context else "",
-                    "count": str(count),
-                    "problem_types": ", ".join(problem_types)
-                }
-                generation_prompt = prompt_manager_service.render_template(template, variables)
-            else:
-                # Fallback to default prompt
-                generation_prompt = self._build_default_prompt(
-                    subskill, subject, foundations, count, problem_types
-                )
+        # Note: We intentionally do NOT use templates here to preserve context variety.
+        # The three-phase generation system below uses context primitives to create varied prompts
+        # that are stored with each problem. Templates are reserved for custom overrides only.
+        # Each problem type gets its own prompt with sampled primitives in _generate_single_type()
 
         # Generate unique ID for this generation session
         generation_id = str(uuid4())
