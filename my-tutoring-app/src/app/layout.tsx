@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import Script from 'next/script';
+import { Inter, Space_Grotesk } from 'next/font/google';
 import NavHeader from '@/components/NavHeader';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AICoachProvider } from '@/contexts/AICoachContext';
@@ -11,6 +12,10 @@ import { Toaster } from 'sonner';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+});
 
 export const metadata: Metadata = {
   title: 'AI Tutor',
@@ -24,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} ${spaceGrotesk.variable}`}>
         <QueryProvider>
           <AuthProvider>
             <EngagementProvider>
@@ -38,6 +43,14 @@ export default function RootLayout({
             </EngagementProvider>
           </AuthProvider>
         </QueryProvider>
+
+        {/* Global visualization libraries - loaded once for all components */}
+        <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="lazyOnload" />
+        <Script src="https://d3js.org/d3.v7.min.js" strategy="lazyOnload" />
+        <Script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js" strategy="lazyOnload" />
+        <Script src="https://unpkg.com/roughjs@latest/bundled/rough.js" strategy="lazyOnload" />
+        <Script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js" strategy="lazyOnload" />
+        <Script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" strategy="lazyOnload" />
       </body>
     </html>
   );
