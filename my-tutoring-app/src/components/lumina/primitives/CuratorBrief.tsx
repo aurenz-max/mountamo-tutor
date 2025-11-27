@@ -1,15 +1,35 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { IntroData } from '../types';
+import { IntroData, WalkThroughRequest } from '../types';
+import { WalkThroughButton } from './WalkThroughButton';
 
 interface CuratorBriefProps {
   data: IntroData;
+  onWalkThroughRequest?: (request: WalkThroughRequest) => void;
+  highlightedObjectiveIndex?: number | null;
 }
 
-export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data }) => {
+export const CuratorBrief: React.FC<CuratorBriefProps> = ({
+  data,
+  onWalkThroughRequest,
+  highlightedObjectiveIndex
+}) => {
   const [displayedHook, setDisplayedHook] = useState('');
   const [objectivesVisible, setObjectivesVisible] = useState(false);
+
+  const handleWalkThrough = () => {
+    if (onWalkThroughRequest) {
+      onWalkThroughRequest({
+        type: 'curator-brief',
+        content: {
+          brief: data.hook,
+          objectives: data.objectives
+        },
+        componentId: 'curator-brief'
+      });
+    }
+  };
 
   useEffect(() => {
     setDisplayedHook('');
@@ -30,8 +50,11 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data }) => {
   }, [data.hook]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto my-8 animate-fade-in-up">
+    <div className="w-full max-w-4xl mx-auto my-8 animate-fade-in-up relative">
         <div className="glass-panel p-6 md:p-8 rounded-2xl border-t border-b border-blue-500/20 md:border md:rounded-3xl relative overflow-hidden">
+
+            {/* Add WalkThroughButton */}
+            <WalkThroughButton onWalkThrough={handleWalkThrough} />
             
             {/* Decoration: Corner Accents */}
             <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-400 rounded-tl"></div>
@@ -69,18 +92,44 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data }) => {
                         <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Learning Objectives</h4>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {data.objectives.map((obj, i) => (
-                                <div key={i} className="group relative bg-slate-800/50 hover:bg-slate-800 border border-white/5 hover:border-blue-500/30 p-4 rounded-xl transition-all duration-300">
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-1 w-4 h-4 shrink-0 rounded border border-slate-500 group-hover:border-blue-400 flex items-center justify-center transition-colors">
-                                            <div className="w-2 h-2 bg-blue-400 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            {data.objectives.map((obj, i) => {
+                                const isHighlighted = highlightedObjectiveIndex === i;
+                                const isOtherHighlighted = highlightedObjectiveIndex !== null && !isHighlighted;
+
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`group relative bg-slate-800/50 border p-4 rounded-xl transition-all duration-300
+                                            ${isHighlighted
+                                                ? 'ring-2 ring-blue-400 scale-105 shadow-lg shadow-blue-500/50 border-blue-400 bg-slate-800'
+                                                : isOtherHighlighted
+                                                ? 'opacity-40 border-white/5'
+                                                : 'hover:bg-slate-800 border-white/5 hover:border-blue-500/30'
+                                            }`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className={`mt-1 w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors
+                                                ${isHighlighted
+                                                    ? 'border-blue-400 bg-blue-400'
+                                                    : 'border-slate-500 group-hover:border-blue-400'
+                                                }`}>
+                                                <div className={`w-2 h-2 bg-blue-400 rounded-sm transition-opacity
+                                                    ${isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+                                                `}></div>
+                                            </div>
+                                            <p className={`text-sm leading-snug transition-colors
+                                                ${isHighlighted
+                                                    ? 'text-white font-medium'
+                                                    : isOtherHighlighted
+                                                    ? 'text-slate-400'
+                                                    : 'text-slate-300 group-hover:text-white'
+                                                }`}>
+                                                {obj}
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-slate-300 group-hover:text-white transition-colors leading-snug">
-                                            {obj}
-                                        </p>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

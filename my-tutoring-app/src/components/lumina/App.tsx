@@ -2,29 +2,180 @@
 
 import React, { useState, useCallback } from 'react';
 import { GenerativeBackground } from './primitives/GenerativeBackground';
-import { ConceptCard } from './primitives/SpellingCard';
+import { ConceptCard } from './primitives/ConceptCard';
 import { CuratorBrief } from './primitives/CuratorBrief';
 import { GenerativeTable } from './primitives/GenerativeTable';
 import { KnowledgeCheck } from './primitives/KnowledgeCheck';
 import { FeatureExhibit } from './primitives/FeatureExhibit';
 import { ComparisonPanel } from './primitives/ComparisonPanel';
-import { ModuleResolver } from './primitives/ModuleResolver'; // Replaces FormulaCard
+import { FormulaCard } from './primitives/FormulaCard';
+import { MathVisuals } from './primitives/MathVisuals';
+import { SentenceAnalyzer } from './primitives/SentenceAnalyzer';
+import { CustomVisual } from './primitives/CustomVisual';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { LiveAssistant } from './service/LiveAssistant';
-import { generateExhibitContent } from './service/geminiService';
-import { GameState, ExhibitData } from './types';
+import { generateExhibitContent, generateExhibitManifest, buildCompleteExhibitFromTopic } from './service/geminiService';
+import { GameState, ExhibitData, WalkThroughRequest, WalkThroughProgress, WalkThroughState, ExhibitManifest } from './types';
+import { GradeLevelSelector, GradeLevel } from './components/GradeLevelSelector';
+import { ManifestViewer } from './components/ManifestViewer';
+import { ObjectCollection } from './primitives/visual-primitives/ObjectCollection';
+import { ComparisonPanel as VisualComparisonPanel } from './primitives/visual-primitives/ComparisonPanel';
+import { AlphabetSequence } from './primitives/visual-primitives/AlphabetSequence';
+import { RhymingPairs } from './primitives/visual-primitives/RhymingPairs';
+import { SightWordCard } from './primitives/visual-primitives/SightWordCard';
+import { SoundSort } from './primitives/visual-primitives/SoundSort';
+import { LetterPicture } from './primitives/visual-primitives/LetterPicture';
+
 
 export default function App() {
   const [gameState, setGameState] = useState<GameState>(GameState.IDLE);
   const [topic, setTopic] = useState('');
+  const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
   const [exhibitData, setExhibitData] = useState<ExhibitData | null>(null);
   const [loadingMessage, setLoadingMessage] = useState('');
-  
+
+  // Manifest Viewer State
+  const [showManifestViewer, setShowManifestViewer] = useState(false);
+  const [manifest, setManifest] = useState<ExhibitManifest | null>(null);
+  const [isGeneratingManifest, setIsGeneratingManifest] = useState(false);
+
   // Drawer State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<string | null>(null);
 
-  const startExhibit = useCallback(async (topicOverride?: string) => {
+  // Walk-Through State
+  const [walkThroughState, setWalkThroughState] = useState<WalkThroughState>({
+    active: false,
+    componentId: null,
+    currentSection: null,
+    highlightIndex: null
+  });
+
+  const [walkThroughRequest, setWalkThroughRequest] = useState<WalkThroughRequest | null>(null);
+
+  // Visual Primitives Testing State
+  const [showVisualTester, setShowVisualTester] = useState(false);
+  const [currentVisualIndex, setCurrentVisualIndex] = useState(0);
+
+  // Sample data for each visual primitive
+  const visualPrimitiveExamples = [
+    {
+      name: 'Object Collection',
+      component: (
+        <ObjectCollection
+          data={{
+            instruction: 'Count the apples',
+            items: [
+              { name: 'apple', count: 5, icon: '🍎' },
+              { name: 'orange', count: 3, icon: '🍊' }
+            ],
+            layout: 'grid'
+          }}
+        />
+      )
+    },
+    {
+      name: 'Comparison Panel',
+      component: (
+        <VisualComparisonPanel
+          data={{
+            panels: [
+              {
+                label: 'Group A',
+                collection: {
+                  instruction: 'Red fruits',
+                  items: [{ name: 'apple', count: 4, icon: '🍎' }],
+                  layout: 'grid'
+                }
+              },
+              {
+                label: 'Group B',
+                collection: {
+                  instruction: 'Yellow fruits',
+                  items: [{ name: 'banana', count: 3, icon: '🍌' }],
+                  layout: 'grid'
+                }
+              }
+            ]
+          }}
+        />
+      )
+    },
+    {
+      name: 'Alphabet Sequence',
+      component: (
+        <AlphabetSequence
+          data={{
+            sequence: ['A', 'B', '_', 'D', 'E'],
+            missing: ['C'],
+            highlightMissing: true,
+            showImages: true
+          }}
+        />
+      )
+    },
+    {
+      name: 'Rhyming Pairs',
+      component: (
+        <RhymingPairs
+          data={{
+            pairs: [
+              { word1: 'cat', image1: '🐱', word2: 'hat', image2: '🎩' },
+              { word1: 'dog', image1: '🐶', word2: 'log', image2: '🪵' }
+            ],
+            showConnectingLines: true
+          }}
+        />
+      )
+    },
+    {
+      name: 'Sight Word Card',
+      component: (
+        <SightWordCard
+          data={{
+            word: 'the',
+            fontSize: 'large',
+            showInContext: true,
+            sentence: 'Look at the cat in the hat.',
+            highlightWord: true
+          }}
+        />
+      )
+    },
+    {
+      name: 'Sound Sort',
+      component: (
+        <SoundSort
+          data={{
+            targetSound: 'short a',
+            categories: [
+              { label: 'Has short a', words: ['cat', 'hat', 'bat', 'mat'] },
+              { label: 'No short a', words: ['dog', 'run', 'pig'] }
+            ],
+            showPictures: true
+          }}
+        />
+      )
+    },
+    {
+      name: 'Letter Picture',
+      component: (
+        <LetterPicture
+          data={{
+            letter: 'B',
+            items: [
+              { name: 'Ball', image: '🏀', highlight: true },
+              { name: 'Book', image: '📚', highlight: true },
+              { name: 'Cat', image: '🐱', highlight: false },
+              { name: 'Bear', image: '🐻', highlight: true }
+            ]
+          }}
+        />
+      )
+    }
+  ];
+
+  const startExhibit = useCallback(async (topicOverride?: string, useManifestFlow: boolean = false) => {
     const searchTopic = topicOverride || topic;
     if (!searchTopic.trim()) return;
 
@@ -32,40 +183,109 @@ export default function App() {
 
     setGameState(GameState.GENERATING);
     setLoadingMessage(`Curating exhibit: ${searchTopic.substring(0, 30)}...`);
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    try {
-      setTimeout(() => setLoadingMessage('Gathering historical context...'), 1500);
-      setTimeout(() => setLoadingMessage('Synthesizing key concepts...'), 3000);
-      setTimeout(() => setLoadingMessage('Designing interactive visuals...'), 4500);
 
-      const data = await generateExhibitContent(searchTopic);
-      setExhibitData(data);
-      setGameState(GameState.PLAYING);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    try {
+      if (useManifestFlow) {
+        // Use new manifest-first architecture
+        setTimeout(() => setLoadingMessage('📋 Generating exhibit blueprint...'), 500);
+        setTimeout(() => setLoadingMessage('🎨 Building components in parallel...'), 2000);
+        setTimeout(() => setLoadingMessage('🏗️ Assembling complete exhibit...'), 4000);
+
+        const data = await buildCompleteExhibitFromTopic(searchTopic, gradeLevel);
+        setExhibitData(data);
+        setGameState(GameState.PLAYING);
+      } else {
+        // Use legacy flow
+        setTimeout(() => setLoadingMessage('Gathering historical context...'), 1500);
+        setTimeout(() => setLoadingMessage('Synthesizing key concepts...'), 3000);
+        setTimeout(() => setLoadingMessage('Designing interactive visuals...'), 4500);
+
+        const data = await generateExhibitContent(searchTopic, gradeLevel);
+        setExhibitData(data);
+        setGameState(GameState.PLAYING);
+      }
     } catch (error) {
       console.error(error);
       setGameState(GameState.ERROR);
       alert("Failed to generate exhibit. Please try a different topic or check API key.");
       setGameState(GameState.IDLE);
     }
-  }, [topic]);
+  }, [topic, gradeLevel]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    startExhibit();
+    startExhibit(undefined, false); // Legacy flow
+  };
+
+  const handleManifestFlowSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    startExhibit(undefined, true); // Manifest-first flow
   };
 
   const reset = () => {
     setGameState(GameState.IDLE);
     setTopic('');
     setExhibitData(null);
+    setShowManifestViewer(false);
+    setManifest(null);
   };
+
+  const generateManifest = useCallback(async () => {
+    if (!topic.trim()) return;
+
+    setIsGeneratingManifest(true);
+    setShowManifestViewer(true);
+    setManifest(null);
+
+    try {
+      const generatedManifest = await generateExhibitManifest(topic, gradeLevel);
+      setManifest(generatedManifest);
+    } catch (error) {
+      console.error('Manifest generation error:', error);
+      alert('Failed to generate manifest. Please try again.');
+      setShowManifestViewer(false);
+    } finally {
+      setIsGeneratingManifest(false);
+    }
+  }, [topic, gradeLevel]);
 
   const handleDetailItemClick = (item: string) => {
       setSelectedDetailItem(item);
       setIsDrawerOpen(true);
   };
+
+  const handleWalkThroughRequest = useCallback((request: WalkThroughRequest) => {
+    console.log('[App] Walk-through requested:', request);
+
+    // Initialize walk-through state
+    setWalkThroughState({
+      active: true,
+      componentId: request.componentId,
+      currentSection: 'brief',
+      highlightIndex: null
+    });
+
+    // Pass request to LiveAssistant
+    setWalkThroughRequest(request);
+  }, []);
+
+  const handleWalkThroughProgress = useCallback((progress: WalkThroughProgress) => {
+    console.log('[App] Walk-through progress:', progress);
+
+    setWalkThroughState(prev => ({
+      ...prev,
+      currentSection: progress.section,
+      highlightIndex: progress.objectiveIndex ?? null,
+      active: !progress.isComplete
+    }));
+
+    // Clear request if complete
+    if (progress.isComplete) {
+      setWalkThroughRequest(null);
+    }
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden selection:bg-blue-500/30">
@@ -98,13 +318,18 @@ export default function App() {
                    ← New Topic
                 </button>
             )}
+            {showVisualTester && (
+                <button onClick={() => setShowVisualTester(false)} className="hover:text-white transition-colors">
+                   ← Exit Tester
+                </button>
+            )}
         </div>
       </header>
 
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -114,7 +339,18 @@ export default function App() {
                     Enter any topic to generate an interactive museum exhibit.
                 </p>
 
-                <form onSubmit={handleFormSubmit} className="relative group max-w-lg mx-auto mt-12">
+                {/* Grade Level Selector */}
+                <div className="max-w-md mx-auto mt-8">
+                  <label className="block text-sm font-medium text-slate-400 mb-2 text-center">
+                    Learning Level
+                  </label>
+                  <GradeLevelSelector
+                    value={gradeLevel}
+                    onChange={setGradeLevel}
+                  />
+                </div>
+
+                <form onSubmit={handleFormSubmit} className="relative group max-w-lg mx-auto mt-8">
                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-30 group-hover:opacity-60 transition duration-1000"></div>
                     <div className="relative flex items-center">
                         <input
@@ -125,7 +361,7 @@ export default function App() {
                             className="w-full px-8 py-5 bg-slate-900 text-white rounded-full border border-slate-700 focus:border-blue-400/50 focus:outline-none text-lg shadow-2xl transition-all"
                             autoFocus
                         />
-                        <button 
+                        <button
                             type="submit"
                             className="absolute right-2 p-3 bg-white text-slate-900 rounded-full hover:bg-blue-50 transition-transform active:scale-95 disabled:opacity-50"
                             disabled={!topic}
@@ -135,18 +371,164 @@ export default function App() {
                     </div>
                 </form>
 
-                <div className="pt-12 grid grid-cols-2 md:flex justify-center gap-3">
+                {/* Manifest-First Flow Button */}
+                <div className="pt-4">
+                  <button
+                    onClick={handleManifestFlowSubmit}
+                    disabled={!topic}
+                    className="group relative px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+                  >
+                    <span className="flex items-center gap-2">
+                      ✨ Build with Manifest-First
+                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                      </svg>
+                    </span>
+                  </button>
+                  <p className="text-xs text-slate-500 mt-2">Phase 2: Generate manifest + build complete exhibit</p>
+                </div>
+
+                {/* Manifest Viewer Button */}
+                <div className="pt-4">
+                  <button
+                    onClick={generateManifest}
+                    disabled={!topic}
+                    className="group relative px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+                  >
+                    <span className="flex items-center gap-2">
+                      📋 Preview Manifest Only
+                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </span>
+                  </button>
+                  <p className="text-xs text-slate-500 mt-2">Phase 1: See the blueprint before building</p>
+                </div>
+
+                <div className="pt-8 grid grid-cols-2 md:flex justify-center gap-3">
                     {['Industrial Revolution', 'Botany', 'Cubism', 'Black Holes'].map(suggestion => (
-                        <button 
+                        <button
                             key={suggestion}
-                            onClick={() => { setTopic(suggestion); startExhibit(suggestion); }} 
+                            onClick={() => { setTopic(suggestion); startExhibit(suggestion); }}
                             className="px-5 py-2 rounded-full border border-white/10 hover:bg-white/5 text-sm text-slate-400 transition-colors hover:text-white"
                         >
                             {suggestion}
                         </button>
                     ))}
                 </div>
+
+                {/* Visual Primitives Tester Button */}
+                <div className="pt-8">
+                  <button
+                    onClick={() => setShowVisualTester(true)}
+                    className="group relative px-8 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
+                  >
+                    <span className="flex items-center gap-2">
+                      🎨 Test Visual Primitives
+                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                      </svg>
+                    </span>
+                  </button>
+                  <p className="text-xs text-slate-500 mt-2">Preview all visual primitive components</p>
+                </div>
              </div>
+          </div>
+        )}
+
+        {/* MANIFEST VIEWER STATE */}
+        {gameState === GameState.IDLE && showManifestViewer && (
+          <div className="flex-1 animate-fade-in">
+            <div className="mb-8 text-center">
+              <button
+                onClick={reset}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-full border border-slate-600 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Home
+              </button>
+            </div>
+            <ManifestViewer manifest={manifest} isLoading={isGeneratingManifest} />
+          </div>
+        )}
+
+        {/* VISUAL PRIMITIVES TESTER STATE */}
+        {gameState === GameState.IDLE && showVisualTester && (
+          <div className="flex-1 animate-fade-in">
+            {/* Header with back button */}
+            <div className="mb-8 text-center">
+              <button
+                onClick={() => setShowVisualTester(false)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-full border border-slate-600 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Home
+              </button>
+            </div>
+
+            {/* Title */}
+            <div className="text-center mb-8">
+              <h2 className="text-4xl font-bold text-white mb-2">Visual Primitives Gallery</h2>
+              <p className="text-slate-400">Preview all early learning visual components</p>
+            </div>
+
+            {/* Navigation Controls */}
+            <div className="flex items-center justify-center gap-4 mb-8">
+              <button
+                onClick={() => setCurrentVisualIndex(Math.max(0, currentVisualIndex - 1))}
+                disabled={currentVisualIndex === 0}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Previous
+              </button>
+
+              <div className="px-6 py-3 bg-slate-800/80 rounded-lg border border-slate-600">
+                <span className="text-white font-bold">
+                  {currentVisualIndex + 1} / {visualPrimitiveExamples.length}
+                </span>
+                <span className="text-slate-400 ml-2">- {visualPrimitiveExamples[currentVisualIndex].name}</span>
+              </div>
+
+              <button
+                onClick={() => setCurrentVisualIndex(Math.min(visualPrimitiveExamples.length - 1, currentVisualIndex + 1))}
+                disabled={currentVisualIndex === visualPrimitiveExamples.length - 1}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                Next
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </button>
+            </div>
+
+            {/* Quick Jump Buttons */}
+            <div className="flex flex-wrap justify-center gap-2 mb-8 max-w-4xl mx-auto">
+              {visualPrimitiveExamples.map((example, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentVisualIndex(index)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    currentVisualIndex === index
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  {example.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Current Visual Component Display */}
+            <div className="max-w-5xl mx-auto">
+              {visualPrimitiveExamples[currentVisualIndex].component}
+            </div>
           </div>
         )}
 
@@ -160,6 +542,11 @@ export default function App() {
                 </div>
                 <h3 className="text-2xl font-bold text-white animate-pulse">{loadingMessage}</h3>
                 <p className="text-slate-500 mt-2 font-mono text-sm">Generative AI is curating...</p>
+                <div className="mt-4 px-4 py-2 bg-slate-800/50 rounded-full border border-slate-700">
+                  <span className="text-xs text-slate-400">
+                    Tailoring for: <span className="text-blue-400 font-medium capitalize">{gradeLevel.replace('-', ' ')}</span>
+                  </span>
+                </div>
             </div>
         )}
 
@@ -170,7 +557,15 @@ export default function App() {
                 <div className="mb-12 text-center space-y-4">
                     <h2 className="text-5xl font-bold text-white tracking-tight">{exhibitData.topic}</h2>
                     <div className="max-w-4xl mx-auto">
-                        <CuratorBrief data={exhibitData.intro} />
+                        <CuratorBrief
+                            data={exhibitData.intro}
+                            onWalkThroughRequest={handleWalkThroughRequest}
+                            highlightedObjectiveIndex={
+                                walkThroughState.active && walkThroughState.componentId === 'curator-brief'
+                                    ? walkThroughState.highlightIndex
+                                    : null
+                            }
+                        />
                     </div>
                 </div>
 
@@ -183,9 +578,26 @@ export default function App() {
                     ))}
                 </div>
 
-                {/* Polymorphic Specialized Module (Equation or Sentence) */}
-                {exhibitData.modularExhibit && (
-                    <ModuleResolver data={exhibitData.modularExhibit} topic={exhibitData.topic} />
+                {/* Specialized Exhibits Section - Support for multiple exhibits */}
+                {exhibitData.specializedExhibits && exhibitData.specializedExhibits.length > 0 && (
+                    <div className="space-y-8">
+                        {exhibitData.specializedExhibits.map((exhibit, index) => {
+                            const key = `specialized-${index}`;
+                            switch (exhibit.type) {
+                                case 'equation':
+                                    return <FormulaCard key={key} data={exhibit} />;
+                                case 'sentence':
+                                    return <SentenceAnalyzer key={key} data={exhibit} />;
+                                case 'math-visual':
+                                    return <MathVisuals key={key} data={exhibit} />;
+                                case 'custom-svg':
+                                case 'custom-web':
+                                    return <CustomVisual key={key} data={exhibit} />;
+                                default:
+                                    return null;
+                            }
+                        })}
+                    </div>
                 )}
 
                 {/* Feature Exhibit (Deep Dive) */}
@@ -209,12 +621,25 @@ export default function App() {
                             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
                         </div>
                         {exhibitData.tables.map((table, index) => (
-                            <GenerativeTable 
-                                key={index} 
-                                data={table} 
-                                index={index} 
+                            <GenerativeTable
+                                key={index}
+                                data={table}
+                                index={index}
                                 onRowClick={handleDetailItemClick}
                             />
+                        ))}
+                   </div>
+                )}
+
+                {/* Graph Board Section */}
+                {exhibitData.graphBoards && exhibitData.graphBoards.length > 0 && (
+                   <div className="max-w-5xl mx-auto mb-20">
+                        <div className="flex items-center gap-4 mb-8">
+                            <span className="text-slate-400 text-sm font-mono uppercase tracking-widest">Interactive Graph</span>
+                            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
+                        </div>
+                        {exhibitData.graphBoards.map((graphData, index) => (
+                            <GraphBoardWrapper key={index} data={graphData} />
                         ))}
                    </div>
                 )}
@@ -278,7 +703,11 @@ export default function App() {
 
       {/* Voice Curator - Available during exhibit viewing */}
       {gameState === GameState.PLAYING && exhibitData && (
-        <LiveAssistant exhibitData={exhibitData} />
+        <LiveAssistant
+            exhibitData={exhibitData}
+            walkThroughRequest={walkThroughRequest}
+            onWalkThroughProgress={handleWalkThroughProgress}
+        />
       )}
     </div>
   );

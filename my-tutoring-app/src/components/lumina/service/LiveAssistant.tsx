@@ -1,19 +1,37 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
-import { ExhibitData } from '../types';
+import { ExhibitData, WalkThroughRequest, WalkThroughProgress } from '../types';
 
 interface LiveAssistantProps {
   exhibitData: ExhibitData;
+  walkThroughRequest?: WalkThroughRequest | null;
+  onWalkThroughProgress?: (progress: WalkThroughProgress) => void;
 }
 
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 
-export const LiveAssistant: React.FC<LiveAssistantProps> = ({ exhibitData }) => {
+export const LiveAssistant: React.FC<LiveAssistantProps> = ({
+  exhibitData,
+  walkThroughRequest,
+  onWalkThroughProgress
+}) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [volume, setVolume] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [walkThroughState, setWalkThroughState] = useState<{
+    isActive: boolean;
+    currentSection: 'brief' | 'objectives';
+    currentObjectiveIndex: number | null;
+    content: { brief: string; objectives: string[] } | null;
+  }>({
+    isActive: false,
+    currentSection: 'brief',
+    currentObjectiveIndex: null,
+    content: null
+  });
   
   // Audio Contexts & Nodes
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -26,11 +44,15 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ exhibitData }) => 
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number>(0);
+  const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       disconnect();
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+      }
     };
   }, []);
 
@@ -41,17 +63,17 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ exhibitData }) => 
         });
         sessionPromiseRef.current = null;
     }
-    
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    
+
     if (processorRef.current) {
       processorRef.current.disconnect();
       processorRef.current = null;
     }
-    
+
     if (sourceRef.current) {
       sourceRef.current.disconnect();
       sourceRef.current = null;
@@ -66,10 +88,46 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ exhibitData }) => 
         cancelAnimationFrame(animationFrameRef.current);
     }
 
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+
     setIsConnected(false);
     setIsSpeaking(false);
     setVolume(0);
   };
+
+  // Handle Walk-Through Requests
+  useEffect(() => {
+    if (!walkThroughRequest || walkThroughState.isActive) return;
+
+    console.log('[LiveAssistant] Starting walk-through:', walkThroughRequest);
+
+    // Auto-expand panel
+    setIsExpanded(true);
+
+    // Store walk-through content
+    setWalkThroughState({
+      isActive: true,
+      currentSection: 'brief',
+      currentObjectiveIndex: null,
+      content: {
+        brief: walkThroughRequest.content.brief || '',
+        objectives: walkThroughRequest.content.objectives || []
+      }
+    });
+
+    // Connect if not already connected
+    if (!isConnected) {
+      connect().then(() => {
+        // Wait a bit for connection to stabilize, then send instruction
+        setTimeout(() => sendWalkThroughInstruction(), 1000);
+      });
+    } else {
+      sendWalkThroughInstruction();
+    }
+  }, [walkThroughRequest]);
 
   const connect = async () => {
     setError(null);
@@ -338,10 +396,136 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ exhibitData }) => 
     animationFrameRef.current = requestAnimationFrame(visualize);
   };
 
+  // --- Walk-Through Functions ---
+  const sendWalkThroughInstruction = async () => {
+    if (!walkThroughState.content || !sessionPromiseRef.current) {
+      console.warn('[LiveAssistant] Cannot send walk-through: missing content or session');
+      return;
+    }
+
+    const { brief, objectives } = walkThroughState.content;
+
+    console.log('[LiveAssistant] Sending walk-through instruction');
+    console.log(`Brief: ${brief}`);
+    console.log(`Objectives: ${objectives.join(', ')}`);
+
+    try {
+      const session = await sessionPromiseRef.current;
+
+      // Create walk-through instruction text
+      const instruction = `Please walk me through this exhibit. First explain the briefing: "${brief.substring(0, 100)}". Then explain each learning objective one by one.`;
+
+      // Use Web Speech API to synthesize the instruction as audio
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(instruction);
+        utterance.rate = 1.2; // Speak faster
+        utterance.volume = 0.7; // Lower volume
+
+        // Capture the synthesized audio
+        // Note: This is a simplified approach - in production you'd want to capture the actual audio
+        speechSynthesis.speak(utterance);
+
+        console.log('[LiveAssistant] Walk-through instruction spoken via TTS');
+      } else {
+        console.warn('[LiveAssistant] Speech synthesis not available');
+
+        // Fallback: Send a simple text prompt using session.send if available
+        try {
+          // Try the standard send method with text content
+          if (typeof session.send === 'function') {
+            await session.send(instruction);
+            console.log('[LiveAssistant] Walk-through instruction sent as text');
+          }
+        } catch (sendError) {
+          console.warn('[LiveAssistant] Could not send text instruction:', sendError);
+        }
+      }
+
+      // Start progress simulation
+      startProgressSimulation();
+    } catch (error) {
+      console.error('[LiveAssistant] Error sending walk-through instruction:', error);
+      startProgressSimulation(); // Start anyway for visual feedback
+    }
+  };
+
+  const startProgressSimulation = () => {
+    if (!walkThroughState.content) return;
+
+    const { brief, objectives } = walkThroughState.content;
+
+    // Estimate timing: ~3s for brief, ~5s per objective
+    const briefDuration = 3000;
+    const objectiveDuration = 5000;
+
+    let elapsed = 0;
+
+    // Start with brief
+    if (onWalkThroughProgress) {
+      onWalkThroughProgress({
+        section: 'brief',
+        objectiveIndex: null
+      });
+    }
+
+    progressTimerRef.current = setInterval(() => {
+      elapsed += 1000;
+
+      if (elapsed < briefDuration) {
+        // Still on brief
+        setWalkThroughState(prev => ({
+          ...prev,
+          currentSection: 'brief',
+          currentObjectiveIndex: null
+        }));
+      } else {
+        // On objectives
+        const objectiveElapsed = elapsed - briefDuration;
+        const currentObjIndex = Math.floor(objectiveElapsed / objectiveDuration);
+
+        if (currentObjIndex < objectives.length) {
+          setWalkThroughState(prev => ({
+            ...prev,
+            currentSection: 'objectives',
+            currentObjectiveIndex: currentObjIndex
+          }));
+
+          if (onWalkThroughProgress) {
+            onWalkThroughProgress({
+              section: 'objectives',
+              objectiveIndex: currentObjIndex
+            });
+          }
+        } else {
+          // Completed
+          console.log('[LiveAssistant] Walk-through complete');
+
+          if (progressTimerRef.current) {
+            clearInterval(progressTimerRef.current);
+            progressTimerRef.current = null;
+          }
+
+          setWalkThroughState(prev => ({
+            ...prev,
+            isActive: false
+          }));
+
+          if (onWalkThroughProgress) {
+            onWalkThroughProgress({
+              section: 'objectives',
+              objectiveIndex: objectives.length - 1,
+              isComplete: true
+            });
+          }
+        }
+      }
+    }, 1000);
+  };
+
   // --- Render ---
 
-  // Collapsed State
-  if (!isConnected) {
+  // Collapsed State (only show button if not connected AND no walk-through active)
+  if (!isConnected && !walkThroughState.isActive) {
     return (
       <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-2">
           {error && (
@@ -387,6 +571,38 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ exhibitData }) => 
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
          </div>
+
+         {/* Walk-Through Content Card */}
+         {walkThroughState.isActive && walkThroughState.content && (
+           <div className="mb-4 p-4 bg-slate-800/50 rounded-lg border border-blue-500/30 animate-fade-in">
+             <div className="flex items-center gap-2 mb-2">
+               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+               <div className="text-xs text-slate-400 font-mono uppercase tracking-wider">
+                 Currently Explaining
+               </div>
+             </div>
+
+             {walkThroughState.currentSection === 'brief' ? (
+               <div className="text-sm text-slate-200">
+                 <div className="font-semibold text-blue-400 mb-1">Briefing</div>
+                 <p className="text-slate-300 leading-relaxed">
+                   {walkThroughState.content.brief}
+                 </p>
+               </div>
+             ) : (
+               <div className="text-sm text-slate-200">
+                 <div className="font-semibold text-blue-400 mb-1">
+                   Learning Objective {(walkThroughState.currentObjectiveIndex ?? 0) + 1}
+                 </div>
+                 <p className="text-slate-300 leading-relaxed">
+                   {walkThroughState.content.objectives[
+                     walkThroughState.currentObjectiveIndex ?? 0
+                   ]}
+                 </p>
+               </div>
+             )}
+           </div>
+         )}
 
          {/* Visualizer */}
          <div className="h-24 bg-black/40 rounded-2xl border border-white/5 flex items-center justify-center gap-1.5 overflow-hidden shadow-inner relative">

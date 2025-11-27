@@ -1,7 +1,27 @@
 'use client';
 
 import React, { useState } from 'react';
-import { KnowledgeCheckData } from '../types';
+import {
+  KnowledgeCheckData,
+  VisualObjectCollection,
+  VisualComparisonData,
+  LetterTracingData,
+  LetterPictureData,
+  AlphabetSequenceData,
+  RhymingPairsData,
+  SightWordCardData,
+  SoundSortData
+} from '../types';
+import {
+  ObjectCollection,
+  ComparisonPanel,
+  LetterPicture,
+  AlphabetSequence,
+  RhymingPairs,
+  SightWordCard,
+  SoundSort
+} from './visual-primitives';
+import { LetterTracing } from './LetterTracing';
 
 interface KnowledgeCheckProps {
   data: KnowledgeCheckData;
@@ -45,6 +65,36 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
             <h3 className="text-2xl md:text-3xl font-bold text-white mb-8 leading-tight">
                 {data.question}
             </h3>
+
+            {/* Visual Primitive (if present) */}
+            {data.visual && (
+              <div className="mb-8">
+                {data.visual.type === 'object-collection' && (
+                  <ObjectCollection data={data.visual.data as VisualObjectCollection} />
+                )}
+                {data.visual.type === 'comparison-panel' && (
+                  <ComparisonPanel data={data.visual.data as VisualComparisonData} />
+                )}
+                {data.visual.type === 'letter-tracing' && (
+                  <LetterTracing data={data.visual.data as LetterTracingData} />
+                )}
+                {data.visual.type === 'letter-picture' && (
+                  <LetterPicture data={data.visual.data as LetterPictureData} />
+                )}
+                {data.visual.type === 'alphabet-sequence' && (
+                  <AlphabetSequence data={data.visual.data as AlphabetSequenceData} />
+                )}
+                {data.visual.type === 'rhyming-pairs' && (
+                  <RhymingPairs data={data.visual.data as RhymingPairsData} />
+                )}
+                {data.visual.type === 'sight-word-card' && (
+                  <SightWordCard data={data.visual.data as SightWordCardData} />
+                )}
+                {data.visual.type === 'sound-sort' && (
+                  <SoundSort data={data.visual.data as SoundSortData} />
+                )}
+              </div>
+            )}
 
             {/* Options Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
