@@ -14,7 +14,7 @@ import { SentenceAnalyzer } from './primitives/SentenceAnalyzer';
 import { CustomVisual } from './primitives/CustomVisual';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { LiveAssistant } from './service/LiveAssistant';
-import { generateExhibitContent, generateExhibitManifest, buildCompleteExhibitFromTopic } from './service/geminiService';
+import { generateExhibitManifest, buildCompleteExhibitFromTopic } from './service/geminiService';
 import { GameState, ExhibitData, WalkThroughRequest, WalkThroughProgress, WalkThroughState, ExhibitManifest } from './types';
 import { GradeLevelSelector, GradeLevel } from './components/GradeLevelSelector';
 import { ManifestViewer } from './components/ManifestViewer';
@@ -25,6 +25,7 @@ import { RhymingPairs } from './primitives/visual-primitives/RhymingPairs';
 import { SightWordCard } from './primitives/visual-primitives/SightWordCard';
 import { SoundSort } from './primitives/visual-primitives/SoundSort';
 import { LetterPicture } from './primitives/visual-primitives/LetterPicture';
+import { PrimitiveCollectionRenderer } from './components/PrimitiveRenderer';
 
 
 export default function App() {
@@ -175,7 +176,7 @@ export default function App() {
     }
   ];
 
-  const startExhibit = useCallback(async (topicOverride?: string, useManifestFlow: boolean = false) => {
+  const startExhibit = useCallback(async (topicOverride?: string) => {
     const searchTopic = topicOverride || topic;
     if (!searchTopic.trim()) return;
 
@@ -187,25 +188,14 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      if (useManifestFlow) {
-        // Use new manifest-first architecture
-        setTimeout(() => setLoadingMessage('📋 Generating exhibit blueprint...'), 500);
-        setTimeout(() => setLoadingMessage('🎨 Building components in parallel...'), 2000);
-        setTimeout(() => setLoadingMessage('🏗️ Assembling complete exhibit...'), 4000);
+      // Use manifest-first architecture
+      setTimeout(() => setLoadingMessage('📋 Generating exhibit blueprint...'), 500);
+      setTimeout(() => setLoadingMessage('🎨 Building components in parallel...'), 2000);
+      setTimeout(() => setLoadingMessage('🏗️ Assembling complete exhibit...'), 4000);
 
-        const data = await buildCompleteExhibitFromTopic(searchTopic, gradeLevel);
-        setExhibitData(data);
-        setGameState(GameState.PLAYING);
-      } else {
-        // Use legacy flow
-        setTimeout(() => setLoadingMessage('Gathering historical context...'), 1500);
-        setTimeout(() => setLoadingMessage('Synthesizing key concepts...'), 3000);
-        setTimeout(() => setLoadingMessage('Designing interactive visuals...'), 4500);
-
-        const data = await generateExhibitContent(searchTopic, gradeLevel);
-        setExhibitData(data);
-        setGameState(GameState.PLAYING);
-      }
+      const data = await buildCompleteExhibitFromTopic(searchTopic, gradeLevel);
+      setExhibitData(data);
+      setGameState(GameState.PLAYING);
     } catch (error) {
       console.error(error);
       setGameState(GameState.ERROR);
@@ -216,12 +206,7 @@ export default function App() {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    startExhibit(undefined, false); // Legacy flow
-  };
-
-  const handleManifestFlowSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    startExhibit(undefined, true); // Manifest-first flow
+    startExhibit();
   };
 
   const reset = () => {
@@ -371,23 +356,6 @@ export default function App() {
                     </div>
                 </form>
 
-                {/* Manifest-First Flow Button */}
-                <div className="pt-4">
-                  <button
-                    onClick={handleManifestFlowSubmit}
-                    disabled={!topic}
-                    className="group relative px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
-                  >
-                    <span className="flex items-center gap-2">
-                      ✨ Build with Manifest-First
-                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                      </svg>
-                    </span>
-                  </button>
-                  <p className="text-xs text-slate-500 mt-2">Phase 2: Generate manifest + build complete exhibit</p>
-                </div>
-
                 {/* Manifest Viewer Button */}
                 <div className="pt-4">
                   <button
@@ -402,7 +370,7 @@ export default function App() {
                       </svg>
                     </span>
                   </button>
-                  <p className="text-xs text-slate-500 mt-2">Phase 1: See the blueprint before building</p>
+                  <p className="text-xs text-slate-500 mt-2">See the blueprint without building the exhibit</p>
                 </div>
 
                 <div className="pt-8 grid grid-cols-2 md:flex justify-center gap-3">
@@ -614,35 +582,17 @@ export default function App() {
                 )}
 
                 {/* Data Tables Section */}
-                {exhibitData.tables && exhibitData.tables.length > 0 && (
-                   <div className="max-w-5xl mx-auto mb-20">
-                        <div className="flex items-center gap-4 mb-8">
-                            <span className="text-slate-400 text-sm font-mono uppercase tracking-widest">Data Analysis</span>
-                            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
-                        </div>
-                        {exhibitData.tables.map((table, index) => (
-                            <GenerativeTable
-                                key={index}
-                                data={table}
-                                index={index}
-                                onRowClick={handleDetailItemClick}
-                            />
-                        ))}
-                   </div>
-                )}
+                <PrimitiveCollectionRenderer
+                    componentId="generative-table"
+                    dataArray={exhibitData.tables || []}
+                    additionalProps={{ onRowClick: handleDetailItemClick }}
+                />
 
-                {/* Graph Board Section */}
-                {exhibitData.graphBoards && exhibitData.graphBoards.length > 0 && (
-                   <div className="max-w-5xl mx-auto mb-20">
-                        <div className="flex items-center gap-4 mb-8">
-                            <span className="text-slate-400 text-sm font-mono uppercase tracking-widest">Interactive Graph</span>
-                            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
-                        </div>
-                        {exhibitData.graphBoards.map((graphData, index) => (
-                            <GraphBoardWrapper key={index} data={graphData} />
-                        ))}
-                   </div>
-                )}
+                {/* Graph Board Section - Standalone Interactive Tool */}
+                <PrimitiveCollectionRenderer
+                    componentId="graph-board"
+                    dataArray={exhibitData.graphBoards || []}
+                />
 
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
