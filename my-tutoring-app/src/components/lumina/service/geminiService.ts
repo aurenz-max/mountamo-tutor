@@ -12,7 +12,11 @@ import {
   ExhibitManifest,
   ComponentDefinition,
   ComponentId,
-  GraphBoardData
+  GraphBoardData,
+  ScaleSpectrumData,
+  AnnotatedExampleData,
+  NestedHierarchyData,
+  ImagePanelData
 } from "../types";
 
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
@@ -236,92 +240,6 @@ const detailSchema: Schema = {
 };
 
 
-export const generateExhibitContent = async (topic: string, gradeLevel: string = 'elementary'): Promise<ExhibitData> => {
-  try {
-    const gradeLevelContext = getGradeLevelContext(gradeLevel);
-
-    // STEP 1: Generate exhibit structure with lightweight intents
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: `Create comprehensive interactive educational content for the topic: "${topic}".
-
-      TARGET AUDIENCE: ${gradeLevelContext}
-
-      REQUIREMENTS:
-        - 4-6 core concepts appropriate for the target audience's cognitive development
-        - 5-8 key terms with definitions suitable for the target audience's vocabulary level
-        - 4-6 specific, measurable learning objectives aligned with the target audience's educational standards
-        - 3-5 real-world applications that the target audience can relate to
-        - Language complexity and examples appropriate for the target audience's comprehension level
-
-      EXHIBITS:
-      - Based on the selected learning objectives, definitions, and concepts, identify the most relevant exhibits to illustrate those principles
-
-      **Core Engagement Primitives:**
-      - Curator Brief: introduce the topic and define learning objectives
-      - Concept Cards: introduce the topic with relevant definitional terms and relationships
-      - Deep Dive Analysis: deep walkthrough of the topic with relevant real-world applications noted
-
-      **Additional Exhibits:**
-      - Comparison Panels: compare and contrast related topics
-      - Interactive Tables: organize and display information in a structured format
-
-      **Knowledge Checks:**
-      - Multiple choice question to ensure understanding of material
-
-      IMPORTANT CAPABILITIES:
-      - You have access to a variety of artifacts to ensure the most pedagalogically appropriate exhibit is created
-      - For Math: pre-defined exhibits for elementary concepts
-         -number-line: 
-         -base-ten-blocks
-         -fraction-circles
-         -geometric-shape
-      - Custom Visuals (specializedExhibitIntents): provide the manifest to a dedicated visual generator to create a custom visual uniquely suited for the topic
-      
-      Generate the full JSON for the exhibit structure.
-
-      OUTPUT FORMAT:
-      - Return strictly JSON matching the schema.
-      `,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: exhibitSchema,
-        temperature: 0.7,
-      },
-    });
-
-    if (!response.text) throw new Error("No text returned from step 1");
-
-    let jsonStr = response.text.trim();
-    const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (match) jsonStr = match[1].trim();
-
-    // Cleanup potential trailing characters
-    const firstOpen = jsonStr.indexOf('{');
-    const lastClose = jsonStr.lastIndexOf('}');
-    if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
-        jsonStr = jsonStr.substring(firstOpen, lastClose + 1);
-    }
-
-    const exhibitData = JSON.parse(jsonStr) as any;
-
-    // STEP 2: Generate specialized exhibits from intents using powerful model
-    if (exhibitData.specializedExhibitIntents && exhibitData.specializedExhibitIntents.length > 0) {
-      console.log(`Generating ${exhibitData.specializedExhibitIntents.length} specialized exhibits...`);
-      const specializedExhibits = await generateSpecializedExhibits(
-        exhibitData.specializedExhibitIntents,
-        topic
-      );
-      exhibitData.specializedExhibits = specializedExhibits;
-      delete exhibitData.specializedExhibitIntents; // Remove intents from final data
-    }
-
-    return exhibitData as ExhibitData;
-  } catch (error) {
-    console.error("Text gen error:", error);
-    throw error;
-  }
-};
 
 export const generateItemDetail = async (contextTopic: string, item: string): Promise<ItemDetailData> => {
   try {
@@ -848,7 +766,7 @@ Generate appropriate data for this visualization type.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-thinking-exp-01-21",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -973,6 +891,31 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     id: 'knowledge-check',
     description: 'Multiple choice quiz question. RECOMMENDED: Include at the end to assess understanding.',
     constraints: 'Typically one per exhibit, at the end'
+  },
+  {
+    id: 'scale-spectrum',
+    description: 'Interactive spectrum for placing items along a continuum. Use for teaching nuanced judgments, degrees of intensity, moral/ethical reasoning, or comparative analysis.',
+    constraints: 'Best for middle-school and above. Requires items that can be meaningfully positioned on a spectrum.'
+  },
+  {
+    id: 'annotated-example',
+    description: 'Step-by-step worked example with multi-layer annotations (procedural steps, strategic thinking, common errors, conceptual connections). Use for demonstrating problem-solving processes in math, science, or any domain requiring systematic reasoning.',
+    constraints: 'Best for elementary and above. Requires a well-defined problem with clear solution steps.'
+  },
+  {
+    id: 'nested-hierarchy',
+    description: 'Interactive tree structure for exploring hierarchical systems (organizational charts, taxonomies, system architectures, anatomical structures). Users navigate through expandable nodes to see relationships and detailed information about each component.',
+    constraints: 'Best for topics with clear hierarchical organization (2-4 levels deep). Use for biology (body systems), government (branches), classification systems, or any nested organizational structure.'
+  },
+  {
+    id: 'image-panel',
+    description: 'AI-generated images for visual context (maps, diagrams, illustrations, historical scenes, scientific visualizations). Subject-agnostic - works for geography, history, science, literature, art, or any topic requiring visual representation.',
+    constraints: 'Best for topics that benefit from visual representation. Automatically categorizes and styles based on subject matter.'
+  },
+  {
+    id: 'take-home-activity',
+    description: 'Hands-on activity using common household materials. Screen-free learning experience with step-by-step instructions, safety notes, reflection prompts, and optional extensions. Perfect for reinforcing concepts through kinesthetic learning and real-world application.',
+    constraints: 'Best for science experiments, math manipulatives, art projects, or any topic that benefits from hands-on exploration. Automatically adapts complexity and safety guidance to grade level.'
   }
 ];
 
@@ -1064,6 +1007,18 @@ export const generateComponentContent = async (
     case 'graph-board':
       return await generateGraphBoardContent(item, topic, gradeLevelContext);
 
+    case 'scale-spectrum':
+      return await generateScaleSpectrumContent(item, topic, gradeLevelContext);
+
+    case 'annotated-example':
+      return await generateAnnotatedExampleContent(item, topic, gradeLevelContext);
+
+    case 'nested-hierarchy':
+      return await generateNestedHierarchyContent(item, topic, gradeLevelContext);
+
+    case 'image-panel':
+      return await generateImagePanelContent(item, topic, gradeLevelContext);
+
     case 'feature-exhibit':
       return await generateFeatureExhibitContent(item, topic, gradeLevelContext);
 
@@ -1075,6 +1030,9 @@ export const generateComponentContent = async (
 
     case 'sentence-analyzer':
       return await generateSentenceAnalyzerContent(item, topic, gradeLevelContext);
+
+    case 'take-home-activity':
+      return await generateTakeHomeActivityContent(item, topic, gradeLevelContext);
 
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
@@ -1666,32 +1624,168 @@ const generateFormulaCardContent = async (item: any, topic: string, gradeContext
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
-      title: { type: Type.STRING },
-      description: { type: Type.STRING },
+      title: { type: Type.STRING, description: "Title of the formula (e.g., 'Newton's Second Law')" },
+      description: { type: Type.STRING, description: "Brief overview of what the formula represents" },
+      formula: { type: Type.STRING, description: "The formula as plain text (e.g., 'F = ma')" },
       segments: {
         type: Type.ARRAY,
+        description: "Interactive segments for the formula display",
         items: {
           type: Type.OBJECT,
           properties: {
-            text: { type: Type.STRING },
-            meaning: { type: Type.STRING },
-            isVariable: { type: Type.BOOLEAN }
+            text: { type: Type.STRING, description: "The text segment (variable, operator, or symbol)" },
+            meaning: { type: Type.STRING, description: "Brief tooltip explanation (for variables only)" },
+            isVariable: { type: Type.BOOLEAN, description: "True if this is a variable/parameter, false for operators" }
           },
           required: ["text", "isVariable"]
         }
-      }
+      },
+      parameters: {
+        type: Type.ARRAY,
+        description: "Detailed explanation cards for each parameter/variable in the formula",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            symbol: { type: Type.STRING, description: "The variable symbol (e.g., 'F', 'm', 'a')" },
+            name: { type: Type.STRING, description: "Full name (e.g., 'Force', 'Mass', 'Acceleration')" },
+            description: { type: Type.STRING, description: "Clear explanation of what this parameter represents (2-3 sentences)" },
+            unit: { type: Type.STRING, description: "Standard unit of measurement (e.g., 'Newtons (N)', 'kilograms (kg)', 'm/s²')" },
+            isHighlighted: { type: Type.BOOLEAN, description: "True for the MOST IMPORTANT parameters that students should focus on (typically 1-2 parameters). Consider L'Hôpital's rule principle - highlight parameters that have the most significant impact or are most commonly misunderstood." }
+          },
+          required: ["symbol", "name", "description"]
+        }
+      },
+      relationships: {
+        type: Type.ARRAY,
+        description: "Key relationships between parameters (optional, 1-3 relationships)",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            description: { type: Type.STRING, description: "Explanation of the relationship (e.g., 'Force is directly proportional to both mass and acceleration')" },
+            type: { type: Type.STRING, enum: ["proportional", "inverse", "complex"], description: "Type of mathematical relationship" }
+          },
+          required: ["description"]
+        }
+      },
+      examples: {
+        type: Type.ARRAY,
+        description: "Real-world examples demonstrating the formula (2-3 examples recommended)",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            scenario: { type: Type.STRING, description: "Concrete real-world scenario (e.g., 'Pushing a shopping cart')" },
+            calculation: { type: Type.STRING, description: "Optional: Show the calculation with specific numbers" },
+            result: { type: Type.STRING, description: "The outcome or what it demonstrates" }
+          },
+          required: ["scenario", "result"]
+        }
+      },
+      applicationContext: { type: Type.STRING, description: "When and where this formula is used (1-2 sentences)" }
     },
-    required: ["title", "description", "segments"]
+    required: ["title", "description", "formula", "segments", "parameters"]
   };
 
   const response = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: `Create formula card for: "${topic}"
+    model: "gemini-2.5-flash",
+    contents: `Create a comprehensive formula card for: "${topic}"
 
 TARGET AUDIENCE: ${gradeContext}
 INTENT: ${item.intent}
 
-Generate a mathematical formula with explanation of each part.`,
+## Task: Generate a rich, educational formula explanation
+
+You are creating an interactive formula display that helps students deeply understand a mathematical or scientific formula.
+
+## Design Principles:
+
+1. **Parameter Highlighting** (L'Hôpital's Rule Principle):
+   - Mark 1-2 parameters as "highlighted" (isHighlighted: true)
+   - Highlight parameters that are:
+     * Most conceptually important
+     * Most commonly misunderstood
+     * Have the greatest impact on the result
+   - For F=ma, you might highlight 'a' (acceleration) as it's often the key variable being solved for
+   - For complex formulas (Snell's Law, Einstein's equations), highlight the parameters that reveal the core insight
+
+2. **Parameter Cards**:
+   - Each variable gets a detailed explanation card
+   - Include the standard unit of measurement
+   - Use clear, accessible language appropriate for ${gradeContext}
+   - Explain what the parameter represents in practical terms
+
+3. **Relationships**:
+   - Explain how parameters interact (proportional, inverse, etc.)
+   - Make mathematical relationships intuitive
+   - Focus on the 1-3 most important relationships
+
+4. **Real-World Examples**:
+   - Provide 2-3 concrete, relatable scenarios
+   - Use everyday situations students can visualize
+   - Show how the formula applies in practice
+   - Optional: Include simple numerical calculations
+
+5. **Segments**:
+   - Break the formula into interactive parts
+   - Variables should have isVariable: true with a brief meaning
+   - Operators (=, +, -, ×, ÷, etc.) should have isVariable: false
+
+## Example Output Structure (for reference):
+
+For "F = ma" (Newton's Second Law):
+{
+  "title": "Newton's Second Law of Motion",
+  "description": "This fundamental law describes how force, mass, and acceleration are related",
+  "formula": "F = ma",
+  "segments": [
+    {"text": "F", "meaning": "Force", "isVariable": true},
+    {"text": " = ", "isVariable": false},
+    {"text": "m", "meaning": "Mass", "isVariable": true},
+    {"text": "a", "meaning": "Acceleration", "isVariable": true}
+  ],
+  "parameters": [
+    {
+      "symbol": "F",
+      "name": "Force",
+      "description": "Force is a push or pull on an object. It's what causes things to speed up, slow down, or change direction.",
+      "unit": "Newtons (N)",
+      "isHighlighted": false
+    },
+    {
+      "symbol": "m",
+      "name": "Mass",
+      "description": "Mass is how much matter an object contains. Heavier objects have more mass and are harder to accelerate.",
+      "unit": "kilograms (kg)",
+      "isHighlighted": false
+    },
+    {
+      "symbol": "a",
+      "name": "Acceleration",
+      "description": "Acceleration is how quickly velocity changes. It's the rate at which something speeds up or slows down.",
+      "unit": "meters per second squared (m/s²)",
+      "isHighlighted": true
+    }
+  ],
+  "relationships": [
+    {
+      "description": "Force is directly proportional to both mass and acceleration. Doubling either mass or acceleration will double the force.",
+      "type": "proportional"
+    }
+  ],
+  "examples": [
+    {
+      "scenario": "Pushing a shopping cart",
+      "result": "An empty cart (low mass) accelerates easily with little force. A full cart (high mass) needs much more force to achieve the same acceleration."
+    },
+    {
+      "scenario": "Car braking",
+      "calculation": "A 1000 kg car decelerating at 5 m/s² experiences F = 1000 × 5 = 5000 N of braking force",
+      "result": "Heavier vehicles require more braking force to stop in the same distance."
+    }
+  ],
+  "applicationContext": "This formula is fundamental in physics and engineering, used to analyze motion in everything from rocket launches to car safety systems."
+}
+
+Now generate comprehensive formula data following these principles.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
@@ -1745,6 +1839,716 @@ const generateGraphBoardContent = async (item: any, topic: string, gradeContext:
 };
 
 /**
+ * Generate Scale Spectrum content
+ */
+const generateScaleSpectrumContent = async (item: any, topic: string, gradeContext: string) => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Question framing the spectrum judgment" },
+      description: { type: Type.STRING, description: "Brief instruction for the student" },
+      spectrum: {
+        type: Type.OBJECT,
+        properties: {
+          leftLabel: { type: Type.STRING, description: "Left endpoint (3 words max)" },
+          rightLabel: { type: Type.STRING, description: "Right endpoint (3 words max)" },
+          leftColor: { type: Type.STRING, description: "Hex color for left (default #ef4444)" },
+          rightColor: { type: Type.STRING, description: "Hex color for right (default #22c55e)" },
+          anchors: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                position: { type: Type.NUMBER, description: "Position 0-100 on spectrum" },
+                label: { type: Type.STRING, description: "Endpoint label" },
+                example: { type: Type.STRING, description: "Concrete example (5 words max)" }
+              },
+              required: ["position", "label", "example"]
+            },
+            description: "Exactly 5 anchors at positions 0, 25, 50, 75, 100"
+          }
+        },
+        required: ["leftLabel", "rightLabel", "leftColor", "rightColor", "anchors"]
+      },
+      items: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.NUMBER },
+            title: { type: Type.STRING, description: "Item name (concise)" },
+            description: { type: Type.STRING, description: "One sentence explaining what this item is" },
+            correctPosition: { type: Type.NUMBER, description: "Position 0-100 on spectrum" },
+            tolerance: { type: Type.NUMBER, description: "Acceptable margin of error (5-18)" },
+            explanation: { type: Type.STRING, description: "2-3 sentences justifying the position" },
+            metadata: { type: Type.STRING, description: "Optional contextual metadata like date (e.g., '235 CE'), step number (e.g., 'Step 3'), category, or other brief identifier relevant to the topic. Leave empty if not applicable." }
+          },
+          required: ["id", "title", "description", "correctPosition", "tolerance", "explanation"]
+        },
+        description: "4-6 items that span the spectrum meaningfully"
+      }
+    },
+    required: ["title", "description", "spectrum", "items"]
+  };
+
+  const prompt = `You are generating a Scale/Spectrum learning activity. The student will place items along a continuum, learning to make nuanced judgments rather than binary classifications.
+
+CONTEXT:
+- Topic: ${topic}
+- Target Audience: ${gradeContext}
+- Intent: ${item.intent}
+
+## Design Principles
+
+1. **Anchors calibrate judgment**: Each anchor should be an unambiguous reference point. Students use these to triangulate where items belong. Choose anchors that are widely understood and not themselves debatable.
+
+2. **Tolerance reflects genuine ambiguity**: Items with clear positions get tolerance 5-8. Items where reasonable people disagree get tolerance 12-18. Never use tolerance > 20 (that's too vague to teach anything).
+
+3. **Avoid clustering**: Distribute items across the spectrum. Include at least one item in each third (0-33, 34-66, 67-100). Clustering defeats the purpose.
+
+4. **Explanations model reasoning**: The explanation should articulate the factors that determine position, not just assert it. Use phrases like "because...", "considering that...", "while X, also Y..."
+
+5. **Title as genuine question**: Frame the title as something worth asking, not a label. "How formal is this writing?" not "Writing Formality Spectrum"
+
+6. **Metadata usage**: Include the metadata field when contextually relevant:
+   - For historical topics: Include dates (e.g., "235 CE", "1776", "14th Century")
+   - For sequential processes: Include step numbers (e.g., "Step 1", "Phase 2")
+   - For categorized items: Include category names (e.g., "Politics", "Science")
+   - For general topics without natural metadata: Leave empty or omit
+
+## Common Spectrum Types
+
+- **Degree/Intensity**: How much of a quality (formal↔informal, concrete↔abstract)
+- **Moral/Ethical**: How justifiable, fair, democratic, ethical
+- **Temporal**: How recent, how long-lasting, how fast-changing
+- **Certainty**: How well-established, how disputed, how speculative
+- **Complexity**: How simple↔complex, how many factors involved
+- **Scope**: How narrow↔broad, local↔global, individual↔systemic
+
+Generate 4-6 items that span the spectrum meaningfully. Ensure the activity teaches discrimination—students should finish understanding WHY things fall where they do, not just WHERE.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      temperature: 0.8,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text);
+
+  return {
+    type: 'scale-spectrum',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Annotated Example content
+ */
+const generateAnnotatedExampleContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: AnnotatedExampleData }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Descriptive title of the problem type" },
+      subject: { type: Type.STRING, description: "Subject area" },
+      problem: {
+        type: Type.OBJECT,
+        properties: {
+          statement: { type: Type.STRING, description: "The problem prompt or question" },
+          equations: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Any given equations or expressions"
+          },
+          context: { type: Type.STRING, description: "Optional additional context or given information" }
+        },
+        required: ["statement"]
+      },
+      layers: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING, description: "Layer ID (steps, strategy, misconceptions, connections)" },
+            label: { type: Type.STRING, description: "Display label" },
+            color: { type: Type.STRING, description: "Hex color code" },
+            icon: { type: Type.STRING, description: "Emoji icon" }
+          },
+          required: ["id", "label", "color", "icon"]
+        },
+        description: "Must include these 4 layers: steps, strategy, misconceptions, connections"
+      },
+      steps: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.NUMBER, description: "Step number (sequential from 1)" },
+            title: { type: Type.STRING, description: "Brief title for this step" },
+            work: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  text: { type: Type.STRING, description: "Mathematical expression or work shown" },
+                  annotation: { type: Type.STRING, description: "Optional inline note like '× 3'" }
+                },
+                required: ["text"]
+              },
+              description: "Lines of mathematical work shown in this step"
+            },
+            result: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  text: { type: Type.STRING, description: "Result or simplified form after this step" }
+                },
+                required: ["text"]
+              },
+              description: "Result lines after this step (optional)"
+            },
+            annotations: {
+              type: Type.OBJECT,
+              properties: {
+                steps: { type: Type.STRING, description: "What we're doing procedurally in this step" },
+                strategy: { type: Type.STRING, description: "WHY we're making this choice, metacognitive reasoning" },
+                misconceptions: { type: Type.STRING, description: "Common errors students make here" },
+                connections: { type: Type.STRING, description: "How this connects to underlying concepts" }
+              },
+              required: ["steps", "strategy", "misconceptions", "connections"]
+            }
+          },
+          required: ["id", "title", "work", "annotations"]
+        },
+        description: "4-8 steps that solve the problem completely"
+      }
+    },
+    required: ["title", "subject", "problem", "layers", "steps"]
+  };
+
+  const prompt = `You are generating a Worked Example with Annotation Layers. The student will study a fully solved problem while toggling different layers that reveal procedural steps, strategic thinking, common errors, and conceptual connections.
+
+CONTEXT:
+- Topic: ${topic}
+- Target Audience: ${gradeContext}
+- Intent: ${item.intent}
+
+## Output Format
+Return ONLY valid JSON matching the schema provided.
+
+## Layer Design Principles
+
+### Steps Layer (Procedural)
+- Describe WHAT is happening mechanically
+- Use clear, direct language: "Multiply both sides by 3" not "We should multiply..."
+- Focus on the action, not the reasoning
+- Should be sufficient for a student to replicate the procedure
+
+### Strategy Layer (Metacognitive)
+- Explain WHY this approach was chosen over alternatives
+- Make decision points explicit: "I chose elimination over substitution because..."
+- Reveal expert thinking patterns: "I notice that... so I'll..."
+- Discuss efficiency and elegance when relevant
+- Use first person to model internal monologue
+
+### Misconceptions Layer (Error Prevention)
+- Flag the SPECIFIC error students commonly make at this step
+- Be concrete: "A common error is writing 12x - 3y = 5 instead of 15"
+- Explain why the error is tempting
+- Don't just say "be careful"—say what to be careful about
+
+### Connections Layer (Conceptual)
+- Link to underlying mathematical/scientific principles
+- Connect to previously learned concepts
+- Provide geometric, visual, or real-world interpretations
+- Show how this technique generalizes
+
+## Step Design Principles
+
+1. **Granularity**: Each step should represent ONE logical move. If you're tempted to write "and then" in a step description, split it into two steps.
+
+2. **Work array**: Show the actual mathematical expressions, line by line. Include intermediate steps—don't skip algebra.
+
+3. **Result array**: Show what we have after this step is complete. This becomes the starting point for the next step.
+
+4. **Inline annotations**: Use sparingly for operation indicators (× 3, + equation 1, etc.)
+
+5. **Verification step**: Always include a final step that verifies the answer by substitution or checking. This models good mathematical practice.
+
+## Annotation Quality Checklist
+
+For each step, verify:
+- Steps layer tells WHAT without WHY
+- Strategy layer reveals expert decision-making
+- Misconceptions layer flags a SPECIFIC, COMMON error (not generic warnings)
+- Connections layer links to at least one broader concept
+- No layer repeats information from another layer
+
+## Required Layers (MUST include all 4)
+[
+  { "id": "steps", "label": "Steps", "color": "#3b82f6", "icon": "📝" },
+  { "id": "strategy", "label": "Strategy", "color": "#8b5cf6", "icon": "🧠" },
+  { "id": "misconceptions", "label": "Watch Out", "color": "#ef4444", "icon": "⚠️" },
+  { "id": "connections", "label": "Connections", "color": "#22c55e", "icon": "🔗" }
+]
+
+Generate a complete worked example with 4-8 steps. Ensure annotations are substantive—each should teach something a student wouldn't get from just watching the procedure.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      temperature: 0.7,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text) as AnnotatedExampleData;
+
+  return {
+    type: 'annotated-example',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Image Panel content
+ */
+const generateImagePanelContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: ImagePanelData }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Title for the image panel" },
+      description: { type: Type.STRING, description: "Brief description of what the image shows" },
+      imagePrompt: {
+        type: Type.STRING,
+        description: "Detailed prompt for generating the image - be specific about style, content, perspective, and educational purpose"
+      },
+      category: {
+        type: Type.STRING,
+        enum: ["geography", "history", "science", "literature", "art", "general"],
+        description: "Category that best fits the image content"
+      }
+    },
+    required: ["title", "imagePrompt", "category"]
+  };
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: `Create image panel metadata for: "${topic}"
+
+TARGET AUDIENCE: ${gradeContext}
+INTENT: ${item.intent}
+
+Generate metadata for an AI image generation request. The imagePrompt should be:
+- Detailed and specific about what to visualize
+- Educational and age-appropriate
+- Clear about style (map, diagram, illustration, photograph-style, etc.)
+- Include relevant context (historical period, geographic region, scientific accuracy)
+
+Choose the most appropriate category based on the content.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      temperature: 0.7,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const metadata = JSON.parse(response.text);
+
+  // Generate the actual image using the existing generateConceptImage function
+  let imageUrl: string | null = null;
+  try {
+    imageUrl = await generateConceptImage(metadata.imagePrompt);
+  } catch (error) {
+    console.error("Failed to generate image:", error);
+    // Continue without image - the component will handle the null case
+  }
+
+  return {
+    type: 'image-panel',
+    instanceId: item.instanceId,
+    data: {
+      title: metadata.title,
+      description: metadata.description,
+      imageUrl,
+      imagePrompt: metadata.imagePrompt,
+      category: metadata.category,
+      attribution: 'Generated with Gemini AI'
+    }
+  };
+};
+
+/**
+ * Generate Take Home Activity content
+ */
+const generateTakeHomeActivityContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      id: { type: Type.STRING, description: "Unique identifier for this activity" },
+      title: { type: Type.STRING, description: "Engaging, action-oriented title" },
+      subject: {
+        type: Type.STRING,
+        enum: ["Science", "Math", "Language Arts", "Social Studies", "Art"],
+        description: "Subject area"
+      },
+      topic: { type: Type.STRING, description: "Specific curriculum topic this addresses" },
+      gradeRange: { type: Type.STRING, description: "Grade range like 'K-2', '3-5', '6-8'" },
+      estimatedTime: { type: Type.STRING, description: "Time estimate like '30-45 minutes'" },
+      overview: { type: Type.STRING, description: "2-3 sentence description that hooks student interest and previews the learning" },
+      learningObjectives: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description: "3 specific, measurable learning outcomes"
+      },
+      materials: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            item: { type: Type.STRING, description: "Material name" },
+            quantity: { type: Type.STRING, description: "Amount needed (household-friendly units)" },
+            essential: { type: Type.BOOLEAN, description: "Is this truly necessary?" },
+            substitutes: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Alternative materials that can be used instead"
+            },
+            examples: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Specific examples for open-ended items"
+            }
+          },
+          required: ["item", "quantity", "essential"]
+        },
+        description: "List of 5-10 materials needed"
+      },
+      safetyNotes: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description: "Safety considerations if applicable"
+      },
+      steps: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            stepNumber: { type: Type.NUMBER, description: "Step number (1, 2, 3...)" },
+            title: { type: Type.STRING, description: "Brief step title" },
+            instruction: { type: Type.STRING, description: "Clear, detailed instruction at appropriate reading level" },
+            tip: { type: Type.STRING, description: "Optional helpful hint for tricky parts" },
+            scienceNote: { type: Type.STRING, description: "Optional explanation of the concept being demonstrated" },
+            checkpoint: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING, description: "Question to verify understanding or completion" },
+                type: {
+                  type: Type.STRING,
+                  enum: ["confirm", "count", "reflection"],
+                  description: "Type of checkpoint"
+                }
+              },
+              required: ["question", "type"]
+            }
+          },
+          required: ["stepNumber", "title", "instruction"]
+        },
+        description: "5-8 steps for younger grades, up to 10-12 for older grades"
+      },
+      reflectionPrompts: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            question: { type: Type.STRING, description: "Open-ended question connecting to learning objectives" },
+            hint: { type: Type.STRING, description: "Scaffolding hint to guide thinking" },
+            connectionTo: { type: Type.STRING, description: "Reference to which learning objective this addresses" }
+          },
+          required: ["question"]
+        },
+        description: "2-4 reflection prompts moving from observation to abstract principle to real-world connection"
+      },
+      extensions: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING, description: "Extension activity name" },
+            description: { type: Type.STRING, description: "Brief description of the challenge" },
+            difficulty: {
+              type: Type.STRING,
+              enum: ["intermediate", "advanced"],
+              description: "Difficulty level"
+            }
+          },
+          required: ["title", "description", "difficulty"]
+        },
+        description: "1-2 optional challenges for deeper exploration"
+      },
+      documentationPrompt: {
+        type: Type.OBJECT,
+        properties: {
+          instruction: { type: Type.STRING, description: "What to photograph or record" },
+          suggestedCaption: { type: Type.STRING, description: "Template for sharing with fill-in-the-blanks" }
+        },
+        required: ["instruction", "suggestedCaption"]
+      }
+    },
+    required: ["id", "title", "subject", "topic", "gradeRange", "estimatedTime", "overview", "learningObjectives", "materials", "steps", "reflectionPrompts"]
+  };
+
+  const prompt = `You are an expert educational content designer specializing in hands-on, inquiry-based learning activities for K-8 homeschool students. Generate a Take Home Activity - a screen-free, hands-on learning experience using common household materials.
+
+CONTEXT:
+- Topic: ${topic}
+- Target Audience: ${gradeContext}
+- Intent: ${item.intent}
+
+## Design Principles
+
+1. **Safety First**: Activities must be age-appropriate with clear safety guidance. Assume varying levels of adult supervision.
+
+2. **Accessibility**: Prioritize common household materials. ALWAYS provide substitutes for harder-to-find items.
+
+3. **Scientific Rigor**: Even simple activities should teach real concepts accurately. Include the "why" behind each step.
+
+4. **Scaffolded Discovery**: Guide students toward insights rather than just telling them. Use checkpoints and reflection prompts.
+
+5. **Multiple Entry Points**: Activities should engage different learning styles - kinesthetic doing, visual observation, verbal reflection.
+
+6. **Documentation Built-In**: Encourage students to capture and reflect on their work.
+
+## Field Guidelines
+
+### Materials
+- List 5-10 materials maximum
+- Mark truly necessary items as essential: true
+- ALWAYS provide substitutes for specialty items (substitutes array)
+- Use examples array for open-ended categories (e.g., "small objects to test")
+- Quantities should be household-friendly (tablespoons, cups, "a few")
+
+### Steps
+- Aim for 5-8 steps for younger grades (K-2, 3-5), up to 10-12 for older (6-8)
+- Each step should be ONE focused action
+- Include tip for tricky parts or common mistakes
+- Include scienceNote when explaining WHY something happens
+- Every 2-3 steps should have a checkpoint to maintain engagement
+- Checkpoint types:
+  - confirm: Yes/no verification ("Can you see two layers?")
+  - count: Numerical observation ("How many different sounds can you make?")
+  - reflection: Open observation ("What do you notice about...?")
+
+### Reflection Prompts
+- 2-4 prompts that connect hands-on experience to conceptual understanding
+- Move from concrete observation → abstract principle → real-world connection
+- Hints should scaffold without giving away the answer
+
+### Extensions
+- 1-2 optional challenges for students who want more
+- Should deepen understanding, not just add busywork
+- Mark difficulty clearly so students self-select appropriately
+
+### Safety Notes
+- Include for ANY activity involving:
+  - Heat, sharp objects, or breakable items
+  - Substances that shouldn't be ingested
+  - Activities requiring adult supervision
+  - Potential mess or stain risks
+- For young grades (K-2), always include "Adult helper recommended"
+
+## Grade-Level Calibration
+
+### K-2 Activities
+- 15-25 minutes
+- 5-6 steps maximum
+- Simple materials (paper, crayons, water, food items)
+- Large motor skills preferred
+- Picture-friendly checkpoints
+- Adult helper assumed
+
+### 3-5 Activities
+- 25-45 minutes
+- 6-8 steps
+- Can include measuring, simple tools
+- Mix of observation and recording
+- Introduction to scientific vocabulary
+- Adult supervision for specific steps only
+
+### 6-8 Activities
+- 30-60 minutes
+- 8-12 steps
+- Can include calculations, precise measurements
+- Emphasis on hypothesis → experiment → conclusion
+- More sophisticated reflection prompts
+- Independent work with safety awareness
+
+Generate a complete, engaging take-home activity following these guidelines.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      temperature: 0.8,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const activityData = JSON.parse(response.text);
+
+  return {
+    type: 'take-home-activity',
+    instanceId: item.instanceId,
+    data: activityData
+  };
+};
+
+/**
+ * Generate Nested Hierarchy content
+ */
+const generateNestedHierarchyContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: NestedHierarchyData }> => {
+  const hierarchyNodeSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      id: { type: Type.STRING, description: "Unique identifier for this node" },
+      label: { type: Type.STRING, description: "Display name for this node" },
+      type: { type: Type.STRING, description: "Category/type of this node (e.g., 'System', 'Subsystem', 'Component')" },
+      icon: {
+        type: Type.STRING,
+        enum: ["activity", "brain", "zap", "git-commit", "layers", "home"],
+        description: "Icon identifier for this node"
+      },
+      description: { type: Type.STRING, description: "Detailed explanation of this node" },
+      children: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING, description: "Recursive reference - will be replaced with actual node structure" },
+        description: "Child nodes in the hierarchy"
+      }
+    },
+    required: ["id", "label", "icon", "description"]
+  };
+
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Title of the hierarchical system" },
+      description: { type: Type.STRING, description: "Brief overview of the system" },
+      root_node: {
+        type: Type.OBJECT,
+        description: "The root node of the hierarchy - must be a complete recursive tree structure",
+        properties: {
+          id: { type: Type.STRING },
+          label: { type: Type.STRING },
+          type: { type: Type.STRING },
+          icon: {
+            type: Type.STRING,
+            enum: ["activity", "brain", "zap", "git-commit", "layers", "home"]
+          },
+          description: { type: Type.STRING },
+          children: {
+            type: Type.ARRAY,
+            description: "Array of child nodes - each with same recursive structure"
+          }
+        },
+        required: ["id", "label", "icon", "description"]
+      },
+      defaultExpanded: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description: "Array of node IDs that should be expanded by default"
+      }
+    },
+    required: ["title", "root_node"]
+  };
+
+  const prompt = `You are generating a Nested Hierarchy visualization. The student will explore a hierarchical system by clicking through nodes in a tree structure, seeing detailed information about each component.
+
+CONTEXT:
+- Topic: ${topic}
+- Target Audience: ${gradeContext}
+- Intent: ${item.intent}
+
+## Design Principles
+
+1. **Clear Hierarchy Levels**: Organize the system into logical levels (e.g., System → Subsystem → Component → Subcomponent)
+
+2. **Balanced Tree**: Aim for 2-4 children per node where possible. Avoid single-child nodes unless structurally necessary.
+
+3. **Meaningful Descriptions**: Each node's description should:
+   - Explain what this component does/is
+   - Clarify its role in the larger system
+   - Be 1-3 sentences, clear and informative
+
+4. **Type Labels**: Use consistent type labels across the same level (e.g., all level-2 nodes might be "Subsystem", level-3 "Component")
+
+5. **Icon Selection**: Choose icons that visually represent the node's function:
+   - "activity": General activity, processes, actions
+   - "brain": Cognitive functions, control centers, decision-making
+   - "zap": Energy, electrical, fast processes
+   - "git-commit": Connections, pathways, transmission
+   - "layers": Structural layers, organization
+   - "home": Root, foundation, central hub
+
+6. **Depth**: Aim for 3-4 levels deep. Too shallow (1-2 levels) lacks detail; too deep (5+ levels) overwhelms.
+
+7. **Default Expanded**: Include the root node ID and 1-2 key subsystem IDs to give students a good starting view.
+
+## Example Structure
+
+For "The Human Nervous System":
+- Root: "Human Nervous System"
+  - Level 1: "Central Nervous System", "Peripheral Nervous System"
+    - Level 2: "Brain", "Spinal Cord" (under CNS)
+      - Level 3: "Cerebrum", "Cerebellum", "Brain Stem" (under Brain)
+    - Level 2: "Somatic", "Autonomic" (under PNS)
+      - Level 3: "Sympathetic", "Parasympathetic" (under Autonomic)
+
+## Output Requirements
+
+Generate a complete hierarchical tree structure with:
+- 1 root node
+- 2-5 main branches (children of root)
+- Each branch developed to 2-3 additional levels
+- Total of 8-20 nodes across the entire tree
+- Descriptive content for each node
+- Logical type progressions (System → Subsystem → Component)
+
+Return ONLY valid JSON matching the schema.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      temperature: 0.7,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text) as NestedHierarchyData;
+
+  return {
+    type: 'nested-hierarchy',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Exhibit Manifest (Phase 1 - The Blueprint)
  * This creates a plan for what components to use WITHOUT generating content
  */
@@ -1772,9 +2576,12 @@ DESIGN RULES:
 3. 🎯 Choose the BEST 4-8 components total to explain the topic effectively
 4. 📊 Prioritize components that match the subject matter:
    - Math/Counting for Kids → Use 'math-visual' (basic concepts) OR 'custom-visual' (interactive games/counting)
+   - Math Problem-Solving (Elementary+) → Use 'annotated-example' to show worked solutions with multi-layer reasoning
    - History/Literature/Social Studies → Use 'comparison-panel', 'generative-table', or 'feature-exhibit'
-   - Science/Physics/Chemistry → Use 'formula-card' (equations), 'custom-visual' (simulations), 'feature-exhibit'
+   - Nuanced Judgment Topics → Use 'scale-spectrum' for ethical dilemmas, degrees of formality, historical significance, etc.
+   - Science/Physics/Chemistry → Use 'formula-card' (equations), 'custom-visual' (simulations), 'feature-exhibit', 'annotated-example' (problem-solving)
    - Language Arts/Grammar → Use 'sentence-analyzer', 'concept-card-grid'
+   - Data Analysis → Use 'graph-board' for polynomial fitting and data visualization
 5. 🎨 Pick a themeColor that matches the subject (e.g., blue for science, green for nature, purple for humanities)
 
 OUTPUT INSTRUCTIONS:
@@ -1926,6 +2733,11 @@ export const buildCompleteExhibitFromTopic = async (
     comparison: null,
     tables: [],
     graphBoards: [],
+    scaleSpectrums: [],
+    annotatedExamples: [],
+    nestedHierarchies: [],
+    imagePanels: [],
+    takeHomeActivities: [],
     knowledgeCheck: null,
     specializedExhibits: [],
     relatedTopics: [] // Could be added as another component type in future
@@ -1958,6 +2770,26 @@ export const buildCompleteExhibitFromTopic = async (
 
       case 'graph-board':
         exhibit.graphBoards.push(component.data);
+        break;
+
+      case 'scale-spectrum':
+        exhibit.scaleSpectrums.push(component.data);
+        break;
+
+      case 'annotated-example':
+        exhibit.annotatedExamples.push(component.data);
+        break;
+
+      case 'nested-hierarchy':
+        exhibit.nestedHierarchies.push(component.data);
+        break;
+
+      case 'image-panel':
+        exhibit.imagePanels.push(component.data);
+        break;
+
+      case 'take-home-activity':
+        exhibit.takeHomeActivities.push(component.data);
         break;
 
       case 'knowledge-check':

@@ -37,18 +37,42 @@ export interface SpecializedExhibitIntent {
 
 // Step 2: Generated Exhibit Data
 
-// Module A: Math/Science Formula (Legacy/Fallback)
+// Module A: Math/Science Formula
 export interface FormulaSegment {
   text: string;
   meaning?: string;
   isVariable: boolean;
 }
 
+export interface FormulaParameter {
+  symbol: string;
+  name: string;
+  description: string;
+  unit?: string;
+  isHighlighted?: boolean; // LLM marks most important parameters
+}
+
+export interface FormulaRelationship {
+  description: string; // e.g., "F is directly proportional to both m and a"
+  type?: 'proportional' | 'inverse' | 'complex';
+}
+
+export interface FormulaExample {
+  scenario: string;
+  calculation?: string;
+  result: string;
+}
+
 export interface EquationData {
   type: 'equation'; // Discriminator
   title: string;
   description: string;
-  segments: FormulaSegment[];
+  formula: string; // The actual formula as text (e.g., "F = ma")
+  segments: FormulaSegment[]; // For interactive display
+  parameters: FormulaParameter[]; // Detailed parameter cards
+  relationships?: FormulaRelationship[]; // Key relationships in the formula
+  examples?: FormulaExample[]; // Real-world examples
+  applicationContext?: string; // When/where this formula is used
 }
 
 // Module B: Language/Grammar Sentence
@@ -321,6 +345,158 @@ export interface GraphBoardData {
   gridRange?: { xMin: number; xMax: number; yMin: number; yMax: number };
 }
 
+export interface SpectrumAnchor {
+  position: number;
+  label: string;
+  example: string;
+}
+
+export interface SpectrumItem {
+  id: number;
+  title: string;
+  description: string;
+  correctPosition: number;
+  tolerance: number;
+  explanation: string;
+  metadata?: string; // Optional metadata like date, step number, etc. displayed in top-right
+}
+
+export interface ScaleSpectrumData {
+  title: string;
+  description: string;
+  spectrum: {
+    leftLabel: string;
+    rightLabel: string;
+    leftColor: string;
+    rightColor: string;
+    anchors: SpectrumAnchor[];
+  };
+  items: SpectrumItem[];
+  mode?: string;
+}
+
+export interface AnnotationLayer {
+  id: string;
+  label: string;
+  color: string;
+  icon: string;
+}
+
+export interface WorkLine {
+  text: string;
+  annotation?: string;
+}
+
+export interface ResultLine {
+  text: string;
+}
+
+export interface StepAnnotations {
+  [layerId: string]: string;
+}
+
+export interface ExampleStep {
+  id: number;
+  title: string;
+  work: WorkLine[];
+  result?: ResultLine[];
+  annotations: StepAnnotations;
+}
+
+export interface ProblemStatement {
+  statement: string;
+  equations?: string[];
+  context?: string;
+}
+
+export interface AnnotatedExampleData {
+  title: string;
+  subject: string;
+  problem: ProblemStatement;
+  layers: AnnotationLayer[];
+  steps: ExampleStep[];
+}
+
+export interface HierarchyNode {
+  id: string;
+  label: string;
+  type?: string;
+  icon: string;
+  description: string;
+  children?: HierarchyNode[];
+}
+
+export interface NestedHierarchyData {
+  title: string;
+  description?: string;
+  root_node: HierarchyNode;
+  defaultExpanded?: string[];
+}
+
+export interface ImagePanelData {
+  title: string;
+  description?: string;
+  imageUrl: string | null;
+  imagePrompt?: string;
+  category?: 'geography' | 'history' | 'science' | 'literature' | 'art' | 'general';
+  attribution?: string;
+}
+
+// Take Home Activity Types
+export interface MaterialItem {
+  item: string;
+  quantity: string;
+  essential: boolean;
+  substitutes?: string[];
+  examples?: string[];
+}
+
+export interface ActivityStep {
+  stepNumber: number;
+  title: string;
+  instruction: string;
+  tip?: string;
+  scienceNote?: string;
+  checkpoint?: {
+    question: string;
+    type: 'confirm' | 'count' | 'reflection';
+  };
+}
+
+export interface ReflectionPrompt {
+  question: string;
+  hint?: string;
+  connectionTo?: string;
+}
+
+export interface ActivityExtension {
+  title: string;
+  description: string;
+  difficulty: 'intermediate' | 'advanced';
+}
+
+export interface DocumentationPrompt {
+  instruction: string;
+  suggestedCaption: string;
+}
+
+export interface TakeHomeActivityData {
+  id: string;
+  title: string;
+  subject: string;
+  topic: string;
+  gradeRange: string;
+  estimatedTime: string;
+  overview: string;
+  learningObjectives: string[];
+  materials: MaterialItem[];
+  safetyNotes?: string[];
+  steps: ActivityStep[];
+  reflectionPrompts: ReflectionPrompt[];
+  extensions?: ActivityExtension[];
+  documentationPrompt?: DocumentationPrompt;
+}
+
 export interface ExhibitData {
   topic: string;
   intro: IntroData;
@@ -330,6 +506,11 @@ export interface ExhibitData {
   cards: ConceptCardData[];
   tables: TableData[];
   graphBoards?: GraphBoardData[];
+  scaleSpectrums?: ScaleSpectrumData[];
+  annotatedExamples?: AnnotatedExampleData[];
+  nestedHierarchies?: NestedHierarchyData[];
+  imagePanels?: ImagePanelData[];
+  takeHomeActivities?: TakeHomeActivityData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -376,11 +557,18 @@ export type ComponentId =
   | 'generative-table'   // Structured data
   | 'sentence-analyzer'  // Linguistic breakdown
   | 'graph-board'        // Interactive polynomial graphing tool
+  | 'nested-hierarchy'   // Hierarchical tree structure with detailed views
 
   // Math & Science Engines
   | 'formula-card'       // LaTeX/Math display
   | 'math-visual'        // Your React math primitives (blocks, circles, etc.)
   | 'custom-visual'      // The SVG/HTML wildcard
+
+  // Interactive Learning Tools
+  | 'scale-spectrum'     // Spectrum/continuum for nuanced judgments
+  | 'annotated-example'  // Worked examples with multi-layer annotations
+  | 'image-panel'        // AI-generated images for any subject (maps, diagrams, illustrations)
+  | 'take-home-activity' // Hands-on activities using household materials
 
   // Assessment
   | 'knowledge-check';   // Quiz

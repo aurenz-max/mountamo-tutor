@@ -594,6 +594,30 @@ export default function App() {
                     dataArray={exhibitData.graphBoards || []}
                 />
 
+                {/* Scale Spectrum Section - Interactive Spectrum Tool */}
+                <PrimitiveCollectionRenderer
+                    componentId="scale-spectrum"
+                    dataArray={exhibitData.scaleSpectrums || []}
+                />
+
+                {/* Annotated Example Section - Worked Examples with Multi-Layer Annotations */}
+                <PrimitiveCollectionRenderer
+                    componentId="annotated-example"
+                    dataArray={exhibitData.annotatedExamples || []}
+                />
+
+                {/* Nested Hierarchy Section - Interactive Tree Structure */}
+                <PrimitiveCollectionRenderer
+                    componentId="nested-hierarchy"
+                    dataArray={exhibitData.nestedHierarchies || []}
+                />
+
+                {/* Image Panel Section */}
+                <PrimitiveCollectionRenderer
+                    componentId="image-panel"
+                    dataArray={exhibitData.imagePanels || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

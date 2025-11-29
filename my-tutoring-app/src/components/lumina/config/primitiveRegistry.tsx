@@ -9,6 +9,11 @@ import { MathVisuals } from '../primitives/MathVisuals';
 import { SentenceAnalyzer } from '../primitives/SentenceAnalyzer';
 import { CustomVisual } from '../primitives/CustomVisual';
 import GraphBoard from '../primitives/GraphBoard';
+import ScaleSpectrum from '../primitives/ScaleSpectrum';
+import AnnotatedExample from '../primitives/AnnotatedExample';
+import NestedHierarchy from '../primitives/NestedHierarchy';
+import ImagePanel from '../primitives/ImagePanel';
+import TakeHomeActivity from '../primitives/TakeHomeActivity';
 import { ComponentId } from '../types';
 
 /**
@@ -104,9 +109,49 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-5xl mx-auto mb-20',
   },
 
+  'scale-spectrum': {
+    component: ScaleSpectrum,
+    sectionTitle: 'Spectrum Analysis',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+  },
+
+  'annotated-example': {
+    component: AnnotatedExample,
+    sectionTitle: 'Worked Example',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-4xl mx-auto mb-20',
+  },
+
+  'nested-hierarchy': {
+    component: NestedHierarchy,
+    sectionTitle: 'System Structure',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'image-panel': {
+    component: ImagePanel,
+    sectionTitle: 'Visual Context',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+  },
+
   'formula-card': {
     component: FormulaCard,
+    sectionTitle: 'Formula Decoder',
+    showDivider: true,
+    dividerStyle: 'left',
     allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
   },
 
   'math-visual': {
@@ -126,6 +171,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'center',
     allowMultiple: false,
     containerClassName: 'max-w-4xl mx-auto mb-20',
+  },
+
+  'take-home-activity': {
+    component: TakeHomeActivity,
+    sectionTitle: 'Take Home Activity',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
   },
 };
 
