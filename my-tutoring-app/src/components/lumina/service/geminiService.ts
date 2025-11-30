@@ -16,7 +16,11 @@ import {
   ScaleSpectrumData,
   AnnotatedExampleData,
   NestedHierarchyData,
-  ImagePanelData
+  ImagePanelData,
+  ManifestItemConfig,
+  InteractivePassageData,
+  IntroBriefingData,
+  WordBuilderData
 } from "../types";
 
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
@@ -46,186 +50,6 @@ const getGradeLevelContext = (gradeLevel: string): string => {
 
 // --- MAIN EXHIBIT SCHEMA ---
 
-const exhibitSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    topic: { type: Type.STRING },
-    intro: {
-      type: Type.OBJECT,
-      description: "The curator's briefing for the exhibit.",
-      properties: {
-        hook: { type: Type.STRING, description: "A captivating 2-sentence narrative introduction." },
-        objectives: { 
-          type: Type.ARRAY, 
-          items: { type: Type.STRING },
-          description: "3 specific learning objectives."
-        }
-      },
-      required: ["hook", "objectives"]
-    },
-    specializedExhibitIntents: {
-        type: Type.ARRAY,
-        description: "Array of specialized exhibit requests. Specify WHAT exhibits are needed, content will be generated separately.",
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            id: {
-              type: Type.STRING,
-              description: "Unique identifier for this exhibit (e.g., 'sentence_1', 'custom_web_1')"
-            },
-            type: {
-              type: Type.STRING,
-              enum: ["sentence", "math-visual", "custom-svg", "custom-web"],
-              description: "Type of specialized exhibit to generate"
-            },
-            title: {
-              type: Type.STRING,
-              description: "Title/heading for the exhibit"
-            },
-            purpose: {
-              type: Type.STRING,
-              description: "What this exhibit should demonstrate or teach (brief description)"
-            },
-            // Optional hints for specific types
-            visualType: {
-              type: Type.STRING,
-              description: "For math-visual: specify bar-model, number-line, base-ten-blocks, fraction-circles, or geometric-shape"
-            }
-          },
-          required: ["id", "type", "title", "purpose"]
-        }
-    },
-    featureExhibit: {
-      type: Type.OBJECT,
-      description: "A deep-dive editorial section.",
-      properties: {
-        title: { type: Type.STRING },
-        visualPrompt: { type: Type.STRING, description: "Prompt for detailed background image." },
-        sections: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              heading: { type: Type.STRING },
-              content: { type: Type.STRING }
-            },
-            required: ["heading", "content"]
-          }
-        },
-        relatedTerms: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING }
-        }
-      },
-      required: ["title", "visualPrompt", "sections", "relatedTerms"]
-    },
-    comparison: {
-      type: Type.OBJECT,
-      description: "Comparative analysis of two entities.",
-      properties: {
-        title: { type: Type.STRING },
-        intro: { type: Type.STRING },
-        item1: {
-          type: Type.OBJECT,
-          properties: {
-            name: { type: Type.STRING },
-            description: { type: Type.STRING },
-            visualPrompt: { type: Type.STRING },
-            points: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["name", "description", "visualPrompt", "points"]
-        },
-        item2: {
-           type: Type.OBJECT,
-           properties: {
-             name: { type: Type.STRING },
-             description: { type: Type.STRING },
-             visualPrompt: { type: Type.STRING },
-             points: { type: Type.ARRAY, items: { type: Type.STRING } }
-           },
-           required: ["name", "description", "visualPrompt", "points"]
-        },
-        synthesis: { type: Type.STRING }
-      },
-      required: ["title", "intro", "item1", "item2", "synthesis"]
-    },
-    cards: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING },
-          subheading: { type: Type.STRING },
-          definition: { type: Type.STRING },
-          conceptElements: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    label: { type: Type.STRING },
-                    detail: { type: Type.STRING },
-                    type: { type: Type.STRING, enum: ['primary', 'secondary', 'highlight']}
-                }
-            }
-          },
-          timelineContext: { type: Type.STRING },
-          originStory: { type: Type.STRING },
-          curiosityNote: { type: Type.STRING },
-          visualPrompt: { type: Type.STRING },
-          themeColor: { type: Type.STRING }
-        },
-        required: ["title", "subheading", "definition", "conceptElements", "timelineContext", "originStory", "curiosityNote", "visualPrompt", "themeColor"]
-      }
-    },
-    tables: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          type: { type: Type.STRING, enum: ["table"] },
-          title: { type: Type.STRING },
-          headers: { type: Type.ARRAY, items: { type: Type.STRING } },
-          rows: { type: Type.ARRAY, items: { type: Type.ARRAY, items: { type: Type.STRING } } }
-        },
-        required: ["type", "headers", "rows"]
-      }
-    },
-    knowledgeCheck: {
-      type: Type.OBJECT,
-      properties: {
-        question: { type: Type.STRING },
-        options: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              id: { type: Type.STRING },
-              text: { type: Type.STRING }
-            },
-            required: ["id", "text"]
-          }
-        },
-        correctAnswerId: { type: Type.STRING },
-        explanation: { type: Type.STRING }
-      },
-      required: ["question", "options", "correctAnswerId", "explanation"]
-    },
-    relatedTopics: {
-      type: Type.ARRAY,
-      items: { 
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING },
-          topic: { type: Type.STRING },
-          category: { type: Type.STRING },
-          teaser: { type: Type.STRING }
-        },
-        required: ["title", "topic", "category", "teaser"]
-      }
-    }
-  },
-  required: ["topic", "intro", "featureExhibit", "comparison", "cards", "tables", "knowledgeCheck", "relatedTopics"]
-};
 
 const detailSchema: Schema = {
   type: Type.OBJECT,
@@ -295,14 +119,46 @@ export const generateConceptImage = async (prompt: string): Promise<string | nul
  */
 export const generateCustomWebExhibit = async (
   intent: SpecializedExhibitIntent,
-  contextTopic: string
+  contextTopic: string,
+  gradeLevel?: string,
+  additionalContext?: ManifestItemConfig
 ): Promise<CustomWebData> => {
-  const prompt = `You are an expert educational experience designer creating interactive HTML visualizations.
+  // Build educational context section
+  let contextSection = '';
+  if (gradeLevel || additionalContext) {
+    contextSection = '\n🎓 EDUCATIONAL CONTEXT:\n';
+    if (gradeLevel) {
+      contextSection += `Grade Level: ${gradeLevel}\n`;
+    }
+    if (additionalContext?.subject) {
+      contextSection += `Subject: ${additionalContext.subject}\n`;
+    }
+    if (additionalContext?.unitTitle) {
+      contextSection += `Unit: ${additionalContext.unitTitle}\n`;
+    }
+  }
 
-CONTEXT:
+  // Build key terms section
+  let keyTermsSection = '';
+  if (additionalContext?.keyTerms && additionalContext.keyTerms.length > 0) {
+    keyTermsSection = `\n📚 KEY TERMS TO EMPHASIZE: ${additionalContext.keyTerms.join(', ')}\n`;
+  }
+
+  // Build concepts section
+  let conceptsSection = '';
+  if (additionalContext?.conceptsCovered && additionalContext.conceptsCovered.length > 0) {
+    conceptsSection = `\n💡 CORE CONCEPTS TO ILLUSTRATE: ${additionalContext.conceptsCovered.join(', ')}\n`;
+  }
+
+  const prompt = `You are an expert educational experience designer creating interactive HTML visualizations that bring concepts to life.
+
+Your mission: Create a delightful, engaging HTML experience that makes learners think "WOW! That makes it so much clearer!"
+
+🎯 CONTENT TO VISUALIZE:
 - Topic: ${contextTopic}
 - Exhibit Title: ${intent.title}
 - Purpose: ${intent.purpose}
+${contextSection}${keyTermsSection}${conceptsSection}
 
 Create a complete, self-contained HTML document that brings this concept to life.
 
@@ -339,6 +195,12 @@ Create a complete, self-contained HTML document that brings this concept to life
    - The output MUST NOT be static
    - Include buttons, sliders, drag-and-drop, or dynamic visualizations
 
+7. EMPHASIZES KEY VOCABULARY
+   - Make key terms ${additionalContext?.keyTerms?.length ? `(${additionalContext.keyTerms.join(', ')}) ` : ''}prominent and interactive
+   - Clicking terms should reveal definitions, examples, or demonstrations
+   - Use visual cues (highlighting, borders, glow effects) to highlight important concepts
+   - Interactive term cards or tooltips for deeper exploration
+
 💻 TECHNICAL REQUIREMENTS:
 1. Create a complete, self-contained HTML document with embedded CSS and JavaScript
 2. **CRITICAL: IF USING LIBRARIES (p5.js, Three.js, etc.):**
@@ -360,46 +222,76 @@ Create a complete, self-contained HTML document that brings this concept to life
 - **CRITICAL**: Do NOT use <img src="..."> with external URLs
 - **INSTEAD**: Use **CSS shapes**, **inline SVGs**, **Emojis**, or **CSS gradients**
 
-🎨 DESIGN STYLE (MUST FOLLOW FOR CONSISTENT APPEARANCE):
+🎨 LUMINA DESIGN SYSTEM (MUST FOLLOW FOR CONSISTENT APPEARANCE):
 
 CSS Custom Properties (use in :root):
-  --primary: #3b82f6;
-  --secondary: #10b981;
-  --accent: #8b5cf6;
-  --bg-main: #f8fafc;
-  --bg-surface: #ffffff;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --border-color: #e2e8f0;
+  --bg-dark: #0f172a;           /* slate-900 - main background */
+  --bg-surface: #1e293b;        /* slate-800 - card/surface background */
+  --bg-elevated: #334155;       /* slate-700 - elevated elements */
+  --primary: #3b82f6;           /* blue-500 - primary actions */
+  --primary-light: #60a5fa;     /* blue-400 - hover states */
+  --accent: #a855f7;            /* purple-500 - accents */
+  --accent-light: #c084fc;      /* purple-400 - accent hover */
+  --success: #10b981;           /* emerald-500 - positive feedback */
+  --text-primary: #ffffff;      /* white - headings and primary text */
+  --text-secondary: #cbd5e1;    /* slate-300 - body text */
+  --text-muted: #94a3b8;        /* slate-400 - muted text */
+  --text-subtle: #64748b;       /* slate-500 - very subtle text */
+  --border-subtle: rgba(255, 255, 255, 0.05);  /* subtle borders */
+  --border-normal: rgba(255, 255, 255, 0.1);   /* normal borders */
 
 Typography:
-  - Font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
-  - Headings: 24-32px, font-weight: 600, color: var(--text-primary)
+  - Font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif
+  - Headings: 24-40px, font-weight: 700, color: var(--text-primary), tracking: -0.02em
+  - Subheadings: 18-24px, font-weight: 600, color: var(--text-secondary)
   - Body: 14-16px, line-height: 1.6, color: var(--text-secondary)
-  - Instructions: 14px, font-weight: 500, color: var(--text-primary)
+  - Instructions: 14px, font-weight: 500, color: var(--text-muted)
 
 Layout:
-  - Container padding: 24px
-  - Margins: 16px between sections, 12px between related items
+  - Container padding: 32px (mobile: 24px)
+  - Margins: 24px between major sections, 16px between related items
   - Max-width: 1200px, centered
+  - Background: var(--bg-dark) for main container
 
-Visual Elements:
-  - Border radius: 8-12px
-  - Card shadows: 0 1px 3px rgba(0,0,0,0.1)
-  - Elevated shadows: 0 4px 6px rgba(0,0,0,0.1)
-  - Borders: 1px solid var(--border-color)
+Visual Elements - Glassmorphism & Modern Cards:
+  - Border radius: 12-16px (rounded-xl, rounded-2xl)
+  - Card background: rgba(30, 41, 59, 0.5) /* slate-800 with transparency */
+  - Card backdrop-filter: blur(12px) /* glassmorphism effect */
+  - Card borders: 1px solid var(--border-subtle)
+  - Subtle shadows: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4)
+  - Elevated shadows: 0 10px 15px rgba(0, 0, 0, 0.4), 0 4px 6px rgba(0, 0, 0, 0.5)
 
 Interactive Elements:
-  - Buttons: padding 10px 20px, border-radius 8px, background var(--primary), color white
-  - Hover states: opacity 0.9, transform scale(1.05), transition all 0.3s ease
+  - Buttons: padding 12px 24px, border-radius 12px, font-weight 600
+  - Primary button: background linear-gradient(to right, var(--primary), var(--accent)), color white
+  - Secondary button: background rgba(255,255,255,0.05), border 1px solid var(--border-normal), color var(--text-primary)
+  - Hover effects: transform translateY(-2px) scale(1.02), transition all 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+  - Active/pressed: transform translateY(0) scale(0.98)
   - Cursor: pointer on all interactive elements
+  - Glow effects: box-shadow 0 0 20px rgba(59, 130, 246, 0.3) on hover
 
-Color Usage:
-  - Primary (blue): main actions, key elements
-  - Secondary (green): success, positive feedback
-  - Accent (purple): highlights, special features
-  - Use gradients sparingly for visual interest
-  - Ensure WCAG AA contrast for accessibility
+Color Usage & Gradients:
+  - Primary (blue): main actions, key interactive elements
+  - Accent (purple): highlights, special features, secondary emphasis
+  - Success (emerald): positive feedback, completion states
+  - Gradients: Use liberally for visual interest
+    * Hero gradients: linear-gradient(to bottom right, #3b82f6, #a855f7)
+    * Subtle accents: linear-gradient(to right, rgba(59,130,246,0.1), rgba(168,85,247,0.1))
+  - Border gradients for special elements
+  - Ensure WCAG AA contrast (white text on dark backgrounds)
+
+Animations & Micro-interactions:
+  - Fade in: opacity 0 to 1, duration 0.3s
+  - Slide up: transform translateY(10px) to translateY(0), duration 0.4s
+  - Stagger animations for lists (delay: index * 100ms)
+  - Particle effects and celebrations for interactions
+  - Smooth transitions with cubic-bezier(0.4, 0, 0.2, 1)
+
+Special Effects:
+  - Use backdrop-filter: blur() for glassmorphism
+  - Subtle glow effects with box-shadow and rgba colors
+  - Animated gradients for loading states
+  - CSS transforms for depth and layering
 
 ✨ YOUR GOAL:
 Create something magical that makes learners light up with understanding. This isn't just a visualization - it's a learning experience that should feel alive, responsive, and genuinely helpful. Make them excited to explore and discover!
@@ -518,7 +410,7 @@ Respond ONLY with the SVG code. No explanations or markdown.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-thinking-exp-01-21",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         temperature: 0.8,
@@ -609,7 +501,7 @@ Choose an example sentence that clearly demonstrates the concept.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-thinking-exp-01-21",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -835,6 +727,1233 @@ export const generateSpecializedExhibits = async (
 };
 
 // ============================================================================
+// KNOWLEDGE CHECK - PROBLEM REGISTRY GENERATION
+// ============================================================================
+
+/**
+ * Generate multiple choice problems for KnowledgeCheck component
+ * Following the problem registry architecture from KNOWLEDGE_CHECK_SYSTEM.md
+ */
+export const generateMultipleChoiceProblems = async (
+  topic: string,
+  gradeLevel: string,
+  count: number = 1,
+  context?: string
+): Promise<any[]> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  // Define schema for multiple choice problem generation
+  const multipleChoiceSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      problems: {
+        type: Type.ARRAY,
+        description: `Array of ${count} multiple choice problems`,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: {
+              type: Type.STRING,
+              description: "Unique identifier (e.g., 'mc_1', 'mc_2')"
+            },
+            difficulty: {
+              type: Type.STRING,
+              enum: ["easy", "medium", "hard"],
+              description: "Problem difficulty level"
+            },
+            question: {
+              type: Type.STRING,
+              description: "The multiple choice question"
+            },
+            options: {
+              type: Type.ARRAY,
+              description: "Array of 4 answer options",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING, description: "Option letter (A, B, C, D)" },
+                  text: { type: Type.STRING, description: "Option text" }
+                },
+                required: ["id", "text"]
+              }
+            },
+            correctOptionId: {
+              type: Type.STRING,
+              description: "The correct option ID (A, B, C, or D)"
+            },
+            rationale: {
+              type: Type.STRING,
+              description: "Detailed explanation of the correct answer and why it's correct (2-3 sentences)"
+            },
+            teachingNote: {
+              type: Type.STRING,
+              description: "Optional teaching tip or additional context for educators (can be empty string)"
+            },
+            successCriteria: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Learning objectives this problem assesses (1-3 criteria)"
+            }
+          },
+          required: ["id", "difficulty", "question", "options", "correctOptionId", "rationale", "teachingNote", "successCriteria"]
+        }
+      }
+    },
+    required: ["problems"]
+  };
+
+  const prompt = `You are an expert educational assessment designer creating multiple choice questions for a knowledge check.
+
+🎯 TOPIC: ${topic}
+📚 TARGET AUDIENCE: ${gradeLevelContext}
+${context ? `📖 ADDITIONAL CONTEXT: ${context}\n` : ''}
+🔢 NUMBER OF PROBLEMS: ${count}
+
+## Your Mission:
+Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".
+
+## Quality Standards:
+
+### 1. QUESTION DESIGN
+- Write clear, unambiguous questions appropriate for the grade level
+- Focus on conceptual understanding, not just memorization
+- Use age-appropriate vocabulary and sentence structure
+- Questions should test genuine comprehension, not trick students
+
+### 2. ANSWER OPTIONS
+- Provide exactly 4 options labeled A, B, C, D
+- Make all distractors (wrong answers) plausible but clearly incorrect
+- Avoid "all of the above" or "none of the above" options
+- Ensure options are parallel in structure and length
+- Mix up the position of the correct answer (don't always make it B or C)
+
+### 3. DIFFICULTY PROGRESSION
+${count > 1 ? `- Start with easier questions, build to harder ones
+- Balance difficulty: some easy, some medium, some hard` : '- Set appropriate difficulty for the topic and grade level'}
+
+### 4. RATIONALE (Most Important!)
+- Explain WHY the correct answer is right (not just repeating it)
+- Connect to broader concepts or principles
+- Address common misconceptions if relevant
+- Use encouraging, educational language
+- 2-3 sentences that genuinely teach
+
+### 5. TEACHING NOTE
+- Provide optional pedagogical context or teaching strategies
+- Suggest connections to other concepts
+- Highlight common student difficulties
+- Can be empty if no special note needed
+
+### 6. SUCCESS CRITERIA
+- List 1-3 specific learning objectives this problem assesses
+- Use action verbs (identify, explain, apply, analyze, etc.)
+- Make criteria measurable and specific to the problem
+
+## Example Problem Structure:
+
+{
+  "id": "mc_1",
+  "difficulty": "medium",
+  "question": "What is the primary purpose of photosynthesis in plants?",
+  "options": [
+    {"id": "A", "text": "To produce oxygen for animals to breathe"},
+    {"id": "B", "text": "To convert sunlight into chemical energy stored in glucose"},
+    {"id": "C", "text": "To absorb water from the soil"},
+    {"id": "D", "text": "To create flowers for reproduction"}
+  ],
+  "correctOptionId": "B",
+  "rationale": "Photosynthesis is the process by which plants convert light energy into chemical energy stored in glucose molecules. While oxygen is produced as a byproduct, the primary purpose is energy conversion to fuel the plant's life processes.",
+  "teachingNote": "Connect this to the broader concept of energy flow in ecosystems and how plants are producers at the base of food chains.",
+  "successCriteria": [
+    "Identify the main function of photosynthesis",
+    "Distinguish between primary purposes and byproducts of biological processes"
+  ]
+}
+
+Now generate ${count} problem${count > 1 ? 's' : ''} following this structure and quality standard.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: multipleChoiceSchema,
+        temperature: 0.8, // Slightly higher for variety in questions
+      },
+    });
+
+    if (!response.text) throw new Error("No content generated");
+    const data = JSON.parse(response.text);
+
+    // Transform to match MultipleChoiceProblemData interface
+    const problems = data.problems.map((problem: any) => ({
+      type: 'multiple_choice',
+      id: problem.id,
+      difficulty: problem.difficulty,
+      gradeLevel: gradeLevel,
+      question: problem.question,
+      options: problem.options,
+      correctOptionId: problem.correctOptionId,
+      rationale: problem.rationale,
+      teachingNote: problem.teachingNote,
+      successCriteria: problem.successCriteria
+    }));
+
+    return problems;
+  } catch (error) {
+    console.error("Multiple choice problem generation error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Generate true/false problems for KnowledgeCheck component
+ * Following the problem registry architecture from KNOWLEDGE_CHECK_SYSTEM.md
+ */
+export const generateTrueFalseProblems = async (
+  topic: string,
+  gradeLevel: string,
+  count: number = 1,
+  context?: string
+): Promise<any[]> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  // Define schema for true/false problem generation
+  const trueFalseSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      problems: {
+        type: Type.ARRAY,
+        description: `Array of ${count} true/false problems`,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: {
+              type: Type.STRING,
+              description: "Unique identifier (e.g., 'tf_1', 'tf_2')"
+            },
+            difficulty: {
+              type: Type.STRING,
+              enum: ["easy", "medium", "hard"],
+              description: "Problem difficulty level"
+            },
+            statement: {
+              type: Type.STRING,
+              description: "A clear declarative statement that is either true or false"
+            },
+            correct: {
+              type: Type.BOOLEAN,
+              description: "Whether the statement is true (true) or false (false)"
+            },
+            rationale: {
+              type: Type.STRING,
+              description: "Detailed explanation of why the statement is true or false, addressing potential misconceptions (2-3 sentences)"
+            },
+            teachingNote: {
+              type: Type.STRING,
+              description: "Optional teaching tip, real-world connection, or common student misconception to address (can be empty string)"
+            },
+            successCriteria: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Learning objectives this problem assesses (1-3 criteria)"
+            }
+          },
+          required: ["id", "difficulty", "statement", "correct", "rationale", "teachingNote", "successCriteria"]
+        }
+      }
+    },
+    required: ["problems"]
+  };
+
+  const prompt = `You are an expert educational assessment designer creating true/false questions for a knowledge check.
+
+🎯 TOPIC: ${topic}
+📚 TARGET AUDIENCE: ${gradeLevelContext}
+${context ? `📖 ADDITIONAL CONTEXT: ${context}\n` : ''}
+🔢 NUMBER OF PROBLEMS: ${count}
+
+## Your Mission:
+Create ${count} high-quality true/false statement${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".
+
+## Quality Standards:
+
+### 1. STATEMENT DESIGN
+- Write clear, unambiguous declarative statements
+- Each statement should be definitively true or false (no "sometimes" or "maybe")
+- Focus on important concepts, not trivial facts
+- Avoid trick questions or overly complex wording
+- Use age-appropriate vocabulary and sentence structure
+- Avoid absolute words like "always," "never," "all," "none" unless genuinely accurate
+
+### 2. BALANCE TRUE AND FALSE
+${count > 1 ? `- Mix true and false statements roughly equally
+- Don't create patterns (e.g., T, F, T, F or all true)
+- Randomize the distribution naturally` : '- Make it either true or false based on what best assesses understanding'}
+
+### 3. DIFFICULTY PROGRESSION
+${count > 1 ? `- Start with clearer statements, progress to more nuanced ones
+- Balance difficulty: some easy, some medium, some hard` : '- Set appropriate difficulty for the topic and grade level'}
+
+### 4. MISCONCEPTION TARGETING
+- Target common student misconceptions with false statements
+- Use false statements that reflect plausible but incorrect thinking
+- Avoid obscure or trick false statements
+- True statements should reinforce key accurate understandings
+
+### 5. RATIONALE (Most Important!)
+- Explain WHY the statement is true or false
+- For FALSE statements: explain what makes it false AND what the truth is
+- For TRUE statements: explain what makes it accurate and important
+- Address any misconceptions the statement targets
+- Use clear, educational language
+- 2-3 sentences that genuinely teach
+
+### 6. TEACHING NOTE
+- Provide optional pedagogical context
+- Highlight common student errors or confusion points
+- Suggest real-world examples or demonstrations
+- Connect to broader concepts
+- Can be empty if no special note needed
+
+### 7. SUCCESS CRITERIA
+- List 1-3 specific learning objectives this problem assesses
+- Use action verbs (identify, recognize, distinguish, understand, etc.)
+- Make criteria measurable and specific to the statement
+
+## Example Problem Structure:
+
+{
+  "id": "tf_1",
+  "difficulty": "easy",
+  "statement": "All mammals lay eggs.",
+  "correct": false,
+  "rationale": "This statement is false. While most mammals give birth to live young, there are exceptions like the platypus and echidna (monotremes) that do lay eggs. However, these are rare exceptions, and the vast majority of mammals are viviparous (give birth to live offspring).",
+  "teachingNote": "Use the platypus as a fascinating exception to illustrate that biological classifications often have interesting outliers. This helps students understand that scientific rules often have nuanced exceptions.",
+  "successCriteria": [
+    "Recognize basic characteristics of mammal reproduction",
+    "Understand that biological classifications can have exceptions"
+  ]
+}
+
+{
+  "id": "tf_2",
+  "difficulty": "medium",
+  "statement": "Photosynthesis occurs only in the leaves of plants.",
+  "correct": false,
+  "rationale": "This statement is false. While leaves are the primary site of photosynthesis due to their high chlorophyll concentration, photosynthesis can occur in any green part of a plant that contains chloroplasts. This includes green stems, unripe fruit, and even some roots that are exposed to light.",
+  "teachingNote": "Point out green stems in common plants to demonstrate that photosynthesis isn't limited to leaves. This reinforces understanding of the role of chlorophyll rather than the organ itself.",
+  "successCriteria": [
+    "Identify where photosynthesis occurs in plants",
+    "Understand the role of chlorophyll in photosynthesis"
+  ]
+}
+
+## Important Guidelines:
+
+✅ DO:
+- Write statements that test conceptual understanding
+- Use statements that address common misconceptions
+- Make false statements plausible but clearly wrong
+- Balance true and false statements
+- Provide educational rationales that teach
+
+❌ DON'T:
+- Use trick wording or confusing language
+- Create statements with "sometimes" situations
+- Make statements about trivial details
+- Use double negatives or complex grammar
+- Write statements that are opinion-based
+
+Now generate ${count} problem${count > 1 ? 's' : ''} following this structure and quality standard.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: trueFalseSchema,
+        temperature: 0.8,
+      },
+    });
+
+    if (!response.text) throw new Error("No content generated");
+    const data = JSON.parse(response.text);
+
+    // Transform to match TrueFalseProblemData interface
+    const problems = data.problems.map((problem: any) => ({
+      type: 'true_false',
+      id: problem.id,
+      difficulty: problem.difficulty,
+      gradeLevel: gradeLevel,
+      statement: problem.statement,
+      correct: problem.correct,
+      rationale: problem.rationale,
+      teachingNote: problem.teachingNote,
+      successCriteria: problem.successCriteria
+    }));
+
+    return problems;
+  } catch (error) {
+    console.error("True/false problem generation error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Generate fill in blanks problems for KnowledgeCheck component
+ * Following the problem registry architecture from KNOWLEDGE_CHECK_SYSTEM.md
+ */
+export const generateFillInBlanksProblems = async (
+  topic: string,
+  gradeLevel: string,
+  count: number = 1,
+  context?: string
+): Promise<any[]> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  // Define schema for fill in blanks problem generation
+  const fillInBlanksSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      problems: {
+        type: Type.ARRAY,
+        description: `Array of ${count} fill in blanks problems`,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: {
+              type: Type.STRING,
+              description: "Unique identifier (e.g., 'fib_1', 'fib_2')"
+            },
+            difficulty: {
+              type: Type.STRING,
+              enum: ["easy", "medium", "hard"],
+              description: "Problem difficulty level - Easy: 1 blank, Medium: 2 blanks, Hard: 3 blanks"
+            },
+            textWithBlanks: {
+              type: Type.STRING,
+              description: "Complete sentence or passage with blanks marked as [blank_1], [blank_2], etc. The blanks should test key vocabulary or concepts."
+            },
+            blanks: {
+              type: Type.ARRAY,
+              description: "Array of blank definitions, one for each [blank_N] in the text. Easy should have 1 blank, Medium 2 blanks, Hard 3 blanks.",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: {
+                    type: Type.STRING,
+                    description: "Blank identifier matching the text (e.g., 'blank_1', 'blank_2')"
+                  },
+                  correctAnswer: {
+                    type: Type.STRING,
+                    description: "The single correct answer for this blank (will be included in word bank)"
+                  },
+                  caseSensitive: {
+                    type: Type.BOOLEAN,
+                    description: "Whether answers should be case-sensitive (usually false)"
+                  }
+                },
+                required: ["id", "correctAnswer", "caseSensitive"]
+              }
+            },
+            wordBank: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Word bank containing all correct answers PLUS 2-3 plausible distractors. Distractors should be related to the topic but clearly incorrect for the given context."
+            },
+            rationale: {
+              type: Type.STRING,
+              description: "Detailed explanation of the correct answers and why they're important (2-3 sentences)"
+            },
+            teachingNote: {
+              type: Type.STRING,
+              description: "Optional teaching tip about vocabulary usage, context clues, or common errors (can be empty string)"
+            },
+            successCriteria: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Learning objectives this problem assesses (1-3 criteria)"
+            }
+          },
+          required: ["id", "difficulty", "textWithBlanks", "blanks", "wordBank", "rationale", "teachingNote", "successCriteria"]
+        }
+      }
+    },
+    required: ["problems"]
+  };
+
+  const prompt = `You are an expert educational assessment designer creating fill-in-the-blank questions with drag-and-drop word banks.
+
+🎯 TOPIC: ${topic}
+📚 TARGET AUDIENCE: ${gradeLevelContext}
+${context ? `📖 ADDITIONAL CONTEXT: ${context}\n` : ''}
+🔢 NUMBER OF PROBLEMS: ${count}
+
+## Your Mission:
+Create ${count} high-quality fill-in-the-blank problem${count > 1 ? 's' : ''} with word banks that effectively assess understanding of "${topic}".
+
+## Quality Standards:
+
+### 1. TEXT DESIGN
+- Create complete, meaningful sentences or short passages (1-3 sentences)
+- Use age-appropriate vocabulary and complexity
+- Make the context clear enough that students can use context clues
+- Ensure the sentence makes sense with the blanks filled in
+- Use natural, flowing language (not awkward or forced)
+
+### 2. DIFFICULTY LEVELS (CRITICAL - FOLLOW EXACTLY)
+- **EASY**: Exactly 1 blank per problem
+- **MEDIUM**: Exactly 2 blanks per problem
+- **HARD**: Exactly 3 blanks per problem
+- Mark blanks using the format [blank_1], [blank_2], [blank_3], etc.
+
+### 3. BLANK PLACEMENT
+- Place blanks strategically at KEY TERMS or CONCEPTS (not trivial words)
+- Don't blank out articles (a, an, the) or prepositions unless testing those specifically
+- Space blanks out - don't put them right next to each other
+
+### 4. WORD BANK DESIGN (CRITICAL)
+- Include ALL correct answers in the word bank
+- Add 2-3 PLAUSIBLE DISTRACTORS (wrong answers that seem related)
+- Distractors should be:
+  * Related to the same topic/subject area
+  * Similar part of speech as the correct answers
+  * Tempting but clearly incorrect in context
+- Example: If correct answers are "photosynthesis" and "glucose", distractors might be "respiration", "oxygen", "mitochondria"
+- Total word bank size: (number of blanks) + 2 or 3 distractors
+
+### 5. CASE SENSITIVITY
+- Usually set caseSensitive to false (most forgiving for students)
+- Only use caseSensitive: true when testing proper nouns or when case genuinely matters
+
+### 6. DIFFICULTY PROGRESSION
+${count > 1 ? `- Easy problems: 1 blank with simple vocabulary
+- Medium problems: 2 blanks with moderate complexity
+- Hard problems: 3 blanks with advanced concepts` : '- Set appropriate difficulty for the topic and grade level'}
+
+### 7. RATIONALE (Most Important!)
+- Explain the meaning and importance of the correct answers
+- Connect the vocabulary to broader concepts
+- Provide context for why these terms matter
+- Address why distractors are incorrect
+- Use clear, educational language
+- 2-3 sentences that genuinely teach
+
+### 8. TEACHING NOTE
+- Suggest how to help students use context clues to eliminate distractors
+- Mention common misconceptions that distractors might represent
+- Connect to other related vocabulary
+- Can be empty if no special note needed
+
+### 9. SUCCESS CRITERIA
+- List 1-3 specific learning objectives this problem assesses
+- Focus on vocabulary usage, comprehension, or concept application
+- Use action verbs (recall, identify, apply, use correctly, etc.)
+
+## Example Problem Structure (Medium Difficulty - 2 blanks):
+
+{
+  "id": "fib_1",
+  "difficulty": "medium",
+  "textWithBlanks": "During [blank_1], plants use sunlight to convert carbon dioxide and water into [blank_2], which is stored as chemical energy.",
+  "blanks": [
+    {
+      "id": "blank_1",
+      "correctAnswer": "photosynthesis",
+      "caseSensitive": false
+    },
+    {
+      "id": "blank_2",
+      "correctAnswer": "glucose",
+      "caseSensitive": false
+    }
+  ],
+  "wordBank": ["photosynthesis", "glucose", "respiration", "oxygen", "chlorophyll"],
+  "rationale": "Photosynthesis is the fundamental process by which plants convert light energy into chemical energy. The glucose produced is used to fuel cellular processes and is the basis of the food chain. The distractors 'respiration' and 'oxygen' are related processes/products but don't fit the specific context clues in the sentence.",
+  "teachingNote": "Encourage students to look for context clues like 'sunlight' and 'convert' to identify photosynthesis, and 'stored as chemical energy' to identify glucose as the product.",
+  "successCriteria": [
+    "Recall key vocabulary terms related to photosynthesis",
+    "Understand the inputs and outputs of photosynthesis",
+    "Use context clues to distinguish between related biological terms"
+  ]
+}
+
+## Important Guidelines:
+
+✅ DO:
+- Create sentences that flow naturally
+- Test important vocabulary and concepts
+- Create plausible distractors that test understanding
+- Use context clues to help students differentiate
+- Make rationales explain WHY distractors are wrong
+
+❌ DON'T:
+- Violate the difficulty rules (1 blank for easy, 2 for medium, 3 for hard)
+- Create distractors that are random or unrelated
+- Blank out trivial words like "the," "and," "very"
+- Make blanks impossible to deduce from context
+- Use overly complex sentence structures
+
+Now generate ${count} problem${count > 1 ? 's' : ''} following this structure and quality standard.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: fillInBlanksSchema,
+        temperature: 0.8,
+      },
+    });
+
+    if (!response.text) throw new Error("No content generated");
+    const data = JSON.parse(response.text);
+
+    // Transform to match FillInBlanksProblemData interface
+    const problems = data.problems.map((problem: any) => ({
+      type: 'fill_in_blanks',
+      id: problem.id,
+      difficulty: problem.difficulty,
+      gradeLevel: gradeLevel,
+      textWithBlanks: problem.textWithBlanks,
+      blanks: problem.blanks,
+      wordBank: problem.wordBank,
+      rationale: problem.rationale,
+      teachingNote: problem.teachingNote,
+      successCriteria: problem.successCriteria
+    }));
+
+    return problems;
+  } catch (error) {
+    console.error("Fill in blanks problem generation error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Generate categorization activity problems for KnowledgeCheck component
+ * Following the problem registry architecture from KNOWLEDGE_CHECK_SYSTEM.md
+ */
+export const generateCategorizationProblems = async (
+  topic: string,
+  gradeLevel: string,
+  count: number = 1,
+  context?: string
+): Promise<any[]> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  // Define schema for categorization problem generation
+  const categorizationSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      problems: {
+        type: Type.ARRAY,
+        description: `Array of ${count} categorization activity problems`,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: {
+              type: Type.STRING,
+              description: "Unique identifier (e.g., 'cat_1', 'cat_2')"
+            },
+            difficulty: {
+              type: Type.STRING,
+              enum: ["easy", "medium", "hard"],
+              description: "Problem difficulty level"
+            },
+            instruction: {
+              type: Type.STRING,
+              description: "Clear instruction telling students what to categorize and how (e.g., 'Sort these words by part of speech')"
+            },
+            categories: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "2-4 category names that items will be sorted into"
+            },
+            categorizationItems: {
+              type: Type.ARRAY,
+              description: "6-12 items to be categorized (should be balanced across categories)",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  itemText: {
+                    type: Type.STRING,
+                    description: "The text/word/concept to be categorized"
+                  },
+                  correctCategory: {
+                    type: Type.STRING,
+                    description: "The category this item belongs to (must match one of the categories exactly)"
+                  }
+                },
+                required: ["itemText", "correctCategory"]
+              }
+            },
+            rationale: {
+              type: Type.STRING,
+              description: "Educational explanation of the categorization logic, common patterns, and why items belong in their categories (2-3 sentences)"
+            },
+            teachingNote: {
+              type: Type.STRING,
+              description: "Optional teaching tip, common categorization errors to watch for, or scaffolding suggestions (can be empty string)"
+            },
+            successCriteria: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Learning objectives this problem assesses (1-3 criteria)"
+            }
+          },
+          required: ["id", "difficulty", "instruction", "categories", "categorizationItems", "rationale", "teachingNote", "successCriteria"]
+        }
+      }
+    },
+    required: ["problems"]
+  };
+
+  const prompt = `You are an expert educational assessment designer creating categorization activities for a knowledge check.
+
+🎯 TOPIC: ${topic}
+📚 TARGET AUDIENCE: ${gradeLevelContext}
+${context ? `📖 ADDITIONAL CONTEXT: ${context}\n` : ''}
+🔢 NUMBER OF PROBLEMS: ${count}
+
+## Your Mission:
+Create ${count} high-quality categorization activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".
+
+## Quality Standards:
+
+### 1. INSTRUCTION DESIGN
+- Write clear, concise instructions that explain the categorization task
+- Be specific about what attribute/characteristic determines the categories
+- Use age-appropriate language
+- Make the task unambiguous (students should know exactly what to do)
+
+### 2. CATEGORY SELECTION
+- Choose 2-4 distinct, well-defined categories
+- Categories should be mutually exclusive (no overlap)
+- Categories should be collectively exhaustive for the given items
+- Use clear, recognizable category labels
+- Ensure categories are appropriate for the grade level
+
+### 3. ITEM SELECTION (6-12 items per problem)
+- Choose items that clearly belong to one category
+- Distribute items relatively evenly across categories (avoid having all items in one category)
+- Include some items that might be tempting to miscategorize (to assess deeper understanding)
+- Use items that are familiar to students at the target grade level
+- Vary complexity within items (some obvious, some requiring more thought)
+- Ensure each item has exactly ONE correct category
+
+### 4. DIFFICULTY PROGRESSION
+${count > 1 ? `- Start with clearer categorizations, progress to more nuanced ones
+- Balance difficulty: some easy, some medium, some hard` : '- Set appropriate difficulty for the topic and grade level'}
+
+### 5. BALANCED DISTRIBUTION
+- Aim for roughly equal numbers of items per category
+- For 2 categories: 3-6 items each (6-12 total)
+- For 3 categories: 2-4 items each (6-12 total)
+- For 4 categories: 2-3 items each (8-12 total)
+
+### 6. RATIONALE (Most Important!)
+- Explain the logic behind the categorization system
+- Highlight key distinguishing features of each category
+- Address common categorization errors students might make
+- Explain why tricky items belong where they do
+- Use clear, educational language
+- 2-3 sentences that genuinely teach the categorization skill
+
+### 7. TEACHING NOTE
+- Provide optional pedagogical context
+- Highlight common student categorization errors
+- Suggest scaffolding strategies (e.g., "Start by identifying obvious examples")
+- Connect to broader concepts or real-world applications
+- Can be empty if no special note needed
+
+### 8. SUCCESS CRITERIA
+- List 1-3 specific learning objectives this problem assesses
+- Use action verbs (classify, identify, distinguish, group, organize, etc.)
+- Make criteria measurable and specific to the categorization task
+
+## Example Problem Structures:
+
+### Example 1: Parts of Speech (Elementary)
+{
+  "id": "cat_1",
+  "difficulty": "medium",
+  "instruction": "Sort these words by their part of speech",
+  "categories": ["Noun", "Verb", "Adjective"],
+  "categorizationItems": [
+    { "itemText": "cat", "correctCategory": "Noun" },
+    { "itemText": "run", "correctCategory": "Verb" },
+    { "itemText": "beautiful", "correctCategory": "Adjective" },
+    { "itemText": "book", "correctCategory": "Noun" },
+    { "itemText": "jump", "correctCategory": "Verb" },
+    { "itemText": "happy", "correctCategory": "Adjective" },
+    { "itemText": "teacher", "correctCategory": "Noun" },
+    { "itemText": "think", "correctCategory": "Verb" },
+    { "itemText": "tall", "correctCategory": "Adjective" }
+  ],
+  "rationale": "Parts of speech are determined by how words function in sentences. Nouns name people, places, or things (cat, book, teacher). Verbs show actions or states of being (run, jump, think). Adjectives describe or modify nouns (beautiful, happy, tall). Understanding these categories is fundamental to grammar and sentence construction.",
+  "teachingNote": "Students often confuse words that can function as multiple parts of speech. For this activity, all words have clear primary functions. Consider following up with examples where words change roles (e.g., 'run' as a noun: 'I went for a run').",
+  "successCriteria": [
+    "Identify basic parts of speech",
+    "Classify words by grammatical function",
+    "Distinguish between nouns, verbs, and adjectives"
+  ]
+}
+
+### Example 2: Living vs Non-living (Preschool)
+{
+  "id": "cat_2",
+  "difficulty": "easy",
+  "instruction": "Sort these things into living and non-living",
+  "categories": ["Living", "Non-living"],
+  "categorizationItems": [
+    { "itemText": "dog", "correctCategory": "Living" },
+    { "itemText": "rock", "correctCategory": "Non-living" },
+    { "itemText": "tree", "correctCategory": "Living" },
+    { "itemText": "toy car", "correctCategory": "Non-living" },
+    { "itemText": "butterfly", "correctCategory": "Living" },
+    { "itemText": "water", "correctCategory": "Non-living" },
+    { "itemText": "flower", "correctCategory": "Living" },
+    { "itemText": "pencil", "correctCategory": "Non-living" }
+  ],
+  "rationale": "Living things grow, need food and water, breathe, and can reproduce. Non-living things do not have these characteristics. While water is essential for life, water itself is not alive - it doesn't grow, eat, or reproduce. This fundamental distinction helps children understand biology and the natural world.",
+  "teachingNote": "Young children often think moving objects (like toy cars) or natural objects (like water) are alive. Use the criteria of growth, eating, and reproduction to help them distinguish. Consider discussing borderline cases like seeds (alive but dormant) in future lessons.",
+  "successCriteria": [
+    "Distinguish between living and non-living things",
+    "Apply characteristics of life to classify objects"
+  ]
+}
+
+### Example 3: States of Matter (Middle School)
+{
+  "id": "cat_3",
+  "difficulty": "hard",
+  "instruction": "Classify these substances by their state of matter at room temperature (20°C)",
+  "categories": ["Solid", "Liquid", "Gas"],
+  "categorizationItems": [
+    { "itemText": "ice cube", "correctCategory": "Solid" },
+    { "itemText": "water", "correctCategory": "Liquid" },
+    { "itemText": "steam", "correctCategory": "Gas" },
+    { "itemText": "iron nail", "correctCategory": "Solid" },
+    { "itemText": "milk", "correctCategory": "Liquid" },
+    { "itemText": "oxygen", "correctCategory": "Gas" },
+    { "itemText": "sugar", "correctCategory": "Solid" },
+    { "itemText": "mercury", "correctCategory": "Liquid" },
+    { "itemText": "carbon dioxide", "correctCategory": "Gas" },
+    { "itemText": "aluminum foil", "correctCategory": "Solid" }
+  ],
+  "rationale": "States of matter depend on temperature and the arrangement of molecules. At room temperature (20°C): solids have fixed shape and volume (ice, iron, sugar), liquids have fixed volume but take the shape of their container (water, milk, mercury), and gases have neither fixed shape nor volume (steam, oxygen, CO2). Mercury is tricky because it's the only metal that's liquid at room temperature.",
+  "teachingNote": "Students often struggle with mercury (liquid metal) and may categorize steam incorrectly if thinking of visible water vapor. Emphasize that the state depends on temperature - the same substance (H2O) appears in all three states in this list. This reinforces that state is a property determined by conditions, not by the substance itself.",
+  "successCriteria": [
+    "Classify substances by state of matter",
+    "Apply knowledge of molecular arrangement",
+    "Recognize temperature-dependent states"
+  ]
+}
+
+## Important Guidelines:
+
+✅ DO:
+- Create categories that are clearly defined and mutually exclusive
+- Balance items across categories (roughly equal distribution)
+- Include items that test nuanced understanding
+- Use familiar, age-appropriate items
+- Provide detailed rationales that explain the categorization logic
+- Address potential misconceptions in teaching notes
+
+❌ DON'T:
+- Create overlapping categories (items should fit clearly in ONE category)
+- Put all items in one or two categories (balance the distribution)
+- Use obscure items students won't recognize
+- Make categories too similar or confusing
+- Create categorization tasks that rely on trivial memorization
+- Use ambiguous items that could reasonably fit multiple categories
+
+## Additional Tips:
+
+### For Toddler/Preschool:
+- Use 2 categories maximum
+- Use very concrete, familiar items (animals, toys, food)
+- Categories should be obvious and visual (big/small, colors, animal/not animal)
+- 6-8 items total
+
+### For Elementary:
+- 2-3 categories work well
+- Mix concrete and slightly abstract concepts
+- Can introduce academic categorizations (parts of speech, living/non-living)
+- 8-10 items total
+
+### For Middle/High School:
+- 3-4 categories can work
+- More abstract or academic categorizations
+- Can include disciplinary knowledge (states of matter, literary genres, historical periods)
+- 9-12 items total
+
+Now generate ${count} problem${count > 1 ? 's' : ''} following this structure and quality standard.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: categorizationSchema,
+        temperature: 0.8,
+      },
+    });
+
+    if (!response.text) throw new Error("No content generated");
+    const data = JSON.parse(response.text);
+
+    // Transform to match CategorizationActivityProblemData interface
+    const problems = data.problems.map((problem: any) => ({
+      type: 'categorization_activity',
+      id: problem.id,
+      difficulty: problem.difficulty,
+      gradeLevel: gradeLevel,
+      instruction: problem.instruction,
+      categories: problem.categories,
+      categorizationItems: problem.categorizationItems,
+      rationale: problem.rationale,
+      teachingNote: problem.teachingNote,
+      successCriteria: problem.successCriteria
+    }));
+
+    return problems;
+  } catch (error) {
+    console.error("Categorization problem generation error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Generate sequencing activity problems for KnowledgeCheck component
+ * Following the problem registry architecture from KNOWLEDGE_CHECK_SYSTEM.md
+ */
+export const generateSequencingProblems = async (
+  topic: string,
+  gradeLevel: string,
+  count: number = 1,
+  context?: string
+): Promise<any[]> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  // Define schema for sequencing problem generation
+  const sequencingSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      problems: {
+        type: Type.ARRAY,
+        description: `Array of ${count} sequencing activity problems`,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: {
+              type: Type.STRING,
+              description: "Unique identifier (e.g., 'seq_1', 'seq_2')"
+            },
+            difficulty: {
+              type: Type.STRING,
+              enum: ["easy", "medium", "hard"],
+              description: "Problem difficulty level"
+            },
+            instruction: {
+              type: Type.STRING,
+              description: "Clear instruction telling students what to sequence and how (e.g., 'Arrange the life cycle stages of a butterfly in order')"
+            },
+            items: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "4-8 items in the CORRECT ORDER. These will be shuffled when presented to students. Each item should be a clear, concise step or stage."
+            },
+            rationale: {
+              type: Type.STRING,
+              description: "Educational explanation of why this is the correct sequence, the logic or principle that determines the order (2-3 sentences)"
+            },
+            teachingNote: {
+              type: Type.STRING,
+              description: "Optional teaching tip, common sequencing errors students make, or scaffolding suggestions (can be empty string)"
+            },
+            successCriteria: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Learning objectives this problem assesses (1-3 criteria)"
+            }
+          },
+          required: ["id", "difficulty", "instruction", "items", "rationale", "teachingNote", "successCriteria"]
+        }
+      }
+    },
+    required: ["problems"]
+  };
+
+  const prompt = `You are an expert educational assessment designer creating sequencing activities for a knowledge check.
+
+🎯 TOPIC: ${topic}
+📚 TARGET AUDIENCE: ${gradeLevelContext}
+${context ? `📖 ADDITIONAL CONTEXT: ${context}\n` : ''}
+🔢 NUMBER OF PROBLEMS: ${count}
+
+## Your Mission:
+Create ${count} high-quality sequencing activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".
+
+## Quality Standards:
+
+### 1. INSTRUCTION DESIGN
+- Write clear, concise instructions that explain what needs to be sequenced
+- Be specific about the ordering principle (chronological, procedural, logical, etc.)
+- Use age-appropriate language
+- Make the task unambiguous (students should know exactly what to do)
+
+### 2. ITEM SELECTION (4-8 items per problem)
+- Choose items that have a clear, logical sequence
+- Each item should be distinct and necessary for the sequence
+- Items should be concise (1-2 short sentences or a brief phrase)
+- Use parallel structure (all items formatted similarly)
+- Ensure the sequence has ONE correct order (not multiple valid orderings)
+- Avoid items that could logically go in multiple positions
+
+### 3. SEQUENCE TYPES TO CONSIDER
+- **Chronological**: Events in time order (historical events, life cycles, timelines)
+- **Procedural**: Steps in a process (scientific method, recipe, instructions)
+- **Logical**: Progression of ideas (simple to complex, cause to effect)
+- **Developmental**: Stages of growth or development (life cycles, skill progression)
+- **Narrative**: Story sequence (plot events, problem-solving steps)
+
+### 4. DIFFICULTY PROGRESSION
+${count > 1 ? `- Start with clearer sequences, progress to more nuanced ones
+- Balance difficulty: some easy, some medium, some hard
+- Easy: Obvious sequences with distinct stages (4-5 items)
+- Medium: Familiar sequences requiring some thought (5-6 items)
+- Hard: Complex sequences with subtle distinctions (6-8 items)` : '- Set appropriate difficulty for the topic and grade level'}
+
+### 5. ITEM COUNT GUIDELINES
+- **4 items**: Very clear, simple sequences (toddler/preschool)
+- **5 items**: Basic sequences with distinct steps (kindergarten/elementary)
+- **6 items**: Standard sequences requiring careful thought (elementary/middle school)
+- **7-8 items**: Complex sequences with nuanced ordering (middle/high school)
+
+### 6. RATIONALE (Most Important!)
+- Explain WHY this is the correct sequence
+- Describe the principle or logic that determines the order
+- Highlight key transitions or turning points in the sequence
+- Address why certain items must come before or after others
+- Use clear, educational language
+- 2-3 sentences that genuinely teach the sequencing logic
+
+### 7. TEACHING NOTE
+- Provide optional pedagogical context
+- Highlight common sequencing errors students make
+- Suggest scaffolding strategies (e.g., "Look for time markers like 'first,' 'then,' 'finally'")
+- Connect to broader concepts or real-world applications
+- Can be empty if no special note needed
+
+### 8. SUCCESS CRITERIA
+- List 1-3 specific learning objectives this problem assesses
+- Use action verbs (sequence, order, arrange, organize, identify progression, etc.)
+- Make criteria measurable and specific to the sequencing task
+
+## Example Problem Structures:
+
+### Example 1: Butterfly Life Cycle (Elementary)
+{
+  "id": "seq_1",
+  "difficulty": "easy",
+  "instruction": "Arrange the life cycle stages of a butterfly in order from beginning to end",
+  "items": [
+    "Egg",
+    "Larva (Caterpillar)",
+    "Pupa (Chrysalis)",
+    "Adult Butterfly"
+  ],
+  "rationale": "The butterfly undergoes complete metamorphosis with four distinct stages. It begins as an egg laid by an adult butterfly, hatches into a larva (caterpillar) that eats and grows, forms a protective pupa (chrysalis) where transformation occurs, and finally emerges as an adult butterfly. This cycle represents a complete transformation from one form to another.",
+  "teachingNote": "Students often confuse the pupa stage with a cocoon (which moths use). Emphasize that butterflies form a chrysalis. Use real images to reinforce each stage and highlight the dramatic transformation that occurs inside the chrysalis.",
+  "successCriteria": [
+    "Understand life cycle sequences",
+    "Identify stages of complete metamorphosis",
+    "Recognize developmental progression"
+  ]
+}
+
+### Example 2: Scientific Method (Middle School)
+{
+  "id": "seq_2",
+  "difficulty": "medium",
+  "instruction": "Put the steps of the scientific method in the correct order",
+  "items": [
+    "Ask a question based on observation",
+    "Research and gather background information",
+    "Form a testable hypothesis",
+    "Design and conduct an experiment",
+    "Analyze data and draw conclusions",
+    "Communicate results and repeat if necessary"
+  ],
+  "rationale": "The scientific method follows a logical progression from curiosity to conclusion. Scientists first observe something and ask a question, then research to understand existing knowledge. They form a hypothesis (testable prediction), design an experiment to test it, analyze the results, and share their findings. This iterative process ensures scientific rigor and allows others to verify results.",
+  "teachingNote": "Students often want to jump straight to experimenting without forming a clear hypothesis first. Emphasize that research and hypothesis formation guide the experimental design. Note that real science is often messier than this linear model suggests - scientists may cycle back to earlier steps based on results.",
+  "successCriteria": [
+    "Sequence procedural steps correctly",
+    "Understand the logic of scientific inquiry",
+    "Recognize the relationship between hypothesis and experiment"
+  ]
+}
+
+### Example 3: American Revolution Timeline (High School)
+{
+  "id": "seq_3",
+  "difficulty": "hard",
+  "instruction": "Arrange these key events of the American Revolution in chronological order",
+  "items": [
+    "Stamp Act imposed by British Parliament (1765)",
+    "Boston Tea Party protest (1773)",
+    "First Continental Congress meets (1774)",
+    "Battles of Lexington and Concord (1775)",
+    "Declaration of Independence signed (1776)",
+    "Battle of Saratoga - turning point (1777)",
+    "Treaty of Paris ends the war (1783)"
+  ],
+  "rationale": "The American Revolution followed a progression from colonial grievances to open rebellion to independence. The Stamp Act created early tensions, leading to protests like the Boston Tea Party. Colonists organized through the Continental Congress, armed conflict began at Lexington and Concord, and independence was formally declared in 1776. The Battle of Saratoga secured French support, and the war concluded with the Treaty of Paris recognizing American independence.",
+  "teachingNote": "Students may struggle with events happening in quick succession (1774-1776). Help them see the cause-and-effect chain: taxation → protest → organization → war → independence declaration. Emphasize that declaring independence (1776) came AFTER fighting had already started (1775), which surprises many students.",
+  "successCriteria": [
+    "Sequence historical events chronologically",
+    "Understand cause-and-effect relationships in history",
+    "Recognize escalation from protest to war to independence"
+  ]
+}
+
+### Example 4: Story Sequence (Elementary)
+{
+  "id": "seq_4",
+  "difficulty": "easy",
+  "instruction": "Put these events from 'The Three Little Pigs' in story order",
+  "items": [
+    "Three pigs leave home to build their own houses",
+    "First pig builds a house of straw",
+    "Wolf blows down the straw house",
+    "Second pig builds a house of sticks",
+    "Wolf blows down the stick house",
+    "Third pig builds a house of bricks",
+    "Wolf cannot blow down the brick house",
+    "Pigs live safely in the brick house"
+  ],
+  "rationale": "This narrative follows a clear story arc with repeated patterns. The pigs leave home and each builds a house in sequence (straw, sticks, bricks). The wolf attacks each house in the same order, succeeding twice but failing at the brick house. The story demonstrates the consequences of effort and planning, with the climax at the brick house and resolution with the pigs' safety.",
+  "teachingNote": "The repeated pattern (build house → wolf attacks) helps students predict and remember the sequence. Use this to discuss story structure: beginning (pigs leave), middle (building and attacks), end (safety). This foundation helps students understand more complex narratives later.",
+  "successCriteria": [
+    "Sequence narrative events in story order",
+    "Recognize repeated patterns in stories",
+    "Identify beginning, middle, and end"
+  ]
+}
+
+### Example 5: Water Cycle (Elementary)
+{
+  "id": "seq_5",
+  "difficulty": "medium",
+  "instruction": "Arrange the stages of the water cycle in order, starting with evaporation",
+  "items": [
+    "Water evaporates from oceans, lakes, and rivers",
+    "Water vapor rises and cools in the atmosphere",
+    "Water vapor condenses into clouds",
+    "Precipitation falls as rain, snow, or hail",
+    "Water collects in bodies of water or soaks into ground",
+    "The cycle repeats"
+  ],
+  "rationale": "The water cycle is a continuous process driven by the sun's energy. Water evaporates (turns to vapor), rises and cools, condenses into clouds, falls as precipitation, and collects back in bodies of water or underground, where it can evaporate again. This cycle has no true beginning or end, but starting with evaporation provides a logical entry point for understanding the process.",
+  "teachingNote": "Emphasize that this is a CYCLE - it continues forever with no true start or finish. Students may ask 'why start with evaporation?' - explain that we need to start somewhere to explain it, but in nature, all stages are happening simultaneously around the world.",
+  "successCriteria": [
+    "Sequence the stages of the water cycle",
+    "Understand cyclical processes",
+    "Recognize the role of energy in phase changes"
+  ]
+}
+
+## Important Guidelines:
+
+✅ DO:
+- Create sequences with a single, clear correct order
+- Use concise, parallel phrasing for all items
+- Choose sequences that teach important processes or concepts
+- Include transitional logic students can learn from
+- Provide detailed rationales that explain the sequencing principle
+- Address potential misconceptions in teaching notes
+
+❌ DON'T:
+- Create sequences where multiple orderings could be valid
+- Use overly long or complex item descriptions
+- Include "trick" sequences that rely on trivial details
+- Mix different types of sequences (don't combine chronological with logical)
+- Create sequences with missing steps (all necessary items should be included)
+- Use sequences that require specialized prior knowledge
+
+## Additional Tips:
+
+### For Toddler/Preschool:
+- Use 3-4 items maximum
+- Choose very familiar sequences (getting dressed, daily routines, simple stories)
+- Use concrete, visual sequences
+- Items should be obviously different from each other
+
+### For Kindergarten/Elementary:
+- 4-6 items work well
+- Mix familiar routines with academic content (life cycles, simple procedures)
+- Can introduce basic chronological and procedural sequences
+- Use clear temporal markers when appropriate
+
+### For Middle School:
+- 5-7 items are appropriate
+- More complex procedural and chronological sequences
+- Can include historical events, scientific processes, mathematical procedures
+- May require understanding of cause-and-effect relationships
+
+### For High School:
+- 6-8 items can work
+- Complex chronological, procedural, or logical sequences
+- Disciplinary knowledge (historical events, literary plot, scientific processes)
+- May involve subtle distinctions between adjacent items
+
+## Key Insight:
+The ITEMS array you provide must be in the CORRECT ORDER. The frontend will shuffle them for display, and students will drag them to recreate your correct sequence.
+
+Now generate ${count} problem${count > 1 ? 's' : ''} following this structure and quality standard.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: sequencingSchema,
+        temperature: 0.8,
+      },
+    });
+
+    if (!response.text) throw new Error("No content generated");
+    const data = JSON.parse(response.text);
+
+    // Transform to match SequencingActivityProblemData interface
+    const problems = data.problems.map((problem: any) => ({
+      type: 'sequencing_activity',
+      id: problem.id,
+      difficulty: problem.difficulty,
+      gradeLevel: gradeLevel,
+      instruction: problem.instruction,
+      items: problem.items,
+      rationale: problem.rationale,
+      teachingNote: problem.teachingNote,
+      successCriteria: problem.successCriteria
+    }));
+
+    return problems;
+  } catch (error) {
+    console.error("Sequencing problem generation error:", error);
+    throw error;
+  }
+};
+
+// ============================================================================
 // MANIFEST-FIRST ARCHITECTURE
 // ============================================================================
 
@@ -871,7 +1990,7 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'custom-visual',
-    description: 'A bespoke HTML/JS simulation or SVG diagram. Use for complex systems (biology, physics, counting games) that standard math visuals cannot handle.'
+    description: 'A bespoke HTML/JS simulation or SVG diagram. Use for complex systems (biology, physics, counting games) that standard math visuals cannot handle. TIP: Provide config with subject, keyTerms, and conceptsCovered for richer content.'
   },
   {
     id: 'formula-card',
@@ -916,6 +2035,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     id: 'take-home-activity',
     description: 'Hands-on activity using common household materials. Screen-free learning experience with step-by-step instructions, safety notes, reflection prompts, and optional extensions. Perfect for reinforcing concepts through kinesthetic learning and real-world application.',
     constraints: 'Best for science experiments, math manipulatives, art projects, or any topic that benefits from hands-on exploration. Automatically adapts complexity and safety guidance to grade level.'
+  },
+  {
+    id: 'word-builder',
+    description: 'Interactive morphology lab where students construct complex words from roots, prefixes, and suffixes to understand their meaning. Drag-and-drop construction with visual breakdown showing how word parts combine. Perfect for vocabulary development, etymology, and morphological analysis in language arts.',
+    constraints: 'Best for grades 3-8. Requires words that can be meaningfully broken into morphological components (prefixes, roots, suffixes).'
   }
 ];
 
@@ -956,11 +2080,23 @@ const manifestSchema: Schema = {
           },
           config: {
             type: Type.OBJECT,
-            description: "Optional configuration hints",
+            description: "Optional configuration hints and educational context",
             properties: {
-              visualType: { type: Type.STRING },
-              itemCount: { type: Type.NUMBER },
-              difficulty: { type: Type.STRING }
+              visualType: { type: Type.STRING, description: "Type of visualization (e.g., 'bar-model', 'number-line')" },
+              itemCount: { type: Type.NUMBER, description: "Number of items to generate" },
+              difficulty: { type: Type.STRING, description: "Difficulty level" },
+              subject: { type: Type.STRING, description: "Subject area (e.g., 'Mathematics', 'Science', 'Language Arts')" },
+              unitTitle: { type: Type.STRING, description: "Broader unit context" },
+              keyTerms: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "Key vocabulary terms to emphasize in the visualization"
+              },
+              conceptsCovered: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "Core concepts to illustrate"
+              }
             }
           }
         },
@@ -996,7 +2132,7 @@ export const generateComponentContent = async (
       return await generateMathVisualContent(item, topic, gradeLevelContext);
 
     case 'custom-visual':
-      return await generateCustomVisualContent(item, topic, gradeLevelContext);
+      return await generateCustomVisualContent(item, topic, gradeLevel);
 
     case 'comparison-panel':
       return await generateComparisonContent(item, topic, gradeLevelContext);
@@ -1034,6 +2170,12 @@ export const generateComponentContent = async (
     case 'take-home-activity':
       return await generateTakeHomeActivityContent(item, topic, gradeLevelContext);
 
+    case 'interactive-passage':
+      return await generateInteractivePassageContent(item, topic, gradeLevelContext);
+
+    case 'word-builder':
+      return await generateWordBuilderContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -1042,42 +2184,46 @@ export const generateComponentContent = async (
 
 /**
  * Generate Curator Brief content
+ * Now generates comprehensive IntroBriefingData using the new generateIntroBriefing function
  */
 const generateCuratorBriefContent = async (item: any, topic: string, gradeContext: string) => {
-  const schema: Schema = {
-    type: Type.OBJECT,
-    properties: {
-      hook: { type: Type.STRING, description: "A captivating 2-sentence narrative introduction." },
-      objectives: {
-        type: Type.ARRAY,
-        items: { type: Type.STRING },
-        description: "3 specific learning objectives."
-      }
-    },
-    required: ["hook", "objectives"]
-  };
+  // Extract subject from topic or use default
+  // Try to infer subject from common keywords in topic
+  let subject = 'General';
+  const topicLower = topic.toLowerCase();
+  if (topicLower.includes('math') || topicLower.includes('fraction') || topicLower.includes('algebra') ||
+      topicLower.includes('geometry') || topicLower.includes('number') || topicLower.includes('counting')) {
+    subject = 'Mathematics';
+  } else if (topicLower.includes('science') || topicLower.includes('biology') || topicLower.includes('chemistry') ||
+             topicLower.includes('physics') || topicLower.includes('plant') || topicLower.includes('animal')) {
+    subject = 'Science';
+  } else if (topicLower.includes('reading') || topicLower.includes('writing') || topicLower.includes('grammar') ||
+             topicLower.includes('sentence') || topicLower.includes('vocabulary') || topicLower.includes('language')) {
+    subject = 'Language Arts';
+  } else if (topicLower.includes('history') || topicLower.includes('historical') || topicLower.includes('ancient') ||
+             topicLower.includes('civilization') || topicLower.includes('revolution') || topicLower.includes('war')) {
+    subject = 'History';
+  } else if (topicLower.includes('geography') || topicLower.includes('map') || topicLower.includes('continent') ||
+             topicLower.includes('country') || topicLower.includes('climate')) {
+    subject = 'Geography';
+  }
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: `Create curator brief for: "${topic}"
+  // Extract grade level from gradeContext or use default
+  let gradeLevel = 'Elementary';
+  if (gradeContext.includes('toddler')) gradeLevel = 'Toddler';
+  else if (gradeContext.includes('preschool')) gradeLevel = 'Preschool';
+  else if (gradeContext.includes('kindergarten')) gradeLevel = 'Kindergarten';
+  else if (gradeContext.includes('elementary') || gradeContext.includes('grades 1-5')) gradeLevel = 'Elementary';
+  else if (gradeContext.includes('middle') || gradeContext.includes('grades 6-8')) gradeLevel = 'Middle School';
+  else if (gradeContext.includes('high') || gradeContext.includes('grades 9-12')) gradeLevel = 'High School';
 
-TARGET AUDIENCE: ${gradeContext}
-INTENT: ${item.intent}
+  // Generate comprehensive intro briefing
+  const introBriefingData = await generateIntroBriefing(topic, subject, gradeLevel);
 
-Generate an engaging introduction with hook and learning objectives.`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      temperature: 0.7,
-    },
-  });
-
-  if (!response.text) throw new Error("No content generated");
-  const data = JSON.parse(response.text);
   return {
     type: 'curator-brief',
     instanceId: item.instanceId,
-    data
+    data: introBriefingData
   };
 };
 
@@ -1171,7 +2317,7 @@ const generateMathVisualContent = async (item: any, topic: string, gradeContext:
 /**
  * Generate Custom Visual content (reusing existing generator)
  */
-const generateCustomVisualContent = async (item: any, topic: string, gradeContext: string) => {
+const generateCustomVisualContent = async (item: any, topic: string, gradeLevel: string) => {
   const intent: SpecializedExhibitIntent = {
     id: item.instanceId,
     type: 'custom-web',
@@ -1179,7 +2325,15 @@ const generateCustomVisualContent = async (item: any, topic: string, gradeContex
     purpose: item.intent
   };
 
-  const result = await generateCustomWebExhibit(intent, topic);
+  // Extract additional context from config if available
+  const additionalContext = item.config ? {
+    subject: item.config.subject,
+    unitTitle: item.config.unitTitle,
+    keyTerms: item.config.keyTerms,
+    conceptsCovered: item.config.conceptsCovered
+  } : undefined;
+
+  const result = await generateCustomWebExhibit(intent, topic, gradeLevel, additionalContext);
   return {
     type: 'custom-visual',
     instanceId: item.instanceId,
@@ -2143,7 +3297,7 @@ const generateImagePanelContent = async (item: any, topic: string, gradeContext:
   };
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-flash-lite-latest",
     contents: `Create image panel metadata for: "${topic}"
 
 TARGET AUDIENCE: ${gradeContext}
@@ -2417,6 +3571,248 @@ Generate a complete, engaging take-home activity following these guidelines.`;
 };
 
 /**
+ * Generate Interactive Passage content
+ */
+const generateInteractivePassageContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: InteractivePassageData }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Engaging title for the reading passage" },
+      author: { type: Type.STRING, description: "Author name (or 'Lumina AI')" },
+      readingLevel: { type: Type.STRING, description: "Lexile or grade level estimate" },
+      sections: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING },
+            segments: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  text: { type: Type.STRING },
+                  type: { type: Type.STRING, enum: ['text', 'vocabulary'] },
+                  vocabData: {
+                    type: Type.OBJECT,
+                    properties: {
+                      word: { type: Type.STRING },
+                      definition: { type: Type.STRING },
+                      partOfSpeech: { type: Type.STRING }
+                    },
+                    required: ["word", "definition", "partOfSpeech"]
+                  }
+                },
+                required: ["text", "type"]
+              }
+            },
+            inlineQuestion: {
+              type: Type.OBJECT,
+              properties: {
+                prompt: { type: Type.STRING },
+                options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                correctIndex: { type: Type.INTEGER }
+              },
+              required: ["prompt", "options", "correctIndex"]
+            }
+          },
+          required: ["id", "segments"]
+        }
+      },
+      highlightTask: {
+        type: Type.OBJECT,
+        properties: {
+          instruction: { type: Type.STRING, description: "Task instruction (e.g., 'Find the sentence that explains why...')" },
+          targets: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                textSegment: { type: Type.STRING, description: "Exact text to match for highlighting" },
+                correct: { type: Type.BOOLEAN },
+                feedback: { type: Type.STRING }
+              },
+              required: ["id", "textSegment", "correct", "feedback"]
+            }
+          }
+        },
+        required: ["instruction", "targets"]
+      }
+    },
+    required: ["title", "sections"]
+  };
+
+  const prompt = `Create an interactive reading passage for: "${topic}"
+
+TARGET AUDIENCE: ${gradeContext}
+INTENT: ${item.intent}
+
+Generate a reading passage broken into sections.
+- Identify 3-5 challenging vocabulary words and mark them as 'vocabulary' segments with definitions.
+- Include 1-2 inline comprehension checks (multiple choice).
+- Create a "Highlight Task" where students must find evidence in the text to answer a specific question.
+  - Provide at least 1 correct target (the right evidence).
+  - Provide 1-2 plausible but incorrect targets (distractors) with specific feedback explaining why they are wrong.
+
+Structure the text as a sequence of segments. Most segments will be 'text', but vocabulary words should be their own 'vocabulary' segments.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      temperature: 0.7,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text) as InteractivePassageData;
+
+  return {
+    type: 'interactive-passage',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Word Builder content
+ */
+const generateWordBuilderContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Engaging title for the word-building exercise (e.g., 'Constructing Scientific Terms')" },
+      availableParts: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING, description: "Unique identifier like 'pre-bio', 'root-log', 'suf-y'" },
+            text: { type: Type.STRING, description: "The actual word part (e.g., 'bio', 'log', 'y')" },
+            type: { type: Type.STRING, enum: ['prefix', 'root', 'suffix'], description: "Type of word part" },
+            meaning: { type: Type.STRING, description: "What this part means (e.g., 'Life' for 'bio')" }
+          },
+          required: ["id", "text", "type", "meaning"]
+        },
+        description: "Pool of 8-12 word parts students can use. Include variety of prefixes, roots, and suffixes."
+      },
+      targets: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            word: { type: Type.STRING, description: "The complete word to build (e.g., 'biology')" },
+            parts: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Array of part IDs in order [prefix, root, suffix]. Some positions can be omitted if word doesn't have that part."
+            },
+            definition: { type: Type.STRING, description: "Clear definition of the word" },
+            sentenceContext: { type: Type.STRING, description: "Example sentence using the word in context" }
+          },
+          required: ["word", "parts", "definition", "sentenceContext"]
+        },
+        description: "2-4 target words to build. Ensure parts needed are in availableParts array."
+      }
+    },
+    required: ["title", "availableParts", "targets"]
+  };
+
+  const prompt = `Create a word-building morphology exercise for: "${topic}"
+
+TARGET AUDIENCE: ${gradeContext}
+INTENT: ${item.intent}
+
+## Design Principles
+
+1. **Educational Value**: Choose words that genuinely illustrate morphological patterns
+   - Words should be relevant to the topic/subject area
+   - Parts should have clear, teachable meanings
+   - Focus on common, useful word parts students will encounter again
+
+2. **Available Parts Pool (8-12 parts)**:
+   - Include 2-4 prefixes (e.g., bio-, geo-, tele-, micro-, pre-, un-)
+   - Include 3-5 roots (e.g., -log-, -graph-, -meter-, -scope-)
+   - Include 2-4 suffixes (e.g., -y, -ic, -er, -tion, -ous)
+   - Ensure all parts needed for target words are in the pool
+   - Include some extra parts that aren't used (adds challenge)
+
+3. **Target Words (2-4 words)**:
+   - Start with simpler 2-part words, progress to 3-part words
+   - Each word should clearly demonstrate its meaning through its parts
+   - Provide clear, age-appropriate definitions
+   - Include authentic sentence contexts showing usage
+
+4. **Part ID Format**:
+   - Use descriptive IDs: "pre-bio", "root-log", "suf-y"
+   - This helps with debugging and understanding
+
+5. **Meaning Quality**:
+   - Keep meanings concise (1-3 words)
+   - Use accessible language appropriate for grade level
+   - Examples: "Life", "Study", "State of", "Against", "Write"
+
+## Subject-Specific Guidance
+
+**Science/Biology**: Use Greek/Latin roots common in scientific vocabulary
+- bio (life), geo (earth), hydro (water), thermo (heat), photo (light)
+- -logy (study), -meter (measure), -scope (view), -graph (write/record)
+
+**Medical/Health**: Focus on body parts and processes
+- cardio (heart), neuro (nerve), derm (skin), gastro (stomach)
+- -ology (study), -itis (inflammation), -pathy (disease)
+
+**General Academic**: Mix of common prefixes and roots
+- pre- (before), re- (again), un- (not), dis- (opposite)
+- -tion (action), -ment (result), -able (capable of)
+
+## Example Structure
+
+{
+  "title": "Building Scientific Vocabulary",
+  "availableParts": [
+    {"id": "pre-bio", "text": "bio", "type": "prefix", "meaning": "Life"},
+    {"id": "pre-geo", "text": "geo", "type": "prefix", "meaning": "Earth"},
+    {"id": "root-log", "text": "log", "type": "root", "meaning": "Study"},
+    {"id": "root-graph", "text": "graph", "type": "root", "meaning": "Write"},
+    {"id": "suf-y", "text": "y", "type": "suffix", "meaning": "State of"}
+  ],
+  "targets": [
+    {
+      "word": "biology",
+      "parts": ["pre-bio", "root-log", "suf-y"],
+      "definition": "The study of life and living organisms",
+      "sentenceContext": "In biology class, we learned about photosynthesis."
+    }
+  ]
+}
+
+Generate an engaging word-building exercise that helps students understand how words are constructed from meaningful parts.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      temperature: 0.7,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text);
+
+  return {
+    type: 'word-builder',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Nested Hierarchy content
  */
 const generateNestedHierarchyContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: NestedHierarchyData }> => {
@@ -2590,7 +3986,11 @@ OUTPUT INSTRUCTIONS:
   * instanceId: Create a unique ID (e.g., 'brief-1', 'math-addition-1', 'comparison-democracy-monarchy')
   * title: The heading that will appear above this section
   * intent: DETAILED instructions for what content to generate (be specific!)
-  * config: Optional hints (e.g., for math-visual, specify {"visualType": "number-line"})
+  * config: Optional hints and educational context
+    - For math-visual: {"visualType": "number-line"}
+    - For custom-visual: Include subject, keyTerms, and conceptsCovered to improve content quality
+      Example: {"subject": "Mathematics", "keyTerms": ["addition", "sum", "equals"], "conceptsCovered": ["combining quantities", "number sense"]}
+    - For any component: Can include itemCount, difficulty, unitTitle
 
 EXAMPLE MANIFEST STRUCTURE:
 {
@@ -2610,6 +4010,17 @@ EXAMPLE MANIFEST STRUCTURE:
       "title": "Let's Count Together",
       "intent": "Show addition using a number line from 0-10. Highlight 2 + 3 = 5.",
       "config": { "visualType": "number-line" }
+    },
+    {
+      "componentId": "custom-visual",
+      "instanceId": "interactive-addition-1",
+      "title": "Interactive Counting Game",
+      "intent": "Create an interactive HTML game where students drag objects together to add them. Make it colorful and engaging.",
+      "config": {
+        "subject": "Mathematics",
+        "keyTerms": ["addition", "sum", "plus", "equals"],
+        "conceptsCovered": ["combining quantities", "number sense", "counting"]
+      }
     },
     {
       "componentId": "knowledge-check",
@@ -2749,7 +4160,19 @@ export const buildCompleteExhibitFromTopic = async (
 
     switch (component.type) {
       case 'curator-brief':
-        exhibit.intro = component.data;
+        // Check if it's the new comprehensive format or legacy format
+        if (component.data && 'mindset' in component.data) {
+          // New IntroBriefingData format
+          exhibit.introBriefing = component.data;
+          // Also create legacy intro for backward compatibility
+          exhibit.intro = {
+            hook: component.data.hook.content,
+            objectives: component.data.objectives.map((obj: any) => obj.text)
+          };
+        } else {
+          // Legacy IntroData format
+          exhibit.intro = component.data;
+        }
         break;
 
       case 'concept-card-grid':
@@ -2792,6 +4215,16 @@ export const buildCompleteExhibitFromTopic = async (
         exhibit.takeHomeActivities.push(component.data);
         break;
 
+      case 'interactive-passage':
+        if (!exhibit.interactivePassages) exhibit.interactivePassages = [];
+        exhibit.interactivePassages.push(component.data);
+        break;
+
+      case 'word-builder':
+        if (!exhibit.wordBuilders) exhibit.wordBuilders = [];
+        exhibit.wordBuilders.push(component.data);
+        break;
+
       case 'knowledge-check':
         exhibit.knowledgeCheck = component.data;
         break;
@@ -2819,5 +4252,296 @@ export const buildCompleteExhibitFromTopic = async (
 
   console.log('🎉 Exhibit assembly complete!');
   return exhibit;
+};
+
+/**
+ * Generate comprehensive Intro Briefing data for lesson introduction
+ */
+export const generateIntroBriefing = async (
+  topic: string,
+  subject: string,
+  gradeLevel: string,
+  estimatedTime: string = '15-20 minutes'
+): Promise<IntroBriefingData> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      primitive: {
+        type: Type.STRING,
+        description: "Must be 'intro_briefing'"
+      },
+      topic: { type: Type.STRING },
+      subject: { type: Type.STRING },
+      gradeLevel: { type: Type.STRING },
+      estimatedTime: { type: Type.STRING },
+
+      hook: {
+        type: Type.OBJECT,
+        properties: {
+          type: {
+            type: Type.STRING,
+            enum: ['scenario', 'question', 'surprising_fact', 'story'],
+            description: 'Type of hook: scenario (imagine situation), question (thought-provoking), surprising_fact (unexpected info), or story (narrative)'
+          },
+          content: {
+            type: Type.STRING,
+            description: 'Engaging opening that captures attention and connects to students\' lives, age-appropriate and curiosity-creating'
+          },
+          visual: {
+            type: Type.STRING,
+            description: 'A single emoji that represents the hook visually'
+          }
+        },
+        required: ['type', 'content', 'visual']
+      },
+
+      bigIdea: {
+        type: Type.OBJECT,
+        properties: {
+          statement: {
+            type: Type.STRING,
+            description: 'Core concept in one clear, memorable sentence using student-friendly language'
+          },
+          whyItMatters: {
+            type: Type.STRING,
+            description: 'Real-world relevance explaining why this topic is worth learning, connecting to students\' lives and future learning'
+          }
+        },
+        required: ['statement', 'whyItMatters']
+      },
+
+      objectives: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: {
+              type: Type.STRING,
+              description: 'Unique identifier like obj1, obj2, etc.'
+            },
+            text: {
+              type: Type.STRING,
+              description: 'Clear learning objective starting with an action verb'
+            },
+            verb: {
+              type: Type.STRING,
+              enum: ['identify', 'explain', 'create', 'analyze', 'compare', 'apply', 'evaluate'],
+              description: 'Bloom\'s taxonomy verb category'
+            },
+            icon: {
+              type: Type.STRING,
+              description: 'Icon hint: search, message, pencil, lightbulb, scale, puzzle, check'
+            }
+          },
+          required: ['id', 'text', 'verb', 'icon']
+        },
+        description: '3-4 specific, achievable learning objectives'
+      },
+
+      prerequisites: {
+        type: Type.OBJECT,
+        properties: {
+          shouldKnow: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: '2-4 genuine prerequisites from recent learning'
+          },
+          quickCheck: {
+            type: Type.OBJECT,
+            properties: {
+              question: {
+                type: Type.STRING,
+                description: 'Simple question answerable in under 30 seconds to verify readiness'
+              },
+              answer: {
+                type: Type.STRING,
+                description: 'Expected answer to the question'
+              },
+              hint: {
+                type: Type.STRING,
+                description: 'Helpful hint that scaffolds thinking without giving the answer'
+              }
+            },
+            required: ['question', 'answer', 'hint']
+          }
+        },
+        required: ['shouldKnow', 'quickCheck']
+      },
+
+      roadmap: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            phase: {
+              type: Type.STRING,
+              description: 'Student-friendly phase name like Explore, Learn, Practice, Apply'
+            },
+            description: {
+              type: Type.STRING,
+              description: 'Brief description of what happens in this phase'
+            },
+            activities: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: '1-3 concrete activities for this phase'
+            }
+          },
+          required: ['phase', 'description', 'activities']
+        },
+        description: '3-5 learning phases that build confidence'
+      },
+
+      connections: {
+        type: Type.OBJECT,
+        properties: {
+          buildingFrom: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: 'Concepts from previous grades/units that directly support this topic'
+          },
+          leadingTo: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: 'Where this knowledge goes next in the curriculum'
+          },
+          realWorld: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: 'Concrete, relatable applications students can visualize'
+          }
+        },
+        required: ['buildingFrom', 'leadingTo', 'realWorld']
+      },
+
+      mindset: {
+        type: Type.OBJECT,
+        properties: {
+          encouragement: {
+            type: Type.STRING,
+            description: 'Warm, encouraging message acknowledging potential challenges but emphasizing achievability'
+          },
+          growthTip: {
+            type: Type.STRING,
+            description: 'Practical learning strategy or study tip specific to this content type'
+          }
+        },
+        required: ['encouragement', 'growthTip']
+      }
+    },
+    required: [
+      'primitive', 'topic', 'subject', 'gradeLevel', 'estimatedTime',
+      'hook', 'bigIdea', 'objectives', 'prerequisites', 'roadmap', 'connections', 'mindset'
+    ]
+  };
+
+  const prompt = `You are an expert curriculum designer creating engaging lesson introductions for K-8 homeschool students. Your task is to generate an Intro Briefing schema that orients students to new topics by providing context, relevance, clear objectives, and motivation.
+
+Generate an Intro Briefing schema for the following topic:
+
+**Topic:** ${topic}
+**Subject:** ${subject}
+**Grade Level:** ${gradeLevel}
+**Estimated Lesson Time:** ${estimatedTime}
+
+## Educational Context
+This content is for ${gradeLevelContext}
+
+## Guidelines for High-Quality Schemas
+
+### Hook Design
+Choose the hook type that best fits the content and grade level:
+- **scenario**: "Imagine you're..." - Places student in a relatable situation
+- **question**: Poses a thought-provoking question they'll want answered
+- **surprising_fact**: Shares something unexpected that creates curiosity
+- **story**: Brief narrative that introduces the concept naturally
+
+Younger students often respond better to scenarios and stories; older students engage with questions and surprising facts.
+
+### Objective Writing
+- Start each objective with a measurable action verb
+- Keep objectives achievable within the estimated time
+- Progress from lower to higher Bloom's levels when appropriate
+- Limit to 3-4 objectives to maintain focus
+- Use age-appropriate language
+
+**Verb Categories:**
+- identify: Recognize, locate, name, list
+- explain: Describe, summarize, interpret, paraphrase
+- create: Design, construct, produce, compose
+- analyze: Compare, contrast, examine, differentiate
+- compare: Match, relate, distinguish, categorize
+- apply: Use, demonstrate, solve, implement
+- evaluate: Judge, assess, critique, justify
+
+### Prerequisites
+- List 2-4 genuine prerequisites (not too many)
+- Quick check should be answerable in under 30 seconds
+- The hint should scaffold thinking, not give the answer
+- Prerequisites should be from recent learning when possible
+
+### Roadmap Design
+- Use 3-5 phases typically
+- Phase names should be student-friendly
+- Each phase should have 1-3 concrete activities
+- The progression should feel logical and build confidence
+
+### Connections
+- **buildingFrom**: Concepts from previous grades/units that directly support this topic
+- **leadingTo**: Where this knowledge goes next in the curriculum
+- **realWorld**: Concrete, relatable applications students can visualize
+
+### Mindset Messages
+- Acknowledge potential difficulty without being discouraging
+- Reference common misconceptions or challenges
+- Provide actionable strategies, not just "try hard"
+- Match tone to grade level (warmer for younger, more mature for older)
+
+## Grade-Level Calibration
+
+**K-2:**
+- Hooks: Simple scenarios, familiar situations (home, playground, family)
+- Language: Short sentences, concrete words, avoid abstractions
+- Objectives: 2-3 max, focus on identify/explain
+- Time: 10-15 minutes typical
+
+**3-5:**
+- Hooks: Can include surprising facts, more complex scenarios
+- Language: Can introduce some academic vocabulary with context
+- Objectives: 3-4, include some create/apply
+- Time: 15-25 minutes typical
+
+**6-8:**
+- Hooks: Questions, real-world problems, connections to current interests
+- Language: Academic vocabulary expected, more sophisticated reasoning
+- Objectives: 3-4, include analyze/evaluate
+- Time: 20-30 minutes typical
+
+Create an engaging, age-appropriate Intro Briefing that will excite students about learning this topic!`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 1.0,
+      },
+    });
+
+    const result = response.text ? JSON.parse(response.text) : null;
+
+    if (!result) {
+      throw new Error('No data returned from Gemini API');
+    }
+
+    return result as IntroBriefingData;
+  } catch (error) {
+    console.error('Error generating intro briefing:', error);
+    throw error;
+  }
 };
 

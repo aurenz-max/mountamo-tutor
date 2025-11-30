@@ -1,0 +1,9 @@
+// Export all problem primitive components
+export { MultipleChoiceProblem } from './MultipleChoiceProblem';
+export { TrueFalseProblem } from './TrueFalseProblem';
+export { FillInBlanksProblem } from './FillInBlanksProblem';
+export { MatchingActivityProblem } from './MatchingActivityProblem';
+export { SequencingActivityProblem } from './SequencingActivityProblem';
+export { CategorizationActivityProblem } from './CategorizationActivityProblem';
+export { ScenarioQuestionProblem } from './ScenarioQuestionProblem';
+export { ShortAnswerProblem } from './ShortAnswerProblem';

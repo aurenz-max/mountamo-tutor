@@ -13,7 +13,19 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
   const [showAllMaterials, setShowAllMaterials] = useState(false);
   const [reflectionAnswers, setReflectionAnswers] = useState<Record<number, string>>({});
   const [showReflections, setShowReflections] = useState(false);
-  const [printMode, setPrintMode] = useState(false);
+
+  const handlePrint = () => {
+    // Expand all sections for printing
+    const allStepNumbers = data.steps.map(s => s.stepNumber);
+    setExpandedSteps(new Set(allStepNumbers));
+    setShowAllMaterials(true);
+    setShowReflections(true);
+
+    // Wait for state updates to render, then print
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
 
   const toggleStep = (stepNum: number) => {
     const newExpanded = new Set(expandedSteps);
@@ -44,8 +56,12 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
   const optionalMaterials = data.materials.filter(m => !m.essential);
 
   return (
-    <div className={`min-h-screen bg-slate-950 text-slate-100 p-6 ${printMode ? 'print-mode' : ''} ${className || ''}`}>
-      <div className="max-w-3xl mx-auto">
+    <div className={`w-full text-slate-100 ${className || ''}`}>
+      <div className="max-w-3xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
+        {/* Ambient background glow for entire card */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[150px] opacity-10 bg-gradient-to-br from-amber-500 via-emerald-500 to-indigo-500" />
+
+        <div className="relative z-10">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between mb-4">
@@ -60,8 +76,8 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
               <p className="text-slate-400">{data.topic}</p>
             </div>
             <button
-              onClick={() => setPrintMode(!printMode)}
-              className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors"
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-4 py-2 glass-panel border border-white/10 hover:border-white/30 rounded-xl text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
             >
               <Printer size={16} />
               Print
@@ -81,12 +97,12 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
         </div>
 
         {/* Overview */}
-        <div className="bg-slate-900 rounded-xl p-5 mb-6 border border-slate-800">
+        <div className="glass-panel rounded-2xl p-6 mb-6 border border-white/10 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-xl">
           <p className="text-slate-300 leading-relaxed">{data.overview}</p>
         </div>
 
         {/* Learning Objectives */}
-        <div className="bg-slate-900/50 rounded-xl p-5 mb-6 border border-slate-800">
+        <div className="glass-panel rounded-2xl p-6 mb-6 border border-white/10 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-xl">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-200 mb-3">
             <Sparkles size={18} className="text-amber-400" />
             What You'll Learn
@@ -102,7 +118,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
         </div>
 
         {/* Materials */}
-        <div className="bg-slate-900 rounded-xl p-5 mb-6 border border-slate-800">
+        <div className="glass-panel rounded-2xl p-6 mb-6 border border-white/10 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-xl">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-200 mb-4">
             <Package size={18} className="text-emerald-400" />
             Materials Needed
@@ -110,7 +126,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
 
           <div className="space-y-3">
             {essentialMaterials.map((material, idx) => (
-              <div key={idx} className="flex items-start justify-between py-2 border-b border-slate-800 last:border-0">
+              <div key={idx} className="flex items-start justify-between py-2 border-b border-white/10 last:border-0">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-slate-200">{material.item}</span>
@@ -143,7 +159,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
               </button>
 
               {showAllMaterials && (
-                <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
+                <div className="mt-3 pt-3 border-t border-white/10 space-y-3">
                   {optionalMaterials.map((material, idx) => (
                     <div key={idx} className="flex items-start justify-between py-2">
                       <div className="flex-1">
@@ -185,9 +201,9 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
             <span className="text-sm text-slate-400">Progress</span>
             <span className="text-sm text-slate-400">{completedSteps.size} of {data.steps.length} steps</span>
           </div>
-          <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-2 glass-panel border border-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500 shadow-lg shadow-emerald-500/50"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -204,10 +220,10 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
             return (
               <div
                 key={step.stepNumber}
-                className={`rounded-xl border transition-all duration-300 ${
+                className={`rounded-2xl border transition-all duration-300 shadow-lg ${
                   isCompleted
-                    ? 'bg-emerald-950/20 border-emerald-800/50'
-                    : 'bg-slate-900 border-slate-800'
+                    ? 'glass-panel border-emerald-500/50'
+                    : 'glass-panel border-white/10 hover:border-white/20'
                 }`}
               >
                 <button
@@ -251,7 +267,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
                     )}
 
                     {step.checkpoint && (
-                      <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                      <div className="mt-4 p-4 glass-panel rounded-xl border border-white/10">
                         <p className="text-sm font-medium text-slate-300 mb-3">
                           ✓ Checkpoint: {step.checkpoint.question}
                         </p>
@@ -276,15 +292,19 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
 
         {/* Completion Celebration */}
         {completedSteps.size === data.steps.length && (
-          <div className="bg-gradient-to-r from-emerald-900/50 to-sky-900/50 rounded-xl p-6 mb-8 border border-emerald-700/50 text-center">
-            <div className="text-4xl mb-3">🎉</div>
-            <h3 className="text-xl font-bold text-emerald-400 mb-2">Amazing Work!</h3>
-            <p className="text-slate-300">You've completed all the steps. Time to reflect on what you learned!</p>
+          <div className="glass-panel rounded-2xl p-8 mb-8 border border-emerald-500/30 text-center relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-500/20 via-sky-500/20 to-purple-500/20" />
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-[100px] opacity-30 bg-emerald-500" />
+            <div className="relative z-10">
+              <div className="text-4xl mb-3">🎉</div>
+              <h3 className="text-xl font-bold text-emerald-400 mb-2">Amazing Work!</h3>
+              <p className="text-slate-300">You've completed all the steps. Time to reflect on what you learned!</p>
+            </div>
           </div>
         )}
 
         {/* Reflection Section */}
-        <div className="bg-slate-900 rounded-xl p-5 mb-6 border border-slate-800">
+        <div className="glass-panel rounded-2xl p-6 mb-6 border border-white/10 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-xl">
           <button
             onClick={() => setShowReflections(!showReflections)}
             className="w-full flex items-center justify-between"
@@ -305,7 +325,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
                     <p className="text-sm text-slate-500 italic">Hint: {prompt.hint}</p>
                   )}
                   <textarea
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full glass-panel border border-white/10 rounded-lg p-3 text-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500"
                     rows={3}
                     placeholder="Write your thoughts here..."
                     value={reflectionAnswers[idx] || ''}
@@ -319,13 +339,13 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
 
         {/* Documentation Prompt */}
         {data.documentationPrompt && (
-          <div className="bg-slate-900 rounded-xl p-5 mb-6 border border-slate-800">
+          <div className="glass-panel rounded-2xl p-6 mb-6 border border-white/10 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-xl">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-200 mb-3">
               <Camera size={18} className="text-pink-400" />
               Document Your Work
             </h2>
             <p className="text-slate-300 mb-3">{data.documentationPrompt.instruction}</p>
-            <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+            <div className="glass-panel rounded-lg p-3 border border-white/10">
               <p className="text-sm text-slate-400 italic">
                 Suggested caption: "{data.documentationPrompt.suggestedCaption}"
               </p>
@@ -335,14 +355,14 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
 
         {/* Extensions */}
         {data.extensions && data.extensions.length > 0 && (
-          <div className="bg-slate-900 rounded-xl p-5 border border-slate-800">
+          <div className="glass-panel rounded-2xl p-6 border border-white/10 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-xl">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-200 mb-4">
               <Sparkles size={18} className="text-amber-400" />
               Want More? Try These Extensions
             </h2>
             <div className="space-y-4">
               {data.extensions.map((ext, idx) => (
-                <div key={idx} className="p-4 bg-slate-800/50 rounded-lg">
+                <div key={idx} className="p-4 glass-panel rounded-xl border border-white/10">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="font-medium text-slate-200">{ext.title}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded ${
@@ -359,6 +379,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

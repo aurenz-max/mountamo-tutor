@@ -310,6 +310,146 @@ export interface KnowledgeCheckData {
   visual?: VisualPrimitive; // Optional visual component
 }
 
+// ============================================================================
+// PROBLEM PRIMITIVES (Knowledge Check System)
+// ============================================================================
+// These types mirror the backend problem_type_schemas.py structure
+// to enable consistent problem generation across multiple problem types
+
+export type ProblemType =
+  | 'multiple_choice'
+  | 'true_false'
+  | 'fill_in_blanks'
+  | 'matching_activity'
+  | 'sequencing_activity'
+  | 'categorization_activity'
+  | 'scenario_question'
+  | 'short_answer';
+
+export type ProblemDifficulty = 'easy' | 'medium' | 'hard';
+
+// Base interface for all problem types
+export interface BaseProblemData {
+  id: string;
+  difficulty: ProblemDifficulty;
+  gradeLevel: string;
+  rationale: string;
+  teachingNote: string;
+  successCriteria: string[];
+}
+
+// Multiple Choice Problem
+export interface MultipleChoiceOption {
+  id: string;
+  text: string;
+}
+
+export interface MultipleChoiceProblemData extends BaseProblemData {
+  type: 'multiple_choice';
+  question: string;
+  visual?: VisualPrimitive;
+  options: MultipleChoiceOption[];
+  correctOptionId: string;
+}
+
+// True/False Problem
+export interface TrueFalseProblemData extends BaseProblemData {
+  type: 'true_false';
+  statement: string;
+  visual?: VisualPrimitive;
+  correct: boolean;
+}
+
+// Fill in Blanks Problem
+export interface BlankItem {
+  id: string;
+  correctAnswer: string; // Single correct answer for word bank matching
+  caseSensitive: boolean;
+}
+
+export interface FillInBlanksProblemData extends BaseProblemData {
+  type: 'fill_in_blanks';
+  textWithBlanks: string;
+  blanks: BlankItem[];
+  wordBank: string[]; // All words including correct answers and distractors
+}
+
+// Matching Activity Problem
+export interface MatchingItem {
+  id: string;
+  text: string;
+}
+
+export interface MatchingMapping {
+  leftId: string;
+  rightIds: string[];
+}
+
+export interface MatchingActivityProblemData extends BaseProblemData {
+  type: 'matching_activity';
+  prompt: string;
+  leftItems: MatchingItem[];
+  rightItems: MatchingItem[];
+  mappings: MatchingMapping[];
+}
+
+// Sequencing Activity Problem
+export interface SequencingActivityProblemData extends BaseProblemData {
+  type: 'sequencing_activity';
+  instruction: string;
+  items: string[];
+}
+
+// Categorization Activity Problem
+export interface CategorizationItem {
+  itemText: string;
+  correctCategory: string;
+}
+
+export interface CategorizationActivityProblemData extends BaseProblemData {
+  type: 'categorization_activity';
+  instruction: string;
+  categories: string[];
+  categorizationItems: CategorizationItem[];
+}
+
+// Scenario Question Problem
+export interface ScenarioQuestionProblemData extends BaseProblemData {
+  type: 'scenario_question';
+  scenario: string;
+  scenarioQuestion: string;
+  scenarioAnswer: string;
+}
+
+// Short Answer Problem
+export interface ShortAnswerProblemData extends BaseProblemData {
+  type: 'short_answer';
+  question: string;
+}
+
+// Union type for all problem data
+export type ProblemData =
+  | MultipleChoiceProblemData
+  | TrueFalseProblemData
+  | FillInBlanksProblemData
+  | MatchingActivityProblemData
+  | SequencingActivityProblemData
+  | CategorizationActivityProblemData
+  | ScenarioQuestionProblemData
+  | ShortAnswerProblemData;
+
+// Type selection for parallel generation (mirrors backend TYPE_SELECTION_SCHEMA)
+export interface ProblemTypeSelection {
+  type: ProblemType;
+  count: number;
+  reasoning: string;
+}
+
+export interface ProblemTypeSelectionResult {
+  selectedTypes: ProblemTypeSelection[];
+  overallReasoning: string;
+}
+
 export interface ComparisonItem {
   name: string;
   description: string;
@@ -336,6 +476,68 @@ export interface ItemDetailData {
 export interface IntroData {
   hook: string;
   objectives: string[];
+}
+
+// Intro Briefing Types (comprehensive lesson introduction)
+export interface HookData {
+  type: 'scenario' | 'question' | 'surprising_fact' | 'story';
+  content: string;
+  visual: string; // emoji
+}
+
+export interface BigIdeaData {
+  statement: string;
+  whyItMatters: string;
+}
+
+export interface ObjectiveData {
+  id: string;
+  text: string;
+  verb: 'identify' | 'explain' | 'create' | 'analyze' | 'compare' | 'apply' | 'evaluate';
+  icon: string;
+}
+
+export interface QuickCheckData {
+  question: string;
+  answer: string;
+  hint: string;
+}
+
+export interface PrerequisitesData {
+  shouldKnow: string[];
+  quickCheck: QuickCheckData;
+}
+
+export interface RoadmapPhase {
+  phase: string;
+  description: string;
+  activities: string[];
+}
+
+export interface ConnectionsData {
+  buildingFrom: string[];
+  leadingTo: string[];
+  realWorld: string[];
+}
+
+export interface MindsetData {
+  encouragement: string;
+  growthTip: string;
+}
+
+export interface IntroBriefingData {
+  primitive: 'intro_briefing';
+  topic: string;
+  subject: string;
+  gradeLevel: string;
+  estimatedTime: string;
+  hook: HookData;
+  bigIdea: BigIdeaData;
+  objectives: ObjectiveData[];
+  prerequisites: PrerequisitesData;
+  roadmap: RoadmapPhase[];
+  connections: ConnectionsData;
+  mindset: MindsetData;
 }
 
 export interface GraphBoardData {
@@ -497,9 +699,72 @@ export interface TakeHomeActivityData {
   documentationPrompt?: DocumentationPrompt;
 }
 
+// Interactive Passage Types (Language Arts Suite)
+export interface HighlightTarget {
+  id: string;
+  textSegment: string; // The exact text to match
+  correct: boolean;
+  feedback: string;
+}
+
+export interface VocabularyTerm {
+  word: string;
+  definition: string;
+  partOfSpeech: string;
+}
+
+export interface PassageSegment {
+  text: string;
+  type: 'text' | 'vocabulary';
+  vocabData?: VocabularyTerm;
+}
+
+export interface PassageSection {
+  id: string;
+  segments: PassageSegment[];
+  inlineQuestion?: {
+    prompt: string;
+    options: string[];
+    correctIndex: number;
+  };
+}
+
+export interface InteractivePassageData {
+  title: string;
+  author?: string;
+  readingLevel?: string; // e.g., "Lexile 800L"
+  sections: PassageSection[];
+  highlightTask?: {
+    instruction: string; // e.g., "Highlight the sentence that shows the character is angry."
+    targets: HighlightTarget[];
+  };
+}
+
+// Word Builder Types (Language Arts Suite)
+export interface WordPart {
+  id: string;
+  text: string;
+  type: 'prefix' | 'root' | 'suffix';
+  meaning: string; // e.g., "Life" for "Bio"
+}
+
+export interface TargetWord {
+  word: string;
+  parts: string[]; // IDs of the correct parts
+  definition: string;
+  sentenceContext: string;
+}
+
+export interface WordBuilderData {
+  title: string; // e.g., "Constructing Scientific Terms"
+  availableParts: WordPart[]; // Pool of parts to drag from
+  targets: TargetWord[]; // Words to build
+}
+
 export interface ExhibitData {
   topic: string;
-  intro: IntroData;
+  intro: IntroData; // Legacy simple intro (hook + objectives)
+  introBriefing?: IntroBriefingData; // New comprehensive intro briefing
   specializedExhibits?: SpecializedExhibit[];
   featureExhibit: FeatureExhibitData;
   comparison: ComparisonData;
@@ -511,6 +776,8 @@ export interface ExhibitData {
   nestedHierarchies?: NestedHierarchyData[];
   imagePanels?: ImagePanelData[];
   takeHomeActivities?: TakeHomeActivityData[];
+  interactivePassages?: InteractivePassageData[];
+  wordBuilders?: WordBuilderData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -570,6 +837,10 @@ export type ComponentId =
   | 'image-panel'        // AI-generated images for any subject (maps, diagrams, illustrations)
   | 'take-home-activity' // Hands-on activities using household materials
 
+  // Language Arts Suite
+  | 'interactive-passage' // Reading comprehension with evidence highlighting
+  | 'word-builder'        // Vocabulary & Morphology - construct words from roots, prefixes, suffixes
+
   // Assessment
   | 'knowledge-check';   // Quiz
 
@@ -579,12 +850,32 @@ export interface ComponentDefinition {
   constraints?: string; // e.g. "Max 1 per page" or "Requires numeric data"
 }
 
+/**
+ * Configuration object for manifest items
+ * Provides hints and educational context for content generation
+ */
+export interface ManifestItemConfig {
+  // General configuration
+  visualType?: string;      // Type of visualization (e.g., 'bar-model', 'number-line')
+  itemCount?: number;       // Number of items to generate
+  difficulty?: string;      // Difficulty level
+
+  // Educational context (especially useful for custom-visual)
+  subject?: string;         // Subject area (e.g., 'Mathematics', 'Science', 'Language Arts')
+  unitTitle?: string;       // Broader unit context
+  keyTerms?: string[];      // Key vocabulary terms to emphasize
+  conceptsCovered?: string[]; // Core concepts to illustrate
+
+  // Allow additional properties for component-specific needs
+  [key: string]: any;
+}
+
 export interface ManifestItem {
   componentId: ComponentId;
   instanceId: string; // Unique ID for the builder to use later
   title: string;      // The heading for this section
   intent: string;     // Instructions for the content generator
-  config?: any;       // Optional hints (e.g., { visualType: 'bar-model' })
+  config?: ManifestItemConfig; // Optional hints and educational context
 }
 
 export interface ExhibitManifest {

@@ -15,7 +15,7 @@ import { CustomVisual } from './primitives/CustomVisual';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { LiveAssistant } from './service/LiveAssistant';
 import { generateExhibitManifest, buildCompleteExhibitFromTopic } from './service/geminiService';
-import { GameState, ExhibitData, WalkThroughRequest, WalkThroughProgress, WalkThroughState, ExhibitManifest } from './types';
+import { GameState, ExhibitData, ExhibitManifest } from './types';
 import { GradeLevelSelector, GradeLevel } from './components/GradeLevelSelector';
 import { ManifestViewer } from './components/ManifestViewer';
 import { ObjectCollection } from './primitives/visual-primitives/ObjectCollection';
@@ -26,6 +26,7 @@ import { SightWordCard } from './primitives/visual-primitives/SightWordCard';
 import { SoundSort } from './primitives/visual-primitives/SoundSort';
 import { LetterPicture } from './primitives/visual-primitives/LetterPicture';
 import { PrimitiveCollectionRenderer } from './components/PrimitiveRenderer';
+import { KnowledgeCheckTester } from './components/KnowledgeCheckTester';
 
 
 export default function App() {
@@ -44,19 +45,12 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<string | null>(null);
 
-  // Walk-Through State
-  const [walkThroughState, setWalkThroughState] = useState<WalkThroughState>({
-    active: false,
-    componentId: null,
-    currentSection: null,
-    highlightIndex: null
-  });
-
-  const [walkThroughRequest, setWalkThroughRequest] = useState<WalkThroughRequest | null>(null);
-
   // Visual Primitives Testing State
   const [showVisualTester, setShowVisualTester] = useState(false);
   const [currentVisualIndex, setCurrentVisualIndex] = useState(0);
+
+  // Knowledge Check Testing State
+  const [showKnowledgeCheckTester, setShowKnowledgeCheckTester] = useState(false);
 
   // Sample data for each visual primitive
   const visualPrimitiveExamples = [
@@ -241,36 +235,6 @@ export default function App() {
       setIsDrawerOpen(true);
   };
 
-  const handleWalkThroughRequest = useCallback((request: WalkThroughRequest) => {
-    console.log('[App] Walk-through requested:', request);
-
-    // Initialize walk-through state
-    setWalkThroughState({
-      active: true,
-      componentId: request.componentId,
-      currentSection: 'brief',
-      highlightIndex: null
-    });
-
-    // Pass request to LiveAssistant
-    setWalkThroughRequest(request);
-  }, []);
-
-  const handleWalkThroughProgress = useCallback((progress: WalkThroughProgress) => {
-    console.log('[App] Walk-through progress:', progress);
-
-    setWalkThroughState(prev => ({
-      ...prev,
-      currentSection: progress.section,
-      highlightIndex: progress.objectiveIndex ?? null,
-      active: !progress.isComplete
-    }));
-
-    // Clear request if complete
-    if (progress.isComplete) {
-      setWalkThroughRequest(null);
-    }
-  }, []);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden selection:bg-blue-500/30">
@@ -308,13 +272,18 @@ export default function App() {
                    ← Exit Tester
                 </button>
             )}
+            {showKnowledgeCheckTester && (
+                <button onClick={() => setShowKnowledgeCheckTester(false)} className="hover:text-white transition-colors">
+                   ← Exit Tester
+                </button>
+            )}
         </div>
       </header>
 
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -385,20 +354,45 @@ export default function App() {
                     ))}
                 </div>
 
-                {/* Visual Primitives Tester Button */}
-                <div className="pt-8">
-                  <button
-                    onClick={() => setShowVisualTester(true)}
-                    className="group relative px-8 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
-                  >
-                    <span className="flex items-center gap-2">
-                      🎨 Test Visual Primitives
-                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                      </svg>
-                    </span>
-                  </button>
-                  <p className="text-xs text-slate-500 mt-2">Preview all visual primitive components</p>
+                {/* Testing Tools Section */}
+                <div className="pt-8 space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>
+                    <span className="text-slate-500 text-xs font-mono uppercase tracking-widest">Testing Tools</span>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
+                  </div>
+
+                  {/* Knowledge Check Tester Button */}
+                  <div>
+                    <button
+                      onClick={() => setShowKnowledgeCheckTester(true)}
+                      className="group relative px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
+                    >
+                      <span className="flex items-center gap-2">
+                        📝 Test Knowledge Check Problems
+                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                      </span>
+                    </button>
+                    <p className="text-xs text-slate-500 mt-2">Create and test specific problem types</p>
+                  </div>
+
+                  {/* Visual Primitives Tester Button */}
+                  <div>
+                    <button
+                      onClick={() => setShowVisualTester(true)}
+                      className="group relative px-8 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
+                    >
+                      <span className="flex items-center gap-2">
+                        🎨 Test Visual Primitives
+                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                      </span>
+                    </button>
+                    <p className="text-xs text-slate-500 mt-2">Preview all visual primitive components</p>
+                  </div>
                 </div>
              </div>
           </div>
@@ -419,6 +413,13 @@ export default function App() {
               </button>
             </div>
             <ManifestViewer manifest={manifest} isLoading={isGeneratingManifest} />
+          </div>
+        )}
+
+        {/* KNOWLEDGE CHECK TESTER STATE */}
+        {gameState === GameState.IDLE && showKnowledgeCheckTester && (
+          <div className="flex-1 animate-fade-in">
+            <KnowledgeCheckTester onBack={() => setShowKnowledgeCheckTester(false)} />
           </div>
         )}
 
@@ -526,13 +527,7 @@ export default function App() {
                     <h2 className="text-5xl font-bold text-white tracking-tight">{exhibitData.topic}</h2>
                     <div className="max-w-4xl mx-auto">
                         <CuratorBrief
-                            data={exhibitData.intro}
-                            onWalkThroughRequest={handleWalkThroughRequest}
-                            highlightedObjectiveIndex={
-                                walkThroughState.active && walkThroughState.componentId === 'curator-brief'
-                                    ? walkThroughState.highlightIndex
-                                    : null
-                            }
+                            data={exhibitData.introBriefing || exhibitData.intro}
                         />
                     </div>
                 </div>
@@ -618,6 +613,24 @@ export default function App() {
                     dataArray={exhibitData.imagePanels || []}
                 />
 
+                {/* Take Home Activity Section */}
+                <PrimitiveCollectionRenderer
+                    componentId="take-home-activity"
+                    dataArray={exhibitData.takeHomeActivities || []}
+                />
+
+                {/* Interactive Passage Section */}
+                <PrimitiveCollectionRenderer
+                    componentId="interactive-passage"
+                    dataArray={exhibitData.interactivePassages || []}
+                />
+
+                {/* Word Builder Section */}
+                <PrimitiveCollectionRenderer
+                    componentId="word-builder"
+                    dataArray={exhibitData.wordBuilders || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">
@@ -679,8 +692,6 @@ export default function App() {
       {gameState === GameState.PLAYING && exhibitData && (
         <LiveAssistant
             exhibitData={exhibitData}
-            walkThroughRequest={walkThroughRequest}
-            onWalkThroughProgress={handleWalkThroughProgress}
         />
       )}
     </div>

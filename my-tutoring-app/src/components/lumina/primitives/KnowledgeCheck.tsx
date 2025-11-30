@@ -1,175 +1,132 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-  KnowledgeCheckData,
-  VisualObjectCollection,
-  VisualComparisonData,
-  LetterTracingData,
-  LetterPictureData,
-  AlphabetSequenceData,
-  RhymingPairsData,
-  SightWordCardData,
-  SoundSortData
-} from '../types';
-import {
-  ObjectCollection,
-  ComparisonPanel,
-  LetterPicture,
-  AlphabetSequence,
-  RhymingPairs,
-  SightWordCard,
-  SoundSort
-} from './visual-primitives';
-import { LetterTracing } from './LetterTracing';
+import React from 'react';
+import { KnowledgeCheckData, ProblemData } from '../types';
+import { ProblemRenderer } from '../config/problemTypeRegistry';
+
+/**
+ * KnowledgeCheck Component
+ *
+ * Supports two modes:
+ * 1. Legacy mode: Single multiple-choice question (backwards compatible)
+ * 2. Problem Registry mode: Single or multiple problems of various types
+ *
+ * The component automatically detects which mode to use based on the data structure.
+ */
 
 interface KnowledgeCheckProps {
-  data: KnowledgeCheckData;
+  data: KnowledgeCheckData | { problems: ProblemData[] };
+}
+
+// Type guard to check if using legacy format
+function isLegacyKnowledgeCheck(data: any): data is KnowledgeCheckData {
+  return 'question' in data && 'options' in data && 'correctAnswerId' in data;
+}
+
+// Type guard to check if using problem registry format
+function isProblemRegistryFormat(data: any): data is { problems: ProblemData[] } {
+  return 'problems' in data && Array.isArray(data.problems);
 }
 
 export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  // Legacy format - convert to problem registry format
+  if (isLegacyKnowledgeCheck(data)) {
+    const legacyProblem: ProblemData = {
+      type: 'multiple_choice',
+      id: 'legacy_mc_1',
+      difficulty: 'medium',
+      gradeLevel: 'elementary',
+      question: data.question,
+      visual: data.visual,
+      options: data.options,
+      correctOptionId: data.correctAnswerId,
+      rationale: data.explanation,
+      teachingNote: '',
+      successCriteria: []
+    };
 
-  const handleSelect = (id: string) => {
-    if (isSubmitted) return;
-    setSelectedId(id);
-  };
-
-  const handleSubmit = () => {
-    if (selectedId) setIsSubmitted(true);
-  };
-
-  const isCorrect = selectedId === data.correctAnswerId;
-
-  return (
-    <div className="w-full max-w-4xl mx-auto my-12 animate-fade-in-up">
-      <div className="glass-panel rounded-3xl overflow-hidden border border-blue-500/20 relative">
-        
-        {/* Header / Terminal Bar */}
-        <div className="bg-slate-900/80 p-4 flex items-center justify-between border-b border-white/5">
+    return (
+      <div className="w-full max-w-4xl mx-auto my-12 animate-fade-in-up">
+        <div className="glass-panel rounded-3xl overflow-hidden border border-blue-500/20 relative">
+          {/* Header */}
+          <div className="bg-slate-900/80 p-4 flex items-center justify-between border-b border-white/5">
             <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                    <span className="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></span>
-                    <span className="w-2 h-2 rounded-full bg-slate-600"></span>
-                </div>
-                <span className="text-xs font-mono uppercase tracking-widest text-blue-400">Concept Verification Terminal</span>
+              <div className="flex gap-1">
+                <span className="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+              </div>
+              <span className="text-xs font-mono uppercase tracking-widest text-blue-400">
+                Concept Verification Terminal
+              </span>
+            </div>
+          </div>
+
+          <div className="p-8 md:p-12">
+            <ProblemRenderer problemData={legacyProblem} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Problem Registry format - render multiple problems
+  if (isProblemRegistryFormat(data)) {
+    const problemCount = data.problems.length;
+
+    return (
+      <div className="w-full max-w-4xl mx-auto my-12 animate-fade-in-up">
+        <div className="glass-panel rounded-3xl overflow-hidden border border-blue-500/20 relative">
+          {/* Header */}
+          <div className="bg-slate-900/80 p-4 flex items-center justify-between border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+              </div>
+              <span className="text-xs font-mono uppercase tracking-widest text-blue-400">
+                Knowledge Assessment Terminal
+              </span>
             </div>
             <div className="text-xs text-slate-500 font-mono">
-                STATUS: {isSubmitted ? (isCorrect ? 'VERIFIED' : 'ANALYSIS COMPLETE') : 'AWAITING INPUT'}
+              {problemCount} {problemCount === 1 ? 'PROBLEM' : 'PROBLEMS'}
             </div>
-        </div>
+          </div>
 
-        <div className="p-8 md:p-12">
-            {/* Question */}
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-8 leading-tight">
-                {data.question}
-            </h3>
-
-            {/* Visual Primitive (if present) */}
-            {data.visual && (
-              <div className="mb-8">
-                {data.visual.type === 'object-collection' && (
-                  <ObjectCollection data={data.visual.data as VisualObjectCollection} />
-                )}
-                {data.visual.type === 'comparison-panel' && (
-                  <ComparisonPanel data={data.visual.data as VisualComparisonData} />
-                )}
-                {data.visual.type === 'letter-tracing' && (
-                  <LetterTracing data={data.visual.data as LetterTracingData} />
-                )}
-                {data.visual.type === 'letter-picture' && (
-                  <LetterPicture data={data.visual.data as LetterPictureData} />
-                )}
-                {data.visual.type === 'alphabet-sequence' && (
-                  <AlphabetSequence data={data.visual.data as AlphabetSequenceData} />
-                )}
-                {data.visual.type === 'rhyming-pairs' && (
-                  <RhymingPairs data={data.visual.data as RhymingPairsData} />
-                )}
-                {data.visual.type === 'sight-word-card' && (
-                  <SightWordCard data={data.visual.data as SightWordCardData} />
-                )}
-                {data.visual.type === 'sound-sort' && (
-                  <SoundSort data={data.visual.data as SoundSortData} />
-                )}
-              </div>
-            )}
-
-            {/* Options Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                {data.options.map((option) => {
-                    let statusClass = "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20"; // Default
-                    
-                    if (selectedId === option.id) {
-                        statusClass = "border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]";
-                    }
-
-                    if (isSubmitted) {
-                         if (option.id === data.correctAnswerId) {
-                             statusClass = "border-emerald-500 bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
-                         } else if (selectedId === option.id && option.id !== data.correctAnswerId) {
-                             statusClass = "border-red-500 bg-red-500/20 opacity-60";
-                         } else {
-                             statusClass = "opacity-40 border-transparent bg-black/20";
-                         }
-                    }
-
-                    return (
-                        <button
-                            key={option.id}
-                            onClick={() => handleSelect(option.id)}
-                            disabled={isSubmitted}
-                            className={`relative text-left p-6 rounded-xl border transition-all duration-300 group ${statusClass}`}
-                        >
-                            <div className="flex items-center gap-4">
-                                <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold font-mono border transition-colors
-                                    ${selectedId === option.id || (isSubmitted && option.id === data.correctAnswerId) ? 'bg-white text-slate-900 border-white' : 'bg-black/30 text-slate-400 border-white/10'}
-                                `}>
-                                    {option.id}
-                                </span>
-                                <span className="text-lg text-slate-200 font-light group-hover:text-white transition-colors">{option.text}</span>
-                            </div>
-                            
-                            {/* Success/Fail Icon overlay */}
-                            {isSubmitted && option.id === data.correctAnswerId && (
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                </div>
-                            )}
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* Action Area */}
-            <div className="flex flex-col items-center">
-                {!isSubmitted ? (
-                     <button
-                        onClick={handleSubmit}
-                        disabled={!selectedId}
-                        className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 hover:shadow-blue-500/40 hover:-translate-y-0.5"
-                     >
-                        Verify Answer
-                     </button>
-                ) : (
-                    <div className="w-full animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-                        <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${isCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 {isCorrect ? 
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                 }
-                             </svg>
-                             <span>{isCorrect ? 'Correct Analysis' : 'Insight'}</span>
-                        </div>
-                        <p className="text-slate-300 leading-relaxed text-lg font-light">
-                            {data.explanation}
-                        </p>
+          <div className="p-8 md:p-12">
+            {/* Problem Collection */}
+            <div className="space-y-16">
+              {data.problems.map((problem, index) => (
+                <div key={problem.id} className="relative">
+                  {/* Problem Number Badge */}
+                  {problemCount > 1 && (
+                    <div className="absolute -left-6 md:-left-8 top-0 flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-400 font-mono text-sm">
+                      {index + 1}
                     </div>
-                )}
+                  )}
+
+                  {/* Problem Content */}
+                  <div className={problemCount > 1 ? 'ml-4 md:ml-6' : ''}>
+                    <ProblemRenderer problemData={problem} />
+                  </div>
+
+                  {/* Divider between problems */}
+                  {index < problemCount - 1 && (
+                    <div className="mt-16 mb-0 h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+                  )}
+                </div>
+              ))}
             </div>
+          </div>
         </div>
+      </div>
+    );
+  }
+
+  // Fallback for unknown format
+  return (
+    <div className="w-full max-w-4xl mx-auto my-12">
+      <div className="p-4 bg-red-900/20 border border-red-500/50 rounded-lg text-red-400">
+        Invalid KnowledgeCheck data format
       </div>
     </div>
   );
