@@ -20,7 +20,9 @@ import {
   ManifestItemConfig,
   InteractivePassageData,
   IntroBriefingData,
-  WordBuilderData
+  WordBuilderData,
+  ProblemType,
+  ProblemData
 } from "../types";
 
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
@@ -1631,6 +1633,417 @@ Now generate ${count} problem${count > 1 ? 's' : ''} following this structure an
 };
 
 /**
+ * Generate matching activity problems for KnowledgeCheck component
+ * Following the problem registry architecture from KNOWLEDGE_CHECK_SYSTEM.md
+ */
+export const generateMatchingProblems = async (
+  topic: string,
+  gradeLevel: string,
+  count: number = 1,
+  context?: string
+): Promise<any[]> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  // Define schema for matching activity problem generation
+  const matchingSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      problems: {
+        type: Type.ARRAY,
+        description: `Array of ${count} matching activity problems`,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: {
+              type: Type.STRING,
+              description: "Unique identifier (e.g., 'match_1', 'match_2')"
+            },
+            difficulty: {
+              type: Type.STRING,
+              enum: ["easy", "medium", "hard"],
+              description: "Problem difficulty level - Easy: 3-4 matches, Medium: 5-6 matches, Hard: 7-8 matches"
+            },
+            prompt: {
+              type: Type.STRING,
+              description: "Clear instruction for the matching task (e.g., 'Match each scientist to their discovery', 'Connect each country with its capital')"
+            },
+            leftItems: {
+              type: Type.ARRAY,
+              description: "Items in the left column (3-8 items depending on difficulty). These are what students will select first.",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: {
+                    type: Type.STRING,
+                    description: "Unique identifier (e.g., 'L1', 'L2', 'L3')"
+                  },
+                  text: {
+                    type: Type.STRING,
+                    description: "The text to display"
+                  }
+                },
+                required: ["id", "text"]
+              }
+            },
+            rightItems: {
+              type: Type.ARRAY,
+              description: "Items in the right column (same count as leftItems). These are the matching targets.",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: {
+                    type: Type.STRING,
+                    description: "Unique identifier (e.g., 'R1', 'R2', 'R3')"
+                  },
+                  text: {
+                    type: Type.STRING,
+                    description: "The text to display"
+                  }
+                },
+                required: ["id", "text"]
+              }
+            },
+            mappings: {
+              type: Type.ARRAY,
+              description: "Correct mappings from left items to right items. Each left item maps to exactly one right item (1:1 relationship).",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  leftId: {
+                    type: Type.STRING,
+                    description: "ID of the left item"
+                  },
+                  rightIds: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                    description: "Array containing exactly ONE right item ID (use array format for consistency, but only include one ID)"
+                  }
+                },
+                required: ["leftId", "rightIds"]
+              }
+            },
+            rationale: {
+              type: Type.STRING,
+              description: "Detailed explanation of the relationships and why they're important (2-4 sentences)"
+            },
+            teachingNote: {
+              type: Type.STRING,
+              description: "Optional teaching tip about the relationships, common confusions, or mnemonic devices (can be empty string)"
+            },
+            successCriteria: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Learning objectives this problem assesses (1-3 criteria)"
+            }
+          },
+          required: ["id", "difficulty", "prompt", "leftItems", "rightItems", "mappings", "rationale", "teachingNote", "successCriteria"]
+        }
+      }
+    },
+    required: ["problems"]
+  };
+
+  const prompt = `You are an expert educational assessment designer creating matching activities for knowledge checks.
+
+🎯 TOPIC: ${topic}
+📚 TARGET AUDIENCE: ${gradeLevelContext}
+${context ? `📖 ADDITIONAL CONTEXT: ${context}\n` : ''}
+🔢 NUMBER OF PROBLEMS: ${count}
+
+## Your Mission:
+Create ${count} high-quality matching activity problem${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".
+
+## What is a Matching Activity?
+A matching activity presents two columns of items where students must identify the correct relationships between items in the left column and items in the right column. This tests their ability to make connections and understand relationships.
+
+## Quality Standards:
+
+### 1. PROMPT DESIGN
+- Write a clear, specific instruction (e.g., "Match each scientist to their discovery")
+- Make it obvious what kind of relationship to look for
+- Use age-appropriate language
+- Be specific about what's being matched
+
+### 2. DIFFICULTY LEVELS (CRITICAL - FOLLOW EXACTLY)
+- **EASY**: Exactly 3-4 matching pairs
+- **MEDIUM**: Exactly 5-6 matching pairs
+- **HARD**: Exactly 7-8 matching pairs
+- More pairs = harder because there are more options to choose from
+
+### 3. ITEM DESIGN (Left Column)
+- Use clear, concise labels
+- Keep items parallel in structure (all nouns, all people, all concepts, etc.)
+- Make items distinct from each other
+- Avoid overly similar items that would cause confusion
+- Left items are typically the "key" items (e.g., scientists, countries, terms)
+
+### 4. ITEM DESIGN (Right Column)
+- Should match the grammatical structure needed for the relationship
+- Keep parallel structure across all right items
+- Make each right item clearly distinct
+- Right items are typically the "values" (e.g., discoveries, capitals, definitions)
+
+### 5. RELATIONSHIP DESIGN
+- Create ONE-TO-ONE relationships (each left item matches to exactly ONE right item)
+- Even though rightIds is an array, ONLY include ONE ID per mapping
+- Ensure all relationships are factually correct and unambiguous
+- Test important, meaningful relationships (not trivial connections)
+- All left items must have a match (no unmatched items)
+- All right items must have a match (no extra distractors)
+
+### 6. ITEM BALANCE
+- Keep text length similar across items (don't make one much longer)
+- Vary the complexity appropriately for grade level
+- Don't give away answers through text length or obvious patterns
+- Randomize the order (don't put matches in the same position)
+
+### 7. RELATIONSHIP TYPES (Choose what fits the topic)
+- **Cause → Effect**: "Global warming" → "Rising sea levels"
+- **Person → Achievement**: "Marie Curie" → "Discovery of radium"
+- **Term → Definition**: "Photosynthesis" → "Process plants use to make food"
+- **Location → Feature**: "Egypt" → "Pyramids of Giza"
+- **Category → Example**: "Mammals" → "Whale"
+- **Part → Whole**: "Chapter" → "Book"
+- **Symbol → Meaning**: "H₂O" → "Water"
+- **Question → Answer**: "What is the capital of France?" → "Paris"
+
+### 8. RATIONALE (Most Important!)
+- Explain the nature of the relationships
+- Highlight why these connections matter
+- Connect to broader concepts or patterns
+- Address any potentially confusing pairs
+- Use clear, educational language
+- 2-4 sentences that genuinely teach
+
+### 9. TEACHING NOTE
+- Common mistakes students make
+- Helpful mnemonics or memory tricks
+- Ways to remember the relationships
+- Connections to other concepts
+
+## Example Structure:
+
+EASY (4 pairs - Elementary Science):
+{
+  "id": "match_1",
+  "difficulty": "easy",
+  "prompt": "Match each animal to where it lives",
+  "leftItems": [
+    { "id": "L1", "text": "Fish" },
+    { "id": "L2", "text": "Bird" },
+    { "id": "L3", "text": "Rabbit" },
+    { "id": "L4", "text": "Monkey" }
+  ],
+  "rightItems": [
+    { "id": "R1", "text": "Ocean" },
+    { "id": "R2", "text": "Sky/Trees" },
+    { "id": "R3", "text": "Underground burrow" },
+    { "id": "R4", "text": "Tree canopy" }
+  ],
+  "mappings": [
+    { "leftId": "L1", "rightIds": ["R1"] },
+    { "leftId": "L2", "rightIds": ["R2"] },
+    { "leftId": "L3", "rightIds": ["R3"] },
+    { "leftId": "L4", "rightIds": ["R4"] }
+  ],
+  "rationale": "Animals have adapted to live in specific habitats based on their physical features and needs. Fish have gills for breathing underwater, birds have wings for flying, rabbits dig burrows for shelter and safety, and monkeys have strong limbs for climbing and living in trees. Understanding animal habitats helps us see how species are specially suited to their environments.",
+  "teachingNote": "Some students may confuse where monkeys and birds live since both can be in trees. Emphasize that birds primarily fly and nest in trees, while monkeys live and move through the tree canopy. You can extend this by asking: 'What would happen if a fish tried to live on land?' to reinforce adaptation concepts.",
+  "successCriteria": [
+    "Identify animal habitats",
+    "Understand adaptation to environment",
+    "Match organisms to ecosystems"
+  ]
+}
+
+MEDIUM (6 pairs - Middle School History):
+{
+  "id": "match_2",
+  "difficulty": "medium",
+  "prompt": "Match each historical figure to their major contribution",
+  "leftItems": [
+    { "id": "L1", "text": "Isaac Newton" },
+    { "id": "L2", "text": "Marie Curie" },
+    { "id": "L3", "text": "Albert Einstein" },
+    { "id": "L4", "text": "Charles Darwin" },
+    { "id": "L5", "text": "Galileo Galilei" },
+    { "id": "L6", "text": "Ada Lovelace" }
+  ],
+  "rightItems": [
+    { "id": "R1", "text": "Laws of Motion and Gravity" },
+    { "id": "R2", "text": "Research on Radioactivity" },
+    { "id": "R3", "text": "Theory of Relativity" },
+    { "id": "R4", "text": "Theory of Evolution" },
+    { "id": "R5", "text": "Telescopic Astronomy" },
+    { "id": "R6", "text": "First Computer Algorithm" }
+  ],
+  "mappings": [
+    { "leftId": "L1", "rightIds": ["R1"] },
+    { "leftId": "L2", "rightIds": ["R2"] },
+    { "leftId": "L3", "rightIds": ["R3"] },
+    { "leftId": "L4", "rightIds": ["R4"] },
+    { "leftId": "L5", "rightIds": ["R5"] },
+    { "leftId": "L6", "rightIds": ["R6"] }
+  ],
+  "rationale": "These scientists revolutionized our understanding of the natural world across different disciplines. Newton explained how objects move and gravity works. Curie pioneered research into radioactive elements. Einstein transformed physics with relativity. Darwin explained how species change over time. Galileo used telescopes to study space. Lovelace created the first computer program before computers even existed. Each contribution built on previous knowledge and opened new fields of study.",
+  "teachingNote": "Students often confuse Newton and Einstein since both worked in physics, or Darwin and Galileo since both challenged established beliefs. Help students create mental associations: Newton = falling apple, Einstein = E=mc², Curie = radioactive elements, Darwin = finches/evolution, Galileo = telescope, Lovelace = early programming. Discuss how these discoveries connect - many later scientists built upon Newton's work.",
+  "successCriteria": [
+    "Connect scientists to their discoveries",
+    "Recognize historical contributions to science",
+    "Understand the impact of scientific breakthroughs"
+  ]
+}
+
+## Important Guidelines:
+
+✅ DO:
+- Create meaningful, educational relationships
+- Use parallel structure in both columns
+- Make relationships unambiguous (one clear correct match)
+- Balance difficulty appropriately
+- Include exactly ONE ID in each rightIds array
+- Randomize item order (don't put matches side-by-side)
+- Choose topics students should know or can learn from
+- Provide rich rationales that explain the connections
+
+❌ DON'T:
+- Create ambiguous relationships (multiple possible correct answers)
+- Use obscure or overly difficult pairings for the grade level
+- Put multiple IDs in rightIds arrays (always exactly one)
+- Make items too similar to each other
+- Leave any items unmatched
+- Add extra distractors to right column
+- Create patterns that give away answers (like alphabetical order)
+- Use relationships based on trivial facts
+
+## Additional Tips:
+
+### For Toddler/Preschool:
+- 3 pairs maximum (EASY difficulty)
+- Use very familiar, concrete items (animals and sounds, shapes and colors)
+- Relationships should be obvious and visual
+- Use simple, one-word labels where possible
+
+### For Elementary:
+- 3-5 pairs (EASY to MEDIUM)
+- Mix concrete and slightly abstract relationships
+- Can introduce academic connections (vocabulary to definitions, math terms to symbols)
+- Use complete but simple phrases
+
+### For Middle School:
+- 5-6 pairs (MEDIUM difficulty)
+- More abstract or academic relationships
+- Can test historical facts, scientific concepts, literary analysis
+- Expect students to know or learn specific content
+
+### For High School+:
+- 6-8 pairs (MEDIUM to HARD)
+- Complex academic relationships
+- Can test nuanced understanding and advanced concepts
+- Expect detailed domain knowledge
+
+Now generate ${count} problem${count > 1 ? 's' : ''} following this structure and quality standard.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: matchingSchema,
+        temperature: 0.8,
+      },
+    });
+
+    if (!response.text) throw new Error("No content generated");
+    const data = JSON.parse(response.text);
+
+    // Transform to match MatchingActivityProblemData interface
+    const problems = data.problems.map((problem: any) => ({
+      type: 'matching_activity',
+      id: problem.id,
+      difficulty: problem.difficulty,
+      gradeLevel: gradeLevel,
+      prompt: problem.prompt,
+      leftItems: problem.leftItems,
+      rightItems: problem.rightItems,
+      mappings: problem.mappings,
+      rationale: problem.rationale,
+      teachingNote: problem.teachingNote,
+      successCriteria: problem.successCriteria
+    }));
+
+    return problems;
+  } catch (error) {
+    console.error("Matching activity problem generation error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Generate knowledge check problems based on manifest config
+ * This is the main entry point for manifest-driven problem generation
+ *
+ * @param topic - The topic to generate problems about
+ * @param gradeLevel - Grade level for appropriate difficulty
+ * @param config - Manifest configuration specifying problemType, count, difficulty
+ * @param context - Optional additional context
+ * @returns Array of problems matching the specified type
+ */
+export const generateKnowledgeCheckProblems = async (
+  topic: string,
+  gradeLevel: string,
+  config?: {
+    problemType?: ProblemType;
+    count?: number;
+    difficulty?: string;
+    context?: string;
+  }
+): Promise<ProblemData[]> => {
+  const problemType = config?.problemType || 'multiple_choice';
+  const count = config?.count || 1;
+  const context = config?.context;
+
+  console.log('🎲 [generateKnowledgeCheckProblems] Starting problem generation:');
+  console.log('  📝 Topic:', topic);
+  console.log('  🎓 Grade Level:', gradeLevel);
+  console.log('  🎯 Problem Type:', problemType);
+  console.log('  🔢 Count:', count);
+  console.log('  📋 Context:', context || '(none)');
+  console.log('  ⚙️ Full Config:', JSON.stringify(config, null, 2));
+
+  // Map problem types to their generator functions
+  const generatorMap: Record<ProblemType, (topic: string, gradeLevel: string, count: number, context?: string) => Promise<any[]>> = {
+    'multiple_choice': generateMultipleChoiceProblems,
+    'true_false': generateTrueFalseProblems,
+    'fill_in_blanks': generateFillInBlanksProblems,
+    'matching_activity': generateMatchingProblems,
+    'sequencing_activity': generateSequencingProblems,
+    'categorization_activity': generateCategorizationProblems,
+    'scenario_question': async () => { throw new Error('Scenario questions not yet implemented'); },
+    'short_answer': async () => { throw new Error('Short answer not yet implemented'); },
+  };
+
+  const generator = generatorMap[problemType];
+  if (!generator) {
+    console.error(`❌ Unknown problem type: ${problemType}`);
+    throw new Error(`Unknown problem type: ${problemType}`);
+  }
+
+  console.log(`  🚀 Calling generator function for: ${problemType}`);
+  console.log(`  📞 Generator params: topic="${topic}", gradeLevel="${gradeLevel}", count=${count}, context="${context || ''}"`);
+
+  try {
+    const problems = await generator(topic, gradeLevel, count, context);
+    console.log(`  ✅ Successfully generated ${problems.length} problem(s) of type: ${problemType}`);
+    console.log(`  📦 Generated problems:`, JSON.stringify(problems, null, 2));
+    return problems as ProblemData[];
+  } catch (error) {
+    console.error(`❌ Error generating ${problemType} problems:`, error);
+    throw error;
+  }
+};
+
+/**
  * Generate sequencing activity problems for KnowledgeCheck component
  * Following the problem registry architecture from KNOWLEDGE_CHECK_SYSTEM.md
  */
@@ -2087,6 +2500,13 @@ const manifestSchema: Schema = {
               difficulty: { type: Type.STRING, description: "Difficulty level" },
               subject: { type: Type.STRING, description: "Subject area (e.g., 'Mathematics', 'Science', 'Language Arts')" },
               unitTitle: { type: Type.STRING, description: "Broader unit context" },
+              problemType: {
+                type: Type.STRING,
+                enum: ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity", "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"],
+                description: "For knowledge-check components: Type of problem to generate (e.g., 'multiple_choice', 'true_false', 'sequencing_activity')"
+              },
+              count: { type: Type.NUMBER, description: "For knowledge-check components: Number of problems to generate" },
+              gradeLevel: { type: Type.STRING, description: "For knowledge-check components: Override grade level for this specific check" },
               keyTerms: {
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
@@ -2120,6 +2540,14 @@ export const generateComponentContent = async (
   gradeLevel: string
 ): Promise<any> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  console.log(`🔧 [generateComponentContent] Processing: ${item.componentId} (${item.instanceId})`);
+  if (item.componentId === 'knowledge-check') {
+    console.log('  📋 Knowledge Check Item Details:');
+    console.log('  - Title:', item.title);
+    console.log('  - Intent:', item.intent);
+    console.log('  - Config:', JSON.stringify(item.config, null, 2));
+  }
 
   switch (item.componentId) {
     case 'curator-brief':
@@ -2490,6 +2918,37 @@ Generate a deep-dive editorial section with multiple subsections.`,
  * Generate Knowledge Check content
  */
 const generateKnowledgeCheckContent = async (item: any, topic: string, gradeContext: string) => {
+  console.log('🎯 [Knowledge Check] generateKnowledgeCheckContent called with:');
+  console.log('  📦 item:', JSON.stringify(item, null, 2));
+  console.log('  📚 topic:', topic);
+  console.log('  🎓 gradeContext:', gradeContext);
+
+  // NEW: If config specifies a problemType, use the problem registry system
+  if (item.config?.problemType) {
+    console.log('  ✅ Using config-based problem generation');
+    console.log('  🎲 Problem Type:', item.config.problemType);
+    console.log('  📊 Config:', JSON.stringify(item.config, null, 2));
+
+    const problems = await generateKnowledgeCheckProblems(
+      topic,
+      item.config.gradeLevel || 'elementary',
+      {
+        problemType: item.config.problemType,
+        count: item.config.count || 1,
+        difficulty: item.config.difficulty,
+        context: item.intent
+      }
+    );
+
+    return {
+      type: 'knowledge-check',
+      data: { problems } // Return in problem registry format
+    };
+  }
+
+  console.log('  ⚠️ No config.problemType found - using LEGACY format');
+
+  // LEGACY: Fall back to old single multiple-choice format with visuals
   // Define reusable schemas for visual primitives
   const objectItemSchema: Schema = {
     type: Type.OBJECT,
@@ -3990,6 +4449,8 @@ OUTPUT INSTRUCTIONS:
     - For math-visual: {"visualType": "number-line"}
     - For custom-visual: Include subject, keyTerms, and conceptsCovered to improve content quality
       Example: {"subject": "Mathematics", "keyTerms": ["addition", "sum", "equals"], "conceptsCovered": ["combining quantities", "number sense"]}
+    - For knowledge-check: MUST include problemType (choose from: "multiple_choice", "true_false", "fill_in_blanks", "matching_activity", "sequencing_activity", "categorization_activity")
+      Example: {"problemType": "multiple_choice", "count": 1, "difficulty": "easy"}
     - For any component: Can include itemCount, difficulty, unitTitle
 
 EXAMPLE MANIFEST STRUCTURE:
@@ -4026,7 +4487,12 @@ EXAMPLE MANIFEST STRUCTURE:
       "componentId": "knowledge-check",
       "instanceId": "quiz-1",
       "title": "Check Your Understanding",
-      "intent": "Create a simple addition question: If you have 2 apples and get 1 more, how many do you have?"
+      "intent": "Create a simple addition question: If you have 2 apples and get 1 more, how many do you have?",
+      "config": {
+        "problemType": "multiple_choice",
+        "count": 1,
+        "difficulty": "easy"
+      }
     }
   ]
 }
@@ -4541,6 +5007,317 @@ Create an engaging, age-appropriate Intro Briefing that will excite students abo
     return result as IntroBriefingData;
   } catch (error) {
     console.error('Error generating intro briefing:', error);
+    throw error;
+  }
+};
+
+/**
+ * Generate Relational Mapping schema for chemistry molecular bonding
+ *
+ * This generates a cognitive primitive that shows how entities (atoms) connect
+ * and why those connections exist, focusing on molecular bonding in chemistry.
+ */
+export const generateRelationalMappingChemistry = async (
+  molecule: string,
+  gradeLevel: string,
+  topic?: string
+): Promise<any> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      primitive: {
+        type: Type.STRING,
+        description: "Must be 'relational_mapping'"
+      },
+      pedagogicalIntent: {
+        type: Type.STRING,
+        enum: ['understand_mechanism', 'trace_causation', 'apply_rules', 'make_predictions'],
+        description: 'The learning goal - for molecular bonding, typically understand_mechanism'
+      },
+      domain: {
+        type: Type.OBJECT,
+        properties: {
+          field: {
+            type: Type.STRING,
+            description: "Must be 'chemistry'"
+          },
+          subtype: {
+            type: Type.STRING,
+            description: "Must be 'molecular_bonding'"
+          },
+          renderingHints: {
+            type: Type.OBJECT,
+            properties: {
+              entityRepresentation: {
+                type: Type.STRING,
+                enum: ['atom_simple', 'atom_with_orbitals', 'lewis_dot', 'ball_stick', 'space_filling'],
+                description: 'How to visualize atoms - use atom_simple for basic 3D spheres'
+              },
+              connectionVisualization: {
+                type: Type.STRING,
+                enum: ['electron_sharing', 'ionic_transfer', 'single_bond', 'double_bond', 'hydrogen_bond'],
+                description: 'How to show bonds - use electron_sharing for covalent bonds'
+              },
+              spatialLayout: {
+                type: Type.STRING,
+                enum: ['molecular_geometry', 'crystal_lattice', 'orbital_diagram', 'reaction_equation'],
+                description: 'Overall arrangement - use molecular_geometry for 3D molecule structure'
+              }
+            },
+            required: ['entityRepresentation', 'connectionVisualization', 'spatialLayout']
+          }
+        },
+        required: ['field', 'subtype', 'renderingHints']
+      },
+      content: {
+        type: Type.OBJECT,
+        properties: {
+          title: {
+            type: Type.STRING,
+            description: 'Clear title describing the molecule and concept'
+          },
+          centralQuestion: {
+            type: Type.STRING,
+            description: 'The key question students should be able to answer, e.g., "Why does oxygen bond with two hydrogen atoms?"'
+          },
+          entities: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: {
+                  type: Type.STRING,
+                  description: 'Unique identifier for the atom, e.g., "oxygen", "hydrogen_1"'
+                },
+                label: {
+                  type: Type.STRING,
+                  description: 'Element name, e.g., "Oxygen", "Hydrogen"'
+                },
+                properties: {
+                  type: Type.OBJECT,
+                  properties: {
+                    valenceElectrons: { type: Type.NUMBER },
+                    electronegativity: { type: Type.NUMBER },
+                    desiredElectrons: { type: Type.NUMBER }
+                  },
+                  description: 'Chemical properties like valenceElectrons, electronegativity, desiredElectrons'
+                },
+                visualState: {
+                  type: Type.OBJECT,
+                  properties: {
+                    orbitals: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING }
+                    },
+                    unpairedElectrons: { type: Type.NUMBER },
+                    lonePairs: { type: Type.NUMBER }
+                  },
+                  description: 'Visual data like orbitals, unpairedElectrons, lonePairs - optional'
+                },
+                position: {
+                  type: Type.OBJECT,
+                  properties: {
+                    x: { type: Type.NUMBER },
+                    y: { type: Type.NUMBER },
+                    z: { type: Type.NUMBER }
+                  },
+                  required: ['x', 'y', 'z'],
+                  description: '3D position in Angstroms, centered at origin'
+                }
+              },
+              required: ['id', 'label', 'properties', 'position']
+            },
+            description: 'Array of atoms in the molecule (2-8 atoms)'
+          },
+          relationships: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                from: {
+                  type: Type.STRING,
+                  description: 'Entity ID of the first atom'
+                },
+                to: {
+                  type: Type.STRING,
+                  description: 'Entity ID of the second atom'
+                },
+                type: {
+                  type: Type.STRING,
+                  description: 'Bond type: covalent_bond, ionic_bond, hydrogen_bond, etc.'
+                },
+                mechanism: {
+                  type: Type.STRING,
+                  description: 'How the bond forms: electron_sharing, electron_transfer, etc.'
+                },
+                properties: {
+                  type: Type.OBJECT,
+                  properties: {
+                    sharedElectrons: { type: Type.NUMBER },
+                    bondPolarity: { type: Type.STRING },
+                    bondAngle: { type: Type.NUMBER },
+                    bondOrder: { type: Type.NUMBER }
+                  },
+                  description: 'Bond properties like sharedElectrons, bondPolarity, bondAngle, bondOrder'
+                },
+                explanation: {
+                  type: Type.STRING,
+                  description: 'Student-facing explanation of why this bond exists and how it forms'
+                }
+              },
+              required: ['from', 'to', 'type', 'mechanism', 'properties', 'explanation']
+            },
+            description: 'Array of bonds between atoms'
+          },
+          emergentProperties: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                property: {
+                  type: Type.STRING,
+                  description: 'The emergent property name, e.g., "molecular_polarity"'
+                },
+                explanation: {
+                  type: Type.STRING,
+                  description: 'Why this property emerges from the structure and bonds'
+                },
+                consequence: {
+                  type: Type.STRING,
+                  description: 'Real-world implications of this property'
+                }
+              },
+              required: ['property', 'explanation', 'consequence']
+            },
+            description: 'Properties that emerge from the molecular structure (1-3)'
+          },
+          satisfiedConstraints: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.STRING
+            },
+            description: 'Chemical rules satisfied, e.g., "Oxygen achieves 8 valence electrons (octet rule)", "VSEPR theory predicts bent geometry"'
+          }
+        },
+        required: ['title', 'centralQuestion', 'entities', 'relationships', 'emergentProperties', 'satisfiedConstraints']
+      },
+      assessmentHooks: {
+        type: Type.OBJECT,
+        properties: {
+          predict: {
+            type: Type.STRING,
+            description: 'Question asking what would happen if something changed, e.g., "What if you replaced oxygen with sulfur?"'
+          },
+          transfer: {
+            type: Type.STRING,
+            description: 'Question applying the concept to a different context, e.g., "Why does ammonia have a different bond angle?"'
+          },
+          explain: {
+            type: Type.STRING,
+            description: 'Question asking for deeper explanation of the mechanism'
+          }
+        },
+        description: 'At least one assessment hook required'
+      },
+      metadata: {
+        type: Type.OBJECT,
+        properties: {
+          gradeLevel: { type: Type.STRING },
+          difficulty: {
+            type: Type.STRING,
+            enum: ['intro', 'standard', 'advanced']
+          },
+          estimatedTime: {
+            type: Type.NUMBER,
+            description: 'Time in minutes'
+          }
+        }
+      }
+    },
+    required: ['primitive', 'pedagogicalIntent', 'domain', 'content', 'assessmentHooks']
+  };
+
+  const prompt = `You are generating a Relational Mapping schema for chemistry education.
+
+Target Audience: ${gradeLevelContext}
+Topic Context: ${topic || 'Chemistry fundamentals'}
+Molecule: ${molecule}
+
+## Your Task
+Generate a complete relational mapping schema that explains the molecular structure of ${molecule}.
+
+## Requirements
+
+### Entities (Atoms)
+- Include all atoms in the molecule (2-8 atoms)
+- For each atom, provide:
+  - Unique ID (e.g., "oxygen", "hydrogen_1", "hydrogen_2")
+  - Element name
+  - Chemical properties: valenceElectrons, electronegativity, desiredElectrons
+  - 3D position coordinates in Angstroms (realistic molecular geometry)
+  - Optional visualState with orbital information for advanced learners
+
+### Relationships (Bonds)
+- Define all bonds between atoms
+- For each bond:
+  - Specify atom IDs (from and to)
+  - Bond type (covalent_bond, ionic_bond, etc.)
+  - Mechanism (electron_sharing, electron_transfer)
+  - Properties: sharedElectrons, bondPolarity, bondAngle (if applicable)
+  - Clear explanation of WHY this bond forms
+
+### Emergent Properties
+- Identify 1-3 properties that emerge from the molecular structure
+- Examples: molecular_polarity, dipole_moment, reactivity, solubility
+- For each property:
+  - Explain WHY it emerges from the bonding and structure
+  - Describe real-world CONSEQUENCES
+
+### Satisfied Constraints
+- List chemical rules/laws that are satisfied
+- Examples: "Octet rule", "VSEPR theory", "Electronegativity differences explain polarity"
+
+### Assessment Hooks
+- Predict: Ask what would happen if an atom were substituted
+- Transfer: Ask how the same principles apply to a similar molecule
+- Explain: Ask for deeper mechanistic understanding
+
+## Rendering Hints
+- entityRepresentation: Use "atom_simple" for basic 3D spheres
+- connectionVisualization: Use "electron_sharing" for covalent bonds
+- spatialLayout: Use "molecular_geometry" for 3D structure
+
+## Example Molecules
+- Water (H₂O): Bent geometry, polar, hydrogen bonding
+- Methane (CH₄): Tetrahedral, nonpolar, single bonds
+- Ammonia (NH₃): Trigonal pyramidal, polar, lone pair
+- Carbon Dioxide (CO₂): Linear, nonpolar, double bonds
+- Oxygen (O₂): Linear, nonpolar, double bond
+
+Generate an accurate, educational relational mapping schema that will help students understand the structure and properties of ${molecule}.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 0.7,
+      },
+    });
+
+    const result = response.text ? JSON.parse(response.text) : null;
+
+    if (!result) {
+      throw new Error('No data returned from Gemini API');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error generating relational mapping:', error);
     throw error;
   }
 };

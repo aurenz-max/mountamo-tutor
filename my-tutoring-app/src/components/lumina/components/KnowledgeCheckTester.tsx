@@ -9,7 +9,8 @@ import {
   generateTrueFalseProblems,
   generateFillInBlanksProblems,
   generateCategorizationProblems,
-  generateSequencingProblems
+  generateSequencingProblems,
+  generateMatchingProblems
 } from '../service/geminiService';
 
 interface KnowledgeCheckTesterProps {
@@ -38,6 +39,7 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
     'fill_in_blanks': generateFillInBlanksProblems,
     'categorization_activity': generateCategorizationProblems,
     'sequencing_activity': generateSequencingProblems,
+    'matching_activity': generateMatchingProblems,
   };
 
   const handleGenerate = async () => {
@@ -342,8 +344,8 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
               <ul className="text-slate-300 text-sm space-y-1">
                 <li>• <strong>Generate & Preview:</strong> Replace current preview with newly generated problems</li>
                 <li>• <strong>Add to List:</strong> Add new problems to existing collection for multi-problem testing</li>
-                <li>• <strong>Available Generators:</strong> Multiple Choice, True/False, Fill in Blanks, Categorization, Sequencing</li>
-                <li>• <strong>Coming Soon:</strong> Matching, Scenario, Short Answer</li>
+                <li>• <strong>Available Generators:</strong> Multiple Choice, True/False, Fill in Blanks, Categorization, Sequencing, Matching</li>
+                <li>• <strong>Coming Soon:</strong> Scenario, Short Answer</li>
               </ul>
             </div>
           </div>
