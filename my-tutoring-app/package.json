@@ -55,6 +55,7 @@
     "react-dom": "^18.2.0",
     "react-p5": "^1.4.1",
     "recharts": "^2.15.0",
+    "server-only": "^0.0.1",
     "sonner": "^2.0.7",
     "swr": "^2.3.6",
     "tailwind-merge": "^2.6.0",

@@ -11,7 +11,7 @@ import {
   generateCategorizationProblems,
   generateSequencingProblems,
   generateMatchingProblems
-} from '../service/geminiService';
+} from '../service/geminiClient-api';
 
 interface KnowledgeCheckTesterProps {
   onBack: () => void;

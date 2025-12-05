@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, MouseEvent } from 'react';
 import { ConceptCardData } from '../types';
-import { generateConceptImage } from '../service/geminiService';
+import { generateConceptImage } from '../service/geminiClient-api';
 
 interface ConceptCardProps {
   data: ConceptCardData;

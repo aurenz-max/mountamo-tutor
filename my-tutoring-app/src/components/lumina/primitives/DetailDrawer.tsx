@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ItemDetailData } from '@/types/lumina';
-import { generateItemDetail, generateConceptImage } from '@/lib/lumina/geminiService';
+import { generateItemDetail, generateConceptImage } from '@/lib/lumina/geminiClient-api';
 
 interface DetailDrawerProps {
   isOpen: boolean;

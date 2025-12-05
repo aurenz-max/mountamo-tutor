@@ -1,10 +1,7 @@
 
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { Type, Schema } from "@google/genai";
 import { ExhibitData, ItemDetailData } from "@/types/lumina";
-
-const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+import { ai } from "./geminiClient";
 
 // --- VISUALIZATION GUIDELINES ---
 

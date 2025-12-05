@@ -14,7 +14,7 @@ import { SentenceAnalyzer } from './primitives/SentenceAnalyzer';
 import { CustomVisual } from './primitives/CustomVisual';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { LiveAssistant } from './service/LiveAssistant';
-import { generateExhibitManifest, buildCompleteExhibitFromTopic } from './service/geminiService';
+import { generateExhibitManifest, buildCompleteExhibitFromTopic } from './service/geminiClient-api';
 import { GameState, ExhibitData, ExhibitManifest } from './types';
 import { GradeLevelSelector, GradeLevel } from './components/GradeLevelSelector';
 import { ManifestViewer } from './components/ManifestViewer';

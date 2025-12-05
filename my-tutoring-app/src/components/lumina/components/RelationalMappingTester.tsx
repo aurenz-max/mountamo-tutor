@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RelationalMappingSchema } from '../types';
 import RelationalMapping from '../primitives/RelationalMapping';
-import { generateRelationalMappingChemistry } from '../service/geminiService';
+import { generateRelationalMappingChemistry } from '../service/geminiClient-api';
 
 interface RelationalMappingTesterProps {
   onBack?: () => void;

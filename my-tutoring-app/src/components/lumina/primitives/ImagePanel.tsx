@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ImageIcon, MapIcon, Beaker, BookIcon, GlobeIcon } from 'lucide-react';
-import { generateConceptImage } from '../service/geminiService';
+import { generateConceptImage } from '../service/geminiClient-api';
 
 interface ImagePanelData {
   title: string;

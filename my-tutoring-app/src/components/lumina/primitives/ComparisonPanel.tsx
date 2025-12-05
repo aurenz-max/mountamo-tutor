@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ComparisonData } from '../types';
-import { generateConceptImage } from '../service/geminiService';
+import { generateConceptImage } from '../service/geminiClient-api';
 
 interface ComparisonPanelProps {
   data: ComparisonData;

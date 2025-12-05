@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { FeatureExhibitData } from '../types';
-import { generateConceptImage } from '../service/geminiService';
+import { generateConceptImage } from '../service/geminiClient-api';
 
 interface FeatureExhibitProps {
   data: FeatureExhibitData;
