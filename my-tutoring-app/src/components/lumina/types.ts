@@ -778,7 +778,6 @@ export interface ExhibitData {
   takeHomeActivities?: TakeHomeActivityData[];
   interactivePassages?: InteractivePassageData[];
   wordBuilders?: WordBuilderData[];
-  relationalMappings?: RelationalMappingSchema[]; // Science primitives
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -842,9 +841,6 @@ export type ComponentId =
   | 'interactive-passage' // Reading comprehension with evidence highlighting
   | 'word-builder'        // Vocabulary & Morphology - construct words from roots, prefixes, suffixes
 
-  // Science Primitives (Cognitive Operations)
-  | 'relational-mapping'  // Show how entities connect and why (chemistry, physics, biology)
-
   // Assessment
   | 'knowledge-check';   // Quiz
 
@@ -887,113 +883,4 @@ export interface ExhibitManifest {
   gradeLevel: string;
   themeColor: string;
   layout: ManifestItem[];
-}
-
-// ============================================================================
-// SCIENCE PRIMITIVES - Cognitive Operation Schemas
-// ============================================================================
-
-// Base schema shared by all science primitives
-export interface BaseSchema {
-  primitive: 'relational_mapping' | 'state_transformation' |
-             'constraint_satisfaction' | 'scale_bridging';
-
-  pedagogicalIntent: 'understand_mechanism' | 'trace_causation' | 'apply_rules' | 'make_predictions';
-
-  domain: {
-    field: 'chemistry' | 'physics' | 'biology' | 'earth_science' | 'math';
-    subtype: string; // e.g., 'molecular_bonding', 'force_interactions'
-    renderingHints: RenderingHints;
-  };
-
-  content: RelationalMappingContent | any; // Extend with other primitive types later
-
-  assessmentHooks: AssessmentHooks;
-
-  metadata?: {
-    gradeLevel?: string;
-    difficulty?: 'intro' | 'standard' | 'advanced';
-    estimatedTime?: number; // in minutes
-  };
-}
-
-// Rendering hints vocabulary
-export interface RenderingHints {
-  entityRepresentation?: string; // How to draw entities
-  connectionVisualization?: string; // How to show connections
-  spatialLayout?: string; // Overall arrangement
-  [key: string]: string | undefined; // Allow custom hints
-}
-
-// Chemistry rendering hints vocabulary
-export type ChemistryEntityRepresentation =
-  | 'atom_simple'
-  | 'atom_with_orbitals'
-  | 'lewis_dot'
-  | 'ball_stick'
-  | 'space_filling';
-
-export type ChemistryConnectionVisualization =
-  | 'electron_sharing'
-  | 'ionic_transfer'
-  | 'single_bond'
-  | 'double_bond'
-  | 'hydrogen_bond';
-
-export type ChemistrySpatialLayout =
-  | 'molecular_geometry'
-  | 'crystal_lattice'
-  | 'orbital_diagram'
-  | 'reaction_equation';
-
-// Assessment hooks (standardized across all primitives)
-export interface AssessmentHooks {
-  predict?: string; // "What would happen if X changed?"
-  transfer?: string; // "How does this apply to a different context?"
-  explain?: string; // "Why does this work the way it does?"
-}
-
-// ============================================================================
-// RELATIONAL MAPPING PRIMITIVE
-// ============================================================================
-
-export interface RelationalMappingEntity {
-  id: string;
-  label: string;
-  properties: Record<string, string | number | boolean>;
-  visualState?: Record<string, any>; // Domain-specific visual data
-  position?: { x: number; y: number; z?: number };
-}
-
-export interface RelationalMappingRelationship {
-  from: string; // Entity ID
-  to: string; // Entity ID
-  type: string; // e.g., "covalent_bond", "gravitational_force", "predation"
-  mechanism: string; // How/why the relationship exists
-  properties: Record<string, string | number | boolean>;
-  explanation: string; // Student-facing explanation
-}
-
-export interface RelationalMappingEmergentProperty {
-  property: string; // What emerges from the relationships
-  explanation: string; // Why it emerges
-  consequence: string; // Real-world implication
-}
-
-export interface RelationalMappingContent {
-  title: string;
-  centralQuestion: string;
-
-  entities: RelationalMappingEntity[];
-
-  relationships: RelationalMappingRelationship[];
-
-  emergentProperties: RelationalMappingEmergentProperty[];
-
-  satisfiedConstraints: string[]; // Rules/laws that are satisfied
-}
-
-export interface RelationalMappingSchema extends BaseSchema {
-  primitive: 'relational_mapping';
-  content: RelationalMappingContent;
 }

@@ -16,7 +16,6 @@ import ImagePanel from '../primitives/ImagePanel';
 import TakeHomeActivity from '../primitives/TakeHomeActivity';
 import InteractivePassage from '../primitives/InteractivePassage';
 import WordBuilder from '../primitives/WordBuilder';
-import RelationalMapping from '../primitives/RelationalMapping';
 import { ComponentId } from '../types';
 
 /**
@@ -197,15 +196,6 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'word-builder': {
     component: WordBuilder,
     sectionTitle: 'Word Construction Lab',
-    showDivider: true,
-    dividerStyle: 'left',
-    allowMultiple: true,
-    containerClassName: 'max-w-6xl mx-auto mb-20',
-  },
-
-  'relational-mapping': {
-    component: RelationalMapping,
-    sectionTitle: 'Relational Analysis',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

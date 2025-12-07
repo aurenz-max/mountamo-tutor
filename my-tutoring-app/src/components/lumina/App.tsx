@@ -27,7 +27,6 @@ import { SoundSort } from './primitives/visual-primitives/SoundSort';
 import { LetterPicture } from './primitives/visual-primitives/LetterPicture';
 import { PrimitiveCollectionRenderer } from './components/PrimitiveRenderer';
 import { KnowledgeCheckTester } from './components/KnowledgeCheckTester';
-import RelationalMappingTester from './components/RelationalMappingTester';
 
 
 export default function App() {
@@ -52,9 +51,6 @@ export default function App() {
 
   // Knowledge Check Testing State
   const [showKnowledgeCheckTester, setShowKnowledgeCheckTester] = useState(false);
-
-  // Relational Mapping Testing State
-  const [showRelationalMappingTester, setShowRelationalMappingTester] = useState(false);
 
   // Sample data for each visual primitive
   const visualPrimitiveExamples = [
@@ -281,18 +277,13 @@ export default function App() {
                    ← Exit Tester
                 </button>
             )}
-            {showRelationalMappingTester && (
-                <button onClick={() => setShowRelationalMappingTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
         </div>
       </header>
 
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showRelationalMappingTester && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -402,22 +393,6 @@ export default function App() {
                     </button>
                     <p className="text-xs text-slate-500 mt-2">Preview all visual primitive components</p>
                   </div>
-
-                  {/* Relational Mapping Tester Button */}
-                  <div>
-                    <button
-                      onClick={() => setShowRelationalMappingTester(true)}
-                      className="group relative px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
-                    >
-                      <span className="flex items-center gap-2">
-                        🧬 Test Relational Mapping
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                      </span>
-                    </button>
-                    <p className="text-xs text-slate-500 mt-2">Visualize molecular bonding and chemistry concepts</p>
-                  </div>
                 </div>
              </div>
           </div>
@@ -445,13 +420,6 @@ export default function App() {
         {gameState === GameState.IDLE && showKnowledgeCheckTester && (
           <div className="flex-1 animate-fade-in">
             <KnowledgeCheckTester onBack={() => setShowKnowledgeCheckTester(false)} />
-          </div>
-        )}
-
-        {/* RELATIONAL MAPPING TESTER STATE */}
-        {gameState === GameState.IDLE && showRelationalMappingTester && (
-          <div className="flex-1 animate-fade-in">
-            <RelationalMappingTester onBack={() => setShowRelationalMappingTester(false)} />
           </div>
         )}
 

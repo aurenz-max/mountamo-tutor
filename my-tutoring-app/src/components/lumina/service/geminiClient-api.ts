@@ -171,11 +171,3 @@ export const generateIntroBriefing = async (
 ): Promise<IntroBriefingData> => {
   return callAPI('generateIntroBriefing', { topic, gradeLevel });
 };
-
-export const generateRelationalMappingChemistry = async (
-  molecule: string,
-  gradeLevel: string,
-  topic?: string
-): Promise<any> => {
-  return callAPI('generateRelationalMappingChemistry', { molecule, gradeLevel, topic });
-};
