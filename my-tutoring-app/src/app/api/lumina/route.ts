@@ -15,11 +15,12 @@ import {
   generateKnowledgeCheckProblems,
   generateSequencingProblems,
   generateComponentContent,
-  generateExhibitManifest,
   buildCompleteExhibitFromTopic,
-  generateIntroBriefing,
-  generateRelationalMappingChemistry
+  generateIntroBriefing
 } from '@/components/lumina/service/geminiService';
+
+import { generateExhibitManifest } from '@/components/lumina/service/manifest/gemini-manifest';
+import { generateIntroBriefing as generateCuratorBrief } from '@/components/lumina/service/curator-brief/gemini-curator-brief';
 
 export async function POST(request: NextRequest) {
   try {
@@ -137,13 +138,14 @@ export async function POST(request: NextRequest) {
         const introBriefing = await generateIntroBriefing(params.topic, params.gradeLevel);
         return NextResponse.json(introBriefing);
 
-      case 'generateRelationalMappingChemistry':
-        const mapping = await generateRelationalMappingChemistry(
-          params.molecule,
+      case 'generateCuratorBrief':
+        const curatorBrief = await generateCuratorBrief(
+          params.topic,
+          params.subject,
           params.gradeLevel,
-          params.topic
+          params.estimatedTime
         );
-        return NextResponse.json(mapping);
+        return NextResponse.json(curatorBrief);
 
       default:
         return NextResponse.json(
