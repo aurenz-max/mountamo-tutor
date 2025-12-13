@@ -1,0 +1,228 @@
+import { Type, Schema, Modality } from "@google/genai";
+import { MediaPlayerData, LessonSegment, FullLessonSegment } from "../../types";
+import { ai } from "../geminiClient";
+
+/**
+ * Convert grade level to descriptive educational context for prompts
+ */
+const getGradeLevelContext = (gradeLevel: string): string => {
+  const contexts: Record<string, string> = {
+    'toddler': 'toddlers (ages 1-3) - Use very simple language, basic concepts, concrete examples, and playful engagement. Focus on sensory experiences and foundational learning.',
+    'preschool': 'preschool children (ages 3-5) - Use simple sentences, colorful examples, storytelling, and hands-on concepts. Build curiosity and wonder.',
+    'kindergarten': 'kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.',
+    'elementary': 'elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.',
+    'middle-school': 'middle school students (grades 6-8) - Use more complex vocabulary, abstract concepts, real-world applications, and critical thinking opportunities. Encourage deeper analysis.',
+    'high-school': 'high school students (grades 9-12) - Use advanced vocabulary, sophisticated concepts, academic rigor, and college-prep content. Foster analytical and creative thinking.',
+    'undergraduate': 'undergraduate college students - Use academic language, theoretical frameworks, research-based content, and interdisciplinary connections. Promote scholarly engagement.',
+    'graduate': 'graduate students (Master\'s level) - Use specialized terminology, advanced theoretical concepts, research methodologies, and professional applications. Encourage critical scholarship.',
+    'phd': 'doctoral students and researchers - Use expert-level terminology, cutting-edge research, theoretical depth, and scholarly discourse. Foster original thinking and research contributions.'
+  };
+
+  return contexts[gradeLevel] || contexts['elementary'];
+};
+
+/**
+ * Decode base64 audio data to Uint8Array
+ */
+const decodeBase64 = (base64: string): Uint8Array => {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+};
+
+/**
+ * Generate lesson plan with segments (text-only, no audio/images yet)
+ */
+const generateLessonPlan = async (
+  topic: string,
+  gradeLevel: string,
+  segmentCount: number = 4
+): Promise<LessonSegment[]> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+
+  const schema: Schema = {
+    type: Type.ARRAY,
+    items: {
+      type: Type.OBJECT,
+      properties: {
+        title: {
+          type: Type.STRING,
+          description: "A short, catchy title for this segment (3-5 words)"
+        },
+        script: {
+          type: Type.STRING,
+          description: "Clear, engaging narration script (2-3 sentences) intended to be spoken. Age-appropriate and conversational."
+        },
+        imagePrompt: {
+          type: Type.STRING,
+          description: "Detailed visual description for image generation that illustrates the concept clearly (photorealistic or diagrammatic as appropriate)"
+        }
+      },
+      required: ["title", "script", "imagePrompt"]
+    }
+  };
+
+  const prompt = `Create a ${segmentCount}-part educational walkthrough about the following topic: "${topic}".
+The audience is ${gradeLevelContext}
+
+For each part, provide:
+1. A short, catchy title (3-5 words)
+2. A clear, engaging explanation script (2-3 sentences, intended to be spoken aloud with natural pacing)
+3. A detailed visual description prompt for an image generation model that illustrates the concept clearly
+
+The segments should build on each other progressively, starting with fundamentals and moving to more complex ideas.
+Use age-appropriate language and relatable examples.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 1.0,
+      },
+    });
+
+    const result = response.text ? JSON.parse(response.text) : null;
+
+    if (!result || !Array.isArray(result)) {
+      throw new Error('No valid lesson plan returned from Gemini API');
+    }
+
+    console.log('📋 Media Player Lesson Plan Generated:', result);
+    return result as LessonSegment[];
+  } catch (error) {
+    console.error('Error generating lesson plan:', error);
+    throw error;
+  }
+};
+
+/**
+ * Generate audio (TTS) for a specific script
+ * Returns raw base64 PCM audio data or null if generation fails
+ */
+const generateAudioSegment = async (text: string): Promise<string | null> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Fenrir' }, // Deep, engaging voice
+          },
+        },
+      },
+    });
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+    if (!base64Audio) {
+      console.warn('No audio data returned for segment');
+      return null;
+    }
+
+    // Return raw base64 (client will decode to AudioBuffer)
+    return base64Audio;
+  } catch (error) {
+    console.error('Error generating audio segment:', error);
+    return null;
+  }
+};
+
+/**
+ * Generate image for a specific prompt
+ * Returns base64 data URL or null if generation fails
+ */
+const generateImageSegment = async (
+  prompt: string,
+  resolution: '1K' | '2K' | '4K' = '1K'
+): Promise<string | null> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-image-preview",
+      contents: {
+        parts: [{ text: prompt }]
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: "16:9",
+          imageSize: resolution
+        }
+      }
+    });
+
+    // Find the image in the response
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        const base64String = part.inlineData.data;
+        return `data:image/png;base64,${base64String}`;
+      }
+    }
+
+    console.warn('No image generated found in response');
+    return null;
+  } catch (error) {
+    console.error('Error generating image segment:', error);
+    return null;
+  }
+};
+
+/**
+ * Generate complete media player content with lesson plan, audio, and images
+ */
+export const generateMediaPlayer = async (
+  topic: string,
+  gradeLevel: string = 'elementary',
+  segmentCount: number = 4,
+  imageResolution: '1K' | '2K' | '4K' = '1K'
+): Promise<MediaPlayerData> => {
+  try {
+    console.log('🎬 Generating Media Player content for:', topic);
+
+    // Step 1: Generate the lesson plan (text only)
+    const lessonPlan = await generateLessonPlan(topic, gradeLevel, segmentCount);
+
+    // Step 2: Generate assets (audio + images) for all segments in parallel
+    const fullSegments: FullLessonSegment[] = await Promise.all(
+      lessonPlan.map(async (segment: LessonSegment) => {
+        // Generate audio and image in parallel for each segment
+        const [audioBase64, imageUrl] = await Promise.all([
+          generateAudioSegment(segment.script).catch(e => {
+            console.error("Audio generation failed for segment:", segment.title, e);
+            return null;
+          }),
+          generateImageSegment(segment.imagePrompt, imageResolution).catch(e => {
+            console.error("Image generation failed for segment:", segment.title, e);
+            return null;
+          })
+        ]);
+
+        return {
+          ...segment,
+          audioBase64,
+          imageUrl
+        };
+      })
+    );
+
+    const result: MediaPlayerData = {
+      title: `Interactive Lesson: ${topic}`,
+      description: `A ${segmentCount}-part audio-visual walkthrough exploring ${topic}`,
+      segments: fullSegments,
+      imageResolution
+    };
+
+    console.log('🎬 Media Player Generated Successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('Error generating media player:', error);
+    throw error;
+  }
+};

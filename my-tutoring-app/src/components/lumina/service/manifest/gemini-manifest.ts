@@ -145,6 +145,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     id: 'periodic-table',
     description: 'Interactive periodic table of all 118 elements with detailed element information, electron shell visualization, stability charts, and category filtering. Perfect for teaching element properties, electron configuration, periodic trends, atomic structure, chemical categories, and the organization of the periodic table. Features clickable elements with modal views showing atomic number, mass, electron shells, valence electrons, phase, and band of stability.',
     constraints: 'Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Ideal for introducing the periodic table or exploring specific element groups.'
+  },
+  {
+    id: 'media-player',
+    description: 'Audio-visual lesson player with synchronized narration and images. Multi-segment interactive presentation where each segment has AI-generated voiceover narration and accompanying visuals. Perfect for step-by-step explanations, processes, stories, or any content that benefits from multimedia presentation. Features play/pause controls, progress tracking, and segment navigation.',
+    constraints: 'Best for topics that benefit from sequential, narrative-driven explanation (processes, stories, step-by-step concepts). Each lesson typically has 3-5 segments. Works for all grade levels - narration and visuals adapt to audience.'
   }
 ];
 
@@ -256,6 +261,7 @@ DESIGN RULES:
    - Science/Physics/Chemistry → Use 'formula-card' (equations), 'custom-visual' (simulations), 'feature-exhibit', 'annotated-example' (problem-solving), 'molecule-viewer' (atomic and molecular bonds), 'periodic-table' (element properties and periodic trends)
    - Language Arts/Grammar → Use 'sentence-analyzer', 'concept-card-grid'
    - Data Analysis → Use 'graph-board' for polynomial fitting and data visualization
+   - Sequential/Process Topics → Use 'media-player' for step-by-step narratives, processes, or stories that benefit from audio-visual presentation
 5. 🎨 Pick a themeColor that matches the subject (e.g., blue for science, green for nature, purple for humanities)
 
 OUTPUT INSTRUCTIONS:

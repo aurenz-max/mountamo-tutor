@@ -802,6 +802,27 @@ export interface PeriodicTableData {
   focusCategory?: string; // Optional category to focus on
 }
 
+// Media Player Types (Audio-Visual Lesson Player)
+export interface LessonSegment {
+  title: string;
+  script: string;
+  imagePrompt: string;
+}
+
+export interface GeneratedMediaAsset {
+  audioBase64: string | null; // Raw base64 audio data (PCM) from Gemini TTS
+  imageUrl: string | null; // Base64 data URL or null if generation failed
+}
+
+export interface FullLessonSegment extends LessonSegment, GeneratedMediaAsset {}
+
+export interface MediaPlayerData {
+  title?: string;
+  description?: string;
+  segments: FullLessonSegment[];
+  imageResolution?: '1K' | '2K' | '4K';
+}
+
 export interface ExhibitData {
   topic: string;
   intro: IntroData; // Legacy simple intro (hook + objectives)
@@ -821,6 +842,7 @@ export interface ExhibitData {
   wordBuilders?: WordBuilderData[];
   moleculeViewers?: MoleculeViewerData[];
   periodicTables?: PeriodicTableData[];
+  mediaPlayers?: MediaPlayerData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -898,7 +920,10 @@ export type ComponentId =
 
   // Science Visualization
   | 'molecule-viewer'    // 3D molecular structure viewer
-  | 'periodic-table';    // Interactive periodic table of elements
+  | 'periodic-table'     // Interactive periodic table of elements
+
+  // Media & Multimedia
+  | 'media-player';      // Audio-visual lesson player with synchronized narration and images
 
 export interface ComponentDefinition {
   id: ComponentId;

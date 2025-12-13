@@ -21,6 +21,7 @@ import {
 
 import { generateExhibitManifest } from '@/components/lumina/service/manifest/gemini-manifest';
 import { generateIntroBriefing as generateCuratorBrief } from '@/components/lumina/service/curator-brief/gemini-curator-brief';
+import { generateMediaPlayer } from '@/components/lumina/service/media-player/gemini-media-player';
 
 export async function POST(request: NextRequest) {
   try {
@@ -178,6 +179,15 @@ export async function POST(request: NextRequest) {
           params.gradeLevel
         );
         return NextResponse.json(warmUp);
+
+      case 'generateMediaPlayer':
+        const mediaPlayer = await generateMediaPlayer(
+          params.topic,
+          params.gradeLevel,
+          params.segmentCount,
+          params.imageResolution
+        );
+        return NextResponse.json(mediaPlayer);
 
       default:
         return NextResponse.json(

@@ -142,7 +142,58 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
 };
 ```
 
-### Step 4: Use in App.tsx
+### Step 4: Add Content Generation Logic
+
+**CRITICAL STEP:** The registry pattern handles rendering, but you must also wire up the content generation pipeline in `geminiService.ts`.
+
+```tsx
+// service/geminiService.ts
+
+// 1. Import your generation function (if you have a dedicated service file)
+import { generateMyNewPrimitive } from "./my-primitive/gemini-my-primitive";
+
+// 2. Add case to generateComponentContent switch statement (around line 2600)
+case 'my-new-primitive':
+  return await generateMyNewPrimitiveContent(item, topic, gradeLevelContext);
+
+// 3. Create the content generation function (around line 4300)
+const generateMyNewPrimitiveContent = async (
+  item: any,
+  topic: string,
+  gradeContext: string
+): Promise<{ type: string; instanceId: string; data: any }> => {
+  // Extract configuration from manifest item
+  const config = item.config || {};
+
+  // Call your dedicated generation service or build data directly
+  const primitiveData = await generateMyNewPrimitive(topic, gradeContext, config);
+  // OR build data structure directly:
+  // const primitiveData = {
+  //   title: item.title,
+  //   description: item.intent,
+  //   // ... other fields
+  // };
+
+  return {
+    type: 'my-new-primitive',
+    instanceId: item.instanceId,
+    data: primitiveData
+  };
+};
+
+// 4. Add assembly case in assembleExhibitFromComponents (around line 4650)
+case 'my-new-primitive':
+  if (!exhibit.myNewPrimitives) exhibit.myNewPrimitives = [];
+  exhibit.myNewPrimitives.push(component.data);
+  break;
+```
+
+**Why is this needed?**
+- The registry handles how components are **rendered**
+- But `geminiService.ts` handles how component **content is generated** from the manifest
+- Without this step, the manifest will call your component, but it won't have any data to show
+
+### Step 5: Use in App.tsx
 
 ```tsx
 // App.tsx
@@ -160,7 +211,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
 />
 ```
 
-**That's it!** No other changes needed.
+**That's it!** Your primitive is now fully integrated.
 
 ## Advanced: Passing Additional Props
 
@@ -280,6 +331,13 @@ For these, keep them in App.tsx as-is.
 1. Check that the `componentId` matches the registry key exactly
 2. Verify `dataArray` is not empty in React DevTools
 3. Check console for warnings from `PrimitiveCollectionRenderer`
+4. **MOST COMMON:** Look for "Unknown component type" in console - this means you forgot Step 4 (content generation logic)
+
+### "Unknown component type" error in console
+This means the manifest is calling your component, but `geminiService.ts` doesn't know how to generate content for it.
+1. Add the case handler in `generateComponentContent` switch statement
+2. Create the `generate[ComponentName]Content` function
+3. Add the assembly case in `assembleExhibitFromComponents`
 
 ### Headers/dividers not showing
 1. Set `showDivider: true` in registry config
@@ -294,6 +352,24 @@ For these, keep them in App.tsx as-is.
 2. Verify data structure matches interface definition
 3. Check that primitive component accepts `data` prop
 
+## Complete Integration Checklist
+
+When adding a new primitive from scratch, ensure you complete ALL steps:
+
+- [ ] **Step 1:** Create the primitive component in `primitives/`
+- [ ] **Step 2:** Add TypeScript types to `types.ts` (ComponentId, data interface, ExhibitData field)
+- [ ] **Step 3:** Register in `primitiveRegistry.tsx` with configuration
+- [ ] **Step 4:** Add content generation logic in `geminiService.ts`
+  - [ ] Import generation function (if needed)
+  - [ ] Add case to `generateComponentContent` switch
+  - [ ] Create `generate[ComponentName]Content` function
+  - [ ] Add assembly case in `assembleExhibitFromComponents`
+- [ ] **Step 5:** Add `PrimitiveCollectionRenderer` call in `App.tsx`
+- [ ] **Step 6:** Add to manifest catalog in `gemini-manifest.ts` (if you want AI to use it)
+- [ ] Test that manifest generation includes your component
+- [ ] Test that content generation works without "Unknown component type" error
+- [ ] Test that the component renders correctly in the exhibit
+
 ## Migration Checklist
 
 When converting an existing primitive to the registry pattern:
@@ -302,6 +378,7 @@ When converting an existing primitive to the registry pattern:
 - [ ] Move state into the primitive component itself
 - [ ] Change props from `{ value, onChange }` to `{ data }`
 - [ ] Register in `primitiveRegistry.tsx`
+- [ ] Ensure content generation logic exists in `geminiService.tsx`
 - [ ] Replace custom rendering code in `App.tsx` with `PrimitiveCollectionRenderer`
 - [ ] Test that all functionality still works
 - [ ] Remove unused wrapper components and imports

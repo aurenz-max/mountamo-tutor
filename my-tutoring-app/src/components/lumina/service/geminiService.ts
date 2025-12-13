@@ -26,6 +26,7 @@ import {
 
 import { generateExhibitManifest } from "./manifest/gemini-manifest";
 import { generateIntroBriefing } from "./curator-brief/gemini-curator-brief";
+import { generateMediaPlayer } from "./media-player/gemini-media-player";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2609,6 +2610,9 @@ export const generateComponentContent = async (
     case 'periodic-table':
       return await generatePeriodicTableContent(item, topic, gradeLevelContext);
 
+    case 'media-player':
+      return await generateMediaPlayerContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4327,6 +4331,37 @@ const generatePeriodicTableContent = async (item: any, topic: string, gradeConte
 };
 
 /**
+ * Generate Media Player content
+ * Uses dedicated media player service to generate audio-visual lesson content
+ */
+const generateMediaPlayerContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  // Extract configuration from manifest item
+  const lessonTopic = item.intent || item.title || topic;
+  const segmentCount = item.config?.segmentCount || 4;
+  const imageResolution = item.config?.imageResolution || '1K';
+
+  // Extract grade level from context
+  const gradeLevel = gradeContext.toLowerCase().includes('toddler') ? 'toddler' :
+                     gradeContext.toLowerCase().includes('preschool') ? 'preschool' :
+                     gradeContext.toLowerCase().includes('kindergarten') ? 'kindergarten' :
+                     gradeContext.toLowerCase().includes('elementary') ? 'elementary' :
+                     gradeContext.toLowerCase().includes('middle') ? 'middle-school' :
+                     gradeContext.toLowerCase().includes('high') ? 'high-school' :
+                     gradeContext.toLowerCase().includes('undergraduate') ? 'undergraduate' :
+                     gradeContext.toLowerCase().includes('graduate') ? 'graduate' :
+                     gradeContext.toLowerCase().includes('phd') ? 'phd' : 'elementary';
+
+  // Generate the media player content using dedicated service
+  const mediaPlayerData = await generateMediaPlayer(lessonTopic, gradeLevel, segmentCount, imageResolution);
+
+  return {
+    type: 'media-player',
+    instanceId: item.instanceId,
+    data: mediaPlayerData
+  };
+};
+
+/**
  * Generate Nested Hierarchy content
  */
 const generateNestedHierarchyContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: NestedHierarchyData }> => {
@@ -4370,6 +4405,25 @@ const generateNestedHierarchyContent = async (item: any, topic: string, gradeCon
           description: { type: Type.STRING },
           children: {
             type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                label: { type: Type.STRING },
+                type: { type: Type.STRING },
+                icon: {
+                  type: Type.STRING,
+                  enum: ["activity", "brain", "zap", "git-commit", "layers", "home"]
+                },
+                description: { type: Type.STRING },
+                children: {
+                  type: Type.ARRAY,
+                  items: { type: Type.OBJECT },
+                  description: "Recursive children"
+                }
+              },
+              required: ["id", "label", "icon", "description"]
+            },
             description: "Array of child nodes - each with same recursive structure"
           }
         },
@@ -4626,6 +4680,11 @@ export const buildCompleteExhibitFromTopic = async (
       case 'periodic-table':
         if (!exhibit.periodicTables) exhibit.periodicTables = [];
         exhibit.periodicTables.push(component.data);
+        break;
+
+      case 'media-player':
+        if (!exhibit.mediaPlayers) exhibit.mediaPlayers = [];
+        exhibit.mediaPlayers.push(component.data);
         break;
 
       case 'knowledge-check':
