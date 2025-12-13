@@ -2606,6 +2606,9 @@ export const generateComponentContent = async (
     case 'molecule-viewer':
       return await generateMoleculeViewerContent(item, topic, gradeLevelContext);
 
+    case 'periodic-table':
+      return await generatePeriodicTableContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4300,6 +4303,30 @@ const generateMoleculeViewerContent = async (item: any, topic: string, gradeCont
 };
 
 /**
+ * Generate Periodic Table content
+ * The periodic table is self-contained with all element data, so we just need to pass configuration
+ */
+const generatePeriodicTableContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  // Parse any element highlighting from the intent or config
+  const highlightElements = item.config?.highlightElements || [];
+  const focusCategory = item.config?.focusCategory;
+
+  // Build the periodic table data structure
+  const periodicTableData = {
+    title: item.title || 'Periodic Table of Elements',
+    description: item.intent || 'Explore the elements and their properties',
+    highlightElements,
+    focusCategory
+  };
+
+  return {
+    type: 'periodic-table',
+    instanceId: item.instanceId,
+    data: periodicTableData
+  };
+};
+
+/**
  * Generate Nested Hierarchy content
  */
 const generateNestedHierarchyContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: NestedHierarchyData }> => {
@@ -4594,6 +4621,11 @@ export const buildCompleteExhibitFromTopic = async (
       case 'molecule-viewer':
         if (!exhibit.moleculeViewers) exhibit.moleculeViewers = [];
         exhibit.moleculeViewers.push(component.data);
+        break;
+
+      case 'periodic-table':
+        if (!exhibit.periodicTables) exhibit.periodicTables = [];
+        exhibit.periodicTables.push(component.data);
         break;
 
       case 'knowledge-check':

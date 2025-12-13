@@ -22,6 +22,7 @@ import TakeHomeActivity from '../primitives/TakeHomeActivity';
 import InteractivePassage from '../primitives/InteractivePassage';
 import WordBuilder from '../primitives/WordBuilder';
 import MoleculeViewer from '../primitives/MoleculeViewer';
+import PeriodicTable from '../primitives/PeriodicTable';
 import { ComponentId } from '../types';
 
 /**
@@ -241,6 +242,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
+  },
+
+  'periodic-table': {
+    component: PeriodicTable,
+    sectionTitle: 'Periodic Table of Elements',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: false,
     containerClassName: 'max-w-7xl mx-auto mb-20',
   },
 };

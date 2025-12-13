@@ -675,6 +675,12 @@ export default function App() {
                     dataArray={exhibitData.moleculeViewers || []}
                 />
 
+                {/* Periodic Table Section - Interactive Element Explorer */}
+                <PrimitiveCollectionRenderer
+                    componentId="periodic-table"
+                    dataArray={exhibitData.periodicTables || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

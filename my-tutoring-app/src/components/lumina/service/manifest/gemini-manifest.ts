@@ -140,6 +140,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     id: 'molecule-viewer',
     description: 'Interactive 3D molecular structure visualization with CPK-colored atoms and chemical bonds. Perfect for chemistry lessons on molecular structure, bonding, organic compounds, crystal lattices, proteins, and biochemistry. Features interactive atom selection, bond analysis, and auto-rotating 3D view. HIGHLY RECOMMENDED for any chemistry topic involving molecular structure.',
     constraints: 'Best for middle-school and above. Use for chemistry, biochemistry, organic chemistry, crystal structures, or any topic involving molecules, atoms, and chemical bonds.'
+  },
+  {
+    id: 'periodic-table',
+    description: 'Interactive periodic table of all 118 elements with detailed element information, electron shell visualization, stability charts, and category filtering. Perfect for teaching element properties, electron configuration, periodic trends, atomic structure, chemical categories, and the organization of the periodic table. Features clickable elements with modal views showing atomic number, mass, electron shells, valence electrons, phase, and band of stability.',
+    constraints: 'Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Ideal for introducing the periodic table or exploring specific element groups.'
   }
 ];
 
@@ -248,7 +253,7 @@ DESIGN RULES:
    - Math Problem-Solving (Elementary+) → Use 'annotated-example' to show worked solutions with multi-layer reasoning
    - History/Literature/Social Studies → Use 'comparison-panel', 'generative-table', or 'feature-exhibit'
    - Nuanced Judgment Topics → Use 'scale-spectrum' for ethical dilemmas, degrees of formality, historical significance, etc.
-   - Science/Physics/Chemistry → Use 'formula-card' (equations), 'custom-visual' (simulations), 'feature-exhibit', 'annotated-example' (problem-solving), 'molecule-viewer' (atomic and molecular bonds)
+   - Science/Physics/Chemistry → Use 'formula-card' (equations), 'custom-visual' (simulations), 'feature-exhibit', 'annotated-example' (problem-solving), 'molecule-viewer' (atomic and molecular bonds), 'periodic-table' (element properties and periodic trends)
    - Language Arts/Grammar → Use 'sentence-analyzer', 'concept-card-grid'
    - Data Analysis → Use 'graph-board' for polynomial fitting and data visualization
 5. 🎨 Pick a themeColor that matches the subject (e.g., blue for science, green for nature, purple for humanities)

@@ -794,6 +794,14 @@ export interface WordBuilderData {
   targets: TargetWord[]; // Words to build
 }
 
+// Periodic Table Types
+export interface PeriodicTableData {
+  title?: string;
+  description?: string;
+  highlightElements?: number[]; // Array of atomic numbers to highlight
+  focusCategory?: string; // Optional category to focus on
+}
+
 export interface ExhibitData {
   topic: string;
   intro: IntroData; // Legacy simple intro (hook + objectives)
@@ -812,6 +820,7 @@ export interface ExhibitData {
   interactivePassages?: InteractivePassageData[];
   wordBuilders?: WordBuilderData[];
   moleculeViewers?: MoleculeViewerData[];
+  periodicTables?: PeriodicTableData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -888,7 +897,8 @@ export type ComponentId =
   | 'knowledge-check'   // Quiz
 
   // Science Visualization
-  | 'molecule-viewer';   // 3D molecular structure viewer
+  | 'molecule-viewer'    // 3D molecular structure viewer
+  | 'periodic-table';    // Interactive periodic table of elements
 
 export interface ComponentDefinition {
   id: ComponentId;
