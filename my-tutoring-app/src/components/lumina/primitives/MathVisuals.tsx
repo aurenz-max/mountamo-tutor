@@ -3,10 +3,23 @@
 import React from 'react';
 import { MathVisualData } from '../types';
 
+/**
+ * @deprecated This wrapper component is deprecated. Use individual primitives instead:
+ * - 'bar-model' for comparative bar visualizations
+ * - 'number-line' for linear number line with highlights
+ * - 'base-ten-blocks' for place value visualization
+ * - 'fraction-circles' for fractional parts visualization
+ * - 'geometric-shape' for shape properties and attributes
+ *
+ * This component is kept for backward compatibility only.
+ */
 interface MathVisualsProps {
   data: MathVisualData;
 }
 
+/**
+ * @deprecated Use individual primitives instead. See interface documentation above.
+ */
 export const MathVisuals: React.FC<MathVisualsProps> = ({ data }) => {
   
   // -- RENDERERS --

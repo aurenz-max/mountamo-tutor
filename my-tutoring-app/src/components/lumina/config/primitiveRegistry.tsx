@@ -9,6 +9,11 @@ import { MathVisuals } from '../primitives/MathVisuals';
 import { SentenceAnalyzer } from '../primitives/SentenceAnalyzer';
 import { CustomVisual } from '../primitives/CustomVisual';
 import GraphBoard from '../primitives/GraphBoard';
+import BarModel from '../primitives/visual-primitives/math/BarModel';
+import NumberLine from '../primitives/visual-primitives/math/NumberLine';
+import BaseTenBlocks from '../primitives/visual-primitives/math/BaseTenBlocks';
+import FractionCircles from '../primitives/visual-primitives/math/FractionCircles';
+import GeometricShape from '../primitives/visual-primitives/math/GeometricShape';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -16,6 +21,7 @@ import ImagePanel from '../primitives/ImagePanel';
 import TakeHomeActivity from '../primitives/TakeHomeActivity';
 import InteractivePassage from '../primitives/InteractivePassage';
 import WordBuilder from '../primitives/WordBuilder';
+import MoleculeViewer from '../primitives/MoleculeViewer';
 import { ComponentId } from '../types';
 
 /**
@@ -156,6 +162,33 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-6xl mx-auto mb-20',
   },
 
+  // Math Visualization Primitives
+  'bar-model': {
+    component: BarModel,
+    allowMultiple: true,
+  },
+
+  'number-line': {
+    component: NumberLine,
+    allowMultiple: true,
+  },
+
+  'base-ten-blocks': {
+    component: BaseTenBlocks,
+    allowMultiple: true,
+  },
+
+  'fraction-circles': {
+    component: FractionCircles,
+    allowMultiple: true,
+  },
+
+  'geometric-shape': {
+    component: GeometricShape,
+    allowMultiple: true,
+  },
+
+  // Deprecated: Use specific math primitives instead
   'math-visual': {
     component: MathVisuals,
     allowMultiple: true,
@@ -200,6 +233,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'molecule-viewer': {
+    component: MoleculeViewer,
+    sectionTitle: 'Molecular Structure',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
   },
 };
 

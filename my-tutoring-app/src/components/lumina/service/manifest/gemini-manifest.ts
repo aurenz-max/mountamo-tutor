@@ -46,9 +46,29 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     description: 'A set of 3-4 distinct key terms or concepts defined with visuals. Use for vocabulary or core principles.'
   },
   {
-    id: 'math-visual',
-    description: 'Interactive math visualizations (Number Line, Base-10 Blocks, Fraction Circles, Geometric Shapes). ESSENTIAL for toddlers/elementary math.',
-    constraints: 'Requires numeric/mathematical content'
+    id: 'bar-model',
+    description: 'Comparative bar visualization showing relative values. Perfect for comparing quantities, showing differences, or teaching basic arithmetic comparisons. ESSENTIAL for elementary math.',
+    constraints: 'Requires numeric values to compare'
+  },
+  {
+    id: 'number-line',
+    description: 'Interactive number line with highlighted points. Perfect for teaching addition, subtraction, counting, number sequencing, and basic operations. ESSENTIAL for toddlers/kindergarten/elementary math.',
+    constraints: 'Requires numeric range and values to highlight'
+  },
+  {
+    id: 'base-ten-blocks',
+    description: 'Place value visualization using hundreds, tens, and ones blocks. Perfect for teaching place value, decomposing numbers, and understanding multi-digit numbers. ESSENTIAL for elementary math.',
+    constraints: 'Requires a whole number to decompose (best for numbers 1-999)'
+  },
+  {
+    id: 'fraction-circles',
+    description: 'Visual pie charts showing fractional parts. Perfect for teaching fractions, parts of a whole, equivalent fractions, and basic fraction comparison. ESSENTIAL for elementary math.',
+    constraints: 'Requires fraction values (numerator/denominator)'
+  },
+  {
+    id: 'geometric-shape',
+    description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
+    constraints: 'Requires a shape name and measurable properties'
   },
   {
     id: 'graph-board',
@@ -115,6 +135,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     id: 'word-builder',
     description: 'Interactive morphology lab where students construct complex words from roots, prefixes, and suffixes to understand their meaning. Drag-and-drop construction with visual breakdown showing how word parts combine. Perfect for vocabulary development, etymology, and morphological analysis in language arts.',
     constraints: 'Best for grades 3-8. Requires words that can be meaningfully broken into morphological components (prefixes, roots, suffixes).'
+  },
+  {
+    id: 'molecule-viewer',
+    description: 'Interactive 3D molecular structure visualization with CPK-colored atoms and chemical bonds. Perfect for chemistry lessons on molecular structure, bonding, organic compounds, crystal lattices, proteins, and biochemistry. Features interactive atom selection, bond analysis, and auto-rotating 3D view. HIGHLY RECOMMENDED for any chemistry topic involving molecular structure.',
+    constraints: 'Best for middle-school and above. Use for chemistry, biochemistry, organic chemistry, crystal structures, or any topic involving molecules, atoms, and chemical bonds.'
   }
 ];
 
@@ -216,11 +241,14 @@ DESIGN RULES:
 2. ✅ ALWAYS end with 'knowledge-check' (this is RECOMMENDED)
 3. 🎯 Choose the BEST 4-8 components total to explain the topic effectively
 4. 📊 Prioritize components that match the subject matter:
-   - Math/Counting for Kids → Use 'math-visual' (basic concepts) OR 'custom-visual' (interactive games/counting)
+   - Elementary Math (Counting, Addition, Subtraction) → Use 'number-line' or 'bar-model'
+   - Elementary Math (Place Value) → Use 'base-ten-blocks'
+   - Elementary Math (Fractions) → Use 'fraction-circles'
+   - Elementary Math (Geometry) → Use 'geometric-shape'
    - Math Problem-Solving (Elementary+) → Use 'annotated-example' to show worked solutions with multi-layer reasoning
    - History/Literature/Social Studies → Use 'comparison-panel', 'generative-table', or 'feature-exhibit'
    - Nuanced Judgment Topics → Use 'scale-spectrum' for ethical dilemmas, degrees of formality, historical significance, etc.
-   - Science/Physics/Chemistry → Use 'formula-card' (equations), 'custom-visual' (simulations), 'feature-exhibit', 'annotated-example' (problem-solving)
+   - Science/Physics/Chemistry → Use 'formula-card' (equations), 'custom-visual' (simulations), 'feature-exhibit', 'annotated-example' (problem-solving), 'molecule-viewer' (atomic and molecular bonds)
    - Language Arts/Grammar → Use 'sentence-analyzer', 'concept-card-grid'
    - Data Analysis → Use 'graph-board' for polynomial fitting and data visualization
 5. 🎨 Pick a themeColor that matches the subject (e.g., blue for science, green for nature, purple for humanities)
@@ -228,11 +256,10 @@ DESIGN RULES:
 OUTPUT INSTRUCTIONS:
 - For each component in the layout array:
   * componentId: Pick from the catalog
-  * instanceId: Create a unique ID (e.g., 'brief-1', 'math-addition-1', 'comparison-democracy-monarchy')
+  * instanceId: Create a unique ID (e.g., 'brief-1', 'number-line-addition-1', 'comparison-democracy-monarchy')
   * title: The heading that will appear above this section
   * intent: DETAILED instructions for what content to generate (be specific!)
   * config: Optional hints and educational context
-    - For math-visual: {"visualType": "number-line"}
     - For custom-visual: Include subject, keyTerms, and conceptsCovered to improve content quality
       Example: {"subject": "Mathematics", "keyTerms": ["addition", "sum", "equals"], "conceptsCovered": ["combining quantities", "number sense"]}
     - For knowledge-check: MUST include problemType (choose from: "multiple_choice", "true_false", "fill_in_blanks", "matching_activity", "sequencing_activity", "categorization_activity")
@@ -252,11 +279,10 @@ EXAMPLE MANIFEST STRUCTURE:
       "intent": "Create a warm introduction about adding numbers together. Include learning objectives: 1) Understand what addition means, 2) Count objects to add them, 3) Use the plus symbol"
     },
     {
-      "componentId": "math-visual",
-      "instanceId": "math-counting-1",
+      "componentId": "number-line",
+      "instanceId": "number-line-addition-1",
       "title": "Let's Count Together",
-      "intent": "Show addition using a number line from 0-10. Highlight 2 + 3 = 5.",
-      "config": { "visualType": "number-line" }
+      "intent": "Show addition using a number line from 0-10. Highlight 2 + 3 = 5."
     },
     {
       "componentId": "custom-visual",

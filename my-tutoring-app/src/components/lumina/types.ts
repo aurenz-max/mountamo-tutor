@@ -159,6 +159,39 @@ export interface EarlyLearningData {
   };
 }
 
+// Module G: Chemistry 3D Molecular Visualization
+export interface Position {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface MoleculeAtom {
+  id: string;
+  element: string; // Symbol, e.g., 'C', 'H'
+  name: string; // Full name, e.g., 'Carbon'
+  position: Position;
+  color?: string; // Hex code override, optional
+  radius?: number; // Relative size, optional
+  atomicNumber?: number;
+  description?: string; // Short fun fact
+}
+
+export interface MoleculeBond {
+  sourceId: string;
+  targetId: string;
+  order: number; // 1 = single, 2 = double, 3 = triple, 1.5 = resonant/aromatic
+  type: 'covalent' | 'ionic' | 'hydrogen' | 'metallic' | 'unknown';
+}
+
+export interface MoleculeViewerData {
+  name: string;
+  description: string;
+  atoms: MoleculeAtom[];
+  bonds: MoleculeBond[];
+  category: 'organic' | 'inorganic' | 'protein' | 'crystal' | 'other';
+}
+
 // Union Type for the Exhibit
 export type SpecializedExhibit = EquationData | SentenceSchemaData | MathVisualData | CustomSVGData | CustomWebData | EarlyLearningData;
 
@@ -778,6 +811,7 @@ export interface ExhibitData {
   takeHomeActivities?: TakeHomeActivityData[];
   interactivePassages?: InteractivePassageData[];
   wordBuilders?: WordBuilderData[];
+  moleculeViewers?: MoleculeViewerData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -828,8 +862,17 @@ export type ComponentId =
 
   // Math & Science Engines
   | 'formula-card'       // LaTeX/Math display
-  | 'math-visual'        // Your React math primitives (blocks, circles, etc.)
   | 'custom-visual'      // The SVG/HTML wildcard
+
+  // Math Visualization Primitives (Elementary Math)
+  | 'bar-model'          // Comparative bar visualization for values
+  | 'number-line'        // Linear number line with highlights
+  | 'base-ten-blocks'    // Place value visualization (hundreds, tens, ones)
+  | 'fraction-circles'   // Fractional parts shown as pie charts
+  | 'geometric-shape'    // Shape properties and attributes
+
+  // Deprecated (kept for backward compatibility)
+  | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape
 
   // Interactive Learning Tools
   | 'scale-spectrum'     // Spectrum/continuum for nuanced judgments
@@ -842,7 +885,10 @@ export type ComponentId =
   | 'word-builder'        // Vocabulary & Morphology - construct words from roots, prefixes, suffixes
 
   // Assessment
-  | 'knowledge-check';   // Quiz
+  | 'knowledge-check'   // Quiz
+
+  // Science Visualization
+  | 'molecule-viewer';   // 3D molecular structure viewer
 
 export interface ComponentDefinition {
   id: ComponentId;

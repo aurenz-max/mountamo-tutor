@@ -2603,6 +2603,9 @@ export const generateComponentContent = async (
     case 'word-builder':
       return await generateWordBuilderContent(item, topic, gradeLevelContext);
 
+    case 'molecule-viewer':
+      return await generateMoleculeViewerContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4271,6 +4274,32 @@ Generate an engaging word-building exercise that helps students understand how w
 };
 
 /**
+ * Generate Molecule Viewer content
+ * Uses the standalone chemistry service for 3D molecular structure generation
+ */
+const generateMoleculeViewerContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  // Import the chemistry service dynamically to avoid circular dependencies
+  const { generateMoleculeData } = await import('./chemistry/gemini-chemistry');
+
+  // Extract molecule prompt from intent or title
+  const moleculePrompt = item.intent || item.title || topic;
+
+  // Extract grade level from context if available
+  const gradeLevel = gradeContext.toLowerCase().includes('elementary') ? 'elementary' :
+                     gradeContext.toLowerCase().includes('middle') ? 'middle-school' :
+                     gradeContext.toLowerCase().includes('high') ? 'high-school' : undefined;
+
+  // Generate the 3D molecular structure using our dedicated chemistry service
+  const moleculeData = await generateMoleculeData(moleculePrompt, gradeLevel);
+
+  return {
+    type: 'molecule-viewer',
+    instanceId: item.instanceId,
+    data: moleculeData
+  };
+};
+
+/**
  * Generate Nested Hierarchy content
  */
 const generateNestedHierarchyContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: NestedHierarchyData }> => {
@@ -4560,6 +4589,11 @@ export const buildCompleteExhibitFromTopic = async (
       case 'word-builder':
         if (!exhibit.wordBuilders) exhibit.wordBuilders = [];
         exhibit.wordBuilders.push(component.data);
+        break;
+
+      case 'molecule-viewer':
+        if (!exhibit.moleculeViewers) exhibit.moleculeViewers = [];
+        exhibit.moleculeViewers.push(component.data);
         break;
 
       case 'knowledge-check':

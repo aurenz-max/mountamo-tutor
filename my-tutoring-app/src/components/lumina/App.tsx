@@ -669,6 +669,12 @@ export default function App() {
                     dataArray={exhibitData.wordBuilders || []}
                 />
 
+                {/* Molecule Viewer Section - 3D Molecular Structure Visualization */}
+                <PrimitiveCollectionRenderer
+                    componentId="molecule-viewer"
+                    dataArray={exhibitData.moleculeViewers || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">
