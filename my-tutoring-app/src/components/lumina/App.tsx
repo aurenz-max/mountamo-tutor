@@ -27,6 +27,8 @@ import { SoundSort } from './primitives/visual-primitives/SoundSort';
 import { LetterPicture } from './primitives/visual-primitives/LetterPicture';
 import { PrimitiveCollectionRenderer } from './components/PrimitiveRenderer';
 import { KnowledgeCheckTester } from './components/KnowledgeCheckTester';
+import { PracticeMode } from './components/PracticeModeEnhanced';
+import { SpotlightCard } from './components/SpotlightCard';
 
 
 export default function App() {
@@ -51,6 +53,9 @@ export default function App() {
 
   // Knowledge Check Testing State
   const [showKnowledgeCheckTester, setShowKnowledgeCheckTester] = useState(false);
+
+  // Practice Mode State
+  const [showPracticeMode, setShowPracticeMode] = useState(false);
 
   // Sample data for each visual primitive
   const visualPrimitiveExamples = [
@@ -203,6 +208,25 @@ export default function App() {
     startExhibit();
   };
 
+  // Handle transition from practice to learning exhibit
+  const handleLearnMoreFromPractice = useCallback((subject: string, practiceLevelGrade: GradeLevel) => {
+    setShowPracticeMode(false);
+    setGradeLevel(practiceLevelGrade);
+
+    // Map subject to a topic string for exhibit generation
+    const subjectTopicMap: Record<string, string> = {
+      'mathematics': 'Mathematics',
+      'science': 'Science',
+      'language-arts': 'Language Arts',
+      'social-studies': 'Social Studies',
+      'reading': 'Reading',
+      'writing': 'Writing'
+    };
+
+    const exhibitTopic = subjectTopicMap[subject] || subject;
+    startExhibit(exhibitTopic);
+  }, [startExhibit]);
+
   const reset = () => {
     setGameState(GameState.IDLE);
     setTopic('');
@@ -277,13 +301,18 @@ export default function App() {
                    ← Exit Tester
                 </button>
             )}
+            {showPracticeMode && (
+                <button onClick={() => setShowPracticeMode(false)} className="hover:text-white transition-colors">
+                   ← Exit Practice
+                </button>
+            )}
         </div>
       </header>
 
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showPracticeMode && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -325,74 +354,73 @@ export default function App() {
                     </div>
                 </form>
 
-                {/* Manifest Viewer Button */}
-                <div className="pt-4">
-                  <button
-                    onClick={generateManifest}
-                    disabled={!topic}
-                    className="group relative px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
-                  >
-                    <span className="flex items-center gap-2">
-                      📋 Preview Manifest Only
-                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                      </svg>
-                    </span>
-                  </button>
-                  <p className="text-xs text-slate-500 mt-2">See the blueprint without building the exhibit</p>
+                {/* Suggested Topics - Card Style */}
+                <div className="pt-8 max-w-5xl mx-auto">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>
+                        <span className="text-slate-500 text-xs font-mono uppercase tracking-widest">Popular Topics</span>
+                        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            { topic: 'Industrial Revolution', icon: '⚙️', color: '250, 204, 21', description: 'Explore the transformation of manufacturing and society' },
+                            { topic: 'Botany', icon: '🌿', color: '74, 222, 128', description: 'Discover the science of plants and their ecosystems' },
+                            { topic: 'Cubism', icon: '🎨', color: '192, 132, 252', description: 'Learn about geometric abstraction in modern art' },
+                            { topic: 'Black Holes', icon: '🌌', color: '56, 189, 248', description: 'Journey into the mysteries of spacetime' }
+                        ].map(({ topic: suggestion, icon, color, description }) => (
+                            <SpotlightCard
+                                key={suggestion}
+                                color={color}
+                                onClick={() => { setTopic(suggestion); startExhibit(suggestion); }}
+                                className="bg-slate-900/40"
+                            >
+                                <div className="p-5 flex flex-col items-center text-center gap-3">
+                                    <div className="text-4xl">{icon}</div>
+                                    <div>
+                                        <h4 className="text-lg font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">
+                                            {suggestion}
+                                        </h4>
+                                        <p className="text-xs text-slate-400 leading-relaxed">
+                                            {description}
+                                        </p>
+                                    </div>
+                                </div>
+                            </SpotlightCard>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="pt-8 grid grid-cols-2 md:flex justify-center gap-3">
-                    {['Industrial Revolution', 'Botany', 'Cubism', 'Black Holes'].map(suggestion => (
-                        <button
-                            key={suggestion}
-                            onClick={() => { setTopic(suggestion); startExhibit(suggestion); }}
-                            className="px-5 py-2 rounded-full border border-white/10 hover:bg-white/5 text-sm text-slate-400 transition-colors hover:text-white"
-                        >
-                            {suggestion}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Testing Tools Section */}
-                <div className="pt-8 space-y-6">
-                  <div className="flex items-center gap-4">
+                {/* Main Actions Section */}
+                <div className="pt-8 max-w-2xl mx-auto">
+                  <div className="flex items-center gap-4 mb-6">
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>
-                    <span className="text-slate-500 text-xs font-mono uppercase tracking-widest">Testing Tools</span>
+                    <span className="text-slate-500 text-xs font-mono uppercase tracking-widest">Quick Start</span>
                     <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
                   </div>
 
-                  {/* Knowledge Check Tester Button */}
-                  <div>
-                    <button
-                      onClick={() => setShowKnowledgeCheckTester(true)}
-                      className="group relative px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
-                    >
-                      <span className="flex items-center gap-2">
-                        📝 Test Knowledge Check Problems
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                      </span>
-                    </button>
-                    <p className="text-xs text-slate-500 mt-2">Create and test specific problem types</p>
-                  </div>
-
-                  {/* Visual Primitives Tester Button */}
-                  <div>
-                    <button
-                      onClick={() => setShowVisualTester(true)}
-                      className="group relative px-8 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
-                    >
-                      <span className="flex items-center gap-2">
-                        🎨 Test Visual Primitives
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                      </span>
-                    </button>
-                    <p className="text-xs text-slate-500 mt-2">Preview all visual primitive components</p>
-                  </div>
+                  {/* Practice Mode Button - SpotlightCard Style */}
+                  <SpotlightCard
+                    color="74, 222, 128"
+                    onClick={() => setShowPracticeMode(true)}
+                    className="bg-gradient-to-br from-green-900/20 to-emerald-900/20"
+                  >
+                    <div className="p-8 flex items-start gap-6">
+                      <div className="w-16 h-16 bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                        <span className="text-3xl">🎯</span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-green-200 transition-colors">
+                          Start Practice Session
+                        </h3>
+                        <p className="text-slate-300 text-sm leading-relaxed">
+                          Jump into a focused practice session with auto-generated questions tailored to your subject and grade level
+                        </p>
+                      </div>
+                      <svg className="w-6 h-6 text-slate-600 group-hover:text-green-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                      </svg>
+                    </div>
+                  </SpotlightCard>
                 </div>
              </div>
           </div>
@@ -420,6 +448,16 @@ export default function App() {
         {gameState === GameState.IDLE && showKnowledgeCheckTester && (
           <div className="flex-1 animate-fade-in">
             <KnowledgeCheckTester onBack={() => setShowKnowledgeCheckTester(false)} />
+          </div>
+        )}
+
+        {/* PRACTICE MODE STATE */}
+        {gameState === GameState.IDLE && showPracticeMode && (
+          <div className="flex-1 animate-fade-in">
+            <PracticeMode
+              onBack={() => setShowPracticeMode(false)}
+              onLearnMore={handleLearnMoreFromPractice}
+            />
           </div>
         )}
 

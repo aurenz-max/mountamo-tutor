@@ -147,6 +147,38 @@ export async function POST(request: NextRequest) {
         );
         return NextResponse.json(curatorBrief);
 
+      case 'generateProblemHint':
+        const { generateProblemHint } = await import('@/components/lumina/service/problems/hint-generator');
+        const hint = await generateProblemHint(params.problem, params.hintLevel);
+        return NextResponse.json(hint);
+
+      case 'generatePracticeAssessment':
+        const { generatePracticeAssessment } = await import('@/components/lumina/service/problems/assessment-generator');
+        const assessment = await generatePracticeAssessment(
+          params.subject,
+          params.gradeLevel,
+          params.problemCount,
+          params.problems
+        );
+        return NextResponse.json(assessment);
+
+      case 'generateQuests':
+        const { generateQuests } = await import('@/components/lumina/service/problems/quest-generator');
+        const quests = await generateQuests(
+          params.subject,
+          params.gradeLevel,
+          params.count
+        );
+        return NextResponse.json(quests);
+
+      case 'generateWarmUpQuestion':
+        const { generateWarmUpQuestion } = await import('@/components/lumina/service/problems/quest-generator');
+        const warmUp = await generateWarmUpQuestion(
+          params.subject,
+          params.gradeLevel
+        );
+        return NextResponse.json(warmUp);
+
       default:
         return NextResponse.json(
           { error: `Unknown action: ${action}` },

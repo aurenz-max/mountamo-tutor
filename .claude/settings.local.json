@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Read(**)",
-      "Bash(dir \"c:\\Users\\xbox3\\claude web tutor\\curriculum-authoring-service\\app\")"
+      "Bash(dir \"c:\\Users\\xbox3\\claude web tutor\\curriculum-authoring-service\\app\")",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

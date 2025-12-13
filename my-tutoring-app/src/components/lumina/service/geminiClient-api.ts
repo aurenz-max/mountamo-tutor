@@ -142,6 +142,13 @@ export const generateSequencingProblems = async (
   return callAPI('generateSequencingProblems', { topic, gradeLevel, count });
 };
 
+export const generateProblemHint = async (
+  problem: ProblemData,
+  hintLevel: number
+): Promise<string> => {
+  return callAPI('generateProblemHint', { problem, hintLevel });
+};
+
 export const generateComponentContent = async (
   componentId: ComponentId,
   topic: string,
@@ -170,4 +177,52 @@ export const generateIntroBriefing = async (
   gradeLevel: string
 ): Promise<IntroBriefingData> => {
   return callAPI('generateIntroBriefing', { topic, gradeLevel });
+};
+
+export const generatePracticeAssessment = async (
+  subject: string,
+  gradeLevel: string,
+  problemCount: number,
+  problems: ProblemData[]
+): Promise<{
+  summary: string;
+  strengths: string[];
+  areasForGrowth: string[];
+  recommendedTopics: Array<{
+    topic: string;
+    reason: string;
+    subject: string;
+  }>;
+}> => {
+  return callAPI('generatePracticeAssessment', { subject, gradeLevel, problemCount, problems });
+};
+
+export interface Quest {
+  title: string;
+  description: string;
+  icon: string;
+  focusArea: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+}
+
+export interface WarmUpQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  funFact: string;
+}
+
+export const generateQuests = async (
+  subject: string,
+  gradeLevel: string,
+  count: number = 4
+): Promise<Quest[]> => {
+  return callAPI('generateQuests', { subject, gradeLevel, count });
+};
+
+export const generateWarmUpQuestion = async (
+  subject: string,
+  gradeLevel: string
+): Promise<WarmUpQuestion> => {
+  return callAPI('generateWarmUpQuestion', { subject, gradeLevel });
 };

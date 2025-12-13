@@ -4594,3 +4594,6 @@ export const buildCompleteExhibitFromTopic = async (
 // Re-export generateIntroBriefing from dedicated curator-brief service
 export { generateIntroBriefing };
 
+// Re-export hint generator from problems service
+export { generateProblemHint } from './problems/hint-generator';
+
