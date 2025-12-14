@@ -768,6 +768,12 @@ export default function App() {
                     dataArray={exhibitData.flashcardDecks || []}
                 />
 
+                {/* Image Comparison */}
+                <PrimitiveCollectionRenderer
+                    componentId="image-comparison"
+                    dataArray={exhibitData.imageComparisons || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

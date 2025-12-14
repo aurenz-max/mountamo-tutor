@@ -25,6 +25,7 @@ import MoleculeViewer from '../primitives/MoleculeViewer';
 import PeriodicTable from '../primitives/PeriodicTable';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
+import ImageComparison from '../primitives/ImageComparison';
 import { ComponentId } from '../types';
 
 /**
@@ -272,6 +273,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+  },
+
+  'image-comparison': {
+    component: ImageComparison,
+    sectionTitle: 'Visual Transformation',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
   },
 };
 

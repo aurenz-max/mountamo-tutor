@@ -28,6 +28,7 @@ import { generateExhibitManifest } from "./manifest/gemini-manifest";
 import { generateIntroBriefing } from "./curator-brief/gemini-curator-brief";
 import { generateMediaPlayer } from "./media-player/gemini-media-player";
 import { generateFlashcardDeck } from "./flashcard-deck/gemini-flashcard";
+import { generateImageComparison } from "./image-comparison/gemini-image-comparison";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2617,6 +2618,9 @@ export const generateComponentContent = async (
     case 'flashcard-deck':
       return await generateFlashcardDeckContent(item, topic, gradeLevelContext);
 
+    case 'image-comparison':
+      return await generateImageComparisonContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4388,6 +4392,25 @@ const generateFlashcardDeckContent = async (item: any, topic: string, gradeConte
   };
 };
 
+const generateImageComparisonContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  // Extract configuration from manifest item
+  const config = item.config || {};
+  const focusArea = item.intent || config.focusArea || '';
+  const aspectRatio = config.aspectRatio || '1:1';
+
+  // Generate the image comparison using dedicated service
+  const imageComparisonData = await generateImageComparison(topic, gradeContext, {
+    focusArea,
+    aspectRatio
+  });
+
+  return {
+    type: 'image-comparison',
+    instanceId: item.instanceId,
+    data: imageComparisonData
+  };
+};
+
 /**
  * Generate Nested Hierarchy content
  */
@@ -4717,6 +4740,11 @@ export const buildCompleteExhibitFromTopic = async (
       case 'flashcard-deck':
         if (!exhibit.flashcardDecks) exhibit.flashcardDecks = [];
         exhibit.flashcardDecks.push(component.data);
+        break;
+
+      case 'image-comparison':
+        if (!exhibit.imageComparisons) exhibit.imageComparisons = [];
+        exhibit.imageComparisons.push(component.data);
         break;
 
       case 'knowledge-check':

@@ -837,6 +837,18 @@ export interface FlashcardDeckData {
   cards: FlashcardItem[];
 }
 
+// Image Comparison Types (Before/After Slider)
+export interface ImageComparisonData {
+  title?: string;
+  description?: string;
+  beforeImage: string;
+  afterImage: string;
+  beforeLabel?: string;
+  afterLabel?: string;
+  detailedExplanation?: string;
+  keyTakeaways?: string[];
+}
+
 export interface ExhibitData {
   topic: string;
   intro: IntroData; // Legacy simple intro (hook + objectives)
@@ -858,6 +870,7 @@ export interface ExhibitData {
   periodicTables?: PeriodicTableData[];
   mediaPlayers?: MediaPlayerData[];
   flashcardDecks?: FlashcardDeckData[];
+  imageComparisons?: ImageComparisonData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -941,7 +954,10 @@ export type ComponentId =
   | 'media-player'       // Audio-visual lesson player with synchronized narration and images
 
   // Study & Practice Tools
-  | 'flashcard-deck';    // Interactive flashcard deck for rapid-fire memorization
+  | 'flashcard-deck'     // Interactive flashcard deck for rapid-fire memorization
+
+  // Visual Comparison Tools
+  | 'image-comparison';  // Before/After image slider for visual transformations
 
 export interface ComponentDefinition {
   id: ComponentId;

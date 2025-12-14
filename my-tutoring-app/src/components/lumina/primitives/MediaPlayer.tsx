@@ -15,7 +15,8 @@ interface MediaPlayerProps {
  * - Multi-segment lessons with audio narration and visual content
  * - Play/pause controls with progress tracking
  * - Navigation between segments
- * - Automatic playback on segment change
+ * - Intro screen to prevent auto-play
+ * - Automatic playback on segment change (after started)
  * - Beautiful UI with ambient effects
  * - Uses Web Audio API for PCM audio playback
  */
@@ -26,6 +27,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
   const [isFinished, setIsFinished] = useState(false);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -125,6 +127,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
         setProgress(0);
         setIsFinished(false);
       }
+      setHasStarted(true);
       playAudio();
     }
   };
@@ -180,13 +183,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     loadAudio();
   }, [currentSegment.audioBase64]);
 
-  // Auto-play on segment change (after audio is loaded)
+  // Auto-play on segment change (after audio is loaded) - only if already started
   useEffect(() => {
     setProgress(0);
     setIsFinished(false);
     pausedAtRef.current = 0;
 
-    if (audioBuffer) {
+    if (audioBuffer && hasStarted) {
       // Small delay to ensure everything is ready
       const timer = setTimeout(() => {
         playAudio();
@@ -200,7 +203,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
     return () => stopAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, audioBuffer]);
+  }, [currentIndex, audioBuffer, hasStarted]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -214,6 +217,31 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       {/* Ambient Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+
+      {/* Intro Overlay */}
+      {!hasStarted && (
+        <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center rounded-3xl">
+          <div className="text-center space-y-6 max-w-md px-6">
+            <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-indigo-500/20 mb-4">
+              <Play className="h-10 w-10 text-indigo-400 fill-current ml-1" />
+            </div>
+            <h2 className="text-3xl font-bold text-white">
+              {data.title || 'Interactive Lesson'}
+            </h2>
+            <p className="text-slate-400 text-lg leading-relaxed">
+              {data.segments.length} segments with audio narration and visual illustrations
+            </p>
+            <button
+              onClick={handlePlayPause}
+              disabled={!audioBuffer || isLoadingAudio}
+              className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-lg shadow-lg shadow-indigo-500/25 ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              <Play className="h-5 w-5 fill-current" />
+              {isLoadingAudio ? 'Loading...' : 'Begin Lesson'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Card Container */}
       <div className="w-full max-w-6xl h-[700px] bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 flex flex-col lg:flex-row overflow-hidden relative z-10 transition-all">
