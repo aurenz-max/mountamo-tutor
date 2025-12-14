@@ -823,6 +823,20 @@ export interface MediaPlayerData {
   imageResolution?: '1K' | '2K' | '4K';
 }
 
+// Flashcard Types (Rapid-Fire Study Tool)
+export interface FlashcardItem {
+  id: string;
+  term: string;
+  definition: string;
+  category: string;
+}
+
+export interface FlashcardDeckData {
+  title?: string;
+  description?: string;
+  cards: FlashcardItem[];
+}
+
 export interface ExhibitData {
   topic: string;
   intro: IntroData; // Legacy simple intro (hook + objectives)
@@ -843,6 +857,7 @@ export interface ExhibitData {
   moleculeViewers?: MoleculeViewerData[];
   periodicTables?: PeriodicTableData[];
   mediaPlayers?: MediaPlayerData[];
+  flashcardDecks?: FlashcardDeckData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -923,7 +938,10 @@ export type ComponentId =
   | 'periodic-table'     // Interactive periodic table of elements
 
   // Media & Multimedia
-  | 'media-player';      // Audio-visual lesson player with synchronized narration and images
+  | 'media-player'       // Audio-visual lesson player with synchronized narration and images
+
+  // Study & Practice Tools
+  | 'flashcard-deck';    // Interactive flashcard deck for rapid-fire memorization
 
 export interface ComponentDefinition {
   id: ComponentId;

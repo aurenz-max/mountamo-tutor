@@ -27,6 +27,7 @@ import {
 import { generateExhibitManifest } from "./manifest/gemini-manifest";
 import { generateIntroBriefing } from "./curator-brief/gemini-curator-brief";
 import { generateMediaPlayer } from "./media-player/gemini-media-player";
+import { generateFlashcardDeck } from "./flashcard-deck/gemini-flashcard";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2613,6 +2614,9 @@ export const generateComponentContent = async (
     case 'media-player':
       return await generateMediaPlayerContent(item, topic, gradeLevelContext);
 
+    case 'flashcard-deck':
+      return await generateFlashcardDeckContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4362,6 +4366,29 @@ const generateMediaPlayerContent = async (item: any, topic: string, gradeContext
 };
 
 /**
+ * Generate Flashcard Deck content
+ */
+const generateFlashcardDeckContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  // Extract configuration from manifest item
+  const config = item.config || {};
+  const cardCount = config.cardCount || 15;
+  const focusArea = item.intent || config.focusArea || '';
+
+  // Generate the flashcard deck using dedicated service
+  const flashcardData = await generateFlashcardDeck(topic, gradeContext, {
+    cardCount,
+    focusArea,
+    includeExamples: config.includeExamples
+  });
+
+  return {
+    type: 'flashcard-deck',
+    instanceId: item.instanceId,
+    data: flashcardData
+  };
+};
+
+/**
  * Generate Nested Hierarchy content
  */
 const generateNestedHierarchyContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: NestedHierarchyData }> => {
@@ -4685,6 +4712,11 @@ export const buildCompleteExhibitFromTopic = async (
       case 'media-player':
         if (!exhibit.mediaPlayers) exhibit.mediaPlayers = [];
         exhibit.mediaPlayers.push(component.data);
+        break;
+
+      case 'flashcard-deck':
+        if (!exhibit.flashcardDecks) exhibit.flashcardDecks = [];
+        exhibit.flashcardDecks.push(component.data);
         break;
 
       case 'knowledge-check':

@@ -762,6 +762,12 @@ export default function App() {
                     dataArray={exhibitData.mediaPlayers || []}
                 />
 
+                {/* Flashcard Deck Section - Interactive Study Tool */}
+                <PrimitiveCollectionRenderer
+                    componentId="flashcard-deck"
+                    dataArray={exhibitData.flashcardDecks || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

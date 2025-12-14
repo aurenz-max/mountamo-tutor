@@ -150,6 +150,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     id: 'media-player',
     description: 'Audio-visual lesson player with synchronized narration and images. Multi-segment interactive presentation where each segment has AI-generated voiceover narration and accompanying visuals. Perfect for step-by-step explanations, processes, stories, or any content that benefits from multimedia presentation. Features play/pause controls, progress tracking, and segment navigation.',
     constraints: 'Best for topics that benefit from sequential, narrative-driven explanation (processes, stories, step-by-step concepts). Each lesson typically has 3-5 segments. Works for all grade levels - narration and visuals adapt to audience.'
+  },
+  {
+    id: 'flashcard-deck',
+    description: 'Interactive flashcard deck for rapid-fire memorization and active recall practice. Students flip cards to reveal answers, mark whether they know each concept, and track their progress. Perfect for vocabulary, key terms, formulas, definitions, facts, language learning, or any content requiring rote memorization. Features 3D flip animations, keyboard shortcuts, audio feedback, shuffle mode, and performance statistics.',
+    constraints: 'Best for content with discrete facts or term-definition pairs. Typically generates 12-20 cards per deck. Ideal for review, test prep, or building fluency. Works for all grade levels - vocabulary and definitions adapt to audience. Use when students need active recall practice rather than passive reading.'
   }
 ];
 
