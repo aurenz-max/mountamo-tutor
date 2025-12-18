@@ -1,4 +1,4 @@
-import { Type, Schema } from "@google/genai";
+import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { MoleculeViewerData } from "../../types";
 import { ai } from "../geminiClient";
 
@@ -130,13 +130,15 @@ VISUALIZATION GUIDELINES:
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: generationPrompt,
       config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
         responseMimeType: "application/json",
         responseSchema: moleculeSchema,
         systemInstruction: "You are an expert computational chemist and educator. You generate precise 3D coordinate data for molecular visualization engines. Provide chemically accurate structures with educational value.",
-        temperature: 0.7,
       }
     });
 

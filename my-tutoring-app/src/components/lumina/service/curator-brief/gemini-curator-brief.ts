@@ -1,4 +1,4 @@
-import { Type, Schema } from "@google/genai";
+import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { IntroBriefingData } from "../../types";
 import { ai } from "../geminiClient";
 
@@ -299,12 +299,14 @@ Create an engaging, age-appropriate Intro Briefing that will excite students abo
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
         responseMimeType: "application/json",
         responseSchema: schema,
-        temperature: 1.0,
       },
     });
 

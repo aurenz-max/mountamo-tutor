@@ -1,4 +1,4 @@
-import { Type, Schema, Modality } from "@google/genai";
+import { Type, Schema, Modality, ThinkingLevel } from "@google/genai";
 import { MediaPlayerData, LessonSegment, FullLessonSegment } from "../../types";
 import { ai } from "../geminiClient";
 
@@ -79,9 +79,12 @@ Use age-appropriate language and relatable examples.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
         responseMimeType: "application/json",
         responseSchema: schema,
         temperature: 1.0,

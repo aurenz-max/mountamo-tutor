@@ -1,5 +1,5 @@
 
-import { Type, Schema } from "@google/genai";
+import { Type, Schema, ThinkingLevel } from "@google/genai";
 import {
   ExhibitData,
   ItemDetailData,
@@ -72,10 +72,13 @@ const detailSchema: Schema = {
 export const generateItemDetail = async (contextTopic: string, item: string): Promise<ItemDetailData> => {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: `Context: Educational exhibit about "${contextTopic}".
       Task: Provide a deep-dive analysis for the specific item: "${item}".`,
       config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
         responseMimeType: "application/json",
         responseSchema: detailSchema,
       }
@@ -307,10 +310,9 @@ Respond ONLY with the complete HTML code. Do not include explanations or markdow
       model: "gemini-3-pro-preview",
       contents: prompt,
       config: {
-        temperature: 1.0,
         maxOutputTokens: 15000,
         thinkingConfig: {
-          thinkingLevel: 'HIGH',
+          thinkingLevel: ThinkingLevel.HIGH,
         },
       },
     });
@@ -414,10 +416,13 @@ Respond ONLY with the SVG code. No explanations or markdown.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        temperature: 0.8,
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
+        responseMimeType: 'application/json',
         maxOutputTokens: 8000,
       },
     });
@@ -505,12 +510,14 @@ Choose an example sentence that clearly demonstrates the concept.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
         responseMimeType: "application/json",
         responseSchema: schema,
-        temperature: 0.7,
       },
     });
 
@@ -662,12 +669,14 @@ Generate appropriate data for this visualization type.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
         responseMimeType: "application/json",
         responseSchema: schema,
-        temperature: 0.7,
       },
     });
 
@@ -878,12 +887,11 @@ Now generate ${count} problem${count > 1 ? 's' : ''} following this structure an
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: multipleChoiceSchema,
-        temperature: 0.8, // Slightly higher for variety in questions
       },
     });
 
@@ -1074,12 +1082,11 @@ Now generate ${count} problem${count > 1 ? 's' : ''} following this structure an
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: trueFalseSchema,
-        temperature: 0.8,
       },
     });
 
@@ -1305,12 +1312,11 @@ Now generate ${count} problem${count > 1 ? 's' : ''} following this structure an
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: fillInBlanksSchema,
-        temperature: 0.8,
       },
     });
 
@@ -1601,12 +1607,11 @@ Now generate ${count} problem${count > 1 ? 's' : ''} following this structure an
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: categorizationSchema,
-        temperature: 0.8,
       },
     });
 
@@ -1947,12 +1952,11 @@ Now generate ${count} problem${count > 1 ? 's' : ''} following this structure an
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: matchingSchema,
-        temperature: 0.8,
       },
     });
 
@@ -2336,12 +2340,11 @@ Now generate ${count} problem${count > 1 ? 's' : ''} following this structure an
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: sequencingSchema,
-        temperature: 0.8,
       },
     });
 
@@ -2714,7 +2717,7 @@ const generateConceptCardsContent = async (item: any, topic: string, gradeContex
   };
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: `Create ${itemCount} concept cards for: "${topic}"
 
 TARGET AUDIENCE: ${gradeContext}
@@ -2724,7 +2727,6 @@ Generate ${itemCount} key concepts with definitions, visual prompts, and pedagog
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -2831,7 +2833,6 @@ Generate a side-by-side comparison with two items.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -2869,7 +2870,6 @@ Generate a table with headers and rows.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -2918,7 +2918,6 @@ Generate a deep-dive editorial section with multiple subsections.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -3217,7 +3216,6 @@ CRITICAL RULES:
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -3316,7 +3314,7 @@ const generateFormulaCardContent = async (item: any, topic: string, gradeContext
   };
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: `Create a comprehensive formula card for: "${topic}"
 
 TARGET AUDIENCE: ${gradeContext}
@@ -3419,7 +3417,6 @@ Now generate comprehensive formula data following these principles.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -3558,12 +3555,11 @@ CONTEXT:
 Generate 4-6 items that span the spectrum meaningfully. Ensure the activity teaches discrimination—students should finish understanding WHY things fall where they do, not just WHERE.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.8,
     },
   });
 
@@ -3731,12 +3727,11 @@ For each step, verify:
 Generate a complete worked example with 4-8 steps. Ensure annotations are substantive—each should teach something a student wouldn't get from just watching the procedure.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -3789,7 +3784,6 @@ Choose the most appropriate category based on the content.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -4027,12 +4021,11 @@ CONTEXT:
 Generate a complete, engaging take-home activity following these guidelines.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.8,
     },
   });
 
@@ -4134,12 +4127,11 @@ Generate a reading passage broken into sections.
 Structure the text as a sequence of segments. Most segments will be 'text', but vocabulary words should be their own 'vocabulary' segments.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -4269,12 +4261,11 @@ INTENT: ${item.intent}
 Generate an engaging word-building exercise that helps students understand how words are constructed from meaningful parts.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 
@@ -4543,12 +4534,11 @@ Generate a complete hierarchical tree structure with:
 Return ONLY valid JSON matching the schema.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0.7,
     },
   });
 

@@ -1,4 +1,4 @@
-import { Type, Schema } from "@google/genai";
+import { Type, Schema, ThinkingLevel } from "@google/genai";
 
 import {
 
@@ -258,7 +258,7 @@ ${catalogContext}
 
 DESIGN RULES:
 1. ✅ ALWAYS start with 'curator-brief' (this is REQUIRED)
-2. ✅ ALWAYS end with 'knowledge-check' (this is RECOMMENDED)
+2. ✅ ALWAYS end with either 'knowledge-check' or 'flashcard-deck' to reinforce learning (this is RECOMMENDED)
 3. 🎯 Choose the BEST 4-8 components total to explain the topic effectively
 4. 📊 Prioritize components that match the subject matter:
    - Elementary Math (Counting, Addition, Subtraction) → Use 'number-line' or 'bar-model'
@@ -280,7 +280,7 @@ OUTPUT INSTRUCTIONS:
   * instanceId: Create a unique ID (e.g., 'brief-1', 'number-line-addition-1', 'comparison-democracy-monarchy')
   * title: The heading that will appear above this section
   * intent: DETAILED instructions for what content to generate (be specific!)
-  * config: Optional hints and educational context
+  * config: educational context for continuity across components
     - For custom-visual: Include subject, keyTerms, and conceptsCovered to improve content quality
       Example: {"subject": "Mathematics", "keyTerms": ["addition", "sum", "equals"], "conceptsCovered": ["combining quantities", "number sense"]}
     - For knowledge-check: MUST include problemType (choose from: "multiple_choice", "true_false", "fill_in_blanks", "matching_activity", "sequencing_activity", "categorization_activity")
@@ -334,12 +334,14 @@ Now generate the manifest for: "${topic}" (${gradeLevel})
 Return ONLY valid JSON matching the schema.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
         responseMimeType: "application/json",
         responseSchema: manifestSchema,
-        temperature: 0.8,
       },
     });
 
