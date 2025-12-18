@@ -1,4 +1,38 @@
+import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { FlashcardDeckData, FlashcardItem } from '../../types';
+import { ai } from "../geminiClient";
+
+/**
+ * Schema definition for Flashcard Deck
+ */
+const flashcardDeckSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    cards: {
+      type: Type.ARRAY,
+      description: "Array of flashcard items",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          term: {
+            type: Type.STRING,
+            description: "The concept, word, or question (front of card)"
+          },
+          definition: {
+            type: Type.STRING,
+            description: "The concise answer or explanation (back of card, under 25 words)"
+          },
+          category: {
+            type: Type.STRING,
+            description: "A short sub-category label (e.g., 'Vocabulary', 'Key Concept', 'Formula')"
+          }
+        },
+        required: ["term", "definition", "category"]
+      }
+    }
+  },
+  required: ["cards"]
+};
 
 /**
  * Generate a flashcard deck using Gemini AI
@@ -19,7 +53,7 @@ export async function generateFlashcardDeck(
   const cardCount = config?.cardCount || 15;
   const focusArea = config?.focusArea || '';
 
-  const prompt = `Generate a set of ${cardCount} high-quality flashcards for studying: "${topic}"${focusArea ? ` (focus on: ${focusArea})` : ''}.
+  const generationPrompt = `Generate a set of ${cardCount} high-quality flashcards for studying: "${topic}"${focusArea ? ` (focus on: ${focusArea})` : ''}.
 
 Target audience: ${gradeContext}
 
@@ -30,45 +64,45 @@ Create flashcards that:
 4. Group cards by logical sub-categories
 5. Progress from basic to more advanced concepts
 
-Return the flashcards as a JSON array where each card has:
+Ensure each card has:
 - term: The concept, word, or question (front of card)
 - definition: The concise answer or explanation (back of card)
-- category: A short sub-category label (e.g., "Vocabulary", "Key Concept", "Formula")
-
-Example format:
-[
-  {
-    "term": "Photosynthesis",
-    "definition": "Process by which plants convert sunlight into chemical energy",
-    "category": "Key Process"
-  }
-]`;
+- category: A short sub-category label (e.g., "Vocabulary", "Key Concept", "Formula")`;
 
   try {
-    const response = await fetch('/api/lumina', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'generateStructuredContent',
-        topic,
-        gradeLevel: gradeContext,
-        contentType: 'flashcard-deck',
-        prompt,
-        responseFormat: 'json'
-      })
+    console.log('📞 Generator params:', { topic, gradeLevel: gradeContext, cardCount, focusArea });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: generationPrompt,
+      config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
+        responseMimeType: "application/json",
+        responseSchema: flashcardDeckSchema,
+        systemInstruction: `You are an expert educational content creator. Generate high-quality flashcards that promote effective memorization and learning for ${gradeContext} students.`,
+      }
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to generate flashcard deck: ${response.statusText}`);
+    const text = response.text;
+    if (!text) {
+      throw new Error("No data returned from Gemini API");
     }
 
-    const data = await response.json();
-    const cards: FlashcardItem[] = (data.content || []).map((card: any, index: number) => ({
+    const result = JSON.parse(text);
+    const cards: FlashcardItem[] = (result.cards || []).map((card: any, index: number) => ({
       id: `${Date.now()}-${index}`,
       term: card.term || '',
       definition: card.definition || '',
       category: card.category || 'General'
     }));
+
+    console.log('🃏 Flashcard Deck Generated:', {
+      topic,
+      cardCount: cards.length,
+      categories: Array.from(new Set(cards.map(c => c.category)))
+    });
 
     return {
       title: `${topic} Flashcards`,
@@ -77,19 +111,6 @@ Example format:
     };
   } catch (error) {
     console.error('Error generating flashcard deck:', error);
-
-    // Return a minimal fallback deck
-    return {
-      title: `${topic} Flashcards`,
-      description: 'Study deck for ' + topic,
-      cards: [
-        {
-          id: '1',
-          term: topic,
-          definition: 'Review the key concepts and terminology',
-          category: 'Overview'
-        }
-      ]
-    };
+    throw error;
   }
 }
