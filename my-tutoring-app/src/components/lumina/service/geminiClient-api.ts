@@ -165,11 +165,26 @@ export const generateExhibitManifest = async (
   return callAPI('generateExhibitManifest', { topic, gradeLevel });
 };
 
+export const generateExhibitManifestWithObjectives = async (
+  topic: string,
+  gradeLevel: string,
+  objectives: Array<{ id: string; text: string; verb: string; icon: string }>
+): Promise<ExhibitManifest> => {
+  return callAPI('generateExhibitManifestWithObjectives', { topic, gradeLevel, objectives });
+};
+
 export const buildCompleteExhibitFromTopic = async (
   topic: string,
   gradeLevel: string
 ): Promise<ExhibitData> => {
   return callAPI('buildCompleteExhibitFromTopic', { topic, gradeLevel });
+};
+
+export const buildCompleteExhibitFromManifest = async (
+  manifest: ExhibitManifest,
+  curatorBrief: IntroBriefingData
+): Promise<ExhibitData> => {
+  return callAPI('buildCompleteExhibitFromManifest', { manifest, curatorBrief });
 };
 
 export const generateIntroBriefing = async (

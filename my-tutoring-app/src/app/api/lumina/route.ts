@@ -131,11 +131,30 @@ export async function POST(request: NextRequest) {
         const manifest = await generateExhibitManifest(params.topic, params.gradeLevel);
         return NextResponse.json(manifest);
 
+      case 'generateExhibitManifestWithObjectives':
+        console.log('🗺️ API ROUTE: generateExhibitManifestWithObjectives called with', params.objectives?.length, 'objectives');
+        const manifestWithObjectives = await generateExhibitManifest(
+          params.topic,
+          params.gradeLevel,
+          params.objectives
+        );
+        return NextResponse.json(manifestWithObjectives);
+
       case 'buildCompleteExhibitFromTopic':
         const exhibit = await buildCompleteExhibitFromTopic(params.topic, params.gradeLevel);
         return NextResponse.json(exhibit);
 
+      case 'buildCompleteExhibitFromManifest':
+        console.log('🎯 API ROUTE: buildCompleteExhibitFromManifest called');
+        const { buildCompleteExhibitFromManifest } = await import('@/components/lumina/service/geminiService');
+        const exhibitFromManifest = await buildCompleteExhibitFromManifest(
+          params.manifest,
+          params.curatorBrief
+        );
+        return NextResponse.json(exhibitFromManifest);
+
       case 'generateIntroBriefing':
+        console.log('📚 API ROUTE: generateIntroBriefing called for topic:', params.topic);
         const introBriefing = await generateIntroBriefing(params.topic, params.gradeLevel);
         return NextResponse.json(introBriefing);
 

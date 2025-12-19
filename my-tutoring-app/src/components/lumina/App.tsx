@@ -14,7 +14,13 @@ import { SentenceAnalyzer } from './primitives/SentenceAnalyzer';
 import { CustomVisual } from './primitives/CustomVisual';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { LiveAssistant } from './service/LiveAssistant';
-import { generateExhibitManifest, buildCompleteExhibitFromTopic } from './service/geminiClient-api';
+import {
+  generateExhibitManifest,
+  buildCompleteExhibitFromTopic,
+  generateIntroBriefing,
+  generateExhibitManifestWithObjectives,
+  buildCompleteExhibitFromManifest
+} from './service/geminiClient-api';
 import { GameState, ExhibitData, ExhibitManifest } from './types';
 import { GradeLevelSelector, GradeLevel } from './components/GradeLevelSelector';
 import { ManifestViewer } from './components/ManifestViewer';
@@ -191,12 +197,26 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      // Use manifest-first architecture
-      setTimeout(() => setLoadingMessage('📋 Generating exhibit blueprint...'), 500);
-      setTimeout(() => setLoadingMessage('🎨 Building components in parallel...'), 2000);
+      // CURATOR-BRIEF-FIRST ARCHITECTURE
+      // STEP 1: Generate curator brief with learning objectives
+      setTimeout(() => setLoadingMessage('🎯 Defining learning objectives...'), 500);
+      const curatorBrief = await generateIntroBriefing(searchTopic, gradeLevel);
+      console.log('📚 Curator brief generated with objectives:', curatorBrief.objectives);
+
+      // STEP 2: Use learning objectives to guide manifest generation
+      setTimeout(() => setLoadingMessage('📋 Generating exhibit blueprint...'), 1500);
+      const manifest = await generateExhibitManifestWithObjectives(
+        searchTopic,
+        gradeLevel,
+        curatorBrief.objectives
+      );
+      console.log('🗺️ Manifest generated based on learning objectives');
+
+      // STEP 3: Build complete exhibit from manifest
+      setTimeout(() => setLoadingMessage('🎨 Building components in parallel...'), 2500);
       setTimeout(() => setLoadingMessage('🏗️ Assembling complete exhibit...'), 4000);
 
-      const data = await buildCompleteExhibitFromTopic(searchTopic, gradeLevel);
+      const data = await buildCompleteExhibitFromManifest(manifest, curatorBrief);
       setExhibitData(data);
       setGameState(GameState.PLAYING);
     } catch (error) {

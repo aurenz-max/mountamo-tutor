@@ -240,7 +240,8 @@ const manifestSchema: Schema = {
  */
 export const generateExhibitManifest = async (
   topic: string,
-  gradeLevel: string = 'elementary'
+  gradeLevel: string = 'elementary',
+  objectives?: Array<{ id: string; text: string; verb: string; icon: string }>
 ): Promise<ExhibitManifest> => {
   try {
     const gradeLevelContext = getGradeLevelContext(gradeLevel);
@@ -248,10 +249,16 @@ export const generateExhibitManifest = async (
       `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`
     ).join('\n');
 
+    // Format objectives if provided
+    const objectivesContext = objectives
+      ? `\n\nLEARNING OBJECTIVES (Use these to guide component selection):
+${objectives.map((obj, i) => `${i + 1}. ${obj.text} [${obj.verb}]`).join('\n')}`
+      : '';
+
     const prompt = `You are the Lead Curator designing an educational exhibit.
 
 ASSIGNMENT: Create a manifest (blueprint) for: "${topic}"
-TARGET AUDIENCE: ${gradeLevelContext}
+TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}
 
 AVAILABLE COMPONENT TOOLS:
 ${catalogContext}

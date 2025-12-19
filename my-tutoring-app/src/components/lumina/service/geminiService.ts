@@ -25,7 +25,7 @@ import {
 } from "../types";
 
 import { generateExhibitManifest } from "./manifest/gemini-manifest";
-import { generateIntroBriefing } from "./curator-brief/gemini-curator-brief";
+import { generateIntroBriefing as generateIntroBriefingWithSubject } from "./curator-brief/gemini-curator-brief";
 import { generateMediaPlayer } from "./media-player/gemini-media-player";
 import { generateFlashcardDeck } from "./flashcard-deck/gemini-flashcard";
 import { generateImageComparison } from "./image-comparison/gemini-image-comparison";
@@ -4766,8 +4766,189 @@ export const buildCompleteExhibitFromTopic = async (
   return exhibit;
 };
 
-// Re-export generateIntroBriefing from dedicated curator-brief service
-export { generateIntroBriefing };
+/**
+ * Build Complete Exhibit from Pre-Generated Manifest and Curator Brief
+ * This function is used in the curator-brief-first architecture where:
+ * 1. Curator brief is generated first (with learning objectives)
+ * 2. Learning objectives guide manifest generation
+ * 3. This function builds the exhibit from the manifest (skipping curator brief generation)
+ */
+export const buildCompleteExhibitFromManifest = async (
+  manifest: any,
+  curatorBrief: any
+): Promise<any> => {
+  console.log('🎯 Building exhibit from pre-generated manifest and curator brief');
+  console.log(`📋 Manifest has ${manifest.layout.length} components`);
+
+  // PHASE 1: Filter out curator-brief from manifest since we already have it
+  const componentsToGenerate = manifest.layout.filter(
+    (item: any) => item.componentId !== 'curator-brief'
+  );
+  console.log(`🎨 Generating ${componentsToGenerate.length} components (excluding curator-brief)...`);
+
+  // PHASE 2: Generate Content for All Components in Parallel (except curator-brief)
+  const contentPromises = componentsToGenerate.map(async (item: any, index: number) => {
+    try {
+      console.log(`  ⚙️ [${index + 1}/${componentsToGenerate.length}] Generating: ${item.componentId} (${item.instanceId})`);
+      const content = await generateComponentContent(item, manifest.topic, manifest.gradeLevel);
+      console.log(`  ✅ [${index + 1}/${componentsToGenerate.length}] Completed: ${item.componentId}`);
+      return content;
+    } catch (error) {
+      console.error(`  ❌ Failed to generate ${item.componentId}:`, error);
+      return null; // Return null for failed components, don't block others
+    }
+  });
+
+  const components = await Promise.all(contentPromises);
+  const validComponents = components.filter(c => c !== null);
+  console.log(`✅ Generated ${validComponents.length}/${componentsToGenerate.length} components successfully`);
+
+  // PHASE 3: Assemble into Complete Exhibit Structure
+  console.log('🏗️ Phase 3: Assembling exhibit...');
+
+  const exhibit: any = {
+    topic: manifest.topic,
+    themeColor: manifest.themeColor,
+    introBriefing: curatorBrief, // Use pre-generated curator brief
+    intro: {
+      hook: curatorBrief.hook.content,
+      objectives: curatorBrief.objectives.map((obj: any) => obj.text)
+    },
+    cards: [],
+    featureExhibit: null,
+    comparison: null,
+    tables: [],
+    graphBoards: [],
+    scaleSpectrums: [],
+    annotatedExamples: [],
+    nestedHierarchies: [],
+    imagePanels: [],
+    takeHomeActivities: [],
+    knowledgeCheck: null,
+    specializedExhibits: [],
+    relatedTopics: []
+  };
+
+  // Map components to exhibit structure (same as buildCompleteExhibitFromTopic)
+  for (const component of validComponents) {
+    if (!component) continue;
+
+    switch (component.type) {
+      case 'concept-card-grid':
+        exhibit.cards = component.data;
+        break;
+
+      case 'feature-exhibit':
+        exhibit.featureExhibit = component.data;
+        break;
+
+      case 'comparison-panel':
+        exhibit.comparison = component.data;
+        break;
+
+      case 'generative-table':
+        exhibit.tables.push(component.data);
+        break;
+
+      case 'graph-board':
+        exhibit.graphBoards.push(component.data);
+        break;
+
+      case 'scale-spectrum':
+        exhibit.scaleSpectrums.push(component.data);
+        break;
+
+      case 'annotated-example':
+        exhibit.annotatedExamples.push(component.data);
+        break;
+
+      case 'nested-hierarchy':
+        exhibit.nestedHierarchies.push(component.data);
+        break;
+
+      case 'image-panel':
+        exhibit.imagePanels.push(component.data);
+        break;
+
+      case 'take-home-activity':
+        exhibit.takeHomeActivities.push(component.data);
+        break;
+
+      case 'interactive-passage':
+        if (!exhibit.interactivePassages) exhibit.interactivePassages = [];
+        exhibit.interactivePassages.push(component.data);
+        break;
+
+      case 'word-builder':
+        if (!exhibit.wordBuilders) exhibit.wordBuilders = [];
+        exhibit.wordBuilders.push(component.data);
+        break;
+
+      case 'molecule-viewer':
+        if (!exhibit.moleculeViewers) exhibit.moleculeViewers = [];
+        exhibit.moleculeViewers.push(component.data);
+        break;
+
+      case 'periodic-table':
+        if (!exhibit.periodicTables) exhibit.periodicTables = [];
+        exhibit.periodicTables.push(component.data);
+        break;
+
+      case 'media-player':
+        if (!exhibit.mediaPlayers) exhibit.mediaPlayers = [];
+        exhibit.mediaPlayers.push(component.data);
+        break;
+
+      case 'flashcard-deck':
+        if (!exhibit.flashcardDecks) exhibit.flashcardDecks = [];
+        exhibit.flashcardDecks.push(component.data);
+        break;
+
+      case 'image-comparison':
+        if (!exhibit.imageComparisons) exhibit.imageComparisons = [];
+        exhibit.imageComparisons.push(component.data);
+        break;
+
+      case 'knowledge-check':
+        exhibit.knowledgeCheck = component.data;
+        break;
+
+      case 'formula-card':
+        exhibit.specializedExhibits.push({ ...component.data, type: 'equation' });
+        break;
+
+      case 'sentence-analyzer':
+        exhibit.specializedExhibits.push(component.data);
+        break;
+
+      case 'math-visual':
+        exhibit.specializedExhibits.push(component.data);
+        break;
+
+      case 'custom-visual':
+        exhibit.specializedExhibits.push(component.data);
+        break;
+
+      default:
+        console.warn('Unknown component type:', component.type);
+    }
+  }
+
+  console.log('🎉 Exhibit assembly complete from manifest!');
+  return exhibit;
+};
+
+/**
+ * Wrapper for generateIntroBriefing that auto-infers subject from topic
+ * This allows simpler API calls that don't require explicit subject specification
+ */
+export const generateIntroBriefing = async (
+  topic: string,
+  gradeLevel: string
+): Promise<any> => {
+  // Auto-infer subject as "General" - the curator brief will adapt to the topic
+  return generateIntroBriefingWithSubject(topic, 'General', gradeLevel);
+};
 
 // Re-export hint generator from problems service
 export { generateProblemHint } from './problems/hint-generator';
