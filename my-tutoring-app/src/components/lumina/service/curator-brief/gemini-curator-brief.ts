@@ -213,7 +213,7 @@ export const generateIntroBriefing = async (
     ]
   };
 
-  const prompt = `You are an expert curriculum designer creating engaging lesson introductions for K-8 homeschool students. Your task is to generate an Intro Briefing schema that orients students to new topics by providing context, relevance, clear objectives, and motivation.
+  const prompt = `You are an expert curriculum designer creating engaging lesson plans for a given subject. Your task is to generate an Intro Briefing schema that orients students to new topics by providing context, relevance, clear objectives, and motivation.
 
 Generate an Intro Briefing schema for the following topic:
 
@@ -240,7 +240,6 @@ Younger students often respond better to scenarios and stories; older students e
 - Start each objective with a measurable action verb
 - Keep objectives achievable within the estimated time
 - Progress from lower to higher Bloom's levels when appropriate
-- Limit to 3-4 objectives to maintain focus
 - Use age-appropriate language
 
 **Verb Categories:**
@@ -299,14 +298,12 @@ Create an engaging, age-appropriate Intro Briefing that will excite students abo
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-lite-latest",
       contents: prompt,
       config: {
-        thinkingConfig: {
-          thinkingLevel: ThinkingLevel.HIGH,
-        },
         responseMimeType: "application/json",
         responseSchema: schema,
+        temperature: 0.7
       },
     });
 

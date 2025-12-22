@@ -794,6 +794,32 @@ export default function App() {
                     dataArray={exhibitData.imageComparisons || []}
                 />
 
+                {/* Math Visualization Primitives */}
+                <PrimitiveCollectionRenderer
+                    componentId="bar-model"
+                    dataArray={exhibitData.barModels || []}
+                />
+
+                <PrimitiveCollectionRenderer
+                    componentId="number-line"
+                    dataArray={exhibitData.numberLines || []}
+                />
+
+                <PrimitiveCollectionRenderer
+                    componentId="base-ten-blocks"
+                    dataArray={exhibitData.baseTenBlocks || []}
+                />
+
+                <PrimitiveCollectionRenderer
+                    componentId="fraction-circles"
+                    dataArray={exhibitData.fractionCircles || []}
+                />
+
+                <PrimitiveCollectionRenderer
+                    componentId="geometric-shape"
+                    dataArray={exhibitData.geometricShapes || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

@@ -169,27 +169,47 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   // Math Visualization Primitives
   'bar-model': {
     component: BarModel,
+    sectionTitle: 'Bar Model',
+    showDivider: true,
+    dividerStyle: 'left',
     allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
   },
 
   'number-line': {
     component: NumberLine,
+    sectionTitle: 'Number Line',
+    showDivider: true,
+    dividerStyle: 'left',
     allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
   },
 
   'base-ten-blocks': {
     component: BaseTenBlocks,
+    sectionTitle: 'Base Ten Blocks',
+    showDivider: true,
+    dividerStyle: 'left',
     allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
   },
 
   'fraction-circles': {
     component: FractionCircles,
+    sectionTitle: 'Fraction Circles',
+    showDivider: true,
+    dividerStyle: 'left',
     allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
   },
 
   'geometric-shape': {
     component: GeometricShape,
+    sectionTitle: 'Geometric Shape',
+    showDivider: true,
+    dividerStyle: 'left',
     allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
   },
 
   // Deprecated: Use specific math primitives instead

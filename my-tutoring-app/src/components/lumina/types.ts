@@ -1,3 +1,9 @@
+// Import math primitive data types
+import type { BarModelData } from './primitives/visual-primitives/math/BarModel';
+import type { NumberLineData } from './primitives/visual-primitives/math/NumberLine';
+import type { BaseTenBlocksData } from './primitives/visual-primitives/math/BaseTenBlocks';
+import type { FractionCirclesData } from './primitives/visual-primitives/math/FractionCircles';
+import type { GeometricShapeData } from './primitives/visual-primitives/math/GeometricShape';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -871,6 +877,12 @@ export interface ExhibitData {
   mediaPlayers?: MediaPlayerData[];
   flashcardDecks?: FlashcardDeckData[];
   imageComparisons?: ImageComparisonData[];
+  // Math Visualization Primitives
+  barModels?: BarModelData[];
+  numberLines?: NumberLineData[];
+  baseTenBlocks?: BaseTenBlocksData[];
+  fractionCircles?: FractionCirclesData[];
+  geometricShapes?: GeometricShapeData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }

@@ -53,11 +53,12 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
           <div className="w-full max-w-2xl px-8 py-12">
             <div className="relative h-1 bg-slate-600 rounded-full flex items-center">
               {/* Ticks */}
-              {Array.from({ length: 11 }).map((_, i) => {
-                const val = min + (totalRange * (i / 10));
+              {Array.from({ length: totalRange + 1 }).map((_, i) => {
+                const val = min + i;
+                const percent = (i / totalRange) * 100;
                 return (
-                  <div key={i} className="absolute w-px h-3 bg-slate-500 top-full mt-1 flex flex-col items-center" style={{ left: `${i * 10}%` }}>
-                    <span className="mt-2 text-[10px] text-slate-500 font-mono">{Math.round(val)}</span>
+                  <div key={i} className="absolute w-px h-3 bg-slate-500 top-full mt-1 flex flex-col items-center -translate-x-1/2" style={{ left: `${percent}%` }}>
+                    <span className="mt-2 text-base text-slate-400 font-mono font-semibold">{val}</span>
                   </div>
                 );
               })}
@@ -68,7 +69,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
                 return (
                   <div
                     key={i}
-                    className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center group cursor-help transition-all duration-500"
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center group cursor-help transition-all duration-500"
                     style={{ left: `${percent}%` }}
                   >
                     <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-[0_0_15px_rgba(59,130,246,0.5)] z-10 hover:scale-125 transition-transform"></div>

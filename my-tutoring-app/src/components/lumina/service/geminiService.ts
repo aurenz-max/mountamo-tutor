@@ -9,17 +9,13 @@ import {
   CustomWebData,
   CustomSVGData,
   SentenceSchemaData,
-  ExhibitManifest,
   ComponentDefinition,
-  ComponentId,
   GraphBoardData,
-  ScaleSpectrumData,
   AnnotatedExampleData,
   NestedHierarchyData,
   ImagePanelData,
   ManifestItemConfig,
   InteractivePassageData,
-  WordBuilderData,
   ProblemType,
   ProblemData
 } from "../types";
@@ -307,7 +303,7 @@ Respond ONLY with the complete HTML code. Do not include explanations or markdow
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         maxOutputTokens: 15000,
@@ -2624,6 +2620,21 @@ export const generateComponentContent = async (
     case 'image-comparison':
       return await generateImageComparisonContent(item, topic, gradeLevelContext);
 
+    case 'bar-model':
+      return await generateBarModelContent(item, topic, gradeLevelContext);
+
+    case 'number-line':
+      return await generateNumberLineContent(item, topic, gradeLevelContext);
+
+    case 'base-ten-blocks':
+      return await generateBaseTenBlocksContent(item, topic, gradeLevelContext);
+
+    case 'fraction-circles':
+      return await generateFractionCirclesContent(item, topic, gradeLevelContext);
+
+    case 'geometric-shape':
+      return await generateGeometricShapeContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4403,6 +4414,322 @@ const generateImageComparisonContent = async (item: any, topic: string, gradeCon
 };
 
 /**
+ * Generate Bar Model content
+ */
+const generateBarModelContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Title for the bar model visualization" },
+      description: { type: Type.STRING, description: "Brief explanation of what the bar model demonstrates" },
+      values: {
+        type: Type.ARRAY,
+        description: "Array of values to display as bars",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            label: { type: Type.STRING, description: "Label for this bar" },
+            value: { type: Type.NUMBER, description: "Numeric value for the bar height" },
+            color: { type: Type.STRING, description: "Color for this bar (e.g., 'blue', 'green', 'purple')" }
+          },
+          required: ["label", "value"]
+        }
+      }
+    },
+    required: ["title", "description", "values"]
+  };
+
+  const prompt = `You are generating a Bar Model visualization for elementary math education.
+
+CONTEXT:
+- Topic: ${topic}
+- Target Audience: ${gradeContext}
+- Intent: ${item.intent || item.title}
+
+Generate a bar model that helps students understand comparison, addition, or part-whole relationships through visual bars.
+
+REQUIREMENTS:
+1. Title should be engaging and age-appropriate
+2. Description should explain what the bars represent
+3. Create 2-4 bars with different values
+4. Use colors: blue, green, purple, orange, pink, or yellow
+5. Values should relate to the topic and be appropriate for the grade level
+6. Labels should be clear and concise
+
+Return the complete bar model data structure.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text);
+
+  return {
+    type: 'bar-model',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Number Line content
+ */
+const generateNumberLineContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Title for the number line visualization" },
+      description: { type: Type.STRING, description: "Brief explanation of what the number line demonstrates" },
+      range: {
+        type: Type.OBJECT,
+        description: "The range of numbers shown on the line",
+        properties: {
+          min: { type: Type.NUMBER, description: "Minimum value on the number line" },
+          max: { type: Type.NUMBER, description: "Maximum value on the number line" }
+        },
+        required: ["min", "max"]
+      },
+      highlights: {
+        type: Type.ARRAY,
+        description: "Important points to highlight on the number line",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            value: { type: Type.NUMBER, description: "Position on the number line" },
+            label: { type: Type.STRING, description: "Label for this highlighted point" }
+          },
+          required: ["value", "label"]
+        }
+      }
+    },
+    required: ["title", "description", "range", "highlights"]
+  };
+
+  const prompt = `You are generating a Number Line visualization for elementary math education.
+
+CONTEXT:
+- Topic: ${topic}
+- Target Audience: ${gradeContext}
+- Intent: ${item.intent || item.title}
+
+Generate a number line that helps students understand number placement, counting, addition, or subtraction.
+
+REQUIREMENTS:
+1. Title should be engaging and age-appropriate
+2. Description should explain what the number line demonstrates
+3. Choose an appropriate range (e.g., 0-10 for young learners, 0-100 for older students)
+4. Highlight 2-4 important points on the line
+5. Make sure highlighted values fall within the range
+6. Labels should explain why each point is important
+
+Return the complete number line data structure.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text);
+
+  return {
+    type: 'number-line',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Base-Ten Blocks content
+ */
+const generateBaseTenBlocksContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Title for the base-ten blocks visualization" },
+      description: { type: Type.STRING, description: "Brief explanation of what the blocks demonstrate" },
+      numberValue: { type: Type.NUMBER, description: "The number to represent using base-ten blocks (should be under 1000)" }
+    },
+    required: ["title", "description", "numberValue"]
+  };
+
+  const prompt = `You are generating a Base-Ten Blocks visualization for elementary math education.
+
+CONTEXT:
+- Topic: ${topic}
+- Target Audience: ${gradeContext}
+- Intent: ${item.intent || item.title}
+
+Generate base-ten blocks that help students understand place value (ones, tens, hundreds).
+
+REQUIREMENTS:
+1. Title should be engaging and age-appropriate
+2. Description should explain the place value concept
+3. Choose a number between 1 and 999 that relates to the topic
+4. The number should be appropriate for the grade level
+5. Make it relevant to the learning objective
+
+Return the complete base-ten blocks data structure.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text);
+
+  return {
+    type: 'base-ten-blocks',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Fraction Circles content
+ */
+const generateFractionCirclesContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Title for the fraction circles visualization" },
+      description: { type: Type.STRING, description: "Brief explanation of what the fraction circles demonstrate" },
+      fractions: {
+        type: Type.ARRAY,
+        description: "Array of fractions to visualize",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            numerator: { type: Type.NUMBER, description: "Numerator of the fraction" },
+            denominator: { type: Type.NUMBER, description: "Denominator of the fraction" },
+            label: { type: Type.STRING, description: "Label for this fraction" }
+          },
+          required: ["numerator", "denominator"]
+        }
+      }
+    },
+    required: ["title", "description", "fractions"]
+  };
+
+  const prompt = `You are generating Fraction Circles visualization for elementary math education.
+
+CONTEXT:
+- Topic: ${topic}
+- Target Audience: ${gradeContext}
+- Intent: ${item.intent || item.title}
+
+Generate fraction circles that help students understand fractional parts visually.
+
+REQUIREMENTS:
+1. Title should be engaging and age-appropriate
+2. Description should explain the fraction concept
+3. Create 2-3 fractions to compare
+4. Use simple fractions appropriate for the grade level (e.g., 1/2, 1/4, 3/4)
+5. Labels can explain what each fraction represents
+
+Return the complete fraction circles data structure.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text);
+
+  return {
+    type: 'fraction-circles',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Geometric Shape content
+ */
+const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Title for the geometric shape visualization" },
+      description: { type: Type.STRING, description: "Brief explanation of what the shape demonstrates" },
+      shapeName: {
+        type: Type.STRING,
+        description: "Name of the shape (e.g., 'triangle', 'square', 'circle', 'rectangle', 'pentagon')"
+      },
+      attributes: {
+        type: Type.ARRAY,
+        description: "Key attributes and properties of the shape",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            label: { type: Type.STRING, description: "Attribute name (e.g., 'Sides', 'Angles', 'Area')" },
+            value: { type: Type.STRING, description: "Value or description of this attribute" }
+          },
+          required: ["label", "value"]
+        }
+      }
+    },
+    required: ["title", "description", "shapeName", "attributes"]
+  };
+
+  const prompt = `You are generating a Geometric Shape visualization for elementary math education.
+
+CONTEXT:
+- Topic: ${topic}
+- Target Audience: ${gradeContext}
+- Intent: ${item.intent || item.title}
+
+Generate a geometric shape visualization that helps students understand shape properties.
+
+REQUIREMENTS:
+1. Title should be engaging and age-appropriate
+2. Description should introduce the shape
+3. Choose a shape relevant to the topic (triangle, square, circle, rectangle, pentagon, hexagon)
+4. Include 3-5 key attributes (e.g., number of sides, angles, symmetry, special properties)
+5. Make attributes age-appropriate and clear
+
+Return the complete geometric shape data structure.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated");
+  const data = JSON.parse(response.text);
+
+  return {
+    type: 'geometric-shape',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Nested Hierarchy content
  */
 const generateNestedHierarchyContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: NestedHierarchyData }> => {
@@ -4737,6 +5064,31 @@ export const buildCompleteExhibitFromTopic = async (
         exhibit.imageComparisons.push(component.data);
         break;
 
+      case 'bar-model':
+        if (!exhibit.barModels) exhibit.barModels = [];
+        exhibit.barModels.push(component.data);
+        break;
+
+      case 'number-line':
+        if (!exhibit.numberLines) exhibit.numberLines = [];
+        exhibit.numberLines.push(component.data);
+        break;
+
+      case 'base-ten-blocks':
+        if (!exhibit.baseTenBlocks) exhibit.baseTenBlocks = [];
+        exhibit.baseTenBlocks.push(component.data);
+        break;
+
+      case 'fraction-circles':
+        if (!exhibit.fractionCircles) exhibit.fractionCircles = [];
+        exhibit.fractionCircles.push(component.data);
+        break;
+
+      case 'geometric-shape':
+        if (!exhibit.geometricShapes) exhibit.geometricShapes = [];
+        exhibit.geometricShapes.push(component.data);
+        break;
+
       case 'knowledge-check':
         exhibit.knowledgeCheck = component.data;
         break;
@@ -4907,6 +5259,31 @@ export const buildCompleteExhibitFromManifest = async (
       case 'image-comparison':
         if (!exhibit.imageComparisons) exhibit.imageComparisons = [];
         exhibit.imageComparisons.push(component.data);
+        break;
+
+      case 'bar-model':
+        if (!exhibit.barModels) exhibit.barModels = [];
+        exhibit.barModels.push(component.data);
+        break;
+
+      case 'number-line':
+        if (!exhibit.numberLines) exhibit.numberLines = [];
+        exhibit.numberLines.push(component.data);
+        break;
+
+      case 'base-ten-blocks':
+        if (!exhibit.baseTenBlocks) exhibit.baseTenBlocks = [];
+        exhibit.baseTenBlocks.push(component.data);
+        break;
+
+      case 'fraction-circles':
+        if (!exhibit.fractionCircles) exhibit.fractionCircles = [];
+        exhibit.fractionCircles.push(component.data);
+        break;
+
+      case 'geometric-shape':
+        if (!exhibit.geometricShapes) exhibit.geometricShapes = [];
+        exhibit.geometricShapes.push(component.data);
         break;
 
       case 'knowledge-check':
