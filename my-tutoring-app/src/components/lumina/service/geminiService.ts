@@ -5031,66 +5031,66 @@ export const buildCompleteExhibitFromTopic = async (
 
       case 'interactive-passage':
         if (!exhibit.interactivePassages) exhibit.interactivePassages = [];
-        exhibit.interactivePassages.push(component.data);
+        exhibit.interactivePassages.push(dataWithInstanceId);
         break;
 
       case 'word-builder':
         if (!exhibit.wordBuilders) exhibit.wordBuilders = [];
-        exhibit.wordBuilders.push(component.data);
+        exhibit.wordBuilders.push(dataWithInstanceId);
         break;
 
       case 'molecule-viewer':
         if (!exhibit.moleculeViewers) exhibit.moleculeViewers = [];
-        exhibit.moleculeViewers.push(component.data);
+        exhibit.moleculeViewers.push(dataWithInstanceId);
         break;
 
       case 'periodic-table':
         if (!exhibit.periodicTables) exhibit.periodicTables = [];
-        exhibit.periodicTables.push(component.data);
+        exhibit.periodicTables.push(dataWithInstanceId);
         break;
 
       case 'media-player':
         if (!exhibit.mediaPlayers) exhibit.mediaPlayers = [];
-        exhibit.mediaPlayers.push(component.data);
+        exhibit.mediaPlayers.push(dataWithInstanceId);
         break;
 
       case 'flashcard-deck':
         if (!exhibit.flashcardDecks) exhibit.flashcardDecks = [];
-        exhibit.flashcardDecks.push(component.data);
+        exhibit.flashcardDecks.push(dataWithInstanceId);
         break;
 
       case 'image-comparison':
         if (!exhibit.imageComparisons) exhibit.imageComparisons = [];
-        exhibit.imageComparisons.push(component.data);
+        exhibit.imageComparisons.push(dataWithInstanceId);
         break;
 
       case 'bar-model':
         if (!exhibit.barModels) exhibit.barModels = [];
-        exhibit.barModels.push(component.data);
+        exhibit.barModels.push(dataWithInstanceId);
         break;
 
       case 'number-line':
         if (!exhibit.numberLines) exhibit.numberLines = [];
-        exhibit.numberLines.push(component.data);
+        exhibit.numberLines.push(dataWithInstanceId);
         break;
 
       case 'base-ten-blocks':
         if (!exhibit.baseTenBlocks) exhibit.baseTenBlocks = [];
-        exhibit.baseTenBlocks.push(component.data);
+        exhibit.baseTenBlocks.push(dataWithInstanceId);
         break;
 
       case 'fraction-circles':
         if (!exhibit.fractionCircles) exhibit.fractionCircles = [];
-        exhibit.fractionCircles.push(component.data);
+        exhibit.fractionCircles.push(dataWithInstanceId);
         break;
 
       case 'geometric-shape':
         if (!exhibit.geometricShapes) exhibit.geometricShapes = [];
-        exhibit.geometricShapes.push(component.data);
+        exhibit.geometricShapes.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':
-        exhibit.knowledgeCheck = component.data;
+        exhibit.knowledgeCheck = dataWithInstanceId;
         break;
 
       case 'formula-card':
@@ -5161,6 +5161,7 @@ export const buildCompleteExhibitFromManifest = async (
   const exhibit: any = {
     topic: manifest.topic,
     themeColor: manifest.themeColor,
+    manifest: manifest, // Include the manifest for objective mapping
     introBriefing: curatorBrief, // Use pre-generated curator brief
     intro: {
       hook: curatorBrief.hook.content,
@@ -5182,12 +5183,16 @@ export const buildCompleteExhibitFromManifest = async (
   };
 
   // Map components to exhibit structure (same as buildCompleteExhibitFromTopic)
+  // IMPORTANT: Attach instanceId to each data object for objective mapping
   for (const component of validComponents) {
     if (!component) continue;
 
+    // Attach instanceId to data for objective badge rendering
+    const dataWithInstanceId = { ...component.data, __instanceId: component.instanceId };
+
     switch (component.type) {
       case 'concept-card-grid':
-        exhibit.cards = component.data;
+        exhibit.cards = component.data; // Cards are special - rendered differently
         break;
 
       case 'feature-exhibit':
@@ -5199,95 +5204,95 @@ export const buildCompleteExhibitFromManifest = async (
         break;
 
       case 'generative-table':
-        exhibit.tables.push(component.data);
+        exhibit.tables.push(dataWithInstanceId);
         break;
 
       case 'graph-board':
-        exhibit.graphBoards.push(component.data);
+        exhibit.graphBoards.push(dataWithInstanceId);
         break;
 
       case 'scale-spectrum':
-        exhibit.scaleSpectrums.push(component.data);
+        exhibit.scaleSpectrums.push(dataWithInstanceId);
         break;
 
       case 'annotated-example':
-        exhibit.annotatedExamples.push(component.data);
+        exhibit.annotatedExamples.push(dataWithInstanceId);
         break;
 
       case 'nested-hierarchy':
-        exhibit.nestedHierarchies.push(component.data);
+        exhibit.nestedHierarchies.push(dataWithInstanceId);
         break;
 
       case 'image-panel':
-        exhibit.imagePanels.push(component.data);
+        exhibit.imagePanels.push(dataWithInstanceId);
         break;
 
       case 'take-home-activity':
-        exhibit.takeHomeActivities.push(component.data);
+        exhibit.takeHomeActivities.push(dataWithInstanceId);
         break;
 
       case 'interactive-passage':
         if (!exhibit.interactivePassages) exhibit.interactivePassages = [];
-        exhibit.interactivePassages.push(component.data);
+        exhibit.interactivePassages.push(dataWithInstanceId);
         break;
 
       case 'word-builder':
         if (!exhibit.wordBuilders) exhibit.wordBuilders = [];
-        exhibit.wordBuilders.push(component.data);
+        exhibit.wordBuilders.push(dataWithInstanceId);
         break;
 
       case 'molecule-viewer':
         if (!exhibit.moleculeViewers) exhibit.moleculeViewers = [];
-        exhibit.moleculeViewers.push(component.data);
+        exhibit.moleculeViewers.push(dataWithInstanceId);
         break;
 
       case 'periodic-table':
         if (!exhibit.periodicTables) exhibit.periodicTables = [];
-        exhibit.periodicTables.push(component.data);
+        exhibit.periodicTables.push(dataWithInstanceId);
         break;
 
       case 'media-player':
         if (!exhibit.mediaPlayers) exhibit.mediaPlayers = [];
-        exhibit.mediaPlayers.push(component.data);
+        exhibit.mediaPlayers.push(dataWithInstanceId);
         break;
 
       case 'flashcard-deck':
         if (!exhibit.flashcardDecks) exhibit.flashcardDecks = [];
-        exhibit.flashcardDecks.push(component.data);
+        exhibit.flashcardDecks.push(dataWithInstanceId);
         break;
 
       case 'image-comparison':
         if (!exhibit.imageComparisons) exhibit.imageComparisons = [];
-        exhibit.imageComparisons.push(component.data);
+        exhibit.imageComparisons.push(dataWithInstanceId);
         break;
 
       case 'bar-model':
         if (!exhibit.barModels) exhibit.barModels = [];
-        exhibit.barModels.push(component.data);
+        exhibit.barModels.push(dataWithInstanceId);
         break;
 
       case 'number-line':
         if (!exhibit.numberLines) exhibit.numberLines = [];
-        exhibit.numberLines.push(component.data);
+        exhibit.numberLines.push(dataWithInstanceId);
         break;
 
       case 'base-ten-blocks':
         if (!exhibit.baseTenBlocks) exhibit.baseTenBlocks = [];
-        exhibit.baseTenBlocks.push(component.data);
+        exhibit.baseTenBlocks.push(dataWithInstanceId);
         break;
 
       case 'fraction-circles':
         if (!exhibit.fractionCircles) exhibit.fractionCircles = [];
-        exhibit.fractionCircles.push(component.data);
+        exhibit.fractionCircles.push(dataWithInstanceId);
         break;
 
       case 'geometric-shape':
         if (!exhibit.geometricShapes) exhibit.geometricShapes = [];
-        exhibit.geometricShapes.push(component.data);
+        exhibit.geometricShapes.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':
-        exhibit.knowledgeCheck = component.data;
+        exhibit.knowledgeCheck = dataWithInstanceId;
         break;
 
       case 'formula-card':

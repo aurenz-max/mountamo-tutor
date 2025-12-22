@@ -5,6 +5,8 @@ import {
   CenteredSectionHeader,
 } from '../config/primitiveRegistry';
 import { ComponentId } from '../types';
+import { useExhibitContext } from '../contexts/ExhibitContext';
+import { ObjectiveBadge } from './ObjectiveBadge';
 
 interface PrimitiveRendererProps {
   /**
@@ -124,6 +126,7 @@ export const PrimitiveCollectionRenderer: React.FC<PrimitiveCollectionRendererPr
   keyExtractor = (_, index) => `${componentId}-${index}`,
 }) => {
   const config = getPrimitive(componentId);
+  const { getObjectivesForComponent } = useExhibitContext();
 
   if (!config) {
     console.warn(`[PrimitiveCollectionRenderer] No configuration found for component: ${componentId}`);
@@ -152,14 +155,27 @@ export const PrimitiveCollectionRenderer: React.FC<PrimitiveCollectionRendererPr
       {config.showDivider && config.sectionTitle && (
         <HeaderComponent title={config.sectionTitle} />
       )}
-      {dataArray.map((item, index) => (
-        <Component
-          key={keyExtractor(item, index)}
-          data={item}
-          index={index}
-          {...additionalProps}
-        />
-      ))}
+      {dataArray.map((item, index) => {
+        // Extract instanceId from data if available
+        const instanceId = item.__instanceId;
+        const objectives = instanceId ? getObjectivesForComponent(instanceId) : [];
+
+        return (
+          <div key={keyExtractor(item, index)} className="relative">
+            {/* Objective badges above component */}
+            {objectives.length > 0 && (
+              <div className="mb-4">
+                <ObjectiveBadge objectives={objectives} compact={true} />
+              </div>
+            )}
+            <Component
+              data={item}
+              index={index}
+              {...additionalProps}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };

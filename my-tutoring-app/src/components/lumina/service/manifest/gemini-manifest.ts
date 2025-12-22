@@ -225,6 +225,11 @@ const manifestSchema: Schema = {
                 description: "Core concepts to illustrate"
               }
             }
+          },
+          objectiveIds: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Array of learning objective IDs (e.g., ['obj1', 'obj2']) that this component helps achieve. Each component should map to 1-2 objectives based on its content and purpose."
           }
         },
         required: ["componentId", "instanceId", "title", "intent"]
@@ -235,13 +240,24 @@ const manifestSchema: Schema = {
 };
 
 /**
- * Generate Exhibit Manifest (Phase 1 - The Blueprint)
- * This creates a plan for what components to use WITHOUT generating content
+ * Progress callback for manifest generation
  */
-export const generateExhibitManifest = async (
+export interface ManifestProgressCallback {
+  onThinking?: (thought: string) => void;
+  onProgress?: (message: string) => void;
+  onPartialManifest?: (partial: Partial<ExhibitManifest>) => void;
+}
+
+/**
+ * Generate Exhibit Manifest with Streaming (Phase 1 - The Blueprint)
+ * This creates a plan for what components to use WITHOUT generating content
+ * Supports real-time progress updates and thinking visibility
+ */
+export const generateExhibitManifestStreaming = async (
   topic: string,
   gradeLevel: string = 'elementary',
-  objectives?: Array<{ id: string; text: string; verb: string; icon: string }>
+  objectives?: Array<{ id: string; text: string; verb: string; icon: string }>,
+  callbacks?: ManifestProgressCallback
 ): Promise<ExhibitManifest> => {
   try {
     const gradeLevelContext = getGradeLevelContext(gradeLevel);
@@ -287,6 +303,7 @@ OUTPUT INSTRUCTIONS:
   * instanceId: Create a unique ID (e.g., 'brief-1', 'number-line-addition-1', 'comparison-democracy-monarchy')
   * title: The heading that will appear above this section
   * intent: DETAILED instructions for what content to generate (be specific!)
+  * objectiveIds: Array of objective IDs (e.g., ["obj1", "obj2"]) this component addresses. Map each component to 1-2 relevant objectives based on its content and purpose.
   * config: educational context for continuity across components
     - For custom-visual: Include subject, keyTerms, and conceptsCovered to improve content quality
       Example: {"subject": "Mathematics", "keyTerms": ["addition", "sum", "equals"], "conceptsCovered": ["combining quantities", "number sense"]}
@@ -304,19 +321,22 @@ EXAMPLE MANIFEST STRUCTURE:
       "componentId": "curator-brief",
       "instanceId": "brief-1",
       "title": "Welcome to Addition!",
-      "intent": "Create a warm introduction about adding numbers together. Include learning objectives: 1) Understand what addition means, 2) Count objects to add them, 3) Use the plus symbol"
+      "intent": "Create a warm introduction about adding numbers together. Include learning objectives: 1) Understand what addition means, 2) Count objects to add them, 3) Use the plus symbol",
+      "objectiveIds": ["obj1", "obj2", "obj3"]
     },
     {
       "componentId": "number-line",
       "instanceId": "number-line-addition-1",
       "title": "Let's Count Together",
-      "intent": "Show addition using a number line from 0-10. Highlight 2 + 3 = 5."
+      "intent": "Show addition using a number line from 0-10. Highlight 2 + 3 = 5.",
+      "objectiveIds": ["obj1", "obj3"]
     },
     {
       "componentId": "custom-visual",
       "instanceId": "interactive-addition-1",
       "title": "Interactive Counting Game",
       "intent": "Create an interactive HTML game where students drag objects together to add them. Make it colorful and engaging.",
+      "objectiveIds": ["obj3"],
       "config": {
         "subject": "Mathematics",
         "keyTerms": ["addition", "sum", "plus", "equals"],
@@ -328,6 +348,7 @@ EXAMPLE MANIFEST STRUCTURE:
       "instanceId": "quiz-1",
       "title": "Check Your Understanding",
       "intent": "Create a simple addition question: If you have 2 apples and get 1 more, how many do you have?",
+      "objectiveIds": ["obj1", "obj2", "obj3"],
       "config": {
         "problemType": "multiple_choice",
         "count": 1,
@@ -340,21 +361,62 @@ EXAMPLE MANIFEST STRUCTURE:
 Now generate the manifest for: "${topic}" (${gradeLevel})
 Return ONLY valid JSON matching the schema.`;
 
-    const response = await ai.models.generateContent({
+    callbacks?.onProgress?.('🧠 Starting manifest generation with AI thinking...');
+
+    // Use streaming API
+    const responseStream = await ai.models.generateContentStream({
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         thinkingConfig: {
-          thinkingLevel: ThinkingLevel.HIGH,
+          thinkingLevel: ThinkingLevel.LOW,
         },
         responseMimeType: "application/json",
         responseSchema: manifestSchema,
       },
     });
 
-    if (!response.text) throw new Error("No manifest returned");
+    let accumulatedText = '';
+    let chunkCount = 0;
+    let lastProgressUpdate = Date.now();
 
-    let jsonStr = response.text.trim();
+    callbacks?.onProgress?.('📡 Receiving AI response stream...');
+
+    // Stream and accumulate chunks
+    for await (const chunk of responseStream) {
+      chunkCount++;
+
+      if (chunk.text) {
+        accumulatedText += chunk.text;
+
+        // Throttle progress updates to every 500ms
+        const now = Date.now();
+        if (now - lastProgressUpdate > 500) {
+          callbacks?.onProgress?.(`📝 Processing chunk ${chunkCount}... (${accumulatedText.length} chars)`);
+          lastProgressUpdate = now;
+
+          // Try to parse partial JSON to show progress
+          try {
+            const partial = JSON.parse(accumulatedText);
+            if (partial.topic || partial.layout) {
+              callbacks?.onPartialManifest?.(partial);
+              if (partial.layout?.length) {
+                callbacks?.onProgress?.(`🎨 Discovered ${partial.layout.length} components so far...`);
+              }
+            }
+          } catch {
+            // Not yet valid JSON, continue accumulating
+          }
+        }
+      }
+
+    }
+
+    callbacks?.onProgress?.('✅ Stream complete, parsing final manifest...');
+
+    if (!accumulatedText) throw new Error("No manifest returned");
+
+    let jsonStr = accumulatedText.trim();
     const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
     if (match) jsonStr = match[1].trim();
 
@@ -367,10 +429,27 @@ Return ONLY valid JSON matching the schema.`;
 
     const manifest = JSON.parse(jsonStr) as ExhibitManifest;
 
-    console.log('📋 Manifest Generated from standalone service:', manifest);
+    callbacks?.onProgress?.(`🎉 Manifest complete with ${manifest.layout?.length || 0} components!`);
+    console.log('📋 Manifest Generated (streaming):', manifest);
+
     return manifest;
   } catch (error) {
     console.error("Manifest generation error:", error);
     throw error;
   }
+};
+
+/**
+ * Generate Exhibit Manifest (Phase 1 - The Blueprint)
+ * This creates a plan for what components to use WITHOUT generating content
+ *
+ * @deprecated Use generateExhibitManifestStreaming for better progress visibility
+ */
+export const generateExhibitManifest = async (
+  topic: string,
+  gradeLevel: string = 'elementary',
+  objectives?: Array<{ id: string; text: string; verb: string; icon: string }>
+): Promise<ExhibitManifest> => {
+  // Fallback to streaming version without callbacks for backward compatibility
+  return generateExhibitManifestStreaming(topic, gradeLevel, objectives);
 };

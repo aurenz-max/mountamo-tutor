@@ -859,6 +859,7 @@ export interface ExhibitData {
   topic: string;
   intro: IntroData; // Legacy simple intro (hook + objectives)
   introBriefing?: IntroBriefingData; // New comprehensive intro briefing
+  manifest?: ExhibitManifest; // The manifest used to generate this exhibit
   specializedExhibits?: SpecializedExhibit[];
   featureExhibit: FeatureExhibitData;
   comparison: ComparisonData;
@@ -1003,6 +1004,7 @@ export interface ManifestItem {
   title: string;      // The heading for this section
   intent: string;     // Instructions for the content generator
   config?: ManifestItemConfig; // Optional hints and educational context
+  objectiveIds?: string[]; // Learning objective IDs this component addresses
 }
 
 export interface ExhibitManifest {

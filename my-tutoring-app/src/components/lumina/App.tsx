@@ -19,7 +19,9 @@ import {
   buildCompleteExhibitFromTopic,
   generateIntroBriefing,
   generateExhibitManifestWithObjectives,
-  buildCompleteExhibitFromManifest
+  generateExhibitManifestWithObjectivesStreaming,
+  buildCompleteExhibitFromManifest,
+  type ManifestProgressCallback
 } from './service/geminiClient-api';
 import { GameState, ExhibitData, ExhibitManifest } from './types';
 import { GradeLevelSelector, GradeLevel } from './components/GradeLevelSelector';
@@ -36,6 +38,7 @@ import { KnowledgeCheckTester } from './components/KnowledgeCheckTester';
 import { MediaPlayerTester } from './components/MediaPlayerTester';
 import { PracticeMode } from './components/PracticeModeEnhanced';
 import { SpotlightCard } from './components/SpotlightCard';
+import { ExhibitProvider } from './contexts/ExhibitContext';
 
 
 export default function App() {
@@ -44,6 +47,14 @@ export default function App() {
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
   const [exhibitData, setExhibitData] = useState<ExhibitData | null>(null);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [thinkingMessages, setThinkingMessages] = useState<string[]>([]);
+  const [componentStatuses, setComponentStatuses] = useState<Array<{
+    id: string;
+    name: string;
+    status: 'pending' | 'building' | 'completed';
+    index: number;
+    total: number;
+  }>>([]);
 
   // Manifest Viewer State
   const [showManifestViewer, setShowManifestViewer] = useState(false);
@@ -193,30 +204,102 @@ export default function App() {
 
     setGameState(GameState.GENERATING);
     setLoadingMessage(`Curating exhibit: ${searchTopic.substring(0, 30)}...`);
+    setThinkingMessages([]); // Clear previous thinking messages
+    setComponentStatuses([]); // Clear previous component statuses
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
       // CURATOR-BRIEF-FIRST ARCHITECTURE
       // STEP 1: Generate curator brief with learning objectives
-      setTimeout(() => setLoadingMessage('🎯 Defining learning objectives...'), 500);
+      setLoadingMessage('🎯 Defining learning objectives...');
       const curatorBrief = await generateIntroBriefing(searchTopic, gradeLevel);
       console.log('📚 Curator brief generated with objectives:', curatorBrief.objectives);
 
-      // STEP 2: Use learning objectives to guide manifest generation
-      setTimeout(() => setLoadingMessage('📋 Generating exhibit blueprint...'), 1500);
-      const manifest = await generateExhibitManifestWithObjectives(
+      // STEP 2: Use learning objectives to guide manifest generation WITH STREAMING
+      setLoadingMessage('📋 Generating exhibit blueprint...');
+
+      // Define streaming callbacks for real-time progress
+      const manifestCallbacks: ManifestProgressCallback = {
+        onProgress: (message: string) => {
+          console.log('🔄 Manifest Progress:', message);
+          setLoadingMessage(message);
+        },
+        onThinking: (thought: string) => {
+          console.log('🧠 AI Thinking:', thought);
+          setThinkingMessages(prev => [...prev.slice(-4), thought]); // Keep last 5 thoughts
+        },
+        onPartialManifest: (partial) => {
+          console.log('📦 Partial Manifest:', partial);
+          // Could show partial progress in UI
+        }
+      };
+
+      const manifest = await generateExhibitManifestWithObjectivesStreaming(
         searchTopic,
         gradeLevel,
-        curatorBrief.objectives
+        curatorBrief.objectives,
+        manifestCallbacks
       );
       console.log('🗺️ Manifest generated based on learning objectives');
 
       // STEP 3: Build complete exhibit from manifest
-      setTimeout(() => setLoadingMessage('🎨 Building components in parallel...'), 2500);
-      setTimeout(() => setLoadingMessage('🏗️ Assembling complete exhibit...'), 4000);
+      setLoadingMessage('🎨 Building components in parallel...');
+      setThinkingMessages([]); // Clear thinking messages for next phase
 
+      // Initialize component statuses from manifest
+      const totalComponents = manifest.layout?.length || 0;
+      const initialStatuses = (manifest.layout || []).map((item, index) => ({
+        id: item.instanceId,
+        name: item.componentId,
+        status: 'pending' as const,
+        index: index + 1,
+        total: totalComponents
+      }));
+      setComponentStatuses(initialStatuses);
+
+      // Simulate realistic component building progress
+      // Components are built in parallel, so we'll randomize completion times
+      const simulateProgress = () => {
+        // Mark 1-3 random pending components as building
+        setComponentStatuses(prev => {
+          const pending = prev.filter(c => c.status === 'pending');
+          if (pending.length === 0) return prev;
+
+          const toBuild = Math.min(3, pending.length);
+          const selected = pending.slice(0, toBuild);
+
+          return prev.map(c =>
+            selected.find(s => s.id === c.id)
+              ? { ...c, status: 'building' as const }
+              : c
+          );
+        });
+
+        // After random delay, mark building as completed
+        setTimeout(() => {
+          setComponentStatuses(prev =>
+            prev.map(c =>
+              c.status === 'building'
+                ? { ...c, status: 'completed' as const }
+                : c
+            )
+          );
+        }, 800 + Math.random() * 1200);
+      };
+
+      // Start simulation
+      const interval = setInterval(() => {
+        simulateProgress();
+      }, 1500);
+
+      // Build the actual data
       const data = await buildCompleteExhibitFromManifest(manifest, curatorBrief);
+
+      // Clear interval and mark all as completed
+      clearInterval(interval);
+      setComponentStatuses(prev => prev.map(c => ({ ...c, status: 'completed' as const })));
+
       setExhibitData(data);
       setGameState(GameState.PLAYING);
     } catch (error) {
@@ -649,21 +732,128 @@ export default function App() {
                     Tailoring for: <span className="text-blue-400 font-medium capitalize">{gradeLevel.replace('-', ' ')}</span>
                   </span>
                 </div>
+
+                {/* AI Thinking Display */}
+                {thinkingMessages.length > 0 && (
+                  <div className="mt-8 max-w-2xl w-full px-4">
+                    <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">AI Thinking</span>
+                      </div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {thinkingMessages.map((thought, index) => (
+                          <div
+                            key={index}
+                            className="text-sm text-slate-300 bg-slate-900/40 rounded-lg p-3 animate-fade-in"
+                            style={{ animationDelay: `${index * 50}ms` }}
+                          >
+                            {thought}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Component Build Progress */}
+                {componentStatuses.length > 0 && (
+                  <div className="mt-8 max-w-3xl w-full px-4">
+                    <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                      <div className="flex items-center gap-2 mb-6">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Component Assembly</span>
+                        <span className="ml-auto text-xs text-slate-500 font-mono">
+                          {componentStatuses.filter(c => c.status === 'completed').length}/{componentStatuses.length}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {componentStatuses.map((component) => (
+                          <div
+                            key={component.id}
+                            className={`relative overflow-hidden rounded-xl border transition-all duration-500 ${
+                              component.status === 'completed'
+                                ? 'bg-emerald-950/20 border-emerald-500/30'
+                                : component.status === 'building'
+                                ? 'bg-blue-950/20 border-blue-500/30 animate-pulse'
+                                : 'bg-slate-900/20 border-slate-700/30'
+                            }`}
+                          >
+                            {/* Shimmer effect for building */}
+                            {component.status === 'building' && (
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent animate-shimmer"></div>
+                            )}
+
+                            <div className="relative p-4 flex items-center gap-3">
+                              {/* Status Icon */}
+                              <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                                component.status === 'completed'
+                                  ? 'bg-emerald-500/20 text-emerald-400'
+                                  : component.status === 'building'
+                                  ? 'bg-blue-500/20 text-blue-400'
+                                  : 'bg-slate-700/20 text-slate-500'
+                              }`}>
+                                {component.status === 'completed' ? (
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                  </svg>
+                                ) : component.status === 'building' ? (
+                                  <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
+                                )}
+                              </div>
+
+                              {/* Component Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2">
+                                  <span className={`text-xs font-mono font-bold ${
+                                    component.status === 'completed' ? 'text-emerald-400' : 'text-slate-500'
+                                  }`}>
+                                    [{component.index}/{component.total}]
+                                  </span>
+                                  <span className={`text-sm font-medium truncate ${
+                                    component.status === 'completed' ? 'text-white' : 'text-slate-400'
+                                  }`}>
+                                    {component.name}
+                                  </span>
+                                </div>
+                                <div className={`text-xs mt-1 ${
+                                  component.status === 'completed'
+                                    ? 'text-emerald-500/70'
+                                    : component.status === 'building'
+                                    ? 'text-blue-400/70'
+                                    : 'text-slate-600'
+                                }`}>
+                                  {component.status === 'completed' ? 'Completed' : component.status === 'building' ? 'Building...' : 'Pending'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
         )}
 
         {/* EXHIBIT STATE */}
         {gameState === GameState.PLAYING && exhibitData && (
-            <div className="w-full animate-fade-in-up">
-                {/* Title Section */}
-                <div className="mb-12 text-center space-y-4">
-                    <h2 className="text-5xl font-bold text-white tracking-tight">{exhibitData.topic}</h2>
-                    <div className="max-w-4xl mx-auto">
-                        <CuratorBrief
-                            data={exhibitData.introBriefing || exhibitData.intro}
-                        />
+            <ExhibitProvider
+                objectives={exhibitData.introBriefing?.objectives || []}
+                manifestItems={exhibitData.manifest?.layout || []}
+            >
+                <div className="w-full animate-fade-in-up">
+                    {/* Title Section */}
+                    <div className="mb-12 text-center space-y-4">
+                        <h2 className="text-5xl font-bold text-white tracking-tight">{exhibitData.topic}</h2>
+                        <div className="max-w-4xl mx-auto">
+                            <CuratorBrief
+                                data={exhibitData.introBriefing || exhibitData.intro}
+                            />
+                        </div>
                     </div>
-                </div>
 
                 {/* Cards Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 justify-items-center max-w-7xl mx-auto mb-20">
@@ -873,6 +1063,7 @@ export default function App() {
                     </div>
                 )}
             </div>
+            </ExhibitProvider>
         )}
 
       </main>

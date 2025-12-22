@@ -18,6 +18,15 @@ import {
   ManifestItemConfig
 } from '../types';
 
+/**
+ * Progress callback for manifest generation streaming
+ */
+export interface ManifestProgressCallback {
+  onThinking?: (thought: string) => void;
+  onProgress?: (message: string) => void;
+  onPartialManifest?: (partial: Partial<ExhibitManifest>) => void;
+}
+
 const API_BASE = '/api/lumina';
 
 async function callAPI(action: string, params: any) {
@@ -171,6 +180,89 @@ export const generateExhibitManifestWithObjectives = async (
   objectives: Array<{ id: string; text: string; verb: string; icon: string }>
 ): Promise<ExhibitManifest> => {
   return callAPI('generateExhibitManifestWithObjectives', { topic, gradeLevel, objectives });
+};
+
+/**
+ * Generate manifest with streaming progress updates via API
+ * This uses Server-Sent Events to stream real-time progress
+ */
+export const generateExhibitManifestWithObjectivesStreaming = async (
+  topic: string,
+  gradeLevel: string,
+  objectives: Array<{ id: string; text: string; verb: string; icon: string }>,
+  callbacks?: ManifestProgressCallback
+): Promise<ExhibitManifest> => {
+  const response = await fetch('/api/lumina/manifest-stream', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ topic, gradeLevel, objectives }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Manifest streaming failed');
+  }
+
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+
+  if (!reader) {
+    throw new Error('No response body reader available');
+  }
+
+  let buffer = '';
+  let finalManifest: ExhibitManifest | null = null;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      // Decode chunk and add to buffer
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete lines
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        try {
+          const event = JSON.parse(line);
+
+          switch (event.type) {
+            case 'progress':
+              callbacks?.onProgress?.(event.message);
+              break;
+            case 'thinking':
+              callbacks?.onThinking?.(event.thought);
+              break;
+            case 'partial':
+              callbacks?.onPartialManifest?.(event.manifest);
+              break;
+            case 'complete':
+              finalManifest = event.manifest;
+              break;
+            case 'error':
+              throw new Error(event.error);
+          }
+        } catch (parseError) {
+          console.error('Failed to parse streaming event:', line, parseError);
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!finalManifest) {
+    throw new Error('No manifest received from stream');
+  }
+
+  return finalManifest;
 };
 
 export const buildCompleteExhibitFromTopic = async (
