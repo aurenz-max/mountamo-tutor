@@ -1,12 +1,77 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
 
 import {
-
   ExhibitManifest,
   ComponentDefinition,
-} from ".../types";
+  ManifestItem,
+} from "../../types";
 
 import { ai } from "../geminiClient";
+
+/**
+ * Convert objective-centric manifest to flat layout array for backward compatibility
+ * This allows the existing rendering pipeline to work with the new manifest format
+ */
+export const flattenManifestToLayout = (manifest: ExhibitManifest): ManifestItem[] => {
+  const layout: ManifestItem[] = [];
+
+  // 1. Add curator brief first
+  if (manifest.curatorBrief) {
+    layout.push({
+      componentId: 'curator-brief',
+      instanceId: manifest.curatorBrief.instanceId,
+      title: manifest.curatorBrief.title,
+      intent: manifest.curatorBrief.intent,
+      objectiveIds: manifest.objectiveBlocks?.map(b => b.objectiveId) || []
+    });
+  }
+
+  // 2. Add all components from each objective block
+  if (manifest.objectiveBlocks) {
+    for (const block of manifest.objectiveBlocks) {
+      for (const component of block.components) {
+        layout.push({
+          componentId: component.componentId,
+          instanceId: component.instanceId,
+          title: component.title,
+          intent: component.intent,
+          config: {
+            ...component.config,
+            // Inject objective context into config for content generators
+            objectiveId: block.objectiveId,
+            objectiveText: block.objectiveText,
+            objectiveVerb: block.objectiveVerb,
+          },
+          objectiveIds: [block.objectiveId]
+        });
+      }
+    }
+  }
+
+  // 3. Add final assessment last
+  if (manifest.finalAssessment) {
+    layout.push({
+      componentId: manifest.finalAssessment.componentId,
+      instanceId: manifest.finalAssessment.instanceId,
+      title: manifest.finalAssessment.title,
+      intent: manifest.finalAssessment.intent,
+      config: manifest.finalAssessment.config,
+      objectiveIds: manifest.objectiveBlocks?.map(b => b.objectiveId) || []
+    });
+  }
+
+  return layout;
+};
+
+/**
+ * Enrich manifest with flattened layout for backward compatibility
+ */
+export const enrichManifestWithLayout = (manifest: ExhibitManifest): ExhibitManifest => {
+  return {
+    ...manifest,
+    layout: flattenManifestToLayout(manifest)
+  };
+};
 
 /**
  * Convert grade level to descriptive educational context for prompts
@@ -164,7 +229,63 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
 ];
 
 /**
- * Manifest Schema for structured output
+ * Schema for a single component within an objective
+ */
+const objectiveComponentSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    componentId: {
+      type: Type.STRING,
+      enum: UNIVERSAL_CATALOG.map(c => c.id),
+      description: "Component type from the universal catalog"
+    },
+    instanceId: {
+      type: Type.STRING,
+      description: "Unique identifier for this instance (e.g., 'obj1-number-line-1', 'obj2-concept-cards')"
+    },
+    title: {
+      type: Type.STRING,
+      description: "Display title/heading for this section"
+    },
+    intent: {
+      type: Type.STRING,
+      description: "Detailed instructions for what content to generate. MUST directly address the parent objective."
+    },
+    config: {
+      type: Type.OBJECT,
+      description: "Optional configuration hints and educational context",
+      properties: {
+        visualType: { type: Type.STRING, description: "Type of visualization (e.g., 'bar-model', 'number-line')" },
+        itemCount: { type: Type.NUMBER, description: "Number of items to generate" },
+        difficulty: { type: Type.STRING, description: "Difficulty level" },
+        subject: { type: Type.STRING, description: "Subject area (e.g., 'Mathematics', 'Science', 'Language Arts')" },
+        unitTitle: { type: Type.STRING, description: "Broader unit context" },
+        problemType: {
+          type: Type.STRING,
+          enum: ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity", "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"],
+          description: "For knowledge-check components: Type of problem to generate"
+        },
+        count: { type: Type.NUMBER, description: "For knowledge-check components: Number of problems to generate" },
+        gradeLevel: { type: Type.STRING, description: "For knowledge-check components: Override grade level for this specific check" },
+        keyTerms: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description: "Key vocabulary terms to emphasize in the visualization"
+        },
+        conceptsCovered: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description: "Core concepts to illustrate"
+        }
+      }
+    }
+  },
+  required: ["componentId", "instanceId", "title", "intent"]
+};
+
+/**
+ * Manifest Schema for structured output - OBJECTIVE-CENTRIC design
+ * Each objective gets its own dedicated set of components (1-to-many)
  */
 const manifestSchema: Schema = {
   type: Type.OBJECT,
@@ -175,68 +296,74 @@ const manifestSchema: Schema = {
       type: Type.STRING,
       description: "Hex color code for the exhibit theme (e.g., #3b82f6)"
     },
-    layout: {
+    // Curator brief is standalone - introduces all objectives
+    curatorBrief: {
+      type: Type.OBJECT,
+      description: "The introductory curator-brief component (always first)",
+      properties: {
+        instanceId: { type: Type.STRING },
+        title: { type: Type.STRING },
+        intent: { type: Type.STRING }
+      },
+      required: ["instanceId", "title", "intent"]
+    },
+    // Each objective gets its own dedicated components
+    objectiveBlocks: {
       type: Type.ARRAY,
-      description: "Ordered array of components to display",
+      description: "Array of objective blocks. Each objective has its own dedicated components that teach ONLY that objective.",
       items: {
         type: Type.OBJECT,
         properties: {
-          componentId: {
+          objectiveId: {
             type: Type.STRING,
-            enum: UNIVERSAL_CATALOG.map(c => c.id),
-            description: "Component type from the universal catalog"
+            description: "The objective ID (e.g., 'obj1', 'obj2')"
           },
-          instanceId: {
+          objectiveText: {
             type: Type.STRING,
-            description: "Unique identifier for this instance (e.g., 'curator-brief-1', 'math-visual-counting')"
+            description: "The full learning objective text"
           },
-          title: {
+          objectiveVerb: {
             type: Type.STRING,
-            description: "Display title/heading for this section"
+            description: "The Bloom's taxonomy verb (identify, explain, apply, etc.)"
           },
-          intent: {
-            type: Type.STRING,
-            description: "Detailed instructions for what content to generate for this component"
-          },
-          config: {
-            type: Type.OBJECT,
-            description: "Optional configuration hints and educational context",
-            properties: {
-              visualType: { type: Type.STRING, description: "Type of visualization (e.g., 'bar-model', 'number-line')" },
-              itemCount: { type: Type.NUMBER, description: "Number of items to generate" },
-              difficulty: { type: Type.STRING, description: "Difficulty level" },
-              subject: { type: Type.STRING, description: "Subject area (e.g., 'Mathematics', 'Science', 'Language Arts')" },
-              unitTitle: { type: Type.STRING, description: "Broader unit context" },
-              problemType: {
-                type: Type.STRING,
-                enum: ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity", "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"],
-                description: "For knowledge-check components: Type of problem to generate (e.g., 'multiple_choice', 'true_false', 'sequencing_activity')"
-              },
-              count: { type: Type.NUMBER, description: "For knowledge-check components: Number of problems to generate" },
-              gradeLevel: { type: Type.STRING, description: "For knowledge-check components: Override grade level for this specific check" },
-              keyTerms: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "Key vocabulary terms to emphasize in the visualization"
-              },
-              conceptsCovered: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "Core concepts to illustrate"
-              }
-            }
-          },
-          objectiveIds: {
+          components: {
             type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "Array of learning objective IDs (e.g., ['obj1', 'obj2']) that this component helps achieve. Each component should map to 1-2 objectives based on its content and purpose."
+            description: "2-4 components dedicated to teaching THIS specific objective. Order matters: start with introduction/explanation, then practice/application.",
+            items: objectiveComponentSchema
           }
         },
-        required: ["componentId", "instanceId", "title", "intent"]
+        required: ["objectiveId", "objectiveText", "objectiveVerb", "components"]
       }
+    },
+    // Final assessment covers all objectives
+    finalAssessment: {
+      type: Type.OBJECT,
+      description: "Optional final knowledge-check or flashcard-deck that assesses ALL objectives together",
+      properties: {
+        componentId: {
+          type: Type.STRING,
+          enum: ["knowledge-check", "flashcard-deck"],
+          description: "Either knowledge-check or flashcard-deck"
+        },
+        instanceId: { type: Type.STRING },
+        title: { type: Type.STRING },
+        intent: {
+          type: Type.STRING,
+          description: "Should assess understanding across ALL learning objectives"
+        },
+        config: {
+          type: Type.OBJECT,
+          properties: {
+            problemType: { type: Type.STRING },
+            count: { type: Type.NUMBER },
+            difficulty: { type: Type.STRING }
+          }
+        }
+      },
+      required: ["componentId", "instanceId", "title", "intent"]
     }
   },
-  required: ["topic", "gradeLevel", "themeColor", "layout"]
+  required: ["topic", "gradeLevel", "themeColor", "curatorBrief", "objectiveBlocks"]
 };
 
 /**
@@ -271,7 +398,7 @@ export const generateExhibitManifestStreaming = async (
 ${objectives.map((obj, i) => `${i + 1}. ${obj.text} [${obj.verb}]`).join('\n')}`
       : '';
 
-    const prompt = `You are the Lead Curator designing an educational exhibit.
+    const prompt = `You are the Lead Curator designing an educational exhibit using an OBJECTIVE-CENTRIC approach.
 
 ASSIGNMENT: Create a manifest (blueprint) for: "${topic}"
 TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}
@@ -279,83 +406,122 @@ TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}
 AVAILABLE COMPONENT TOOLS:
 ${catalogContext}
 
-DESIGN RULES:
-1. ✅ ALWAYS start with 'curator-brief' (this is REQUIRED)
-2. ✅ ALWAYS end with either 'knowledge-check' or 'flashcard-deck' to reinforce learning (this is RECOMMENDED)
-3. 🎯 Choose the BEST 4-8 components total to explain the topic effectively
-4. 📊 Prioritize components that match the subject matter:
-   - Elementary Math (Counting, Addition, Subtraction) → Use 'number-line' or 'bar-model'
-   - Elementary Math (Place Value) → Use 'base-ten-blocks'
-   - Elementary Math (Fractions) → Use 'fraction-circles'
-   - Elementary Math (Geometry) → Use 'geometric-shape'
-   - Math Problem-Solving (Elementary+) → Use 'annotated-example' to show worked solutions with multi-layer reasoning
-   - History/Literature/Social Studies → Use 'comparison-panel', 'generative-table', or 'feature-exhibit'
-   - Nuanced Judgment Topics → Use 'scale-spectrum' for ethical dilemmas, degrees of formality, historical significance, etc.
-   - Science/Physics/Chemistry → Use 'formula-card' (equations), 'custom-visual' (simulations), 'feature-exhibit', 'annotated-example' (problem-solving), 'molecule-viewer' (atomic and molecular bonds), 'periodic-table' (element properties and periodic trends)
-   - Language Arts/Grammar → Use 'sentence-analyzer', 'concept-card-grid'
-   - Data Analysis → Use 'graph-board' for polynomial fitting and data visualization
-   - Sequential/Process Topics → Use 'media-player' for step-by-step narratives, processes, or stories that benefit from audio-visual presentation
-5. 🎨 Pick a themeColor that matches the subject (e.g., blue for science, green for nature, purple for humanities)
+## CRITICAL: OBJECTIVE-CENTRIC DESIGN
 
-OUTPUT INSTRUCTIONS:
-- For each component in the layout array:
-  * componentId: Pick from the catalog
-  * instanceId: Create a unique ID (e.g., 'brief-1', 'number-line-addition-1', 'comparison-democracy-monarchy')
-  * title: The heading that will appear above this section
-  * intent: DETAILED instructions for what content to generate (be specific!)
-  * objectiveIds: Array of objective IDs (e.g., ["obj1", "obj2"]) this component addresses. Map each component to 1-2 relevant objectives based on its content and purpose.
-  * config: educational context for continuity across components
-    - For custom-visual: Include subject, keyTerms, and conceptsCovered to improve content quality
-      Example: {"subject": "Mathematics", "keyTerms": ["addition", "sum", "equals"], "conceptsCovered": ["combining quantities", "number sense"]}
-    - For knowledge-check: MUST include problemType (choose from: "multiple_choice", "true_false", "fill_in_blanks", "matching_activity", "sequencing_activity", "categorization_activity")
-      Example: {"problemType": "multiple_choice", "count": 1, "difficulty": "easy"}
-    - For any component: Can include itemCount, difficulty, unitTitle
+This manifest is structured around LEARNING OBJECTIVES, not a flat list of components.
+Each objective gets its own dedicated set of 2-4 components (1-to-many relationship).
 
-EXAMPLE MANIFEST STRUCTURE:
+STRUCTURE:
+1. curatorBrief: Introduces the topic and ALL objectives (always first)
+2. objectiveBlocks: Array where EACH objective has its own dedicated components
+3. finalAssessment: Optional quiz/flashcards covering ALL objectives (at the end)
+
+## COMPONENT SELECTION BY SUBJECT:
+- Elementary Math (Counting, Addition, Subtraction) → 'number-line', 'bar-model'
+- Elementary Math (Place Value) → 'base-ten-blocks'
+- Elementary Math (Fractions) → 'fraction-circles'
+- Elementary Math (Geometry) → 'geometric-shape'
+- Math Problem-Solving → 'annotated-example' for worked solutions
+- Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'
+- History/Social Studies → 'comparison-panel', 'generative-table', 'feature-exhibit'
+- Language Arts → 'sentence-analyzer', 'word-builder', 'concept-card-grid'
+- Any topic with visuals → 'image-panel', 'image-comparison', 'media-player'
+- Vocabulary/Memorization → 'flashcard-deck', 'concept-card-grid'
+
+## RULES FOR EACH OBJECTIVE BLOCK:
+1. Include 2-4 components per objective (not too few, not too many)
+2. Components should PROGRESS within each objective:
+   - First: Introduce/explain the concept (concept-card-grid, feature-exhibit, media-player)
+   - Then: Visualize/demonstrate (number-line, bar-model, custom-visual, image-panel)
+   - Finally: Practice/apply (annotated-example, knowledge-check for that specific objective)
+3. Each component's intent MUST directly address its parent objective
+4. Use instanceIds that reference the objective (e.g., 'obj1-number-line', 'obj2-concept-cards')
+
+## EXAMPLE MANIFEST (Addition for Kindergarten with 3 objectives):
+
 {
   "topic": "Addition for Kindergarten",
   "gradeLevel": "kindergarten",
   "themeColor": "#3b82f6",
-  "layout": [
+  "curatorBrief": {
+    "instanceId": "curator-brief-1",
+    "title": "Welcome to Addition!",
+    "intent": "Create a warm, engaging introduction about adding numbers together. Preview all three learning objectives in kid-friendly language."
+  },
+  "objectiveBlocks": [
     {
-      "componentId": "curator-brief",
-      "instanceId": "brief-1",
-      "title": "Welcome to Addition!",
-      "intent": "Create a warm introduction about adding numbers together. Include learning objectives: 1) Understand what addition means, 2) Count objects to add them, 3) Use the plus symbol",
-      "objectiveIds": ["obj1", "obj2", "obj3"]
+      "objectiveId": "obj1",
+      "objectiveText": "Understand what addition means",
+      "objectiveVerb": "identify",
+      "components": [
+        {
+          "componentId": "concept-card-grid",
+          "instanceId": "obj1-concepts",
+          "title": "What is Addition?",
+          "intent": "Define addition in simple terms. Key concepts: 'putting together', 'more', 'total'. Use relatable examples like toys or snacks."
+        },
+        {
+          "componentId": "custom-visual",
+          "instanceId": "obj1-visual",
+          "title": "See Addition in Action",
+          "intent": "Create a simple animation showing two groups of objects coming together. Reinforce that addition means combining.",
+          "config": {"subject": "Mathematics", "keyTerms": ["addition", "combine", "together"]}
+        }
+      ]
     },
     {
-      "componentId": "number-line",
-      "instanceId": "number-line-addition-1",
-      "title": "Let's Count Together",
-      "intent": "Show addition using a number line from 0-10. Highlight 2 + 3 = 5.",
-      "objectiveIds": ["obj1", "obj3"]
+      "objectiveId": "obj2",
+      "objectiveText": "Count objects to add them",
+      "objectiveVerb": "apply",
+      "components": [
+        {
+          "componentId": "bar-model",
+          "instanceId": "obj2-bar-model",
+          "title": "Counting Objects",
+          "intent": "Show 3 apples + 2 apples = 5 apples using a bar model visualization. Emphasize counting each group then counting the total."
+        },
+        {
+          "componentId": "number-line",
+          "instanceId": "obj2-number-line",
+          "title": "Hop Along the Number Line",
+          "intent": "Demonstrate 3 + 2 = 5 by starting at 3 and hopping 2 spaces to land on 5. Range 0-10."
+        },
+        {
+          "componentId": "knowledge-check",
+          "instanceId": "obj2-practice",
+          "title": "Try Counting!",
+          "intent": "Simple counting-based addition: Show 2 balls and 3 balls, ask how many total?",
+          "config": {"problemType": "multiple_choice", "difficulty": "easy"}
+        }
+      ]
     },
     {
-      "componentId": "custom-visual",
-      "instanceId": "interactive-addition-1",
-      "title": "Interactive Counting Game",
-      "intent": "Create an interactive HTML game where students drag objects together to add them. Make it colorful and engaging.",
-      "objectiveIds": ["obj3"],
-      "config": {
-        "subject": "Mathematics",
-        "keyTerms": ["addition", "sum", "plus", "equals"],
-        "conceptsCovered": ["combining quantities", "number sense", "counting"]
-      }
-    },
-    {
-      "componentId": "knowledge-check",
-      "instanceId": "quiz-1",
-      "title": "Check Your Understanding",
-      "intent": "Create a simple addition question: If you have 2 apples and get 1 more, how many do you have?",
-      "objectiveIds": ["obj1", "obj2", "obj3"],
-      "config": {
-        "problemType": "multiple_choice",
-        "count": 1,
-        "difficulty": "easy"
-      }
+      "objectiveId": "obj3",
+      "objectiveText": "Recognize the plus sign (+) and equals sign (=)",
+      "objectiveVerb": "identify",
+      "components": [
+        {
+          "componentId": "concept-card-grid",
+          "instanceId": "obj3-symbols",
+          "title": "Meet the Math Symbols",
+          "intent": "Introduce + and = signs. Explain + means 'add' or 'and', = means 'equals' or 'is the same as'. Use visual examples."
+        },
+        {
+          "componentId": "annotated-example",
+          "instanceId": "obj3-example",
+          "title": "Reading a Math Sentence",
+          "intent": "Walk through reading '2 + 3 = 5' step by step. Annotate each symbol's meaning."
+        }
+      ]
     }
-  ]
+  ],
+  "finalAssessment": {
+    "componentId": "knowledge-check",
+    "instanceId": "final-quiz",
+    "title": "Show What You Learned!",
+    "intent": "Create 2-3 questions that cover ALL objectives: one about what addition means, one counting problem, one symbol recognition.",
+    "config": {"problemType": "multiple_choice", "count": 3, "difficulty": "easy"}
+  }
 }
 
 Now generate the manifest for: "${topic}" (${gradeLevel})
@@ -398,10 +564,13 @@ Return ONLY valid JSON matching the schema.`;
           // Try to parse partial JSON to show progress
           try {
             const partial = JSON.parse(accumulatedText);
-            if (partial.topic || partial.layout) {
+            if (partial.topic || partial.objectiveBlocks) {
               callbacks?.onPartialManifest?.(partial);
-              if (partial.layout?.length) {
-                callbacks?.onProgress?.(`🎨 Discovered ${partial.layout.length} components so far...`);
+              if (partial.objectiveBlocks?.length) {
+                const totalComponents = partial.objectiveBlocks.reduce(
+                  (sum: number, block: any) => sum + (block.components?.length || 0), 0
+                );
+                callbacks?.onProgress?.(`🎯 Discovered ${partial.objectiveBlocks.length} objectives with ${totalComponents} components...`);
               }
             }
           } catch {
@@ -427,10 +596,22 @@ Return ONLY valid JSON matching the schema.`;
       jsonStr = jsonStr.substring(firstOpen, lastClose + 1);
     }
 
-    const manifest = JSON.parse(jsonStr) as ExhibitManifest;
+    const rawManifest = JSON.parse(jsonStr) as ExhibitManifest;
 
-    callbacks?.onProgress?.(`🎉 Manifest complete with ${manifest.layout?.length || 0} components!`);
-    console.log('📋 Manifest Generated (streaming):', manifest);
+    // Enrich with flattened layout for backward compatibility
+    const manifest = enrichManifestWithLayout(rawManifest);
+
+    const totalComponents = manifest.objectiveBlocks?.reduce(
+      (sum, block) => sum + (block.components?.length || 0), 0
+    ) || 0;
+    const objectiveCount = manifest.objectiveBlocks?.length || 0;
+
+    callbacks?.onProgress?.(`🎉 Manifest complete: ${objectiveCount} objectives, ${totalComponents} components!`);
+    console.log('📋 Manifest Generated (objective-centric):', manifest);
+    console.log(`   📊 Objectives: ${objectiveCount}`);
+    manifest.objectiveBlocks?.forEach(block => {
+      console.log(`      - ${block.objectiveId}: "${block.objectiveText}" → ${block.components.length} components`);
+    });
 
     return manifest;
   } catch (error) {

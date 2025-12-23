@@ -48,6 +48,27 @@ const getGradeLevelContext = (gradeLevel: string): string => {
   return contexts[gradeLevel] || contexts['elementary'];
 };
 
+/**
+ * Extract objective context from manifest item config
+ * Returns formatted string for use in content generation prompts
+ */
+const getObjectiveContext = (item: any): string => {
+  const config = item.config || {};
+
+  if (!config.objectiveText) {
+    return ''; // No objective context available
+  }
+
+  return `
+LEARNING OBJECTIVE FOCUS:
+- Objective: ${config.objectiveText}
+- Action Verb: ${config.objectiveVerb || 'understand'}
+- Objective ID: ${config.objectiveId || 'unknown'}
+
+IMPORTANT: This component must DIRECTLY help students achieve the above learning objective.
+All content should be focused on this specific objective, not general topic coverage.`;
+};
+
 // --- MAIN EXHIBIT SCHEMA ---
 
 
@@ -153,6 +174,17 @@ export const generateCustomWebExhibit = async (
     conceptsSection = `\n💡 CORE CONCEPTS TO ILLUSTRATE: ${additionalContext.conceptsCovered.join(', ')}\n`;
   }
 
+  // Build learning objective section (new objective-centric design)
+  let objectiveSection = '';
+  if (additionalContext?.objectiveText) {
+    objectiveSection = `\n🎯 LEARNING OBJECTIVE (CRITICAL - Design your visualization to achieve this):
+- Objective: ${additionalContext.objectiveText}
+- Action Verb: ${additionalContext.objectiveVerb || 'understand'}
+
+The entire visualization must directly help students achieve this specific learning objective.
+Every interactive element should reinforce this objective.\n`;
+  }
+
   const prompt = `You are an expert educational experience designer creating interactive HTML visualizations that bring concepts to life.
 
 Your mission: Create a delightful, engaging HTML experience that makes learners think "WOW! That makes it so much clearer!"
@@ -161,7 +193,7 @@ Your mission: Create a delightful, engaging HTML experience that makes learners 
 - Topic: ${contextTopic}
 - Exhibit Title: ${intent.title}
 - Purpose: ${intent.purpose}
-${contextSection}${keyTermsSection}${conceptsSection}
+${contextSection}${keyTermsSection}${conceptsSection}${objectiveSection}
 
 Create a complete, self-contained HTML document that brings this concept to life.
 
@@ -2691,6 +2723,7 @@ const generateCuratorBriefContent = async (item: any, topic: string, gradeContex
  */
 const generateConceptCardsContent = async (item: any, topic: string, gradeContext: string) => {
   const itemCount = item.config?.itemCount || 3;
+  const objectiveContext = getObjectiveContext(item);
 
   const schema: Schema = {
     type: Type.OBJECT,
@@ -2733,8 +2766,10 @@ const generateConceptCardsContent = async (item: any, topic: string, gradeContex
 
 TARGET AUDIENCE: ${gradeContext}
 INTENT: ${item.intent}
+${objectiveContext}
 
-Generate ${itemCount} key concepts with definitions, visual prompts, and pedagogical elements.`,
+Generate ${itemCount} key concepts with definitions, visual prompts, and pedagogical elements.
+${objectiveContext ? 'Focus on concepts that directly support the learning objective above.' : ''}`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
@@ -2783,12 +2818,16 @@ const generateCustomVisualContent = async (item: any, topic: string, gradeLevel:
     purpose: item.intent
   };
 
-  // Extract additional context from config if available
+  // Extract additional context from config if available, including objective context
   const additionalContext = item.config ? {
     subject: item.config.subject,
     unitTitle: item.config.unitTitle,
     keyTerms: item.config.keyTerms,
-    conceptsCovered: item.config.conceptsCovered
+    conceptsCovered: item.config.conceptsCovered,
+    // Include objective context for focused content generation
+    objectiveId: item.config.objectiveId,
+    objectiveText: item.config.objectiveText,
+    objectiveVerb: item.config.objectiveVerb,
   } : undefined;
 
   const result = await generateCustomWebExhibit(intent, topic, gradeLevel, additionalContext);
@@ -2803,6 +2842,8 @@ const generateCustomVisualContent = async (item: any, topic: string, gradeLevel:
  * Generate Comparison Panel content
  */
 const generateComparisonContent = async (item: any, topic: string, gradeContext: string) => {
+  const objectiveContext = getObjectiveContext(item);
+
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
@@ -2839,8 +2880,10 @@ const generateComparisonContent = async (item: any, topic: string, gradeContext:
 
 TARGET AUDIENCE: ${gradeContext}
 INTENT: ${item.intent}
+${objectiveContext}
 
-Generate a side-by-side comparison with two items.`,
+Generate a side-by-side comparison with two items.
+${objectiveContext ? 'The comparison must help students understand the learning objective above.' : ''}`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
@@ -2897,6 +2940,8 @@ Generate a table with headers and rows.`,
  * Generate Feature Exhibit content
  */
 const generateFeatureExhibitContent = async (item: any, topic: string, gradeContext: string) => {
+  const objectiveContext = getObjectiveContext(item);
+
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
@@ -2924,8 +2969,10 @@ const generateFeatureExhibitContent = async (item: any, topic: string, gradeCont
 
 TARGET AUDIENCE: ${gradeContext}
 INTENT: ${item.intent}
+${objectiveContext}
 
-Generate a deep-dive editorial section with multiple subsections.`,
+Generate a deep-dive editorial section with multiple subsections.
+${objectiveContext ? 'All sections must directly support the learning objective above.' : ''}`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
@@ -2956,6 +3003,13 @@ const generateKnowledgeCheckContent = async (item: any, topic: string, gradeCont
     console.log('  🎲 Problem Type:', item.config.problemType);
     console.log('  📊 Config:', JSON.stringify(item.config, null, 2));
 
+    // Build context with objective information for focused assessment
+    let context = item.intent;
+    if (item.config.objectiveText) {
+      context = `${item.intent}\n\nLEARNING OBJECTIVE TO ASSESS: ${item.config.objectiveText}\nThe question must directly test whether the student has achieved this specific objective.`;
+      console.log('  🎯 Objective context added:', item.config.objectiveText);
+    }
+
     const problems = await generateKnowledgeCheckProblems(
       topic,
       item.config.gradeLevel || 'elementary',
@@ -2963,7 +3017,7 @@ const generateKnowledgeCheckContent = async (item: any, topic: string, gradeCont
         problemType: item.config.problemType,
         count: item.config.count || 1,
         difficulty: item.config.difficulty,
-        context: item.intent
+        context: context
       }
     );
 
@@ -3588,6 +3642,8 @@ Generate 4-6 items that span the spectrum meaningfully. Ensure the activity teac
  * Generate Annotated Example content
  */
 const generateAnnotatedExampleContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: AnnotatedExampleData }> => {
+  const objectiveContext = getObjectiveContext(item);
+
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
@@ -3675,6 +3731,7 @@ CONTEXT:
 - Topic: ${topic}
 - Target Audience: ${gradeContext}
 - Intent: ${item.intent}
+${objectiveContext}
 
 ## Output Format
 Return ONLY valid JSON matching the schema provided.

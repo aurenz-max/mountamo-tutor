@@ -1004,12 +1004,68 @@ export interface ManifestItem {
   title: string;      // The heading for this section
   intent: string;     // Instructions for the content generator
   config?: ManifestItemConfig; // Optional hints and educational context
-  objectiveIds?: string[]; // Learning objective IDs this component addresses
+  objectiveIds?: string[]; // Learning objective IDs this component addresses (legacy)
 }
 
+/**
+ * A component within an objective block - knows which objective it serves
+ */
+export interface ObjectiveComponent {
+  componentId: ComponentId;
+  instanceId: string;
+  title: string;
+  intent: string;
+  config?: ManifestItemConfig;
+}
+
+/**
+ * An objective block containing all components dedicated to teaching ONE objective
+ */
+export interface ObjectiveBlock {
+  objectiveId: string;      // e.g., 'obj1', 'obj2'
+  objectiveText: string;    // The full learning objective text
+  objectiveVerb: string;    // Bloom's taxonomy verb (identify, explain, apply, etc.)
+  components: ObjectiveComponent[];
+}
+
+/**
+ * Curator brief component - introduces all objectives
+ */
+export interface CuratorBriefManifest {
+  instanceId: string;
+  title: string;
+  intent: string;
+}
+
+/**
+ * Final assessment component - covers all objectives
+ */
+export interface FinalAssessmentManifest {
+  componentId: 'knowledge-check' | 'flashcard-deck';
+  instanceId: string;
+  title: string;
+  intent: string;
+  config?: ManifestItemConfig;
+}
+
+/**
+ * OBJECTIVE-CENTRIC ExhibitManifest
+ * Each objective gets its own dedicated set of components (1-to-many)
+ */
 export interface ExhibitManifest {
   topic: string;
   gradeLevel: string;
   themeColor: string;
-  layout: ManifestItem[];
+
+  // The curator brief introduces all objectives
+  curatorBrief: CuratorBriefManifest;
+
+  // Each objective has its own dedicated components
+  objectiveBlocks: ObjectiveBlock[];
+
+  // Optional final assessment covering all objectives
+  finalAssessment?: FinalAssessmentManifest;
+
+  // Legacy flat layout - computed from objectiveBlocks for backward compatibility
+  layout?: ManifestItem[];
 }
