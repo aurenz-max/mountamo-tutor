@@ -22,6 +22,8 @@ import {
 import { generateExhibitManifest } from '@/components/lumina/service/manifest/gemini-manifest';
 import { generateIntroBriefing as generateCuratorBrief } from '@/components/lumina/service/curator-brief/gemini-curator-brief';
 import { generateMediaPlayer } from '@/components/lumina/service/media-player/gemini-media-player';
+import { generateFractionBar } from '@/components/lumina/service/math/gemini-fraction-bar';
+import { generatePlaceValueChart } from '@/components/lumina/service/math/gemini-place-value';
 
 export async function POST(request: NextRequest) {
   try {
@@ -207,6 +209,22 @@ export async function POST(request: NextRequest) {
           params.imageResolution
         );
         return NextResponse.json(mediaPlayer);
+
+      case 'generateFractionBar':
+        const fractionBar = await generateFractionBar(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(fractionBar);
+
+      case 'generatePlaceValueChart':
+        const placeValueChart = await generatePlaceValueChart(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(placeValueChart);
 
       default:
         return NextResponse.json(

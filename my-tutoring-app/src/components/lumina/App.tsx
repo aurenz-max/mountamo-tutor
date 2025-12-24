@@ -38,6 +38,7 @@ import { LetterPicture } from './primitives/visual-primitives/LetterPicture';
 import { PrimitiveCollectionRenderer } from './components/PrimitiveRenderer';
 import { KnowledgeCheckTester } from './components/KnowledgeCheckTester';
 import { MediaPlayerTester } from './components/MediaPlayerTester';
+import { MathPrimitivesTester } from './components/MathPrimitivesTester';
 import { PracticeMode } from './components/PracticeModeEnhanced';
 import { SpotlightCard } from './components/SpotlightCard';
 import { ExhibitProvider } from './contexts/ExhibitContext';
@@ -84,6 +85,9 @@ export default function App() {
 
   // Media Player Testing State
   const [showMediaPlayerTester, setShowMediaPlayerTester] = useState(false);
+
+  // Math Primitives Testing State
+  const [showMathPrimitivesTester, setShowMathPrimitivesTester] = useState(false);
 
   // Practice Mode State
   const [showPracticeMode, setShowPracticeMode] = useState(false);
@@ -461,6 +465,11 @@ export default function App() {
                    ← Exit Tester
                 </button>
             )}
+            {showMathPrimitivesTester && (
+                <button onClick={() => setShowMathPrimitivesTester(false)} className="hover:text-white transition-colors">
+                   ← Exit Tester
+                </button>
+            )}
             {showPracticeMode && (
                 <button onClick={() => setShowPracticeMode(false)} className="hover:text-white transition-colors">
                    ← Exit Practice
@@ -472,7 +481,7 @@ export default function App() {
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showPracticeMode && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showPracticeMode && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -590,7 +599,7 @@ export default function App() {
                       <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {/* Media Player Tester */}
                       <SpotlightCard
                         color="139, 92, 246"
@@ -638,6 +647,30 @@ export default function App() {
                           </svg>
                         </div>
                       </SpotlightCard>
+
+                      {/* Math Primitives Tester */}
+                      <SpotlightCard
+                        color="236, 72, 153"
+                        onClick={() => setShowMathPrimitivesTester(true)}
+                        className="bg-gradient-to-br from-pink-900/20 to-rose-900/20"
+                      >
+                        <div className="p-6 flex items-start gap-4">
+                          <div className="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <span className="text-2xl">🧮</span>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-pink-200 transition-colors">
+                              Math Primitives Tester
+                            </h3>
+                            <p className="text-slate-400 text-xs leading-relaxed">
+                              Test and configure visual math components like fraction bars and place value charts
+                            </p>
+                          </div>
+                          <svg className="w-5 h-5 text-slate-600 group-hover:text-pink-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                          </svg>
+                        </div>
+                      </SpotlightCard>
                     </div>
                   </div>
                 </div>
@@ -674,6 +707,13 @@ export default function App() {
         {gameState === GameState.IDLE && showMediaPlayerTester && (
           <div className="flex-1 animate-fade-in">
             <MediaPlayerTester onBack={() => setShowMediaPlayerTester(false)} />
+          </div>
+        )}
+
+        {/* MATH PRIMITIVES TESTER STATE */}
+        {gameState === GameState.IDLE && showMathPrimitivesTester && (
+          <div className="flex-1 animate-fade-in">
+            <MathPrimitivesTester onBack={() => setShowMathPrimitivesTester(false)} />
           </div>
         )}
 

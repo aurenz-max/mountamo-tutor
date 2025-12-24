@@ -4,6 +4,8 @@ import type { NumberLineData } from './primitives/visual-primitives/math/NumberL
 import type { BaseTenBlocksData } from './primitives/visual-primitives/math/BaseTenBlocks';
 import type { FractionCirclesData } from './primitives/visual-primitives/math/FractionCircles';
 import type { GeometricShapeData } from './primitives/visual-primitives/math/GeometricShape';
+import type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
+import type { FractionBarData } from './primitives/visual-primitives/math/FractionBar';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -883,7 +885,9 @@ export interface ExhibitData {
   numberLines?: NumberLineData[];
   baseTenBlocks?: BaseTenBlocksData[];
   fractionCircles?: FractionCirclesData[];
+  fractionBars?: FractionBarData[];
   geometricShapes?: GeometricShapeData[];
+  placeValueCharts?: PlaceValueChartData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -941,7 +945,9 @@ export type ComponentId =
   | 'number-line'        // Linear number line with highlights
   | 'base-ten-blocks'    // Place value visualization (hundreds, tens, ones)
   | 'fraction-circles'   // Fractional parts shown as pie charts
+  | 'fraction-bar'       // Rectangular bar divided into parts to represent fractions
   | 'geometric-shape'    // Shape properties and attributes
+  | 'place-value-chart'  // Place value chart for reading and writing numbers
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape

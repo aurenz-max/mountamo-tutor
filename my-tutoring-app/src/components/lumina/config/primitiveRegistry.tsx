@@ -13,7 +13,9 @@ import BarModel from '../primitives/visual-primitives/math/BarModel';
 import NumberLine from '../primitives/visual-primitives/math/NumberLine';
 import BaseTenBlocks from '../primitives/visual-primitives/math/BaseTenBlocks';
 import FractionCircles from '../primitives/visual-primitives/math/FractionCircles';
+import FractionBar from '../primitives/visual-primitives/math/FractionBar';
 import GeometricShape from '../primitives/visual-primitives/math/GeometricShape';
+import PlaceValueChart from '../primitives/visual-primitives/math/PlaceValueChart';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -203,6 +205,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-5xl mx-auto mb-20',
   },
 
+  'fraction-bar': {
+    component: FractionBar,
+    sectionTitle: 'Fraction Bar',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+  },
+
   'geometric-shape': {
     component: GeometricShape,
     sectionTitle: 'Geometric Shape',
@@ -210,6 +221,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+  },
+
+  'place-value-chart': {
+    component: PlaceValueChart,
+    sectionTitle: 'Place Value Chart',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
   },
 
   // Deprecated: Use specific math primitives instead

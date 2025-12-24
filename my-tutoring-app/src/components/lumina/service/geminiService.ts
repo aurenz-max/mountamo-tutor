@@ -25,6 +25,8 @@ import { generateIntroBriefing as generateIntroBriefingWithSubject } from "./cur
 import { generateMediaPlayer } from "./media-player/gemini-media-player";
 import { generateFlashcardDeck } from "./flashcard-deck/gemini-flashcard";
 import { generateImageComparison } from "./image-comparison/gemini-image-comparison";
+import { generatePlaceValueChart } from "./math/gemini-place-value";
+import { generateFractionBar } from "./math/gemini-fraction-bar";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2664,8 +2666,14 @@ export const generateComponentContent = async (
     case 'fraction-circles':
       return await generateFractionCirclesContent(item, topic, gradeLevelContext);
 
+    case 'fraction-bar':
+      return await generateFractionBarContent(item, topic, gradeLevelContext);
+
     case 'geometric-shape':
       return await generateGeometricShapeContent(item, topic, gradeLevelContext);
+
+    case 'place-value-chart':
+      return await generatePlaceValueChartContent(item, topic, gradeLevelContext);
 
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
@@ -4721,6 +4729,20 @@ Return the complete fraction circles data structure.`;
 };
 
 /**
+ * Generate Fraction Bar content
+ */
+const generateFractionBarContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateFractionBar(topic, gradeContext, config);
+
+  return {
+    type: 'fraction-bar',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -4781,6 +4803,20 @@ Return the complete geometric shape data structure.`;
 
   return {
     type: 'geometric-shape',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Place Value Chart content
+ */
+const generatePlaceValueChartContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generatePlaceValueChart(topic, gradeContext, config);
+
+  return {
+    type: 'place-value-chart',
     instanceId: item.instanceId,
     data
   };
@@ -5141,9 +5177,19 @@ export const buildCompleteExhibitFromTopic = async (
         exhibit.fractionCircles.push(dataWithInstanceId);
         break;
 
+      case 'fraction-bar':
+        if (!exhibit.fractionBars) exhibit.fractionBars = [];
+        exhibit.fractionBars.push(dataWithInstanceId);
+        break;
+
       case 'geometric-shape':
         if (!exhibit.geometricShapes) exhibit.geometricShapes = [];
         exhibit.geometricShapes.push(dataWithInstanceId);
+        break;
+
+      case 'place-value-chart':
+        if (!exhibit.placeValueCharts) exhibit.placeValueCharts = [];
+        exhibit.placeValueCharts.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':
@@ -5343,9 +5389,19 @@ export const buildCompleteExhibitFromManifest = async (
         exhibit.fractionCircles.push(dataWithInstanceId);
         break;
 
+      case 'fraction-bar':
+        if (!exhibit.fractionBars) exhibit.fractionBars = [];
+        exhibit.fractionBars.push(dataWithInstanceId);
+        break;
+
       case 'geometric-shape':
         if (!exhibit.geometricShapes) exhibit.geometricShapes = [];
         exhibit.geometricShapes.push(dataWithInstanceId);
+        break;
+
+      case 'place-value-chart':
+        if (!exhibit.placeValueCharts) exhibit.placeValueCharts = [];
+        exhibit.placeValueCharts.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':
