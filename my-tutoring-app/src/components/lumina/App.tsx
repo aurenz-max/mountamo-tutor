@@ -26,6 +26,8 @@ import {
 import { GameState, ExhibitData, ExhibitManifest } from './types';
 import { GradeLevelSelector, GradeLevel } from './components/GradeLevelSelector';
 import { ManifestViewer } from './components/ManifestViewer';
+import { ObjectivesViewer } from './components/ObjectivesViewer';
+import { ComponentViewer } from './components/ComponentViewer';
 import { ObjectCollection } from './primitives/visual-primitives/ObjectCollection';
 import { ComparisonPanel as VisualComparisonPanel } from './primitives/visual-primitives/ComparisonPanel';
 import { AlphabetSequence } from './primitives/visual-primitives/AlphabetSequence';
@@ -54,12 +56,20 @@ export default function App() {
     status: 'pending' | 'building' | 'completed';
     index: number;
     total: number;
+    title?: string;
+    intent?: string;
+    objectiveId?: string;
+    objectiveText?: string;
+    objectiveVerb?: string;
   }>>([]);
 
   // Manifest Viewer State
   const [showManifestViewer, setShowManifestViewer] = useState(false);
   const [manifest, setManifest] = useState<ExhibitManifest | null>(null);
   const [isGeneratingManifest, setIsGeneratingManifest] = useState(false);
+
+  // Curator Brief State (for displaying objectives during generation)
+  const [curatorBrief, setCuratorBrief] = useState<any>(null);
 
   // Drawer State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -206,6 +216,7 @@ export default function App() {
     setLoadingMessage(`Curating exhibit: ${searchTopic.substring(0, 30)}...`);
     setThinkingMessages([]); // Clear previous thinking messages
     setComponentStatuses([]); // Clear previous component statuses
+    setCuratorBrief(null); // Clear previous curator brief
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -213,8 +224,11 @@ export default function App() {
       // CURATOR-BRIEF-FIRST ARCHITECTURE
       // STEP 1: Generate curator brief with learning objectives
       setLoadingMessage('🎯 Defining learning objectives...');
-      const curatorBrief = await generateIntroBriefing(searchTopic, gradeLevel);
-      console.log('📚 Curator brief generated with objectives:', curatorBrief.objectives);
+      const generatedBrief = await generateIntroBriefing(searchTopic, gradeLevel);
+      console.log('📚 Curator brief generated with objectives:', generatedBrief.objectives);
+
+      // Store curator brief in state to display objectives
+      setCuratorBrief(generatedBrief);
 
       // STEP 2: Use learning objectives to guide manifest generation WITH STREAMING
       setLoadingMessage('📋 Generating exhibit blueprint...');
@@ -238,7 +252,7 @@ export default function App() {
       const manifest = await generateExhibitManifestWithObjectivesStreaming(
         searchTopic,
         gradeLevel,
-        curatorBrief.objectives,
+        generatedBrief.objectives,
         manifestCallbacks
       );
       console.log('🗺️ Manifest generated based on learning objectives');
@@ -247,19 +261,28 @@ export default function App() {
       setLoadingMessage('🎨 Building components in parallel...');
       setThinkingMessages([]); // Clear thinking messages for next phase
 
-      // Initialize component statuses from manifest
+      // Initialize component statuses from manifest with rich metadata
       const totalComponents = manifest.layout?.length || 0;
       const initialStatuses = (manifest.layout || []).map((item, index) => ({
         id: item.instanceId,
         name: item.componentId,
         status: 'pending' as const,
         index: index + 1,
-        total: totalComponents
+        total: totalComponents,
+        // Learning-specific metadata
+        title: item.title,
+        intent: item.intent,
+        objectiveId: item.config?.objectiveId,
+        objectiveText: item.config?.objectiveText,
+        objectiveVerb: item.config?.objectiveVerb,
       }));
       setComponentStatuses(initialStatuses);
 
       // Simulate realistic component building progress
       // Components are built in parallel, so we'll randomize completion times
+      let buildComplete = false;
+      const activeTimeouts: NodeJS.Timeout[] = [];
+
       const simulateProgress = () => {
         // Mark 1-3 random pending components as building
         setComponentStatuses(prev => {
@@ -277,28 +300,52 @@ export default function App() {
         });
 
         // After random delay, mark building as completed
-        setTimeout(() => {
-          setComponentStatuses(prev =>
-            prev.map(c =>
+        const timeout = setTimeout(() => {
+          setComponentStatuses(prev => {
+            const updated = prev.map(c =>
               c.status === 'building'
                 ? { ...c, status: 'completed' as const }
                 : c
-            )
-          );
+            );
+
+            // Check if all are completed and build is done
+            const allCompleted = updated.every(c => c.status === 'completed');
+            if (allCompleted && buildComplete) {
+              // Clean up any remaining intervals/timeouts
+              activeTimeouts.forEach(t => clearTimeout(t));
+            }
+
+            return updated;
+          });
         }, 800 + Math.random() * 1200);
+
+        activeTimeouts.push(timeout);
       };
 
-      // Start simulation
+      // Start simulation with faster initial pace
       const interval = setInterval(() => {
         simulateProgress();
-      }, 1500);
+      }, 1000);
 
       // Build the actual data
-      const data = await buildCompleteExhibitFromManifest(manifest, curatorBrief);
+      const data = await buildCompleteExhibitFromManifest(manifest, generatedBrief);
+      buildComplete = true;
 
-      // Clear interval and mark all as completed
+      // Don't force completion - let simulation finish naturally
+      // Just clear the interval so no new components start building
       clearInterval(interval);
-      setComponentStatuses(prev => prev.map(c => ({ ...c, status: 'completed' as const })));
+
+      // If there are still pending components, complete them after a short delay
+      setTimeout(() => {
+        setComponentStatuses(prev => {
+          const stillPending = prev.some(c => c.status !== 'completed');
+          if (stillPending) {
+            return prev.map(c => ({ ...c, status: 'completed' as const }));
+          }
+          return prev;
+        });
+        activeTimeouts.forEach(t => clearTimeout(t));
+      }, 2500); // Give simulation 2.5s to finish naturally
 
       setExhibitData(data);
       setGameState(GameState.PLAYING);
@@ -340,6 +387,7 @@ export default function App() {
     setExhibitData(null);
     setShowManifestViewer(false);
     setManifest(null);
+    setCuratorBrief(null);
   };
 
   const generateManifest = useCallback(async () => {
@@ -733,6 +781,23 @@ export default function App() {
                   </span>
                 </div>
 
+                {/* Objectives Display - Show after curator brief is generated */}
+                {curatorBrief && curatorBrief.objectives && (
+                  <div className="mt-12 w-full px-4">
+                    <ObjectivesViewer
+                      objectives={curatorBrief.objectives}
+                      topic={curatorBrief.topic}
+                    />
+                  </div>
+                )}
+
+                {/* Component Build Progress */}
+                {componentStatuses.length > 0 && (
+                  <div className="mt-8 w-full px-4">
+                    <ComponentViewer components={componentStatuses} />
+                  </div>
+                )}
+
                 {/* AI Thinking Display */}
                 {thinkingMessages.length > 0 && (
                   <div className="mt-8 max-w-2xl w-full px-4">
@@ -749,86 +814,6 @@ export default function App() {
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
                             {thought}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Component Build Progress */}
-                {componentStatuses.length > 0 && (
-                  <div className="mt-8 max-w-3xl w-full px-4">
-                    <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                      <div className="flex items-center gap-2 mb-6">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Component Assembly</span>
-                        <span className="ml-auto text-xs text-slate-500 font-mono">
-                          {componentStatuses.filter(c => c.status === 'completed').length}/{componentStatuses.length}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {componentStatuses.map((component) => (
-                          <div
-                            key={component.id}
-                            className={`relative overflow-hidden rounded-xl border transition-all duration-500 ${
-                              component.status === 'completed'
-                                ? 'bg-emerald-950/20 border-emerald-500/30'
-                                : component.status === 'building'
-                                ? 'bg-blue-950/20 border-blue-500/30 animate-pulse'
-                                : 'bg-slate-900/20 border-slate-700/30'
-                            }`}
-                          >
-                            {/* Shimmer effect for building */}
-                            {component.status === 'building' && (
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent animate-shimmer"></div>
-                            )}
-
-                            <div className="relative p-4 flex items-center gap-3">
-                              {/* Status Icon */}
-                              <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                                component.status === 'completed'
-                                  ? 'bg-emerald-500/20 text-emerald-400'
-                                  : component.status === 'building'
-                                  ? 'bg-blue-500/20 text-blue-400'
-                                  : 'bg-slate-700/20 text-slate-500'
-                              }`}>
-                                {component.status === 'completed' ? (
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                                  </svg>
-                                ) : component.status === 'building' ? (
-                                  <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                                ) : (
-                                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                                )}
-                              </div>
-
-                              {/* Component Info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-2">
-                                  <span className={`text-xs font-mono font-bold ${
-                                    component.status === 'completed' ? 'text-emerald-400' : 'text-slate-500'
-                                  }`}>
-                                    [{component.index}/{component.total}]
-                                  </span>
-                                  <span className={`text-sm font-medium truncate ${
-                                    component.status === 'completed' ? 'text-white' : 'text-slate-400'
-                                  }`}>
-                                    {component.name}
-                                  </span>
-                                </div>
-                                <div className={`text-xs mt-1 ${
-                                  component.status === 'completed'
-                                    ? 'text-emerald-500/70'
-                                    : component.status === 'building'
-                                    ? 'text-blue-400/70'
-                                    : 'text-slate-600'
-                                }`}>
-                                  {component.status === 'completed' ? 'Completed' : component.status === 'building' ? 'Building...' : 'Pending'}
-                                </div>
-                              </div>
-                            </div>
                           </div>
                         ))}
                       </div>
