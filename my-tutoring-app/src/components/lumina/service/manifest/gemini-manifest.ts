@@ -131,6 +131,26 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Requires fraction values (numerator/denominator)'
   },
   {
+    id: 'fraction-bar',
+    description: 'Interactive rectangular bar models showing fractional parts with adjustable partitions. Perfect for teaching fractions, equivalent fractions, comparing fractions, and fraction operations. Students can click to shade/unshade parts. ESSENTIAL for elementary math.',
+    constraints: 'Requires fraction values (numerator/denominator). Supports multiple bars for comparison.'
+  },
+  {
+    id: 'place-value-chart',
+    description: 'Interactive place value chart showing digit positions from millions to thousandths. Perfect for teaching place value, decimal notation, expanded form, and number decomposition. Students can edit digits to explore different numbers. ESSENTIAL for elementary math.',
+    constraints: 'Best for numbers with clear place value structure (whole numbers and decimals)'
+  },
+  {
+    id: 'area-model',
+    description: 'Visual area model for multiplication using rectangles divided by factor decomposition. Perfect for teaching multi-digit multiplication, distributive property, partial products, binomial multiplication (FOIL), and polynomial expansion. Shows how (a+b)×(c+d) breaks into partial products. ESSENTIAL for grades 3-8 math and algebra.',
+    constraints: 'Requires two factors that can be decomposed (e.g., 23×15 or (x+3)(x+5)). Supports both numeric and algebraic modes.'
+  },
+  {
+    id: 'array-grid',
+    description: 'Rectangular array of discrete objects (dots, squares, stars) arranged in rows and columns. Perfect for teaching multiplication introduction, repeated addition, skip counting, commutative property, area concepts, and combinatorics. Interactive highlighting by row, column, or cell. ESSENTIAL for elementary multiplication (grades 2-5).',
+    constraints: 'Best for multiplication facts and concrete counting. Keep arrays reasonable size (2-10 rows, 2-12 columns).'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'
@@ -418,9 +438,12 @@ STRUCTURE:
 
 ## COMPONENT SELECTION BY SUBJECT:
 - Elementary Math (Counting, Addition, Subtraction) → 'number-line', 'bar-model'
-- Elementary Math (Place Value) → 'base-ten-blocks'
-- Elementary Math (Fractions) → 'fraction-circles'
+- Elementary Math (Place Value) → 'base-ten-blocks', 'place-value-chart'
+- Elementary Math (Fractions) → 'fraction-circles', 'fraction-bar'
+- Elementary Math (Multiplication) → 'array-grid', 'area-model', 'bar-model'
 - Elementary Math (Geometry) → 'geometric-shape'
+- Middle School Math (Multi-digit Multiplication, Distributive Property) → 'area-model'
+- Algebra (Binomial/Polynomial Multiplication) → 'area-model' (algebraic mode)
 - Math Problem-Solving → 'annotated-example' for worked solutions
 - Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'
 - History/Social Studies → 'comparison-panel', 'generative-table', 'feature-exhibit'

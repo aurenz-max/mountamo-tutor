@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import FractionBar, { FractionBarData } from '../primitives/visual-primitives/math/FractionBar';
 import PlaceValueChart, { PlaceValueChartData } from '../primitives/visual-primitives/math/PlaceValueChart';
+import AreaModel, { AreaModelData } from '../primitives/visual-primitives/math/AreaModel';
+import ArrayGrid, { ArrayGridData } from '../primitives/visual-primitives/math/ArrayGrid';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -43,9 +45,38 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     editableDigits: true,
   });
 
+  // Area Model State
+  const [areaModelData, setAreaModelData] = useState<AreaModelData>({
+    title: 'Multiplying with Area Model',
+    description: 'Visualize multiplication using the area model strategy',
+    factor1Parts: [20, 3],
+    factor2Parts: [10, 5],
+    showPartialProducts: true,
+    showDimensions: true,
+    algebraicMode: false,
+    highlightCell: null,
+    showAnimation: false,
+  });
+
+  // Array Grid State
+  const [arrayGridData, setArrayGridData] = useState<ArrayGridData>({
+    title: 'Understanding Multiplication Arrays',
+    description: 'Click on rows, columns, or cells to explore how arrays represent multiplication',
+    rows: 3,
+    columns: 4,
+    iconType: 'dot',
+    showRowLabels: true,
+    showColumnLabels: true,
+    partitionLines: [],
+    highlightMode: 'cell',
+    animateSkipCounting: true,
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
+    { value: 'area-model', label: 'Area Model', icon: '📐' },
+    { value: 'array-grid', label: 'Array / Grid', icon: '⊞' },
   ];
 
   const handleGenerate = async () => {
@@ -55,12 +86,20 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     try {
       const action = selectedPrimitive === 'fraction-bar'
         ? 'generateFractionBar'
-        : 'generatePlaceValueChart';
+        : selectedPrimitive === 'place-value-chart'
+        ? 'generatePlaceValueChart'
+        : selectedPrimitive === 'area-model'
+        ? 'generateAreaModel'
+        : 'generateArrayGrid';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
         ? 'Understanding fractions'
-        : 'Place value and decimal numbers';
+        : selectedPrimitive === 'place-value-chart'
+        ? 'Place value and decimal numbers'
+        : selectedPrimitive === 'area-model'
+        ? 'Multi-digit multiplication'
+        : 'Introduction to multiplication';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -87,6 +126,10 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setFractionBarData(generatedData);
       } else if (selectedPrimitive === 'place-value-chart') {
         setPlaceValueData(generatedData);
+      } else if (selectedPrimitive === 'area-model') {
+        setAreaModelData(generatedData);
+      } else if (selectedPrimitive === 'array-grid') {
+        setArrayGridData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -108,7 +151,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         allowPartitionEdit: true,
         showEquivalentLines: true,
       });
-    } else {
+    } else if (selectedPrimitive === 'place-value-chart') {
       setPlaceValueData({
         title: 'Place Value Chart',
         description: 'Enter digits to see their place values',
@@ -118,6 +161,31 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         showExpandedForm: true,
         showMultipliers: true,
         editableDigits: true,
+      });
+    } else if (selectedPrimitive === 'area-model') {
+      setAreaModelData({
+        title: 'Multiplying with Area Model',
+        description: 'Visualize multiplication using the area model strategy',
+        factor1Parts: [20, 3],
+        factor2Parts: [10, 5],
+        showPartialProducts: true,
+        showDimensions: true,
+        algebraicMode: false,
+        highlightCell: null,
+        showAnimation: false,
+      });
+    } else if (selectedPrimitive === 'array-grid') {
+      setArrayGridData({
+        title: 'Understanding Multiplication Arrays',
+        description: 'Click on rows, columns, or cells to explore how arrays represent multiplication',
+        rows: 3,
+        columns: 4,
+        iconType: 'dot',
+        showRowLabels: true,
+        showColumnLabels: true,
+        partitionLines: [],
+        highlightMode: 'cell',
+        animateSkipCounting: true,
       });
     }
   };
@@ -158,7 +226,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             </div>
 
             <p className="text-sm text-slate-400 mb-3">
-              Generate a {selectedPrimitive === 'fraction-bar' ? 'fraction bar' : 'place value chart'} with AI-chosen specifications appropriate for the selected grade level.
+              Generate a {selectedPrimitive === 'fraction-bar' ? 'fraction bar' : selectedPrimitive === 'place-value-chart' ? 'place value chart' : 'area model'} with AI-chosen specifications appropriate for the selected grade level.
             </p>
 
             {/* Grade Level */}
@@ -331,6 +399,221 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             </div>
           )}
 
+          {/* Area Model Controls */}
+          {selectedPrimitive === 'area-model' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={areaModelData.title}
+                  onChange={(e) => setAreaModelData({ ...areaModelData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <textarea
+                  value={areaModelData.description}
+                  onChange={(e) => setAreaModelData({ ...areaModelData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Factor 1 Parts (comma-separated)</label>
+                <input
+                  type="text"
+                  value={areaModelData.factor1Parts.join(', ')}
+                  onChange={(e) => {
+                    const parts = e.target.value.split(',').map(s => parseInt(s.trim()) || 0).filter(n => n > 0);
+                    if (parts.length > 0) setAreaModelData({ ...areaModelData, factor1Parts: parts });
+                  }}
+                  placeholder="e.g., 20, 3"
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Factor 2 Parts (comma-separated)</label>
+                <input
+                  type="text"
+                  value={areaModelData.factor2Parts.join(', ')}
+                  onChange={(e) => {
+                    const parts = e.target.value.split(',').map(s => parseInt(s.trim()) || 0).filter(n => n > 0);
+                    if (parts.length > 0) setAreaModelData({ ...areaModelData, factor2Parts: parts });
+                  }}
+                  placeholder="e.g., 10, 5"
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={areaModelData.showPartialProducts}
+                    onChange={(e) => setAreaModelData({ ...areaModelData, showPartialProducts: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Partial Products</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={areaModelData.showDimensions}
+                    onChange={(e) => setAreaModelData({ ...areaModelData, showDimensions: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Dimensions</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={areaModelData.algebraicMode || false}
+                    onChange={(e) => setAreaModelData({ ...areaModelData, algebraicMode: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Algebraic Mode</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={areaModelData.showAnimation || false}
+                    onChange={(e) => setAreaModelData({ ...areaModelData, showAnimation: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Animation</span>
+                </label>
+              </div>
+
+              {areaModelData.algebraicMode && (
+                <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                  <p className="text-xs text-yellow-300 mb-2">Algebraic Mode Enabled</p>
+                  <p className="text-xs text-slate-400">
+                    In algebraic mode, you can add custom labels through the AI generator or manually configure labels in the component data.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Array Grid Controls */}
+          {selectedPrimitive === 'array-grid' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={arrayGridData.title}
+                  onChange={(e) => setArrayGridData({ ...arrayGridData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-green-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <textarea
+                  value={arrayGridData.description}
+                  onChange={(e) => setArrayGridData({ ...arrayGridData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-green-500 focus:outline-none resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Rows</label>
+                  <input
+                    type="number"
+                    min="2"
+                    max="10"
+                    value={arrayGridData.rows}
+                    onChange={(e) => setArrayGridData({ ...arrayGridData, rows: parseInt(e.target.value) || 2 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-green-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Columns</label>
+                  <input
+                    type="number"
+                    min="2"
+                    max="12"
+                    value={arrayGridData.columns}
+                    onChange={(e) => setArrayGridData({ ...arrayGridData, columns: parseInt(e.target.value) || 2 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-green-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Icon Type</label>
+                <select
+                  value={arrayGridData.iconType}
+                  onChange={(e) => setArrayGridData({ ...arrayGridData, iconType: e.target.value as 'dot' | 'square' | 'star' | 'custom' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-green-500 focus:outline-none"
+                >
+                  <option value="dot">Dot</option>
+                  <option value="square">Square</option>
+                  <option value="star">Star</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Highlight Mode</label>
+                <select
+                  value={arrayGridData.highlightMode}
+                  onChange={(e) => setArrayGridData({ ...arrayGridData, highlightMode: e.target.value as 'row' | 'column' | 'cell' | 'region' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-green-500 focus:outline-none"
+                >
+                  <option value="cell">Cell</option>
+                  <option value="row">Row</option>
+                  <option value="column">Column</option>
+                  <option value="region">Region</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={arrayGridData.showRowLabels}
+                    onChange={(e) => setArrayGridData({ ...arrayGridData, showRowLabels: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-green-500 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Row Labels</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={arrayGridData.showColumnLabels}
+                    onChange={(e) => setArrayGridData({ ...arrayGridData, showColumnLabels: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-green-500 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Column Labels</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={arrayGridData.animateSkipCounting}
+                    onChange={(e) => setArrayGridData({ ...arrayGridData, animateSkipCounting: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-green-500 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-slate-300">Animate Skip Counting</span>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* Place Value Chart Controls */}
           {selectedPrimitive === 'place-value-chart' && (
             <div className="space-y-4">
@@ -487,6 +770,68 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
                 </button>
               </div>
             )}
+            {selectedPrimitive === 'area-model' && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setAreaModelData({ ...areaModelData, factor1Parts: [3], factor2Parts: [4] })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  3 × 4
+                </button>
+                <button
+                  onClick={() => setAreaModelData({ ...areaModelData, factor1Parts: [10, 2], factor2Parts: [10, 3] })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  12 × 13
+                </button>
+                <button
+                  onClick={() => setAreaModelData({ ...areaModelData, factor1Parts: [20, 3], factor2Parts: [10, 5] })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  23 × 15
+                </button>
+                <button
+                  onClick={() => setAreaModelData({ ...areaModelData, factor1Parts: [30, 4], factor2Parts: [20, 7] })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  34 × 27
+                </button>
+                <button
+                  onClick={() => setAreaModelData({ ...areaModelData, factor1Parts: [100, 20, 5], factor2Parts: [10, 2] })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  125 × 12
+                </button>
+              </div>
+            )}
+            {selectedPrimitive === 'array-grid' && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setArrayGridData({ ...arrayGridData, rows: 2, columns: 3 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  2 × 3
+                </button>
+                <button
+                  onClick={() => setArrayGridData({ ...arrayGridData, rows: 3, columns: 4 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  3 × 4
+                </button>
+                <button
+                  onClick={() => setArrayGridData({ ...arrayGridData, rows: 4, columns: 5 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  4 × 5
+                </button>
+                <button
+                  onClick={() => setArrayGridData({ ...arrayGridData, rows: 5, columns: 6 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  5 × 6
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -496,6 +841,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
           <div className="overflow-y-auto">
             {selectedPrimitive === 'fraction-bar' && <FractionBar data={fractionBarData} />}
             {selectedPrimitive === 'place-value-chart' && <PlaceValueChart data={placeValueData} />}
+            {selectedPrimitive === 'area-model' && <AreaModel data={areaModelData} />}
+            {selectedPrimitive === 'array-grid' && <ArrayGrid data={arrayGridData} />}
           </div>
         </div>
       </div>

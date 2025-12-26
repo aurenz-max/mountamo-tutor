@@ -27,6 +27,8 @@ import { generateFlashcardDeck } from "./flashcard-deck/gemini-flashcard";
 import { generateImageComparison } from "./image-comparison/gemini-image-comparison";
 import { generatePlaceValueChart } from "./math/gemini-place-value";
 import { generateFractionBar } from "./math/gemini-fraction-bar";
+import { generateAreaModel } from "./math/gemini-area-model";
+import { generateArrayGrid } from "./math/gemini-array-grid";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2675,6 +2677,12 @@ export const generateComponentContent = async (
     case 'place-value-chart':
       return await generatePlaceValueChartContent(item, topic, gradeLevelContext);
 
+    case 'area-model':
+      return await generateAreaModelContent(item, topic, gradeLevelContext);
+
+    case 'array-grid':
+      return await generateArrayGridContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4743,6 +4751,34 @@ const generateFractionBarContent = async (item: any, topic: string, gradeContext
 };
 
 /**
+ * Generate Area Model content
+ */
+const generateAreaModelContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateAreaModel(topic, gradeContext, config);
+
+  return {
+    type: 'area-model',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Array Grid content
+ */
+const generateArrayGridContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateArrayGrid(topic, gradeContext, config);
+
+  return {
+    type: 'array-grid',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5192,6 +5228,16 @@ export const buildCompleteExhibitFromTopic = async (
         exhibit.placeValueCharts.push(dataWithInstanceId);
         break;
 
+      case 'area-model':
+        if (!exhibit.areaModels) exhibit.areaModels = [];
+        exhibit.areaModels.push(dataWithInstanceId);
+        break;
+
+      case 'array-grid':
+        if (!exhibit.arrayGrids) exhibit.arrayGrids = [];
+        exhibit.arrayGrids.push(dataWithInstanceId);
+        break;
+
       case 'knowledge-check':
         exhibit.knowledgeCheck = dataWithInstanceId;
         break;
@@ -5402,6 +5448,16 @@ export const buildCompleteExhibitFromManifest = async (
       case 'place-value-chart':
         if (!exhibit.placeValueCharts) exhibit.placeValueCharts = [];
         exhibit.placeValueCharts.push(dataWithInstanceId);
+        break;
+
+      case 'area-model':
+        if (!exhibit.areaModels) exhibit.areaModels = [];
+        exhibit.areaModels.push(dataWithInstanceId);
+        break;
+
+      case 'array-grid':
+        if (!exhibit.arrayGrids) exhibit.arrayGrids = [];
+        exhibit.arrayGrids.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':

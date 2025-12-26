@@ -6,6 +6,8 @@ import type { FractionCirclesData } from './primitives/visual-primitives/math/Fr
 import type { GeometricShapeData } from './primitives/visual-primitives/math/GeometricShape';
 import type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
 import type { FractionBarData } from './primitives/visual-primitives/math/FractionBar';
+import type { AreaModelData } from './primitives/visual-primitives/math/AreaModel';
+import type { ArrayGridData } from './primitives/visual-primitives/math/ArrayGrid';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -888,6 +890,8 @@ export interface ExhibitData {
   fractionBars?: FractionBarData[];
   geometricShapes?: GeometricShapeData[];
   placeValueCharts?: PlaceValueChartData[];
+  areaModels?: AreaModelData[];
+  arrayGrids?: ArrayGridData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -948,6 +952,8 @@ export type ComponentId =
   | 'fraction-bar'       // Rectangular bar divided into parts to represent fractions
   | 'geometric-shape'    // Shape properties and attributes
   | 'place-value-chart'  // Place value chart for reading and writing numbers
+  | 'area-model'         // Area model for multiplication and distributive property
+  | 'array-grid'         // Array/grid for multiplication and combinatorics
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape

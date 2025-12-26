@@ -193,6 +193,42 @@ case 'my-new-primitive':
 - But `geminiService.ts` handles how component **content is generated** from the manifest
 - Without this step, the manifest will call your component, but it won't have any data to show
 
+### Step 4.5: Add to Manifest Catalog (Make AI Aware)
+
+**EQUALLY CRITICAL:** Even if your primitive renders and generates content correctly, the AI won't use it unless you add it to the manifest catalog.
+
+```tsx
+// service/manifest/gemini-manifest.ts
+
+// Add to UNIVERSAL_CATALOG array (around line 103)
+export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
+  // ... existing components
+  {
+    id: 'my-new-primitive',
+    description: 'Clear description of what this primitive does and when to use it. Perfect for [use case]. ESSENTIAL for [subject area].',
+    constraints: 'Any limitations or requirements (e.g., "Requires numeric data", "Best for grades 3-8")'
+  },
+];
+
+// Also update the COMPONENT SELECTION BY SUBJECT section (around line 430)
+## COMPONENT SELECTION BY SUBJECT:
+- Elementary Math (Your Topic) → 'my-new-primitive', 'other-related'
+```
+
+**Real Example (FractionBar):**
+```tsx
+{
+  id: 'fraction-bar',
+  description: 'Interactive rectangular bar models showing fractional parts with adjustable partitions. Perfect for teaching fractions, equivalent fractions, comparing fractions, and fraction operations. Students can click to shade/unshade parts. ESSENTIAL for elementary math.',
+  constraints: 'Requires fraction values (numerator/denominator). Supports multiple bars for comparison.'
+},
+```
+
+**Why is this critical?**
+- The manifest generation uses this catalog to decide which primitives to include
+- Without this entry, AI will NEVER select your primitive, even if everything else works
+- This is the most commonly missed step when adding new primitives
+
 ### Step 5: Use in App.tsx
 
 ```tsx
@@ -365,7 +401,10 @@ When adding a new primitive from scratch, ensure you complete ALL steps:
   - [ ] Create `generate[ComponentName]Content` function
   - [ ] Add assembly case in `assembleExhibitFromComponents`
 - [ ] **Step 5:** Add `PrimitiveCollectionRenderer` call in `App.tsx`
-- [ ] **Step 6:** Add to manifest catalog in `gemini-manifest.ts` (if you want AI to use it)
+- [ ] **Step 6: CRITICAL** Add to manifest catalog in `service/manifest/gemini-manifest.ts`
+  - [ ] Add component definition to `UNIVERSAL_CATALOG` array with id, description, and constraints
+  - [ ] Add to appropriate subject category in `COMPONENT SELECTION BY SUBJECT` section
+  - [ ] Provide clear guidance on when AI should select this primitive
 - [ ] Test that manifest generation includes your component
 - [ ] Test that content generation works without "Unknown component type" error
 - [ ] Test that the component renders correctly in the exhibit

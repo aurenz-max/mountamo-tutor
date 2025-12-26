@@ -24,6 +24,8 @@ import { generateIntroBriefing as generateCuratorBrief } from '@/components/lumi
 import { generateMediaPlayer } from '@/components/lumina/service/media-player/gemini-media-player';
 import { generateFractionBar } from '@/components/lumina/service/math/gemini-fraction-bar';
 import { generatePlaceValueChart } from '@/components/lumina/service/math/gemini-place-value';
+import { generateAreaModel } from '@/components/lumina/service/math/gemini-area-model';
+import { generateArrayGrid } from '@/components/lumina/service/math/gemini-array-grid';
 
 export async function POST(request: NextRequest) {
   try {
@@ -225,6 +227,22 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(placeValueChart);
+
+      case 'generateAreaModel':
+        const areaModel = await generateAreaModel(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(areaModel);
+
+      case 'generateArrayGrid':
+        const arrayGrid = await generateArrayGrid(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(arrayGrid);
 
       default:
         return NextResponse.json(

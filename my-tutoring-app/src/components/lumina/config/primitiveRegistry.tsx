@@ -16,6 +16,8 @@ import FractionCircles from '../primitives/visual-primitives/math/FractionCircle
 import FractionBar from '../primitives/visual-primitives/math/FractionBar';
 import GeometricShape from '../primitives/visual-primitives/math/GeometricShape';
 import PlaceValueChart from '../primitives/visual-primitives/math/PlaceValueChart';
+import AreaModel from '../primitives/visual-primitives/math/AreaModel';
+import ArrayGrid from '../primitives/visual-primitives/math/ArrayGrid';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -226,6 +228,24 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'place-value-chart': {
     component: PlaceValueChart,
     sectionTitle: 'Place Value Chart',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'area-model': {
+    component: AreaModel,
+    sectionTitle: 'Area Model',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'array-grid': {
+    component: ArrayGrid,
+    sectionTitle: 'Array / Grid',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
