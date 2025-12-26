@@ -26,6 +26,8 @@ import { generateFractionBar } from '@/components/lumina/service/math/gemini-fra
 import { generatePlaceValueChart } from '@/components/lumina/service/math/gemini-place-value';
 import { generateAreaModel } from '@/components/lumina/service/math/gemini-area-model';
 import { generateArrayGrid } from '@/components/lumina/service/math/gemini-array-grid';
+import { generateFactorTree } from '@/components/lumina/service/math/gemini-factor-tree';
+import { generateRatioTable } from '@/components/lumina/service/math/gemini-ratio-table';
 
 export async function POST(request: NextRequest) {
   try {
@@ -243,6 +245,22 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(arrayGrid);
+
+      case 'generateFactorTree':
+        const factorTree = await generateFactorTree(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(factorTree);
+
+      case 'generateRatioTable':
+        const ratioTable = await generateRatioTable(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(ratioTable);
 
       default:
         return NextResponse.json(

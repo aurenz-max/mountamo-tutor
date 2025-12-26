@@ -8,6 +8,8 @@ import type { PlaceValueChartData } from './primitives/visual-primitives/math/Pl
 import type { FractionBarData } from './primitives/visual-primitives/math/FractionBar';
 import type { AreaModelData } from './primitives/visual-primitives/math/AreaModel';
 import type { ArrayGridData } from './primitives/visual-primitives/math/ArrayGrid';
+import type { FactorTreeData } from './primitives/visual-primitives/math/FactorTree';
+import type { RatioTableData } from './primitives/visual-primitives/math/RatioTable';
 
 export enum GameState {
   IDLE = 'IDLE',

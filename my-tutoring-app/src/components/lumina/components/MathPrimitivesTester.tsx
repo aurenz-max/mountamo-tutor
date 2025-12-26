@@ -5,12 +5,14 @@ import FractionBar, { FractionBarData } from '../primitives/visual-primitives/ma
 import PlaceValueChart, { PlaceValueChartData } from '../primitives/visual-primitives/math/PlaceValueChart';
 import AreaModel, { AreaModelData } from '../primitives/visual-primitives/math/AreaModel';
 import ArrayGrid, { ArrayGridData } from '../primitives/visual-primitives/math/ArrayGrid';
+import FactorTree, { FactorTreeData } from '../primitives/visual-primitives/math/FactorTree';
+import RatioTable, { RatioTableData } from '../primitives/visual-primitives/math/RatioTable';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -72,11 +74,35 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     animateSkipCounting: true,
   });
 
+  // Factor Tree State
+  const [factorTreeData, setFactorTreeData] = useState<FactorTreeData>({
+    title: 'Prime Factorization of 24',
+    description: 'Split the number into factor pairs until all leaves are prime',
+    rootValue: 24,
+    highlightPrimes: true,
+    showExponentForm: true,
+    guidedMode: true,
+    allowReset: true,
+  });
+
+  // Ratio Table State
+  const [ratioTableData, setRatioTableData] = useState<RatioTableData>({
+    title: 'Baking Cookies: Flour to Cookie Ratio',
+    description: 'Explore how ratios stay equivalent by scaling quantities up or down. In this table, we see that for every 1 cup of flour, we can bake 12 cookies. By multiplying both numbers by the same amount, we maintain the proportional relationship.',
+    rowLabels: ['Cups of Flour', 'Cookies Made'],
+    baseRatio: [1, 12],
+    maxMultiplier: 10,
+    showUnitRate: true,
+    showBarChart: true,
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
     { value: 'area-model', label: 'Area Model', icon: '📐' },
     { value: 'array-grid', label: 'Array / Grid', icon: '⊞' },
+    { value: 'factor-tree', label: 'Factor Tree', icon: '🌳' },
+    { value: 'ratio-table', label: 'Ratio Table', icon: '⚖️' },
   ];
 
   const handleGenerate = async () => {
@@ -90,7 +116,11 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generatePlaceValueChart'
         : selectedPrimitive === 'area-model'
         ? 'generateAreaModel'
-        : 'generateArrayGrid';
+        : selectedPrimitive === 'array-grid'
+        ? 'generateArrayGrid'
+        : selectedPrimitive === 'factor-tree'
+        ? 'generateFactorTree'
+        : 'generateRatioTable';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -99,7 +129,11 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Place value and decimal numbers'
         : selectedPrimitive === 'area-model'
         ? 'Multi-digit multiplication'
-        : 'Introduction to multiplication';
+        : selectedPrimitive === 'array-grid'
+        ? 'Introduction to multiplication'
+        : selectedPrimitive === 'factor-tree'
+        ? 'Prime factorization'
+        : 'Equivalent ratios and proportions';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -130,6 +164,10 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setAreaModelData(generatedData);
       } else if (selectedPrimitive === 'array-grid') {
         setArrayGridData(generatedData);
+      } else if (selectedPrimitive === 'factor-tree') {
+        setFactorTreeData(generatedData);
+      } else if (selectedPrimitive === 'ratio-table') {
+        setRatioTableData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -186,6 +224,26 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         partitionLines: [],
         highlightMode: 'cell',
         animateSkipCounting: true,
+      });
+    } else if (selectedPrimitive === 'factor-tree') {
+      setFactorTreeData({
+        title: 'Prime Factorization of 24',
+        description: 'Split the number into factor pairs until all leaves are prime',
+        rootValue: 24,
+        highlightPrimes: true,
+        showExponentForm: true,
+        guidedMode: true,
+        allowReset: true,
+      });
+    } else if (selectedPrimitive === 'ratio-table') {
+      setRatioTableData({
+        title: 'Baking Cookies: Flour to Cookie Ratio',
+        description: 'Explore how ratios stay equivalent by scaling quantities up or down. In this table, we see that for every 1 cup of flour, we can bake 12 cookies. By multiplying both numbers by the same amount, we maintain the proportional relationship.',
+        rowLabels: ['Cups of Flour', 'Cookies Made'],
+        baseRatio: [1, 12],
+        maxMultiplier: 10,
+        showUnitRate: true,
+        showBarChart: true,
       });
     }
   };
@@ -707,6 +765,192 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             </div>
           )}
 
+          {/* Factor Tree Controls */}
+          {selectedPrimitive === 'factor-tree' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={factorTreeData.title}
+                  onChange={(e) => setFactorTreeData({ ...factorTreeData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <textarea
+                  value={factorTreeData.description}
+                  onChange={(e) => setFactorTreeData({ ...factorTreeData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-amber-500 focus:outline-none resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Root Value (Composite Number)</label>
+                <input
+                  type="number"
+                  min="4"
+                  max="100"
+                  value={factorTreeData.rootValue}
+                  onChange={(e) => setFactorTreeData({ ...factorTreeData, rootValue: parseInt(e.target.value) || 4 })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={factorTreeData.highlightPrimes ?? true}
+                    onChange={(e) => setFactorTreeData({ ...factorTreeData, highlightPrimes: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-slate-300">Highlight Prime Numbers</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={factorTreeData.showExponentForm ?? true}
+                    onChange={(e) => setFactorTreeData({ ...factorTreeData, showExponentForm: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Exponent Form</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={factorTreeData.guidedMode ?? true}
+                    onChange={(e) => setFactorTreeData({ ...factorTreeData, guidedMode: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-slate-300">Guided Mode (Show Suggestions)</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={factorTreeData.allowReset ?? true}
+                    onChange={(e) => setFactorTreeData({ ...factorTreeData, allowReset: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-slate-300">Allow Reset</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Ratio Table Controls */}
+          {selectedPrimitive === 'ratio-table' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={ratioTableData.title}
+                  onChange={(e) => setRatioTableData({ ...ratioTableData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <textarea
+                  value={ratioTableData.description}
+                  onChange={(e) => setRatioTableData({ ...ratioTableData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Row 1 Label</label>
+                  <input
+                    type="text"
+                    value={ratioTableData.rowLabels[0]}
+                    onChange={(e) => setRatioTableData({ ...ratioTableData, rowLabels: [e.target.value, ratioTableData.rowLabels[1]] })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Row 2 Label</label>
+                  <input
+                    type="text"
+                    value={ratioTableData.rowLabels[1]}
+                    onChange={(e) => setRatioTableData({ ...ratioTableData, rowLabels: [ratioTableData.rowLabels[0], e.target.value] })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Base Value 1</label>
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={ratioTableData.baseRatio[0]}
+                    onChange={(e) => setRatioTableData({ ...ratioTableData, baseRatio: [parseFloat(e.target.value) || 1, ratioTableData.baseRatio[1]] })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Base Value 2</label>
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={ratioTableData.baseRatio[1]}
+                    onChange={(e) => setRatioTableData({ ...ratioTableData, baseRatio: [ratioTableData.baseRatio[0], parseFloat(e.target.value) || 1] })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Max Multiplier</label>
+                <input
+                  type="number"
+                  min="2"
+                  max="20"
+                  value={ratioTableData.maxMultiplier ?? 10}
+                  onChange={(e) => setRatioTableData({ ...ratioTableData, maxMultiplier: parseInt(e.target.value) || 10 })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={ratioTableData.showUnitRate ?? true}
+                    onChange={(e) => setRatioTableData({ ...ratioTableData, showUnitRate: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-teal-500 focus:ring-teal-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Unit Rate</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={ratioTableData.showBarChart ?? true}
+                    onChange={(e) => setRatioTableData({ ...ratioTableData, showBarChart: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-teal-500 focus:ring-teal-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Bar Chart</span>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* Reset Button */}
           <div className="mt-6 pt-6 border-t border-slate-700">
             <button
@@ -832,6 +1076,74 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
                 </button>
               </div>
             )}
+            {selectedPrimitive === 'factor-tree' && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setFactorTreeData({ ...factorTreeData, rootValue: 12 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  12
+                </button>
+                <button
+                  onClick={() => setFactorTreeData({ ...factorTreeData, rootValue: 24 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  24
+                </button>
+                <button
+                  onClick={() => setFactorTreeData({ ...factorTreeData, rootValue: 36 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  36
+                </button>
+                <button
+                  onClick={() => setFactorTreeData({ ...factorTreeData, rootValue: 48 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  48
+                </button>
+                <button
+                  onClick={() => setFactorTreeData({ ...factorTreeData, rootValue: 60 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  60
+                </button>
+                <button
+                  onClick={() => setFactorTreeData({ ...factorTreeData, rootValue: 72 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  72
+                </button>
+              </div>
+            )}
+            {selectedPrimitive === 'ratio-table' && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setRatioTableData({ ...ratioTableData, rowLabels: ['Cups of Flour', 'Cookies Made'], baseRatio: [1, 12] })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Recipe
+                </button>
+                <button
+                  onClick={() => setRatioTableData({ ...ratioTableData, rowLabels: ['Hours', 'Miles'], baseRatio: [1, 60] })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Speed
+                </button>
+                <button
+                  onClick={() => setRatioTableData({ ...ratioTableData, rowLabels: ['Items', 'Cost ($)'], baseRatio: [1, 2.50] })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Unit Price
+                </button>
+                <button
+                  onClick={() => setRatioTableData({ ...ratioTableData, rowLabels: ['Red Paint', 'Blue Paint'], baseRatio: [2, 3] })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Mixing
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -843,6 +1155,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'place-value-chart' && <PlaceValueChart data={placeValueData} />}
             {selectedPrimitive === 'area-model' && <AreaModel data={areaModelData} />}
             {selectedPrimitive === 'array-grid' && <ArrayGrid data={arrayGridData} />}
+            {selectedPrimitive === 'factor-tree' && <FactorTree data={factorTreeData} />}
+            {selectedPrimitive === 'ratio-table' && <RatioTable data={ratioTableData} />}
           </div>
         </div>
       </div>
