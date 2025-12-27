@@ -7,12 +7,14 @@ import AreaModel, { AreaModelData } from '../primitives/visual-primitives/math/A
 import ArrayGrid, { ArrayGridData } from '../primitives/visual-primitives/math/ArrayGrid';
 import FactorTree, { FactorTreeData } from '../primitives/visual-primitives/math/FactorTree';
 import RatioTable, { RatioTableData } from '../primitives/visual-primitives/math/RatioTable';
+import DoubleNumberLine, { DoubleNumberLineData } from '../primitives/visual-primitives/math/DoubleNumberLine';
+import PercentBar, { PercentBarData } from '../primitives/visual-primitives/math/PercentBar';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -96,6 +98,35 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     showBarChart: true,
   });
 
+  // Double Number Line State
+  const [doubleNumberLineData, setDoubleNumberLineData] = useState<DoubleNumberLineData>({
+    title: 'Converting Miles to Kilometers',
+    description: 'Explore the proportional relationship between miles and kilometers. See how corresponding values align to maintain the same ratio.',
+    topLabel: 'Miles',
+    bottomLabel: 'Kilometers',
+    topScale: { min: 0, max: 10, interval: 2 },
+    bottomScale: { min: 0, max: 16, interval: 3.2 },
+    linkedPoints: [
+      { topValue: 0, bottomValue: 0, label: 'Origin' },
+      { topValue: 1, bottomValue: 1.6, label: 'Unit Rate' },
+      { topValue: 5, bottomValue: 8, label: 'Midpoint' },
+      { topValue: 10, bottomValue: 16, label: 'Maximum' }
+    ],
+    showVerticalGuides: true,
+  });
+
+  // Percent Bar State
+  const [percentBarData, setPercentBarData] = useState<PercentBarData>({
+    title: 'Understanding 50%',
+    description: 'Click or drag on the bar to adjust the percentage and see how it relates to the whole value',
+    wholeValue: 100,
+    shadedPercent: 50,
+    showPercentLabels: true,
+    showValueLabels: true,
+    benchmarkLines: [25, 50, 75],
+    doubleBar: false,
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -103,6 +134,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'array-grid', label: 'Array / Grid', icon: '⊞' },
     { value: 'factor-tree', label: 'Factor Tree', icon: '🌳' },
     { value: 'ratio-table', label: 'Ratio Table', icon: '⚖️' },
+    { value: 'double-number-line', label: 'Double Number Line', icon: '↔️' },
+    { value: 'percent-bar', label: 'Percent Bar', icon: '📈' },
   ];
 
   const handleGenerate = async () => {
@@ -120,7 +153,11 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateArrayGrid'
         : selectedPrimitive === 'factor-tree'
         ? 'generateFactorTree'
-        : 'generateRatioTable';
+        : selectedPrimitive === 'ratio-table'
+        ? 'generateRatioTable'
+        : selectedPrimitive === 'double-number-line'
+        ? 'generateDoubleNumberLine'
+        : 'generatePercentBar';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -133,7 +170,11 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Introduction to multiplication'
         : selectedPrimitive === 'factor-tree'
         ? 'Prime factorization'
-        : 'Equivalent ratios and proportions';
+        : selectedPrimitive === 'ratio-table'
+        ? 'Equivalent ratios and proportions'
+        : selectedPrimitive === 'double-number-line'
+        ? 'Unit rates and proportional relationships'
+        : 'Percent concepts and calculations';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -168,6 +209,10 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setFactorTreeData(generatedData);
       } else if (selectedPrimitive === 'ratio-table') {
         setRatioTableData(generatedData);
+      } else if (selectedPrimitive === 'double-number-line') {
+        setDoubleNumberLineData(generatedData);
+      } else if (selectedPrimitive === 'percent-bar') {
+        setPercentBarData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -244,6 +289,33 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         maxMultiplier: 10,
         showUnitRate: true,
         showBarChart: true,
+      });
+    } else if (selectedPrimitive === 'double-number-line') {
+      setDoubleNumberLineData({
+        title: 'Converting Miles to Kilometers',
+        description: 'Explore the proportional relationship between miles and kilometers. See how corresponding values align to maintain the same ratio.',
+        topLabel: 'Miles',
+        bottomLabel: 'Kilometers',
+        topScale: { min: 0, max: 10, interval: 2 },
+        bottomScale: { min: 0, max: 16, interval: 3.2 },
+        linkedPoints: [
+          { topValue: 0, bottomValue: 0, label: 'Origin' },
+          { topValue: 1, bottomValue: 1.6, label: 'Unit Rate' },
+          { topValue: 5, bottomValue: 8, label: 'Midpoint' },
+          { topValue: 10, bottomValue: 16, label: 'Maximum' }
+        ],
+        showVerticalGuides: true,
+      });
+    } else if (selectedPrimitive === 'percent-bar') {
+      setPercentBarData({
+        title: 'Understanding 50%',
+        description: 'Click or drag on the bar to adjust the percentage and see how it relates to the whole value',
+        wholeValue: 100,
+        shadedPercent: 50,
+        showPercentLabels: true,
+        showValueLabels: true,
+        benchmarkLines: [25, 50, 75],
+        doubleBar: false,
       });
     }
   };
@@ -844,6 +916,90 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             </div>
           )}
 
+          {/* Percent Bar Controls */}
+          {selectedPrimitive === 'percent-bar' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={percentBarData.title}
+                  onChange={(e) => setPercentBarData({ ...percentBarData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <textarea
+                  value={percentBarData.description}
+                  onChange={(e) => setPercentBarData({ ...percentBarData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-emerald-500 focus:outline-none resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Whole Value (100%)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    value={percentBarData.wholeValue}
+                    onChange={(e) => setPercentBarData({ ...percentBarData, wholeValue: parseFloat(e.target.value) || 100 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Shaded Percent</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={percentBarData.shadedPercent}
+                    onChange={(e) => setPercentBarData({ ...percentBarData, shadedPercent: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)) })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={percentBarData.showPercentLabels ?? true}
+                    onChange={(e) => setPercentBarData({ ...percentBarData, showPercentLabels: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Percent Labels</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={percentBarData.showValueLabels ?? true}
+                    onChange={(e) => setPercentBarData({ ...percentBarData, showValueLabels: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Value Labels</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={percentBarData.doubleBar ?? false}
+                    onChange={(e) => setPercentBarData({ ...percentBarData, doubleBar: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Double Bar (Value Bar)</span>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* Ratio Table Controls */}
           {selectedPrimitive === 'ratio-table' && (
             <div className="space-y-4">
@@ -1144,6 +1300,40 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
                 </button>
               </div>
             )}
+            {selectedPrimitive === 'percent-bar' && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setPercentBarData({ ...percentBarData, wholeValue: 100, shadedPercent: 50 })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  50%
+                </button>
+                <button
+                  onClick={() => setPercentBarData({ ...percentBarData, wholeValue: 50, shadedPercent: 8, doubleBar: true })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  8% Tax
+                </button>
+                <button
+                  onClick={() => setPercentBarData({ ...percentBarData, wholeValue: 80, shadedPercent: 35, doubleBar: true })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  35% Off
+                </button>
+                <button
+                  onClick={() => setPercentBarData({ ...percentBarData, wholeValue: 60, shadedPercent: 75, doubleBar: true })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  75% Score
+                </button>
+                <button
+                  onClick={() => setPercentBarData({ ...percentBarData, wholeValue: 40, shadedPercent: 15, doubleBar: true })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  15% Tip
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1157,6 +1347,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'array-grid' && <ArrayGrid data={arrayGridData} />}
             {selectedPrimitive === 'factor-tree' && <FactorTree data={factorTreeData} />}
             {selectedPrimitive === 'ratio-table' && <RatioTable data={ratioTableData} />}
+            {selectedPrimitive === 'double-number-line' && <DoubleNumberLine data={doubleNumberLineData} />}
+            {selectedPrimitive === 'percent-bar' && <PercentBar data={percentBarData} />}
           </div>
         </div>
       </div>

@@ -1035,6 +1035,11 @@ export default function App() {
                     dataArray={exhibitData.geometricShapes || []}
                 />
 
+                <PrimitiveCollectionRenderer
+                    componentId="double-number-line"
+                    dataArray={exhibitData.doubleNumberLines || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

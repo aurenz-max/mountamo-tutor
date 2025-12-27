@@ -151,6 +151,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Best for multiplication facts and concrete counting. Keep arrays reasonable size (2-10 rows, 2-12 columns).'
   },
   {
+    id: 'double-number-line',
+    description: 'Two parallel horizontal number lines with independent scales showing proportional relationships between quantities. Points on one line correspond to points on the other, visualized with vertical alignment guides. Perfect for teaching ratios, unit rates, proportional relationships, measurement conversions, percent problems, and speed/distance relationships. Critical bridge from additive to multiplicative reasoning. ESSENTIAL for grades 5-8 ratios and proportions.',
+    constraints: 'Requires two quantity labels and proportional relationship. Best with 3-5 linked corresponding points. Ideal for unit rate exploration.'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'
@@ -442,6 +447,8 @@ STRUCTURE:
 - Elementary Math (Fractions) → 'fraction-circles', 'fraction-bar'
 - Elementary Math (Multiplication) → 'array-grid', 'area-model', 'bar-model'
 - Elementary Math (Geometry) → 'geometric-shape'
+- Middle School Math (Ratios, Proportions, Unit Rates) → 'double-number-line', 'ratio-table'
+- Middle School Math (Percent, Conversions) → 'double-number-line'
 - Middle School Math (Multi-digit Multiplication, Distributive Property) → 'area-model'
 - Algebra (Binomial/Polynomial Multiplication) → 'area-model' (algebraic mode)
 - Math Problem-Solving → 'annotated-example' for worked solutions

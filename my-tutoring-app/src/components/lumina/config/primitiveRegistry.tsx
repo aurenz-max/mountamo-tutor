@@ -18,6 +18,8 @@ import GeometricShape from '../primitives/visual-primitives/math/GeometricShape'
 import PlaceValueChart from '../primitives/visual-primitives/math/PlaceValueChart';
 import AreaModel from '../primitives/visual-primitives/math/AreaModel';
 import ArrayGrid from '../primitives/visual-primitives/math/ArrayGrid';
+import DoubleNumberLine from '../primitives/visual-primitives/math/DoubleNumberLine';
+import PercentBar from '../primitives/visual-primitives/math/PercentBar';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -246,6 +248,24 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'array-grid': {
     component: ArrayGrid,
     sectionTitle: 'Array / Grid',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'double-number-line': {
+    component: DoubleNumberLine,
+    sectionTitle: 'Double Number Line',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'percent-bar': {
+    component: PercentBar,
+    sectionTitle: 'Percent Bar',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

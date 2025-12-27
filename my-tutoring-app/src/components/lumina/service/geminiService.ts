@@ -29,6 +29,7 @@ import { generatePlaceValueChart } from "./math/gemini-place-value";
 import { generateFractionBar } from "./math/gemini-fraction-bar";
 import { generateAreaModel } from "./math/gemini-area-model";
 import { generateArrayGrid } from "./math/gemini-array-grid";
+import { generateDoubleNumberLine } from "./math/gemini-double-number-line";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2683,6 +2684,9 @@ export const generateComponentContent = async (
     case 'array-grid':
       return await generateArrayGridContent(item, topic, gradeLevelContext);
 
+    case 'double-number-line':
+      return await generateDoubleNumberLineContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4779,6 +4783,20 @@ const generateArrayGridContent = async (item: any, topic: string, gradeContext: 
 };
 
 /**
+ * Generate Double Number Line content
+ */
+const generateDoubleNumberLineContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateDoubleNumberLine(topic, gradeContext, config);
+
+  return {
+    type: 'double-number-line',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5238,6 +5256,11 @@ export const buildCompleteExhibitFromTopic = async (
         exhibit.arrayGrids.push(dataWithInstanceId);
         break;
 
+      case 'double-number-line':
+        if (!exhibit.doubleNumberLines) exhibit.doubleNumberLines = [];
+        exhibit.doubleNumberLines.push(dataWithInstanceId);
+        break;
+
       case 'knowledge-check':
         exhibit.knowledgeCheck = dataWithInstanceId;
         break;
@@ -5458,6 +5481,11 @@ export const buildCompleteExhibitFromManifest = async (
       case 'array-grid':
         if (!exhibit.arrayGrids) exhibit.arrayGrids = [];
         exhibit.arrayGrids.push(dataWithInstanceId);
+        break;
+
+      case 'double-number-line':
+        if (!exhibit.doubleNumberLines) exhibit.doubleNumberLines = [];
+        exhibit.doubleNumberLines.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':

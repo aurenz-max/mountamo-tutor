@@ -10,6 +10,8 @@ import type { AreaModelData } from './primitives/visual-primitives/math/AreaMode
 import type { ArrayGridData } from './primitives/visual-primitives/math/ArrayGrid';
 import type { FactorTreeData } from './primitives/visual-primitives/math/FactorTree';
 import type { RatioTableData } from './primitives/visual-primitives/math/RatioTable';
+import type { DoubleNumberLineData } from './primitives/visual-primitives/math/DoubleNumberLine';
+import type { PercentBarData } from './primitives/visual-primitives/math/PercentBar';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -894,6 +896,7 @@ export interface ExhibitData {
   placeValueCharts?: PlaceValueChartData[];
   areaModels?: AreaModelData[];
   arrayGrids?: ArrayGridData[];
+  doubleNumberLines?: DoubleNumberLineData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -956,6 +959,7 @@ export type ComponentId =
   | 'place-value-chart'  // Place value chart for reading and writing numbers
   | 'area-model'         // Area model for multiplication and distributive property
   | 'array-grid'         // Array/grid for multiplication and combinatorics
+  | 'double-number-line' // Two parallel number lines showing proportional relationships
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape

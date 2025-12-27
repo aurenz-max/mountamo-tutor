@@ -28,6 +28,8 @@ import { generateAreaModel } from '@/components/lumina/service/math/gemini-area-
 import { generateArrayGrid } from '@/components/lumina/service/math/gemini-array-grid';
 import { generateFactorTree } from '@/components/lumina/service/math/gemini-factor-tree';
 import { generateRatioTable } from '@/components/lumina/service/math/gemini-ratio-table';
+import { generateDoubleNumberLine } from '@/components/lumina/service/math/gemini-double-number-line';
+import { generatePercentBar } from '@/components/lumina/service/math/gemini-percent-bar';
 
 export async function POST(request: NextRequest) {
   try {
@@ -261,6 +263,22 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(ratioTable);
+
+      case 'generateDoubleNumberLine':
+        const doubleNumberLine = await generateDoubleNumberLine(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(doubleNumberLine);
+
+      case 'generatePercentBar':
+        const percentBar = await generatePercentBar(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(percentBar);
 
       default:
         return NextResponse.json(
