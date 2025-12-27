@@ -9,12 +9,13 @@ import FactorTree, { FactorTreeData } from '../primitives/visual-primitives/math
 import RatioTable, { RatioTableData } from '../primitives/visual-primitives/math/RatioTable';
 import DoubleNumberLine, { DoubleNumberLineData } from '../primitives/visual-primitives/math/DoubleNumberLine';
 import PercentBar, { PercentBarData } from '../primitives/visual-primitives/math/PercentBar';
+import TapeDiagram, { TapeDiagramData } from '../primitives/visual-primitives/math/TapeDiagram';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -127,6 +128,23 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     doubleBar: false,
   });
 
+  // Tape Diagram State
+  const [tapeDiagramData, setTapeDiagramData] = useState<TapeDiagramData>({
+    title: 'Part-Part-Whole: Finding the Total',
+    description: 'Click on segments to see their values and how they combine to make the whole',
+    bars: [
+      {
+        segments: [
+          { value: 12, label: 'Red marbles' },
+          { value: 8, label: 'Blue marbles' }
+        ],
+        totalLabel: 'Total marbles'
+      }
+    ],
+    comparisonMode: false,
+    showBrackets: true,
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -136,6 +154,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'ratio-table', label: 'Ratio Table', icon: '⚖️' },
     { value: 'double-number-line', label: 'Double Number Line', icon: '↔️' },
     { value: 'percent-bar', label: 'Percent Bar', icon: '📈' },
+    { value: 'tape-diagram', label: 'Tape Diagram', icon: '📏' },
   ];
 
   const handleGenerate = async () => {
@@ -157,7 +176,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateRatioTable'
         : selectedPrimitive === 'double-number-line'
         ? 'generateDoubleNumberLine'
-        : 'generatePercentBar';
+        : selectedPrimitive === 'percent-bar'
+        ? 'generatePercentBar'
+        : 'generateTapeDiagram';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -174,7 +195,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Equivalent ratios and proportions'
         : selectedPrimitive === 'double-number-line'
         ? 'Unit rates and proportional relationships'
-        : 'Percent concepts and calculations';
+        : selectedPrimitive === 'percent-bar'
+        ? 'Percent concepts and calculations'
+        : 'Part-part-whole word problems';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -213,6 +236,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setDoubleNumberLineData(generatedData);
       } else if (selectedPrimitive === 'percent-bar') {
         setPercentBarData(generatedData);
+      } else if (selectedPrimitive === 'tape-diagram') {
+        setTapeDiagramData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -316,6 +341,22 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         showValueLabels: true,
         benchmarkLines: [25, 50, 75],
         doubleBar: false,
+      });
+    } else if (selectedPrimitive === 'tape-diagram') {
+      setTapeDiagramData({
+        title: 'Part-Part-Whole: Finding the Total',
+        description: 'Click on segments to see their values and how they combine to make the whole',
+        bars: [
+          {
+            segments: [
+              { value: 12, label: 'Red marbles' },
+              { value: 8, label: 'Blue marbles' }
+            ],
+            totalLabel: 'Total marbles'
+          }
+        ],
+        comparisonMode: false,
+        showBrackets: true,
       });
     }
   };
@@ -1334,6 +1375,61 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
                 </button>
               </div>
             )}
+            {selectedPrimitive === 'tape-diagram' && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setTapeDiagramData({
+                    title: 'Part-Part-Whole: Finding the Total',
+                    description: 'Two parts combine to make a whole',
+                    bars: [{ segments: [{ value: 12, label: 'Red' }, { value: 8, label: 'Blue' }], totalLabel: 'Total = 20' }],
+                    comparisonMode: false,
+                    showBrackets: true,
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Part-Whole
+                </button>
+                <button
+                  onClick={() => setTapeDiagramData({
+                    title: 'Comparison: More Than',
+                    description: 'Compare two quantities',
+                    bars: [
+                      { segments: [{ value: 15, label: 'Maria' }], totalLabel: 'Maria' },
+                      { segments: [{ value: 15, label: 'Same' }, { value: 7, label: 'More' }], totalLabel: 'John = 22' }
+                    ],
+                    comparisonMode: true,
+                    showBrackets: true,
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Comparison
+                </button>
+                <button
+                  onClick={() => setTapeDiagramData({
+                    title: 'Unknown Part',
+                    description: 'Find the missing value',
+                    bars: [{ segments: [{ value: 8, label: 'Chocolate' }, { isUnknown: true, label: '?' }], totalLabel: 'Total = 20' }],
+                    comparisonMode: false,
+                    showBrackets: true,
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Unknown
+                </button>
+                <button
+                  onClick={() => setTapeDiagramData({
+                    title: 'Algebra: x + 7 = 15',
+                    description: 'Solve for the variable',
+                    bars: [{ segments: [{ isUnknown: true, label: 'x' }, { value: 7, label: '7' }], totalLabel: 'Total = 15' }],
+                    comparisonMode: false,
+                    showBrackets: true,
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Algebra
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1349,6 +1445,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'ratio-table' && <RatioTable data={ratioTableData} />}
             {selectedPrimitive === 'double-number-line' && <DoubleNumberLine data={doubleNumberLineData} />}
             {selectedPrimitive === 'percent-bar' && <PercentBar data={percentBarData} />}
+            {selectedPrimitive === 'tape-diagram' && <TapeDiagram data={tapeDiagramData} />}
           </div>
         </div>
       </div>

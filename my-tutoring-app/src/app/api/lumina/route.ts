@@ -30,6 +30,7 @@ import { generateFactorTree } from '@/components/lumina/service/math/gemini-fact
 import { generateRatioTable } from '@/components/lumina/service/math/gemini-ratio-table';
 import { generateDoubleNumberLine } from '@/components/lumina/service/math/gemini-double-number-line';
 import { generatePercentBar } from '@/components/lumina/service/math/gemini-percent-bar';
+import { generateTapeDiagram } from '@/components/lumina/service/math/gemini-tape-diagram';
 
 export async function POST(request: NextRequest) {
   try {
@@ -279,6 +280,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(percentBar);
+
+      case 'generateTapeDiagram':
+        const tapeDiagram = await generateTapeDiagram(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(tapeDiagram);
 
       default:
         return NextResponse.json(

@@ -12,6 +12,7 @@ import type { FactorTreeData } from './primitives/visual-primitives/math/FactorT
 import type { RatioTableData } from './primitives/visual-primitives/math/RatioTable';
 import type { DoubleNumberLineData } from './primitives/visual-primitives/math/DoubleNumberLine';
 import type { PercentBarData } from './primitives/visual-primitives/math/PercentBar';
+import type { TapeDiagramData } from './primitives/visual-primitives/math/TapeDiagram';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -897,6 +898,7 @@ export interface ExhibitData {
   areaModels?: AreaModelData[];
   arrayGrids?: ArrayGridData[];
   doubleNumberLines?: DoubleNumberLineData[];
+  tapeDiagrams?: TapeDiagramData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -960,6 +962,7 @@ export type ComponentId =
   | 'area-model'         // Area model for multiplication and distributive property
   | 'array-grid'         // Array/grid for multiplication and combinatorics
   | 'double-number-line' // Two parallel number lines showing proportional relationships
+  | 'tape-diagram'       // Tape diagram / bar model for part-whole and comparison word problems
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape
