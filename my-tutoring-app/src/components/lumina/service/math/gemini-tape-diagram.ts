@@ -207,8 +207,7 @@ Return the complete tape diagram configuration.
         thinkingLevel: ThinkingLevel.LOW,
       },
       responseMimeType: "application/json",
-      responseSchema: tapeDiagramSchema,
-      temperature: 0.8,
+      responseSchema: tapeDiagramSchema      
     },
   });
 

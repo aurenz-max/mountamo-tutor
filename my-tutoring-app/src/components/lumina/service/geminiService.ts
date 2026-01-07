@@ -31,6 +31,9 @@ import { generateAreaModel } from "./math/gemini-area-model";
 import { generateArrayGrid } from "./math/gemini-array-grid";
 import { generateDoubleNumberLine } from "./math/gemini-double-number-line";
 import { generateTapeDiagram } from "./math/gemini-tape-diagram";
+import { generateFactorTree } from "./math/gemini-factor-tree";
+import { generateRatioTable } from "./math/gemini-ratio-table";
+import { generateBalanceScale } from "./math/gemini-balance-scale";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2691,6 +2694,15 @@ export const generateComponentContent = async (
     case 'tape-diagram':
       return await generateTapeDiagramContent(item, topic, gradeLevelContext);
 
+    case 'factor-tree':
+      return await generateFactorTreeContent(item, topic, gradeLevelContext);
+
+    case 'ratio-table':
+      return await generateRatioTableContent(item, topic, gradeLevelContext);
+
+    case 'balance-scale':
+      return await generateBalanceScaleContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -2893,7 +2905,24 @@ const generateComparisonContent = async (item: any, topic: string, gradeContext:
         },
         required: ["name", "description", "visualPrompt", "points"]
       },
-      synthesis: { type: Type.STRING }
+      synthesis: {
+        type: Type.OBJECT,
+        properties: {
+          mainInsight: { type: Type.STRING },
+          keyDifferences: { type: Type.ARRAY, items: { type: Type.STRING } },
+          keySimilarities: { type: Type.ARRAY, items: { type: Type.STRING } },
+          whenToUse: {
+            type: Type.OBJECT,
+            properties: {
+              item1Context: { type: Type.STRING },
+              item2Context: { type: Type.STRING }
+            },
+            required: ["item1Context", "item2Context"]
+          },
+          commonMisconception: { type: Type.STRING }
+        },
+        required: ["mainInsight", "keyDifferences", "keySimilarities"]
+      }
     },
     required: ["title", "intro", "item1", "item2", "synthesis"]
   };
@@ -2907,7 +2936,16 @@ INTENT: ${item.intent}
 ${objectiveContext}
 
 Generate a side-by-side comparison with two items.
-${objectiveContext ? 'The comparison must help students understand the learning objective above.' : ''}`,
+${objectiveContext ? 'The comparison must help students understand the learning objective above.' : ''}
+
+For the synthesis section, provide:
+- mainInsight: A clear, insightful statement about the relationship between the two items (1-2 sentences)
+- keyDifferences: 2-3 specific, concrete differences that students should recognize
+- keySimilarities: 2-3 specific, concrete similarities that connect the concepts
+- whenToUse: Explain when/why to use item1 vs item2 (practical application context)
+- commonMisconception: One common mistake students make when comparing these concepts
+
+Make all synthesis points clear, grade-appropriate, and actionable for learning.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,
@@ -4815,6 +4853,48 @@ const generateTapeDiagramContent = async (item: any, topic: string, gradeContext
 };
 
 /**
+ * Generate Factor Tree content
+ */
+const generateFactorTreeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateFactorTree(topic, gradeContext, config);
+
+  return {
+    type: 'factor-tree',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Ratio Table content
+ */
+const generateRatioTableContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateRatioTable(topic, gradeContext, config);
+
+  return {
+    type: 'ratio-table',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
+ * Generate Balance Scale content
+ */
+const generateBalanceScaleContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateBalanceScale(topic, gradeContext, config);
+
+  return {
+    type: 'balance-scale',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5284,6 +5364,26 @@ export const buildCompleteExhibitFromTopic = async (
         exhibit.tapeDiagrams.push(dataWithInstanceId);
         break;
 
+      case 'factor-tree':
+        if (!exhibit.factorTrees) exhibit.factorTrees = [];
+        exhibit.factorTrees.push(dataWithInstanceId);
+        break;
+
+      case 'ratio-table':
+        if (!exhibit.ratioTables) exhibit.ratioTables = [];
+        exhibit.ratioTables.push(dataWithInstanceId);
+        break;
+
+      case 'percent-bar':
+        if (!exhibit.percentBars) exhibit.percentBars = [];
+        exhibit.percentBars.push(dataWithInstanceId);
+        break;
+
+      case 'balance-scale':
+        if (!exhibit.balanceScales) exhibit.balanceScales = [];
+        exhibit.balanceScales.push(dataWithInstanceId);
+        break;
+
       case 'knowledge-check':
         exhibit.knowledgeCheck = dataWithInstanceId;
         break;
@@ -5514,6 +5614,26 @@ export const buildCompleteExhibitFromManifest = async (
       case 'tape-diagram':
         if (!exhibit.tapeDiagrams) exhibit.tapeDiagrams = [];
         exhibit.tapeDiagrams.push(dataWithInstanceId);
+        break;
+
+      case 'factor-tree':
+        if (!exhibit.factorTrees) exhibit.factorTrees = [];
+        exhibit.factorTrees.push(dataWithInstanceId);
+        break;
+
+      case 'ratio-table':
+        if (!exhibit.ratioTables) exhibit.ratioTables = [];
+        exhibit.ratioTables.push(dataWithInstanceId);
+        break;
+
+      case 'percent-bar':
+        if (!exhibit.percentBars) exhibit.percentBars = [];
+        exhibit.percentBars.push(dataWithInstanceId);
+        break;
+
+      case 'balance-scale':
+        if (!exhibit.balanceScales) exhibit.balanceScales = [];
+        exhibit.balanceScales.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':

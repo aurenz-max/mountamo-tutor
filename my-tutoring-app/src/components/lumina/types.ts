@@ -13,6 +13,7 @@ import type { RatioTableData } from './primitives/visual-primitives/math/RatioTa
 import type { DoubleNumberLineData } from './primitives/visual-primitives/math/DoubleNumberLine';
 import type { PercentBarData } from './primitives/visual-primitives/math/PercentBar';
 import type { TapeDiagramData } from './primitives/visual-primitives/math/TapeDiagram';
+import type { BalanceScaleData } from './primitives/visual-primitives/math/BalanceScale';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -510,7 +511,16 @@ export interface ComparisonData {
   intro: string;
   item1: ComparisonItem;
   item2: ComparisonItem;
-  synthesis: string;
+  synthesis: {
+    mainInsight: string;
+    keyDifferences: string[];
+    keySimilarities: string[];
+    whenToUse?: {
+      item1Context: string;
+      item2Context: string;
+    };
+    commonMisconception?: string;
+  };
 }
 
 export interface ItemDetailData {
@@ -899,6 +909,10 @@ export interface ExhibitData {
   arrayGrids?: ArrayGridData[];
   doubleNumberLines?: DoubleNumberLineData[];
   tapeDiagrams?: TapeDiagramData[];
+  factorTrees?: FactorTreeData[];
+  ratioTables?: RatioTableData[];
+  percentBars?: PercentBarData[];
+  balanceScales?: BalanceScaleData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -963,6 +977,10 @@ export type ComponentId =
   | 'array-grid'         // Array/grid for multiplication and combinatorics
   | 'double-number-line' // Two parallel number lines showing proportional relationships
   | 'tape-diagram'       // Tape diagram / bar model for part-whole and comparison word problems
+  | 'factor-tree'        // Tree diagram showing prime factorization
+  | 'ratio-table'        // Table showing equivalent ratios
+  | 'percent-bar'        // Horizontal bar model with percentage markings
+  | 'balance-scale'      // Interactive balance scale for equation solving
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape

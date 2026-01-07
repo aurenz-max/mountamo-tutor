@@ -31,6 +31,7 @@ import { generateRatioTable } from '@/components/lumina/service/math/gemini-rati
 import { generateDoubleNumberLine } from '@/components/lumina/service/math/gemini-double-number-line';
 import { generatePercentBar } from '@/components/lumina/service/math/gemini-percent-bar';
 import { generateTapeDiagram } from '@/components/lumina/service/math/gemini-tape-diagram';
+import { generateBalanceScale } from '@/components/lumina/service/math/gemini-balance-scale';
 
 export async function POST(request: NextRequest) {
   try {
@@ -288,6 +289,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(tapeDiagram);
+
+      case 'generateBalanceScale':
+        const balanceScale = await generateBalanceScale(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(balanceScale);
 
       default:
         return NextResponse.json(

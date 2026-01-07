@@ -218,15 +218,11 @@ Return the complete double number line configuration.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
-      thinkingConfig: {
-        thinkingLevel: ThinkingLevel.LOW,
-      },
       responseMimeType: "application/json",
-      responseSchema: doubleNumberLineSchema,
-      temperature: 0.8,
+      responseSchema: doubleNumberLineSchema
     },
   });
 

@@ -138,15 +138,11 @@ Return the complete fraction bar configuration.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
-      thinkingConfig: {
-        thinkingLevel: ThinkingLevel.LOW,
-      },
       responseMimeType: "application/json",
-      responseSchema: fractionBarSchema,
-      temperature: 0.8,
+      responseSchema: fractionBarSchema      
     },
   });
 

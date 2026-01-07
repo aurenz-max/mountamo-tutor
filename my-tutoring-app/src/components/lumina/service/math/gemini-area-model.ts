@@ -229,15 +229,11 @@ Return the complete area model configuration.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
-      thinkingConfig: {
-        thinkingLevel: ThinkingLevel.LOW,
-      },
       responseMimeType: "application/json",
-      responseSchema: areaModelSchema,
-      temperature: 0.8,
+      responseSchema: areaModelSchema
     },
   });
 

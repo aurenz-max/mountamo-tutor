@@ -10,12 +10,13 @@ import RatioTable, { RatioTableData } from '../primitives/visual-primitives/math
 import DoubleNumberLine, { DoubleNumberLineData } from '../primitives/visual-primitives/math/DoubleNumberLine';
 import PercentBar, { PercentBarData } from '../primitives/visual-primitives/math/PercentBar';
 import TapeDiagram, { TapeDiagramData } from '../primitives/visual-primitives/math/TapeDiagram';
+import BalanceScale, { BalanceScaleData } from '../primitives/visual-primitives/math/BalanceScale';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -145,6 +146,25 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     showBrackets: true,
   });
 
+  // Balance Scale State
+  const [balanceScaleData, setBalanceScaleData] = useState<BalanceScaleData>({
+    title: 'Solving x + 3 = 7',
+    description: 'Use the balance scale to find the value of x by keeping both sides equal',
+    leftSide: [
+      { value: 1, label: 'x', isVariable: true },
+      { value: 3, label: '3' }
+    ],
+    rightSide: [{ value: 7, label: '7' }],
+    variableValue: 4,
+    showTilt: true,
+    allowOperations: ['subtract'],
+    stepHistory: [
+      'Start with x + 3 = 7',
+      'Subtract 3 from both sides to isolate x',
+      'x = 4'
+    ],
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -155,6 +175,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'double-number-line', label: 'Double Number Line', icon: '↔️' },
     { value: 'percent-bar', label: 'Percent Bar', icon: '📈' },
     { value: 'tape-diagram', label: 'Tape Diagram', icon: '📏' },
+    { value: 'balance-scale', label: 'Balance / Scale Model', icon: '⚖️' },
   ];
 
   const handleGenerate = async () => {
@@ -178,7 +199,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateDoubleNumberLine'
         : selectedPrimitive === 'percent-bar'
         ? 'generatePercentBar'
-        : 'generateTapeDiagram';
+        : selectedPrimitive === 'tape-diagram'
+        ? 'generateTapeDiagram'
+        : 'generateBalanceScale';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -197,7 +220,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Unit rates and proportional relationships'
         : selectedPrimitive === 'percent-bar'
         ? 'Percent concepts and calculations'
-        : 'Part-part-whole word problems';
+        : selectedPrimitive === 'tape-diagram'
+        ? 'Part-part-whole word problems'
+        : 'Solving equations';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -238,6 +263,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setPercentBarData(generatedData);
       } else if (selectedPrimitive === 'tape-diagram') {
         setTapeDiagramData(generatedData);
+      } else if (selectedPrimitive === 'balance-scale') {
+        setBalanceScaleData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -357,6 +384,24 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ],
         comparisonMode: false,
         showBrackets: true,
+      });
+    } else if (selectedPrimitive === 'balance-scale') {
+      setBalanceScaleData({
+        title: 'Solving x + 3 = 7',
+        description: 'Use the balance scale to find the value of x by keeping both sides equal',
+        leftSide: [
+          { value: 1, label: 'x', isVariable: true },
+          { value: 3, label: '3' }
+        ],
+        rightSide: [{ value: 7, label: '7' }],
+        variableValue: 4,
+        showTilt: true,
+        allowOperations: ['subtract'],
+        stepHistory: [
+          'Start with x + 3 = 7',
+          'Subtract 3 from both sides to isolate x',
+          'x = 4'
+        ],
       });
     }
   };
@@ -1446,6 +1491,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'double-number-line' && <DoubleNumberLine data={doubleNumberLineData} />}
             {selectedPrimitive === 'percent-bar' && <PercentBar data={percentBarData} />}
             {selectedPrimitive === 'tape-diagram' && <TapeDiagram data={tapeDiagramData} />}
+            {selectedPrimitive === 'balance-scale' && <BalanceScale data={balanceScaleData} />}
           </div>
         </div>
       </div>

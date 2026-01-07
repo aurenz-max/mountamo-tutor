@@ -161,6 +161,26 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Requires clear part-whole or comparison relationship. Use 1 bar for part-whole problems, 2+ bars for comparison. Can include unknown segments for algebra (marked with isUnknown: true).'
   },
   {
+    id: 'factor-tree',
+    description: 'Visual tree diagram showing prime factorization of a number. Perfect for teaching prime numbers, composite numbers, factor decomposition, greatest common factor (GCF), least common multiple (LCM), and divisibility rules. Interactive branches show the breakdown process from composite numbers to prime factors. ESSENTIAL for grades 4-6 number theory.',
+    constraints: 'Requires a composite number (not prime). Best for numbers with interesting factorizations (e.g., 24, 36, 48, 60, 72).'
+  },
+  {
+    id: 'ratio-table',
+    description: 'Structured table showing equivalent ratios in rows with columns for each quantity in the ratio relationship. Perfect for teaching equivalent ratios, unit rates, proportional reasoning, scaling relationships, and ratio problem-solving. Shows multiplicative relationships between rows. ESSENTIAL for grades 5-7 ratios and proportions.',
+    constraints: 'Requires a ratio relationship between 2-3 quantities. Best with 3-5 rows showing equivalent ratios.'
+  },
+  {
+    id: 'percent-bar',
+    description: 'Horizontal bar model with percentage markings showing the relationship between a part and whole. Perfect for teaching percentages, percent of a quantity, discounts, tax, tips, percent increase/decrease, and part-to-whole relationships. Visual representation with 0% to 100% scale. ESSENTIAL for grades 6-8 percent concepts.',
+    constraints: 'Requires a percent value and context (total amount). Best for concrete percent problems with real-world applications.'
+  },
+  {
+    id: 'balance-scale',
+    description: 'Interactive balance scale showing equality and equation solving. Perfect for teaching algebraic thinking, equation solving, equality concepts, conservation of equality, inverse operations, and maintaining balance. Visual representation of "what you do to one side, do to the other." ESSENTIAL for pre-algebra and algebra (grades 5-8).',
+    constraints: 'Requires an equation or equality relationship. Best for linear equations and simple algebraic expressions. Shows balanced or unbalanced states.'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'
@@ -447,16 +467,18 @@ STRUCTURE:
 3. finalAssessment: Optional quiz/flashcards covering ALL objectives (at the end)
 
 ## COMPONENT SELECTION BY SUBJECT:
-- Elementary Math (Counting, Addition, Subtraction) → 'number-line', 'bar-model'
+- Elementary Math (Counting, Addition, Subtraction) → 'number-line', 'bar-model', 'tape-diagram'
 - Elementary Math (Place Value) → 'base-ten-blocks', 'place-value-chart'
 - Elementary Math (Fractions) → 'fraction-circles', 'fraction-bar'
 - Elementary Math (Multiplication) → 'array-grid', 'area-model', 'bar-model'
 - Elementary Math (Geometry) → 'geometric-shape'
+- Elementary/Middle School Math (Prime Factorization, GCF, LCM) → 'factor-tree'
 - Middle School Math (Ratios, Proportions, Unit Rates) → 'double-number-line', 'ratio-table'
-- Middle School Math (Percent, Conversions) → 'double-number-line'
+- Middle School Math (Percent, Conversions) → 'double-number-line', 'percent-bar'
 - Middle School Math (Multi-digit Multiplication, Distributive Property) → 'area-model'
+- Pre-Algebra/Algebra (Equations, Equality, Solving) → 'balance-scale', 'tape-diagram'
 - Algebra (Binomial/Polynomial Multiplication) → 'area-model' (algebraic mode)
-- Math Problem-Solving → 'annotated-example' for worked solutions
+- Math Problem-Solving → 'annotated-example' for worked solutions, 'tape-diagram' for word problems
 - Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'
 - History/Social Studies → 'comparison-panel', 'generative-table', 'feature-exhibit'
 - Language Arts → 'sentence-analyzer', 'word-builder', 'concept-card-grid'

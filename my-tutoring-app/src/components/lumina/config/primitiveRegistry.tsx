@@ -20,6 +20,10 @@ import AreaModel from '../primitives/visual-primitives/math/AreaModel';
 import ArrayGrid from '../primitives/visual-primitives/math/ArrayGrid';
 import DoubleNumberLine from '../primitives/visual-primitives/math/DoubleNumberLine';
 import PercentBar from '../primitives/visual-primitives/math/PercentBar';
+import FactorTree from '../primitives/visual-primitives/math/FactorTree';
+import RatioTable from '../primitives/visual-primitives/math/RatioTable';
+import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
+import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -266,6 +270,42 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'percent-bar': {
     component: PercentBar,
     sectionTitle: 'Percent Bar',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'factor-tree': {
+    component: FactorTree,
+    sectionTitle: 'Factor Tree',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'ratio-table': {
+    component: RatioTable,
+    sectionTitle: 'Ratio Table',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'tape-diagram': {
+    component: TapeDiagram,
+    sectionTitle: 'Tape Diagram',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'balance-scale': {
+    component: BalanceScale,
+    sectionTitle: 'Balance Scale',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

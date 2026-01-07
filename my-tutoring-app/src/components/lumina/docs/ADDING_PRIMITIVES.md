@@ -2,6 +2,21 @@
 
 This guide explains the scalable architecture for adding new primitive components to the Lumina exhibit system.
 
+## 🚀 Quick Reference: 6 Files You Must Touch
+
+When adding a new primitive, you MUST modify these files (in order):
+
+1. **`types.ts`** - Add ComponentId, data interface, and ExhibitData field
+2. **`config/primitiveRegistry.tsx`** - Import and register component
+3. **`service/geminiService.ts`** - Import, switch case, wrapper function, 2× assembly
+4. **`App.tsx`** - Add PrimitiveCollectionRenderer call
+5. **`service/manifest/gemini-manifest.ts`** - Add to catalog ⚠️ MOST MISSED!
+6. **`primitives/.../YourComponent.tsx`** - Create the component (may already exist)
+
+**Missing ANY of these = Component won't work!**
+
+---
+
 ## Architecture Overview
 
 The Lumina primitive system uses a **Registry Pattern** to eliminate repetitive code and make adding new primitives a simple 3-step process.
@@ -388,26 +403,167 @@ This means the manifest is calling your component, but `geminiService.ts` doesn'
 2. Verify data structure matches interface definition
 3. Check that primitive component accepts `data` prop
 
+## Pre-Flight Checklist
+
+Before you start coding, verify these prerequisites:
+
+- [ ] The primitive component file exists and exports a React component
+- [ ] The generation service file exists (e.g., `service/math/gemini-your-primitive.ts`)
+- [ ] You have a clear understanding of the data structure the primitive needs
+- [ ] You know which subject areas should use this primitive
+
 ## Complete Integration Checklist
 
 When adding a new primitive from scratch, ensure you complete ALL steps:
 
-- [ ] **Step 1:** Create the primitive component in `primitives/`
-- [ ] **Step 2:** Add TypeScript types to `types.ts` (ComponentId, data interface, ExhibitData field)
-- [ ] **Step 3:** Register in `primitiveRegistry.tsx` with configuration
-- [ ] **Step 4:** Add content generation logic in `geminiService.ts`
-  - [ ] Import generation function (if needed)
-  - [ ] Add case to `generateComponentContent` switch
-  - [ ] Create `generate[ComponentName]Content` function
-  - [ ] Add assembly case in `assembleExhibitFromComponents`
+### Core Implementation (Required for Basic Rendering)
+- [ ] **Step 1:** Create the primitive component in `primitives/` or `primitives/visual-primitives/math/`
+  - [ ] Component accepts `data` prop with defined TypeScript interface
+  - [ ] Component manages its own internal state
+  - [ ] Component is exported as default export
+
+### TypeScript Type Definitions (Required for Type Safety)
+- [ ] **Step 2:** Add TypeScript types to `types.ts`
+  - [ ] Add new component ID to `ComponentId` type union (e.g., `'factor-tree'`)
+  - [ ] Create data interface (e.g., `FactorTreeData`) with all required fields
+  - [ ] Add optional field to `ExhibitData` interface (e.g., `factorTrees?: FactorTreeData[]`)
+
+### Registry Configuration (Required for Rendering)
+- [ ] **Step 3:** Register in `config/primitiveRegistry.tsx`
+  - [ ] Import the component at the top of the file
+  - [ ] Add entry to `PRIMITIVE_REGISTRY` object with:
+    - [ ] `component`: Reference to imported component
+    - [ ] `sectionTitle`: Display title for the section header
+    - [ ] `showDivider`: Set to `true` for most components
+    - [ ] `dividerStyle`: Usually `'left'` for math primitives
+    - [ ] `allowMultiple`: Set to `true` if multiple instances allowed
+    - [ ] `containerClassName`: Standard is `'max-w-6xl mx-auto mb-20'`
+
+### Content Generation Pipeline (Required for AI Content)
+- [ ] **Step 4:** Add content generation logic in `service/geminiService.ts`
+  - [ ] Import generation function from dedicated service file (e.g., `import { generateFactorTree } from './math/gemini-factor-tree'`)
+  - [ ] Add case to `generateComponentContent` switch statement (around line 2600)
+    - [ ] Case matches component ID exactly (e.g., `case 'factor-tree':`)
+    - [ ] Returns properly formatted component data
+  - [ ] Create `generate[ComponentName]Content` function (around line 4300-4900)
+    - [ ] Accepts `item`, `topic`, and `gradeContext` parameters
+    - [ ] Calls dedicated generation service or builds data inline
+    - [ ] Returns object with `type`, `instanceId`, and `data` fields
+  - [ ] **CRITICAL:** Add assembly case in BOTH `assembleExhibitFromComponents` loops (around line 5200-5400 AND 5500-5700)
+    - [ ] Look for the comment "Map components to exhibit structure"
+    - [ ] There are TWO nearly identical switch statements - you must update BOTH
+    - [ ] In each switch, add your case BEFORE the `default:` case
+    - [ ] Each case should: Initialize array if needed (e.g., `if (!exhibit.factorTrees) exhibit.factorTrees = []`)
+    - [ ] Each case should: Push `dataWithInstanceId` to the array (second loop) or `component.data` (first loop, but verify which variable is used)
+    - [ ] **Verification:** Search for your component-id in the file - you should see it in at least 3 places (import, switch case, assembly cases)
+
+### App Integration (Required for Display)
 - [ ] **Step 5:** Add `PrimitiveCollectionRenderer` call in `App.tsx`
+  - [ ] Add in appropriate section (math primitives go after line 1040)
+  - [ ] Use correct `componentId` matching registry key
+  - [ ] Reference correct `ExhibitData` field with fallback to empty array
+  - [ ] Example: `<PrimitiveCollectionRenderer componentId="factor-tree" dataArray={exhibitData.factorTrees || []} />`
+
+### AI Manifest Awareness (CRITICAL - Most Commonly Missed!)
 - [ ] **Step 6: CRITICAL** Add to manifest catalog in `service/manifest/gemini-manifest.ts`
-  - [ ] Add component definition to `UNIVERSAL_CATALOG` array with id, description, and constraints
-  - [ ] Add to appropriate subject category in `COMPONENT SELECTION BY SUBJECT` section
+  - [ ] Add component definition to `UNIVERSAL_CATALOG` array (around line 103)
+    - [ ] `id`: Exact match to component ID
+    - [ ] `description`: Clear description of what primitive does and when to use it
+    - [ ] `constraints`: Any limitations or requirements
+  - [ ] Add to appropriate subject category in `COMPONENT SELECTION BY SUBJECT` section (around line 430)
+    - [ ] List component ID in relevant subjects (e.g., "Elementary Math")
   - [ ] Provide clear guidance on when AI should select this primitive
-- [ ] Test that manifest generation includes your component
-- [ ] Test that content generation works without "Unknown component type" error
-- [ ] Test that the component renders correctly in the exhibit
+
+### Testing & Validation
+- [ ] **Step 7:** Verify complete integration
+  - [ ] Run all 5 verification commands below - ALL must return results
+  - [ ] Generate a test exhibit with a topic that would use your primitive
+  - [ ] Check browser console for "Unknown component type" errors - there should be NONE
+  - [ ] Verify the component appears in the manifest layout (check console logs)
+  - [ ] Confirm the component renders visually in the exhibit
+  - [ ] Test all interactive features of the component
+  - [ ] Verify styling and responsive behavior across different screen sizes
+  - [ ] Check that multiple instances work if `allowMultiple: true`
+  - [ ] Test with different grade levels to ensure content generation adapts appropriately
+
+## Quick Verification Commands
+
+After adding a new primitive, run these checks:
+
+```bash
+# 1. Check if component ID is in ComponentId type
+grep "your-component-id" src/components/lumina/types.ts
+
+# 2. Check if registered in primitiveRegistry
+grep "your-component-id" src/components/lumina/config/primitiveRegistry.tsx
+
+# 3. Check if in App.tsx
+grep "your-component-id" src/components/lumina/App.tsx
+
+# 4. Check if content generation exists
+grep "your-component-id" src/components/lumina/service/geminiService.ts
+
+# 5. Check if in manifest catalog
+grep "your-component-id" src/components/lumina/service/manifest/gemini-manifest.ts
+```
+
+All five checks should return results. If any check fails, that step is missing!
+
+## Common Pitfalls & How to Avoid Them
+
+### ❌ Pitfall 1: "Unknown component type: your-component-id"
+**Symptom:** Error appears in console logs during exhibit generation
+**Cause:** Missing case in `generateComponentContent` switch statement
+**Fix:** Add case handler in geminiService.ts around line 2600-2700
+**Prevention:** Always use grep to verify: `grep "case 'your-component-id':" src/components/lumina/service/geminiService.ts`
+
+### ❌ Pitfall 2: Component generates but doesn't render
+**Symptom:** No errors, but component doesn't appear in exhibit
+**Cause:** Missing assembly case in `assembleExhibitFromComponents`
+**Fix:** Add case to BOTH assembly loops (lines ~5200-5400 and ~5500-5700)
+**Prevention:** Search for your component-id in geminiService.ts - should appear in at least 3 locations
+
+### ❌ Pitfall 3: Component renders but has no section header
+**Symptom:** Component appears but without title/divider
+**Cause:** Missing or incomplete registry configuration
+**Fix:** Verify `sectionTitle` and `showDivider` are set in primitiveRegistry.tsx
+**Prevention:** Copy configuration from a similar component type
+
+### ❌ Pitfall 4: AI never selects your component
+**Symptom:** Manifest generation succeeds but your component never appears
+**Cause:** Not added to manifest catalog in gemini-manifest.ts
+**Fix:** Add to UNIVERSAL_CATALOG array and subject category lists
+**Prevention:** This is the MOST commonly missed step - always check grep output for manifest file
+
+### ❌ Pitfall 5: TypeScript errors about missing properties
+**Symptom:** Build fails with type errors
+**Cause:** ComponentId type or ExhibitData interface not updated
+**Fix:** Add to ComponentId union type and ExhibitData interface in types.ts
+**Prevention:** Run TypeScript check: `npm run type-check` or check IDE errors
+
+## Post-Integration Verification Checklist
+
+After completing all integration steps, perform this final verification:
+
+- [ ] **File Check:** Verify you modified exactly 5 files:
+  1. `primitives/visual-primitives/math/YourComponent.tsx` (or already existed)
+  2. `types.ts` (added ComponentId and interfaces)
+  3. `config/primitiveRegistry.tsx` (imported and registered)
+  4. `service/geminiService.ts` (import, switch case, wrapper function, 2x assembly cases)
+  5. `App.tsx` (added PrimitiveCollectionRenderer)
+  6. `service/manifest/gemini-manifest.ts` (added to catalog) - **CRITICAL, often missed!**
+
+- [ ] **Console Test:** Run exhibit generation and check for these success indicators:
+  - ✅ No "Unknown component type" errors
+  - ✅ Component appears in manifest layout array (visible in console logs)
+  - ✅ Component data is generated successfully
+  - ✅ Component renders visually in browser
+
+- [ ] **Grep Verification:** All 5 verification commands return results (see above)
+
+- [ ] **Visual Test:** Component appears in a real exhibit with proper styling
+
+If any check fails, revisit the relevant section in the checklist above.
 
 ## Migration Checklist
 

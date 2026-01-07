@@ -152,15 +152,11 @@ Return the complete ratio table configuration.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
-      thinkingConfig: {
-        thinkingLevel: ThinkingLevel.LOW,
-      },
       responseMimeType: "application/json",
-      responseSchema: ratioTableSchema,
-      temperature: 0.8,
+      responseSchema: ratioTableSchema
     },
   });
 

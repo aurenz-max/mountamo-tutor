@@ -1040,6 +1040,31 @@ export default function App() {
                     dataArray={exhibitData.doubleNumberLines || []}
                 />
 
+                <PrimitiveCollectionRenderer
+                    componentId="percent-bar"
+                    dataArray={exhibitData.percentBars || []}
+                />
+
+                <PrimitiveCollectionRenderer
+                    componentId="factor-tree"
+                    dataArray={exhibitData.factorTrees || []}
+                />
+
+                <PrimitiveCollectionRenderer
+                    componentId="ratio-table"
+                    dataArray={exhibitData.ratioTables || []}
+                />
+
+                <PrimitiveCollectionRenderer
+                    componentId="tape-diagram"
+                    dataArray={exhibitData.tapeDiagrams || []}
+                />
+
+                <PrimitiveCollectionRenderer
+                    componentId="balance-scale"
+                    dataArray={exhibitData.balanceScales || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

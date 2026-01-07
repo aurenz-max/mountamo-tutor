@@ -148,15 +148,11 @@ Return the complete factor tree configuration.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
-      thinkingConfig: {
-        thinkingLevel: ThinkingLevel.LOW,
-      },
       responseMimeType: "application/json",
-      responseSchema: factorTreeSchema,
-      temperature: 0.8,
+      responseSchema: factorTreeSchema
     },
   });
 

@@ -120,8 +120,7 @@ Return the complete place value chart configuration.
         thinkingLevel: ThinkingLevel.LOW,
       },
       responseMimeType: "application/json",
-      responseSchema: placeValueChartSchema,
-      temperature: 0.8,
+      responseSchema: placeValueChartSchema   
     },
   });
 
