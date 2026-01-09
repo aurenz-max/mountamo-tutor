@@ -25,6 +25,7 @@ import RatioTable from '../primitives/visual-primitives/math/RatioTable';
 import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
+import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGraph';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -316,6 +317,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'function-machine': {
     component: FunctionMachine,
     sectionTitle: 'Function Machine',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'coordinate-graph': {
+    component: CoordinateGraph,
+    sectionTitle: 'Coordinate Graph',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

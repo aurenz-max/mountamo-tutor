@@ -32,6 +32,7 @@ import { generatePercentBar } from '@/components/lumina/service/math/gemini-perc
 import { generateTapeDiagram } from '@/components/lumina/service/math/gemini-tape-diagram';
 import { generateBalanceScale } from '@/components/lumina/service/math/gemini-balance-scale';
 import { generateFunctionMachine } from '@/components/lumina/service/math/gemini-function-machine';
+import { generateCoordinateGraph } from '@/components/lumina/service/math/gemini-coordinate-graph';
 
 export async function POST(request: NextRequest) {
   try {
@@ -301,6 +302,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(functionMachine);
+
+      case 'generateCoordinateGraph':
+        const coordinateGraph = await generateCoordinateGraph(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(coordinateGraph);
 
       default:
         return NextResponse.json(

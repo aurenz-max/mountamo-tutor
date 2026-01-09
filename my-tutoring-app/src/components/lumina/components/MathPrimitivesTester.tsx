@@ -12,12 +12,13 @@ import PercentBar, { PercentBarData } from '../primitives/visual-primitives/math
 import TapeDiagram, { TapeDiagramData } from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale, { BalanceScaleData } from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine, { FunctionMachineData } from '../primitives/visual-primitives/math/FunctionMachine';
+import CoordinateGraph, { CoordinateGraphData } from '../primitives/visual-primitives/math/CoordinateGraph';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -178,6 +179,54 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     ruleComplexity: 'twoStep',
   });
 
+  // Coordinate Graph State
+  const [coordinateGraphData, setCoordinateGraphData] = useState<CoordinateGraphData>({
+    title: 'Graphing Linear Equations',
+    description: 'Explore linear equations by graphing them on the coordinate plane and observe how slope and y-intercept affect the line',
+    xRange: [-10, 10],
+    yRange: [-10, 10],
+    gridSpacing: { x: 1, y: 1 },
+    showAxes: true,
+    showGrid: true,
+    plotMode: 'equation',
+    equations: [
+      {
+        expression: 'y = 2*x + 1',
+        color: '#3b82f6',
+        label: 'Line 1: y = 2x + 1 (Steep positive slope)',
+        slope: 2,
+        yIntercept: 1,
+        conceptFocus: 'slope',
+        realWorldContext: 'A taxi charges $1 base fee plus $2 per mile traveled',
+        slopeInterpretation: 'For every 1 unit right, go up 2 units (steep climb)',
+        interceptInterpretation: 'The line starts at y = 1 when x = 0',
+        annotations: [
+          { x: 0, y: 1, text: 'Y-intercept: (0, 1)', type: 'intercept' },
+          { x: 2, y: 5, text: 'After 2 miles: $5', type: 'point-of-interest' },
+        ]
+      },
+      {
+        expression: 'y = -0.5*x + 3',
+        color: '#10b981',
+        label: 'Line 2: y = -0.5x + 3 (Gentle negative slope)',
+        slope: -0.5,
+        yIntercept: 3,
+        conceptFocus: 'slope',
+        realWorldContext: 'A candle starts at 3 inches tall and burns down 0.5 inches per hour',
+        slopeInterpretation: 'For every 1 hour, the candle gets 0.5 inches shorter',
+        interceptInterpretation: 'The candle starts at 3 inches tall',
+        annotations: [
+          { x: 0, y: 3, text: 'Y-intercept: (0, 3)', type: 'intercept' },
+          { x: 6, y: 0, text: 'Candle burns out', type: 'intercept' },
+        ]
+      },
+    ],
+    points: [],
+    traceEnabled: true,
+    showIntercepts: true,
+    allowZoom: true,
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -190,6 +239,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'tape-diagram', label: 'Tape Diagram', icon: '📏' },
     { value: 'balance-scale', label: 'Balance / Scale Model', icon: '⚖️' },
     { value: 'function-machine', label: 'Function Machine', icon: '⚙️' },
+    { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍' },
   ];
 
   const handleGenerate = async () => {
@@ -217,7 +267,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateTapeDiagram'
         : selectedPrimitive === 'balance-scale'
         ? 'generateBalanceScale'
-        : 'generateFunctionMachine';
+        : selectedPrimitive === 'function-machine'
+        ? 'generateFunctionMachine'
+        : 'generateCoordinateGraph';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -240,7 +292,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Part-part-whole word problems'
         : selectedPrimitive === 'balance-scale'
         ? 'Solving equations'
-        : 'Input-output patterns and functions';
+        : selectedPrimitive === 'function-machine'
+        ? 'Input-output patterns and functions'
+        : 'Graphing linear equations';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -285,6 +339,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setBalanceScaleData(generatedData);
       } else if (selectedPrimitive === 'function-machine') {
         setFunctionMachineData(generatedData);
+      } else if (selectedPrimitive === 'coordinate-graph') {
+        setCoordinateGraphData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -1558,6 +1614,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'tape-diagram' && <TapeDiagram data={tapeDiagramData} />}
             {selectedPrimitive === 'balance-scale' && <BalanceScale data={balanceScaleData} />}
             {selectedPrimitive === 'function-machine' && <FunctionMachine data={functionMachineData} />}
+            {selectedPrimitive === 'coordinate-graph' && <CoordinateGraph data={coordinateGraphData} />}
           </div>
         </div>
       </div>

@@ -15,6 +15,7 @@ import type { PercentBarData } from './primitives/visual-primitives/math/Percent
 import type { TapeDiagramData } from './primitives/visual-primitives/math/TapeDiagram';
 import type { BalanceScaleData } from './primitives/visual-primitives/math/BalanceScale';
 import type { FunctionMachineData } from './primitives/visual-primitives/math/FunctionMachine';
+import type { CoordinateGraphData } from './primitives/visual-primitives/math/CoordinateGraph';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -915,6 +916,7 @@ export interface ExhibitData {
   percentBars?: PercentBarData[];
   balanceScales?: BalanceScaleData[];
   functionMachines?: FunctionMachineData[];
+  coordinateGraphs?: CoordinateGraphData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -984,6 +986,7 @@ export type ComponentId =
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
   | 'balance-scale'      // Interactive balance scale for equation solving
+  | 'coordinate-graph'   // 2D Cartesian coordinate plane for plotting points, lines, curves, and regions
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape

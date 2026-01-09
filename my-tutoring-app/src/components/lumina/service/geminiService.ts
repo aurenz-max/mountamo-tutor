@@ -35,6 +35,7 @@ import { generateFactorTree } from "./math/gemini-factor-tree";
 import { generateRatioTable } from "./math/gemini-ratio-table";
 import { generateBalanceScale } from "./math/gemini-balance-scale";
 import { generateFunctionMachine } from "./math/gemini-function-machine";
+import { generateCoordinateGraph } from "./math/gemini-coordinate-graph";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2707,6 +2708,9 @@ export const generateComponentContent = async (
     case 'function-machine':
       return await generateFunctionMachineContent(item, topic, gradeLevelContext);
 
+    case 'coordinate-graph':
+      return await generateCoordinateGraphContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4913,6 +4917,20 @@ const generateFunctionMachineContent = async (item: any, topic: string, gradeCon
 };
 
 /**
+ * Generate Coordinate Graph content
+ */
+const generateCoordinateGraphContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateCoordinateGraph(topic, gradeContext, config);
+
+  return {
+    type: 'coordinate-graph',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5371,6 +5389,11 @@ export const buildCompleteExhibitFromManifest = async (
       case 'function-machine':
         if (!exhibit.functionMachines) exhibit.functionMachines = [];
         exhibit.functionMachines.push(dataWithInstanceId);
+        break;
+
+      case 'coordinate-graph':
+        if (!exhibit.coordinateGraphs) exhibit.coordinateGraphs = [];
+        exhibit.coordinateGraphs.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':

@@ -186,6 +186,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Requires a transformation rule using variable x (e.g., "x+3", "2*x", "x^2"). Best for discovery mode (hide rule) or learning mode (show rule). Supports one-step, two-step, and expression rules.'
   },
   {
+    id: 'coordinate-graph',
+    description: 'Full-featured 2D Cartesian coordinate plane for plotting points, graphing lines, curves, and functions. Perfect for teaching ordered pairs, linear equations, slope, intercepts, systems of equations, quadratic functions, and function families. Students can click to plot points, view graphed equations, trace curves to read coordinates, and identify key features like intercepts. ESSENTIAL for grades 5-6 (ordered pairs), grades 7-8 (linear equations), Algebra 1-2 (function graphing), and Precalculus (function transformations).',
+    constraints: 'Requires axis ranges (xRange, yRange). Supports plotMode: "points" for plotting practice or "equation" for graphing functions. Equations must use y= format with * for multiplication and ** for exponents (e.g., "y = 2*x + 1", "y = x**2 - 4*x + 3").'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'
@@ -483,10 +488,14 @@ STRUCTURE:
 - Middle School Math (Percent, Conversions) → 'double-number-line', 'percent-bar'
 - Middle School Math (Multi-digit Multiplication, Distributive Property) → 'area-model'
 - Middle School Math (Functions, Function Notation) → 'function-machine', 'graph-board'
+- Middle School Math (Ordered Pairs, Coordinate Plane) → 'coordinate-graph'
 - Pre-Algebra/Algebra (Equations, Equality, Solving) → 'balance-scale', 'tape-diagram'
-- Algebra (Linear Functions, Function Concepts) → 'function-machine', 'graph-board'
+- Algebra (Linear Equations, Slope, Intercepts, Systems) → 'coordinate-graph', 'graph-board'
+- Algebra (Linear Functions, Function Concepts) → 'function-machine', 'graph-board', 'coordinate-graph'
 - Algebra (Binomial/Polynomial Multiplication) → 'area-model' (algebraic mode)
+- Algebra 2 (Quadratic Functions, Parabolas, Vertex Form) → 'coordinate-graph'
 - Algebra 2 (Function Composition, Inverse Functions) → 'function-machine'
+- Precalculus (Function Families, Transformations) → 'coordinate-graph'
 - Math Problem-Solving → 'annotated-example' for worked solutions, 'tape-diagram' for word problems
 - Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'
 - History/Social Studies → 'comparison-panel', 'generative-table', 'feature-exhibit'
