@@ -181,6 +181,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Requires an equation or equality relationship. Best for linear equations and simple algebraic expressions. Shows balanced or unbalanced states.'
   },
   {
+    id: 'function-machine',
+    description: 'Visual "machine" with input hopper, rule display, and output chute. Numbers enter, get transformed by the rule, and exit. Perfect for teaching input/output patterns, function concepts, function notation f(x), linear functions, composition of functions, and inverse functions. Students can drop values in, watch transformations, and guess the rule from input-output pairs. ESSENTIAL for grades 3-4 patterns, grades 5-8 function introduction, and Algebra 1-2 function concepts.',
+    constraints: 'Requires a transformation rule using variable x (e.g., "x+3", "2*x", "x^2"). Best for discovery mode (hide rule) or learning mode (show rule). Supports one-step, two-step, and expression rules.'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'
@@ -472,12 +477,16 @@ STRUCTURE:
 - Elementary Math (Fractions) → 'fraction-circles', 'fraction-bar'
 - Elementary Math (Multiplication) → 'array-grid', 'area-model', 'bar-model'
 - Elementary Math (Geometry) → 'geometric-shape'
+- Elementary Math (Patterns, Input-Output) → 'function-machine'
 - Elementary/Middle School Math (Prime Factorization, GCF, LCM) → 'factor-tree'
 - Middle School Math (Ratios, Proportions, Unit Rates) → 'double-number-line', 'ratio-table'
 - Middle School Math (Percent, Conversions) → 'double-number-line', 'percent-bar'
 - Middle School Math (Multi-digit Multiplication, Distributive Property) → 'area-model'
+- Middle School Math (Functions, Function Notation) → 'function-machine', 'graph-board'
 - Pre-Algebra/Algebra (Equations, Equality, Solving) → 'balance-scale', 'tape-diagram'
+- Algebra (Linear Functions, Function Concepts) → 'function-machine', 'graph-board'
 - Algebra (Binomial/Polynomial Multiplication) → 'area-model' (algebraic mode)
+- Algebra 2 (Function Composition, Inverse Functions) → 'function-machine'
 - Math Problem-Solving → 'annotated-example' for worked solutions, 'tape-diagram' for word problems
 - Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'
 - History/Social Studies → 'comparison-panel', 'generative-table', 'feature-exhibit'

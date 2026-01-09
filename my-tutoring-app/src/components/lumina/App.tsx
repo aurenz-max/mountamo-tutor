@@ -1065,6 +1065,11 @@ export default function App() {
                     dataArray={exhibitData.balanceScales || []}
                 />
 
+                <PrimitiveCollectionRenderer
+                    componentId="function-machine"
+                    dataArray={exhibitData.functionMachines || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

@@ -15,7 +15,6 @@ import {
   generateKnowledgeCheckProblems,
   generateSequencingProblems,
   generateComponentContent,
-  buildCompleteExhibitFromTopic,
   generateIntroBriefing
 } from '@/components/lumina/service/geminiService';
 
@@ -32,6 +31,7 @@ import { generateDoubleNumberLine } from '@/components/lumina/service/math/gemin
 import { generatePercentBar } from '@/components/lumina/service/math/gemini-percent-bar';
 import { generateTapeDiagram } from '@/components/lumina/service/math/gemini-tape-diagram';
 import { generateBalanceScale } from '@/components/lumina/service/math/gemini-balance-scale';
+import { generateFunctionMachine } from '@/components/lumina/service/math/gemini-function-machine';
 
 export async function POST(request: NextRequest) {
   try {
@@ -149,10 +149,6 @@ export async function POST(request: NextRequest) {
           params.objectives
         );
         return NextResponse.json(manifestWithObjectives);
-
-      case 'buildCompleteExhibitFromTopic':
-        const exhibit = await buildCompleteExhibitFromTopic(params.topic, params.gradeLevel);
-        return NextResponse.json(exhibit);
 
       case 'buildCompleteExhibitFromManifest':
         console.log('🎯 API ROUTE: buildCompleteExhibitFromManifest called');
@@ -297,6 +293,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(balanceScale);
+
+      case 'generateFunctionMachine':
+        const functionMachine = await generateFunctionMachine(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(functionMachine);
 
       default:
         return NextResponse.json(

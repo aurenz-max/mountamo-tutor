@@ -34,6 +34,7 @@ import { generateTapeDiagram } from "./math/gemini-tape-diagram";
 import { generateFactorTree } from "./math/gemini-factor-tree";
 import { generateRatioTable } from "./math/gemini-ratio-table";
 import { generateBalanceScale } from "./math/gemini-balance-scale";
+import { generateFunctionMachine } from "./math/gemini-function-machine";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2703,6 +2704,9 @@ export const generateComponentContent = async (
     case 'balance-scale':
       return await generateBalanceScaleContent(item, topic, gradeLevelContext);
 
+    case 'function-machine':
+      return await generateFunctionMachineContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4895,6 +4899,20 @@ const generateBalanceScaleContent = async (item: any, topic: string, gradeContex
 };
 
 /**
+ * Generate Function Machine content
+ */
+const generateFunctionMachineContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateFunctionMachine(topic, gradeContext, config);
+
+  return {
+    type: 'function-machine',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5126,292 +5144,6 @@ Return ONLY valid JSON matching the schema.`;
 
 
 
-// ============================================================================
-// MAIN ORCHESTRATOR: MANIFEST → COMPLETE EXHIBIT
-// ============================================================================
-
-/**
- * 🎯 MAIN ORCHESTRATOR FUNCTION - Manifest-First Architecture
- *
- * This is the primary entry point for the new manifest-first exhibit generation flow.
- * It combines all three phases into a single, streamlined process.
- *
- * WORKFLOW:
- * 1. 📋 Phase 1: Generate Manifest
- *    - Uses Gemini to create a blueprint (ExhibitManifest)
- *    - Selects optimal components from UNIVERSAL_CATALOG
- *    - Defines layout, intent, and configuration for each component
- *
- * 2. 🎨 Phase 2: Generate Content in Parallel
- *    - Calls generateComponentContent() for each manifest item
- *    - All content generation happens concurrently (Promise.all)
- *    - Gracefully handles failures (continues if individual components fail)
- *
- * 3. 🏗️ Phase 3: Assemble Complete Exhibit
- *    - Maps generated components to ExhibitData structure
- *    - Organizes into: intro, cards, featureExhibit, comparison, tables, knowledgeCheck, specializedExhibits
- *    - Returns fully-built exhibit ready for rendering
- *
- * USAGE:
- * ```typescript
- * const exhibit = await buildCompleteExhibitFromTopic('Photosynthesis', 'middle-school');
- * setExhibitData(exhibit);
- * ```
- *
- * @param topic - The educational topic to generate content for
- * @param gradeLevel - Target audience grade level (default: 'elementary')
- * @returns Complete ExhibitData structure ready for rendering
- */
-export const buildCompleteExhibitFromTopic = async (
-  topic: string,
-  gradeLevel: string = 'elementary'
-): Promise<any> => {
-  console.log('🎯 Starting complete exhibit build for:', topic);
-
-  // PHASE 1: Generate Manifest
-  console.log('📋 Phase 1: Generating manifest...');
-  const manifest = await generateExhibitManifest(topic, gradeLevel); 
-  console.log(`✅ Manifest generated with ${manifest.layout.length} components`);
-
-  // PHASE 2: Generate Content for All Components in Parallel
-  console.log('🎨 Phase 2: Generating content for all components...');
-  const contentPromises = manifest.layout.map(async (item, index) => {
-    try {
-      console.log(`  ⚙️ [${index + 1}/${manifest.layout.length}] Generating: ${item.componentId} (${item.instanceId})`);
-      const content = await generateComponentContent(item, manifest.topic, manifest.gradeLevel);
-      console.log(`  ✅ [${index + 1}/${manifest.layout.length}] Completed: ${item.componentId}`);
-      return content;
-    } catch (error) {
-      console.error(`  ❌ Failed to generate ${item.componentId}:`, error);
-      return null; // Return null for failed components, don't block others
-    }
-  });
-
-  const components = await Promise.all(contentPromises);
-  const validComponents = components.filter(c => c !== null);
-  console.log(`✅ Generated ${validComponents.length}/${manifest.layout.length} components successfully`);
-
-  // PHASE 3: Assemble into Complete Exhibit Structure
-  console.log('🏗️ Phase 3: Assembling exhibit...');
-
-  const exhibit: any = {
-    topic: manifest.topic,
-    themeColor: manifest.themeColor,
-    intro: null,
-    cards: [],
-    featureExhibit: null,
-    comparison: null,
-    tables: [],
-    graphBoards: [],
-    scaleSpectrums: [],
-    annotatedExamples: [],
-    nestedHierarchies: [],
-    imagePanels: [],
-    takeHomeActivities: [],
-    knowledgeCheck: null,
-    specializedExhibits: [],
-    relatedTopics: [] // Could be added as another component type in future
-  };
-
-  // Map components to exhibit structure
-  for (const component of validComponents) {
-    if (!component) continue;
-
-    switch (component.type) {
-      case 'curator-brief':
-        // Check if it's the new comprehensive format or legacy format
-        if (component.data && 'mindset' in component.data) {
-          // New IntroBriefingData format
-          exhibit.introBriefing = component.data;
-          // Also create legacy intro for backward compatibility
-          exhibit.intro = {
-            hook: component.data.hook.content,
-            objectives: component.data.objectives.map((obj: any) => obj.text)
-          };
-        } else {
-          // Legacy IntroData format
-          exhibit.intro = component.data;
-        }
-        break;
-
-      case 'concept-card-grid':
-        exhibit.cards = component.data; // Array of cards
-        break;
-
-      case 'feature-exhibit':
-        exhibit.featureExhibit = component.data;
-        break;
-
-      case 'comparison-panel':
-        exhibit.comparison = component.data;
-        break;
-
-      case 'generative-table':
-        exhibit.tables.push(component.data);
-        break;
-
-      case 'graph-board':
-        exhibit.graphBoards.push(component.data);
-        break;
-
-      case 'scale-spectrum':
-        exhibit.scaleSpectrums.push(component.data);
-        break;
-
-      case 'annotated-example':
-        exhibit.annotatedExamples.push(component.data);
-        break;
-
-      case 'nested-hierarchy':
-        exhibit.nestedHierarchies.push(component.data);
-        break;
-
-      case 'image-panel':
-        exhibit.imagePanels.push(component.data);
-        break;
-
-      case 'take-home-activity':
-        exhibit.takeHomeActivities.push(component.data);
-        break;
-
-      case 'interactive-passage':
-        if (!exhibit.interactivePassages) exhibit.interactivePassages = [];
-        exhibit.interactivePassages.push(dataWithInstanceId);
-        break;
-
-      case 'word-builder':
-        if (!exhibit.wordBuilders) exhibit.wordBuilders = [];
-        exhibit.wordBuilders.push(dataWithInstanceId);
-        break;
-
-      case 'molecule-viewer':
-        if (!exhibit.moleculeViewers) exhibit.moleculeViewers = [];
-        exhibit.moleculeViewers.push(dataWithInstanceId);
-        break;
-
-      case 'periodic-table':
-        if (!exhibit.periodicTables) exhibit.periodicTables = [];
-        exhibit.periodicTables.push(dataWithInstanceId);
-        break;
-
-      case 'media-player':
-        if (!exhibit.mediaPlayers) exhibit.mediaPlayers = [];
-        exhibit.mediaPlayers.push(dataWithInstanceId);
-        break;
-
-      case 'flashcard-deck':
-        if (!exhibit.flashcardDecks) exhibit.flashcardDecks = [];
-        exhibit.flashcardDecks.push(dataWithInstanceId);
-        break;
-
-      case 'image-comparison':
-        if (!exhibit.imageComparisons) exhibit.imageComparisons = [];
-        exhibit.imageComparisons.push(dataWithInstanceId);
-        break;
-
-      case 'bar-model':
-        if (!exhibit.barModels) exhibit.barModels = [];
-        exhibit.barModels.push(dataWithInstanceId);
-        break;
-
-      case 'number-line':
-        if (!exhibit.numberLines) exhibit.numberLines = [];
-        exhibit.numberLines.push(dataWithInstanceId);
-        break;
-
-      case 'base-ten-blocks':
-        if (!exhibit.baseTenBlocks) exhibit.baseTenBlocks = [];
-        exhibit.baseTenBlocks.push(dataWithInstanceId);
-        break;
-
-      case 'fraction-circles':
-        if (!exhibit.fractionCircles) exhibit.fractionCircles = [];
-        exhibit.fractionCircles.push(dataWithInstanceId);
-        break;
-
-      case 'fraction-bar':
-        if (!exhibit.fractionBars) exhibit.fractionBars = [];
-        exhibit.fractionBars.push(dataWithInstanceId);
-        break;
-
-      case 'geometric-shape':
-        if (!exhibit.geometricShapes) exhibit.geometricShapes = [];
-        exhibit.geometricShapes.push(dataWithInstanceId);
-        break;
-
-      case 'place-value-chart':
-        if (!exhibit.placeValueCharts) exhibit.placeValueCharts = [];
-        exhibit.placeValueCharts.push(dataWithInstanceId);
-        break;
-
-      case 'area-model':
-        if (!exhibit.areaModels) exhibit.areaModels = [];
-        exhibit.areaModels.push(dataWithInstanceId);
-        break;
-
-      case 'array-grid':
-        if (!exhibit.arrayGrids) exhibit.arrayGrids = [];
-        exhibit.arrayGrids.push(dataWithInstanceId);
-        break;
-
-      case 'double-number-line':
-        if (!exhibit.doubleNumberLines) exhibit.doubleNumberLines = [];
-        exhibit.doubleNumberLines.push(dataWithInstanceId);
-        break;
-
-      case 'tape-diagram':
-        if (!exhibit.tapeDiagrams) exhibit.tapeDiagrams = [];
-        exhibit.tapeDiagrams.push(dataWithInstanceId);
-        break;
-
-      case 'factor-tree':
-        if (!exhibit.factorTrees) exhibit.factorTrees = [];
-        exhibit.factorTrees.push(dataWithInstanceId);
-        break;
-
-      case 'ratio-table':
-        if (!exhibit.ratioTables) exhibit.ratioTables = [];
-        exhibit.ratioTables.push(dataWithInstanceId);
-        break;
-
-      case 'percent-bar':
-        if (!exhibit.percentBars) exhibit.percentBars = [];
-        exhibit.percentBars.push(dataWithInstanceId);
-        break;
-
-      case 'balance-scale':
-        if (!exhibit.balanceScales) exhibit.balanceScales = [];
-        exhibit.balanceScales.push(dataWithInstanceId);
-        break;
-
-      case 'knowledge-check':
-        exhibit.knowledgeCheck = dataWithInstanceId;
-        break;
-
-      case 'formula-card':
-        exhibit.specializedExhibits.push({ ...component.data, type: 'equation' });
-        break;
-
-      case 'sentence-analyzer':
-        exhibit.specializedExhibits.push(component.data);
-        break;
-
-      case 'math-visual':
-        exhibit.specializedExhibits.push(component.data);
-        break;
-
-      case 'custom-visual':
-        exhibit.specializedExhibits.push(component.data);
-        break;
-
-      default:
-        console.warn('Unknown component type:', component.type);
-    }
-  }
-
-  console.log('🎉 Exhibit assembly complete!');
-  return exhibit;
-};
 
 /**
  * Build Complete Exhibit from Pre-Generated Manifest and Curator Brief
@@ -5634,6 +5366,11 @@ export const buildCompleteExhibitFromManifest = async (
       case 'balance-scale':
         if (!exhibit.balanceScales) exhibit.balanceScales = [];
         exhibit.balanceScales.push(dataWithInstanceId);
+        break;
+
+      case 'function-machine':
+        if (!exhibit.functionMachines) exhibit.functionMachines = [];
+        exhibit.functionMachines.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':

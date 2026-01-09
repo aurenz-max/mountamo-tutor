@@ -24,6 +24,7 @@ import FactorTree from '../primitives/visual-primitives/math/FactorTree';
 import RatioTable from '../primitives/visual-primitives/math/RatioTable';
 import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
+import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -306,6 +307,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'balance-scale': {
     component: BalanceScale,
     sectionTitle: 'Balance Scale',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'function-machine': {
+    component: FunctionMachine,
+    sectionTitle: 'Function Machine',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

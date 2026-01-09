@@ -11,12 +11,13 @@ import DoubleNumberLine, { DoubleNumberLineData } from '../primitives/visual-pri
 import PercentBar, { PercentBarData } from '../primitives/visual-primitives/math/PercentBar';
 import TapeDiagram, { TapeDiagramData } from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale, { BalanceScaleData } from '../primitives/visual-primitives/math/BalanceScale';
+import FunctionMachine, { FunctionMachineData } from '../primitives/visual-primitives/math/FunctionMachine';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -165,6 +166,18 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     ],
   });
 
+  // Function Machine State
+  const [functionMachineData, setFunctionMachineData] = useState<FunctionMachineData>({
+    title: 'Mystery Function',
+    description: 'Can you discover the rule by testing different input values?',
+    rule: '2*x + 1',
+    showRule: false,
+    inputQueue: [1, 2, 3, 4, 5],
+    outputDisplay: 'animated',
+    chainable: false,
+    ruleComplexity: 'twoStep',
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -176,6 +189,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'percent-bar', label: 'Percent Bar', icon: '📈' },
     { value: 'tape-diagram', label: 'Tape Diagram', icon: '📏' },
     { value: 'balance-scale', label: 'Balance / Scale Model', icon: '⚖️' },
+    { value: 'function-machine', label: 'Function Machine', icon: '⚙️' },
   ];
 
   const handleGenerate = async () => {
@@ -201,7 +215,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generatePercentBar'
         : selectedPrimitive === 'tape-diagram'
         ? 'generateTapeDiagram'
-        : 'generateBalanceScale';
+        : selectedPrimitive === 'balance-scale'
+        ? 'generateBalanceScale'
+        : 'generateFunctionMachine';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -222,7 +238,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Percent concepts and calculations'
         : selectedPrimitive === 'tape-diagram'
         ? 'Part-part-whole word problems'
-        : 'Solving equations';
+        : selectedPrimitive === 'balance-scale'
+        ? 'Solving equations'
+        : 'Input-output patterns and functions';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -265,6 +283,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setTapeDiagramData(generatedData);
       } else if (selectedPrimitive === 'balance-scale') {
         setBalanceScaleData(generatedData);
+      } else if (selectedPrimitive === 'function-machine') {
+        setFunctionMachineData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -402,6 +422,17 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
           'Subtract 3 from both sides to isolate x',
           'x = 4'
         ],
+      });
+    } else if (selectedPrimitive === 'function-machine') {
+      setFunctionMachineData({
+        title: 'Mystery Function',
+        description: 'Can you discover the rule by testing different input values?',
+        rule: '2*x + 1',
+        showRule: false,
+        inputQueue: [1, 2, 3, 4, 5],
+        outputDisplay: 'animated',
+        chainable: false,
+        ruleComplexity: 'twoStep',
       });
     }
   };
@@ -1475,6 +1506,40 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
                 </button>
               </div>
             )}
+            {selectedPrimitive === 'function-machine' && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setFunctionMachineData({ ...functionMachineData, rule: 'x + 3', showRule: false, ruleComplexity: 'oneStep' })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Add 3
+                </button>
+                <button
+                  onClick={() => setFunctionMachineData({ ...functionMachineData, rule: '2*x', showRule: false, ruleComplexity: 'oneStep' })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Double
+                </button>
+                <button
+                  onClick={() => setFunctionMachineData({ ...functionMachineData, rule: '2*x + 1', showRule: false, inputQueue: [0, 1, 2, 3, 4], ruleComplexity: 'twoStep' })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  2x + 1
+                </button>
+                <button
+                  onClick={() => setFunctionMachineData({ ...functionMachineData, rule: 'x^2', showRule: false, inputQueue: [0, 1, 2, 3, 4], ruleComplexity: 'expression' })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Square
+                </button>
+                <button
+                  onClick={() => setFunctionMachineData({ ...functionMachineData, rule: '3*x - 2', showRule: true, inputQueue: [-1, 0, 1, 2, 3], ruleComplexity: 'twoStep' })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  3x - 2 (Show)
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1492,6 +1557,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'percent-bar' && <PercentBar data={percentBarData} />}
             {selectedPrimitive === 'tape-diagram' && <TapeDiagram data={tapeDiagramData} />}
             {selectedPrimitive === 'balance-scale' && <BalanceScale data={balanceScaleData} />}
+            {selectedPrimitive === 'function-machine' && <FunctionMachine data={functionMachineData} />}
           </div>
         </div>
       </div>

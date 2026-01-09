@@ -14,6 +14,7 @@ import type { DoubleNumberLineData } from './primitives/visual-primitives/math/D
 import type { PercentBarData } from './primitives/visual-primitives/math/PercentBar';
 import type { TapeDiagramData } from './primitives/visual-primitives/math/TapeDiagram';
 import type { BalanceScaleData } from './primitives/visual-primitives/math/BalanceScale';
+import type { FunctionMachineData } from './primitives/visual-primitives/math/FunctionMachine';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -913,6 +914,7 @@ export interface ExhibitData {
   ratioTables?: RatioTableData[];
   percentBars?: PercentBarData[];
   balanceScales?: BalanceScaleData[];
+  functionMachines?: FunctionMachineData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -978,6 +980,7 @@ export type ComponentId =
   | 'double-number-line' // Two parallel number lines showing proportional relationships
   | 'tape-diagram'       // Tape diagram / bar model for part-whole and comparison word problems
   | 'factor-tree'        // Tree diagram showing prime factorization
+  | 'function-machine'   // Visual machine with input hopper, rule display, and output chute for function concepts
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
   | 'balance-scale'      // Interactive balance scale for equation solving

@@ -265,13 +265,6 @@ export const generateExhibitManifestWithObjectivesStreaming = async (
   return finalManifest;
 };
 
-export const buildCompleteExhibitFromTopic = async (
-  topic: string,
-  gradeLevel: string
-): Promise<ExhibitData> => {
-  return callAPI('buildCompleteExhibitFromTopic', { topic, gradeLevel });
-};
-
 export const buildCompleteExhibitFromManifest = async (
   manifest: ExhibitManifest,
   curatorBrief: IntroBriefingData
