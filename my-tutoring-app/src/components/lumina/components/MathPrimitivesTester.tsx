@@ -13,12 +13,13 @@ import TapeDiagram, { TapeDiagramData } from '../primitives/visual-primitives/ma
 import BalanceScale, { BalanceScaleData } from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine, { FunctionMachineData } from '../primitives/visual-primitives/math/FunctionMachine';
 import CoordinateGraph, { CoordinateGraphData } from '../primitives/visual-primitives/math/CoordinateGraph';
+import SlopeTriangle, { SlopeTriangleData } from '../primitives/visual-primitives/math/SlopeTriangle';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -227,6 +228,44 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     allowZoom: true,
   });
 
+  // Slope Triangle State
+  const [slopeTriangleData, setSlopeTriangleData] = useState<SlopeTriangleData>({
+    title: 'Understanding Slope with Rise and Run',
+    description: 'Drag slope triangles along the line to see how rise and run create the same slope. Toggle between rise/run and Δy/Δx notation.',
+    xRange: [-10, 10],
+    yRange: [-10, 10],
+    gridSpacing: { x: 1, y: 1 },
+    showAxes: true,
+    showGrid: true,
+    attachedLine: {
+      equation: 'y = 2*x + 1',
+      color: '#3b82f6',
+      label: 'y = 2x + 1',
+    },
+    triangles: [
+      {
+        position: { x: -4, y: 0 },
+        size: 3,
+        showMeasurements: true,
+        showSlope: true,
+        showAngle: false,
+        notation: 'riseRun',
+        color: '#10b981',
+      },
+      {
+        position: { x: 2, y: 0 },
+        size: 2,
+        showMeasurements: true,
+        showSlope: true,
+        showAngle: true,
+        notation: 'deltaNotation',
+        color: '#f59e0b',
+      },
+    ],
+    allowDrag: true,
+    allowResize: true,
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -240,6 +279,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'balance-scale', label: 'Balance / Scale Model', icon: '⚖️' },
     { value: 'function-machine', label: 'Function Machine', icon: '⚙️' },
     { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍' },
+    { value: 'slope-triangle', label: 'Slope Triangle', icon: '📐' },
   ];
 
   const handleGenerate = async () => {
@@ -269,7 +309,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateBalanceScale'
         : selectedPrimitive === 'function-machine'
         ? 'generateFunctionMachine'
-        : 'generateCoordinateGraph';
+        : selectedPrimitive === 'coordinate-graph'
+        ? 'generateCoordinateGraph'
+        : 'generateSlopeTriangle';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -294,7 +336,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Solving equations'
         : selectedPrimitive === 'function-machine'
         ? 'Input-output patterns and functions'
-        : 'Graphing linear equations';
+        : selectedPrimitive === 'coordinate-graph'
+        ? 'Graphing linear equations'
+        : 'Understanding slope with rise and run';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -341,6 +385,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setFunctionMachineData(generatedData);
       } else if (selectedPrimitive === 'coordinate-graph') {
         setCoordinateGraphData(generatedData);
+      } else if (selectedPrimitive === 'slope-triangle') {
+        setSlopeTriangleData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -1615,6 +1661,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'balance-scale' && <BalanceScale data={balanceScaleData} />}
             {selectedPrimitive === 'function-machine' && <FunctionMachine data={functionMachineData} />}
             {selectedPrimitive === 'coordinate-graph' && <CoordinateGraph data={coordinateGraphData} />}
+            {selectedPrimitive === 'slope-triangle' && <SlopeTriangle data={slopeTriangleData} />}
           </div>
         </div>
       </div>

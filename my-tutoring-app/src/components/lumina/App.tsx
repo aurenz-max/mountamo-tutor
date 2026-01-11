@@ -1075,6 +1075,11 @@ export default function App() {
                     dataArray={exhibitData.coordinateGraphs || []}
                 />
 
+                <PrimitiveCollectionRenderer
+                    componentId="slope-triangle"
+                    dataArray={exhibitData.slopeTriangles || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

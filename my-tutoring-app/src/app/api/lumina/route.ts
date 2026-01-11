@@ -33,6 +33,7 @@ import { generateTapeDiagram } from '@/components/lumina/service/math/gemini-tap
 import { generateBalanceScale } from '@/components/lumina/service/math/gemini-balance-scale';
 import { generateFunctionMachine } from '@/components/lumina/service/math/gemini-function-machine';
 import { generateCoordinateGraph } from '@/components/lumina/service/math/gemini-coordinate-graph';
+import { generateSlopeTriangle } from '@/components/lumina/service/math/gemini-slope-triangle';
 
 export async function POST(request: NextRequest) {
   try {
@@ -310,6 +311,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(coordinateGraph);
+
+      case 'generateSlopeTriangle':
+        const slopeTriangle = await generateSlopeTriangle(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(slopeTriangle);
 
       default:
         return NextResponse.json(

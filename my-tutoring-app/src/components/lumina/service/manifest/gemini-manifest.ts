@@ -191,6 +191,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Requires axis ranges (xRange, yRange). Supports plotMode: "points" for plotting practice or "equation" for graphing functions. Equations must use y= format with * for multiplication and ** for exponents (e.g., "y = 2*x + 1", "y = x**2 - 4*x + 3").'
   },
   {
+    id: 'slope-triangle',
+    description: 'Interactive right triangle overlay on a linear graph showing rise and run for slope visualization. Perfect for teaching slope concept, rise over run, Δy/Δx notation, rate of change, angle of inclination, and connecting slope to trigonometry. Students can drag triangles along the line, resize them to see different rise/run pairs, toggle between rise/run and delta notation, and view angle measurements. Shows that different-sized triangles on the same line always yield the same slope. ESSENTIAL for grades 7-8 (slope introduction), Algebra 1 (slope calculation, linear equations), Geometry (parallel/perpendicular lines, angles), and Precalculus (connecting slope to tangent).',
+    constraints: 'Requires a linear equation to attach triangles to. Equations must use y= format with * for multiplication (e.g., "y = 2*x + 1"). Best for linear functions with clear, visible slopes. Can show 1-3 triangles at different positions or sizes.'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'
@@ -489,9 +494,11 @@ STRUCTURE:
 - Middle School Math (Multi-digit Multiplication, Distributive Property) → 'area-model'
 - Middle School Math (Functions, Function Notation) → 'function-machine', 'graph-board'
 - Middle School Math (Ordered Pairs, Coordinate Plane) → 'coordinate-graph'
+- Middle School Math (Slope, Rise Over Run) → 'slope-triangle', 'coordinate-graph'
 - Pre-Algebra/Algebra (Equations, Equality, Solving) → 'balance-scale', 'tape-diagram'
-- Algebra (Linear Equations, Slope, Intercepts, Systems) → 'coordinate-graph', 'graph-board'
+- Algebra (Linear Equations, Slope, Intercepts, Systems) → 'slope-triangle', 'coordinate-graph', 'graph-board'
 - Algebra (Linear Functions, Function Concepts) → 'function-machine', 'graph-board', 'coordinate-graph'
+- Geometry (Parallel/Perpendicular Lines, Angle of Inclination) → 'slope-triangle', 'coordinate-graph'
 - Algebra (Binomial/Polynomial Multiplication) → 'area-model' (algebraic mode)
 - Algebra 2 (Quadratic Functions, Parabolas, Vertex Form) → 'coordinate-graph'
 - Algebra 2 (Function Composition, Inverse Functions) → 'function-machine'

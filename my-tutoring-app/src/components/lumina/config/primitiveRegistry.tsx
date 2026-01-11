@@ -26,6 +26,7 @@ import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
 import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGraph';
+import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -326,6 +327,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'coordinate-graph': {
     component: CoordinateGraph,
     sectionTitle: 'Coordinate Graph',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'slope-triangle': {
+    component: SlopeTriangle,
+    sectionTitle: 'Slope Triangle',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
