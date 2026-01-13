@@ -1080,6 +1080,11 @@ export default function App() {
                     dataArray={exhibitData.slopeTriangles || []}
                 />
 
+                <PrimitiveCollectionRenderer
+                    componentId="systems-equations-visualizer"
+                    dataArray={exhibitData.systemsEquations || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

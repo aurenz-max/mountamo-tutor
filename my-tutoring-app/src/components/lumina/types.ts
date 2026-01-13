@@ -17,6 +17,7 @@ import type { BalanceScaleData } from './primitives/visual-primitives/math/Balan
 import type { FunctionMachineData } from './primitives/visual-primitives/math/FunctionMachine';
 import type { CoordinateGraphData } from './primitives/visual-primitives/math/CoordinateGraph';
 import type { SlopeTriangleData } from './primitives/visual-primitives/math/SlopeTriangle';
+import type { SystemsEquationsVisualizerData } from './primitives/visual-primitives/math/SystemsEquationsVisualizer';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -919,6 +920,7 @@ export interface ExhibitData {
   functionMachines?: FunctionMachineData[];
   coordinateGraphs?: CoordinateGraphData[];
   slopeTriangles?: SlopeTriangleData[];
+  systemsEquations?: SystemsEquationsVisualizerData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -990,6 +992,7 @@ export type ComponentId =
   | 'balance-scale'      // Interactive balance scale for equation solving
   | 'coordinate-graph'   // 2D Cartesian coordinate plane for plotting points, lines, curves, and regions
   | 'slope-triangle'     // Right triangle overlay showing rise/run for slope visualization
+  | 'systems-equations-visualizer' // Systems of linear equations with graphical and algebraic solution methods
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape

@@ -196,6 +196,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Requires a linear equation to attach triangles to. Equations must use y= format with * for multiplication (e.g., "y = 2*x + 1"). Best for linear functions with clear, visible slopes. Can show 1-3 triangles at different positions or sizes.'
   },
   {
+    id: 'systems-equations-visualizer',
+    description: 'Comprehensive systems of linear equations visualizer combining graphical and algebraic solution methods. Perfect for teaching solving systems by graphing, substitution, and elimination methods. Displays 2-3 equations graphed simultaneously with intersection points highlighted. Side-by-side panels show graphical solution and step-by-step algebraic work. Students can toggle between solution methods, view animated step-by-step solutions, and understand system classification (one solution, no solution, infinite solutions). ESSENTIAL for grade 8 (systems introduction), Algebra 1 (solving systems, graphing method), and Algebra 2 (complex systems, choosing efficient methods).',
+    constraints: 'Requires 2-3 linear equations in y = mx + b format. Equations must use * for multiplication (e.g., "y = 2*x + 1"). Include intersection point for systems with one solution. Provide step-by-step algebraic solution based on chosen method (graphing, substitution, or elimination). Best for integer or simple decimal solutions at grades 8-Algebra 1.'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'
@@ -496,7 +501,8 @@ STRUCTURE:
 - Middle School Math (Ordered Pairs, Coordinate Plane) → 'coordinate-graph'
 - Middle School Math (Slope, Rise Over Run) → 'slope-triangle', 'coordinate-graph'
 - Pre-Algebra/Algebra (Equations, Equality, Solving) → 'balance-scale', 'tape-diagram'
-- Algebra (Linear Equations, Slope, Intercepts, Systems) → 'slope-triangle', 'coordinate-graph', 'graph-board'
+- Algebra (Linear Equations, Slope, Intercepts, Systems of Equations) → 'slope-triangle', 'coordinate-graph', 'systems-equations-visualizer', 'graph-board'
+- Algebra (Systems of Equations, Substitution, Elimination) → 'systems-equations-visualizer', 'coordinate-graph'
 - Algebra (Linear Functions, Function Concepts) → 'function-machine', 'graph-board', 'coordinate-graph'
 - Geometry (Parallel/Perpendicular Lines, Angle of Inclination) → 'slope-triangle', 'coordinate-graph'
 - Algebra (Binomial/Polynomial Multiplication) → 'area-model' (algebraic mode)
@@ -512,13 +518,19 @@ STRUCTURE:
 
 ## RULES FOR EACH OBJECTIVE BLOCK:
 1. Include 2-4 components per objective (not too few, not too many)
-2. Components should PROGRESS within each objective:
-   - First: Introduce/explain the concept (concept-card-grid, feature-exhibit, media-player)
-   - Then: Visualize/demonstrate (number-line, bar-model, custom-visual, image-panel)
-   - Finally: Practice/apply (annotated-example, knowledge-check for that specific objective)
-3. Each component's intent MUST directly address its parent objective
-4. Use instanceIds that reference the objective (e.g., 'obj1-number-line', 'obj2-concept-cards')
-
+2. Components should PROGRESS within each objective through these PHASES:
+   - Phase 1 (Introduce): Explain core vocabulary/concepts
+   - Phase 2 (Visualize): Demonstrate with an interactive or visual tool
+   - Phase 3 (Apply): Practice or worked examples
+   
+3. **CRITICAL: For each phase, consult the COMPONENT SELECTION BY SUBJECT section above 
+   to choose the MOST SPECIFIC component for the topic.** 
+   - If teaching fractions → use 'fraction-circles' or 'fraction-bar', NOT 'custom-visual'
+   - If teaching systems of equations → use 'systems-equations-visualizer', NOT 'coordinate-graph'
+   - If teaching slope → use 'slope-triangle', NOT 'annotated-example'
+   
+4. Each component's intent MUST directly address its parent objective
+5. Use instanceIds that reference the objective (e.g., 'obj1-number-line')
 ## EXAMPLE MANIFEST (Addition for Kindergarten with 3 objectives):
 
 {

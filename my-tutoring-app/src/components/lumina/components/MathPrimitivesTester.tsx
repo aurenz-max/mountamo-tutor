@@ -14,12 +14,13 @@ import BalanceScale, { BalanceScaleData } from '../primitives/visual-primitives/
 import FunctionMachine, { FunctionMachineData } from '../primitives/visual-primitives/math/FunctionMachine';
 import CoordinateGraph, { CoordinateGraphData } from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle, { SlopeTriangleData } from '../primitives/visual-primitives/math/SlopeTriangle';
+import SystemsEquationsVisualizer, { SystemsEquationsVisualizerData } from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -266,6 +267,80 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     allowResize: true,
   });
 
+  // Systems of Equations State
+  const [systemsEquationsData, setSystemsEquationsData] = useState<SystemsEquationsVisualizerData>({
+    title: 'Solving Systems of Equations',
+    description: 'Explore different methods to solve systems: graphing, substitution, and elimination.',
+    equations: [
+      {
+        expression: 'y = 2*x + 1',
+        color: '#3b82f6',
+        label: 'Equation 1: y = 2x + 1',
+        slope: 2,
+        yIntercept: 1,
+      },
+      {
+        expression: 'y = -1*x + 4',
+        color: '#10b981',
+        label: 'Equation 2: y = -x + 4',
+        slope: -1,
+        yIntercept: 4,
+      },
+    ],
+    xRange: [-10, 10],
+    yRange: [-10, 10],
+    gridSpacing: { x: 1, y: 1 },
+    showGraph: true,
+    showAlgebraic: true,
+    solutionMethod: 'graphing',
+    highlightIntersection: true,
+    stepByStep: false,
+    intersectionPoint: {
+      x: 1,
+      y: 3,
+      label: 'Solution: (1, 3)',
+    },
+    algebraicSteps: [
+      {
+        method: 'substitution',
+        stepNumber: 1,
+        description: 'Set the two equations equal to each other',
+        equation: '2*x + 1 = -x + 4',
+      },
+      {
+        method: 'substitution',
+        stepNumber: 2,
+        description: 'Add x to both sides',
+        equation: '3*x + 1 = 4',
+      },
+      {
+        method: 'substitution',
+        stepNumber: 3,
+        description: 'Subtract 1 from both sides',
+        equation: '3*x = 3',
+      },
+      {
+        method: 'substitution',
+        stepNumber: 4,
+        description: 'Divide both sides by 3',
+        equation: 'x = 1',
+      },
+      {
+        method: 'substitution',
+        stepNumber: 5,
+        description: 'Substitute x = 1 into the first equation',
+        equation: 'y = 2(1) + 1 = 3',
+      },
+      {
+        method: 'substitution',
+        stepNumber: 6,
+        description: 'The solution is (1, 3)',
+        equation: '(x, y) = (1, 3)',
+      },
+    ],
+    systemType: 'one-solution',
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -280,6 +355,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'function-machine', label: 'Function Machine', icon: '⚙️' },
     { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍' },
     { value: 'slope-triangle', label: 'Slope Triangle', icon: '📐' },
+    { value: 'systems-equations-visualizer', label: 'Systems of Equations', icon: '📊' },
   ];
 
   const handleGenerate = async () => {
@@ -311,7 +387,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateFunctionMachine'
         : selectedPrimitive === 'coordinate-graph'
         ? 'generateCoordinateGraph'
-        : 'generateSlopeTriangle';
+        : selectedPrimitive === 'slope-triangle'
+        ? 'generateSlopeTriangle'
+        : 'generateSystemsEquations';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -338,7 +416,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Input-output patterns and functions'
         : selectedPrimitive === 'coordinate-graph'
         ? 'Graphing linear equations'
-        : 'Understanding slope with rise and run';
+        : selectedPrimitive === 'slope-triangle'
+        ? 'Understanding slope with rise and run'
+        : 'Solving systems of equations';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -387,6 +467,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setCoordinateGraphData(generatedData);
       } else if (selectedPrimitive === 'slope-triangle') {
         setSlopeTriangleData(generatedData);
+      } else if (selectedPrimitive === 'systems-equations-visualizer') {
+        setSystemsEquationsData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -1662,6 +1744,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'function-machine' && <FunctionMachine data={functionMachineData} />}
             {selectedPrimitive === 'coordinate-graph' && <CoordinateGraph data={coordinateGraphData} />}
             {selectedPrimitive === 'slope-triangle' && <SlopeTriangle data={slopeTriangleData} />}
+            {selectedPrimitive === 'systems-equations-visualizer' && <SystemsEquationsVisualizer data={systemsEquationsData} />}
           </div>
         </div>
       </div>

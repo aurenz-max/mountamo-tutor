@@ -37,6 +37,7 @@ import { generateBalanceScale } from "./math/gemini-balance-scale";
 import { generateFunctionMachine } from "./math/gemini-function-machine";
 import { generateCoordinateGraph } from "./math/gemini-coordinate-graph";
 import { generateSlopeTriangle } from "./math/gemini-slope-triangle";
+import { generateSystemsEquations } from "./math/gemini-systems-equations";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2715,6 +2716,9 @@ export const generateComponentContent = async (
     case 'slope-triangle':
       return await generateSlopeTriangleContent(item, topic, gradeLevelContext);
 
+    case 'systems-equations-visualizer':
+      return await generateSystemsEquationsContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -4949,6 +4953,20 @@ const generateSlopeTriangleContent = async (item: any, topic: string, gradeConte
 };
 
 /**
+ * Generate Systems of Equations Visualizer content
+ */
+const generateSystemsEquationsContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateSystemsEquations(topic, gradeContext, config);
+
+  return {
+    type: 'systems-equations-visualizer',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5417,6 +5435,11 @@ export const buildCompleteExhibitFromManifest = async (
       case 'slope-triangle':
         if (!exhibit.slopeTriangles) exhibit.slopeTriangles = [];
         exhibit.slopeTriangles.push(dataWithInstanceId);
+        break;
+
+      case 'systems-equations-visualizer':
+        if (!exhibit.systemsEquations) exhibit.systemsEquations = [];
+        exhibit.systemsEquations.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':

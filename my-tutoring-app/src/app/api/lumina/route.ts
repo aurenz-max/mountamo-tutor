@@ -34,6 +34,7 @@ import { generateBalanceScale } from '@/components/lumina/service/math/gemini-ba
 import { generateFunctionMachine } from '@/components/lumina/service/math/gemini-function-machine';
 import { generateCoordinateGraph } from '@/components/lumina/service/math/gemini-coordinate-graph';
 import { generateSlopeTriangle } from '@/components/lumina/service/math/gemini-slope-triangle';
+import { generateSystemsEquations } from '@/components/lumina/service/math/gemini-systems-equations';
 
 export async function POST(request: NextRequest) {
   try {
@@ -319,6 +320,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(slopeTriangle);
+
+      case 'generateSystemsEquations':
+        const systemsEquations = await generateSystemsEquations(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(systemsEquations);
 
       default:
         return NextResponse.json(
