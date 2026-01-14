@@ -2,7 +2,7 @@
 
 This guide explains the scalable architecture for adding new primitive components to the Lumina exhibit system.
 
-## 🚀 Quick Reference: 6 Files You Must Touch
+## 🚀 Quick Reference: 7 Files You Must Touch
 
 When adding a new primitive, you MUST modify these files (in order):
 
@@ -11,7 +11,8 @@ When adding a new primitive, you MUST modify these files (in order):
 3. **`service/geminiService.ts`** - Import, switch case, wrapper function, 2× assembly
 4. **`App.tsx`** - Add PrimitiveCollectionRenderer call
 5. **`service/manifest/gemini-manifest.ts`** - Add to catalog ⚠️ MOST MISSED!
-6. **`primitives/.../YourComponent.tsx`** - Create the component (may already exist)
+6. **`app/api/lumina/route.ts`** - Import service and add API route handler ⚠️ CRITICAL!
+7. **`primitives/.../YourComponent.tsx`** - Create the component (may already exist)
 
 **Missing ANY of these = Component won't work!**
 
@@ -474,9 +475,29 @@ When adding a new primitive from scratch, ensure you complete ALL steps:
     - [ ] List component ID in relevant subjects (e.g., "Elementary Math")
   - [ ] Provide clear guidance on when AI should select this primitive
 
+### API Route Integration (CRITICAL - For Math Primitives with Dedicated Services)
+- [ ] **Step 7: CRITICAL** Add API route handler in `app/api/lumina/route.ts`
+  - [ ] Import the generation function from the service file (e.g., `import { generateExpressionTree } from '@/components/lumina/service/math/gemini-expression-tree'`)
+    - [ ] Add import near top of file with other math service imports (around line 24-37)
+  - [ ] Add case to POST handler switch statement (before the `default:` case, around line 330)
+    - [ ] Case name should match a clear action pattern (e.g., `case 'generateExpressionTree':`)
+    - [ ] Call your generation function with appropriate parameters from `params`
+    - [ ] Return the result wrapped in `NextResponse.json()`
+  - [ ] **Example:**
+    ```tsx
+    case 'generateExpressionTree':
+      const expressionTree = await generateExpressionTree(
+        params.topic,
+        params.gradeLevel,
+        params.config
+      );
+      return NextResponse.json(expressionTree);
+    ```
+  - [ ] **Why is this needed?** Math primitive services with structured generation logic need their own API endpoints to be called from the frontend or other services
+
 ### Testing & Validation
-- [ ] **Step 7:** Verify complete integration
-  - [ ] Run all 5 verification commands below - ALL must return results
+- [ ] **Step 8:** Verify complete integration
+  - [ ] Run all 6 verification commands below - ALL must return results
   - [ ] Generate a test exhibit with a topic that would use your primitive
   - [ ] Check browser console for "Unknown component type" errors - there should be NONE
   - [ ] Verify the component appears in the manifest layout (check console logs)
@@ -505,9 +526,14 @@ grep "your-component-id" src/components/lumina/service/geminiService.ts
 
 # 5. Check if in manifest catalog
 grep "your-component-id" src/components/lumina/service/manifest/gemini-manifest.ts
+
+# 6. Check if in API route (for math primitives with dedicated services)
+grep "your-component-id\|YourComponentName" src/app/api/lumina/route.ts
 ```
 
-All five checks should return results. If any check fails, that step is missing!
+All six checks should return results. If any check fails, that step is missing!
+
+**Note:** Check #6 is only required if your primitive has a dedicated generation service file (like math primitives). Some primitives generate content inline in geminiService.ts and don't need an API route.
 
 ## Common Pitfalls & How to Avoid Them
 
@@ -541,17 +567,41 @@ All five checks should return results. If any check fails, that step is missing!
 **Fix:** Add to ComponentId union type and ExhibitData interface in types.ts
 **Prevention:** Run TypeScript check: `npm run type-check` or check IDE errors
 
+### ❌ Pitfall 6: Math primitive generation fails or is unavailable
+**Symptom:** Component is registered but generation function is not accessible or callable
+**Cause:** Missing API route handler in `app/api/lumina/route.ts`
+**Fix:**
+1. Import generation function at top of route.ts file
+2. Add case handler in POST switch statement
+3. Return result wrapped in NextResponse.json()
+**Prevention:** Always check if your primitive has a dedicated service file in `service/math/` - if it does, it MUST have an API route
+**Example:**
+```tsx
+// At top of file (line ~24-37)
+import { generateExpressionTree } from '@/components/lumina/service/math/gemini-expression-tree';
+
+// In POST handler switch statement (before default case, line ~330)
+case 'generateExpressionTree':
+  const expressionTree = await generateExpressionTree(
+    params.topic,
+    params.gradeLevel,
+    params.config
+  );
+  return NextResponse.json(expressionTree);
+```
+
 ## Post-Integration Verification Checklist
 
 After completing all integration steps, perform this final verification:
 
-- [ ] **File Check:** Verify you modified exactly 5 files:
+- [ ] **File Check:** Verify you modified exactly 6-7 files:
   1. `primitives/visual-primitives/math/YourComponent.tsx` (or already existed)
   2. `types.ts` (added ComponentId and interfaces)
   3. `config/primitiveRegistry.tsx` (imported and registered)
   4. `service/geminiService.ts` (import, switch case, wrapper function, 2x assembly cases)
   5. `App.tsx` (added PrimitiveCollectionRenderer)
   6. `service/manifest/gemini-manifest.ts` (added to catalog) - **CRITICAL, often missed!**
+  7. `app/api/lumina/route.ts` (import and API handler) - **CRITICAL for math primitives!**
 
 - [ ] **Console Test:** Run exhibit generation and check for these success indicators:
   - ✅ No "Unknown component type" errors
@@ -559,7 +609,7 @@ After completing all integration steps, perform this final verification:
   - ✅ Component data is generated successfully
   - ✅ Component renders visually in browser
 
-- [ ] **Grep Verification:** All 5 verification commands return results (see above)
+- [ ] **Grep Verification:** All 6 verification commands return results (see above)
 
 - [ ] **Visual Test:** Component appears in a real exhibit with proper styling
 
