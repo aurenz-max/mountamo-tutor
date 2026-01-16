@@ -30,6 +30,7 @@ import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
 import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot from '../primitives/visual-primitives/math/DotPlot';
+import Histogram from '../primitives/visual-primitives/math/Histogram';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -366,6 +367,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'dot-plot': {
     component: DotPlot,
     sectionTitle: 'Dot Plot',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'histogram': {
+    component: Histogram,
+    sectionTitle: 'Histogram',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

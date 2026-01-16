@@ -1095,6 +1095,11 @@ export default function App() {
                     dataArray={exhibitData.dotPlots || []}
                 />
 
+                <PrimitiveCollectionRenderer
+                    componentId="histogram"
+                    dataArray={exhibitData.histograms || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

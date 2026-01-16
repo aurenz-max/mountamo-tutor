@@ -40,6 +40,7 @@ import { generateSlopeTriangle } from "./math/gemini-slope-triangle";
 import { generateSystemsEquations } from "./math/gemini-systems-equations";
 import { generateMatrix } from "./math/gemini-matrix";
 import { generateDotPlot } from "./math/gemini-dot-plot";
+import { generateHistogram } from "./math/gemini-histogram";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2727,6 +2728,9 @@ export const generateComponentContent = async (
     case 'dot-plot':
       return await generateDotPlotContent(item, topic, gradeLevelContext);
 
+    case 'histogram':
+      return await generateHistogramContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -5003,6 +5007,20 @@ const generateDotPlotContent = async (item: any, topic: string, gradeContext: st
 };
 
 /**
+ * Generate Histogram content
+ */
+const generateHistogramContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateHistogram(topic, gradeContext, config);
+
+  return {
+    type: 'histogram',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5486,6 +5504,11 @@ export const buildCompleteExhibitFromManifest = async (
       case 'dot-plot':
         if (!exhibit.dotPlots) exhibit.dotPlots = [];
         exhibit.dotPlots.push(dataWithInstanceId);
+        break;
+
+      case 'histogram':
+        if (!exhibit.histograms) exhibit.histograms = [];
+        exhibit.histograms.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':

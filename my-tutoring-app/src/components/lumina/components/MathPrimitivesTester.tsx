@@ -17,12 +17,13 @@ import SlopeTriangle, { SlopeTriangleData } from '../primitives/visual-primitive
 import SystemsEquationsVisualizer, { SystemsEquationsVisualizerData } from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import MatrixDisplay, { MatrixDisplayData } from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot, { DotPlotData } from '../primitives/visual-primitives/math/DotPlot';
+import Histogram, { HistogramData } from '../primitives/visual-primitives/math/Histogram';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -380,6 +381,20 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     stackStyle: 'dots',
   });
 
+  // Histogram State
+  const [histogramData, setHistogramData] = useState<HistogramData>({
+    title: 'Student Test Scores',
+    description: 'This histogram shows the distribution of test scores in the class. Adjust the bin width to see how the shape of the distribution changes.',
+    data: [45, 52, 58, 62, 65, 68, 70, 72, 73, 75, 75, 76, 78, 80, 82, 85, 88, 92, 95],
+    binWidth: 10,
+    binStart: 40,
+    showFrequency: true,
+    showCurve: false,
+    editable: true,
+    xAxisLabel: 'Test Score',
+    yAxisLabel: 'Frequency',
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -397,6 +412,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'systems-equations-visualizer', label: 'Systems of Equations', icon: '📊' },
     { value: 'matrix-display', label: 'Matrix Display', icon: '▦' },
     { value: 'dot-plot', label: 'Dot Plot', icon: '⚬' },
+    { value: 'histogram', label: 'Histogram', icon: '📊' },
   ];
 
   const handleGenerate = async () => {
@@ -434,7 +450,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateSystemsEquations'
         : selectedPrimitive === 'matrix-display'
         ? 'generateMatrix'
-        : 'generateDotPlot';
+        : selectedPrimitive === 'dot-plot'
+        ? 'generateDotPlot'
+        : 'generateHistogram';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -467,7 +485,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Solving systems of equations'
         : selectedPrimitive === 'matrix-display'
         ? 'Matrix operations and transformations'
-        : 'Mean, median, and mode with data sets';
+        : selectedPrimitive === 'dot-plot'
+        ? 'Mean, median, and mode with data sets'
+        : 'Distribution shapes and frequency analysis';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -522,6 +542,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setMatrixDisplayData(generatedData);
       } else if (selectedPrimitive === 'dot-plot') {
         setDotPlotData(generatedData);
+      } else if (selectedPrimitive === 'histogram') {
+        setHistogramData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -681,6 +703,19 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         editable: true,
         parallel: false,
         stackStyle: 'dots',
+      });
+    } else if (selectedPrimitive === 'histogram') {
+      setHistogramData({
+        title: 'Student Test Scores',
+        description: 'This histogram shows the distribution of test scores in the class. Adjust the bin width to see how the shape of the distribution changes.',
+        data: [45, 52, 58, 62, 65, 68, 70, 72, 73, 75, 75, 76, 78, 80, 82, 85, 88, 92, 95],
+        binWidth: 10,
+        binStart: 40,
+        showFrequency: true,
+        showCurve: false,
+        editable: true,
+        xAxisLabel: 'Test Score',
+        yAxisLabel: 'Frequency',
       });
     }
   };
@@ -2008,6 +2043,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'systems-equations-visualizer' && <SystemsEquationsVisualizer data={systemsEquationsData} />}
             {selectedPrimitive === 'matrix-display' && <MatrixDisplay data={matrixDisplayData} />}
             {selectedPrimitive === 'dot-plot' && <DotPlot data={dotPlotData} />}
+            {selectedPrimitive === 'histogram' && <Histogram data={histogramData} />}
           </div>
         </div>
       </div>
