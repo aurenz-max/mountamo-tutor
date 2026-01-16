@@ -201,6 +201,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Requires 2-3 linear equations in y = mx + b format. Equations must use * for multiplication (e.g., "y = 2*x + 1"). Include intersection point for systems with one solution. Provide step-by-step algebraic solution based on chosen method (graphing, substitution, or elimination). Best for integer or simple decimal solutions at grades 8-Algebra 1.'
   },
   {
+    id: 'matrix-display',
+    description: 'Interactive m×n matrix display and editor with comprehensive step-by-step operations including determinant calculation, matrix inverse, transpose, multiplication, addition, row operations, and augmented matrix solving. Perfect for teaching matrix concepts, organizing data in rows and columns, matrix arithmetic, determinants, inverse matrices, geometric transformations, and solving systems of linear equations using matrices. Features detailed animated explanations for each operation step, highlighting cells involved in calculations, displaying intermediate results, and providing educational context. Shows formulas, calculations, and WHY each step is performed. Supports 2×2 to 4×4 matrices with optional cell editing, operation buttons, and augmented matrix display for system solving. ESSENTIAL for grade 7-8 (data organization in matrices), Algebra 2 (matrix operations, determinants, solving systems with matrices), Precalculus (matrix transformations, inverses), and Linear Algebra (all matrix operations, eigenvalues).',
+    constraints: 'Matrix dimensions typically 2×2 to 4×4 (or 2×3 to 3×4 for augmented). Use simple integers for elementary/middle school, include fractions/decimals for advanced topics. For determinant visualization, show step-by-step calculation with cell highlighting. For inverse, show method (adjugate for 2×2, Gaussian elimination for 3×3+). For row operations, label each operation clearly (e.g., "R₂ - 2R₁ → R₂"). Include educational explanations that can be toggled. Ensure all step-by-step operations show intermediate matrices with proper highlighting.'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'
@@ -508,6 +513,8 @@ STRUCTURE:
 - Algebra (Binomial/Polynomial Multiplication) → 'area-model' (algebraic mode)
 - Algebra 2 (Quadratic Functions, Parabolas, Vertex Form) → 'coordinate-graph'
 - Algebra 2 (Function Composition, Inverse Functions) → 'function-machine'
+- Algebra 2 (Matrices, Determinants, Matrix Operations, Solving Systems with Matrices) → 'matrix-display', 'systems-equations-visualizer'
+- Precalculus (Matrix Transformations, Inverse Matrices) → 'matrix-display'
 - Precalculus (Function Families, Transformations) → 'coordinate-graph'
 - Math Problem-Solving → 'annotated-example' for worked solutions, 'tape-diagram' for word problems
 - Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'

@@ -18,6 +18,7 @@ import type { FunctionMachineData } from './primitives/visual-primitives/math/Fu
 import type { CoordinateGraphData } from './primitives/visual-primitives/math/CoordinateGraph';
 import type { SlopeTriangleData } from './primitives/visual-primitives/math/SlopeTriangle';
 import type { SystemsEquationsVisualizerData } from './primitives/visual-primitives/math/SystemsEquationsVisualizer';
+import type { MatrixDisplayData } from './primitives/visual-primitives/math/MatrixDisplay';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -921,6 +922,7 @@ export interface ExhibitData {
   coordinateGraphs?: CoordinateGraphData[];
   slopeTriangles?: SlopeTriangleData[];
   systemsEquations?: SystemsEquationsVisualizerData[];
+  matrixDisplays?: MatrixDisplayData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -993,6 +995,7 @@ export type ComponentId =
   | 'coordinate-graph'   // 2D Cartesian coordinate plane for plotting points, lines, curves, and regions
   | 'slope-triangle'     // Right triangle overlay showing rise/run for slope visualization
   | 'systems-equations-visualizer' // Systems of linear equations with graphical and algebraic solution methods
+  | 'matrix-display'     // Matrix display and editor with step-by-step operations (determinant, inverse, transpose, etc.)
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape

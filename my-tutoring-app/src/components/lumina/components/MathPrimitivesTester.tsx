@@ -15,12 +15,13 @@ import FunctionMachine, { FunctionMachineData } from '../primitives/visual-primi
 import CoordinateGraph, { CoordinateGraphData } from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle, { SlopeTriangleData } from '../primitives/visual-primitives/math/SlopeTriangle';
 import SystemsEquationsVisualizer, { SystemsEquationsVisualizerData } from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
+import MatrixDisplay, { MatrixDisplayData } from '../primitives/visual-primitives/math/MatrixDisplay';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -341,6 +342,31 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     systemType: 'one-solution',
   });
 
+  // Matrix Display State
+  const [matrixDisplayData, setMatrixDisplayData] = useState<MatrixDisplayData>({
+    title: 'Matrix Operations',
+    description: 'Explore matrix operations including determinant, inverse, and transpose.',
+    rows: 2,
+    columns: 2,
+    values: [
+      [2, 1],
+      [3, 4]
+    ],
+    editable: false,
+    showOperations: [
+      { type: 'determinant', label: 'Calculate Determinant', description: 'Find the determinant of this matrix' },
+      { type: 'transpose', label: 'Transpose Matrix', description: 'Swap rows and columns' },
+    ],
+    augmented: false,
+    highlightCells: [],
+    showSteps: false,
+    operationSteps: [],
+    determinantVisualization: {
+      show: true,
+    },
+    educationalContext: 'Matrices are rectangular arrays of numbers that can represent data, transformations, and systems of equations. Understanding matrix operations is essential for advanced mathematics and many real-world applications.',
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -356,6 +382,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍' },
     { value: 'slope-triangle', label: 'Slope Triangle', icon: '📐' },
     { value: 'systems-equations-visualizer', label: 'Systems of Equations', icon: '📊' },
+    { value: 'matrix-display', label: 'Matrix Display', icon: '▦' },
   ];
 
   const handleGenerate = async () => {
@@ -389,7 +416,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateCoordinateGraph'
         : selectedPrimitive === 'slope-triangle'
         ? 'generateSlopeTriangle'
-        : 'generateSystemsEquations';
+        : selectedPrimitive === 'systems-equations-visualizer'
+        ? 'generateSystemsEquations'
+        : 'generateMatrix';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -418,7 +447,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Graphing linear equations'
         : selectedPrimitive === 'slope-triangle'
         ? 'Understanding slope with rise and run'
-        : 'Solving systems of equations';
+        : selectedPrimitive === 'systems-equations-visualizer'
+        ? 'Solving systems of equations'
+        : 'Matrix operations and transformations';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -469,6 +500,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setSlopeTriangleData(generatedData);
       } else if (selectedPrimitive === 'systems-equations-visualizer') {
         setSystemsEquationsData(generatedData);
+      } else if (selectedPrimitive === 'matrix-display') {
+        setMatrixDisplayData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -1601,6 +1634,135 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
                 </button>
               </div>
             )}
+            {selectedPrimitive === 'matrix-display' && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setMatrixDisplayData({
+                    title: '2×2 Matrix Multiplication',
+                    description: 'Multiply two 2×2 matrices to see the step-by-step calculation',
+                    rows: 2,
+                    columns: 2,
+                    values: [[1, 2], [3, 4]],
+                    secondMatrix: {
+                      rows: 2,
+                      columns: 2,
+                      values: [[2, 0], [1, 3]],
+                      label: 'Matrix B'
+                    },
+                    operationType: 'multiply',
+                    editable: false,
+                    showOperations: [],
+                    augmented: false,
+                    highlightCells: [],
+                    multiplicationVisualization: {
+                      show: true
+                    },
+                    educationalContext: 'Matrix multiplication combines rows from the first matrix with columns from the second matrix.'
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  2×2 Multiply
+                </button>
+                <button
+                  onClick={() => setMatrixDisplayData({
+                    title: '2×3 × 3×2 Matrix Multiplication',
+                    description: 'Multiply a 2×3 matrix by a 3×2 matrix',
+                    rows: 2,
+                    columns: 3,
+                    values: [[1, 2, 3], [4, 5, 6]],
+                    secondMatrix: {
+                      rows: 3,
+                      columns: 2,
+                      values: [[7, 8], [9, 10], [11, 12]],
+                      label: 'Matrix B'
+                    },
+                    operationType: 'multiply',
+                    editable: false,
+                    showOperations: [],
+                    augmented: false,
+                    highlightCells: [],
+                    multiplicationVisualization: {
+                      show: true
+                    },
+                    educationalContext: 'When multiplying matrices, the number of columns in the first matrix must equal the number of rows in the second matrix.'
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  2×3 × 3×2
+                </button>
+                <button
+                  onClick={() => setMatrixDisplayData({
+                    title: '3×2 × 2×3 Matrix Multiplication',
+                    description: 'Multiply a 3×2 matrix by a 2×3 matrix',
+                    rows: 3,
+                    columns: 2,
+                    values: [[1, 2], [3, 4], [5, 6]],
+                    secondMatrix: {
+                      rows: 2,
+                      columns: 3,
+                      values: [[7, 8, 9], [10, 11, 12]],
+                      label: 'Matrix B'
+                    },
+                    operationType: 'multiply',
+                    editable: false,
+                    showOperations: [],
+                    augmented: false,
+                    highlightCells: [],
+                    multiplicationVisualization: {
+                      show: true
+                    },
+                    educationalContext: 'The resulting matrix will have the same number of rows as the first matrix and the same number of columns as the second matrix.'
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  3×2 × 2×3
+                </button>
+                <button
+                  onClick={() => setMatrixDisplayData({
+                    title: '2×2 Determinant',
+                    description: 'Calculate the determinant of a 2×2 matrix',
+                    rows: 2,
+                    columns: 2,
+                    values: [[2, 1], [3, 4]],
+                    editable: false,
+                    showOperations: [
+                      { type: 'determinant', label: 'Calculate Determinant', description: 'Find the determinant of this matrix' }
+                    ],
+                    augmented: false,
+                    highlightCells: [],
+                    determinantVisualization: {
+                      show: true
+                    },
+                    educationalContext: 'The determinant is a scalar value that can be computed from the elements of a square matrix.'
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  2×2 Det
+                </button>
+                <button
+                  onClick={() => setMatrixDisplayData({
+                    title: '3×3 Determinant',
+                    description: 'Calculate the determinant of a 3×3 matrix using the Rule of Sarrus',
+                    rows: 3,
+                    columns: 3,
+                    values: [[1, 2, 3], [4, 5, 6], [7, 8, 10]],
+                    editable: false,
+                    showOperations: [
+                      { type: 'determinant', label: 'Calculate Determinant', description: 'Find the determinant using cofactor expansion' }
+                    ],
+                    augmented: false,
+                    highlightCells: [],
+                    determinantVisualization: {
+                      show: true
+                    },
+                    educationalContext: 'For 3×3 matrices, we use the Rule of Sarrus or cofactor expansion to calculate the determinant.'
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  3×3 Det
+                </button>
+              </div>
+            )}
             {selectedPrimitive === 'percent-bar' && (
               <div className="flex flex-wrap gap-2">
                 <button
@@ -1745,6 +1907,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'coordinate-graph' && <CoordinateGraph data={coordinateGraphData} />}
             {selectedPrimitive === 'slope-triangle' && <SlopeTriangle data={slopeTriangleData} />}
             {selectedPrimitive === 'systems-equations-visualizer' && <SystemsEquationsVisualizer data={systemsEquationsData} />}
+            {selectedPrimitive === 'matrix-display' && <MatrixDisplay data={matrixDisplayData} />}
           </div>
         </div>
       </div>

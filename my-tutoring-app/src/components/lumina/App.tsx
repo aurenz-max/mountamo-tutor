@@ -1085,6 +1085,11 @@ export default function App() {
                     dataArray={exhibitData.systemsEquations || []}
                 />
 
+                <PrimitiveCollectionRenderer
+                    componentId="matrix-display"
+                    dataArray={exhibitData.matrixDisplays || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">
