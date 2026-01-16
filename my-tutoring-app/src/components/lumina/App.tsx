@@ -1090,6 +1090,11 @@ export default function App() {
                     dataArray={exhibitData.matrixDisplays || []}
                 />
 
+                <PrimitiveCollectionRenderer
+                    componentId="dot-plot"
+                    dataArray={exhibitData.dotPlots || []}
+                />
+
                 {/* Knowledge Check Section */}
                 {exhibitData.knowledgeCheck && (
                     <div className="max-w-4xl mx-auto mb-20">

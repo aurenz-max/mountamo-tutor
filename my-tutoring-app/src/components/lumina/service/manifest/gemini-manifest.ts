@@ -206,6 +206,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Matrix dimensions typically 2×2 to 4×4 (or 2×3 to 3×4 for augmented). Use simple integers for elementary/middle school, include fractions/decimals for advanced topics. For determinant visualization, show step-by-step calculation with cell highlighting. For inverse, show method (adjugate for 2×2, Gaussian elimination for 3×3+). For row operations, label each operation clearly (e.g., "R₂ - 2R₁ → R₂"). Include educational explanations that can be toggled. Ensure all step-by-step operations show intermediate matrices with proper highlighting.'
   },
   {
+    id: 'dot-plot',
+    description: 'Interactive dot plot (also called line plot) with stacked dots representing data values on a number line. Perfect for teaching data representation, frequency concepts, mean, median, mode, data distribution shape, and comparing datasets. Students click to add/remove data points, view frequency at each value, and calculate statistical measures. Supports parallel dot plots for comparing two datasets (e.g., morning vs afternoon temperatures). Stack styles include dots, X marks, or custom icons. ESSENTIAL for grades 2-3 (counting and data representation), grades 3-4 (frequency concepts), grades 5-6 (mean, median, mode), and grades 6-7 (data distribution, comparing datasets).',
+    constraints: 'Requires number line range [min, max] and data points array. Data values should be within the range. For younger grades (2-3), use small whole numbers (0-10) and disable statistics. For grades 5+, enable showStatistics for mean/median/mode. For comparison activities, enable parallel mode with labeled datasets. Keep data size manageable: 8-20 values per dataset.'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'
@@ -498,9 +503,12 @@ STRUCTURE:
 - Elementary Math (Multiplication) → 'array-grid', 'area-model', 'bar-model'
 - Elementary Math (Geometry) → 'geometric-shape'
 - Elementary Math (Patterns, Input-Output) → 'function-machine'
+- Elementary Math (Data, Counting Frequency) → 'dot-plot'
 - Elementary/Middle School Math (Prime Factorization, GCF, LCM) → 'factor-tree'
 - Middle School Math (Ratios, Proportions, Unit Rates) → 'double-number-line', 'ratio-table'
 - Middle School Math (Percent, Conversions) → 'double-number-line', 'percent-bar'
+- Middle School Math (Statistics, Mean, Median, Mode, Data Distribution) → 'dot-plot'
+- Middle School Math (Comparing Data Sets) → 'dot-plot' (parallel mode)
 - Middle School Math (Multi-digit Multiplication, Distributive Property) → 'area-model'
 - Middle School Math (Functions, Function Notation) → 'function-machine', 'graph-board'
 - Middle School Math (Ordered Pairs, Coordinate Plane) → 'coordinate-graph'

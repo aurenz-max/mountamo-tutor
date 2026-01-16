@@ -16,12 +16,13 @@ import CoordinateGraph, { CoordinateGraphData } from '../primitives/visual-primi
 import SlopeTriangle, { SlopeTriangleData } from '../primitives/visual-primitives/math/SlopeTriangle';
 import SystemsEquationsVisualizer, { SystemsEquationsVisualizerData } from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import MatrixDisplay, { MatrixDisplayData } from '../primitives/visual-primitives/math/MatrixDisplay';
+import DotPlot, { DotPlotData } from '../primitives/visual-primitives/math/DotPlot';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -367,6 +368,18 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     educationalContext: 'Matrices are rectangular arrays of numbers that can represent data, transformations, and systems of equations. Understanding matrix operations is essential for advanced mathematics and many real-world applications.',
   });
 
+  // Dot Plot State
+  const [dotPlotData, setDotPlotData] = useState<DotPlotData>({
+    title: 'Class Pet Survey',
+    description: 'This dot plot shows how many pets each student in our class has at home. Each dot represents one student.',
+    range: [0, 8],
+    dataPoints: [0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 5, 6],
+    showStatistics: true,
+    editable: true,
+    parallel: false,
+    stackStyle: 'dots',
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -383,6 +396,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'slope-triangle', label: 'Slope Triangle', icon: '📐' },
     { value: 'systems-equations-visualizer', label: 'Systems of Equations', icon: '📊' },
     { value: 'matrix-display', label: 'Matrix Display', icon: '▦' },
+    { value: 'dot-plot', label: 'Dot Plot', icon: '⚬' },
   ];
 
   const handleGenerate = async () => {
@@ -418,7 +432,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateSlopeTriangle'
         : selectedPrimitive === 'systems-equations-visualizer'
         ? 'generateSystemsEquations'
-        : 'generateMatrix';
+        : selectedPrimitive === 'matrix-display'
+        ? 'generateMatrix'
+        : 'generateDotPlot';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -449,7 +465,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Understanding slope with rise and run'
         : selectedPrimitive === 'systems-equations-visualizer'
         ? 'Solving systems of equations'
-        : 'Matrix operations and transformations';
+        : selectedPrimitive === 'matrix-display'
+        ? 'Matrix operations and transformations'
+        : 'Mean, median, and mode with data sets';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -502,6 +520,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setSystemsEquationsData(generatedData);
       } else if (selectedPrimitive === 'matrix-display') {
         setMatrixDisplayData(generatedData);
+      } else if (selectedPrimitive === 'dot-plot') {
+        setDotPlotData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -650,6 +670,17 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         outputDisplay: 'animated',
         chainable: false,
         ruleComplexity: 'twoStep',
+      });
+    } else if (selectedPrimitive === 'dot-plot') {
+      setDotPlotData({
+        title: 'Class Pet Survey',
+        description: 'This dot plot shows how many pets each student in our class has at home. Each dot represents one student.',
+        range: [0, 8],
+        dataPoints: [0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 5, 6],
+        showStatistics: true,
+        editable: true,
+        parallel: false,
+        stackStyle: 'dots',
       });
     }
   };
@@ -1886,6 +1917,74 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
                 </button>
               </div>
             )}
+            {selectedPrimitive === 'dot-plot' && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setDotPlotData({
+                    title: 'Pet Survey Results',
+                    description: 'How many pets do students have at home?',
+                    range: [0, 8],
+                    dataPoints: [0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 5, 6],
+                    showStatistics: true,
+                    editable: true,
+                    parallel: false,
+                    stackStyle: 'dots',
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Pet Survey
+                </button>
+                <button
+                  onClick={() => setDotPlotData({
+                    title: 'Test Scores Comparison',
+                    description: 'Compare test scores between Class A and Class B',
+                    range: [60, 100],
+                    dataPoints: [72, 75, 78, 78, 80, 82, 85, 85, 88, 90],
+                    secondaryDataPoints: [65, 70, 75, 80, 80, 82, 85, 90, 92, 95],
+                    primaryLabel: 'Class A',
+                    secondaryLabel: 'Class B',
+                    showStatistics: true,
+                    editable: true,
+                    parallel: true,
+                    stackStyle: 'dots',
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  Parallel Compare
+                </button>
+                <button
+                  onClick={() => setDotPlotData({
+                    title: 'Daily Temperatures',
+                    description: 'High temperatures this week',
+                    range: [60, 85],
+                    dataPoints: [68, 70, 72, 72, 75, 78, 80],
+                    showStatistics: true,
+                    editable: true,
+                    parallel: false,
+                    stackStyle: 'x',
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  X Marks Style
+                </button>
+                <button
+                  onClick={() => setDotPlotData({
+                    title: 'Apple Picking',
+                    description: 'How many apples did each student pick?',
+                    range: [1, 10],
+                    dataPoints: [3, 4, 4, 5, 5, 5, 6, 6, 7, 8],
+                    showStatistics: false,
+                    editable: true,
+                    parallel: false,
+                    stackStyle: 'icons',
+                    iconEmoji: '🍎',
+                  })}
+                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-xs transition-colors"
+                >
+                  🍎 Icons Style
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1908,6 +2007,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'slope-triangle' && <SlopeTriangle data={slopeTriangleData} />}
             {selectedPrimitive === 'systems-equations-visualizer' && <SystemsEquationsVisualizer data={systemsEquationsData} />}
             {selectedPrimitive === 'matrix-display' && <MatrixDisplay data={matrixDisplayData} />}
+            {selectedPrimitive === 'dot-plot' && <DotPlot data={dotPlotData} />}
           </div>
         </div>
       </div>

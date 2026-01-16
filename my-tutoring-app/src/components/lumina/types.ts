@@ -19,6 +19,7 @@ import type { CoordinateGraphData } from './primitives/visual-primitives/math/Co
 import type { SlopeTriangleData } from './primitives/visual-primitives/math/SlopeTriangle';
 import type { SystemsEquationsVisualizerData } from './primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import type { MatrixDisplayData } from './primitives/visual-primitives/math/MatrixDisplay';
+import type { DotPlotData } from './primitives/visual-primitives/math/DotPlot';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -923,6 +924,7 @@ export interface ExhibitData {
   slopeTriangles?: SlopeTriangleData[];
   systemsEquations?: SystemsEquationsVisualizerData[];
   matrixDisplays?: MatrixDisplayData[];
+  dotPlots?: DotPlotData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -996,6 +998,7 @@ export type ComponentId =
   | 'slope-triangle'     // Right triangle overlay showing rise/run for slope visualization
   | 'systems-equations-visualizer' // Systems of linear equations with graphical and algebraic solution methods
   | 'matrix-display'     // Matrix display and editor with step-by-step operations (determinant, inverse, transpose, etc.)
+  | 'dot-plot'           // Dot plot / line plot with stacked dots representing data values and frequency
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape

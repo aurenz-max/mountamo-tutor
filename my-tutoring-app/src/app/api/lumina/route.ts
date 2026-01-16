@@ -36,6 +36,7 @@ import { generateCoordinateGraph } from '@/components/lumina/service/math/gemini
 import { generateSlopeTriangle } from '@/components/lumina/service/math/gemini-slope-triangle';
 import { generateSystemsEquations } from '@/components/lumina/service/math/gemini-systems-equations';
 import { generateMatrix } from '@/components/lumina/service/math/gemini-matrix';
+import { generateDotPlot } from '@/components/lumina/service/math/gemini-dot-plot';
 
 export async function POST(request: NextRequest) {
   try {
@@ -337,6 +338,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(matrix);
+
+      case 'generateDotPlot':
+        const dotPlot = await generateDotPlot(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(dotPlot);
 
       default:
         return NextResponse.json(
