@@ -18,12 +18,13 @@ import SystemsEquationsVisualizer, { SystemsEquationsVisualizerData } from '../p
 import MatrixDisplay, { MatrixDisplayData } from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot, { DotPlotData } from '../primitives/visual-primitives/math/DotPlot';
 import Histogram, { HistogramData } from '../primitives/visual-primitives/math/Histogram';
+import TwoWayTable, { TwoWayTableData } from '../primitives/visual-primitives/math/TwoWayTable';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
@@ -395,6 +396,20 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     yAxisLabel: 'Frequency',
   });
 
+  // Two-Way Table State
+  const [twoWayTableData, setTwoWayTableData] = useState<TwoWayTableData>({
+    title: 'Pet Preferences by Gender',
+    description: 'This two-way table shows the relationship between gender and pet preference. Click cells to see probability calculations.',
+    rowCategories: ['Male', 'Female'],
+    columnCategories: ['Dogs', 'Cats'],
+    frequencies: [[25, 15], [18, 22]],
+    showTotals: true,
+    displayMode: 'both',
+    showProbabilities: false,
+    editable: true,
+    questionPrompt: 'What is the probability that a randomly selected student prefers dogs given they are female?',
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string }> = [
     { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊' },
     { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢' },
@@ -413,6 +428,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     { value: 'matrix-display', label: 'Matrix Display', icon: '▦' },
     { value: 'dot-plot', label: 'Dot Plot', icon: '⚬' },
     { value: 'histogram', label: 'Histogram', icon: '📊' },
+    { value: 'two-way-table', label: 'Two-Way Table', icon: '⊞' },
   ];
 
   const handleGenerate = async () => {
@@ -452,7 +468,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'generateMatrix'
         : selectedPrimitive === 'dot-plot'
         ? 'generateDotPlot'
-        : 'generateHistogram';
+        : selectedPrimitive === 'histogram'
+        ? 'generateHistogram'
+        : 'generateTwoWayTable';
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -487,7 +505,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Matrix operations and transformations'
         : selectedPrimitive === 'dot-plot'
         ? 'Mean, median, and mode with data sets'
-        : 'Distribution shapes and frequency analysis';
+        : selectedPrimitive === 'histogram'
+        ? 'Distribution shapes and frequency analysis'
+        : 'Categorical data and conditional probability';
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -544,6 +564,8 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         setDotPlotData(generatedData);
       } else if (selectedPrimitive === 'histogram') {
         setHistogramData(generatedData);
+      } else if (selectedPrimitive === 'two-way-table') {
+        setTwoWayTableData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -716,6 +738,19 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         editable: true,
         xAxisLabel: 'Test Score',
         yAxisLabel: 'Frequency',
+      });
+    } else if (selectedPrimitive === 'two-way-table') {
+      setTwoWayTableData({
+        title: 'Pet Preferences by Gender',
+        description: 'This two-way table shows the relationship between gender and pet preference. Click cells to see probability calculations.',
+        rowCategories: ['Male', 'Female'],
+        columnCategories: ['Dogs', 'Cats'],
+        frequencies: [[25, 15], [18, 22]],
+        showTotals: true,
+        displayMode: 'both',
+        showProbabilities: false,
+        editable: true,
+        questionPrompt: 'What is the probability that a randomly selected student prefers dogs given they are female?',
       });
     }
   };
@@ -2044,6 +2079,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             {selectedPrimitive === 'matrix-display' && <MatrixDisplay data={matrixDisplayData} />}
             {selectedPrimitive === 'dot-plot' && <DotPlot data={dotPlotData} />}
             {selectedPrimitive === 'histogram' && <Histogram data={histogramData} />}
+            {selectedPrimitive === 'two-way-table' && <TwoWayTable data={twoWayTableData} />}
           </div>
         </div>
       </div>

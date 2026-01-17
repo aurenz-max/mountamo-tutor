@@ -41,6 +41,7 @@ import { generateSystemsEquations } from "./math/gemini-systems-equations";
 import { generateMatrix } from "./math/gemini-matrix";
 import { generateDotPlot } from "./math/gemini-dot-plot";
 import { generateHistogram } from "./math/gemini-histogram";
+import { generateTwoWayTable } from "./math/gemini-two-way-table";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2731,6 +2732,9 @@ export const generateComponentContent = async (
     case 'histogram':
       return await generateHistogramContent(item, topic, gradeLevelContext);
 
+    case 'two-way-table':
+      return await generateTwoWayTableContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -5021,6 +5025,20 @@ const generateHistogramContent = async (item: any, topic: string, gradeContext: 
 };
 
 /**
+ * Generate Two-Way Table content
+ */
+const generateTwoWayTableContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateTwoWayTable(topic, gradeContext, config);
+
+  return {
+    type: 'two-way-table',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5509,6 +5527,11 @@ export const buildCompleteExhibitFromManifest = async (
       case 'histogram':
         if (!exhibit.histograms) exhibit.histograms = [];
         exhibit.histograms.push(dataWithInstanceId);
+        break;
+
+      case 'two-way-table':
+        if (!exhibit.twoWayTables) exhibit.twoWayTables = [];
+        exhibit.twoWayTables.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':

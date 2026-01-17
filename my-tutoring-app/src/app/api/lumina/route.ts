@@ -38,6 +38,7 @@ import { generateSystemsEquations } from '@/components/lumina/service/math/gemin
 import { generateMatrix } from '@/components/lumina/service/math/gemini-matrix';
 import { generateDotPlot } from '@/components/lumina/service/math/gemini-dot-plot';
 import { generateHistogram } from '@/components/lumina/service/math/gemini-histogram';
+import { generateTwoWayTable } from '@/components/lumina/service/math/gemini-two-way-table';
 
 export async function POST(request: NextRequest) {
   try {
@@ -355,6 +356,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(histogram);
+
+      case 'generateTwoWayTable':
+        const twoWayTable = await generateTwoWayTable(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(twoWayTable);
 
       default:
         return NextResponse.json(

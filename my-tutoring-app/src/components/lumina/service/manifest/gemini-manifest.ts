@@ -216,6 +216,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Requires data array with 15-50 numeric values. binWidth and binStart define the histogram bins. For younger grades (6-7), use showFrequency: true and showCurve: false. For statistics lessons about normal distribution, enable showCurve: true. Set editable: true to allow students to explore bin width adjustments.'
   },
   {
+    id: 'two-way-table',
+    description: 'Interactive two-way table (contingency table) for categorical data with convertible Venn diagram view. Perfect for teaching categorical data organization, joint and marginal frequencies, conditional probability, set relationships (union, intersection), and independence testing. Students can click cells to see joint, marginal, and conditional probabilities. Supports table view, Venn diagram view, or both. Venn diagram circles dynamically size based on set proportions and intersection. Toggle between frequencies and relative frequencies (probabilities). ESSENTIAL for grade 7 (categorical data, set relationships), grade 7-Statistics (joint probability, conditional probability), and Statistics courses (independence testing, contingency tables).',
+    constraints: 'Requires rowCategories and columnCategories arrays (2-4 categories each), and 2D frequencies array matching dimensions. For Venn diagram view, use 2x2 tables. For grade 7, use displayMode: "both" to show table and Venn. For Statistics, use showProbabilities toggle. Set editable: true for exploration, false for assessment. Include questionPrompt for guided probability questions.'
+  },
+  {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
     constraints: 'Requires a shape name and measurable properties'

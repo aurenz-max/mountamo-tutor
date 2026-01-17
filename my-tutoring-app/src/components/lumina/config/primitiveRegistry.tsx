@@ -31,6 +31,7 @@ import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/Sys
 import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot from '../primitives/visual-primitives/math/DotPlot';
 import Histogram from '../primitives/visual-primitives/math/Histogram';
+import TwoWayTable from '../primitives/visual-primitives/math/TwoWayTable';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -376,6 +377,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'histogram': {
     component: Histogram,
     sectionTitle: 'Histogram',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'two-way-table': {
+    component: TwoWayTable,
+    sectionTitle: 'Two-Way Table',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
