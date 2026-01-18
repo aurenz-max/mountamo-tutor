@@ -42,6 +42,7 @@ import { MathPrimitivesTester } from './components/MathPrimitivesTester';
 import { PracticeMode } from './components/PracticeModeEnhanced';
 import { SpotlightCard } from './components/SpotlightCard';
 import { ExhibitProvider } from './contexts/ExhibitContext';
+import { ScratchPad } from './components/scratch-pad';
 
 
 export default function App() {
@@ -91,6 +92,9 @@ export default function App() {
 
   // Practice Mode State
   const [showPracticeMode, setShowPracticeMode] = useState(false);
+
+  // Scratch Pad State
+  const [showScratchPad, setShowScratchPad] = useState(false);
 
   // Sample data for each visual primitive
   const visualPrimitiveExamples = [
@@ -475,13 +479,18 @@ export default function App() {
                    ← Exit Practice
                 </button>
             )}
+            {showScratchPad && (
+                <button onClick={() => setShowScratchPad(false)} className="hover:text-white transition-colors">
+                   ← Exit Scratch Pad
+                </button>
+            )}
         </div>
       </header>
 
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showPracticeMode && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showPracticeMode && !showScratchPad && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -567,29 +576,56 @@ export default function App() {
                     <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
                   </div>
 
-                  {/* Practice Mode Button - SpotlightCard Style */}
-                  <SpotlightCard
-                    color="74, 222, 128"
-                    onClick={() => setShowPracticeMode(true)}
-                    className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 mb-4"
-                  >
-                    <div className="p-8 flex items-start gap-6">
-                      <div className="w-16 h-16 bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                        <span className="text-3xl">🎯</span>
+                  {/* Quick Start Cards Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Practice Mode Button */}
+                    <SpotlightCard
+                      color="74, 222, 128"
+                      onClick={() => setShowPracticeMode(true)}
+                      className="bg-gradient-to-br from-green-900/20 to-emerald-900/20"
+                    >
+                      <div className="p-6 flex items-start gap-4">
+                        <div className="w-14 h-14 bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                          <span className="text-2xl">🎯</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-green-200 transition-colors">
+                            Practice Session
+                          </h3>
+                          <p className="text-slate-400 text-sm leading-relaxed">
+                            Auto-generated questions tailored to your subject and grade level
+                          </p>
+                        </div>
+                        <svg className="w-5 h-5 text-slate-600 group-hover:text-green-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-green-200 transition-colors">
-                          Start Practice Session
-                        </h3>
-                        <p className="text-slate-300 text-sm leading-relaxed">
-                          Jump into a focused practice session with auto-generated questions tailored to your subject and grade level
-                        </p>
+                    </SpotlightCard>
+
+                    {/* Scratch Pad Button */}
+                    <SpotlightCard
+                      color="168, 85, 247"
+                      onClick={() => setShowScratchPad(true)}
+                      className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20"
+                    >
+                      <div className="p-6 flex items-start gap-4">
+                        <div className="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                          <span className="text-2xl">✏️</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-purple-200 transition-colors">
+                            Scratch Pad
+                          </h3>
+                          <p className="text-slate-400 text-sm leading-relaxed">
+                            AI-powered whiteboard with real-time feedback on your work
+                          </p>
+                        </div>
+                        <svg className="w-5 h-5 text-slate-600 group-hover:text-purple-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
                       </div>
-                      <svg className="w-6 h-6 text-slate-600 group-hover:text-green-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                      </svg>
-                    </div>
-                  </SpotlightCard>
+                    </SpotlightCard>
+                  </div>
 
                   {/* Developer Tools Section */}
                   <div className="pt-6">
@@ -723,6 +759,16 @@ export default function App() {
             <PracticeMode
               onBack={() => setShowPracticeMode(false)}
               onLearnMore={handleLearnMoreFromPractice}
+            />
+          </div>
+        )}
+
+        {/* SCRATCH PAD STATE */}
+        {gameState === GameState.IDLE && showScratchPad && (
+          <div className="flex-1 animate-fade-in">
+            <ScratchPad
+              onBack={() => setShowScratchPad(false)}
+              gradeLevel={gradeLevel}
             />
           </div>
         )}

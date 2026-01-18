@@ -39,6 +39,7 @@ import { generateMatrix } from '@/components/lumina/service/math/gemini-matrix';
 import { generateDotPlot } from '@/components/lumina/service/math/gemini-dot-plot';
 import { generateHistogram } from '@/components/lumina/service/math/gemini-histogram';
 import { generateTwoWayTable } from '@/components/lumina/service/math/gemini-two-way-table';
+import { analyzeScratchPad, getScratchPadHint, generatePracticeProblem } from '@/components/lumina/service/scratch-pad/gemini-scratch-pad';
 
 export async function POST(request: NextRequest) {
   try {
@@ -364,6 +365,28 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(twoWayTable);
+
+      case 'analyzeScratchPad':
+        const scratchPadAnalysis = await analyzeScratchPad(
+          params.imageBase64,
+          params.context
+        );
+        return NextResponse.json(scratchPadAnalysis);
+
+      case 'getScratchPadHint':
+        const scratchPadHint = await getScratchPadHint(
+          params.imageBase64,
+          params.hintLevel
+        );
+        return NextResponse.json({ hint: scratchPadHint });
+
+      case 'generateScratchPadProblem':
+        const scratchPadProblem = await generatePracticeProblem(
+          params.topic,
+          params.gradeLevel,
+          params.difficulty
+        );
+        return NextResponse.json(scratchPadProblem);
 
       default:
         return NextResponse.json(
