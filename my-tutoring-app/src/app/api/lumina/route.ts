@@ -39,6 +39,8 @@ import { generateMatrix } from '@/components/lumina/service/math/gemini-matrix';
 import { generateDotPlot } from '@/components/lumina/service/math/gemini-dot-plot';
 import { generateHistogram } from '@/components/lumina/service/math/gemini-histogram';
 import { generateTwoWayTable } from '@/components/lumina/service/math/gemini-two-way-table';
+// Engineering Primitives
+import { generateLeverLab } from '@/components/lumina/service/engineering/gemini-lever-lab';
 import { analyzeScratchPad, getScratchPadHint, generatePracticeProblem } from '@/components/lumina/service/scratch-pad/gemini-scratch-pad';
 
 export async function POST(request: NextRequest) {
@@ -365,6 +367,15 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(twoWayTable);
+
+      // Engineering Primitives
+      case 'generateLeverLab':
+        const leverLab = await generateLeverLab(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(leverLab);
 
       case 'analyzeScratchPad':
         const scratchPadAnalysis = await analyzeScratchPad(

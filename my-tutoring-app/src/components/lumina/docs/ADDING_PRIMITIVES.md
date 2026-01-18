@@ -15,7 +15,7 @@ When adding a new primitive, you MUST modify these files (in order):
 
 **Missing ANY of these = Component won't work!**
 
-> **Note:** You no longer need to modify `App.tsx` - the `ManifestOrderRenderer` component automatically renders all primitives using the primitive registry.
+> **Note:** `ManifestOrderRenderer` component automatically renders all primitives using the primitive registry.
 
 ---
 

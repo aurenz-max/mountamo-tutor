@@ -1,0 +1,508 @@
+'use client';
+
+import React, { useState } from 'react';
+import LeverLab, { LeverLabData } from '../primitives/visual-primitives/engineering/LeverLab';
+
+interface EngineeringPrimitivesTesterProps {
+  onBack: () => void;
+}
+
+type PrimitiveType = 'lever-lab';
+type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
+
+export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterProps> = ({ onBack }) => {
+  const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('lever-lab');
+
+  // AI Generation State
+  const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Lever Lab State
+  const [leverLabData, setLeverLabData] = useState<LeverLabData>({
+    title: 'Seesaw Balance Challenge',
+    description: 'Help balance the seesaw by moving loads and the fulcrum. When both sides have equal torque, the lever will balance!',
+    beamLength: 10,
+    fulcrumPosition: 5,
+    fixedFulcrum: false,
+    loads: [
+      { position: 2, weight: 3, icon: '🧸', label: 'Teddy Bear', isDraggable: true, color: '#3B82F6' },
+      { position: 8, weight: 3, icon: '🎁', label: 'Gift Box', isDraggable: true, color: '#10B981' },
+    ],
+    showDistances: true,
+    showMA: false,
+    effortInput: 'slider',
+    theme: 'seesaw',
+    effortPosition: 0,
+    effortForce: 0,
+    showTorque: false,
+    allowAddLoads: true,
+    maxLoads: 6,
+  });
+
+  const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string; description: string }> = [
+    {
+      value: 'lever-lab',
+      label: 'Lever Lab',
+      icon: '⚖️',
+      description: 'Interactive lever/fulcrum system for simple machines'
+    },
+  ];
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setError(null);
+
+    try {
+      const action = 'generateLeverLab';
+
+      const defaultTopic = 'Understanding levers and balance';
+
+      const response = await fetch('/api/lumina', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          params: {
+            topic: defaultTopic,
+            gradeLevel,
+            config: {},
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const generatedData = await response.json();
+
+      if (selectedPrimitive === 'lever-lab') {
+        setLeverLabData(generatedData);
+      }
+    } catch (err) {
+      console.error('Generation error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to generate primitive');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const resetToDefaults = () => {
+    if (selectedPrimitive === 'lever-lab') {
+      setLeverLabData({
+        title: 'Seesaw Balance Challenge',
+        description: 'Help balance the seesaw by moving loads and the fulcrum. When both sides have equal torque, the lever will balance!',
+        beamLength: 10,
+        fulcrumPosition: 5,
+        fixedFulcrum: false,
+        loads: [
+          { position: 2, weight: 3, icon: '🧸', label: 'Teddy Bear', isDraggable: true, color: '#3B82F6' },
+          { position: 8, weight: 3, icon: '🎁', label: 'Gift Box', isDraggable: true, color: '#10B981' },
+        ],
+        showDistances: true,
+        showMA: false,
+        effortInput: 'slider',
+        theme: 'seesaw',
+        effortPosition: 0,
+        effortForce: 0,
+        showTorque: false,
+        allowAddLoads: true,
+        maxLoads: 6,
+      });
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="mb-8 text-center">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-full border border-slate-600 transition-all"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          Back to Home
+        </button>
+      </div>
+
+      {/* Title */}
+      <div className="text-center mb-8">
+        <h2 className="text-4xl font-bold text-white mb-2">Engineering Primitives Tester</h2>
+        <p className="text-slate-400">Test and configure K-5 engineering visual components</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+        {/* Left Column: Controls */}
+        <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 h-fit">
+          <h3 className="text-2xl font-bold text-white mb-6">Configuration</h3>
+
+          {/* AI Generator Section */}
+          <div className="mb-6 p-4 bg-gradient-to-br from-orange-900/20 to-red-900/20 rounded-xl border border-orange-500/30">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <span className="text-lg">✨</span>
+              </div>
+              <h4 className="text-lg font-bold text-white">AI Generator</h4>
+            </div>
+
+            <p className="text-sm text-slate-400 mb-3">
+              Generate a lever lab with AI-chosen specifications appropriate for the selected grade level.
+            </p>
+
+            {/* Grade Level */}
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-slate-300 mb-2">Grade Level</label>
+              <select
+                value={gradeLevel}
+                onChange={(e) => setGradeLevel(e.target.value as GradeLevel)}
+                className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none"
+              >
+                <option value="toddler">Toddler</option>
+                <option value="preschool">Preschool</option>
+                <option value="kindergarten">Kindergarten</option>
+                <option value="elementary">Elementary</option>
+                <option value="middle-school">Middle School</option>
+                <option value="high-school">High School</option>
+                <option value="undergraduate">Undergraduate</option>
+                <option value="graduate">Graduate</option>
+                <option value="phd">PhD</option>
+              </select>
+            </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="mb-3 p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
+                <p className="text-red-400 text-xs">{error}</p>
+              </div>
+            )}
+
+            {/* Generate Button */}
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="w-full px-4 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <span>✨</span>
+                  Generate with AI
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-px flex-1 bg-slate-600"></div>
+            <span className="text-xs text-slate-500 uppercase tracking-wider">Manual Controls</span>
+            <div className="h-px flex-1 bg-slate-600"></div>
+          </div>
+
+          {/* Primitive Selector */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-slate-300 mb-3">Select Primitive</label>
+            <div className="grid grid-cols-1 gap-3">
+              {primitiveOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedPrimitive(option.value)}
+                  className={`p-4 rounded-lg border transition-all text-left ${
+                    selectedPrimitive === option.value
+                      ? 'border-orange-500 bg-orange-500/20 text-orange-300'
+                      : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{option.icon}</div>
+                    <div>
+                      <div className="text-sm font-medium">{option.label}</div>
+                      <div className="text-xs text-slate-500">{option.description}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Lever Lab Controls */}
+          {selectedPrimitive === 'lever-lab' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={leverLabData.title}
+                  onChange={(e) => setLeverLabData({ ...leverLabData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <textarea
+                  value={leverLabData.description}
+                  onChange={(e) => setLeverLabData({ ...leverLabData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Beam Length</label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="20"
+                    value={leverLabData.beamLength}
+                    onChange={(e) => setLeverLabData({ ...leverLabData, beamLength: parseInt(e.target.value) || 10 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Fulcrum Position</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={leverLabData.beamLength - 1}
+                    step="0.5"
+                    value={leverLabData.fulcrumPosition}
+                    onChange={(e) => setLeverLabData({ ...leverLabData, fulcrumPosition: parseFloat(e.target.value) || 5 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Theme</label>
+                <select
+                  value={leverLabData.theme}
+                  onChange={(e) => setLeverLabData({ ...leverLabData, theme: e.target.value as 'seesaw' | 'excavator' | 'crowbar' | 'generic' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none"
+                >
+                  <option value="seesaw">Seesaw (K-2)</option>
+                  <option value="excavator">Excavator (3-5)</option>
+                  <option value="crowbar">Crowbar (3-5)</option>
+                  <option value="generic">Generic</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Effort Input Method</label>
+                <select
+                  value={leverLabData.effortInput}
+                  onChange={(e) => setLeverLabData({ ...leverLabData, effortInput: e.target.value as 'drag' | 'slider' | 'numeric' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none"
+                >
+                  <option value="slider">Slider</option>
+                  <option value="numeric">Numeric Input</option>
+                  <option value="drag">Drag</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={leverLabData.fixedFulcrum}
+                    onChange={(e) => setLeverLabData({ ...leverLabData, fixedFulcrum: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-slate-300">Fixed Fulcrum</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={leverLabData.showDistances}
+                    onChange={(e) => setLeverLabData({ ...leverLabData, showDistances: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Distances</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={leverLabData.showMA}
+                    onChange={(e) => setLeverLabData({ ...leverLabData, showMA: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Mechanical Advantage</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={leverLabData.showTorque}
+                    onChange={(e) => setLeverLabData({ ...leverLabData, showTorque: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Torque Calculations</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={leverLabData.allowAddLoads}
+                    onChange={(e) => setLeverLabData({ ...leverLabData, allowAddLoads: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-slate-300">Allow Adding Loads</span>
+                </label>
+              </div>
+
+              {/* Preset Scenarios */}
+              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                <label className="block text-sm font-medium text-slate-300 mb-3">Quick Presets</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setLeverLabData({
+                      ...leverLabData,
+                      title: 'Balanced Seesaw',
+                      beamLength: 10,
+                      fulcrumPosition: 5,
+                      fixedFulcrum: false,
+                      loads: [
+                        { position: 2, weight: 2, icon: '🧒', label: 'Child 1', isDraggable: true },
+                        { position: 8, weight: 2, icon: '👧', label: 'Child 2', isDraggable: true },
+                      ],
+                      theme: 'seesaw',
+                      showMA: false,
+                      showTorque: false,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    K-1: Basic Balance
+                  </button>
+                  <button
+                    onClick={() => setLeverLabData({
+                      ...leverLabData,
+                      title: 'Unbalanced Challenge',
+                      beamLength: 10,
+                      fulcrumPosition: 5,
+                      fixedFulcrum: false,
+                      loads: [
+                        { position: 2, weight: 4, icon: '📦', label: 'Heavy Box', isDraggable: true },
+                        { position: 8, weight: 2, icon: '🪨', label: 'Rock', isDraggable: true },
+                      ],
+                      theme: 'seesaw',
+                      showDistances: true,
+                      showMA: false,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 1-2: Find Balance
+                  </button>
+                  <button
+                    onClick={() => setLeverLabData({
+                      ...leverLabData,
+                      title: 'Excavator Arm',
+                      beamLength: 12,
+                      fulcrumPosition: 3,
+                      fixedFulcrum: true,
+                      loads: [
+                        { position: 1, weight: 8, icon: '🪨', label: 'Boulder', isDraggable: false },
+                      ],
+                      effortPosition: 10,
+                      effortForce: 0,
+                      theme: 'excavator',
+                      showDistances: true,
+                      showMA: true,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 3-4: Excavator
+                  </button>
+                  <button
+                    onClick={() => setLeverLabData({
+                      ...leverLabData,
+                      title: 'Mechanical Advantage Lab',
+                      beamLength: 15,
+                      fulcrumPosition: 3,
+                      fixedFulcrum: true,
+                      loads: [
+                        { position: 1, weight: 10, icon: '🪨', label: 'Heavy Load', isDraggable: false },
+                      ],
+                      effortPosition: 12,
+                      effortForce: 0,
+                      theme: 'crowbar',
+                      showDistances: true,
+                      showMA: true,
+                      showTorque: true,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 4-5: MA Calculation
+                  </button>
+                </div>
+              </div>
+
+              {/* Reset Button */}
+              <button
+                onClick={resetToDefaults}
+                className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all"
+              >
+                Reset to Defaults
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Preview */}
+        <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
+          <h3 className="text-2xl font-bold text-white mb-6">Preview</h3>
+
+          {/* Render Selected Primitive */}
+          {selectedPrimitive === 'lever-lab' && (
+            <LeverLab data={leverLabData} />
+          )}
+        </div>
+      </div>
+
+      {/* Educational Info Panel */}
+      <div className="max-w-7xl mx-auto mt-8 p-6 bg-gradient-to-br from-orange-900/20 to-red-900/20 rounded-2xl border border-orange-500/30">
+        <h3 className="text-xl font-bold text-white mb-4">Engineering Primitives - K-5 STEM Education</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-300">
+          <div>
+            <h4 className="font-semibold text-orange-400 mb-2">Lever Lab - Simple Machines</h4>
+            <ul className="space-y-1 text-slate-400">
+              <li>• <strong>K-1:</strong> Basic balance concepts ("same on both sides")</li>
+              <li>• <strong>Gr 1-2:</strong> Fulcrum position affects balance</li>
+              <li>• <strong>Gr 2-3:</strong> Distance matters as much as weight</li>
+              <li>• <strong>Gr 4-5:</strong> Mechanical advantage calculations</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold text-orange-400 mb-2">Real-World Connections</h4>
+            <ul className="space-y-1 text-slate-400">
+              <li>• Seesaw / Teeter-totter (playground)</li>
+              <li>• Excavator boom (construction)</li>
+              <li>• Crowbar / Pry bar (tools)</li>
+              <li>• Wheelbarrow, scissors, bottle opener</li>
+            </ul>
+          </div>
+        </div>
+        <div className="mt-4 p-3 bg-slate-800/50 rounded-lg">
+          <p className="text-xs text-slate-500">
+            <strong>NGSS Alignment:</strong> K-2-ETS1-2 (Design solutions), 3-PS2-1 (Balanced/unbalanced forces),
+            3-5-ETS1-1 (Define problems), 3-5-ETS1-3 (Iterative testing)
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EngineeringPrimitivesTester;

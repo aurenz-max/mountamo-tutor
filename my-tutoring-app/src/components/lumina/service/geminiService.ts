@@ -42,6 +42,8 @@ import { generateMatrix } from "./math/gemini-matrix";
 import { generateDotPlot } from "./math/gemini-dot-plot";
 import { generateHistogram } from "./math/gemini-histogram";
 import { generateTwoWayTable } from "./math/gemini-two-way-table";
+// Engineering Primitives
+import { generateLeverLab } from "./engineering/gemini-lever-lab";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2735,6 +2737,10 @@ export const generateComponentContent = async (
     case 'two-way-table':
       return await generateTwoWayTableContent(item, topic, gradeLevelContext);
 
+    // Engineering Primitives
+    case 'lever-lab':
+      return await generateLeverLabContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -5040,6 +5046,20 @@ const generateTwoWayTableContent = async (item: any, topic: string, gradeContext
 };
 
 /**
+ * Generate Lever Lab content (Engineering Primitive)
+ */
+const generateLeverLabContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateLeverLab(topic, gradeContext, config);
+
+  return {
+    type: 'lever-lab',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5574,6 +5594,12 @@ export const buildCompleteExhibitFromManifest = async (
       case 'two-way-table':
         if (!exhibit.twoWayTables) exhibit.twoWayTables = [];
         exhibit.twoWayTables.push(dataWithInstanceId);
+        break;
+
+      // Engineering Primitives
+      case 'lever-lab':
+        if (!exhibit.leverLabs) exhibit.leverLabs = [];
+        exhibit.leverLabs.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':

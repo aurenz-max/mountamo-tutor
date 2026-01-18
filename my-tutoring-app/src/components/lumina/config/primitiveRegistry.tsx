@@ -44,6 +44,8 @@ import PeriodicTable from '../primitives/PeriodicTable';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
+// Engineering Primitives
+import LeverLab from '../primitives/visual-primitives/engineering/LeverLab';
 import { ComponentId } from '../types';
 
 /**
@@ -478,6 +480,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'image-comparison': {
     component: ImageComparison,
     sectionTitle: 'Visual Transformation',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  // Engineering Primitives (K-5 STEM)
+  'lever-lab': {
+    component: LeverLab,
+    sectionTitle: 'Lever Lab',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

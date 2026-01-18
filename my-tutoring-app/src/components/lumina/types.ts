@@ -23,6 +23,9 @@ import type { DotPlotData } from './primitives/visual-primitives/math/DotPlot';
 import type { HistogramData } from './primitives/visual-primitives/math/Histogram';
 import type { TwoWayTableData } from './primitives/visual-primitives/math/TwoWayTable';
 
+// Import engineering primitive data types
+import type { LeverLabData } from './primitives/visual-primitives/engineering/LeverLab';
+
 export enum GameState {
   IDLE = 'IDLE',
   GENERATING = 'GENERATING',
@@ -943,6 +946,8 @@ export interface ExhibitData {
   dotPlots?: DotPlotData[];
   histograms?: HistogramData[];
   twoWayTables?: TwoWayTableData[];
+  // Engineering Primitives
+  leverLabs?: LeverLabData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -1047,7 +1052,10 @@ export type ComponentId =
   | 'flashcard-deck'     // Interactive flashcard deck for rapid-fire memorization
 
   // Visual Comparison Tools
-  | 'image-comparison';  // Before/After image slider for visual transformations
+  | 'image-comparison'   // Before/After image slider for visual transformations
+
+  // Engineering Primitives (K-5 STEM)
+  | 'lever-lab';         // Interactive lever/fulcrum system for simple machines education
 
 export interface ComponentDefinition {
   id: ComponentId;

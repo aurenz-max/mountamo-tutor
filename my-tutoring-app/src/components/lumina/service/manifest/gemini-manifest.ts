@@ -315,6 +315,12 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     id: 'image-comparison',
     description: 'Interactive before/after image slider for visualizing transformations, processes, or changes. Students drag a slider to reveal differences between two AI-generated images showing a progression (e.g., caterpillar to butterfly, light refraction, cell division, historical changes). Perfect for science processes, biological transformations, physical phenomena, historical evolution, cause-and-effect relationships, or any concept involving visual change over time. Includes educational explanations and key takeaways.',
     constraints: 'Best for topics with clear visual transformations or progressive states. Works for all subjects - science (metamorphosis, phase changes, reactions), history (before/after events), geography (erosion, urban development), biology (life cycles, cellular processes), physics (states of matter, optical phenomena). The AI automatically determines the most educational before/after progression for the topic.'
+  },
+  // Engineering Primitives (K-5 STEM)
+  {
+    id: 'lever-lab',
+    description: 'Interactive lever/fulcrum simulation for teaching simple machines. Students explore balance, mechanical advantage, and force trade-offs by manipulating loads, fulcrum position, and effort force. Features multiple themes (seesaw, excavator, crowbar) to connect abstract physics to real-world tools. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for elementary engineering and physics.',
+    constraints: 'Best for grades K-5. Use for simple machines, balance concepts, mechanical advantage, force multiplication. Themes adapt complexity: seesaw for K-2 (basic balance), excavator/crowbar for 3-5 (mechanical advantage). Supports both exploration (movable fulcrum) and problem-solving (fixed challenges).'
   }
 ];
 
@@ -536,6 +542,7 @@ STRUCTURE:
 - Precalculus (Function Families, Transformations) → 'coordinate-graph'
 - Math Problem-Solving → 'annotated-example' for worked solutions, 'tape-diagram' for word problems
 - Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'
+- Engineering/Simple Machines (K-5) → 'lever-lab' for levers, balance, mechanical advantage
 - History/Social Studies → 'comparison-panel', 'generative-table', 'feature-exhibit'
 - Language Arts → 'sentence-analyzer', 'word-builder', 'concept-card-grid'
 - Any topic with visuals → 'image-panel', 'image-comparison', 'media-player'
