@@ -2,23 +2,12 @@
 
 import React, { useState, useCallback } from 'react';
 import { GenerativeBackground } from './primitives/GenerativeBackground';
-import { ConceptCard } from './primitives/ConceptCard';
 import { CuratorBrief } from './primitives/CuratorBrief';
-import { GenerativeTable } from './primitives/GenerativeTable';
-import { KnowledgeCheck } from './primitives/KnowledgeCheck';
-import { FeatureExhibit } from './primitives/FeatureExhibit';
-import { ComparisonPanel } from './primitives/ComparisonPanel';
-import { FormulaCard } from './primitives/FormulaCard';
-import { MathVisuals } from './primitives/MathVisuals';
-import { SentenceAnalyzer } from './primitives/SentenceAnalyzer';
-import { CustomVisual } from './primitives/CustomVisual';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { LiveAssistant } from './service/LiveAssistant';
 import {
   generateExhibitManifest,
-  buildCompleteExhibitFromTopic,
   generateIntroBriefing,
-  generateExhibitManifestWithObjectives,
   generateExhibitManifestWithObjectivesStreaming,
   buildCompleteExhibitFromManifest,
   type ManifestProgressCallback
@@ -35,7 +24,7 @@ import { RhymingPairs } from './primitives/visual-primitives/RhymingPairs';
 import { SightWordCard } from './primitives/visual-primitives/SightWordCard';
 import { SoundSort } from './primitives/visual-primitives/SoundSort';
 import { LetterPicture } from './primitives/visual-primitives/LetterPicture';
-import { PrimitiveCollectionRenderer } from './components/PrimitiveRenderer';
+import { ManifestOrderRenderer } from './components/ManifestOrderRenderer';
 import { KnowledgeCheckTester } from './components/KnowledgeCheckTester';
 import { MediaPlayerTester } from './components/MediaPlayerTester';
 import { MathPrimitivesTester } from './components/MathPrimitivesTester';
@@ -926,242 +915,12 @@ export default function App() {
                         </div>
                     </div>
 
-                {/* Cards Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 justify-items-center max-w-7xl mx-auto mb-20">
-                    {exhibitData.cards.map((card, index) => (
-                        <div key={index} className="w-full flex justify-center" style={{ animationDelay: `${index * 150}ms` }}>
-                            <ConceptCard data={card} index={index} />
-                        </div>
-                    ))}
-                </div>
-
-                {/* Specialized Exhibits Section - Support for multiple exhibits */}
-                {exhibitData.specializedExhibits && exhibitData.specializedExhibits.length > 0 && (
-                    <div className="space-y-8">
-                        {exhibitData.specializedExhibits.map((exhibit, index) => {
-                            const key = `specialized-${index}`;
-                            switch (exhibit.type) {
-                                case 'equation':
-                                    return <FormulaCard key={key} data={exhibit} />;
-                                case 'sentence':
-                                    return <SentenceAnalyzer key={key} data={exhibit} />;
-                                case 'math-visual':
-                                    return <MathVisuals key={key} data={exhibit} />;
-                                case 'custom-svg':
-                                case 'custom-web':
-                                    return <CustomVisual key={key} data={exhibit} />;
-                                default:
-                                    return null;
-                            }
-                        })}
-                    </div>
-                )}
-
-                {/* Feature Exhibit (Deep Dive) */}
-                {exhibitData.featureExhibit && (
-                    <FeatureExhibit 
-                        data={exhibitData.featureExhibit} 
-                        onTermClick={handleDetailItemClick}
-                    />
-                )}
-                
-                {/* Comparison Panel */}
-                {exhibitData.comparison && (
-                    <ComparisonPanel data={exhibitData.comparison} />
-                )}
-
-                {/* Data Tables Section */}
-                <PrimitiveCollectionRenderer
-                    componentId="generative-table"
-                    dataArray={exhibitData.tables || []}
-                    additionalProps={{ onRowClick: handleDetailItemClick }}
+                {/* Manifest-Ordered Components - Renders all components in the order defined by the manifest */}
+                <ManifestOrderRenderer
+                    orderedComponents={exhibitData.orderedComponents || []}
+                    onDetailItemClick={handleDetailItemClick}
+                    onTermClick={handleDetailItemClick}
                 />
-
-                {/* Graph Board Section - Standalone Interactive Tool */}
-                <PrimitiveCollectionRenderer
-                    componentId="graph-board"
-                    dataArray={exhibitData.graphBoards || []}
-                />
-
-                {/* Scale Spectrum Section - Interactive Spectrum Tool */}
-                <PrimitiveCollectionRenderer
-                    componentId="scale-spectrum"
-                    dataArray={exhibitData.scaleSpectrums || []}
-                />
-
-                {/* Annotated Example Section - Worked Examples with Multi-Layer Annotations */}
-                <PrimitiveCollectionRenderer
-                    componentId="annotated-example"
-                    dataArray={exhibitData.annotatedExamples || []}
-                />
-
-                {/* Nested Hierarchy Section - Interactive Tree Structure */}
-                <PrimitiveCollectionRenderer
-                    componentId="nested-hierarchy"
-                    dataArray={exhibitData.nestedHierarchies || []}
-                />
-
-                {/* Image Panel Section */}
-                <PrimitiveCollectionRenderer
-                    componentId="image-panel"
-                    dataArray={exhibitData.imagePanels || []}
-                />
-
-                {/* Take Home Activity Section */}
-                <PrimitiveCollectionRenderer
-                    componentId="take-home-activity"
-                    dataArray={exhibitData.takeHomeActivities || []}
-                />
-
-                {/* Interactive Passage Section */}
-                <PrimitiveCollectionRenderer
-                    componentId="interactive-passage"
-                    dataArray={exhibitData.interactivePassages || []}
-                />
-
-                {/* Word Builder Section */}
-                <PrimitiveCollectionRenderer
-                    componentId="word-builder"
-                    dataArray={exhibitData.wordBuilders || []}
-                />
-
-                {/* Molecule Viewer Section - 3D Molecular Structure Visualization */}
-                <PrimitiveCollectionRenderer
-                    componentId="molecule-viewer"
-                    dataArray={exhibitData.moleculeViewers || []}
-                />
-
-                {/* Periodic Table Section - Interactive Element Explorer */}
-                <PrimitiveCollectionRenderer
-                    componentId="periodic-table"
-                    dataArray={exhibitData.periodicTables || []}
-                />
-
-                {/* Media Player Section - Audio-Visual Lesson Player */}
-                <PrimitiveCollectionRenderer
-                    componentId="media-player"
-                    dataArray={exhibitData.mediaPlayers || []}
-                />
-
-                {/* Flashcard Deck Section - Interactive Study Tool */}
-                <PrimitiveCollectionRenderer
-                    componentId="flashcard-deck"
-                    dataArray={exhibitData.flashcardDecks || []}
-                />
-
-                {/* Image Comparison */}
-                <PrimitiveCollectionRenderer
-                    componentId="image-comparison"
-                    dataArray={exhibitData.imageComparisons || []}
-                />
-
-                {/* Math Visualization Primitives */}
-                <PrimitiveCollectionRenderer
-                    componentId="bar-model"
-                    dataArray={exhibitData.barModels || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="number-line"
-                    dataArray={exhibitData.numberLines || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="base-ten-blocks"
-                    dataArray={exhibitData.baseTenBlocks || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="fraction-circles"
-                    dataArray={exhibitData.fractionCircles || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="geometric-shape"
-                    dataArray={exhibitData.geometricShapes || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="double-number-line"
-                    dataArray={exhibitData.doubleNumberLines || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="percent-bar"
-                    dataArray={exhibitData.percentBars || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="factor-tree"
-                    dataArray={exhibitData.factorTrees || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="ratio-table"
-                    dataArray={exhibitData.ratioTables || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="tape-diagram"
-                    dataArray={exhibitData.tapeDiagrams || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="balance-scale"
-                    dataArray={exhibitData.balanceScales || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="function-machine"
-                    dataArray={exhibitData.functionMachines || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="coordinate-graph"
-                    dataArray={exhibitData.coordinateGraphs || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="slope-triangle"
-                    dataArray={exhibitData.slopeTriangles || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="systems-equations-visualizer"
-                    dataArray={exhibitData.systemsEquations || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="matrix-display"
-                    dataArray={exhibitData.matrixDisplays || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="dot-plot"
-                    dataArray={exhibitData.dotPlots || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="histogram"
-                    dataArray={exhibitData.histograms || []}
-                />
-
-                <PrimitiveCollectionRenderer
-                    componentId="two-way-table"
-                    dataArray={exhibitData.twoWayTables || []}
-                />
-
-                {/* Knowledge Check Section */}
-                {exhibitData.knowledgeCheck && (
-                    <div className="max-w-4xl mx-auto mb-20">
-                         <div className="flex items-center gap-4 mb-8">
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>
-                            <span className="text-slate-400 text-sm font-mono uppercase tracking-widest">Knowledge Assessment</span>
-                            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
-                        </div>
-                        <KnowledgeCheck data={exhibitData.knowledgeCheck} />
-                    </div>
-                )}
 
                 {/* Related Topics */}
                 {exhibitData.relatedTopics && exhibitData.relatedTopics.length > 0 && (

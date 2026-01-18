@@ -882,11 +882,25 @@ export interface ImageComparisonData {
   keyTakeaways?: string[];
 }
 
+/**
+ * Shape of each ordered component in exhibitData.orderedComponents
+ * Preserves the manifest layout order for rendering
+ */
+export interface OrderedComponent {
+  componentId: ComponentId;
+  instanceId: string;
+  title: string;
+  data: any;
+  objectiveIds?: string[];
+}
+
 export interface ExhibitData {
   topic: string;
   intro: IntroData; // Legacy simple intro (hook + objectives)
   introBriefing?: IntroBriefingData; // New comprehensive intro briefing
   manifest?: ExhibitManifest; // The manifest used to generate this exhibit
+  // NEW: Ordered components array preserving manifest layout order
+  orderedComponents?: OrderedComponent[];
   specializedExhibits?: SpecializedExhibit[];
   featureExhibit: FeatureExhibitData;
   comparison: ComparisonData;

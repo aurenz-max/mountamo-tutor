@@ -2849,7 +2849,7 @@ ${objectiveContext ? 'Focus on concepts that directly support the learning objec
   return {
     type: 'concept-card-grid',
     instanceId: item.instanceId,
-    data: data.cards
+    data: { cards: data.cards }  // Wrap in object so spread operator works correctly
   };
 };
 
@@ -3117,6 +3117,7 @@ const generateKnowledgeCheckContent = async (item: any, topic: string, gradeCont
 
     return {
       type: 'knowledge-check',
+      instanceId: item.instanceId,
       data: { problems } // Return in problem registry format
     };
   }
@@ -5292,20 +5293,22 @@ export const buildCompleteExhibitFromManifest = async (
   console.log(`🎨 Generating ${componentsToGenerate.length} components (excluding curator-brief)...`);
 
   // PHASE 2: Generate Content for All Components in Parallel (except curator-brief)
+  // Use indexed map to preserve order correlation with manifest.layout
   const contentPromises = componentsToGenerate.map(async (item: any, index: number) => {
     try {
       console.log(`  ⚙️ [${index + 1}/${componentsToGenerate.length}] Generating: ${item.componentId} (${item.instanceId})`);
       const content = await generateComponentContent(item, manifest.topic, manifest.gradeLevel);
       console.log(`  ✅ [${index + 1}/${componentsToGenerate.length}] Completed: ${item.componentId}`);
-      return content;
+      // Return with original index to maintain order
+      return { ...content, _originalIndex: index };
     } catch (error) {
       console.error(`  ❌ Failed to generate ${item.componentId}:`, error);
-      return null; // Return null for failed components, don't block others
+      return { _originalIndex: index, _failed: true }; // Keep index even for failures
     }
   });
 
   const components = await Promise.all(contentPromises);
-  const validComponents = components.filter(c => c !== null);
+  const validComponents = components.filter(c => !c._failed);
   console.log(`✅ Generated ${validComponents.length}/${componentsToGenerate.length} components successfully`);
 
   // PHASE 3: Assemble into Complete Exhibit Structure
@@ -5320,6 +5323,9 @@ export const buildCompleteExhibitFromManifest = async (
       hook: curatorBrief.hook.content,
       objectives: curatorBrief.objectives.map((obj: any) => obj.text)
     },
+    // NEW: Ordered components array preserving manifest layout order
+    orderedComponents: [],
+    // Legacy arrays kept for backward compatibility
     cards: [],
     featureExhibit: null,
     comparison: null,
@@ -5335,6 +5341,41 @@ export const buildCompleteExhibitFromManifest = async (
     relatedTopics: []
   };
 
+  // Build the orderedComponents array from manifest layout order
+  // Create a map of instanceId -> generated content for quick lookup
+  const contentMap = new Map<string, any>();
+  for (const component of validComponents) {
+    if (component && component.instanceId) {
+      contentMap.set(component.instanceId, component);
+    }
+  }
+
+  // Iterate through manifest.layout to build orderedComponents in manifest order
+  for (const layoutItem of manifest.layout) {
+    if (layoutItem.componentId === 'curator-brief') {
+      // Add curator brief as first component
+      exhibit.orderedComponents.push({
+        componentId: 'curator-brief',
+        instanceId: layoutItem.instanceId,
+        title: layoutItem.title,
+        data: curatorBrief,
+        objectiveIds: layoutItem.objectiveIds || []
+      });
+    } else {
+      // Look up generated content by instanceId
+      const generatedContent = contentMap.get(layoutItem.instanceId);
+      if (generatedContent && !generatedContent._failed) {
+        exhibit.orderedComponents.push({
+          componentId: layoutItem.componentId,
+          instanceId: layoutItem.instanceId,
+          title: layoutItem.title,
+          data: { ...generatedContent.data, __instanceId: layoutItem.instanceId },
+          objectiveIds: layoutItem.objectiveIds || []
+        });
+      }
+    }
+  }
+
   // Map components to exhibit structure (same as buildCompleteExhibitFromTopic)
   // IMPORTANT: Attach instanceId to each data object for objective mapping
   for (const component of validComponents) {
@@ -5345,7 +5386,8 @@ export const buildCompleteExhibitFromManifest = async (
 
     switch (component.type) {
       case 'concept-card-grid':
-        exhibit.cards = component.data; // Cards are special - rendered differently
+        // Extract cards array from the wrapped object for legacy compatibility
+        exhibit.cards = component.data?.cards || [];
         break;
 
       case 'feature-exhibit':

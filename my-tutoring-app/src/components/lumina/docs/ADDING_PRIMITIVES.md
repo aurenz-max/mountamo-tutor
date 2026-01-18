@@ -2,75 +2,58 @@
 
 This guide explains the scalable architecture for adding new primitive components to the Lumina exhibit system.
 
-## 🚀 Quick Reference: 7 Files You Must Touch
+## 🚀 Quick Reference: 6 Files You Must Touch
 
 When adding a new primitive, you MUST modify these files (in order):
 
 1. **`types.ts`** - Add ComponentId, data interface, and ExhibitData field
 2. **`config/primitiveRegistry.tsx`** - Import and register component
 3. **`service/geminiService.ts`** - Import, switch case, wrapper function, 2× assembly
-4. **`App.tsx`** - Add PrimitiveCollectionRenderer call
-5. **`service/manifest/gemini-manifest.ts`** - Add to catalog ⚠️ MOST MISSED!
-6. **`app/api/lumina/route.ts`** - Import service and add API route handler ⚠️ CRITICAL!
-7. **`primitives/.../YourComponent.tsx`** - Create the component (may already exist)
+4. **`service/manifest/gemini-manifest.ts`** - Add to catalog ⚠️ MOST MISSED!
+5. **`app/api/lumina/route.ts`** - Import service and add API route handler ⚠️ CRITICAL!
+6. **`primitives/.../YourComponent.tsx`** - Create the component (may already exist)
 
 **Missing ANY of these = Component won't work!**
+
+> **Note:** You no longer need to modify `App.tsx` - the `ManifestOrderRenderer` component automatically renders all primitives using the primitive registry.
 
 ---
 
 ## Architecture Overview
 
-The Lumina primitive system uses a **Registry Pattern** to eliminate repetitive code and make adding new primitives a simple 3-step process.
+The Lumina primitive system uses a **Registry Pattern** combined with a **Manifest-Ordered Renderer** to eliminate repetitive code and make adding new primitives simple.
 
 ### Key Files
 
 - **`config/primitiveRegistry.tsx`** - Central registry mapping component IDs to configurations
-- **`components/PrimitiveRenderer.tsx`** - Universal renderer that uses the registry
+- **`components/ManifestOrderRenderer.tsx`** - Renders all components in manifest order using the registry
 - **`types.ts`** - TypeScript definitions including `ComponentId` enum
 - **`primitives/`** - Individual primitive components
 
 ## How It Works
 
-### Before (Non-Scalable Approach)
+### The ManifestOrderRenderer Pattern
 
 ```tsx
-// ❌ OLD WAY: Required custom code for each primitive
-{exhibitData.graphBoards && exhibitData.graphBoards.length > 0 && (
-   <div className="max-w-5xl mx-auto mb-20">
-        <div className="flex items-center gap-4 mb-8">
-            <span className="text-slate-400 text-sm font-mono uppercase tracking-widest">
-                Interactive Graph
-            </span>
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
-        </div>
-        {exhibitData.graphBoards.map((graphData, index) => (
-            <GraphBoardWrapper key={index} data={graphData} />
-        ))}
-   </div>
-)}
-```
-
-**Problems:**
-- Duplicated header/divider code
-- Manual mapping logic
-- Conditional wrapper div
-- Doesn't scale - every new primitive requires App.tsx changes
-
-### After (Scalable Approach)
-
-```tsx
-// ✅ NEW WAY: Single line per primitive type
-<PrimitiveCollectionRenderer
-    componentId="graph-board"
-    dataArray={exhibitData.graphBoards || []}
+// App.tsx - Single renderer handles ALL primitives
+<ManifestOrderRenderer
+    orderedComponents={exhibitData.orderedComponents || []}
+    onDetailItemClick={handleDetailItemClick}
+    onTermClick={handleDetailItemClick}
 />
 ```
 
+**How it works:**
+1. The manifest defines which components to render and in what order
+2. `ManifestOrderRenderer` iterates through `orderedComponents`
+3. For each component, it looks up the configuration in `primitiveRegistry`
+4. The component is rendered with its data automatically
+
 **Benefits:**
-- All styling/layout configured in registry
-- No duplication
-- Add new primitives without touching App.tsx
-- Consistent rendering pattern
+- ✅ **Zero App.tsx changes** - New primitives work automatically once registered
+- ✅ **Order preserved** - Components render exactly as specified in manifest
+- ✅ **Consistent styling** - All primitives use registry-defined containers and headers
+- ✅ **DRY** - No duplicated rendering logic
 
 ## Adding a New Primitive: Step-by-Step
 
@@ -158,6 +141,8 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
 };
 ```
 
+**That's it for rendering!** Once registered, `ManifestOrderRenderer` will automatically render your component when it appears in the manifest.
+
 ### Step 4: Add Content Generation Logic
 
 **CRITICAL STEP:** The registry pattern handles rendering, but you must also wire up the content generation pipeline in `geminiService.ts`.
@@ -209,7 +194,7 @@ case 'my-new-primitive':
 - But `geminiService.ts` handles how component **content is generated** from the manifest
 - Without this step, the manifest will call your component, but it won't have any data to show
 
-### Step 4.5: Add to Manifest Catalog (Make AI Aware)
+### Step 5: Add to Manifest Catalog (Make AI Aware)
 
 **EQUALLY CRITICAL:** Even if your primitive renders and generates content correctly, the AI won't use it unless you add it to the manifest catalog.
 
@@ -245,42 +230,27 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
 - Without this entry, AI will NEVER select your primitive, even if everything else works
 - This is the most commonly missed step when adding new primitives
 
-### Step 5: Use in App.tsx
+### Step 6: Add API Route (For Math Primitives)
 
 ```tsx
-// App.tsx
+// app/api/lumina/route.ts
 
-// Single line to render all instances:
-<PrimitiveCollectionRenderer
-    componentId="my-new-primitive"
-    dataArray={exhibitData.myNewPrimitives || []}
-/>
+// At top of file (line ~24-37)
+import { generateMyNewPrimitive } from '@/components/lumina/service/my-primitive/gemini-my-primitive';
 
-// Or for a single instance:
-<PrimitiveCollectionRenderer
-    componentId="my-new-primitive"
-    dataArray={exhibitData.myNewPrimitive ? [exhibitData.myNewPrimitive] : []}
-/>
+// In POST handler switch statement (before default case, line ~330)
+case 'generateMyNewPrimitive':
+  const myNewPrimitive = await generateMyNewPrimitive(
+    params.topic,
+    params.gradeLevel,
+    params.config
+  );
+  return NextResponse.json(myNewPrimitive);
 ```
 
-**That's it!** Your primitive is now fully integrated.
+**Why is this needed?** Math primitive services with structured generation logic need their own API endpoints to be called from the frontend or other services.
 
-## Advanced: Passing Additional Props
-
-If your primitive needs props beyond `data`:
-
-```tsx
-<PrimitiveCollectionRenderer
-    componentId="generative-table"
-    dataArray={exhibitData.tables || []}
-    additionalProps={{
-        onRowClick: handleDetailItemClick,
-        theme: 'dark'
-    }}
-/>
-```
-
-These props are spread to each component instance.
+**That's it!** Your primitive is now fully integrated. No App.tsx changes needed.
 
 ## Registry Configuration Options
 
@@ -335,54 +305,28 @@ Renders:
 
 ## When NOT to Use This Pattern
 
-- **One-off components** that appear exactly once with custom layout (e.g., `CuratorBrief`)
-- **Modal/Drawer components** that aren't part of the main content flow
+- **One-off components** that appear exactly once with custom layout (e.g., `CuratorBrief` in title section)
+- **Modal/Drawer components** that aren't part of the main content flow (e.g., `DetailDrawer`)
 - **Wrapper/Layout components** like `GenerativeBackground`
 
-For these, keep them in App.tsx as-is.
+These are handled directly in App.tsx, not through the manifest.
 
 ## Benefits Summary
 
-✅ **Scalable**: Add primitives without modifying App.tsx
+✅ **Zero App.tsx Changes**: Add primitives without modifying App.tsx
+✅ **Manifest-Driven**: Components render in exact order specified
 ✅ **Consistent**: All primitives rendered with same pattern
 ✅ **DRY**: No duplicated header/wrapper code
 ✅ **Type-Safe**: Full TypeScript support
 ✅ **Flexible**: Support for collections and single instances
 ✅ **Maintainable**: Configuration in one place
 
-## Real Examples from Codebase
-
-### Graph Board (Collection)
-```tsx
-<PrimitiveCollectionRenderer
-    componentId="graph-board"
-    dataArray={exhibitData.graphBoards || []}
-/>
-```
-
-### Tables with Click Handler
-```tsx
-<PrimitiveCollectionRenderer
-    componentId="generative-table"
-    dataArray={exhibitData.tables || []}
-    additionalProps={{ onRowClick: handleDetailItemClick }}
-/>
-```
-
-### Knowledge Check (Single Instance)
-```tsx
-<PrimitiveCollectionRenderer
-    componentId="knowledge-check"
-    dataArray={exhibitData.knowledgeCheck ? [exhibitData.knowledgeCheck] : []}
-/>
-```
-
 ## Troubleshooting
 
 ### My primitive doesn't render
 1. Check that the `componentId` matches the registry key exactly
-2. Verify `dataArray` is not empty in React DevTools
-3. Check console for warnings from `PrimitiveCollectionRenderer`
+2. Verify the component appears in `exhibitData.orderedComponents`
+3. Check console for warnings from `ManifestOrderRenderer`
 4. **MOST COMMON:** Look for "Unknown component type" in console - this means you forgot Step 4 (content generation logic)
 
 ### "Unknown component type" error in console
@@ -403,6 +347,11 @@ This means the manifest is calling your component, but `geminiService.ts` doesn'
 1. Ensure `ComponentId` type includes your new ID
 2. Verify data structure matches interface definition
 3. Check that primitive component accepts `data` prop
+
+### AI never selects your component
+1. Verify component is in `UNIVERSAL_CATALOG` in gemini-manifest.ts
+2. Check it's listed in appropriate subject categories
+3. Ensure description clearly explains when to use it
 
 ## Pre-Flight Checklist
 
@@ -458,15 +407,8 @@ When adding a new primitive from scratch, ensure you complete ALL steps:
     - [ ] Each case should: Push `dataWithInstanceId` to the array (second loop) or `component.data` (first loop, but verify which variable is used)
     - [ ] **Verification:** Search for your component-id in the file - you should see it in at least 3 places (import, switch case, assembly cases)
 
-### App Integration (Required for Display)
-- [ ] **Step 5:** Add `PrimitiveCollectionRenderer` call in `App.tsx`
-  - [ ] Add in appropriate section (math primitives go after line 1040)
-  - [ ] Use correct `componentId` matching registry key
-  - [ ] Reference correct `ExhibitData` field with fallback to empty array
-  - [ ] Example: `<PrimitiveCollectionRenderer componentId="factor-tree" dataArray={exhibitData.factorTrees || []} />`
-
 ### AI Manifest Awareness (CRITICAL - Most Commonly Missed!)
-- [ ] **Step 6: CRITICAL** Add to manifest catalog in `service/manifest/gemini-manifest.ts`
+- [ ] **Step 5: CRITICAL** Add to manifest catalog in `service/manifest/gemini-manifest.ts`
   - [ ] Add component definition to `UNIVERSAL_CATALOG` array (around line 103)
     - [ ] `id`: Exact match to component ID
     - [ ] `description`: Clear description of what primitive does and when to use it
@@ -476,28 +418,18 @@ When adding a new primitive from scratch, ensure you complete ALL steps:
   - [ ] Provide clear guidance on when AI should select this primitive
 
 ### API Route Integration (CRITICAL - For Math Primitives with Dedicated Services)
-- [ ] **Step 7: CRITICAL** Add API route handler in `app/api/lumina/route.ts`
+- [ ] **Step 6: CRITICAL** Add API route handler in `app/api/lumina/route.ts`
   - [ ] Import the generation function from the service file (e.g., `import { generateExpressionTree } from '@/components/lumina/service/math/gemini-expression-tree'`)
     - [ ] Add import near top of file with other math service imports (around line 24-37)
   - [ ] Add case to POST handler switch statement (before the `default:` case, around line 330)
     - [ ] Case name should match a clear action pattern (e.g., `case 'generateExpressionTree':`)
     - [ ] Call your generation function with appropriate parameters from `params`
     - [ ] Return the result wrapped in `NextResponse.json()`
-  - [ ] **Example:**
-    ```tsx
-    case 'generateExpressionTree':
-      const expressionTree = await generateExpressionTree(
-        params.topic,
-        params.gradeLevel,
-        params.config
-      );
-      return NextResponse.json(expressionTree);
-    ```
   - [ ] **Why is this needed?** Math primitive services with structured generation logic need their own API endpoints to be called from the frontend or other services
 
 ### Testing & Validation
-- [ ] **Step 8:** Verify complete integration
-  - [ ] Run all 6 verification commands below - ALL must return results
+- [ ] **Step 7:** Verify complete integration
+  - [ ] Run all 5 verification commands below - ALL must return results
   - [ ] Generate a test exhibit with a topic that would use your primitive
   - [ ] Check browser console for "Unknown component type" errors - there should be NONE
   - [ ] Verify the component appears in the manifest layout (check console logs)
@@ -518,22 +450,19 @@ grep "your-component-id" src/components/lumina/types.ts
 # 2. Check if registered in primitiveRegistry
 grep "your-component-id" src/components/lumina/config/primitiveRegistry.tsx
 
-# 3. Check if in App.tsx
-grep "your-component-id" src/components/lumina/App.tsx
-
-# 4. Check if content generation exists
+# 3. Check if content generation exists
 grep "your-component-id" src/components/lumina/service/geminiService.ts
 
-# 5. Check if in manifest catalog
+# 4. Check if in manifest catalog
 grep "your-component-id" src/components/lumina/service/manifest/gemini-manifest.ts
 
-# 6. Check if in API route (for math primitives with dedicated services)
+# 5. Check if in API route (for math primitives with dedicated services)
 grep "your-component-id\|YourComponentName" src/app/api/lumina/route.ts
 ```
 
-All six checks should return results. If any check fails, that step is missing!
+All five checks should return results. If any check fails, that step is missing!
 
-**Note:** Check #6 is only required if your primitive has a dedicated generation service file (like math primitives). Some primitives generate content inline in geminiService.ts and don't need an API route.
+**Note:** Check #5 is only required if your primitive has a dedicated generation service file (like math primitives). Some primitives generate content inline in geminiService.ts and don't need an API route.
 
 ## Common Pitfalls & How to Avoid Them
 
@@ -575,33 +504,18 @@ All six checks should return results. If any check fails, that step is missing!
 2. Add case handler in POST switch statement
 3. Return result wrapped in NextResponse.json()
 **Prevention:** Always check if your primitive has a dedicated service file in `service/math/` - if it does, it MUST have an API route
-**Example:**
-```tsx
-// At top of file (line ~24-37)
-import { generateExpressionTree } from '@/components/lumina/service/math/gemini-expression-tree';
-
-// In POST handler switch statement (before default case, line ~330)
-case 'generateExpressionTree':
-  const expressionTree = await generateExpressionTree(
-    params.topic,
-    params.gradeLevel,
-    params.config
-  );
-  return NextResponse.json(expressionTree);
-```
 
 ## Post-Integration Verification Checklist
 
 After completing all integration steps, perform this final verification:
 
-- [ ] **File Check:** Verify you modified exactly 6-7 files:
+- [ ] **File Check:** Verify you modified exactly 5-6 files:
   1. `primitives/visual-primitives/math/YourComponent.tsx` (or already existed)
   2. `types.ts` (added ComponentId and interfaces)
   3. `config/primitiveRegistry.tsx` (imported and registered)
   4. `service/geminiService.ts` (import, switch case, wrapper function, 2x assembly cases)
-  5. `App.tsx` (added PrimitiveCollectionRenderer)
-  6. `service/manifest/gemini-manifest.ts` (added to catalog) - **CRITICAL, often missed!**
-  7. `app/api/lumina/route.ts` (import and API handler) - **CRITICAL for math primitives!**
+  5. `service/manifest/gemini-manifest.ts` (added to catalog) - **CRITICAL, often missed!**
+  6. `app/api/lumina/route.ts` (import and API handler) - **CRITICAL for math primitives!**
 
 - [ ] **Console Test:** Run exhibit generation and check for these success indicators:
   - ✅ No "Unknown component type" errors
@@ -609,7 +523,7 @@ After completing all integration steps, perform this final verification:
   - ✅ Component data is generated successfully
   - ✅ Component renders visually in browser
 
-- [ ] **Grep Verification:** All 6 verification commands return results (see above)
+- [ ] **Grep Verification:** All 5 verification commands return results (see above)
 
 - [ ] **Visual Test:** Component appears in a real exhibit with proper styling
 
@@ -624,6 +538,5 @@ When converting an existing primitive to the registry pattern:
 - [ ] Change props from `{ value, onChange }` to `{ data }`
 - [ ] Register in `primitiveRegistry.tsx`
 - [ ] Ensure content generation logic exists in `geminiService.tsx`
-- [ ] Replace custom rendering code in `App.tsx` with `PrimitiveCollectionRenderer`
 - [ ] Test that all functionality still works
 - [ ] Remove unused wrapper components and imports
