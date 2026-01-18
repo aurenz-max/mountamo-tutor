@@ -678,17 +678,26 @@ async def create_welcome_message(package_id: str, user_email: str) -> str:
         logger.error(f"Error creating welcome message: {str(e)}")
         return "Hi! I'm your AI tutor. What would you like to learn about today?"
 
-# Content package browsing endpoints (unchanged but with better error handling)
-@router.get("/content-packages")
+# ============================================================================
+# DEPRECATED ENDPOINTS - Content package retrieval is being moved out of this service
+# ============================================================================
+
+# DEPRECATED: Content package retrieval is being deprecated from this endpoint.
+# Will be removed in a future version.
+@router.get("/content-packages", deprecated=True)
 async def get_content_packages(
     user_context: dict = Depends(get_user_context),
     subject: Optional[str] = Query(None),
-    skill: Optional[str] = Query(None), 
+    skill: Optional[str] = Query(None),
     subskill: Optional[str] = Query(None),
     status: str = Query("approved"),
     limit: int = Query(50)
 ):
-    """Get available content packages with filtering"""
+    """
+    DEPRECATED: Content package retrieval is being deprecated from this endpoint.
+
+    Get available content packages with filtering
+    """
     try:
         logger.info(f"📦 User {user_context['email']} browsing content packages")
         
@@ -728,13 +737,19 @@ async def get_content_packages(
         logger.error(f"Error getting content packages: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error retrieving content packages: {str(e)}")
 
-@router.get("/content-packages/{package_id}")
+# DEPRECATED: Content package details retrieval is being deprecated from this endpoint.
+# Will be removed in a future version.
+@router.get("/content-packages/{package_id}", deprecated=True)
 async def get_content_package_details(
     package_id: str,
     user_context: dict = Depends(get_user_context),
     problem_service: ProblemService = Depends(get_problem_service)
 ):
-    """Get detailed information about a specific content package with aggregated visuals"""
+    """
+    DEPRECATED: Content package details retrieval is being deprecated from this endpoint.
+
+    Get detailed information about a specific content package with aggregated visuals
+    """
     try:
         logger.info(f"📦 User {user_context['email']} viewing package {package_id}")
         
@@ -876,12 +891,18 @@ async def get_content_package_details(
         logger.error(f"Error getting content package details: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error retrieving content package: {str(e)}")
 
-@router.get("/packages/find-by-curriculum/{curriculum_id}")
+# DEPRECATED: Package lookup by curriculum ID is being deprecated from this endpoint.
+# Will be removed in a future version.
+@router.get("/packages/find-by-curriculum/{curriculum_id}", deprecated=True)
 async def find_package_by_curriculum_id(
     curriculum_id: str,
     user_context: dict = Depends(get_user_context)
 ):
-    """Find a content package by curriculum ID (e.g., rec-COUNT001-01-A)"""
+    """
+    DEPRECATED: Package lookup by curriculum ID is being deprecated from this endpoint.
+
+    Find a content package by curriculum ID (e.g., rec-COUNT001-01-A)
+    """
     try:
         from ..services.daily_activities import CurriculumParser
         
@@ -965,7 +986,8 @@ async def package_learning_health_check():
                 "audio_support": True,
                 "text_support": True,
                 "non_blocking_websocket": True,
-                "enhanced_gemini_api": True
+                "enhanced_gemini_api": True,
+                "content_packages": False  # DEPRECATED: Content package retrieval is deprecated
             }
         }
     except Exception as e:

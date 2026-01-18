@@ -1,4 +1,5 @@
 # backend/app/api/endpoints/packages.py
+# DEPRECATED: This entire module is deprecated and will be removed in a future version.
 # API endpoints for live discovery thread generation and content package orchestration
 
 from fastapi import APIRouter, HTTPException, Depends, Path, BackgroundTasks
@@ -16,7 +17,8 @@ from ...services.problems import ProblemService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+# DEPRECATED: This entire router is deprecated and will be removed in a future version.
+router = APIRouter(deprecated=True)
 cosmos_db = CosmosDBService()
 
 # Initialize discovery thread service
@@ -99,17 +101,21 @@ class GenerateWalkthroughThreadsRequest(BaseModel):
     content: str
     visual_type: Optional[str] = "interactive_demonstration"
 
-@router.post("/section/discovery-threads")
+# DEPRECATED: Discovery thread generation is being deprecated.
+# Will be removed in a future version.
+@router.post("/section/discovery-threads", deprecated=True)
 async def generate_discovery_threads_for_section(
     request: GenerateThreadsRequest,
     user_context: dict = Depends(get_user_context)
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Generate discovery threads for a single section on-demand
-    
+
     Args:
         request: Section heading and content
-        
+
     Returns:
         Discovery threads for the section
     """
@@ -135,18 +141,22 @@ async def generate_discovery_threads_for_section(
         logger.error(f"❌ Error generating discovery threads for section: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating discovery threads: {str(e)}")
 
-@router.post("/section/generate-visual")
+# DEPRECATED: Visual generation is being deprecated.
+# Will be removed in a future version.
+@router.post("/section/generate-visual", deprecated=True)
 async def generate_visual_for_section(
     request: GenerateVisualRequest,
     user_context: dict = Depends(get_user_context)
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Generate an interactive visual demonstration for a single section using AI
     Also automatically saves to Cosmos DB if subskill_id is provided in request
-    
+
     Args:
         request: Section heading and content (optionally subskill_id)
-        
+
     Returns:
         HTML content for interactive visual demonstration
     """
@@ -218,17 +228,21 @@ async def generate_visual_for_section(
         raise HTTPException(status_code=500, detail=f"Error generating visual demonstration: {str(e)}")
 
 
-@router.get("/visualize-concepts/{subskill_id}")
+# DEPRECATED: Visualize concepts retrieval is being deprecated.
+# Will be removed in a future version.
+@router.get("/visualize-concepts/{subskill_id}", deprecated=True)
 async def get_visualize_concepts_by_subskill(
     subskill_id: str = Path(..., description="Curriculum subskill ID"),
     user_context: dict = Depends(get_user_context)
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Get all saved visualize concepts for a specific subskill
-    
+
     Args:
         subskill_id: Curriculum subskill identifier
-        
+
     Returns:
         List of saved visualize concepts for the subskill
     """
@@ -253,19 +267,23 @@ async def get_visualize_concepts_by_subskill(
         logger.error(f"❌ Error retrieving visualize concepts: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error retrieving visualize concepts: {str(e)}")
 
-@router.get("/visualize-concepts/{subskill_id}/{section_heading}")
+# DEPRECATED: Visualize concept retrieval is being deprecated.
+# Will be removed in a future version.
+@router.get("/visualize-concepts/{subskill_id}/{section_heading}", deprecated=True)
 async def get_visualize_concept_by_section(
     subskill_id: str = Path(..., description="Curriculum subskill ID"),
     section_heading: str = Path(..., description="Section heading"),
     user_context: dict = Depends(get_user_context)
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Get a specific visualize concept by subskill_id and section_heading
-    
+
     Args:
         subskill_id: Curriculum subskill identifier
         section_heading: Section heading
-        
+
     Returns:
         Specific visualize concept or null if not found
     """
@@ -296,17 +314,21 @@ async def get_visualize_concept_by_section(
         logger.error(f"❌ Error retrieving visualize concept: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error retrieving visualize concept: {str(e)}")
 
-@router.post("/section/walkthrough-threads")
+# DEPRECATED: Walkthrough thread generation is being deprecated.
+# Will be removed in a future version.
+@router.post("/section/walkthrough-threads", deprecated=True)
 async def generate_walkthrough_threads_for_section(
     request: GenerateWalkthroughThreadsRequest,
     user_context: dict = Depends(get_user_context)
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Generate walkthrough threads specifically for visual demonstrations
-    
+
     Args:
         request: Section heading, content, and visual type
-        
+
     Returns:
         Walkthrough threads focused on guiding users through visual content
     """
@@ -334,17 +356,21 @@ async def generate_walkthrough_threads_for_section(
         logger.error(f"❌ Error generating walkthrough threads for section: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating walkthrough threads: {str(e)}")
 
-@router.post("/bulk/discovery-threads")
+# DEPRECATED: Bulk discovery thread generation is being deprecated.
+# Will be removed in a future version.
+@router.post("/bulk/discovery-threads", deprecated=True)
 async def generate_bulk_discovery_threads(
     request: GenerateBulkThreadsRequest,
     user_context: dict = Depends(get_user_context)
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Generate discovery threads for multiple sections at once
-    
+
     Args:
         request: List of sections with heading and content
-        
+
     Returns:
         Discovery threads for all sections
     """
@@ -400,16 +426,20 @@ async def generate_bulk_discovery_threads(
         raise HTTPException(status_code=500, detail=f"Error generating bulk discovery threads: {str(e)}")
 
 # ============================================================================
-# CONTENT PACKAGE GENERATION ENDPOINTS (Product Spec Implementation)
+# DEPRECATED ENDPOINTS - Content package generation
 # ============================================================================
 
-@router.get("/content-package/for-subskill/{subskill_id}")
+# DEPRECATED: Content package generation is being deprecated.
+# Will be removed in a future version.
+@router.get("/content-package/for-subskill/{subskill_id}", deprecated=True)
 async def get_content_package_for_subskill(
     subskill_id: str = Path(..., description="Curriculum subskill ID"),
     user_context: dict = Depends(get_user_context),
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Get or generate content package for a specific curriculum subskill
 
     Implements 3-tier cascade orchestration:
@@ -620,16 +650,20 @@ def create_subskill_context_fallback(subskill_id: str) -> Dict[str, Any]:
         }
 
 # ============================================================================
-# TESTING AND DEBUG ENDPOINTS
+# DEPRECATED ENDPOINTS - Testing and debug
 # ============================================================================
 
-@router.get("/debug/curriculum/{subskill_id}")
+# DEPRECATED: Debug endpoints are being deprecated.
+# Will be removed in a future version.
+@router.get("/debug/curriculum/{subskill_id}", deprecated=True)
 async def debug_curriculum_lookup(
     subskill_id: str = Path(..., description="Subskill ID to look up"),
     curriculum_service: CurriculumService = Depends(get_curriculum_service),
     user_context: dict = Depends(get_user_context)
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Debug endpoint to test curriculum service lookup
     """
     logger.info(f"🐛 User {user_context['email']} debugging curriculum lookup for: {subskill_id}")
@@ -658,7 +692,9 @@ async def debug_curriculum_lookup(
             "service_initialized": curriculum_service.bigquery_service is not None if hasattr(curriculum_service, 'bigquery_service') else False
         }
 
-@router.post("/test-generate-package")
+# DEPRECATED: Test package generation is being deprecated.
+# Will be removed in a future version.
+@router.post("/test-generate-package", deprecated=True)
 async def test_generate_package(
     user_context: dict = Depends(get_user_context),
     curriculum_service: CurriculumService = Depends(get_curriculum_service),
@@ -666,12 +702,14 @@ async def test_generate_package(
     subject: str = "Mathematics"
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Test endpoint for package generation - useful for debugging
-    
+
     Args:
         test_subskill_id: Test subskill ID to generate content for
         subject: Subject for the test package
-        
+
     Returns:
         Complete generated package with save status
     """
@@ -736,17 +774,21 @@ async def test_generate_package(
             "saved_to_cosmos": False
         }
 
-@router.get("/verify-package/{package_id}")
+# DEPRECATED: Package verification is being deprecated.
+# Will be removed in a future version.
+@router.get("/verify-package/{package_id}", deprecated=True)
 async def verify_package_in_cosmos(
     package_id: str = Path(..., description="Package ID to verify"),
     user_context: dict = Depends(get_user_context)
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     Verify if a package exists in CosmosDB and return its structure
-    
+
     Args:
         package_id: The package ID to verify
-        
+
     Returns:
         Package verification details
     """
@@ -805,14 +847,18 @@ async def verify_package_in_cosmos(
             "error": str(e)
         }
 
-@router.get("/list-generated-packages")
+# DEPRECATED: List generated packages is being deprecated.
+# Will be removed in a future version.
+@router.get("/list-generated-packages", deprecated=True)
 async def list_generated_packages(
     user_context: dict = Depends(get_user_context),
     limit: int = 10
 ):
     """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
     List recently generated packages for debugging
-    
+
     Returns:
         List of dynamically generated packages
     """
@@ -853,13 +899,18 @@ async def list_generated_packages(
         }
 
 # ============================================================================
-# DISCOVERY THREADS HEALTH CHECK
+# DEPRECATED ENDPOINTS - Health check
 # ============================================================================
 
-# Health check for the discovery threads service
-@router.get("/health")
+# DEPRECATED: Health check is being deprecated along with this module.
+# Will be removed in a future version.
+@router.get("/health", deprecated=True)
 async def discovery_threads_health_check():
-    """Health check for live discovery threads service"""
+    """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
+    Health check for live discovery threads service
+    """
     try:
         # Test the discovery service with a simple example
         test_result = await discovery_service.generate_discovery_threads(
@@ -894,9 +945,11 @@ async def discovery_threads_health_check():
         }
 
 # ============================================================================
-# ENGAGEMENT SYSTEM ENDPOINTS - Package Completion
+# DEPRECATED ENDPOINTS - Package completion and engagement
 # ============================================================================
 
+# DEPRECATED: These models are used by deprecated engagement endpoints.
+# Will be removed in a future version.
 class SectionCompletionRequest(BaseModel):
     section_title: str
     time_spent_minutes: Optional[int] = None
@@ -905,9 +958,11 @@ class PackageCompletionRequest(BaseModel):
     sections_completed: int
     total_time_minutes: Optional[int] = None
 
+# DEPRECATED: Primitive completion is being deprecated.
+# Will be removed in a future version.
 # IMPORTANT: Primitive completion route must come BEFORE parameterized routes
 # to avoid FastAPI matching "/primitives/complete" as "/{package_id}/complete"
-@router.post("/primitives/complete")
+@router.post("/primitives/complete", deprecated=True)
 @log_engagement_activity(
     activity_type="content_package_primitive_completed",
     metadata_extractor=_extract_primitive_completion_metadata
@@ -917,7 +972,11 @@ async def complete_primitive(
     background_tasks: BackgroundTasks,
     user_context: dict = Depends(get_user_context)
 ):
-    """Mark a content package interactive primitive as completed. XP is handled automatically."""
+    """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
+    Mark a content package interactive primitive as completed. XP is handled automatically.
+    """
     try:
         student_id = user_context["student_id"]
         logger.info(f"Primitive {request.primitive_type} completed in package {request.package_id} by student {student_id}")
@@ -940,7 +999,9 @@ async def complete_primitive(
         logger.error(f"Error completing primitive: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/{package_id}/sections/complete")
+# DEPRECATED: Section completion is being deprecated.
+# Will be removed in a future version.
+@router.post("/{package_id}/sections/complete", deprecated=True)
 @log_engagement_activity(
     activity_type="content_package_section_completed",
     metadata_extractor=_extract_section_completion_metadata
@@ -951,7 +1012,11 @@ async def complete_package_section(
     background_tasks: BackgroundTasks,
     user_context: dict = Depends(get_user_context)
 ):
-    """Mark a content package section as completed. XP is handled automatically."""
+    """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
+    Mark a content package section as completed. XP is handled automatically.
+    """
     try:
         student_id = user_context["student_id"]
         logger.info(f"Section '{request.section_title}' completed in package {package_id} by student {student_id}")
@@ -968,7 +1033,9 @@ async def complete_package_section(
         logger.error(f"Error completing section in package {package_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/{package_id}/complete")
+# DEPRECATED: Package completion is being deprecated.
+# Will be removed in a future version.
+@router.post("/{package_id}/complete", deprecated=True)
 @log_engagement_activity(
     activity_type="content_package_completed",
     metadata_extractor=_extract_package_completion_metadata
@@ -979,7 +1046,11 @@ async def complete_package(
     background_tasks: BackgroundTasks,
     user_context: dict = Depends(get_user_context)
 ):
-    """Mark an entire content package as completed. Bonus XP is handled automatically."""
+    """
+    DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
+    Mark an entire content package as completed. Bonus XP is handled automatically.
+    """
     try:
         student_id = user_context["student_id"]
         logger.info(f"Package {package_id} completed by student {student_id}")

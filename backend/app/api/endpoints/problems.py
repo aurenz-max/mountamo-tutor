@@ -33,6 +33,8 @@ router = APIRouter()
 # MODELS - Keep existing models
 # ============================================================================
 
+# DEPRECATED: ProblemRequest is used by deprecated generation endpoints.
+# Will be removed in a future version.
 class ProblemRequest(BaseModel):
     subject: str
     unit_id: Optional[str] = None
@@ -41,6 +43,8 @@ class ProblemRequest(BaseModel):
     difficulty: Optional[float] = None
     count: int = 1  # Add count, default to 1 for backward compatibility
 
+# DEPRECATED: ProblemResponse is used by deprecated generation endpoints.
+# Will be removed in a future version.
 class ProblemResponse(BaseModel):
     problem_type: str
     problem: str
@@ -134,6 +138,8 @@ def get_bigquery_analytics_service() -> BigQueryAnalyticsService:
     dataset_id = getattr(settings, "BIGQUERY_DATASET_ID", "analytics")
     return BigQueryAnalyticsService(project_id=project_id, dataset_id=dataset_id)
 
+# DEPRECATED: This dependency is used by deprecated generation endpoints.
+# Will be removed in a future version.
 async def get_composable_problem_service() -> ComposableProblemGenerationService:
     """Get ComposableProblemGenerationService instance with fully configured dependencies"""
     # Initialize the new three-step chain service
@@ -162,10 +168,12 @@ async def get_composable_problem_service() -> ComposableProblemGenerationService
 
 
 # ============================================================================
-# FIXED ENDPOINTS - Using service layer for activity logging
+# DEPRECATED ENDPOINTS - Problem generation is being moved out of this service
 # ============================================================================
 
-@router.post("/generate")
+# DEPRECATED: Problem generation is being deprecated from this endpoint.
+# Use the new problem generation service instead. Will be removed in a future version.
+@router.post("/generate", deprecated=True)
 async def generate_problem(
     request: ProblemRequest,
     background_tasks: BackgroundTasks,
@@ -176,6 +184,8 @@ async def generate_problem(
     cosmos_db = Depends(get_cosmos_db)
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     """
+    DEPRECATED: Problem generation is being deprecated from this endpoint.
+
     Generate a set of one or more problems for a practice session.
     Accepts a 'count' parameter in the request body.
     Returns a single problem dict if count=1, or a list of problem dicts if count>1.
@@ -321,6 +331,10 @@ async def generate_problem(
             metadata={"error": str(e), "student_id": student_id}
         )
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+# ============================================================================
+# ACTIVE ENDPOINTS - Problem submission (NOT deprecated)
+# ============================================================================
 
 @router.post("/submit")
 @log_engagement_activity(
@@ -493,10 +507,12 @@ async def submit_problem_batch(
 
 
 # ============================================================================
-# COMPOSABLE PROBLEMS ENDPOINTS
+# DEPRECATED ENDPOINTS - Composable problem generation
 # ============================================================================
 
-@router.post("/generate-composable")
+# DEPRECATED: Composable problem generation is being deprecated from this endpoint.
+# Will be removed in a future version.
+@router.post("/generate-composable", deprecated=True)
 async def generate_composable_problem(
     request: ProblemRequest,
     background_tasks: BackgroundTasks,
@@ -504,8 +520,10 @@ async def generate_composable_problem(
     generation_service: ComposableProblemGenerationService = Depends(get_composable_problem_service)
 ) -> InteractiveProblem:
     """
+    DEPRECATED: Composable problem generation is being deprecated from this endpoint.
+
     Generate composable problem that returns in the SAME format as regular problems
-    
+
     This integrates with your existing frontend by returning the same ProblemResponse
     structure, but with the composable_template field containing the primitives.
     """
@@ -628,12 +646,18 @@ async def generate_composable_problem(
         raise HTTPException(status_code=500, detail=f"Internal server error generating composable problem: {str(e)}")
 
 
-@router.get("/primitives/manifest")
+# DEPRECATED: Primitive manifest is being deprecated along with composable problem generation.
+# Will be removed in a future version.
+@router.get("/primitives/manifest", deprecated=True)
 async def get_primitive_manifest(
     user_context: dict = Depends(get_user_context),
     generation_service: ComposableProblemGenerationService = Depends(get_composable_problem_service)
 ):
-    """Get the primitive manifest for frontend components"""
+    """
+    DEPRECATED: This endpoint is being deprecated along with composable problem generation.
+
+    Get the primitive manifest for frontend components
+    """
     try:
         manifest = generation_service._get_primitive_manifest()
         return manifest
@@ -677,15 +701,14 @@ async def problems_health_check(
             "grade_level": user_context.get("grade_level")
         },
         "features": {
-            "problem_generation": True,
+            "problem_generation": False,  # DEPRECATED: Problem generation is deprecated
             "problem_submission": True,
             "recommendations": True,
-            "skill_specific_problems": True,
-            "service_layer_integration": True,  # NEW: Service layer integration
-            "activity_logging": True,  # NEW: Proper activity logging
-            "composable_problems": True,  # NEW: Composable problem generation
-            "universal_problem_generation": True,  # NEW: Universal problem generation system
-            "composable_problems": True  # NEW: Composable interactive problems
+            "skill_specific_problems": False,  # DEPRECATED: Part of problem generation
+            "service_layer_integration": True,
+            "activity_logging": True,
+            "composable_problems": False,  # DEPRECATED: Composable problem generation is deprecated
+            "universal_problem_generation": False,  # DEPRECATED: Problem generation is deprecated
         },
         "timestamp": datetime.utcnow().isoformat()
     }

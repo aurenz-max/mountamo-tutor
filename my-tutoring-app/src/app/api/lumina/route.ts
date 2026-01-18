@@ -40,6 +40,7 @@ import { generateDotPlot } from '@/components/lumina/service/math/gemini-dot-plo
 import { generateHistogram } from '@/components/lumina/service/math/gemini-histogram';
 import { generateTwoWayTable } from '@/components/lumina/service/math/gemini-two-way-table';
 import { analyzeScratchPad, getScratchPadHint, generatePracticeProblem } from '@/components/lumina/service/scratch-pad/gemini-scratch-pad';
+import { analyzeScratchPadEnhanced } from '@/components/lumina/service/scratch-pad/gemini-scratch-pad-enhanced';
 
 export async function POST(request: NextRequest) {
   try {
@@ -372,6 +373,13 @@ export async function POST(request: NextRequest) {
           params.context
         );
         return NextResponse.json(scratchPadAnalysis);
+
+      case 'analyzeScratchPadWithPrimitives':
+        const enhancedAnalysis = await analyzeScratchPadEnhanced(
+          params.imageBase64,
+          params.context
+        );
+        return NextResponse.json(enhancedAnalysis);
 
       case 'getScratchPadHint':
         const scratchPadHint = await getScratchPadHint(

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { AIAnalysisResult } from './types';
+import { AIAnalysisResult, PrimitiveSuggestion } from './types';
+import { PrimitiveSuggestionPanel } from './primitives';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,6 +11,12 @@ interface SidebarProps {
   isLoading: boolean;
   isLiveMode: boolean;
   progressMessage?: string;
+  // Primitive suggestions
+  suggestedPrimitives?: PrimitiveSuggestion[];
+  onAcceptPrimitive?: (suggestion: PrimitiveSuggestion) => void;
+  onDismissPrimitive?: (suggestionId: string) => void;
+  onDismissAllPrimitives?: () => void;
+  loadingPrimitiveId?: string | null;
 }
 
 // Icons
@@ -127,7 +134,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   analysis,
   isLoading,
   isLiveMode,
-  progressMessage
+  progressMessage,
+  suggestedPrimitives = [],
+  onAcceptPrimitive,
+  onDismissPrimitive,
+  onDismissAllPrimitives,
+  loadingPrimitiveId = null
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -291,6 +303,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Primitive Suggestions Panel */}
+            {suggestedPrimitives.length > 0 && onAcceptPrimitive && onDismissPrimitive && onDismissAllPrimitives && (
+              <PrimitiveSuggestionPanel
+                suggestions={suggestedPrimitives}
+                onAccept={onAcceptPrimitive}
+                onDismiss={onDismissPrimitive}
+                onDismissAll={onDismissAllPrimitives}
+                loadingPrimitiveId={loadingPrimitiveId}
+              />
             )}
           </div>
         )}

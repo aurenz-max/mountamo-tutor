@@ -4,8 +4,23 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { WhiteboardCanvas, WhiteboardRef } from './WhiteboardCanvas';
 import { Toolbar } from './Toolbar';
 import { Sidebar } from './Sidebar';
-import { Stroke, BackgroundType, AIAnalysisResult, ToolType, ScratchPadProps } from './types';
-import { analyzeScratchPad, generateScratchPadProblem, AnalysisStage } from './scratchPadClient';
+import {
+  Stroke,
+  BackgroundType,
+  AIAnalysisResult,
+  ToolType,
+  ScratchPadProps,
+  PrimitiveSuggestion,
+  GeneratedPrimitive,
+  PrimitiveViewMode
+} from './types';
+import { generateScratchPadProblem, AnalysisStage } from './scratchPadClient';
+import {
+  PrimitiveViewer,
+  SplitPanelContainer,
+  analyzeScratchPadWithPrimitives,
+  generatePrimitiveFromSuggestion
+} from './primitives';
 
 // Icons
 const ArrowLeftIcon = () => (
@@ -66,6 +81,12 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({
   const [currentProblem, setCurrentProblem] = useState<{ problem: string; hint?: string } | null>(null);
   const [isGeneratingProblem, setIsGeneratingProblem] = useState<boolean>(false);
   const [showHint, setShowHint] = useState<boolean>(false);
+
+  // Primitive integration state
+  const [suggestedPrimitives, setSuggestedPrimitives] = useState<PrimitiveSuggestion[]>([]);
+  const [activePrimitive, setActivePrimitive] = useState<GeneratedPrimitive | null>(null);
+  const [primitiveViewMode, setPrimitiveViewMode] = useState<PrimitiveViewMode>('hidden');
+  const [loadingPrimitiveId, setLoadingPrimitiveId] = useState<string | null>(null);
 
   const whiteboardRef = useRef<WhiteboardRef>(null);
 
@@ -134,7 +155,7 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({
 
     try {
       const imageBase64 = whiteboardRef.current.exportImage();
-      const result = await analyzeScratchPad(
+      const result = await analyzeScratchPadWithPrimitives(
         imageBase64,
         {
           topic: currentProblem?.problem || initialTopic,
@@ -148,6 +169,14 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({
         }
       );
       setAnalysisResult(result);
+
+      // Update primitive suggestions if available
+      if (result.shouldSuggestPrimitives && result.suggestedPrimitives?.length > 0) {
+        setSuggestedPrimitives(result.suggestedPrimitives);
+      } else {
+        // Don't clear suggestions if we already have them and this analysis didn't find new ones
+        // This prevents flickering during live mode
+      }
     } catch (error) {
       console.error("Analysis failed", error);
       setAnalysisResult({
@@ -162,6 +191,40 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({
       setAnalysisStage(null);
     }
   }, [isSidebarOpen, currentProblem, initialTopic, gradeLevel]);
+
+  // Handle accepting a primitive suggestion
+  const handleAcceptPrimitive = useCallback(async (suggestion: PrimitiveSuggestion) => {
+    setLoadingPrimitiveId(suggestion.id);
+
+    try {
+      const generated = await generatePrimitiveFromSuggestion(suggestion);
+      setActivePrimitive(generated);
+      setPrimitiveViewMode('split');
+      // Remove the accepted suggestion from the list
+      setSuggestedPrimitives(prev => prev.filter(s => s.id !== suggestion.id));
+    } catch (error) {
+      console.error("Failed to generate primitive:", error);
+      // Could show an error toast here
+    } finally {
+      setLoadingPrimitiveId(null);
+    }
+  }, []);
+
+  // Handle dismissing a single primitive suggestion
+  const handleDismissPrimitive = useCallback((suggestionId: string) => {
+    setSuggestedPrimitives(prev => prev.filter(s => s.id !== suggestionId));
+  }, []);
+
+  // Handle dismissing all primitive suggestions
+  const handleDismissAllPrimitives = useCallback(() => {
+    setSuggestedPrimitives([]);
+  }, []);
+
+  // Handle closing the active primitive viewer
+  const handleClosePrimitive = useCallback(() => {
+    setActivePrimitive(null);
+    setPrimitiveViewMode('hidden');
+  }, []);
 
   const handleGenerateProblem = useCallback(async () => {
     setIsGeneratingProblem(true);
@@ -195,139 +258,161 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({
     return () => clearTimeout(handler);
   }, [strokes, isLiveMode, handleAnalyze]);
 
-  return (
-    <div className="flex h-[calc(100vh-6rem)] w-full overflow-hidden bg-slate-950 rounded-2xl border border-slate-700/50">
-      {/* Main Canvas Area */}
-      <div className={`relative flex-1 h-full transition-all duration-300 ${isSidebarOpen ? 'mr-96' : 'mr-0'}`}>
-        {/* Header Bar */}
-        <div className="absolute top-0 left-0 right-0 z-20 px-4 py-3 flex items-center justify-between bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
-          {/* Back Button */}
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
-            >
-              <ArrowLeftIcon />
-              <span className="text-sm font-medium">Back</span>
-            </button>
-          )}
-
-          {/* Title */}
-          <div className="flex-1 text-center">
-            <h1 className="text-lg font-bold text-white">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
-                Scratch Pad
-              </span>
-            </h1>
-          </div>
-
-          {/* Generate Problem Button */}
+  // Canvas content component (extracted for reuse in split view)
+  const CanvasContent = (
+    <div className="relative h-full">
+      {/* Header Bar */}
+      <div className="absolute top-0 left-0 right-0 z-20 px-4 py-3 flex items-center justify-between bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
+        {/* Back Button */}
+        {onBack && (
           <button
-            onClick={handleGenerateProblem}
-            disabled={isGeneratingProblem}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
-              isGeneratingProblem
-                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/25'
-            }`}
+            onClick={onBack}
+            className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
           >
-            {isGeneratingProblem ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Generating...</span>
-              </>
-            ) : (
-              <>
-                <DiceIcon />
-                <span>New Problem</span>
-              </>
-            )}
+            <ArrowLeftIcon />
+            <span className="text-sm font-medium">Back</span>
           </button>
-        </div>
-
-        {/* Current Problem Display */}
-        {currentProblem && (
-          <div className="absolute top-20 left-4 right-4 z-10">
-            <div className="bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-600/50 p-4 shadow-xl">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    Problem
-                  </div>
-                  <p className="text-white text-lg leading-relaxed">{currentProblem.problem}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {currentProblem.hint && (
-                    <button
-                      onClick={() => setShowHint(!showHint)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        showHint
-                          ? 'bg-amber-500/20 text-amber-400'
-                          : 'hover:bg-slate-700 text-slate-400 hover:text-amber-400'
-                      }`}
-                      title="Show Hint"
-                    >
-                      <LightbulbIcon />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setCurrentProblem(null)}
-                    className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
-                    title="Dismiss"
-                  >
-                    <CloseIcon />
-                  </button>
-                </div>
-              </div>
-              {showHint && currentProblem.hint && (
-                <div className="mt-3 pt-3 border-t border-slate-600/50">
-                  <p className="text-amber-300 text-sm flex items-start gap-2">
-                    <LightbulbIcon />
-                    <span>{currentProblem.hint}</span>
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
         )}
 
-        {/* Canvas Container */}
-        <div className={`absolute left-4 right-4 bottom-24 ${currentProblem ? 'top-44' : 'top-20'}`}>
-          <WhiteboardCanvas
-            ref={whiteboardRef}
-            tool={currentTool}
-            color={currentColor}
-            width={currentWidth}
-            background={background}
-            strokes={strokes}
-            setStrokes={setStrokes}
-            addToHistory={addToHistory}
-          />
+        {/* Title */}
+        <div className="flex-1 text-center">
+          <h1 className="text-lg font-bold text-white">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+              Scratch Pad
+            </span>
+          </h1>
         </div>
 
-        {/* Toolbar */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30">
-          <Toolbar
-            currentTool={currentTool}
-            setTool={setCurrentTool}
-            currentColor={currentColor}
-            setColor={setCurrentColor}
-            currentWidth={currentWidth}
-            setWidth={setCurrentWidth}
-            background={background}
-            setBackground={setBackground}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            onClear={handleClear}
-            onExport={handleExport}
-            onAnalyze={() => handleAnalyze(false)}
-            isAnalyzing={isAnalyzing}
-            canUndo={strokes.length > 0}
-            canRedo={redoStack.length > 0}
-            isLiveMode={isLiveMode}
-            onToggleLiveMode={() => setIsLiveMode(!isLiveMode)}
-          />
+        {/* Generate Problem Button */}
+        <button
+          onClick={handleGenerateProblem}
+          disabled={isGeneratingProblem}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+            isGeneratingProblem
+              ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/25'
+          }`}
+        >
+          {isGeneratingProblem ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Generating...</span>
+            </>
+          ) : (
+            <>
+              <DiceIcon />
+              <span>New Problem</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Current Problem Display */}
+      {currentProblem && (
+        <div className="absolute top-20 left-4 right-4 z-10">
+          <div className="bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-600/50 p-4 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  Problem
+                </div>
+                <p className="text-white text-lg leading-relaxed">{currentProblem.problem}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {currentProblem.hint && (
+                  <button
+                    onClick={() => setShowHint(!showHint)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      showHint
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'hover:bg-slate-700 text-slate-400 hover:text-amber-400'
+                    }`}
+                    title="Show Hint"
+                  >
+                    <LightbulbIcon />
+                  </button>
+                )}
+                <button
+                  onClick={() => setCurrentProblem(null)}
+                  className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                  title="Dismiss"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+            </div>
+            {showHint && currentProblem.hint && (
+              <div className="mt-3 pt-3 border-t border-slate-600/50">
+                <p className="text-amber-300 text-sm flex items-start gap-2">
+                  <LightbulbIcon />
+                  <span>{currentProblem.hint}</span>
+                </p>
+              </div>
+            )}
+          </div>
         </div>
+      )}
+
+      {/* Canvas Container */}
+      <div className={`absolute left-4 right-4 bottom-24 ${currentProblem ? 'top-44' : 'top-20'}`}>
+        <WhiteboardCanvas
+          ref={whiteboardRef}
+          tool={currentTool}
+          color={currentColor}
+          width={currentWidth}
+          background={background}
+          strokes={strokes}
+          setStrokes={setStrokes}
+          addToHistory={addToHistory}
+        />
+      </div>
+
+      {/* Toolbar */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30">
+        <Toolbar
+          currentTool={currentTool}
+          setTool={setCurrentTool}
+          currentColor={currentColor}
+          setColor={setCurrentColor}
+          currentWidth={currentWidth}
+          setWidth={setCurrentWidth}
+          background={background}
+          setBackground={setBackground}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onClear={handleClear}
+          onExport={handleExport}
+          onAnalyze={() => handleAnalyze(false)}
+          isAnalyzing={isAnalyzing}
+          canUndo={strokes.length > 0}
+          canRedo={redoStack.length > 0}
+          isLiveMode={isLiveMode}
+          onToggleLiveMode={() => setIsLiveMode(!isLiveMode)}
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-[calc(100vh-6rem)] w-full overflow-hidden bg-slate-950 rounded-2xl border border-slate-700/50">
+      {/* Main Content Area - Split view when primitive is active */}
+      <div className={`relative flex-1 h-full transition-all duration-300 ${isSidebarOpen ? 'mr-96' : 'mr-0'}`}>
+        {primitiveViewMode === 'split' && activePrimitive ? (
+          <SplitPanelContainer
+            leftPanel={CanvasContent}
+            rightPanel={
+              <PrimitiveViewer
+                primitive={activePrimitive}
+                onClose={handleClosePrimitive}
+              />
+            }
+            defaultSplit={55}
+            minLeftWidth={400}
+            minRightWidth={350}
+          />
+        ) : (
+          CanvasContent
+        )}
       </div>
 
       {/* Sidebar Panel */}
@@ -338,6 +423,11 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({
         isLoading={isAnalyzing}
         isLiveMode={isLiveMode}
         progressMessage={analysisMessage}
+        suggestedPrimitives={suggestedPrimitives}
+        onAcceptPrimitive={handleAcceptPrimitive}
+        onDismissPrimitive={handleDismissPrimitive}
+        onDismissAllPrimitives={handleDismissAllPrimitives}
+        loadingPrimitiveId={loadingPrimitiveId}
       />
     </div>
   );
