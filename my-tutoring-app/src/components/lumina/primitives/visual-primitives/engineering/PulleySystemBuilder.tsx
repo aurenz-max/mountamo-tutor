@@ -52,6 +52,328 @@ interface PulleySystemBuilderProps {
   className?: string;
 }
 
+// Acceleration vs Force Graph Component for Pulley System
+interface AccelerationGraphProps {
+  requiredEffort: number;
+  currentEffortForce: number;
+  loadWeight: number;
+  mechanicalAdvantage: number;
+  maxForce: number;
+  canLift: boolean;
+}
+
+const AccelerationGraph: React.FC<AccelerationGraphProps> = ({
+  requiredEffort,
+  currentEffortForce,
+  loadWeight,
+  mechanicalAdvantage,
+  maxForce,
+  canLift,
+}) => {
+  const graphWidth = 600;
+  const graphHeight = 200;
+  const padding = { top: 30, right: 40, bottom: 50, left: 60 };
+  const plotWidth = graphWidth - padding.left - padding.right;
+  const plotHeight = graphHeight - padding.top - padding.bottom;
+
+  // Assume unit mass for simplicity (loadWeight in "units" acts as mass)
+  // Net force when lifting: (effortForce * MA) - loadWeight
+  // Acceleration a = netForce / mass = ((effort * MA) - load) / load
+  const mass = loadWeight;
+
+  // Calculate max acceleration for scaling (at max effort force)
+  const maxNetForce = (maxForce * mechanicalAdvantage) - loadWeight;
+  const maxAcceleration = Math.max(0, maxNetForce / mass);
+  const yScale = maxAcceleration > 0 ? plotHeight / (maxAcceleration * 1.2) : plotHeight;
+
+  // Current acceleration
+  const currentNetForce = canLift ? (currentEffortForce * mechanicalAdvantage) - loadWeight : 0;
+  const currentAcceleration = canLift ? Math.max(0, currentNetForce / mass) : 0;
+
+  // Generate line path for acceleration curve
+  const generateAccelerationPath = () => {
+    const points: string[] = [];
+    const numPoints = 100;
+
+    for (let i = 0; i <= numPoints; i++) {
+      const effort = (i / numPoints) * maxForce;
+      const x = padding.left + (effort / maxForce) * plotWidth;
+
+      let acceleration = 0;
+      if (effort >= requiredEffort) {
+        const netForce = (effort * mechanicalAdvantage) - loadWeight;
+        acceleration = Math.max(0, netForce / mass);
+      }
+
+      const y = padding.top + plotHeight - (acceleration * yScale);
+      points.push(`${i === 0 ? 'M' : 'L'} ${x},${y}`);
+    }
+
+    return points.join(' ');
+  };
+
+  // X position for threshold line (required effort)
+  const thresholdX = padding.left + (requiredEffort / maxForce) * plotWidth;
+
+  // Current point position
+  const currentX = padding.left + (currentEffortForce / maxForce) * plotWidth;
+  const currentY = padding.top + plotHeight - (currentAcceleration * yScale);
+
+  // Generate Y-axis ticks
+  const yTicks = [];
+  const numYTicks = 5;
+  for (let i = 0; i <= numYTicks; i++) {
+    const value = (maxAcceleration * 1.2 * i) / numYTicks;
+    const y = padding.top + plotHeight - (i / numYTicks) * plotHeight;
+    yTicks.push({ value, y });
+  }
+
+  // Generate X-axis ticks
+  const xTicks = [];
+  const numXTicks = 5;
+  for (let i = 0; i <= numXTicks; i++) {
+    const value = (maxForce * i) / numXTicks;
+    const x = padding.left + (i / numXTicks) * plotWidth;
+    xTicks.push({ value, x });
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${graphWidth} ${graphHeight}`}
+      className="w-full h-auto"
+      style={{ maxHeight: '250px' }}
+    >
+      {/* Background */}
+      <rect x={0} y={0} width={graphWidth} height={graphHeight} fill="transparent" />
+
+      {/* Grid lines */}
+      <g opacity="0.2">
+        {yTicks.map((tick, i) => (
+          <line
+            key={`y-grid-${i}`}
+            x1={padding.left}
+            y1={tick.y}
+            x2={padding.left + plotWidth}
+            y2={tick.y}
+            stroke="#64748B"
+            strokeWidth="1"
+            strokeDasharray="4,4"
+          />
+        ))}
+        {xTicks.map((tick, i) => (
+          <line
+            key={`x-grid-${i}`}
+            x1={tick.x}
+            y1={padding.top}
+            x2={tick.x}
+            y2={padding.top + plotHeight}
+            stroke="#64748B"
+            strokeWidth="1"
+            strokeDasharray="4,4"
+          />
+        ))}
+      </g>
+
+      {/* Axes */}
+      <line
+        x1={padding.left}
+        y1={padding.top}
+        x2={padding.left}
+        y2={padding.top + plotHeight}
+        stroke="#94A3B8"
+        strokeWidth="2"
+      />
+      <line
+        x1={padding.left}
+        y1={padding.top + plotHeight}
+        x2={padding.left + plotWidth}
+        y2={padding.top + plotHeight}
+        stroke="#94A3B8"
+        strokeWidth="2"
+      />
+
+      {/* Y-axis ticks and labels */}
+      {yTicks.map((tick, i) => (
+        <g key={`y-tick-${i}`}>
+          <line
+            x1={padding.left - 5}
+            y1={tick.y}
+            x2={padding.left}
+            y2={tick.y}
+            stroke="#94A3B8"
+            strokeWidth="2"
+          />
+          <text
+            x={padding.left - 10}
+            y={tick.y + 4}
+            textAnchor="end"
+            fontSize="10"
+            fill="#94A3B8"
+            fontFamily="monospace"
+          >
+            {tick.value.toFixed(1)}
+          </text>
+        </g>
+      ))}
+
+      {/* X-axis ticks and labels */}
+      {xTicks.map((tick, i) => (
+        <g key={`x-tick-${i}`}>
+          <line
+            x1={tick.x}
+            y1={padding.top + plotHeight}
+            x2={tick.x}
+            y2={padding.top + plotHeight + 5}
+            stroke="#94A3B8"
+            strokeWidth="2"
+          />
+          <text
+            x={tick.x}
+            y={padding.top + plotHeight + 18}
+            textAnchor="middle"
+            fontSize="10"
+            fill="#94A3B8"
+            fontFamily="monospace"
+          >
+            {tick.value.toFixed(0)}
+          </text>
+        </g>
+      ))}
+
+      {/* Axis labels */}
+      <text
+        x={padding.left + plotWidth / 2}
+        y={graphHeight - 8}
+        textAnchor="middle"
+        fontSize="12"
+        fill="#CBD5E1"
+        fontFamily="monospace"
+      >
+        Effort Force (units)
+      </text>
+      <text
+        x={15}
+        y={padding.top + plotHeight / 2}
+        textAnchor="middle"
+        fontSize="12"
+        fill="#CBD5E1"
+        fontFamily="monospace"
+        transform={`rotate(-90, 15, ${padding.top + plotHeight / 2})`}
+      >
+        Acceleration (units/s²)
+      </text>
+
+      {/* Threshold zone (shaded area where no lift occurs) */}
+      <rect
+        x={padding.left}
+        y={padding.top}
+        width={Math.max(0, thresholdX - padding.left)}
+        height={plotHeight}
+        fill="#EF4444"
+        opacity="0.1"
+      />
+
+      {/* Threshold line */}
+      <line
+        x1={thresholdX}
+        y1={padding.top}
+        x2={thresholdX}
+        y2={padding.top + plotHeight}
+        stroke="#F59E0B"
+        strokeWidth="2"
+        strokeDasharray="6,4"
+      />
+      <text
+        x={thresholdX}
+        y={padding.top - 8}
+        textAnchor="middle"
+        fontSize="10"
+        fill="#F59E0B"
+        fontFamily="monospace"
+        fontWeight="bold"
+      >
+        Min Effort: {requiredEffort.toFixed(1)}
+      </text>
+
+      {/* Acceleration curve */}
+      <path
+        d={generateAccelerationPath()}
+        fill="none"
+        stroke="#10B981"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+
+      {/* Zero acceleration line in threshold zone */}
+      <line
+        x1={padding.left}
+        y1={padding.top + plotHeight}
+        x2={thresholdX}
+        y2={padding.top + plotHeight}
+        stroke="#EF4444"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+
+      {/* Current state indicator */}
+      <g>
+        {/* Vertical line to show current force */}
+        <line
+          x1={currentX}
+          y1={padding.top}
+          x2={currentX}
+          y2={padding.top + plotHeight}
+          stroke="#60A5FA"
+          strokeWidth="1"
+          strokeDasharray="4,4"
+          opacity="0.5"
+        />
+
+        {/* Current point */}
+        <circle
+          cx={currentX}
+          cy={currentY}
+          r={8}
+          fill={canLift ? '#10B981' : '#EF4444'}
+          stroke="white"
+          strokeWidth="2"
+          className="drop-shadow-lg"
+        />
+
+        {/* Current acceleration label */}
+        <g transform={`translate(${Math.min(currentX + 15, graphWidth - 80)}, ${Math.max(currentY - 10, padding.top + 20)})`}>
+          <rect
+            x={-5}
+            y={-12}
+            width={80}
+            height={20}
+            rx={4}
+            fill="rgba(0,0,0,0.7)"
+          />
+          <text
+            fontSize="11"
+            fill={canLift ? '#10B981' : '#EF4444'}
+            fontFamily="monospace"
+            fontWeight="bold"
+          >
+            a = {currentAcceleration.toFixed(2)} u/s²
+          </text>
+        </g>
+      </g>
+
+      {/* Legend */}
+      <g transform={`translate(${padding.left + plotWidth - 160}, ${padding.top + 10})`}>
+        <rect x={-5} y={-5} width={165} height={65} rx={6} fill="rgba(0,0,0,0.5)" />
+        <line x1={0} y1={8} x2={20} y2={8} stroke="#10B981" strokeWidth="3" />
+        <text x={25} y={12} fontSize="10" fill="#94A3B8" fontFamily="monospace">Lifting (a {'>'} 0)</text>
+        <line x1={0} y1={28} x2={20} y2={28} stroke="#EF4444" strokeWidth="3" />
+        <text x={25} y={32} fontSize="10" fill="#94A3B8" fontFamily="monospace">No lift (a = 0)</text>
+        <text x={0} y={52} fontSize="9" fill="#A78BFA" fontFamily="monospace">MA = {mechanicalAdvantage}x</text>
+      </g>
+    </svg>
+  );
+};
+
 const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, className }) => {
   const {
     title,
@@ -1026,6 +1348,28 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
               </div>
             </div>
           )}
+
+          {/* Acceleration vs Force Graph */}
+          <div className="mb-6 bg-slate-800/40 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50">
+            <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              Acceleration vs Effort Force
+            </h4>
+            <p className="text-slate-400 text-sm mb-4">
+              See how adding pulleys changes the force needed to lift. With <span className="text-purple-400">{mechanicalAdvantage}x mechanical advantage</span>,
+              you only need <span className="text-amber-400">{requiredEffort.toFixed(1)} units</span> of effort to lift {loadWeight} units!
+            </p>
+            <AccelerationGraph
+              requiredEffort={requiredEffort}
+              currentEffortForce={effortForce}
+              loadWeight={loadWeight}
+              mechanicalAdvantage={mechanicalAdvantage}
+              maxForce={loadWeight}
+              canLift={canLift}
+            />
+          </div>
 
           {/* Educational Info */}
           <div className="p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">

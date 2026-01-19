@@ -328,6 +328,11 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
     constraints: 'Best for grades K-5. Use for pulleys, mechanical advantage, force reduction, rope systems. Themes adapt complexity: flagpole for K-1 (direction change), well for 1-2 (fixed vs movable), crane/construction for 3-5 (mechanical advantage calculations). Supports exploration (add pulleys) and guided challenges (fixed configurations).'
   },
   {
+    id: 'ramp-lab',
+    description: 'Interactive inclined plane (ramp) simulation for teaching simple machines. Students explore how ramps reduce the force needed to lift objects by trading distance for effort. Adjust angle, friction, and push force to see how steeper ramps require more force. Shows real-world connections: loading docks, wheelchair ramps (ADA), dump trucks, skateboard ramps. Features multiple themes (loading_dock, dump_truck, skateboard, generic) and load types (box, barrel, wheel). Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching inclined planes and force trade-offs.',
+    constraints: 'Best for grades K-5. Use for inclined planes, ramps, force reduction, friction effects. K-1: rolling vs sliding exploration (wheel vs box). 1-2: steeper = harder to push. 2-3: height vs length trade-off. 4-5: mechanical advantage calculations, force decomposition. Themes adapt context: skateboard for fun exploration, loading_dock/dump_truck for real-world applications.'
+  },
+  {
     id: 'foundation-explorer',
     description: 'Objective-driven concept exploration with clear diagrams, definitions, and self-checks. Shows a central diagram with multiple labeled concepts that students explore one at a time. Self-check questions match the learning objective verb (IDENTIFY, EXPLAIN, APPLY). BEST for IDENTIFY objectives where students need to learn foundational vocabulary and recognize key parts/components of a system. Use when introducing 2-4 core concepts that students must master before deeper learning.',
     constraints: 'Best for IDENTIFY and EXPLAIN objectives. Requires 2-4 foundational concepts with clear visual representations. Works across all subjects: science (parts of a cell), engineering (parts of a lever), language arts (parts of a sentence), math (components of an equation). Always connects to a specific learning objective from the curator brief.'
@@ -552,7 +557,7 @@ STRUCTURE:
 - Precalculus (Function Families, Transformations) → 'coordinate-graph'
 - Math Problem-Solving → 'annotated-example' for worked solutions, 'tape-diagram' for word problems
 - Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'
-- Engineering/Simple Machines (K-5) → 'lever-lab' for levers, balance, mechanical advantage; 'pulley-system-builder' for pulleys, lifting, rope systems
+- Engineering/Simple Machines (K-5) → 'lever-lab' for levers, balance, mechanical advantage; 'pulley-system-builder' for pulleys, lifting, rope systems; 'ramp-lab' for inclined planes, ramps, friction, force trade-offs
 - Foundational Concepts (IDENTIFY objectives) → 'foundation-explorer' for introducing key vocabulary, parts, and components across all subjects
 - History/Social Studies → 'comparison-panel', 'generative-table', 'feature-exhibit'
 - Language Arts → 'sentence-analyzer', 'word-builder', 'concept-card-grid'

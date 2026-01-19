@@ -45,6 +45,7 @@ import { generateTwoWayTable } from "./math/gemini-two-way-table";
 // Engineering Primitives
 import { generateLeverLab } from "./engineering/gemini-lever-lab";
 import { generatePulleySystemBuilder } from "./engineering/gemini-pulley-system";
+import { generateRampLab } from "./engineering/gemini-ramp-lab";
 // Foundational Concept Teaching
 import { generateFoundationExplorer } from "./foundation-explorer/gemini-foundation-explorer";
 import { ai } from "./geminiClient";
@@ -2747,6 +2748,9 @@ export const generateComponentContent = async (
     case 'pulley-system-builder':
       return await generatePulleySystemBuilderContent(item, topic, gradeLevelContext);
 
+    case 'ramp-lab':
+      return await generateRampLabContent(item, topic, gradeLevelContext);
+
     // Foundational Concept Teaching
     case 'foundation-explorer':
       return await generateFoundationExplorerContent(item, topic, gradeLevelContext);
@@ -5084,6 +5088,20 @@ const generatePulleySystemBuilderContent = async (item: any, topic: string, grad
 };
 
 /**
+ * Generate Ramp Lab content (Engineering Primitive)
+ */
+const generateRampLabContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateRampLab(topic, gradeContext, config);
+
+  return {
+    type: 'ramp-lab',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Foundation Explorer content
  * Objective-driven concept exploration with diagrams and self-checks
  */
@@ -5653,6 +5671,11 @@ export const buildCompleteExhibitFromManifest = async (
       case 'pulley-system-builder':
         if (!exhibit.pulleySystemBuilders) exhibit.pulleySystemBuilders = [];
         exhibit.pulleySystemBuilders.push(dataWithInstanceId);
+        break;
+
+      case 'ramp-lab':
+        if (!exhibit.rampLabs) exhibit.rampLabs = [];
+        exhibit.rampLabs.push(dataWithInstanceId);
         break;
 
       // Foundational Concept Teaching

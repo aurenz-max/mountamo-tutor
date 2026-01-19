@@ -3,12 +3,13 @@
 import React, { useState } from 'react';
 import LeverLab, { LeverLabData } from '../primitives/visual-primitives/engineering/LeverLab';
 import PulleySystemBuilder, { PulleySystemBuilderData } from '../primitives/visual-primitives/engineering/PulleySystemBuilder';
+import RampLab, { RampLabData } from '../primitives/visual-primitives/engineering/RampLab';
 
 interface EngineeringPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'lever-lab' | 'pulley-system-builder';
+type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterProps> = ({ onBack }) => {
@@ -58,6 +59,24 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
     liftHeight: 0,
   });
 
+  // Ramp Lab State
+  const [rampLabData, setRampLabData] = useState<RampLabData>({
+    title: 'Ramp Challenge',
+    description: 'Explore how ramps make it easier to move heavy objects! Adjust the angle and push force to see how inclined planes work.',
+    rampLength: 10,
+    rampAngle: 30,
+    adjustableAngle: true,
+    loadWeight: 5,
+    loadType: 'box',
+    showMeasurements: true,
+    frictionLevel: 'medium',
+    theme: 'generic',
+    showForceArrows: false,
+    showMA: false,
+    allowPush: true,
+    pushForce: 0,
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string; description: string }> = [
     {
       value: 'lever-lab',
@@ -70,6 +89,12 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
       label: 'Pulley System Builder',
       icon: '🏗️',
       description: 'Interactive pulley system for mechanical advantage'
+    },
+    {
+      value: 'ramp-lab',
+      label: 'Ramp Lab',
+      icon: '📐',
+      description: 'Interactive inclined plane for force trade-offs'
     },
   ];
 
@@ -84,6 +109,9 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
       if (selectedPrimitive === 'pulley-system-builder') {
         action = 'generatePulleySystemBuilder';
         defaultTopic = 'Understanding pulleys and mechanical advantage';
+      } else if (selectedPrimitive === 'ramp-lab') {
+        action = 'generateRampLab';
+        defaultTopic = 'Understanding inclined planes and ramps';
       }
 
       const response = await fetch('/api/lumina', {
@@ -111,6 +139,8 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
         setLeverLabData(generatedData);
       } else if (selectedPrimitive === 'pulley-system-builder') {
         setPulleySystemData(generatedData);
+      } else if (selectedPrimitive === 'ramp-lab') {
+        setRampLabData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -157,6 +187,23 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
         allowAddPulleys: true,
         showMechanicalAdvantage: false,
         liftHeight: 0,
+      });
+    } else if (selectedPrimitive === 'ramp-lab') {
+      setRampLabData({
+        title: 'Ramp Challenge',
+        description: 'Explore how ramps make it easier to move heavy objects! Adjust the angle and push force to see how inclined planes work.',
+        rampLength: 10,
+        rampAngle: 30,
+        adjustableAngle: true,
+        loadWeight: 5,
+        loadType: 'box',
+        showMeasurements: true,
+        frictionLevel: 'medium',
+        theme: 'generic',
+        showForceArrows: false,
+        showMA: false,
+        allowPush: true,
+        pushForce: 0,
       });
     }
   };
@@ -691,6 +738,230 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
               </button>
             </div>
           )}
+
+          {/* Ramp Lab Controls */}
+          {selectedPrimitive === 'ramp-lab' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={rampLabData.title}
+                  onChange={(e) => setRampLabData({ ...rampLabData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <textarea
+                  value={rampLabData.description}
+                  onChange={(e) => setRampLabData({ ...rampLabData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Ramp Angle (°)</label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="60"
+                    value={rampLabData.rampAngle}
+                    onChange={(e) => setRampLabData({ ...rampLabData, rampAngle: parseInt(e.target.value) || 30 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Load Weight</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={rampLabData.loadWeight}
+                    onChange={(e) => setRampLabData({ ...rampLabData, loadWeight: parseInt(e.target.value) || 5 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Load Type</label>
+                <select
+                  value={rampLabData.loadType}
+                  onChange={(e) => setRampLabData({ ...rampLabData, loadType: e.target.value as 'box' | 'barrel' | 'wheel' | 'custom' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="box">Box (slides)</option>
+                  <option value="barrel">Barrel (rolls)</option>
+                  <option value="wheel">Wheel (rolls easily)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Friction Level</label>
+                <select
+                  value={rampLabData.frictionLevel}
+                  onChange={(e) => setRampLabData({ ...rampLabData, frictionLevel: e.target.value as 'none' | 'low' | 'medium' | 'high' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="none">None (ideal)</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Theme</label>
+                <select
+                  value={rampLabData.theme}
+                  onChange={(e) => setRampLabData({ ...rampLabData, theme: e.target.value as 'loading_dock' | 'dump_truck' | 'skateboard' | 'generic' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="skateboard">Skateboard (K-2)</option>
+                  <option value="loading_dock">Loading Dock (2-4)</option>
+                  <option value="dump_truck">Dump Truck (2-4)</option>
+                  <option value="generic">Generic</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rampLabData.adjustableAngle}
+                    onChange={(e) => setRampLabData({ ...rampLabData, adjustableAngle: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Adjustable Angle</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rampLabData.showMeasurements}
+                    onChange={(e) => setRampLabData({ ...rampLabData, showMeasurements: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Measurements</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rampLabData.showForceArrows}
+                    onChange={(e) => setRampLabData({ ...rampLabData, showForceArrows: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Force Arrows</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rampLabData.showMA}
+                    onChange={(e) => setRampLabData({ ...rampLabData, showMA: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Mechanical Advantage</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rampLabData.allowPush}
+                    onChange={(e) => setRampLabData({ ...rampLabData, allowPush: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Allow Push Force</span>
+                </label>
+              </div>
+
+              {/* Preset Scenarios */}
+              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                <label className="block text-sm font-medium text-slate-300 mb-3">Quick Presets</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setRampLabData({
+                      ...rampLabData,
+                      title: 'Rolling Fun!',
+                      rampAngle: 20,
+                      loadType: 'wheel',
+                      frictionLevel: 'none',
+                      theme: 'skateboard',
+                      showMeasurements: false,
+                      showForceArrows: false,
+                      showMA: false,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    K-1: Rolling Play
+                  </button>
+                  <button
+                    onClick={() => setRampLabData({
+                      ...rampLabData,
+                      title: 'Steep vs Gentle',
+                      rampAngle: 35,
+                      loadType: 'box',
+                      frictionLevel: 'medium',
+                      theme: 'skateboard',
+                      showMeasurements: true,
+                      showForceArrows: false,
+                      showMA: false,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 1-2: Angle Comparison
+                  </button>
+                  <button
+                    onClick={() => setRampLabData({
+                      ...rampLabData,
+                      title: 'Loading Dock Design',
+                      rampAngle: 25,
+                      loadType: 'box',
+                      frictionLevel: 'medium',
+                      theme: 'loading_dock',
+                      showMeasurements: true,
+                      showForceArrows: false,
+                      showMA: true,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 2-3: Loading Dock
+                  </button>
+                  <button
+                    onClick={() => setRampLabData({
+                      ...rampLabData,
+                      title: 'Force Analysis Lab',
+                      rampAngle: 30,
+                      loadType: 'box',
+                      frictionLevel: 'medium',
+                      theme: 'generic',
+                      showMeasurements: true,
+                      showForceArrows: true,
+                      showMA: true,
+                      loadWeight: 8,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 4-5: Force Analysis
+                  </button>
+                </div>
+              </div>
+
+              {/* Reset Button */}
+              <button
+                onClick={resetToDefaults}
+                className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all"
+              >
+                Reset to Defaults
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Preview */}
@@ -704,15 +975,18 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
           {selectedPrimitive === 'pulley-system-builder' && (
             <PulleySystemBuilder data={pulleySystemData} />
           )}
+          {selectedPrimitive === 'ramp-lab' && (
+            <RampLab data={rampLabData} />
+          )}
         </div>
       </div>
 
       {/* Educational Info Panel */}
       <div className="max-w-7xl mx-auto mt-8 p-6 bg-gradient-to-br from-orange-900/20 to-red-900/20 rounded-2xl border border-orange-500/30">
         <h3 className="text-xl font-bold text-white mb-4">Engineering Primitives - K-5 STEM Education</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm text-slate-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm text-slate-300">
           <div>
-            <h4 className="font-semibold text-orange-400 mb-2">Lever Lab - Simple Machines</h4>
+            <h4 className="font-semibold text-orange-400 mb-2">Lever Lab</h4>
             <ul className="space-y-1 text-slate-400">
               <li>• <strong>K-1:</strong> Basic balance concepts</li>
               <li>• <strong>Gr 1-2:</strong> Fulcrum position effects</li>
@@ -730,21 +1004,38 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
             </ul>
           </div>
           <div>
+            <h4 className="font-semibold text-blue-400 mb-2">Ramp Lab</h4>
+            <ul className="space-y-1 text-slate-400">
+              <li>• <strong>K-1:</strong> Rolling vs sliding</li>
+              <li>• <strong>Gr 1-2:</strong> Steeper = harder</li>
+              <li>• <strong>Gr 2-3:</strong> Height vs length</li>
+              <li>• <strong>Gr 4-5:</strong> Force calculations</li>
+            </ul>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-slate-300 mt-4">
+          <div>
             <h4 className="font-semibold text-orange-400 mb-2">Lever Real-World</h4>
             <ul className="space-y-1 text-slate-400">
               <li>• Seesaw / Teeter-totter</li>
               <li>• Excavator boom</li>
-              <li>• Crowbar / Pry bar</li>
-              <li>• Wheelbarrow, scissors</li>
+              <li>• Crowbar, wheelbarrow</li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-yellow-400 mb-2">Pulley Real-World</h4>
             <ul className="space-y-1 text-slate-400">
-              <li>• Flagpole</li>
-              <li>• Well bucket</li>
+              <li>• Flagpole, well bucket</li>
               <li>• Construction crane</li>
               <li>• Elevator systems</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold text-blue-400 mb-2">Ramp Real-World</h4>
+            <ul className="space-y-1 text-slate-400">
+              <li>• Loading docks, ADA ramps</li>
+              <li>• Dump trucks, slides</li>
+              <li>• Skateboard ramps</li>
             </ul>
           </div>
         </div>
