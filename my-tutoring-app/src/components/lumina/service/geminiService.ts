@@ -44,6 +44,7 @@ import { generateHistogram } from "./math/gemini-histogram";
 import { generateTwoWayTable } from "./math/gemini-two-way-table";
 // Engineering Primitives
 import { generateLeverLab } from "./engineering/gemini-lever-lab";
+import { generatePulleySystemBuilder } from "./engineering/gemini-pulley-system";
 // Foundational Concept Teaching
 import { generateFoundationExplorer } from "./foundation-explorer/gemini-foundation-explorer";
 import { ai } from "./geminiClient";
@@ -2743,6 +2744,9 @@ export const generateComponentContent = async (
     case 'lever-lab':
       return await generateLeverLabContent(item, topic, gradeLevelContext);
 
+    case 'pulley-system-builder':
+      return await generatePulleySystemBuilderContent(item, topic, gradeLevelContext);
+
     // Foundational Concept Teaching
     case 'foundation-explorer':
       return await generateFoundationExplorerContent(item, topic, gradeLevelContext);
@@ -5066,6 +5070,20 @@ const generateLeverLabContent = async (item: any, topic: string, gradeContext: s
 };
 
 /**
+ * Generate Pulley System Builder content (Engineering Primitive)
+ */
+const generatePulleySystemBuilderContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generatePulleySystemBuilder(topic, gradeContext, config);
+
+  return {
+    type: 'pulley-system-builder',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Foundation Explorer content
  * Objective-driven concept exploration with diagrams and self-checks
  */
@@ -5630,6 +5648,11 @@ export const buildCompleteExhibitFromManifest = async (
       case 'lever-lab':
         if (!exhibit.leverLabs) exhibit.leverLabs = [];
         exhibit.leverLabs.push(dataWithInstanceId);
+        break;
+
+      case 'pulley-system-builder':
+        if (!exhibit.pulleySystemBuilders) exhibit.pulleySystemBuilders = [];
+        exhibit.pulleySystemBuilders.push(dataWithInstanceId);
         break;
 
       // Foundational Concept Teaching

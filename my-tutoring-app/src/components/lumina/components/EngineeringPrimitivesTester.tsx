@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import LeverLab, { LeverLabData } from '../primitives/visual-primitives/engineering/LeverLab';
+import PulleySystemBuilder, { PulleySystemBuilderData } from '../primitives/visual-primitives/engineering/PulleySystemBuilder';
 
 interface EngineeringPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'lever-lab';
+type PrimitiveType = 'lever-lab' | 'pulley-system-builder';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterProps> = ({ onBack }) => {
@@ -40,12 +41,35 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
     maxLoads: 6,
   });
 
+  // Pulley System Builder State
+  const [pulleySystemData, setPulleySystemData] = useState<PulleySystemBuilderData>({
+    title: 'Pulley Lift Challenge',
+    description: 'Build a pulley system to lift the heavy load! Add pulleys and apply force to see how pulleys make lifting easier.',
+    fixedPulleys: [{ id: 'fixed-1', x: 50, y: 15, type: 'fixed', radius: 25 }],
+    movablePulleys: [],
+    loadWeight: 10,
+    ropeConfiguration: [],
+    showForceLabels: true,
+    showRopeSegments: true,
+    maxPulleys: 4,
+    theme: 'crane',
+    allowAddPulleys: true,
+    showMechanicalAdvantage: false,
+    liftHeight: 0,
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string; description: string }> = [
     {
       value: 'lever-lab',
       label: 'Lever Lab',
       icon: '⚖️',
       description: 'Interactive lever/fulcrum system for simple machines'
+    },
+    {
+      value: 'pulley-system-builder',
+      label: 'Pulley System Builder',
+      icon: '🏗️',
+      description: 'Interactive pulley system for mechanical advantage'
     },
   ];
 
@@ -54,9 +78,13 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
     setError(null);
 
     try {
-      const action = 'generateLeverLab';
+      let action = 'generateLeverLab';
+      let defaultTopic = 'Understanding levers and balance';
 
-      const defaultTopic = 'Understanding levers and balance';
+      if (selectedPrimitive === 'pulley-system-builder') {
+        action = 'generatePulleySystemBuilder';
+        defaultTopic = 'Understanding pulleys and mechanical advantage';
+      }
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -81,6 +109,8 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
 
       if (selectedPrimitive === 'lever-lab') {
         setLeverLabData(generatedData);
+      } else if (selectedPrimitive === 'pulley-system-builder') {
+        setPulleySystemData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -111,6 +141,22 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
         showTorque: false,
         allowAddLoads: true,
         maxLoads: 6,
+      });
+    } else if (selectedPrimitive === 'pulley-system-builder') {
+      setPulleySystemData({
+        title: 'Pulley Lift Challenge',
+        description: 'Build a pulley system to lift the heavy load! Add pulleys and apply force to see how pulleys make lifting easier.',
+        fixedPulleys: [{ id: 'fixed-1', x: 50, y: 15, type: 'fixed', radius: 25 }],
+        movablePulleys: [],
+        loadWeight: 10,
+        ropeConfiguration: [],
+        showForceLabels: true,
+        showRopeSegments: true,
+        maxPulleys: 4,
+        theme: 'crane',
+        allowAddPulleys: true,
+        showMechanicalAdvantage: false,
+        liftHeight: 0,
       });
     }
   };
@@ -458,6 +504,193 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
               </button>
             </div>
           )}
+
+          {/* Pulley System Builder Controls */}
+          {selectedPrimitive === 'pulley-system-builder' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={pulleySystemData.title}
+                  onChange={(e) => setPulleySystemData({ ...pulleySystemData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <textarea
+                  value={pulleySystemData.description}
+                  onChange={(e) => setPulleySystemData({ ...pulleySystemData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Load Weight</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={pulleySystemData.loadWeight}
+                    onChange={(e) => setPulleySystemData({ ...pulleySystemData, loadWeight: parseInt(e.target.value) || 10 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Max Pulleys</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="6"
+                    value={pulleySystemData.maxPulleys}
+                    onChange={(e) => setPulleySystemData({ ...pulleySystemData, maxPulleys: parseInt(e.target.value) || 4 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Theme</label>
+                <select
+                  value={pulleySystemData.theme}
+                  onChange={(e) => setPulleySystemData({ ...pulleySystemData, theme: e.target.value as 'crane' | 'flagpole' | 'well' | 'construction' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
+                >
+                  <option value="flagpole">Flagpole (K-1)</option>
+                  <option value="well">Well (1-2)</option>
+                  <option value="crane">Crane (3-5)</option>
+                  <option value="construction">Construction (3-5)</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={pulleySystemData.showForceLabels}
+                    onChange={(e) => setPulleySystemData({ ...pulleySystemData, showForceLabels: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-yellow-500 focus:ring-yellow-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Force Labels</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={pulleySystemData.showRopeSegments}
+                    onChange={(e) => setPulleySystemData({ ...pulleySystemData, showRopeSegments: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-yellow-500 focus:ring-yellow-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Rope Segments</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={pulleySystemData.showMechanicalAdvantage}
+                    onChange={(e) => setPulleySystemData({ ...pulleySystemData, showMechanicalAdvantage: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-yellow-500 focus:ring-yellow-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Mechanical Advantage</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={pulleySystemData.allowAddPulleys}
+                    onChange={(e) => setPulleySystemData({ ...pulleySystemData, allowAddPulleys: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-yellow-500 focus:ring-yellow-500"
+                  />
+                  <span className="text-sm text-slate-300">Allow Adding Pulleys</span>
+                </label>
+              </div>
+
+              {/* Preset Scenarios */}
+              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                <label className="block text-sm font-medium text-slate-300 mb-3">Quick Presets</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPulleySystemData({
+                      ...pulleySystemData,
+                      title: 'Raise the Flag!',
+                      fixedPulleys: [{ id: 'fixed-1', x: 50, y: 10, type: 'fixed', radius: 25 }],
+                      movablePulleys: [],
+                      loadWeight: 5,
+                      theme: 'flagpole',
+                      showForceLabels: false,
+                      showRopeSegments: false,
+                      showMechanicalAdvantage: false,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    K-1: Flagpole
+                  </button>
+                  <button
+                    onClick={() => setPulleySystemData({
+                      ...pulleySystemData,
+                      title: 'Draw Water from the Well',
+                      fixedPulleys: [{ id: 'fixed-1', x: 50, y: 10, type: 'fixed', radius: 25 }],
+                      movablePulleys: [{ id: 'movable-1', x: 50, y: 50, type: 'movable', radius: 25 }],
+                      loadWeight: 8,
+                      theme: 'well',
+                      showForceLabels: true,
+                      showRopeSegments: false,
+                      showMechanicalAdvantage: false,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 1-2: Well Bucket
+                  </button>
+                  <button
+                    onClick={() => setPulleySystemData({
+                      ...pulleySystemData,
+                      title: 'Crane Lift Challenge',
+                      fixedPulleys: [{ id: 'fixed-1', x: 40, y: 10, type: 'fixed', radius: 25 }, { id: 'fixed-2', x: 60, y: 10, type: 'fixed', radius: 25 }],
+                      movablePulleys: [{ id: 'movable-1', x: 50, y: 45, type: 'movable', radius: 25 }],
+                      loadWeight: 12,
+                      theme: 'crane',
+                      showForceLabels: true,
+                      showRopeSegments: true,
+                      showMechanicalAdvantage: true,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 2-3: Block & Tackle
+                  </button>
+                  <button
+                    onClick={() => setPulleySystemData({
+                      ...pulleySystemData,
+                      title: 'Construction Hoist Design',
+                      fixedPulleys: [{ id: 'fixed-1', x: 30, y: 10, type: 'fixed', radius: 25 }, { id: 'fixed-2', x: 70, y: 10, type: 'fixed', radius: 25 }],
+                      movablePulleys: [{ id: 'movable-1', x: 40, y: 40, type: 'movable', radius: 25 }, { id: 'movable-2', x: 60, y: 55, type: 'movable', radius: 25 }],
+                      loadWeight: 20,
+                      theme: 'construction',
+                      showForceLabels: true,
+                      showRopeSegments: true,
+                      showMechanicalAdvantage: true,
+                      allowAddPulleys: true,
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 4-5: MA Challenge
+                  </button>
+                </div>
+              </div>
+
+              {/* Reset Button */}
+              <button
+                onClick={resetToDefaults}
+                className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all"
+              >
+                Reset to Defaults
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Preview */}
@@ -468,29 +701,50 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
           {selectedPrimitive === 'lever-lab' && (
             <LeverLab data={leverLabData} />
           )}
+          {selectedPrimitive === 'pulley-system-builder' && (
+            <PulleySystemBuilder data={pulleySystemData} />
+          )}
         </div>
       </div>
 
       {/* Educational Info Panel */}
       <div className="max-w-7xl mx-auto mt-8 p-6 bg-gradient-to-br from-orange-900/20 to-red-900/20 rounded-2xl border border-orange-500/30">
         <h3 className="text-xl font-bold text-white mb-4">Engineering Primitives - K-5 STEM Education</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm text-slate-300">
           <div>
             <h4 className="font-semibold text-orange-400 mb-2">Lever Lab - Simple Machines</h4>
             <ul className="space-y-1 text-slate-400">
-              <li>• <strong>K-1:</strong> Basic balance concepts ("same on both sides")</li>
-              <li>• <strong>Gr 1-2:</strong> Fulcrum position affects balance</li>
-              <li>• <strong>Gr 2-3:</strong> Distance matters as much as weight</li>
-              <li>• <strong>Gr 4-5:</strong> Mechanical advantage calculations</li>
+              <li>• <strong>K-1:</strong> Basic balance concepts</li>
+              <li>• <strong>Gr 1-2:</strong> Fulcrum position effects</li>
+              <li>• <strong>Gr 2-3:</strong> Distance vs weight</li>
+              <li>• <strong>Gr 4-5:</strong> MA calculations</li>
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold text-orange-400 mb-2">Real-World Connections</h4>
+            <h4 className="font-semibold text-yellow-400 mb-2">Pulley System Builder</h4>
             <ul className="space-y-1 text-slate-400">
-              <li>• Seesaw / Teeter-totter (playground)</li>
-              <li>• Excavator boom (construction)</li>
-              <li>• Crowbar / Pry bar (tools)</li>
-              <li>• Wheelbarrow, scissors, bottle opener</li>
+              <li>• <strong>K-1:</strong> Ropes and lifting</li>
+              <li>• <strong>Gr 1-2:</strong> Direction change</li>
+              <li>• <strong>Gr 2-3:</strong> Effort reduction</li>
+              <li>• <strong>Gr 4-5:</strong> Rope segment counting</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold text-orange-400 mb-2">Lever Real-World</h4>
+            <ul className="space-y-1 text-slate-400">
+              <li>• Seesaw / Teeter-totter</li>
+              <li>• Excavator boom</li>
+              <li>• Crowbar / Pry bar</li>
+              <li>• Wheelbarrow, scissors</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold text-yellow-400 mb-2">Pulley Real-World</h4>
+            <ul className="space-y-1 text-slate-400">
+              <li>• Flagpole</li>
+              <li>• Well bucket</li>
+              <li>• Construction crane</li>
+              <li>• Elevator systems</li>
             </ul>
           </div>
         </div>

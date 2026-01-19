@@ -41,6 +41,7 @@ import { generateHistogram } from '@/components/lumina/service/math/gemini-histo
 import { generateTwoWayTable } from '@/components/lumina/service/math/gemini-two-way-table';
 // Engineering Primitives
 import { generateLeverLab } from '@/components/lumina/service/engineering/gemini-lever-lab';
+import { generatePulleySystemBuilder } from '@/components/lumina/service/engineering/gemini-pulley-system';
 // Foundational Concept Teaching
 import { generateFoundationExplorer } from '@/components/lumina/service/foundation-explorer/gemini-foundation-explorer';
 import { analyzeScratchPad, getScratchPadHint, generatePracticeProblem } from '@/components/lumina/service/scratch-pad/gemini-scratch-pad';
@@ -378,6 +379,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(leverLab);
+
+      case 'generatePulleySystemBuilder':
+        const pulleySystem = await generatePulleySystemBuilder(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(pulleySystem);
 
       case 'generateFoundationExplorer':
         const foundationExplorer = await generateFoundationExplorer(

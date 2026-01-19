@@ -28,6 +28,7 @@ import { ManifestOrderRenderer } from './components/ManifestOrderRenderer';
 import { KnowledgeCheckTester } from './components/KnowledgeCheckTester';
 import { MediaPlayerTester } from './components/MediaPlayerTester';
 import { MathPrimitivesTester } from './components/MathPrimitivesTester';
+import { EngineeringPrimitivesTester } from './components/EngineeringPrimitivesTester';
 import { PracticeMode } from './components/PracticeModeEnhanced';
 import { SpotlightCard } from './components/SpotlightCard';
 import { ExhibitProvider } from './contexts/ExhibitContext';
@@ -78,6 +79,9 @@ export default function App() {
 
   // Math Primitives Testing State
   const [showMathPrimitivesTester, setShowMathPrimitivesTester] = useState(false);
+
+  // Engineering Primitives Testing State
+  const [showEngineeringPrimitivesTester, setShowEngineeringPrimitivesTester] = useState(false);
 
   // Practice Mode State
   const [showPracticeMode, setShowPracticeMode] = useState(false);
@@ -463,6 +467,11 @@ export default function App() {
                    ← Exit Tester
                 </button>
             )}
+            {showEngineeringPrimitivesTester && (
+                <button onClick={() => setShowEngineeringPrimitivesTester(false)} className="hover:text-white transition-colors">
+                   ← Exit Tester
+                </button>
+            )}
             {showPracticeMode && (
                 <button onClick={() => setShowPracticeMode(false)} className="hover:text-white transition-colors">
                    ← Exit Practice
@@ -479,7 +488,7 @@ export default function App() {
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showPracticeMode && !showScratchPad && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showPracticeMode && !showScratchPad && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -696,6 +705,30 @@ export default function App() {
                           </svg>
                         </div>
                       </SpotlightCard>
+
+                      {/* Engineering Primitives Tester */}
+                      <SpotlightCard
+                        color="249, 115, 22"
+                        onClick={() => setShowEngineeringPrimitivesTester(true)}
+                        className="bg-gradient-to-br from-orange-900/20 to-red-900/20"
+                      >
+                        <div className="p-6 flex items-start gap-4">
+                          <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <span className="text-2xl">⚙️</span>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-orange-200 transition-colors">
+                              Engineering Primitives Tester
+                            </h3>
+                            <p className="text-slate-400 text-xs leading-relaxed">
+                              Test lever labs, pulley systems, and other simple machine components
+                            </p>
+                          </div>
+                          <svg className="w-5 h-5 text-slate-600 group-hover:text-orange-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                          </svg>
+                        </div>
+                      </SpotlightCard>
                     </div>
                   </div>
                 </div>
@@ -739,6 +772,13 @@ export default function App() {
         {gameState === GameState.IDLE && showMathPrimitivesTester && (
           <div className="flex-1 animate-fade-in">
             <MathPrimitivesTester onBack={() => setShowMathPrimitivesTester(false)} />
+          </div>
+        )}
+
+        {/* ENGINEERING PRIMITIVES TESTER STATE */}
+        {gameState === GameState.IDLE && showEngineeringPrimitivesTester && (
+          <div className="flex-1 animate-fade-in">
+            <EngineeringPrimitivesTester onBack={() => setShowEngineeringPrimitivesTester(false)} />
           </div>
         )}
 

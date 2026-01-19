@@ -25,6 +25,7 @@ import type { TwoWayTableData } from './primitives/visual-primitives/math/TwoWay
 
 // Import engineering primitive data types
 import type { LeverLabData } from './primitives/visual-primitives/engineering/LeverLab';
+import type { PulleySystemBuilderData } from './primitives/visual-primitives/engineering/PulleySystemBuilder';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -994,6 +995,7 @@ export interface ExhibitData {
   twoWayTables?: TwoWayTableData[];
   // Engineering Primitives
   leverLabs?: LeverLabData[];
+  pulleySystemBuilders?: PulleySystemBuilderData[];
   // Foundational Concept Teaching
   foundationExplorers?: FoundationExplorerData[];
   knowledgeCheck: KnowledgeCheckData;
@@ -1104,6 +1106,7 @@ export type ComponentId =
 
   // Engineering Primitives (K-5 STEM)
   | 'lever-lab'          // Interactive lever/fulcrum system for simple machines education
+  | 'pulley-system-builder' // Interactive pulley system for teaching mechanical advantage
 
   // Foundational Concept Teaching
   | 'foundation-explorer'; // Objective-driven concept exploration with diagrams and self-checks

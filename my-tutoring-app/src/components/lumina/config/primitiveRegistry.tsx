@@ -46,6 +46,7 @@ import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
 // Engineering Primitives
 import LeverLab from '../primitives/visual-primitives/engineering/LeverLab';
+import PulleySystemBuilder from '../primitives/visual-primitives/engineering/PulleySystemBuilder';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -492,6 +493,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'lever-lab': {
     component: LeverLab,
     sectionTitle: 'Lever Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'pulley-system-builder': {
+    component: PulleySystemBuilder,
+    sectionTitle: 'Pulley System Lab',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
