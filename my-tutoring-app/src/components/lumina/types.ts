@@ -27,6 +27,7 @@ import type { TwoWayTableData } from './primitives/visual-primitives/math/TwoWay
 import type { LeverLabData } from './primitives/visual-primitives/engineering/LeverLab';
 import type { PulleySystemBuilderData } from './primitives/visual-primitives/engineering/PulleySystemBuilder';
 import type { RampLabData } from './primitives/visual-primitives/engineering/RampLab';
+import type { WheelAxleExplorerData } from './primitives/visual-primitives/engineering/WheelAxleExplorer';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -998,6 +999,7 @@ export interface ExhibitData {
   leverLabs?: LeverLabData[];
   pulleySystemBuilders?: PulleySystemBuilderData[];
   rampLabs?: RampLabData[];
+  wheelAxleExplorers?: WheelAxleExplorerData[];
   // Foundational Concept Teaching
   foundationExplorers?: FoundationExplorerData[];
   knowledgeCheck: KnowledgeCheckData;
@@ -1110,6 +1112,7 @@ export type ComponentId =
   | 'lever-lab'          // Interactive lever/fulcrum system for simple machines education
   | 'pulley-system-builder' // Interactive pulley system for teaching mechanical advantage
   | 'ramp-lab'           // Interactive inclined plane/ramp for teaching simple machines
+  | 'wheel-axle-explorer' // Interactive wheel and axle for force multiplication and simple machines
 
   // Foundational Concept Teaching
   | 'foundation-explorer'; // Objective-driven concept exploration with diagrams and self-checks

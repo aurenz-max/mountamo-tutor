@@ -4,12 +4,13 @@ import React, { useState } from 'react';
 import LeverLab, { LeverLabData } from '../primitives/visual-primitives/engineering/LeverLab';
 import PulleySystemBuilder, { PulleySystemBuilderData } from '../primitives/visual-primitives/engineering/PulleySystemBuilder';
 import RampLab, { RampLabData } from '../primitives/visual-primitives/engineering/RampLab';
+import WheelAxleExplorer, { WheelAxleExplorerData } from '../primitives/visual-primitives/engineering/WheelAxleExplorer';
 
 interface EngineeringPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab';
+type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterProps> = ({ onBack }) => {
@@ -77,6 +78,23 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
     pushForce: 0,
   });
 
+  // Wheel & Axle Explorer State
+  const [wheelAxleData, setWheelAxleData] = useState<WheelAxleExplorerData>({
+    title: 'Wheel & Axle Discovery',
+    description: 'Explore how wheels and axles multiply force! Turn the wheel and see how it moves the axle.',
+    wheelDiameter: 8,
+    axleDiameter: 2,
+    adjustable: true,
+    attachedLoad: 0,
+    showRatio: true,
+    showForce: false,
+    rotationInput: 'drag',
+    theme: 'winch',
+    showMechanicalAdvantage: false,
+    showRotationCount: true,
+    targetRotations: 0,
+  });
+
   const primitiveOptions: Array<{ value: PrimitiveType; label: string; icon: string; description: string }> = [
     {
       value: 'lever-lab',
@@ -96,6 +114,12 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
       icon: '📐',
       description: 'Interactive inclined plane for force trade-offs'
     },
+    {
+      value: 'wheel-axle-explorer',
+      label: 'Wheel & Axle Explorer',
+      icon: '⚙️',
+      description: 'Interactive wheel and axle for force multiplication'
+    },
   ];
 
   const handleGenerate = async () => {
@@ -112,6 +136,9 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
       } else if (selectedPrimitive === 'ramp-lab') {
         action = 'generateRampLab';
         defaultTopic = 'Understanding inclined planes and ramps';
+      } else if (selectedPrimitive === 'wheel-axle-explorer') {
+        action = 'generateWheelAxleExplorer';
+        defaultTopic = 'Understanding wheel and axle machines';
       }
 
       const response = await fetch('/api/lumina', {
@@ -141,6 +168,8 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
         setPulleySystemData(generatedData);
       } else if (selectedPrimitive === 'ramp-lab') {
         setRampLabData(generatedData);
+      } else if (selectedPrimitive === 'wheel-axle-explorer') {
+        setWheelAxleData(generatedData);
       }
     } catch (err) {
       console.error('Generation error:', err);
@@ -204,6 +233,22 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
         showMA: false,
         allowPush: true,
         pushForce: 0,
+      });
+    } else if (selectedPrimitive === 'wheel-axle-explorer') {
+      setWheelAxleData({
+        title: 'Wheel & Axle Discovery',
+        description: 'Explore how wheels and axles multiply force! Turn the wheel and see how it moves the axle.',
+        wheelDiameter: 8,
+        axleDiameter: 2,
+        adjustable: true,
+        attachedLoad: 0,
+        showRatio: true,
+        showForce: false,
+        rotationInput: 'drag',
+        theme: 'winch',
+        showMechanicalAdvantage: false,
+        showRotationCount: true,
+        targetRotations: 0,
       });
     }
   };
@@ -949,6 +994,232 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
                     className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
                   >
                     Gr 4-5: Force Analysis
+                  </button>
+                </div>
+              </div>
+
+              {/* Reset Button */}
+              <button
+                onClick={resetToDefaults}
+                className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all"
+              >
+                Reset to Defaults
+              </button>
+            </div>
+          )}
+
+          {/* Wheel & Axle Explorer Controls */}
+          {selectedPrimitive === 'wheel-axle-explorer' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={wheelAxleData.title}
+                  onChange={(e) => setWheelAxleData({ ...wheelAxleData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <textarea
+                  value={wheelAxleData.description}
+                  onChange={(e) => setWheelAxleData({ ...wheelAxleData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Wheel Diameter</label>
+                  <input
+                    type="number"
+                    min="4"
+                    max="12"
+                    value={wheelAxleData.wheelDiameter}
+                    onChange={(e) => setWheelAxleData({ ...wheelAxleData, wheelDiameter: parseInt(e.target.value) || 8 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Axle Diameter</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="6"
+                    step="0.5"
+                    value={wheelAxleData.axleDiameter}
+                    onChange={(e) => setWheelAxleData({ ...wheelAxleData, axleDiameter: parseFloat(e.target.value) || 2 })}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Attached Load (0 = no load)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={wheelAxleData.attachedLoad}
+                  onChange={(e) => setWheelAxleData({ ...wheelAxleData, attachedLoad: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Rotation Input</label>
+                <select
+                  value={wheelAxleData.rotationInput}
+                  onChange={(e) => setWheelAxleData({ ...wheelAxleData, rotationInput: e.target.value as 'drag' | 'buttons' | 'slider' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="drag">Drag (hands-on)</option>
+                  <option value="buttons">Buttons (step control)</option>
+                  <option value="slider">Slider (precise)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Theme</label>
+                <select
+                  value={wheelAxleData.theme}
+                  onChange={(e) => setWheelAxleData({ ...wheelAxleData, theme: e.target.value as 'steering_wheel' | 'winch' | 'doorknob' | 'well_crank' })}
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="doorknob">Doorknob (K-1)</option>
+                  <option value="well_crank">Well Crank (1-2)</option>
+                  <option value="winch">Winch (2-4)</option>
+                  <option value="steering_wheel">Steering Wheel (3-5)</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={wheelAxleData.adjustable}
+                    onChange={(e) => setWheelAxleData({ ...wheelAxleData, adjustable: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Adjustable Sizes</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={wheelAxleData.showRatio}
+                    onChange={(e) => setWheelAxleData({ ...wheelAxleData, showRatio: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Ratio</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={wheelAxleData.showForce}
+                    onChange={(e) => setWheelAxleData({ ...wheelAxleData, showForce: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Force Values</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={wheelAxleData.showMechanicalAdvantage}
+                    onChange={(e) => setWheelAxleData({ ...wheelAxleData, showMechanicalAdvantage: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Mechanical Advantage</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={wheelAxleData.showRotationCount}
+                    onChange={(e) => setWheelAxleData({ ...wheelAxleData, showRotationCount: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-300">Show Rotation Count</span>
+                </label>
+              </div>
+
+              {/* Preset Scenarios */}
+              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                <label className="block text-sm font-medium text-slate-300 mb-3">Quick Presets</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setWheelAxleData({
+                      ...wheelAxleData,
+                      title: 'Doorknob Discovery',
+                      wheelDiameter: 6,
+                      axleDiameter: 1.5,
+                      attachedLoad: 0,
+                      theme: 'doorknob',
+                      showRatio: false,
+                      showForce: false,
+                      showMechanicalAdvantage: false,
+                      rotationInput: 'drag',
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    K-1: Doorknob Play
+                  </button>
+                  <button
+                    onClick={() => setWheelAxleData({
+                      ...wheelAxleData,
+                      title: 'Well Crank Challenge',
+                      wheelDiameter: 8,
+                      axleDiameter: 2,
+                      attachedLoad: 3,
+                      theme: 'well_crank',
+                      showRatio: true,
+                      showForce: false,
+                      showMechanicalAdvantage: false,
+                      rotationInput: 'drag',
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 1-2: Well Crank
+                  </button>
+                  <button
+                    onClick={() => setWheelAxleData({
+                      ...wheelAxleData,
+                      title: 'Winch Lifting',
+                      wheelDiameter: 10,
+                      axleDiameter: 2,
+                      attachedLoad: 6,
+                      theme: 'winch',
+                      showRatio: true,
+                      showForce: false,
+                      showMechanicalAdvantage: false,
+                      rotationInput: 'buttons',
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 2-3: Winch Lifting
+                  </button>
+                  <button
+                    onClick={() => setWheelAxleData({
+                      ...wheelAxleData,
+                      title: 'Gear Ratio Lab',
+                      wheelDiameter: 12,
+                      axleDiameter: 3,
+                      attachedLoad: 8,
+                      theme: 'steering_wheel',
+                      showRatio: true,
+                      showForce: true,
+                      showMechanicalAdvantage: true,
+                      rotationInput: 'slider',
+                    })}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-all"
+                  >
+                    Gr 4-5: Gear Ratio
                   </button>
                 </div>
               </div>

@@ -46,6 +46,7 @@ import { generateTwoWayTable } from "./math/gemini-two-way-table";
 import { generateLeverLab } from "./engineering/gemini-lever-lab";
 import { generatePulleySystemBuilder } from "./engineering/gemini-pulley-system";
 import { generateRampLab } from "./engineering/gemini-ramp-lab";
+import { generateWheelAxleExplorer } from "./engineering/gemini-wheel-axle";
 // Foundational Concept Teaching
 import { generateFoundationExplorer } from "./foundation-explorer/gemini-foundation-explorer";
 import { ai } from "./geminiClient";
@@ -2751,6 +2752,9 @@ export const generateComponentContent = async (
     case 'ramp-lab':
       return await generateRampLabContent(item, topic, gradeLevelContext);
 
+    case 'wheel-axle-explorer':
+      return await generateWheelAxleExplorerContent(item, topic, gradeLevelContext);
+
     // Foundational Concept Teaching
     case 'foundation-explorer':
       return await generateFoundationExplorerContent(item, topic, gradeLevelContext);
@@ -5102,6 +5106,20 @@ const generateRampLabContent = async (item: any, topic: string, gradeContext: st
 };
 
 /**
+ * Generate Wheel & Axle Explorer content (Engineering Primitive)
+ */
+const generateWheelAxleExplorerContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+  const data = await generateWheelAxleExplorer(topic, gradeContext, config);
+
+  return {
+    type: 'wheel-axle-explorer',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Foundation Explorer content
  * Objective-driven concept exploration with diagrams and self-checks
  */
@@ -5676,6 +5694,11 @@ export const buildCompleteExhibitFromManifest = async (
       case 'ramp-lab':
         if (!exhibit.rampLabs) exhibit.rampLabs = [];
         exhibit.rampLabs.push(dataWithInstanceId);
+        break;
+
+      case 'wheel-axle-explorer':
+        if (!exhibit.wheelAxleExplorers) exhibit.wheelAxleExplorers = [];
+        exhibit.wheelAxleExplorers.push(dataWithInstanceId);
         break;
 
       // Foundational Concept Teaching

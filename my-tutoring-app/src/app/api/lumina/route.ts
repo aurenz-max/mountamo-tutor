@@ -43,6 +43,7 @@ import { generateTwoWayTable } from '@/components/lumina/service/math/gemini-two
 import { generateLeverLab } from '@/components/lumina/service/engineering/gemini-lever-lab';
 import { generatePulleySystemBuilder } from '@/components/lumina/service/engineering/gemini-pulley-system';
 import { generateRampLab } from '@/components/lumina/service/engineering/gemini-ramp-lab';
+import { generateWheelAxleExplorer } from '@/components/lumina/service/engineering/gemini-wheel-axle';
 // Foundational Concept Teaching
 import { generateFoundationExplorer } from '@/components/lumina/service/foundation-explorer/gemini-foundation-explorer';
 import { analyzeScratchPad, getScratchPadHint, generatePracticeProblem } from '@/components/lumina/service/scratch-pad/gemini-scratch-pad';
@@ -396,6 +397,14 @@ export async function POST(request: NextRequest) {
           params.config
         );
         return NextResponse.json(rampLab);
+
+      case 'generateWheelAxleExplorer':
+        const wheelAxle = await generateWheelAxleExplorer(
+          params.topic,
+          params.gradeLevel,
+          params.config
+        );
+        return NextResponse.json(wheelAxle);
 
       case 'generateFoundationExplorer':
         const foundationExplorer = await generateFoundationExplorer(

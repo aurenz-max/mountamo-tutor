@@ -48,6 +48,7 @@ import ImageComparison from '../primitives/ImageComparison';
 import LeverLab from '../primitives/visual-primitives/engineering/LeverLab';
 import PulleySystemBuilder from '../primitives/visual-primitives/engineering/PulleySystemBuilder';
 import RampLab from '../primitives/visual-primitives/engineering/RampLab';
+import WheelAxleExplorer from '../primitives/visual-primitives/engineering/WheelAxleExplorer';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -512,6 +513,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'ramp-lab': {
     component: RampLab,
     sectionTitle: 'Ramp Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'wheel-axle-explorer': {
+    component: WheelAxleExplorer,
+    sectionTitle: 'Wheel & Axle Explorer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
