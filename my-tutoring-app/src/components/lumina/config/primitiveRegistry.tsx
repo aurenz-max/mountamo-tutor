@@ -46,6 +46,8 @@ import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
 // Engineering Primitives
 import LeverLab from '../primitives/visual-primitives/engineering/LeverLab';
+// Foundational Concept Teaching
+import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
 
 /**
@@ -490,6 +492,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'lever-lab': {
     component: LeverLab,
     sectionTitle: 'Lever Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  // Foundational Concept Teaching
+  'foundation-explorer': {
+    component: FoundationExplorer,
+    sectionTitle: 'Foundational Concepts',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

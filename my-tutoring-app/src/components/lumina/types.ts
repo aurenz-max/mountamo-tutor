@@ -51,6 +51,52 @@ export interface ConceptCardData {
   themeColor: string;
 }
 
+// --- FOUNDATION EXPLORER (Objective-Driven Concept Teaching) ---
+
+export interface FoundationConcept {
+  id: string;
+  name: string;                 // "Fulcrum"
+  briefDefinition: string;      // One sentence max
+
+  // Where to find it in the diagram
+  diagramHighlight: string;     // "center triangle marker"
+
+  // Contextual understanding
+  inContext: {
+    scenario: string;           // "On a seesaw at the playground..."
+    whereToFind: string;        // "The fulcrum is the center post"
+  };
+
+  // Self-check (verb-appropriate)
+  selfCheck: {
+    prompt: string;             // "Can you point to the fulcrum?"
+    hint: string;               // "Look for the triangle in the middle"
+  };
+
+  // Visual identity
+  color: string;                // Accent color for this concept
+}
+
+export interface FoundationExplorerData {
+  // What objective this serves
+  objectiveId: string;
+  objectiveText: string;
+  objectiveVerb: 'identify' | 'explain' | 'apply' | 'analyze' | 'compare';
+
+  // The central diagram
+  diagram: {
+    description: string;        // "A simple lever with all three parts labeled"
+    imagePrompt: string;        // For AI image generation
+    style: 'schematic' | 'realistic' | 'animated';
+  };
+
+  // The foundational concepts (2-4)
+  concepts: FoundationConcept[];
+
+  // Theme
+  themeColor: string;
+}
+
 // --- SPECIALIZED MODULES ---
 
 // Step 1: Exhibit Intents (lightweight requests)
@@ -948,6 +994,8 @@ export interface ExhibitData {
   twoWayTables?: TwoWayTableData[];
   // Engineering Primitives
   leverLabs?: LeverLabData[];
+  // Foundational Concept Teaching
+  foundationExplorers?: FoundationExplorerData[];
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
@@ -1055,7 +1103,10 @@ export type ComponentId =
   | 'image-comparison'   // Before/After image slider for visual transformations
 
   // Engineering Primitives (K-5 STEM)
-  | 'lever-lab';         // Interactive lever/fulcrum system for simple machines education
+  | 'lever-lab'          // Interactive lever/fulcrum system for simple machines education
+
+  // Foundational Concept Teaching
+  | 'foundation-explorer'; // Objective-driven concept exploration with diagrams and self-checks
 
 export interface ComponentDefinition {
   id: ComponentId;

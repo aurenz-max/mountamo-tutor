@@ -44,6 +44,8 @@ import { generateHistogram } from "./math/gemini-histogram";
 import { generateTwoWayTable } from "./math/gemini-two-way-table";
 // Engineering Primitives
 import { generateLeverLab } from "./engineering/gemini-lever-lab";
+// Foundational Concept Teaching
+import { generateFoundationExplorer } from "./foundation-explorer/gemini-foundation-explorer";
 import { ai } from "./geminiClient";
 
 // --- HELPER FUNCTIONS ---
@@ -2741,6 +2743,10 @@ export const generateComponentContent = async (
     case 'lever-lab':
       return await generateLeverLabContent(item, topic, gradeLevelContext);
 
+    // Foundational Concept Teaching
+    case 'foundation-explorer':
+      return await generateFoundationExplorerContent(item, topic, gradeLevelContext);
+
     default:
       console.warn(`Unknown component type: ${item.componentId}`);
       return null;
@@ -5060,6 +5066,30 @@ const generateLeverLabContent = async (item: any, topic: string, gradeContext: s
 };
 
 /**
+ * Generate Foundation Explorer content
+ * Objective-driven concept exploration with diagrams and self-checks
+ */
+const generateFoundationExplorerContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
+  const config = item.config || {};
+
+  // Pass objective context from manifest to the generator
+  const generatorConfig = {
+    objectiveId: config.objectiveId,
+    objectiveText: config.objectiveText,
+    objectiveVerb: config.objectiveVerb,
+    conceptCount: config.conceptCount || 3
+  };
+
+  const data = await generateFoundationExplorer(topic, gradeContext, generatorConfig);
+
+  return {
+    type: 'foundation-explorer',
+    instanceId: item.instanceId,
+    data
+  };
+};
+
+/**
  * Generate Geometric Shape content
  */
 const generateGeometricShapeContent = async (item: any, topic: string, gradeContext: string): Promise<{ type: string; instanceId: string; data: any }> => {
@@ -5600,6 +5630,12 @@ export const buildCompleteExhibitFromManifest = async (
       case 'lever-lab':
         if (!exhibit.leverLabs) exhibit.leverLabs = [];
         exhibit.leverLabs.push(dataWithInstanceId);
+        break;
+
+      // Foundational Concept Teaching
+      case 'foundation-explorer':
+        if (!exhibit.foundationExplorers) exhibit.foundationExplorers = [];
+        exhibit.foundationExplorers.push(dataWithInstanceId);
         break;
 
       case 'knowledge-check':
