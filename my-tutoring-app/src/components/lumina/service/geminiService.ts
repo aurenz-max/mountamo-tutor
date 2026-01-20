@@ -51,6 +51,12 @@ import { generateWheelAxleExplorer } from "./engineering/gemini-wheel-axle";
 import { generateFoundationExplorer } from "./foundation-explorer/gemini-foundation-explorer";
 import { ai } from "./geminiClient";
 
+// Content Registry (Phase 1 Refactor)
+import { getGenerator } from "./registry/contentRegistry";
+import { USE_CONTENT_REGISTRY, DEBUG_CONTENT_REGISTRY } from "../config/featureFlags";
+// Import all generators for side-effect registration
+import "./registry/generators";
+
 // --- HELPER FUNCTIONS ---
 
 /**
@@ -2590,6 +2596,9 @@ const manifestSchema: Schema = {
 
 /**
  * Generate content for a single manifest item based on its component type
+ *
+ * Uses the new ContentRegistry pattern when USE_CONTENT_REGISTRY is enabled,
+ * falling back to the legacy switch statement for unregistered components.
  */
 export const generateComponentContent = async (
   item: any, // ManifestItem
@@ -2606,6 +2615,21 @@ export const generateComponentContent = async (
     console.log('  - Config:', JSON.stringify(item.config, null, 2));
   }
 
+  // Try registry-based generation first (new pattern)
+  if (USE_CONTENT_REGISTRY) {
+    const generator = getGenerator(item.componentId);
+    if (generator) {
+      if (DEBUG_CONTENT_REGISTRY) {
+        console.log(`  📦 [Registry] Using registered generator for '${item.componentId}'`);
+      }
+      return await generator(item, topic, gradeLevelContext);
+    }
+    if (DEBUG_CONTENT_REGISTRY) {
+      console.log(`  ⚠️ [Registry] No generator for '${item.componentId}', using fallback switch`);
+    }
+  }
+
+  // Fallback to legacy switch statement (will be removed after full migration)
   switch (item.componentId) {
     case 'curator-brief':
       return await generateCuratorBriefContent(item, topic, gradeLevelContext);
