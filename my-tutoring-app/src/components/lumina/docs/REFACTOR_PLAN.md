@@ -500,3 +500,89 @@ Delete individual `case 'generateBarModel':` etc. from `route.ts`.
 | Phase 7 | Cleanup | 1 day | All phases complete |
 
 **Total:** ~8-10 days of focused work, can be spread across sprints.
+
+---
+
+## 7. Current Status & Next Steps (January 2026)
+
+### ✅ Completed
+- **Phase 0**: Feature flags implemented (`USE_CONTENT_REGISTRY = true`)
+- **Phase 1**: Content Registry fully operational with **52 generators** registered
+  - `coreGenerators.ts`: 21 generators (curator-brief, concept-cards, knowledge-check, etc.)
+  - `mathGenerators.ts`: 23 generators (all math primitives)
+  - `engineeringGenerators.ts`: 4 generators (lever-lab, pulley, ramp, wheel-axle)
+  - `mediaGenerators.ts`: 3 generators (media-player, flashcard-deck, image-comparison)
+  - `foundationGenerators.ts`: 1 generator (foundation-explorer)
+- **Dead Code Analysis**: Confirmed legacy arrays (`exhibit.barModels`, etc.) are NEVER read
+
+### 🔲 Next Steps: geminiService.ts Cleanup
+
+**Goal:** Reduce geminiService.ts from ~4,100 lines to ~700-950 lines (~75-80% reduction)
+
+#### Step 1: Remove Legacy Fallback Switch (Lines 1003-1159)
+Delete the entire `switch (item.componentId)` block in `generateComponentContent()`.
+Since `USE_CONTENT_REGISTRY = true`, this code is never executed.
+
+**After cleanup, `generateComponentContent` should be ~25 lines:**
+```typescript
+export const generateComponentContent = async (
+  item: any,
+  topic: string,
+  gradeLevel: string
+): Promise<any> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const generator = getGenerator(item.componentId);
+  if (generator) {
+    return await generator(item, topic, gradeLevelContext);
+  }
+  console.warn(`Unknown component type: ${item.componentId}`);
+  return null;
+};
+```
+
+#### Step 2: Remove Inline Generator Functions (~2,500 lines)
+Delete ALL `generate*Content` functions (they exist in dedicated service files now):
+
+| Lines (approx) | Functions to Remove |
+|----------------|---------------------|
+| 1166-2027 | `generateCuratorBriefContent`, `generateConceptCardsContent`, `generateMathVisualContent`, `generateCustomVisualContent`, `generateComparisonContent`, `generateTableContent`, `generateFeatureExhibitContent`, `generateKnowledgeCheckContent`, `generateFormulaCardContent`, `generateSentenceAnalyzerContent` |
+| 2033-2395 | `generateGraphBoardContent`, `generateScaleSpectrumContent`, `generateAnnotatedExampleContent`, `generateImagePanelContent` |
+| 2400-2911 | `generateTakeHomeActivityContent`, `generateInteractivePassageContent`, `generateWordBuilderContent`, `generateMoleculeViewerContent`, `generatePeriodicTableContent` |
+| 2917-2984 | `generateMediaPlayerContent`, `generateFlashcardDeckContent`, `generateImageComparisonContent` |
+| 2989-3700+ | All math generators: `generateBarModelContent`, `generateNumberLineContent`, `generateBaseTenBlocksContent`, `generateFractionCirclesContent`, `generateFractionBarContent`, `generateGeometricShapeContent`, `generatePlaceValueChartContent`, `generateAreaModelContent`, `generateArrayGridContent`, `generateDoubleNumberLineContent`, `generateTapeDiagramContent`, `generateFactorTreeContent`, `generateRatioTableContent`, `generateBalanceScaleContent`, `generateFunctionMachineContent`, `generateCoordinateGraphContent`, `generateSlopeTriangleContent`, `generateSystemsEquationsContent`, `generateMatrixDisplayContent`, `generateDotPlotContent`, `generateHistogramContent`, `generateTwoWayTableContent` |
+| Various | Engineering: `generateLeverLabContent`, `generatePulleySystemBuilderContent`, `generateRampLabContent`, `generateWheelAxleExplorerContent` |
+| Various | Foundation: `generateFoundationExplorerContent` |
+
+#### Step 3: Remove Unused Imports (Lines 24-51)
+Delete imports for functions that are now only used via registry:
+```typescript
+// DELETE these imports:
+import { generateMediaPlayer } from "./media-player/gemini-media-player";
+import { generateFlashcardDeck } from "./flashcard-deck/gemini-flashcard";
+import { generateImageComparison } from "./image-comparison/gemini-image-comparison";
+import { generatePlaceValueChart } from "./math/gemini-place-value";
+// ... all math, engineering, foundation imports
+```
+
+#### Step 4: Remove Assembly Switch (Lines 3885-4127)
+Delete the entire `switch (component.type)` block in `buildCompleteExhibitFromManifest()`.
+The `orderedComponents` array is already populated correctly above the switch.
+Legacy arrays (`exhibit.barModels`, etc.) are confirmed dead code.
+
+#### Step 5: Move UNIVERSAL_CATALOG (Lines 809-890)
+Move to `service/manifest/catalog/index.ts` and import from there.
+
+### 🔲 Post-Cleanup Tasks
+
+1. **Remove Feature Flag**: Delete `USE_CONTENT_REGISTRY` after confirming cleanup works
+2. **Update Types**: Remove deprecated legacy array types from `ExhibitData` interface
+3. **Update Documentation**: Update ADDING_PRIMITIVES.md to reflect new workflow
+4. **Archive Old Docs**: Move legacy documentation to `docs/archive/`
+
+### What to KEEP in geminiService.ts
+
+After cleanup, retain only:
+- Helper functions: `getGradeLevelContext()`, `getObjectiveContext()`
+- Standalone generators used by registry: `generateCustomWebExhibit()`, `generateCustomSVGExhibit()`, `generateSentenceExhibit()`, `generateMathVisualExhibit()`, `generateSpecializedExhibits()`
+- Core exports: `generateItemDetail()`, `generateConceptImage()`, `generateComponentContent()`, `buildCompleteExhibitFromManifest()`, `generateIntroBriefing()`
+- Registry imports and type imports

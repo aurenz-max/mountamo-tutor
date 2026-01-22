@@ -7,16 +7,20 @@ import {
   generateSentenceExhibit,
   generateMathVisualExhibit,
   generateSpecializedExhibits,
+  generateComponentContent,
+  generateIntroBriefing
+} from '@/components/lumina/service/geminiService';
+
+// Knowledge check imports from dedicated service (registry pattern)
+import {
   generateMultipleChoiceProblems,
   generateTrueFalseProblems,
   generateFillInBlanksProblems,
   generateCategorizationProblems,
   generateMatchingProblems,
-  generateKnowledgeCheckProblems,
   generateSequencingProblems,
-  generateComponentContent,
-  generateIntroBriefing
-} from '@/components/lumina/service/geminiService';
+  generateKnowledgeCheck
+} from '@/components/lumina/service/knowledge-check/gemini-knowledge-check';
 
 import { generateExhibitManifest } from '@/components/lumina/service/manifest/gemini-manifest';
 import { generateIntroBriefing as generateCuratorBrief } from '@/components/lumina/service/curator-brief/gemini-curator-brief';
@@ -127,11 +131,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(matchProblems);
 
       case 'generateKnowledgeCheckProblems':
-        const kcProblems = await generateKnowledgeCheckProblems(
+        const kcProblems = await generateKnowledgeCheck(
           params.topic,
           params.gradeLevel,
-          params.problemType,
-          params.count
+          {
+            problemType: params.problemType,
+            count: params.count
+          }
         );
         return NextResponse.json(kcProblems);
 
