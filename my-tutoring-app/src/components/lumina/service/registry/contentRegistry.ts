@@ -8,7 +8,6 @@
  */
 
 import { ComponentId } from '../../types';
-import { DEBUG_CONTENT_REGISTRY } from '../../config/featureFlags';
 
 // ============================================================================
 // Types
@@ -81,10 +80,6 @@ export function registerGenerator<TConfig = ManifestItemConfig, TData = unknown>
     console.warn(`[ContentRegistry] Generator for '${id}' already registered. Overwriting.`);
   }
 
-  if (DEBUG_CONTENT_REGISTRY) {
-    console.log(`[ContentRegistry] Registered generator for '${id}'`);
-  }
-
   CONTENT_GENERATORS[id] = generator as ContentGenerator;
 }
 
@@ -95,17 +90,7 @@ export function registerGenerator<TConfig = ManifestItemConfig, TData = unknown>
  * @returns The generator function or undefined if not registered
  */
 export function getGenerator(id: ComponentId): ContentGenerator | undefined {
-  const generator = CONTENT_GENERATORS[id];
-
-  if (DEBUG_CONTENT_REGISTRY) {
-    if (generator) {
-      console.log(`[ContentRegistry] Found generator for '${id}'`);
-    } else {
-      console.log(`[ContentRegistry] No generator found for '${id}', will use fallback`);
-    }
-  }
-
-  return generator;
+  return CONTENT_GENERATORS[id];
 }
 
 /**

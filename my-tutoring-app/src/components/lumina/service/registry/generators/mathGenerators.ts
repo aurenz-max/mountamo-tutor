@@ -28,6 +28,14 @@ import { generateDotPlot } from '../../math/gemini-dot-plot';
 import { generateHistogram } from '../../math/gemini-histogram';
 import { generateTwoWayTable } from '../../math/gemini-two-way-table';
 
+// Legacy Math Primitives (now have dedicated service files)
+import { generateBarModel } from '../../math/gemini-bar-model';
+import { generateNumberLine } from '../../math/gemini-number-line';
+import { generateBaseTenBlocks } from '../../math/gemini-base-ten-blocks';
+import { generateFractionCircles } from '../../math/gemini-fraction-circles';
+import { generateGeometricShape } from '../../math/gemini-geometric-shape';
+import { generatePercentBar } from '../../math/gemini-percent-bar';
+
 // ============================================================================
 // Math Visualization Primitives Registration
 // ============================================================================
@@ -152,16 +160,62 @@ registerGenerator('two-way-table', async (item, topic, gradeContext) => ({
 }));
 
 // ============================================================================
-// Note: The following math primitives have their generators defined directly
-// in geminiService.ts and need to be extracted to separate files before
-// they can be registered here:
-//
-// - bar-model
-// - number-line
-// - base-ten-blocks
-// - fraction-circles
-// - geometric-shape
-// - percent-bar
-//
-// Migration status: 17/23 math primitives registered
+// Legacy Math Primitives (now have dedicated service files)
+// ============================================================================
+
+// Bar Model (comparative bar visualization)
+registerGenerator('bar-model', async (item, topic, gradeContext) => ({
+  type: 'bar-model',
+  instanceId: item.instanceId,
+  data: await generateBarModel(topic, gradeContext, {
+    intent: item.intent || item.title
+  }),
+}));
+
+// Number Line (linear number representation)
+registerGenerator('number-line', async (item, topic, gradeContext) => ({
+  type: 'number-line',
+  instanceId: item.instanceId,
+  data: await generateNumberLine(topic, gradeContext, {
+    intent: item.intent || item.title
+  }),
+}));
+
+// Base Ten Blocks (place value visualization)
+registerGenerator('base-ten-blocks', async (item, topic, gradeContext) => ({
+  type: 'base-ten-blocks',
+  instanceId: item.instanceId,
+  data: await generateBaseTenBlocks(topic, gradeContext, {
+    intent: item.intent || item.title
+  }),
+}));
+
+// Fraction Circles (pie chart fractions)
+registerGenerator('fraction-circles', async (item, topic, gradeContext) => ({
+  type: 'fraction-circles',
+  instanceId: item.instanceId,
+  data: await generateFractionCircles(topic, gradeContext, {
+    intent: item.intent || item.title
+  }),
+}));
+
+// Geometric Shape (shape properties)
+registerGenerator('geometric-shape', async (item, topic, gradeContext) => ({
+  type: 'geometric-shape',
+  instanceId: item.instanceId,
+  data: await generateGeometricShape(topic, gradeContext, {
+    intent: item.intent || item.title
+  }),
+}));
+
+// Percent Bar (percentage visualization)
+registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
+  type: 'percent-bar',
+  instanceId: item.instanceId,
+  data: await generatePercentBar(topic, gradeContext, item.config),
+}));
+
+// ============================================================================
+// Migration status: 23/23 math primitives registered
+// All math generators now use dedicated service files in math/ folder
 // ============================================================================

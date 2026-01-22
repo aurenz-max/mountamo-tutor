@@ -1,33 +1,7 @@
-// Import math primitive data types
-import type { BarModelData } from './primitives/visual-primitives/math/BarModel';
-import type { NumberLineData } from './primitives/visual-primitives/math/NumberLine';
-import type { BaseTenBlocksData } from './primitives/visual-primitives/math/BaseTenBlocks';
-import type { FractionCirclesData } from './primitives/visual-primitives/math/FractionCircles';
-import type { GeometricShapeData } from './primitives/visual-primitives/math/GeometricShape';
-import type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
-import type { FractionBarData } from './primitives/visual-primitives/math/FractionBar';
-import type { AreaModelData } from './primitives/visual-primitives/math/AreaModel';
-import type { ArrayGridData } from './primitives/visual-primitives/math/ArrayGrid';
-import type { FactorTreeData } from './primitives/visual-primitives/math/FactorTree';
-import type { RatioTableData } from './primitives/visual-primitives/math/RatioTable';
-import type { DoubleNumberLineData } from './primitives/visual-primitives/math/DoubleNumberLine';
-import type { PercentBarData } from './primitives/visual-primitives/math/PercentBar';
-import type { TapeDiagramData } from './primitives/visual-primitives/math/TapeDiagram';
-import type { BalanceScaleData } from './primitives/visual-primitives/math/BalanceScale';
-import type { FunctionMachineData } from './primitives/visual-primitives/math/FunctionMachine';
-import type { CoordinateGraphData } from './primitives/visual-primitives/math/CoordinateGraph';
-import type { SlopeTriangleData } from './primitives/visual-primitives/math/SlopeTriangle';
-import type { SystemsEquationsVisualizerData } from './primitives/visual-primitives/math/SystemsEquationsVisualizer';
-import type { MatrixDisplayData } from './primitives/visual-primitives/math/MatrixDisplay';
-import type { DotPlotData } from './primitives/visual-primitives/math/DotPlot';
-import type { HistogramData } from './primitives/visual-primitives/math/Histogram';
-import type { TwoWayTableData } from './primitives/visual-primitives/math/TwoWayTable';
-
-// Import engineering primitive data types
-import type { LeverLabData } from './primitives/visual-primitives/engineering/LeverLab';
-import type { PulleySystemBuilderData } from './primitives/visual-primitives/engineering/PulleySystemBuilder';
-import type { RampLabData } from './primitives/visual-primitives/engineering/RampLab';
-import type { WheelAxleExplorerData } from './primitives/visual-primitives/engineering/WheelAxleExplorer';
+// Note: Math primitive and engineering primitive data types are defined in their
+// respective component files (e.g., primitives/visual-primitives/math/BarModel.tsx).
+// Components access these types via orderedComponents.data which is typed as 'any'.
+// The specific types remain in their source files for type-safety within generators.
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -971,37 +945,9 @@ export interface ExhibitData {
   mediaPlayers?: MediaPlayerData[];
   flashcardDecks?: FlashcardDeckData[];
   imageComparisons?: ImageComparisonData[];
-  // Math Visualization Primitives
-  barModels?: BarModelData[];
-  numberLines?: NumberLineData[];
-  baseTenBlocks?: BaseTenBlocksData[];
-  fractionCircles?: FractionCirclesData[];
-  fractionBars?: FractionBarData[];
-  geometricShapes?: GeometricShapeData[];
-  placeValueCharts?: PlaceValueChartData[];
-  areaModels?: AreaModelData[];
-  arrayGrids?: ArrayGridData[];
-  doubleNumberLines?: DoubleNumberLineData[];
-  tapeDiagrams?: TapeDiagramData[];
-  factorTrees?: FactorTreeData[];
-  ratioTables?: RatioTableData[];
-  percentBars?: PercentBarData[];
-  balanceScales?: BalanceScaleData[];
-  functionMachines?: FunctionMachineData[];
-  coordinateGraphs?: CoordinateGraphData[];
-  slopeTriangles?: SlopeTriangleData[];
-  systemsEquations?: SystemsEquationsVisualizerData[];
-  matrixDisplays?: MatrixDisplayData[];
-  dotPlots?: DotPlotData[];
-  histograms?: HistogramData[];
-  twoWayTables?: TwoWayTableData[];
-  // Engineering Primitives
-  leverLabs?: LeverLabData[];
-  pulleySystemBuilders?: PulleySystemBuilderData[];
-  rampLabs?: RampLabData[];
-  wheelAxleExplorers?: WheelAxleExplorerData[];
-  // Foundational Concept Teaching
-  foundationExplorers?: FoundationExplorerData[];
+  // Note: Math visualization primitives (barModels, numberLines, etc.) and
+  // engineering primitives (leverLabs, etc.) have been removed.
+  // All components now render exclusively from orderedComponents array.
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
 }
