@@ -506,8 +506,10 @@ Delete individual `case 'generateBarModel':` etc. from `route.ts`.
 ## 7. Current Status & Next Steps (January 2026)
 
 ### ✅ Completed
-- **Phase 0**: Feature flags implemented (`USE_CONTENT_REGISTRY = true`)
-- **Phase 1**: Content Registry fully operational with **52 generators** registered
+
+#### Phase 0-1: Content Registry Migration
+- **Feature flags**: `USE_CONTENT_REGISTRY = true` (enabled)
+- **Content Registry**: Fully operational with **52 generators** registered
   - `coreGenerators.ts`: 21 generators (curator-brief, concept-cards, knowledge-check, etc.)
   - `mathGenerators.ts`: 23 generators (all math primitives)
   - `engineeringGenerators.ts`: 4 generators (lever-lab, pulley, ramp, wheel-axle)
@@ -515,74 +517,124 @@ Delete individual `case 'generateBarModel':` etc. from `route.ts`.
   - `foundationGenerators.ts`: 1 generator (foundation-explorer)
 - **Dead Code Analysis**: Confirmed legacy arrays (`exhibit.barModels`, etc.) are NEVER read
 
-### 🔲 Next Steps: geminiService.ts Cleanup
+#### Phase 2: geminiService.ts Major Cleanup ✅ COMPLETE
+**Result: Reduced from ~4,100 lines to ~1,018 lines (~75% reduction)**
 
-**Goal:** Reduce geminiService.ts from ~4,100 lines to ~700-950 lines (~75-80% reduction)
+Deleted:
+- ✅ Legacy fallback switch in `generateComponentContent()`
+- ✅ All inline `generate*Content` functions (moved to dedicated service files)
+- ✅ All knowledge-check problem generators (moved to `gemini-knowledge-check.ts`)
+- ✅ Assembly switch in `buildCompleteExhibitFromManifest()`
+- ✅ Unused imports
 
-#### Step 1: Remove Legacy Fallback Switch (Lines 1003-1159)
-Delete the entire `switch (item.componentId)` block in `generateComponentContent()`.
-Since `USE_CONTENT_REGISTRY = true`, this code is never executed.
+#### Current geminiService.ts Structure (~1,018 lines)
+What remains:
+- **Helper functions**: `getGradeLevelContext()`, `getObjectiveContext()` (lines 31-66)
+- **Schema definitions**: `detailSchema` (lines 71-81)
+- **Core exports**:
+  - `generateItemDetail()` - Deep-dive analysis (lines 85-110)
+  - `generateConceptImage()` - AI image generation (lines 112-131)
+- **Specialized exhibit generators** (used by registry, kept here for complex prompts):
+  - `generateCustomWebExhibit()` - HTML visualizations (lines 140-414)
+  - `generateCustomSVGExhibit()` - SVG diagrams (lines 419-496)
+  - `generateSentenceExhibit()` - Sentence analysis (lines 501-563)
+  - `generateMathVisualExhibit()` - Math visualizations (lines 568-723)
+  - `generateSpecializedExhibits()` - Orchestrator (lines 728-764)
+- **Manifest architecture**:
+  - `UNIVERSAL_CATALOG` - Component definitions (lines 775-856)
+  - `generateComponentContent()` - Registry-based dispatcher (lines 874-893)
+  - `buildCompleteExhibitFromManifest()` - Exhibit assembly (lines 903-1002)
+  - `generateIntroBriefing()` - Wrapper (lines 1008-1014)
+- **Re-exports**: `generateProblemHint` from problems service (line 1017)
 
-**After cleanup, `generateComponentContent` should be ~25 lines:**
+---
+
+### 🔲 Next Steps: Final Cleanup & Phase 3
+
+#### Step 1: Move UNIVERSAL_CATALOG to Manifest Module
+Move `UNIVERSAL_CATALOG` (lines 775-856) to `service/manifest/catalog/index.ts`:
+
 ```typescript
-export const generateComponentContent = async (
-  item: any,
-  topic: string,
-  gradeLevel: string
-): Promise<any> => {
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
-  const generator = getGenerator(item.componentId);
-  if (generator) {
-    return await generator(item, topic, gradeLevelContext);
-  }
-  console.warn(`Unknown component type: ${item.componentId}`);
-  return null;
-};
+// service/manifest/catalog/index.ts
+export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
+  // ... move all definitions here
+];
 ```
 
-#### Step 2: Remove Inline Generator Functions (~2,500 lines)
-Delete ALL `generate*Content` functions (they exist in dedicated service files now):
-
-| Lines (approx) | Functions to Remove |
-|----------------|---------------------|
-| 1166-2027 | `generateCuratorBriefContent`, `generateConceptCardsContent`, `generateMathVisualContent`, `generateCustomVisualContent`, `generateComparisonContent`, `generateTableContent`, `generateFeatureExhibitContent`, `generateKnowledgeCheckContent`, `generateFormulaCardContent`, `generateSentenceAnalyzerContent` |
-| 2033-2395 | `generateGraphBoardContent`, `generateScaleSpectrumContent`, `generateAnnotatedExampleContent`, `generateImagePanelContent` |
-| 2400-2911 | `generateTakeHomeActivityContent`, `generateInteractivePassageContent`, `generateWordBuilderContent`, `generateMoleculeViewerContent`, `generatePeriodicTableContent` |
-| 2917-2984 | `generateMediaPlayerContent`, `generateFlashcardDeckContent`, `generateImageComparisonContent` |
-| 2989-3700+ | All math generators: `generateBarModelContent`, `generateNumberLineContent`, `generateBaseTenBlocksContent`, `generateFractionCirclesContent`, `generateFractionBarContent`, `generateGeometricShapeContent`, `generatePlaceValueChartContent`, `generateAreaModelContent`, `generateArrayGridContent`, `generateDoubleNumberLineContent`, `generateTapeDiagramContent`, `generateFactorTreeContent`, `generateRatioTableContent`, `generateBalanceScaleContent`, `generateFunctionMachineContent`, `generateCoordinateGraphContent`, `generateSlopeTriangleContent`, `generateSystemsEquationsContent`, `generateMatrixDisplayContent`, `generateDotPlotContent`, `generateHistogramContent`, `generateTwoWayTableContent` |
-| Various | Engineering: `generateLeverLabContent`, `generatePulleySystemBuilderContent`, `generateRampLabContent`, `generateWheelAxleExplorerContent` |
-| Various | Foundation: `generateFoundationExplorerContent` |
-
-#### Step 3: Remove Unused Imports (Lines 24-51)
-Delete imports for functions that are now only used via registry:
+Then update geminiService.ts:
 ```typescript
-// DELETE these imports:
-import { generateMediaPlayer } from "./media-player/gemini-media-player";
-import { generateFlashcardDeck } from "./flashcard-deck/gemini-flashcard";
-import { generateImageComparison } from "./image-comparison/gemini-image-comparison";
-import { generatePlaceValueChart } from "./math/gemini-place-value";
-// ... all math, engineering, foundation imports
+import { UNIVERSAL_CATALOG } from './manifest/catalog';
+export { UNIVERSAL_CATALOG }; // Re-export for backward compatibility
 ```
 
-#### Step 4: Remove Assembly Switch (Lines 3885-4127)
-Delete the entire `switch (component.type)` block in `buildCompleteExhibitFromManifest()`.
-The `orderedComponents` array is already populated correctly above the switch.
-Legacy arrays (`exhibit.barModels`, etc.) are confirmed dead code.
+**Impact:** ~80 lines moved, improves separation of concerns
 
-#### Step 5: Move UNIVERSAL_CATALOG (Lines 809-890)
-Move to `service/manifest/catalog/index.ts` and import from there.
+#### Step 2: Move Specialized Exhibit Generators
+Consider moving `generateCustomWebExhibit`, `generateCustomSVGExhibit`, etc. to dedicated service files:
 
-### 🔲 Post-Cleanup Tasks
+```
+service/specialized/
+├── gemini-custom-web.ts      (~275 lines)
+├── gemini-custom-svg.ts      (~80 lines)
+├── gemini-sentence.ts        (~65 lines)
+├── gemini-math-visual.ts     (~155 lines)
+└── index.ts                  (orchestrator)
+```
 
-1. **Remove Feature Flag**: Delete `USE_CONTENT_REGISTRY` after confirming cleanup works
-2. **Update Types**: Remove deprecated legacy array types from `ExhibitData` interface
-3. **Update Documentation**: Update ADDING_PRIMITIVES.md to reflect new workflow
-4. **Archive Old Docs**: Move legacy documentation to `docs/archive/`
+**Impact:** Would reduce geminiService.ts to ~450 lines (core orchestration only)
 
-### What to KEEP in geminiService.ts
+#### Step 3: Remove Feature Flag (Optional)
+Since `USE_CONTENT_REGISTRY = true` is permanent:
+- Remove `USE_CONTENT_REGISTRY` check in `generateComponentContent()`
+- Remove `DEBUG_CONTENT_REGISTRY` if no longer needed
+- Update `featureFlags.ts`
 
-After cleanup, retain only:
-- Helper functions: `getGradeLevelContext()`, `getObjectiveContext()`
-- Standalone generators used by registry: `generateCustomWebExhibit()`, `generateCustomSVGExhibit()`, `generateSentenceExhibit()`, `generateMathVisualExhibit()`, `generateSpecializedExhibits()`
-- Core exports: `generateItemDetail()`, `generateConceptImage()`, `generateComponentContent()`, `buildCompleteExhibitFromManifest()`, `generateIntroBriefing()`
-- Registry imports and type imports
+#### Step 4: Update Types (Phase 2.3)
+Remove deprecated legacy array types from `ExhibitData` interface in `types.ts`:
+```typescript
+// DELETE these deprecated fields:
+barModels?: BarModelData[];
+numberLines?: NumberLineData[];
+fractionBars?: FractionBarData[];
+// ... etc.
+```
+
+#### Step 5: Route.ts Cleanup
+Review `route.ts` for any remaining dead switch cases that can be removed.
+
+---
+
+### 🔲 Phase 3: Catalog Split (Optional Enhancement)
+
+Split `UNIVERSAL_CATALOG` by domain for better AI context:
+
+```
+service/manifest/catalog/
+├── index.ts           # Aggregates all catalogs
+├── core.ts            # curator-brief, concept-card-grid, feature-exhibit, etc.
+├── math.ts            # bar-model, number-line, fraction-bar, etc.
+├── engineering.ts     # lever-lab, pulley, ramp, wheel-axle
+├── assessment.ts      # knowledge-check
+├── media.ts           # media-player, flashcard-deck, image-panel
+└── literacy.ts        # word-builder, sentence-analyzer, interactive-passage
+```
+
+**Benefit:** When adding a new math primitive, AI only needs to read `math.ts` (~15 components) instead of the full catalog.
+
+---
+
+### 📊 Progress Summary
+
+| Metric | Original | After Phase 1 | After Phase 2 | Target |
+|--------|----------|---------------|---------------|--------|
+| geminiService.ts lines | ~5,753 | ~4,100 | **~1,018** | ~500-700 |
+| Switch cases | ~100 | ~50 | **0** | 0 |
+| Files to modify for new primitive | 6 | 4 | **4** | 4 |
+| Context for AI (adding primitive) | ~7,000 lines | ~3,000 lines | **~100 lines** | ~100 lines |
+
+### What's Working Well
+1. **Registry pattern**: All 52 generators registered and working
+2. **generateComponentContent**: Clean 20-line function using registry lookup
+3. **buildCompleteExhibitFromManifest**: Streamlined without legacy arrays
+4. **Knowledge-check**: Fully migrated to dedicated service
+5. **Route.ts**: Imports from dedicated services, not geminiService.ts
