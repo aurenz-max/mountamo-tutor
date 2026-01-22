@@ -1,19 +1,16 @@
 // Client-side API wrapper for Gemini service functions
 // This file is safe to use in client components ('use client')
+//
+// POST-REFACTOR: All primitive generation now routes through generateComponentContent
+// Individual primitive endpoints have been removed from route.ts
 
 import {
   ItemDetailData,
   ExhibitManifest,
   ExhibitData,
-  SpecializedExhibitIntent,
-  SpecializedExhibit,
   ProblemType,
   ProblemData,
   IntroBriefingData,
-  CustomWebData,
-  CustomSVGData,
-  SentenceSchemaData,
-  MathVisualData,
   ComponentId,
   ManifestItemConfig
 } from '../types';
@@ -46,6 +43,10 @@ async function callAPI(action: string, params: any) {
   return response.json();
 }
 
+// ============================================
+// CORE CONTENT GENERATION
+// ============================================
+
 export const generateItemDetail = async (
   contextTopic: string,
   item: string
@@ -58,106 +59,15 @@ export const generateConceptImage = async (prompt: string): Promise<string | nul
   return result.image;
 };
 
-export const generateCustomWebExhibit = async (
-  topic: string,
-  gradeLevel: string
-): Promise<CustomWebData> => {
-  return callAPI('generateCustomWebExhibit', { topic, gradeLevel });
-};
-
-export const generateCustomSVGExhibit = async (
-  topic: string,
-  gradeLevel: string
-): Promise<CustomSVGData> => {
-  return callAPI('generateCustomSVGExhibit', { topic, gradeLevel });
-};
-
-export const generateSentenceExhibit = async (
-  topic: string,
-  gradeLevel: string
-): Promise<SentenceSchemaData> => {
-  return callAPI('generateSentenceExhibit', { topic, gradeLevel });
-};
-
-export const generateMathVisualExhibit = async (
-  topic: string,
-  gradeLevel: string
-): Promise<MathVisualData> => {
-  return callAPI('generateMathVisualExhibit', { topic, gradeLevel });
-};
-
-export const generateSpecializedExhibits = async (
-  topic: string,
-  gradeLevel: string,
-  intent: SpecializedExhibitIntent
-): Promise<SpecializedExhibit[]> => {
-  return callAPI('generateSpecializedExhibits', { topic, gradeLevel, intent });
-};
-
-export const generateMultipleChoiceProblems = async (
-  topic: string,
-  gradeLevel: string,
-  count: number
-): Promise<ProblemData[]> => {
-  return callAPI('generateMultipleChoiceProblems', { topic, gradeLevel, count });
-};
-
-export const generateTrueFalseProblems = async (
-  topic: string,
-  gradeLevel: string,
-  count: number
-): Promise<ProblemData[]> => {
-  return callAPI('generateTrueFalseProblems', { topic, gradeLevel, count });
-};
-
-export const generateFillInBlanksProblems = async (
-  topic: string,
-  gradeLevel: string,
-  count: number
-): Promise<ProblemData[]> => {
-  return callAPI('generateFillInBlanksProblems', { topic, gradeLevel, count });
-};
-
-export const generateCategorizationProblems = async (
-  topic: string,
-  gradeLevel: string,
-  count: number
-): Promise<ProblemData[]> => {
-  return callAPI('generateCategorizationProblems', { topic, gradeLevel, count });
-};
-
-export const generateMatchingProblems = async (
-  topic: string,
-  gradeLevel: string,
-  count: number
-): Promise<ProblemData[]> => {
-  return callAPI('generateMatchingProblems', { topic, gradeLevel, count });
-};
-
-export const generateKnowledgeCheckProblems = async (
-  topic: string,
-  gradeLevel: string,
-  problemType: ProblemType,
-  count: number
-): Promise<ProblemData[]> => {
-  return callAPI('generateKnowledgeCheckProblems', { topic, gradeLevel, problemType, count });
-};
-
-export const generateSequencingProblems = async (
-  topic: string,
-  gradeLevel: string,
-  count: number
-): Promise<ProblemData[]> => {
-  return callAPI('generateSequencingProblems', { topic, gradeLevel, count });
-};
-
-export const generateProblemHint = async (
-  problem: ProblemData,
-  hintLevel: number
-): Promise<string> => {
-  return callAPI('generateProblemHint', { problem, hintLevel });
-};
-
+/**
+ * Universal component content generator
+ * Routes to all primitives via the content registry pattern
+ *
+ * @param componentId - The component type (e.g., 'fraction-bar', 'lever-lab')
+ * @param topic - The educational topic
+ * @param gradeLevel - The grade level context
+ * @param config - Optional configuration for the component
+ */
 export const generateComponentContent = async (
   componentId: ComponentId,
   topic: string,
@@ -166,6 +76,10 @@ export const generateComponentContent = async (
 ): Promise<any> => {
   return callAPI('generateComponentContent', { componentId, topic, gradeLevel, config });
 };
+
+// ============================================
+// MANIFEST & EXHIBIT ORCHESTRATION
+// ============================================
 
 export const generateExhibitManifest = async (
   topic: string,
@@ -272,11 +186,35 @@ export const buildCompleteExhibitFromManifest = async (
   return callAPI('buildCompleteExhibitFromManifest', { manifest, curatorBrief });
 };
 
+// ============================================
+// CURATOR BRIEF & INTRO
+// ============================================
+
 export const generateIntroBriefing = async (
   topic: string,
   gradeLevel: string
 ): Promise<IntroBriefingData> => {
   return callAPI('generateIntroBriefing', { topic, gradeLevel });
+};
+
+// ============================================
+// KNOWLEDGE CHECK & ASSESSMENT
+// ============================================
+
+export const generateKnowledgeCheckProblems = async (
+  topic: string,
+  gradeLevel: string,
+  problemType: ProblemType,
+  count: number
+): Promise<ProblemData[]> => {
+  return callAPI('generateKnowledgeCheckProblems', { topic, gradeLevel, problemType, count });
+};
+
+export const generateProblemHint = async (
+  problem: ProblemData,
+  hintLevel: number
+): Promise<string> => {
+  return callAPI('generateProblemHint', { problem, hintLevel });
 };
 
 export const generatePracticeAssessment = async (
@@ -296,6 +234,10 @@ export const generatePracticeAssessment = async (
 }> => {
   return callAPI('generatePracticeAssessment', { subject, gradeLevel, problemCount, problems });
 };
+
+// ============================================
+// QUESTS & WARM-UP
+// ============================================
 
 export interface Quest {
   title: string;

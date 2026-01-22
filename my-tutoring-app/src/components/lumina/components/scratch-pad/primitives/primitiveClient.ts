@@ -1,78 +1,38 @@
-import { PrimitiveSuggestion, GeneratedPrimitive } from '../types';
+import { PrimitiveSuggestion } from '../../../service/scratch-pad/gemini-scratch-pad-enhanced';
 
 /**
- * Maps component IDs to their API action names
+ * Generated primitive result
  */
-const COMPONENT_TO_ACTION: Record<string, string> = {
-  'fraction-bar': 'generateFractionBar',
-  'fraction-circles': 'generateFractionBar', // Uses same service
-  'number-line': 'generateComponentContent',
-  'bar-model': 'generateComponentContent',
-  'base-ten-blocks': 'generateComponentContent',
-  'place-value-chart': 'generatePlaceValueChart',
-  'area-model': 'generateAreaModel',
-  'array-grid': 'generateArrayGrid',
-  'tape-diagram': 'generateTapeDiagram',
-  'factor-tree': 'generateFactorTree',
-  'ratio-table': 'generateRatioTable',
-  'double-number-line': 'generateDoubleNumberLine',
-  'percent-bar': 'generatePercentBar',
-  'balance-scale': 'generateBalanceScale',
-  'function-machine': 'generateFunctionMachine',
-  'coordinate-graph': 'generateCoordinateGraph',
-  'slope-triangle': 'generateSlopeTriangle',
-  'systems-equations-visualizer': 'generateSystemsEquations',
-  'matrix-display': 'generateMatrix',
-  'dot-plot': 'generateDotPlot',
-  'histogram': 'generateHistogram',
-  'two-way-table': 'generateTwoWayTable'
-};
+export interface GeneratedPrimitive {
+  id: string;
+  componentId: string;
+  data: unknown;
+  generatedAt: Date;
+}
 
 /**
- * Generic components that need special handling through generateComponentContent
+ * All components now use the universal generateComponentContent endpoint
+ * via the content registry pattern. No need for individual action mappings.
  */
-const GENERIC_COMPONENTS = new Set([
-  'number-line',
-  'bar-model',
-  'base-ten-blocks',
-  'fraction-circles'
-]);
 
 /**
  * Generate a primitive based on a suggestion
+ * Uses the universal generateComponentContent endpoint (registry pattern)
  */
 export async function generatePrimitiveFromSuggestion(
   suggestion: PrimitiveSuggestion
 ): Promise<GeneratedPrimitive> {
   const { componentId, generationConfig } = suggestion;
-  const action = COMPONENT_TO_ACTION[componentId];
 
-  if (!action) {
-    throw new Error(`No action mapping for component: ${componentId}`);
-  }
-
-  let params: Record<string, unknown>;
-
-  // Handle generic components that go through generateComponentContent
-  if (GENERIC_COMPONENTS.has(componentId)) {
-    params = {
-      componentId,
-      topic: generationConfig.topic,
-      gradeLevel: generationConfig.gradeLevel,
-      config: {
-        specificContext: generationConfig.specificContext
-      }
-    };
-  } else {
-    // Specific component generators
-    params = {
-      topic: generationConfig.topic,
-      gradeLevel: generationConfig.gradeLevel,
-      config: {
-        specificContext: generationConfig.specificContext
-      }
-    };
-  }
+  // All components use generateComponentContent via the registry
+  const params = {
+    componentId,
+    topic: generationConfig.topic,
+    gradeLevel: generationConfig.gradeLevel,
+    config: {
+      specificContext: generationConfig.specificContext
+    }
+  };
 
   try {
     const response = await fetch('/api/lumina', {
@@ -81,7 +41,7 @@ export async function generatePrimitiveFromSuggestion(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        action,
+        action: 'generateComponentContent',
         params
       }),
     });
@@ -91,7 +51,9 @@ export async function generatePrimitiveFromSuggestion(
       throw new Error(error.error || 'Failed to generate primitive');
     }
 
-    const data = await response.json();
+    const result = await response.json();
+    // The registry returns { type, instanceId, data } - extract the data
+    const data = result.data || result;
 
     return {
       id: `${componentId}-${Date.now()}`,

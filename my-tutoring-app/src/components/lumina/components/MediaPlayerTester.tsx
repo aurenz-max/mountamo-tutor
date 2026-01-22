@@ -31,18 +31,22 @@ export const MediaPlayerTester: React.FC<MediaPlayerTesterProps> = ({ onBack }) 
     setError(null);
 
     try {
+      // Use universal generateComponentContent endpoint (registry pattern)
       const response = await fetch('/api/lumina', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'generateMediaPlayer',
+          action: 'generateComponentContent',
           params: {
+            componentId: 'media-player',
             topic,
             gradeLevel,
-            segmentCount,
-            imageResolution,
+            config: {
+              segmentCount,
+              imageResolution,
+            },
           },
         }),
       });
@@ -51,7 +55,9 @@ export const MediaPlayerTester: React.FC<MediaPlayerTesterProps> = ({ onBack }) 
         throw new Error(`API error: ${response.statusText}`);
       }
 
-      const generatedMedia = await response.json();
+      const result = await response.json();
+      // The registry returns { type, instanceId, data } - extract the data
+      const generatedMedia = result.data || result;
       setMediaData(generatedMedia);
     } catch (err) {
       console.error('Generation error:', err);

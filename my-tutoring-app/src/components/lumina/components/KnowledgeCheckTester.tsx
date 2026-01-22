@@ -4,14 +4,7 @@ import React, { useState } from 'react';
 import { KnowledgeCheck } from '../primitives/KnowledgeCheck';
 import { ProblemData, ProblemType, ProblemDifficulty } from '../types';
 import { PROBLEM_TYPE_REGISTRY, getAllProblemTypes } from '../config/problemTypeRegistry';
-import {
-  generateMultipleChoiceProblems,
-  generateTrueFalseProblems,
-  generateFillInBlanksProblems,
-  generateCategorizationProblems,
-  generateSequencingProblems,
-  generateMatchingProblems
-} from '../service/geminiClient-api';
+import { generateKnowledgeCheckProblems } from '../service/geminiClient-api';
 
 interface KnowledgeCheckTesterProps {
   onBack: () => void;
@@ -32,14 +25,24 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Use universal generateKnowledgeCheckProblems for all problem types
+  const generateProblemsForType = async (
+    problemType: ProblemType,
+    topic: string,
+    gradeLevel: string,
+    count: number
+  ): Promise<any[]> => {
+    return generateKnowledgeCheckProblems(topic, gradeLevel, problemType, count);
+  };
+
   // Map problem types to their generator functions
   const generatorMap: Partial<Record<ProblemType, (topic: string, gradeLevel: string, count: number, context?: string) => Promise<any[]>>> = {
-    'multiple_choice': generateMultipleChoiceProblems,
-    'true_false': generateTrueFalseProblems,
-    'fill_in_blanks': generateFillInBlanksProblems,
-    'categorization_activity': generateCategorizationProblems,
-    'sequencing_activity': generateSequencingProblems,
-    'matching_activity': generateMatchingProblems,
+    'multiple_choice': (topic, gradeLevel, count) => generateProblemsForType('multiple_choice', topic, gradeLevel, count),
+    'true_false': (topic, gradeLevel, count) => generateProblemsForType('true_false', topic, gradeLevel, count),
+    'fill_in_blanks': (topic, gradeLevel, count) => generateProblemsForType('fill_in_blanks', topic, gradeLevel, count),
+    'categorization_activity': (topic, gradeLevel, count) => generateProblemsForType('categorization_activity', topic, gradeLevel, count),
+    'sequencing_activity': (topic, gradeLevel, count) => generateProblemsForType('sequencing_activity', topic, gradeLevel, count),
+    'matching_activity': (topic, gradeLevel, count) => generateProblemsForType('matching_activity', topic, gradeLevel, count),
   };
 
   const handleGenerate = async () => {

@@ -436,41 +436,29 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
     setError(null);
 
     try {
-      const action = selectedPrimitive === 'fraction-bar'
-        ? 'generateFractionBar'
-        : selectedPrimitive === 'place-value-chart'
-        ? 'generatePlaceValueChart'
-        : selectedPrimitive === 'area-model'
-        ? 'generateAreaModel'
-        : selectedPrimitive === 'array-grid'
-        ? 'generateArrayGrid'
-        : selectedPrimitive === 'factor-tree'
-        ? 'generateFactorTree'
-        : selectedPrimitive === 'ratio-table'
-        ? 'generateRatioTable'
-        : selectedPrimitive === 'double-number-line'
-        ? 'generateDoubleNumberLine'
-        : selectedPrimitive === 'percent-bar'
-        ? 'generatePercentBar'
-        : selectedPrimitive === 'tape-diagram'
-        ? 'generateTapeDiagram'
-        : selectedPrimitive === 'balance-scale'
-        ? 'generateBalanceScale'
-        : selectedPrimitive === 'function-machine'
-        ? 'generateFunctionMachine'
-        : selectedPrimitive === 'coordinate-graph'
-        ? 'generateCoordinateGraph'
-        : selectedPrimitive === 'slope-triangle'
-        ? 'generateSlopeTriangle'
-        : selectedPrimitive === 'systems-equations-visualizer'
-        ? 'generateSystemsEquations'
-        : selectedPrimitive === 'matrix-display'
-        ? 'generateMatrix'
-        : selectedPrimitive === 'dot-plot'
-        ? 'generateDotPlot'
-        : selectedPrimitive === 'histogram'
-        ? 'generateHistogram'
-        : 'generateTwoWayTable';
+      // Map UI primitive names to componentIds for the registry
+      const componentIdMap: Record<PrimitiveType, string> = {
+        'fraction-bar': 'fraction-bar',
+        'place-value-chart': 'place-value-chart',
+        'area-model': 'area-model',
+        'array-grid': 'array-grid',
+        'factor-tree': 'factor-tree',
+        'ratio-table': 'ratio-table',
+        'double-number-line': 'double-number-line',
+        'percent-bar': 'percent-bar',
+        'tape-diagram': 'tape-diagram',
+        'balance-scale': 'balance-scale',
+        'function-machine': 'function-machine',
+        'coordinate-graph': 'coordinate-graph',
+        'slope-triangle': 'slope-triangle',
+        'systems-equations-visualizer': 'systems-equations-visualizer',
+        'matrix-display': 'matrix',
+        'dot-plot': 'dot-plot',
+        'histogram': 'histogram',
+        'two-way-table': 'two-way-table',
+      };
+
+      const componentId = componentIdMap[selectedPrimitive];
 
       // Let the service choose the topic and specification based on the primitive type
       const defaultTopic = selectedPrimitive === 'fraction-bar'
@@ -509,14 +497,16 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         ? 'Distribution shapes and frequency analysis'
         : 'Categorical data and conditional probability';
 
+      // Use universal generateComponentContent endpoint (registry pattern)
       const response = await fetch('/api/lumina', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action,
+          action: 'generateComponentContent',
           params: {
+            componentId,
             topic: defaultTopic,
             gradeLevel,
             config: {}, // Let Gemini choose all specifications
@@ -528,7 +518,9 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         throw new Error(`API error: ${response.statusText}`);
       }
 
-      const generatedData = await response.json();
+      const result = await response.json();
+      // The registry returns { type, instanceId, data } - extract the data
+      const generatedData = result.data || result;
 
       if (selectedPrimitive === 'fraction-bar') {
         setFractionBarData(generatedData);

@@ -127,28 +127,34 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
     setError(null);
 
     try {
-      let action = 'generateLeverLab';
-      let defaultTopic = 'Understanding levers and balance';
+      // Map UI primitive names to componentIds for the registry
+      const componentIdMap: Record<PrimitiveType, string> = {
+        'lever-lab': 'lever-lab',
+        'pulley-system-builder': 'pulley-system-builder',
+        'ramp-lab': 'ramp-lab',
+        'wheel-axle-explorer': 'wheel-axle-explorer',
+      };
 
-      if (selectedPrimitive === 'pulley-system-builder') {
-        action = 'generatePulleySystemBuilder';
-        defaultTopic = 'Understanding pulleys and mechanical advantage';
-      } else if (selectedPrimitive === 'ramp-lab') {
-        action = 'generateRampLab';
-        defaultTopic = 'Understanding inclined planes and ramps';
-      } else if (selectedPrimitive === 'wheel-axle-explorer') {
-        action = 'generateWheelAxleExplorer';
-        defaultTopic = 'Understanding wheel and axle machines';
-      }
+      const topicMap: Record<PrimitiveType, string> = {
+        'lever-lab': 'Understanding levers and balance',
+        'pulley-system-builder': 'Understanding pulleys and mechanical advantage',
+        'ramp-lab': 'Understanding inclined planes and ramps',
+        'wheel-axle-explorer': 'Understanding wheel and axle machines',
+      };
 
+      const componentId = componentIdMap[selectedPrimitive];
+      const defaultTopic = topicMap[selectedPrimitive];
+
+      // Use universal generateComponentContent endpoint (registry pattern)
       const response = await fetch('/api/lumina', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action,
+          action: 'generateComponentContent',
           params: {
+            componentId,
             topic: defaultTopic,
             gradeLevel,
             config: {},
@@ -160,7 +166,9 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
         throw new Error(`API error: ${response.statusText}`);
       }
 
-      const generatedData = await response.json();
+      const result = await response.json();
+      // The registry returns { type, instanceId, data } - extract the data
+      const generatedData = result.data || result;
 
       if (selectedPrimitive === 'lever-lab') {
         setLeverLabData(generatedData);

@@ -1,23 +1,23 @@
-# Adding New Primitives to Lumina (Post-Refactor)
+# Adding New Primitives to Lumina
 
-This guide explains the simplified architecture for adding new primitive components to Lumina.
+This guide explains how to add new primitive components to Lumina using the registry-based architecture.
 
-## Quick Start: 4 Files, Zero Switch Statements
+## Quick Start: 6 Files, Zero Switch Statements
 
-After the Phase 1-3 refactor, adding a new primitive is streamlined:
+Adding a new primitive involves these files:
 
 | Step | File | What to Add |
 |------|------|-------------|
 | 1 | `primitives/.../MyPrimitive.tsx` | Create the React component |
-| 2 | `service/[domain]/gemini-my-primitive.ts` | Create the generator |
-| 3 | `service/registry/generators/[domain]Generators.ts` | Register the generator |
-| 4 | `service/manifest/catalog/[domain].ts` | Add to catalog |
-| 5 | `config/primitiveRegistry.tsx` | Register UI component |
-| 6 | `types.ts` | Add ComponentId and data types |
+| 2 | `types.ts` | Add ComponentId and data types |
+| 3 | `service/[domain]/gemini-my-primitive.ts` | Create the generator service |
+| 4 | `service/registry/generators/[domain]Generators.ts` | Register the generator |
+| 5 | `service/manifest/catalog/[domain].ts` | Add to catalog for AI selection |
+| 6 | `config/primitiveRegistry.tsx` | Register UI component for rendering |
 
 **No changes needed to:**
-- ❌ ~~`geminiService.ts`~~ - Uses registry pattern now
-- ❌ ~~`route.ts`~~ - Universal endpoint handles all components
+- ~~`geminiService.ts`~~ - Registry pattern handles all component generation
+- ~~`route.ts`~~ - Universal endpoint handles all components
 
 ---
 
@@ -57,7 +57,26 @@ const MyPrimitive: React.FC<MyPrimitiveProps> = ({ data, className }) => {
 export default MyPrimitive;
 ```
 
-### Step 2: Create the Generator Service
+### Step 2: Add TypeScript Types
+
+Add the ComponentId and export your data type.
+
+```tsx
+// types.ts
+
+// 1. Add to ComponentId union type
+export type ComponentId =
+  | 'bar-model'
+  | 'number-line'
+  | 'my-primitive'  // ← Add this
+  | // ...
+;
+
+// 2. Export your data interface (if not already in component file)
+export type { MyPrimitiveData } from './primitives/visual-primitives/math/MyPrimitive';
+```
+
+### Step 3: Create the Generator Service
 
 Create an AI-powered generator that produces content for your primitive.
 
@@ -85,7 +104,7 @@ export const generateMyPrimitive = async (
   const prompt = `Create educational content for "${topic}" at ${gradeLevel} level...`;
 
   const result = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-flash-lite-latest',
     contents: prompt,
     config: {
       responseMimeType: 'application/json',
@@ -97,7 +116,7 @@ export const generateMyPrimitive = async (
 };
 ```
 
-### Step 3: Register the Generator
+### Step 4: Register the Generator
 
 Add your generator to the appropriate domain module. This self-registers on import.
 
@@ -115,7 +134,7 @@ registerGenerator('my-primitive', async (item, topic, gradeContext) => ({
 }));
 ```
 
-### Step 4: Add to Manifest Catalog
+### Step 5: Add to Manifest Catalog
 
 Add your component to the appropriate domain catalog so the AI can select it.
 
@@ -133,7 +152,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
 ];
 ```
 
-### Step 5: Register UI Component
+### Step 6: Register UI Component
 
 Register the React component for rendering.
 
@@ -154,25 +173,6 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-6xl mx-auto mb-20',
   },
 };
-```
-
-### Step 6: Add TypeScript Types
-
-Update the type definitions.
-
-```tsx
-// types.ts
-
-// 1. Add to ComponentId union type
-export type ComponentId =
-  | 'bar-model'
-  | 'number-line'
-  | 'my-primitive'  // ← Add this
-  | // ...
-;
-
-// 2. Export your data interface (if not already in component file)
-export type { MyPrimitiveData } from './primitives/visual-primitives/math/MyPrimitive';
 ```
 
 ---
@@ -199,12 +199,13 @@ Add generators to the appropriate domain module:
 
 | Domain | File |
 |--------|------|
+| Core | `registry/generators/coreGenerators.ts` |
 | Math | `registry/generators/mathGenerators.ts` |
 | Engineering | `registry/generators/engineeringGenerators.ts` |
-| Science | (create `scienceGenerators.ts` if needed) |
-| Literacy | (create `literacyGenerators.ts` if needed) |
 | Media | `registry/generators/mediaGenerators.ts` |
 | Foundation | `registry/generators/foundationGenerators.ts` |
+
+To add a new domain, create `registry/generators/[domain]Generators.ts` and import it in `registry/generators/index.ts`.
 
 ---
 
@@ -232,42 +233,35 @@ All four checks should return results.
 
 ## Architecture Benefits
 
-The refactored architecture provides:
+The registry-based architecture provides:
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Files to modify | 6 | 4 |
-| Lines to add | ~150 | ~30 |
+| Metric | Before (Switch-based) | After (Registry) |
+|--------|----------------------|------------------|
+| Files to modify | 6 (including geminiService.ts & route.ts) | 6 (small, focused files) |
+| Lines to add | ~150 | ~50 |
 | Switch cases to update | 3 | 0 |
 | AI context required | ~7,000 lines | ~100 lines |
+| Risk of merge conflicts | High (shared monolithic files) | Low (separate domain files) |
 
 ---
 
 ## Troubleshooting
 
 ### Component doesn't render
-1. Verify `componentId` matches registry key exactly
+1. Verify `componentId` matches registry key exactly (case-sensitive)
 2. Check component appears in `exhibitData.orderedComponents`
 3. Check console for warnings from `ManifestOrderRenderer`
+4. Verify UI component is registered in `primitiveRegistry.tsx`
 
 ### "Unknown component type" warning
 1. Generator not registered - check `generators/[domain]Generators.ts`
-2. Feature flag disabled - check `USE_CONTENT_REGISTRY` in `featureFlags.ts`
+2. Verify the generator file is imported in `registry/generators/index.ts`
 
 ### AI never selects component
 1. Not in catalog - add to appropriate `catalog/[domain].ts`
-2. Description unclear - improve description with use cases
+2. Description unclear - improve description with specific use cases and grade levels
+3. Verify catalog file is imported in `catalog/index.ts`
 
 ### TypeScript errors
 1. Missing `ComponentId` entry in `types.ts`
-2. Data interface not exported
-
----
-
-## Legacy Documentation
-
-For primitives added before the refactor (that still use switch statements), see:
-- [ADDING_PRIMITIVES_LEGACY.md](./ADDING_PRIMITIVES_LEGACY.md)
-
-The legacy switch statements in `geminiService.ts` serve as fallback during migration.
-Once all generators are migrated to the registry, the fallback will be removed.
+2. Data interface not exported from component file
