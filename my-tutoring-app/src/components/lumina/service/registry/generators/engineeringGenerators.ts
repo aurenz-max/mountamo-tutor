@@ -14,6 +14,7 @@ import { generateLeverLab } from '../../engineering/gemini-lever-lab';
 import { generatePulleySystemBuilder } from '../../engineering/gemini-pulley-system';
 import { generateRampLab } from '../../engineering/gemini-ramp-lab';
 import { generateWheelAxleExplorer } from '../../engineering/gemini-wheel-axle';
+import { generateGearTrainBuilder } from '../../engineering/gemini-gear-train';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -47,6 +48,13 @@ registerGenerator('wheel-axle-explorer', async (item, topic, gradeContext) => ({
   data: await generateWheelAxleExplorer(topic, gradeContext, item.config),
 }));
 
+// Gear Train Builder
+registerGenerator('gear-train-builder', async (item, topic, gradeContext) => ({
+  type: 'gear-train-builder',
+  instanceId: item.instanceId,
+  data: await generateGearTrainBuilder(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 4/4 engineering primitives registered
+// Migration status: 5/5 engineering primitives registered
 // ============================================================================

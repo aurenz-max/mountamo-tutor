@@ -49,6 +49,7 @@ import LeverLab from '../primitives/visual-primitives/engineering/LeverLab';
 import PulleySystemBuilder from '../primitives/visual-primitives/engineering/PulleySystemBuilder';
 import RampLab from '../primitives/visual-primitives/engineering/RampLab';
 import WheelAxleExplorer from '../primitives/visual-primitives/engineering/WheelAxleExplorer';
+import GearTrainBuilder from '../primitives/visual-primitives/engineering/GearTrainBuilder';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -522,6 +523,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'wheel-axle-explorer': {
     component: WheelAxleExplorer,
     sectionTitle: 'Wheel & Axle Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'gear-train-builder': {
+    component: GearTrainBuilder,
+    sectionTitle: 'Gear Train Builder',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

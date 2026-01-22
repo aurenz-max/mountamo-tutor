@@ -1059,6 +1059,7 @@ export type ComponentId =
   | 'pulley-system-builder' // Interactive pulley system for teaching mechanical advantage
   | 'ramp-lab'           // Interactive inclined plane/ramp for teaching simple machines
   | 'wheel-axle-explorer' // Interactive wheel and axle for force multiplication and simple machines
+  | 'gear-train-builder' // Interactive gear train sandbox for teaching speed/torque trade-offs
 
   // Foundational Concept Teaching
   | 'foundation-explorer'; // Objective-driven concept exploration with diagrams and self-checks
