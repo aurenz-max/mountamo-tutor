@@ -27,10 +27,13 @@ Adding a new primitive involves these files:
 
 Create a standalone React component that accepts a `data` prop.
 
+**Important: Define and export your data interface here.** This component file is the **single source of truth** for the data type. The generator service will import this type rather than redefining it.
+
 ```tsx
 // primitives/visual-primitives/math/MyPrimitive.tsx
 import React, { useState } from 'react';
 
+// ✅ EXPORT the data interface - this is the single source of truth
 export interface MyPrimitiveData {
   title: string;
   description: string;
@@ -80,12 +83,19 @@ export type { MyPrimitiveData } from './primitives/visual-primitives/math/MyPrim
 
 Create an AI-powered generator that produces content for your primitive.
 
+**Important: Import the data type from the component file.** Do NOT redefine the interface here. This ensures type consistency between what the generator produces and what the component expects.
+
 ```tsx
 // service/math/gemini-my-primitive.ts
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+
+// ✅ IMPORT the data type from the component - single source of truth
 import { MyPrimitiveData } from '../../primitives/visual-primitives/math/MyPrimitive';
 
+// ❌ DON'T redefine the interface here - it leads to drift and duplication
+
+// The Gemini schema must match the TypeScript interface
 const myPrimitiveSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -99,7 +109,7 @@ const myPrimitiveSchema: Schema = {
 export const generateMyPrimitive = async (
   topic: string,
   gradeLevel: string,
-  config?: Record<string, unknown>
+  config?: Partial<MyPrimitiveData>  // ✅ Use imported type for config too
 ): Promise<MyPrimitiveData> => {
   const prompt = `Create educational content for "${topic}" at ${gradeLevel} level...`;
 
@@ -173,6 +183,48 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-6xl mx-auto mb-20',
   },
 };
+```
+
+---
+
+## Best Practices
+
+### Single Source of Truth for Data Types
+
+**Always define your data interface in the component file and import it elsewhere.**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  MyPrimitive.tsx (DEFINES MyPrimitiveData)                  │
+│  ↓                                                          │
+│  gemini-my-primitive.ts (IMPORTS MyPrimitiveData)           │
+│  ↓                                                          │
+│  types.ts (RE-EXPORTS MyPrimitiveData if needed globally)   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Why this matters:**
+- Changes to the data structure only need to happen in one place
+- TypeScript will catch mismatches between generator output and component expectations
+- Reduces copy-paste errors and type drift
+
+**Common mistake to avoid:**
+```tsx
+// ❌ BAD: Defining the same interface in both files
+// MyPrimitive.tsx
+export interface MyPrimitiveData { title: string; values: number[]; }
+
+// gemini-my-primitive.ts
+export interface MyPrimitiveData { title: string; values: number[]; } // Duplicate!
+```
+
+```tsx
+// ✅ GOOD: Single definition, imported where needed
+// MyPrimitive.tsx
+export interface MyPrimitiveData { title: string; values: number[]; }
+
+// gemini-my-primitive.ts
+import { MyPrimitiveData } from '../../primitives/.../MyPrimitive';
 ```
 
 ---

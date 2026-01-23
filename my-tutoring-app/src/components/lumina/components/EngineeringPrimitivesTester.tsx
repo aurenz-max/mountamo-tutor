@@ -6,12 +6,14 @@ import PulleySystemBuilder from '../primitives/visual-primitives/engineering/Pul
 import RampLab from '../primitives/visual-primitives/engineering/RampLab';
 import WheelAxleExplorer from '../primitives/visual-primitives/engineering/WheelAxleExplorer';
 import GearTrainBuilder from '../primitives/visual-primitives/engineering/GearTrainBuilder';
+import BridgeBuilder from '../primitives/visual-primitives/engineering/BridgeBuilder';
+import TowerStacker from '../primitives/visual-primitives/engineering/TowerStacker';
 
 interface EngineeringPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder';
+type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder' | 'bridge-builder' | 'tower-stacker';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -20,6 +22,8 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'ramp-lab', label: 'Ramp Lab', icon: '📐', topic: 'Understanding inclined planes and ramps' },
   { value: 'wheel-axle-explorer', label: 'Wheel & Axle Explorer', icon: '⚙️', topic: 'Understanding wheel and axle machines' },
   { value: 'gear-train-builder', label: 'Gear Train Builder', icon: '🔩', topic: 'Understanding gears and speed ratios' },
+  { value: 'bridge-builder', label: 'Bridge Builder', icon: '🌉', topic: 'Understanding bridges and structural engineering' },
+  { value: 'tower-stacker', label: 'Tower Stacker', icon: '🏗️', topic: 'Understanding stability and center of gravity' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -49,6 +53,10 @@ const PrimitiveRenderer: React.FC<{ componentId: PrimitiveType; data: unknown }>
       return <WheelAxleExplorer data={data as Parameters<typeof WheelAxleExplorer>[0]['data']} />;
     case 'gear-train-builder':
       return <GearTrainBuilder data={data as Parameters<typeof GearTrainBuilder>[0]['data']} />;
+    case 'bridge-builder':
+      return <BridgeBuilder data={data as Parameters<typeof BridgeBuilder>[0]['data']} />;
+    case 'tower-stacker':
+      return <TowerStacker data={data as Parameters<typeof TowerStacker>[0]['data']} />;
     default:
       return <div className="text-slate-400">Unknown primitive: {componentId}</div>;
   }

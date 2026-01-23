@@ -15,6 +15,8 @@ import { generatePulleySystemBuilder } from '../../engineering/gemini-pulley-sys
 import { generateRampLab } from '../../engineering/gemini-ramp-lab';
 import { generateWheelAxleExplorer } from '../../engineering/gemini-wheel-axle';
 import { generateGearTrainBuilder } from '../../engineering/gemini-gear-train';
+import { generateBridgeBuilder } from '../../engineering/gemini-bridge-builder';
+import { generateTowerStacker } from '../../engineering/gemini-tower-stacker';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -55,6 +57,20 @@ registerGenerator('gear-train-builder', async (item, topic, gradeContext) => ({
   data: await generateGearTrainBuilder(topic, gradeContext, item.config),
 }));
 
+// Bridge Builder
+registerGenerator('bridge-builder', async (item, topic, gradeContext) => ({
+  type: 'bridge-builder',
+  instanceId: item.instanceId,
+  data: await generateBridgeBuilder(topic, gradeContext, item.config),
+}));
+
+// Tower Stacker
+registerGenerator('tower-stacker', async (item, topic, gradeContext) => ({
+  type: 'tower-stacker',
+  instanceId: item.instanceId,
+  data: await generateTowerStacker(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 5/5 engineering primitives registered
+// Migration status: 7/7 engineering primitives registered
 // ============================================================================

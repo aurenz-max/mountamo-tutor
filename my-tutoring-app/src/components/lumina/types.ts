@@ -1060,6 +1060,8 @@ export type ComponentId =
   | 'ramp-lab'           // Interactive inclined plane/ramp for teaching simple machines
   | 'wheel-axle-explorer' // Interactive wheel and axle for force multiplication and simple machines
   | 'gear-train-builder' // Interactive gear train sandbox for teaching speed/torque trade-offs
+  | 'bridge-builder'     // Interactive 2D bridge construction for structural engineering concepts
+  | 'tower-stacker'      // Interactive vertical building challenge for stability and center of gravity
 
   // Foundational Concept Teaching
   | 'foundation-explorer'; // Objective-driven concept exploration with diagrams and self-checks

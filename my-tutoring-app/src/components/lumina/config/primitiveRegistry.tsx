@@ -50,6 +50,8 @@ import PulleySystemBuilder from '../primitives/visual-primitives/engineering/Pul
 import RampLab from '../primitives/visual-primitives/engineering/RampLab';
 import WheelAxleExplorer from '../primitives/visual-primitives/engineering/WheelAxleExplorer';
 import GearTrainBuilder from '../primitives/visual-primitives/engineering/GearTrainBuilder';
+import BridgeBuilder from '../primitives/visual-primitives/engineering/BridgeBuilder';
+import TowerStacker from '../primitives/visual-primitives/engineering/TowerStacker';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -532,6 +534,24 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'gear-train-builder': {
     component: GearTrainBuilder,
     sectionTitle: 'Gear Train Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'bridge-builder': {
+    component: BridgeBuilder,
+    sectionTitle: 'Bridge Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'tower-stacker': {
+    component: TowerStacker,
+    sectionTitle: 'Tower Stacker',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
