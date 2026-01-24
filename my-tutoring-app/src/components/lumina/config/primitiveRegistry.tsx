@@ -296,6 +296,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'percent-bar': {
@@ -324,6 +325,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'tape-diagram': {

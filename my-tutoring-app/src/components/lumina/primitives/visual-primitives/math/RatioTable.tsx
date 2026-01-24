@@ -1,15 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+  usePrimitiveEvaluation,
+  type RatioTableMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
 
 export interface RatioTableData {
   title: string;
   description: string;
   rowLabels: [string, string]; // Names for the two quantities
   baseRatio: [number, number]; // The reference ratio (locked first column)
+
+  // Task configuration
+  taskType?: 'missing-value' | 'find-multiplier' | 'build-ratio' | 'unit-rate-challenge' | 'explore';
+  targetMultiplier?: number; // For missing-value, find-multiplier, and build-ratio tasks
+  questionPrompt?: string; // Custom question for the task
+  hiddenValue?: 'scaled-first' | 'scaled-second'; // Which value to hide for missing-value task
+
   maxMultiplier?: number; // Maximum multiplier value for the slider
   showUnitRate?: boolean; // Highlight ratio to 1
   showBarChart?: boolean; // Display visual bar chart
+
+  // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<RatioTableMetrics>) => void;
 }
 
 interface RatioTableProps {
@@ -21,20 +41,66 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
   const {
     rowLabels,
     baseRatio,
+    taskType = 'explore',
+    targetMultiplier = 1,
+    questionPrompt,
+    hiddenValue = 'scaled-second',
     maxMultiplier = 10,
     showUnitRate = true,
     showBarChart = true,
+    // Evaluation props
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
-  // State for the multiplier (starts at 1)
-  const [multiplier, setMultiplier] = useState<number>(1);
+  // State for the multiplier (starts at 1 for explore, or a random value for tasks)
+  const [multiplier, setMultiplier] = useState<number>(taskType === 'missing-value' ? targetMultiplier : 1);
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const [studentAnswer, setStudentAnswer] = useState<string>('');
+  const [sliderAdjustments, setSliderAdjustments] = useState<number>(0);
+  const [exploredMultipliers, setExploredMultipliers] = useState<number[]>([]);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'hint' | null>(null);
+  const [hintsUsed, setHintsUsed] = useState<number>(0);
+
+  // Evaluation hook
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<RatioTableMetrics>({
+    primitiveType: 'ratio-table',
+    instanceId: instanceId || `ratio-table-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as
+      | ((result: PrimitiveEvaluationResult) => void)
+      | undefined,
+  });
+
+  // Track exploration for evaluation
+  useEffect(() => {
+    if (!exploredMultipliers.includes(multiplier)) {
+      setExploredMultipliers((prev) => [...prev, multiplier]);
+    }
+  }, [multiplier, exploredMultipliers]);
 
   // Calculate the second column based on multiplier
   const secondColumn: [number, number] = [
     baseRatio[0] * multiplier,
     baseRatio[1] * multiplier,
   ];
+
+  // Determine which value is hidden for missing-value task
+  const targetValue = hiddenValue === 'scaled-first'
+    ? baseRatio[0] * targetMultiplier
+    : baseRatio[1] * targetMultiplier;
 
   // Calculate the constant ratio
   const getConstantRatio = (): string => {
@@ -52,6 +118,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
 
   // Handle multiplier input change
   const handleMultiplierChange = (value: string) => {
+    if (hasSubmittedEvaluation) return;
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue < 0) return;
     if (numValue > maxMultiplier) {
@@ -59,6 +126,128 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     } else {
       setMultiplier(numValue);
     }
+    setSliderAdjustments((prev) => prev + 1);
+  };
+
+  // Handle slider change
+  const handleSliderChange = (value: number) => {
+    if (hasSubmittedEvaluation) return;
+    setMultiplier(value);
+    setSliderAdjustments((prev) => prev + 1);
+    setFeedback(null);
+  };
+
+  // Hint system
+  const provideHint = () => {
+    if (hasSubmittedEvaluation) return;
+    setHintsUsed((prev) => prev + 1);
+
+    if (taskType === 'missing-value') {
+      if (hintsUsed === 0) {
+        setFeedback(`Hint: The unit rate is ${getUnitRate()} ${rowLabels[1]} per ${rowLabels[0]}. Use this to find the missing value.`);
+        setFeedbackType('hint');
+      } else if (hintsUsed === 1) {
+        setFeedback(`Hint: Multiply the unit rate (${getUnitRate()}) by the known quantity to find the missing value.`);
+        setFeedbackType('hint');
+      } else {
+        setFeedback(`Hint: The answer is ${targetValue.toFixed(2)}`);
+        setFeedbackType('hint');
+      }
+    }
+  };
+
+  // Submit handler for evaluation
+  const handleSubmit = () => {
+    if (hasSubmittedEvaluation) return;
+
+    let success = false;
+    let score = 0;
+    let answerCorrect = false;
+    let strategyUsed: 'calculation' | 'trial-and-error' | 'pattern-recognition' | 'unknown' = 'unknown';
+
+    if (taskType === 'missing-value') {
+      const parsedAnswer = parseFloat(studentAnswer);
+      const percentError = Math.abs((parsedAnswer - targetValue) / targetValue) * 100;
+      answerCorrect = percentError < 1; // Within 1% tolerance
+
+      if (answerCorrect) {
+        success = true;
+        score = 100;
+        setFeedback(`Perfect! The answer is ${parsedAnswer.toFixed(2)}. You've correctly solved the proportional relationship.`);
+        setFeedbackType('success');
+      } else if (percentError < 5) {
+        score = 75;
+        setFeedback(`Very close! Your answer ${parsedAnswer.toFixed(2)} is nearly correct. The exact answer is ${targetValue.toFixed(2)}.`);
+        setFeedbackType('hint');
+      } else if (percentError < 20) {
+        score = 50;
+        setFeedback(`Not quite. Your answer ${parsedAnswer.toFixed(2)} is off. Try using the unit rate: ${getUnitRate()} ${rowLabels[1]} per ${rowLabels[0]}.`);
+        setFeedbackType('error');
+      } else {
+        score = 0;
+        setFeedback(`That's not correct. Remember: the ratio stays constant. Try calculating the unit rate first.`);
+        setFeedbackType('error');
+      }
+
+      // Determine strategy based on behavior
+      if (sliderAdjustments < 3) {
+        strategyUsed = 'calculation';
+      } else if (sliderAdjustments < 10) {
+        strategyUsed = 'pattern-recognition';
+      } else {
+        strategyUsed = 'trial-and-error';
+      }
+    }
+
+    const unitRate = baseRatio[0] !== 0 ? baseRatio[1] / baseRatio[0] : 0;
+    const explorationRange: [number, number] = exploredMultipliers.length > 0
+      ? [Math.min(...exploredMultipliers), Math.max(...exploredMultipliers)]
+      : [multiplier, multiplier];
+
+    const metrics: RatioTableMetrics = {
+      type: 'ratio-table',
+      taskType,
+      goalMet: success,
+      baseRatio,
+      unitRate,
+      targetMultiplier: taskType === 'missing-value' ? targetMultiplier : undefined,
+      targetValue: taskType === 'missing-value' ? targetValue : undefined,
+      studentAnswer: taskType === 'missing-value' ? parseFloat(studentAnswer) : undefined,
+      answerCorrect,
+      answerPrecision: taskType === 'missing-value'
+        ? Math.max(0, 100 - Math.abs((parseFloat(studentAnswer) - targetValue) / targetValue) * 100)
+        : undefined,
+      attempts: 1,
+      hintsRequested: hintsUsed,
+      sliderAdjustments,
+      explorationRange,
+      usedCalculation: strategyUsed === 'calculation',
+      strategyUsed,
+      finalMultiplier: multiplier,
+      finalScaledValues: secondColumn,
+    };
+
+    submitEvaluation(success, score, metrics, {
+      studentWork: {
+        taskType,
+        studentAnswer: taskType === 'missing-value' ? studentAnswer : undefined,
+        finalMultiplier: multiplier,
+        sliderAdjustments,
+        hintsUsed,
+      },
+    });
+  };
+
+  // Reset handler
+  const handleReset = () => {
+    setStudentAnswer('');
+    setMultiplier(taskType === 'missing-value' ? targetMultiplier : 1);
+    setSliderAdjustments(0);
+    setExploredMultipliers([]);
+    setFeedback(null);
+    setFeedbackType(null);
+    setHintsUsed(0);
+    resetEvaluationAttempt();
   };
 
   return (
@@ -91,6 +280,22 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
             <h3 className="text-xl font-bold text-white mb-2">{data.title}</h3>
             <p className="text-slate-300 font-light">{data.description}</p>
           </div>
+
+          {/* Task-Specific Question Prompt */}
+          {taskType === 'missing-value' && questionPrompt && (
+            <div className="mb-6 p-6 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm rounded-2xl border-2 border-purple-400/50 relative overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.3)]">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/30 flex items-center justify-center border border-purple-400/50">
+                    <span className="text-purple-200 text-xl">?</span>
+                  </div>
+                  <h4 className="text-lg font-bold text-purple-200 uppercase tracking-wide">Challenge Question</h4>
+                </div>
+                <p className="text-white text-lg font-medium">{questionPrompt}</p>
+              </div>
+            </div>
+          )}
 
           {/* Constant Ratio Display */}
           {showUnitRate && (
@@ -146,10 +351,12 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
                 )}
               </div>
 
-              {/* Second Column - Adjustable */}
+              {/* Second Column - Adjustable or Hidden for Tasks */}
               <div className="space-y-4">
                 <div className="text-center mb-2">
-                  <span className="text-purple-400 font-mono text-sm uppercase tracking-wider">Scaled by ×{multiplier.toFixed(1)}</span>
+                  <span className="text-purple-400 font-mono text-sm uppercase tracking-wider">
+                    {taskType === 'missing-value' ? 'Find the Missing Value' : `Scaled by ×${multiplier.toFixed(1)}`}
+                  </span>
                 </div>
 
                 {/* Row 1 - Second Column */}
@@ -157,7 +364,11 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
                   <div className="relative z-10">
                     <p className="text-xs text-purple-400 mb-1 font-medium">{rowLabels[0]}</p>
-                    <p className="text-3xl font-bold text-white font-mono">{secondColumn[0].toFixed(1)}</p>
+                    {taskType === 'missing-value' && hiddenValue === 'scaled-first' && !hasSubmittedEvaluation ? (
+                      <p className="text-3xl font-bold text-purple-300 font-mono">?</p>
+                    ) : (
+                      <p className="text-3xl font-bold text-white font-mono">{secondColumn[0].toFixed(1)}</p>
+                    )}
                   </div>
                 </div>
 
@@ -166,7 +377,11 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
                   <div className="relative z-10">
                     <p className="text-xs text-purple-400 mb-1 font-medium">{rowLabels[1]}</p>
-                    <p className="text-3xl font-bold text-white font-mono">{secondColumn[1].toFixed(1)}</p>
+                    {taskType === 'missing-value' && hiddenValue === 'scaled-second' && !hasSubmittedEvaluation ? (
+                      <p className="text-3xl font-bold text-purple-300 font-mono">?</p>
+                    ) : (
+                      <p className="text-3xl font-bold text-white font-mono">{secondColumn[1].toFixed(1)}</p>
+                    )}
                   </div>
                 </div>
 
@@ -181,43 +396,73 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
             </div>
           </div>
 
-          {/* Multiplier Control */}
-          <div className="mb-8 p-6 bg-purple-500/20 backdrop-blur-sm border-2 border-purple-400/50 rounded-2xl relative overflow-hidden shadow-[0_0_25px_rgba(168,85,247,0.2)]">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+          {/* Answer Input for Missing-Value Task */}
+          {taskType === 'missing-value' && (
+            <div className="mb-8 p-6 bg-gradient-to-br from-pink-500/20 to-purple-500/20 backdrop-blur-sm border-2 border-pink-400/50 rounded-2xl relative overflow-hidden shadow-[0_0_30px_rgba(236,72,153,0.2)]">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+              <div className="relative z-10">
+                <label className="text-pink-200 font-bold text-lg mb-4 block">Your Answer</label>
+                <div className="flex gap-4 items-center">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={studentAnswer}
+                    onChange={(e) => setStudentAnswer(e.target.value)}
+                    disabled={hasSubmittedEvaluation}
+                    placeholder="Enter your answer"
+                    className="flex-1 px-6 py-4 bg-slate-800/50 backdrop-blur-sm text-white text-2xl rounded-xl border-2 border-pink-400/40 focus:border-pink-400 focus:ring-2 focus:ring-pink-400/30 focus:outline-none text-center font-mono font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <button
+                    onClick={provideHint}
+                    disabled={hasSubmittedEvaluation}
+                    className="px-6 py-4 bg-yellow-500/20 backdrop-blur-sm text-yellow-200 rounded-xl border-2 border-yellow-400/50 hover:border-yellow-400/80 hover:bg-yellow-500/30 transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Hint ({hintsUsed}/3)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <label className="text-purple-200 font-bold text-lg">Adjust Multiplier</label>
+          {/* Multiplier Control (only for explore mode) */}
+          {taskType !== 'missing-value' && (
+            <div className="mb-8 p-6 bg-purple-500/20 backdrop-blur-sm border-2 border-purple-400/50 rounded-2xl relative overflow-hidden shadow-[0_0_25px_rgba(168,85,247,0.2)]">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-purple-200 font-bold text-lg">Adjust Multiplier</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={maxMultiplier}
+                    step="0.1"
+                    value={multiplier}
+                    onChange={(e) => handleMultiplierChange(e.target.value)}
+                    className="w-24 px-4 py-2 bg-slate-800/50 backdrop-blur-sm text-white rounded-lg border border-purple-400/40 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 focus:outline-none text-center font-mono font-bold transition-all"
+                  />
+                </div>
+
                 <input
-                  type="number"
+                  type="range"
                   min="0"
                   max={maxMultiplier}
                   step="0.1"
                   value={multiplier}
-                  onChange={(e) => handleMultiplierChange(e.target.value)}
-                  className="w-24 px-4 py-2 bg-slate-800/50 backdrop-blur-sm text-white rounded-lg border border-purple-400/40 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 focus:outline-none text-center font-mono font-bold transition-all"
+                  onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
+                  className="w-full h-3 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400 transition-all"
+                  style={{
+                    background: `linear-gradient(to right, rgba(168,85,247,0.4) 0%, rgba(168,85,247,0.4) ${(multiplier / maxMultiplier) * 100}%, rgba(51,65,85,0.5) ${(multiplier / maxMultiplier) * 100}%, rgba(51,65,85,0.5) 100%)`
+                  }}
                 />
-              </div>
 
-              <input
-                type="range"
-                min="0"
-                max={maxMultiplier}
-                step="0.1"
-                value={multiplier}
-                onChange={(e) => setMultiplier(parseFloat(e.target.value))}
-                className="w-full h-3 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400 transition-all"
-                style={{
-                  background: `linear-gradient(to right, rgba(168,85,247,0.4) 0%, rgba(168,85,247,0.4) ${(multiplier / maxMultiplier) * 100}%, rgba(51,65,85,0.5) ${(multiplier / maxMultiplier) * 100}%, rgba(51,65,85,0.5) 100%)`
-                }}
-              />
-
-              <div className="flex justify-between mt-2 text-xs text-purple-300 font-mono">
-                <span>0</span>
-                <span>{maxMultiplier}</span>
+                <div className="flex justify-between mt-2 text-xs text-purple-300 font-mono">
+                  <span>0</span>
+                  <span>{maxMultiplier}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Bar Chart Visualization */}
           {showBarChart && (
@@ -320,28 +565,107 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
             </div>
           )}
 
+          {/* Feedback Display */}
+          {feedback && (
+            <div className={`mb-6 p-6 backdrop-blur-sm rounded-2xl border-2 relative overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.2)] ${
+              feedbackType === 'success'
+                ? 'bg-green-500/20 border-green-400/50'
+                : feedbackType === 'error'
+                ? 'bg-red-500/20 border-red-400/50'
+                : 'bg-yellow-500/20 border-yellow-400/50'
+            }`}>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+              <div className="relative z-10 flex items-start gap-4">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border-2 ${
+                  feedbackType === 'success'
+                    ? 'bg-green-500/30 border-green-400/50'
+                    : feedbackType === 'error'
+                    ? 'bg-red-500/30 border-red-400/50'
+                    : 'bg-yellow-500/30 border-yellow-400/50'
+                }`}>
+                  {feedbackType === 'success' ? '✓' : feedbackType === 'error' ? '✗' : '💡'}
+                </div>
+                <p className={`text-lg font-medium flex-1 ${
+                  feedbackType === 'success'
+                    ? 'text-green-100'
+                    : feedbackType === 'error'
+                    ? 'text-red-100'
+                    : 'text-yellow-100'
+                }`}>
+                  {feedback}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Submit and Reset Buttons */}
+          {taskType !== 'explore' && (
+            <div className="mb-6 flex gap-4 items-center justify-center">
+              <button
+                onClick={handleSubmit}
+                disabled={hasSubmittedEvaluation || (taskType === 'missing-value' && !studentAnswer)}
+                className="px-8 py-4 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-teal-500 disabled:hover:to-cyan-500 text-lg"
+              >
+                {hasSubmittedEvaluation ? 'Submitted ✓' : 'Submit Answer'}
+              </button>
+              {hasSubmittedEvaluation && (
+                <button
+                  onClick={handleReset}
+                  className="px-8 py-4 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all text-lg"
+                >
+                  Try Again
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Instructions */}
           <div className="p-6 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-600/50 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
             <div className="relative z-10">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-teal-400 mb-4">How to Use</h4>
+              <h4 className="text-sm font-mono uppercase tracking-wider text-teal-400 mb-4">
+                {taskType === 'missing-value' ? 'How to Solve' : 'How to Use'}
+              </h4>
               <ul className="text-sm text-slate-200 space-y-2">
-                <li className="flex items-start gap-2 hover:text-white transition-colors">
-                  <span className="text-teal-400 mt-1">▸</span>
-                  <span>The reference ratio shows the base proportional relationship</span>
-                </li>
-                <li className="flex items-start gap-2 hover:text-white transition-colors">
-                  <span className="text-teal-400 mt-1">▸</span>
-                  <span>Use the slider to adjust the multiplier and see how values scale</span>
-                </li>
-                <li className="flex items-start gap-2 hover:text-white transition-colors">
-                  <span className="text-teal-400 mt-1">▸</span>
-                  <span>The bar chart visualizes how both quantities scale proportionally</span>
-                </li>
-                <li className="flex items-start gap-2 hover:text-white transition-colors">
-                  <span className="text-teal-400 mt-1">▸</span>
-                  <span>Notice how the unit rate remains constant regardless of scaling</span>
-                </li>
+                {taskType === 'missing-value' ? (
+                  <>
+                    <li className="flex items-start gap-2 hover:text-white transition-colors">
+                      <span className="text-teal-400 mt-1">▸</span>
+                      <span>Look at the reference ratio to understand the relationship</span>
+                    </li>
+                    <li className="flex items-start gap-2 hover:text-white transition-colors">
+                      <span className="text-teal-400 mt-1">▸</span>
+                      <span>Calculate the unit rate (divide the second quantity by the first)</span>
+                    </li>
+                    <li className="flex items-start gap-2 hover:text-white transition-colors">
+                      <span className="text-teal-400 mt-1">▸</span>
+                      <span>Use the unit rate to find the missing value in the scaled column</span>
+                    </li>
+                    <li className="flex items-start gap-2 hover:text-white transition-colors">
+                      <span className="text-teal-400 mt-1">▸</span>
+                      <span>Click "Hint" if you need help solving the problem</span>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="flex items-start gap-2 hover:text-white transition-colors">
+                      <span className="text-teal-400 mt-1">▸</span>
+                      <span>The reference ratio shows the base proportional relationship</span>
+                    </li>
+                    <li className="flex items-start gap-2 hover:text-white transition-colors">
+                      <span className="text-teal-400 mt-1">▸</span>
+                      <span>Use the slider to adjust the multiplier and see how values scale</span>
+                    </li>
+                    <li className="flex items-start gap-2 hover:text-white transition-colors">
+                      <span className="text-teal-400 mt-1">▸</span>
+                      <span>The bar chart visualizes how both quantities scale proportionally</span>
+                    </li>
+                    <li className="flex items-start gap-2 hover:text-white transition-colors">
+                      <span className="text-teal-400 mt-1">▸</span>
+                      <span>Notice how the unit rate remains constant regardless of scaling</span>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
           </div>

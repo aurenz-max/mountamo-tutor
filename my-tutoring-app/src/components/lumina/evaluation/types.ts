@@ -382,6 +382,41 @@ export interface NumberLineMetrics extends BasePrimitiveMetrics {
   scaleType: 'integer' | 'decimal' | 'fraction';
 }
 
+export interface DoubleNumberLineMetrics extends BasePrimitiveMetrics {
+  type: 'double-number-line';
+
+  // Goal achievement
+  totalTargetPoints: number;      // Number of points student must find
+  correctPoints: number;          // Number of points student got right
+  allPointsCorrect: boolean;      // All target points found correctly
+
+  // Proportional reasoning
+  unitRateIdentified: boolean;    // Did they find the unit rate (top=1)?
+  correctRatio: string;           // The ratio relationship (e.g., "1:4")
+
+  // Per-point accuracy
+  pointResults: Array<{
+    index: number;
+    targetTop: number;
+    targetBottom: number;
+    studentTop: number | null;
+    studentBottom: number | null;
+    topCorrect: boolean;
+    bottomCorrect: boolean;
+    bothCorrect: boolean;
+  }>;
+
+  // Problem-solving approach
+  attemptsCount: number;          // Total value entries made
+  hintsUsed: number;              // Number of hints requested
+  usedGivenPoints: boolean;       // Whether they used hint points to solve
+
+  // Accuracy metrics
+  topValueAccuracy: number;       // 0-100: correct top values / total points
+  bottomValueAccuracy: number;    // 0-100: correct bottom values / total points
+  overallAccuracy: number;        // 0-100: both correct / total points
+}
+
 export interface FractionBarMetrics extends BasePrimitiveMetrics {
   type: 'fraction-bar';
 
@@ -616,6 +651,47 @@ export interface ArrayGridMetrics extends BasePrimitiveMetrics {
   };
 }
 
+export interface RatioTableMetrics extends BasePrimitiveMetrics {
+  type: 'ratio-table';
+
+  // Goal achievement
+  taskType: 'missing-value' | 'find-multiplier' | 'build-ratio' | 'unit-rate-challenge' | 'explore';
+  goalMet: boolean;
+
+  // Base ratio information
+  baseRatio: [number, number];      // The reference ratio [qty1, qty2]
+  unitRate: number;                 // qty2 / qty1
+
+  // Missing-value task metrics
+  targetMultiplier?: number;        // The multiplier for the hidden value
+  targetValue?: number;             // The specific hidden value student should find
+  studentAnswer?: number;           // What student entered
+  answerCorrect?: boolean;          // Did they get it right
+  answerPrecision?: number;         // How close they were (0-100)
+
+  // Find-multiplier task metrics
+  selectedMultiplier?: number;      // Multiplier student chose
+  multiplierCorrect?: boolean;      // Matches target multiplier
+
+  // Build-ratio task metrics
+  finalScaledRatio?: [number, number]; // The ratio they built
+  ratioCorrect?: boolean;           // Matches target
+
+  // Performance tracking
+  attempts: number;                 // Total attempts before success
+  hintsRequested: number;           // How many hints student asked for
+
+  // Strategy indicators
+  sliderAdjustments: number;        // Times they moved the multiplier slider
+  explorationRange?: [number, number]; // [min, max] multipliers explored
+  usedCalculation?: boolean;        // Evidence they calculated vs trial-and-error
+  strategyUsed?: 'calculation' | 'trial-and-error' | 'pattern-recognition' | 'unknown';
+
+  // Final state for replay
+  finalMultiplier: number;          // Where slider ended up
+  finalScaledValues: [number, number]; // Final scaled quantities
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -643,11 +719,13 @@ export type PrimitiveMetrics =
   | FractionBarMetrics
   | AreaModelMetrics
   | NumberLineMetrics
+  | DoubleNumberLineMetrics
   | CoordinateGraphMetrics
   | PlaceValueChartMetrics
   | FactorTreeMetrics
   | FormulaCardMetrics
   | ArrayGridMetrics
+  | RatioTableMetrics
   // Exploration
   | FunctionMachineMetrics;
 

@@ -50,8 +50,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'double-number-line',
-    description: 'Two parallel horizontal number lines with independent scales showing proportional relationships between quantities. Points on one line correspond to points on the other, visualized with vertical alignment guides. Perfect for teaching ratios, unit rates, proportional relationships, measurement conversions, percent problems, and speed/distance relationships. Critical bridge from additive to multiplicative reasoning. ESSENTIAL for grades 5-8 ratios and proportions.',
-    constraints: 'Requires two quantity labels and proportional relationship. Best with 3-5 linked corresponding points. Ideal for unit rate exploration.'
+    description: 'INTERACTIVE PROBLEM-SOLVING PRIMITIVE: Students find missing values on two parallel number lines by calculating proportional relationships. Perfect for teaching ratios, unit rates, proportional relationships, measurement conversions, percent problems, and speed/distance relationships through active problem-solving. Students enter values in input fields and receive immediate feedback. Critical bridge from additive to multiplicative reasoning. ESSENTIAL for grades 5-8 ratios and proportions practice.',
+    constraints: 'Requires two quantity labels and proportional relationship. Automatically generates 2-4 target points for students to solve. Can optionally provide 1-2 hint points (like origin or unit rate). Example config: { targetPoints: [...], givenPoints: [...], showUnitRate: true }'
   },
   {
     id: 'tape-diagram',
