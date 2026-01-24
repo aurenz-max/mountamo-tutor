@@ -1,5 +1,5 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
-import { FractionBarData } from "../../types";
+import { FractionBarData } from "../../primitives/visual-primitives/math/FractionBar";
 import { ai } from "../geminiClient";
 
 /**
@@ -25,7 +25,7 @@ const fractionBarSchema: Schema = {
     },
     shaded: {
       type: Type.NUMBER,
-      description: "Number of shaded parts (numerator). Must be <= partitions"
+      description: "Number of shaded parts (numerator). Must be <= partitions. For 'build' tasks, should be 0 so student starts blank"
     },
     barCount: {
       type: Type.NUMBER,
@@ -42,6 +42,14 @@ const fractionBarSchema: Schema = {
     showEquivalentLines: {
       type: Type.BOOLEAN,
       description: "Draw alignment guides between bars to show equivalence. Useful for comparing fractions. Default: false"
+    },
+    targetFraction: {
+      type: Type.STRING,
+      description: "Target fraction for evaluation (e.g., '3/4', '1/2'). Required for 'build' and 'compare' tasks. Omit for pure 'explore' activities"
+    },
+    taskType: {
+      type: Type.STRING,
+      description: "Type of task: 'build' (construct target fraction), 'compare' (compare fractions), 'explore' (free exploration). Default: 'build' if targetFraction provided"
     }
   },
   required: ["title", "description", "partitions", "shaded", "barCount"]
@@ -72,6 +80,8 @@ export const generateFractionBar = async (
     showLabels?: boolean;
     allowPartitionEdit?: boolean;
     showEquivalentLines?: boolean;
+    targetFraction?: string;
+    taskType?: 'build' | 'compare' | 'explore';
   }
 ): Promise<FractionBarData> => {
   const prompt = `
@@ -116,11 +126,15 @@ ${config.barCount !== undefined ? `- Number of bars: ${config.barCount}` : ''}
 ${config.showLabels !== undefined ? `- Show labels: ${config.showLabels}` : ''}
 ${config.allowPartitionEdit !== undefined ? `- Allow partition editing: ${config.allowPartitionEdit}` : ''}
 ${config.showEquivalentLines !== undefined ? `- Show alignment guides: ${config.showEquivalentLines}` : ''}
+${config.targetFraction !== undefined ? `- Target fraction: ${config.targetFraction}` : ''}
+${config.taskType !== undefined ? `- Task type: ${config.taskType}` : ''}
 ` : ''}
 
 REQUIREMENTS:
 1. Choose appropriate partitions based on topic and grade level (range: 2-24)
-2. Set shaded value to clearly demonstrate the concept (must be <= partitions)
+2. Set shaded value based on task type:
+   - For 'build' tasks: shaded = 0 (student starts blank and builds the target)
+   - For 'explore' or 'compare' tasks: shaded can be preset to show examples
 3. Use 1 bar for introduction, 2-3 bars for comparison/operations
 4. Write a clear, student-friendly title that includes the fraction(s) being shown
 5. Provide an educational description of what students will learn
@@ -128,11 +142,24 @@ REQUIREMENTS:
 7. Enable showEquivalentLines when comparing or showing equivalent fractions
 8. Always show labels unless specifically teaching visual estimation
 
+EVALUATION SETTINGS:
+- Set targetFraction (e.g., "1/4", "3/4") for any task where students need to build or identify a specific fraction
+- Set taskType:
+  * 'build' - Student constructs the target fraction from scratch (shaded should be 0)
+  * 'compare' - Student compares multiple fractions (provide preset fractions)
+  * 'explore' - Free exploration without a specific goal (no targetFraction needed)
+- If topic involves building, constructing, or "what is X?" questions, use taskType='build' and set targetFraction
+- Examples:
+  * "What is 1/4?" → taskType='build', targetFraction='1/4', shaded=0
+  * "Compare 1/2 and 3/4" → taskType='compare', targetFraction='1/2', preset shading
+  * "Explore fractions" → taskType='explore', no targetFraction
+
 IMPORTANT:
 - For single fraction introduction: barCount = 1
 - For comparing two fractions: barCount = 2, showEquivalentLines = true
 - For adding fractions: barCount = 2 or 3 (two addends, optional sum bar)
 - Keep denominators reasonable (prefer 2-12 for elementary, up to 24 for advanced)
+- ALWAYS include targetFraction and taskType unless it's pure exploration
 
 Return the complete fraction bar configuration.
 `;
@@ -166,6 +193,18 @@ Return the complete fraction bar configuration.
     if (config.showLabels !== undefined) data.showLabels = config.showLabels;
     if (config.allowPartitionEdit !== undefined) data.allowPartitionEdit = config.allowPartitionEdit;
     if (config.showEquivalentLines !== undefined) data.showEquivalentLines = config.showEquivalentLines;
+    if (config.targetFraction !== undefined) data.targetFraction = config.targetFraction;
+    if (config.taskType !== undefined) data.taskType = config.taskType;
+  }
+
+  // If targetFraction is provided but taskType is not, default to 'build'
+  if (data.targetFraction && !data.taskType) {
+    data.taskType = 'build';
+  }
+
+  // For 'build' tasks, ensure shaded starts at 0 unless explicitly set
+  if (data.taskType === 'build' && config?.shaded === undefined) {
+    data.shaded = 0;
   }
 
   return data;

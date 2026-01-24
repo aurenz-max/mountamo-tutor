@@ -19,6 +19,11 @@ import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot from '../primitives/visual-primitives/math/DotPlot';
 import Histogram from '../primitives/visual-primitives/math/Histogram';
 import TwoWayTable from '../primitives/visual-primitives/math/TwoWayTable';
+import {
+  EvaluationProvider,
+  useEvaluationContext,
+  type PrimitiveEvaluationResult,
+} from '../evaluation';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
@@ -61,20 +66,77 @@ const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
 ];
 
 // Dynamic renderer that maps componentId to the appropriate primitive component
-const PrimitiveRenderer: React.FC<{ componentId: PrimitiveType; data: unknown }> = ({ componentId, data }) => {
+// Now includes evaluation props for primitives that support it
+const PrimitiveRenderer: React.FC<{
+  componentId: PrimitiveType;
+  data: unknown;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult) => void;
+}> = ({ componentId, data, onEvaluationSubmit }) => {
   if (!data) return null;
 
   switch (componentId) {
     case 'fraction-bar':
-      return <FractionBar data={data as Parameters<typeof FractionBar>[0]['data']} />;
+      // FractionBar supports evaluation - pass the props
+      return (
+        <FractionBar
+          data={{
+            ...(data as Parameters<typeof FractionBar>[0]['data']),
+            // Evaluation integration props
+            instanceId: `fraction-bar-${Date.now()}`,
+            skillId: 'math-fractions',
+            subskillId: 'fraction-representation',
+            objectiveId: 'understand-fraction-models',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'place-value-chart':
-      return <PlaceValueChart data={data as Parameters<typeof PlaceValueChart>[0]['data']} />;
+      // PlaceValueChart supports evaluation - pass the props
+      return (
+        <PlaceValueChart
+          data={{
+            ...(data as Parameters<typeof PlaceValueChart>[0]['data']),
+            // Evaluation integration props
+            instanceId: `place-value-chart-${Date.now()}`,
+            skillId: 'math-place-value',
+            subskillId: 'decimal-numbers',
+            objectiveId: 'understand-place-value',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'factor-tree':
+      // FactorTree supports evaluation - pass the props
+      return (
+        <FactorTree
+          data={{
+            ...(data as Parameters<typeof FactorTree>[0]['data']),
+            // Evaluation integration props
+            instanceId: `factor-tree-${Date.now()}`,
+            skillId: 'math-number-theory',
+            subskillId: 'prime-factorization',
+            objectiveId: 'understand-prime-factors',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'area-model':
       return <AreaModel data={data as Parameters<typeof AreaModel>[0]['data']} />;
     case 'array-grid':
-      return <ArrayGrid data={data as Parameters<typeof ArrayGrid>[0]['data']} />;
-    case 'factor-tree':
-      return <FactorTree data={data as Parameters<typeof FactorTree>[0]['data']} />;
+      // ArrayGrid supports evaluation - pass the props
+      return (
+        <ArrayGrid
+          data={{
+            ...(data as Parameters<typeof ArrayGrid>[0]['data']),
+            // Evaluation integration props
+            instanceId: `array-grid-${Date.now()}`,
+            skillId: 'math-multiplication',
+            subskillId: 'array-models',
+            objectiveId: 'build-arrays',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'ratio-table':
       return <RatioTable data={data as Parameters<typeof RatioTable>[0]['data']} />;
     case 'double-number-line':
@@ -106,14 +168,148 @@ const PrimitiveRenderer: React.FC<{ componentId: PrimitiveType; data: unknown }>
   }
 };
 
-export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
+// Evaluation Results Panel - Shows submitted results from the session
+const EvaluationResultsPanel: React.FC = () => {
+  const context = useEvaluationContext();
+
+  if (!context) {
+    return (
+      <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+        <p className="text-slate-500 text-sm">Evaluation tracking not available (no provider)</p>
+      </div>
+    );
+  }
+
+  const { submittedResults, pendingSubmissions, isOnline, getSessionSummary } = context;
+  const summary = getSessionSummary();
+
+  return (
+    <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-lg font-semibold text-white">Evaluation Results</h4>
+        <div className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs ${
+          isOnline ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+        }`}>
+          <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-400' : 'bg-red-400'}`} />
+          {isOnline ? 'Online' : 'Offline'}
+        </div>
+      </div>
+
+      {/* Session Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div className="text-2xl font-bold text-white">{summary.totalAttempts}</div>
+          <div className="text-xs text-slate-400">Attempts</div>
+        </div>
+        <div className="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div className="text-2xl font-bold text-green-400">{summary.successfulAttempts}</div>
+          <div className="text-xs text-slate-400">Successes</div>
+        </div>
+        <div className="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div className="text-2xl font-bold text-purple-400">{Math.round(summary.averageScore)}%</div>
+          <div className="text-xs text-slate-400">Avg Score</div>
+        </div>
+      </div>
+
+      {/* Pending Submissions */}
+      {pendingSubmissions.length > 0 && (
+        <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/30">
+          <p className="text-amber-400 text-xs">
+            {pendingSubmissions.length} evaluation(s) pending sync...
+          </p>
+        </div>
+      )}
+
+      {/* Recent Results */}
+      {submittedResults.length > 0 && (
+        <div className="space-y-2">
+          <h5 className="text-sm font-medium text-slate-300">Recent Results</h5>
+          <div className="max-h-48 overflow-y-auto space-y-2">
+            {submittedResults.slice(-5).reverse().map((result) => (
+              <div
+                key={result.attemptId}
+                className={`p-3 rounded-lg border ${
+                  result.success
+                    ? 'bg-green-500/10 border-green-500/30'
+                    : 'bg-red-500/10 border-red-500/30'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-white">
+                    {result.primitiveType}
+                  </span>
+                  <span className={`text-sm font-bold ${
+                    result.success ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {Math.round(result.score)}%
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400">
+                  Duration: {Math.round(result.durationMs / 1000)}s
+                  {result.success ? ' • Passed!' : ' • Try again'}
+                </div>
+                {/* Show FractionBar-specific metrics */}
+                {result.metrics.type === 'fraction-bar' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Target: {result.metrics.targetFraction || 'N/A'}</span>
+                    <span>Selected: {result.metrics.selectedFraction}</span>
+                    <span>Numerator: {result.metrics.numerator}</span>
+                    <span>Denominator: {result.metrics.denominator}</span>
+                    <span>Simplified: {result.metrics.simplifiedFraction}</span>
+                    <span>Equivalent: {result.metrics.recognizedEquivalence ? 'Yes' : 'No'}</span>
+                  </div>
+                )}
+                {/* Show PlaceValueChart-specific metrics */}
+                {result.metrics.type === 'place-value-chart' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Final Value: {result.metrics.finalValue}</span>
+                    <span>Digits: {result.metrics.totalDigitsEntered}</span>
+                    <span>Decimals: {result.metrics.usesDecimals ? 'Yes' : 'No'}</span>
+                    <span>Changes: {result.metrics.digitChanges}</span>
+                  </div>
+                )}
+                {/* Show FactorTree-specific metrics */}
+                {result.metrics.type === 'factor-tree' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Target: {result.metrics.targetNumber}</span>
+                    <span>Complete: {result.metrics.factorizationComplete ? 'Yes' : 'No'}</span>
+                    <span>Factorization: {result.metrics.finalFactorization}</span>
+                    <span>Efficiency: {Math.round(result.metrics.efficiency * 100)}%</span>
+                    <span>Primes: {result.metrics.uniquePrimes.join(', ')}</span>
+                    <span>Invalid: {result.metrics.invalidSplitAttempts}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {submittedResults.length === 0 && pendingSubmissions.length === 0 && (
+        <p className="text-slate-500 text-sm text-center py-4">
+          No evaluations yet. Complete a challenge to see results!
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Inner component that uses the evaluation context
+const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('fraction-bar');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
 
   const selectedOption = PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)!;
+
+  // Callback when an evaluation is submitted
+  const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
+    console.log('Evaluation submitted:', result);
+    setLastEvaluationResult(result);
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -169,7 +365,7 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
         <p className="text-slate-400">AI-generated math visualizations for any grade level</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto px-4">
         {/* Left Column: Controls */}
         <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 h-fit">
           <h3 className="text-2xl font-bold text-white mb-6">Generate</h3>
@@ -251,7 +447,11 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
           <h3 className="text-2xl font-bold text-white mb-6">Preview</h3>
 
           {generatedData ? (
-            <PrimitiveRenderer componentId={selectedPrimitive} data={generatedData} />
+            <PrimitiveRenderer
+              componentId={selectedPrimitive}
+              data={generatedData}
+              onEvaluationSubmit={handleEvaluationSubmit}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-slate-500">
               <span className="text-4xl mb-4">{selectedOption.icon}</span>
@@ -259,8 +459,40 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = ({ onBa
             </div>
           )}
         </div>
+
+        {/* Evaluation Results Panel - Third Column */}
+        <div className="lg:col-span-2">
+          <EvaluationResultsPanel />
+
+          {/* Last Result Quick View */}
+          {lastEvaluationResult && (
+            <div className="mt-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+              <h4 className="text-sm font-medium text-slate-300 mb-2">Last Evaluation (Raw JSON)</h4>
+              <pre className="text-xs text-slate-400 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded-lg">
+                {JSON.stringify(lastEvaluationResult, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
       </div>
     </div>
+  );
+};
+
+// Main export - wraps with EvaluationProvider for tracking
+export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = (props) => {
+  return (
+    <EvaluationProvider
+      sessionId={`math-tester-${Date.now()}`}
+      exhibitId="math-primitives-tester"
+      // In production, pass actual studentId from auth context
+      // studentId={currentUser?.studentId}
+      onCompetencyUpdate={(updates) => {
+        console.log('Competency updates received:', updates);
+      }}
+    >
+      <MathPrimitivesTesterInner {...props} />
+    </EvaluationProvider>
   );
 };
 

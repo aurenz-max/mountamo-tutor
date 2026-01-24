@@ -412,6 +412,38 @@ export interface FractionBarMetrics extends BasePrimitiveMetrics {
   correctComparison?: boolean;  // If comparing fractions (e.g., which is larger)
 }
 
+export interface AreaModelMetrics extends BasePrimitiveMetrics {
+  type: 'area-model';
+
+  // Goal achievement
+  targetProduct: number;
+  studentProduct: number;
+  correctFinalAnswer: boolean;
+
+  // Partial products understanding
+  totalPartialProducts: number;
+  correctPartialProducts: number;
+  incorrectPartialProducts: number;
+  skippedPartialProducts: number;
+
+  // Step 2: Addition verification
+  attemptedSum: boolean;
+  correctSum: boolean;
+
+  // Accuracy
+  partialProductAccuracy: number;  // 0-100 (correct partials / total partials)
+  overallAccuracy: number;         // 0-100 (weighted: 70% partials, 30% sum)
+
+  // Problem-solving approach
+  completedInOrder: boolean;       // Did they do cells in sequence?
+  attemptsPerCell: number;         // Average attempts per cell
+  totalAttempts: number;
+
+  // For algebraic mode
+  isAlgebraic: boolean;
+  usedDistributiveProperty: boolean;
+}
+
 export interface CoordinateGraphMetrics extends BasePrimitiveMetrics {
   type: 'coordinate-graph';
 
@@ -542,6 +574,48 @@ export interface FormulaCardMetrics extends BasePrimitiveMetrics {
   formulaTitle: string;               // For analytics
 }
 
+export interface ArrayGridMetrics extends BasePrimitiveMetrics {
+  type: 'array-grid';
+
+  // Goal achievement
+  taskType: 'build' | 'partition' | 'skip-count' | 'explore';
+  goalMet: boolean;
+
+  // Array configuration
+  finalRows: number;
+  finalColumns: number;
+  totalItems: number;
+
+  // Build task metrics
+  targetProduct?: number;
+  productCorrect?: boolean;
+  dimensionsCorrect?: boolean;      // Exact rows/cols match target
+  commuteRecognized?: boolean;      // Built 4×3 when asked for 3×4 (still correct!)
+
+  // Partition task metrics
+  partitionsPlaced?: number;
+  correctPartitions?: number;
+  partitionAccuracy?: number;       // 0-100
+
+  // Skip count metrics
+  skipCountSequence?: number[];     // Numbers entered by student
+  skipCountCorrect?: boolean;
+
+  // Interaction tracking
+  rowChanges: number;               // How many times they adjusted rows
+  columnChanges: number;            // How many times they adjusted columns
+  cellClicks: number;               // Exploration engagement
+  partitionAttempts?: number;       // For partition tasks
+
+  // Final state for replay
+  finalConfiguration: {
+    rows: number;
+    columns: number;
+    partitionLines: Array<{ type: 'row' | 'column'; index: number }>;
+    highlightedCells: string[];     // Cell keys that were highlighted
+  };
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -567,11 +641,13 @@ export type PrimitiveMetrics =
   | BalanceScaleMetrics
   | FractionCirclesMetrics
   | FractionBarMetrics
+  | AreaModelMetrics
   | NumberLineMetrics
   | CoordinateGraphMetrics
   | PlaceValueChartMetrics
   | FactorTreeMetrics
   | FormulaCardMetrics
+  | ArrayGridMetrics
   // Exploration
   | FunctionMachineMetrics;
 

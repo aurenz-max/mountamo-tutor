@@ -61,11 +61,13 @@ export type {
   BalanceScaleMetrics,
   FractionCirclesMetrics,
   FractionBarMetrics,
+  AreaModelMetrics,
   NumberLineMetrics,
   CoordinateGraphMetrics,
   PlaceValueChartMetrics,
   FactorTreeMetrics,
   FormulaCardMetrics,
+  ArrayGridMetrics,
   // Exploration metrics
   FunctionMachineMetrics,
   // Session types

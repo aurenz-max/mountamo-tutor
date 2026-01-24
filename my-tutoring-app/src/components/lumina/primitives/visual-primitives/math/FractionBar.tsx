@@ -36,7 +36,7 @@ interface FractionBarProps {
 const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
   const {
     partitions: initialPartitions = 4,
-    shaded: initialShaded = 1,
+    shaded: initialShaded,
     barCount = 1,
     showLabels = true,
     allowPartitionEdit = false,
@@ -52,11 +52,17 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
+  // Determine initial shaded value based on task type and target
+  // For 'build' tasks with a target, start with blank (0)
+  // For 'explore' or when no target is provided, use provided value or default to 1
+  const defaultShaded = (taskType === 'build' && targetFraction) ? 0 : 1;
+  const shadedValue = initialShaded !== undefined ? initialShaded : defaultShaded;
+
   // State for each bar's configuration
   const [bars, setBars] = useState<Array<{ partitions: number; shaded: number }>>(
     Array.from({ length: barCount }, () => ({
       partitions: initialPartitions,
-      shaded: initialShaded,
+      shaded: shadedValue,
     }))
   );
 
@@ -141,10 +147,19 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     }
 
     // Calculate score based on task type
-    let score = isCorrect ? 100 : 0;
-    if (taskType === 'explore') {
-      // For exploration, score based on engagement
+    let score = 0;
+    if (taskType === 'build') {
+      // For build tasks: correct answer gets 100, incorrect gets 0
+      score = isCorrect ? 100 : 0;
+    } else if (taskType === 'explore') {
+      // For exploration tasks: score based on engagement (not correctness)
       score = Math.min(100, (shadingChangeCount + partitionChangeCount) * 10);
+    } else if (taskType === 'compare') {
+      // For comparison tasks: score based on correct comparison
+      score = isCorrect ? 100 : 0;
+    } else {
+      // Default: correctness-based scoring
+      score = isCorrect ? 100 : 0;
     }
 
     const metrics: FractionBarMetrics = {
@@ -176,7 +191,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     setBars(
       Array.from({ length: barCount }, () => ({
         partitions: initialPartitions,
-        shaded: initialShaded,
+        shaded: shadedValue,
       }))
     );
     setPartitionChangeCount(0);
