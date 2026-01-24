@@ -9,8 +9,17 @@ import { Type, Schema } from "@google/genai";
 import { EquationData, FormulaSegment, FormulaParameter, FormulaRelationship, FormulaExample } from "../../types";
 import { ai } from "../geminiClient";
 
+export interface ComprehensionGate {
+  question: string;
+  questionType: 'parameter-unit' | 'relationship' | 'application' | 'example';
+  correctAnswer: string;
+  options: string[];  // 3-4 options including the correct answer
+  hint?: string;      // Optional hint shown on incorrect attempt
+}
+
 export interface FormulaCardData extends Omit<EquationData, 'type'> {
   type: 'equation';
+  comprehensionGates?: ComprehensionGate[];
 }
 
 /**
@@ -90,9 +99,32 @@ export const generateFormulaCard = async (
           required: ["scenario", "result"]
         }
       },
-      applicationContext: { type: Type.STRING, description: "When and where this formula is used (1-2 sentences)" }
+      applicationContext: { type: Type.STRING, description: "When and where this formula is used (1-2 sentences)" },
+      comprehensionGates: {
+        type: Type.ARRAY,
+        description: "Comprehension gate questions to verify student understanding (2-3 questions)",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            question: { type: Type.STRING, description: "The question to ask (e.g., 'What unit is used to measure acceleration?')" },
+            questionType: {
+              type: Type.STRING,
+              enum: ["parameter-unit", "relationship", "application", "example"],
+              description: "Type of comprehension being tested: parameter-unit tests knowledge of units, relationship tests understanding of how parameters interact, application tests when to use the formula, example tests understanding of real-world scenarios"
+            },
+            correctAnswer: { type: Type.STRING, description: "The correct answer text" },
+            options: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "3-4 answer options including the correct answer in a randomized position. Make wrong answers plausible but clearly distinguishable from the correct answer."
+            },
+            hint: { type: Type.STRING, description: "Optional hint to show if student answers incorrectly (e.g., 'Look at the [parameter name] card in the Parameters section')" }
+          },
+          required: ["question", "questionType", "correctAnswer", "options"]
+        }
+      }
     },
-    required: ["title", "description", "formula", "segments", "parameters"]
+    required: ["title", "description", "formula", "segments", "parameters", "comprehensionGates"]
   };
 
   const response = await ai.models.generateContent({
@@ -102,9 +134,9 @@ export const generateFormulaCard = async (
 TARGET AUDIENCE: ${gradeContext}
 INTENT: ${config?.intent || 'Explain formula components and applications'}
 
-## Task: Generate a rich, educational formula explanation
+## Task: Generate a rich, educational formula explanation WITH comprehension gates
 
-You are creating an interactive formula display that helps students deeply understand a mathematical or scientific formula.
+You are creating an interactive formula display that helps students deeply understand a mathematical or scientific formula. The formula includes comprehension gates to ensure students actively engage with the content.
 
 ## Design Principles:
 
@@ -139,7 +171,22 @@ You are creating an interactive formula display that helps students deeply under
    - Variables should have isVariable: true with a brief meaning
    - Operators (=, +, -, ×, ÷, etc.) should have isVariable: false
 
-Now generate comprehensive formula data following these principles.`,
+6. **Comprehension Gates** (NEW - Required):
+   - Create 2-3 questions that prove students read and understood the content
+   - Questions should require reading specific sections (parameters, relationships, examples)
+   - Each question must have:
+     * A clear question that references content in the formula card
+     * A questionType: parameter-unit (tests unit knowledge), relationship (tests how parameters interact), application (when to use formula), or example (real-world scenario understanding)
+     * The correctAnswer as a string
+     * 3-4 options including the correct answer (wrong answers should be plausible)
+     * An optional hint that directs students where to look in the formula card
+
+   Example gates for F=ma:
+   - Gate 1 (parameter-unit): "What unit is used to measure acceleration (a)?" → Options: ["m/s²", "kg", "N", "m/s"] → Correct: "m/s²"
+   - Gate 2 (relationship): "If mass doubles while force stays constant, what happens to acceleration?" → Options: ["Doubles", "Halves", "Stays the same", "Quadruples"] → Correct: "Halves"
+   - Gate 3 (application): "Which scenario best demonstrates Newton's Second Law?" → Based on examples provided
+
+Now generate comprehensive formula data WITH comprehension gates following these principles.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,

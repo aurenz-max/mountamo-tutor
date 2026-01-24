@@ -391,6 +391,14 @@ export interface KnowledgeCheckData {
   correctAnswerId: string;
   explanation: string;
   visual?: VisualPrimitive; // Optional visual component
+
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: any) => void;
 }
 
 // ============================================================================
@@ -433,6 +441,14 @@ export interface MultipleChoiceProblemData extends BaseProblemData {
   visual?: VisualPrimitive;
   options: MultipleChoiceOption[];
   correctOptionId: string;
+
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: any) => void;
 }
 
 // True/False Problem
@@ -441,6 +457,14 @@ export interface TrueFalseProblemData extends BaseProblemData {
   statement: string;
   visual?: VisualPrimitive;
   correct: boolean;
+
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: any) => void;
 }
 
 // Fill in Blanks Problem
@@ -540,6 +564,13 @@ export interface ComparisonItem {
   points: string[];
 }
 
+export interface ComparisonGate {
+  question: string;           // The true/false question to unlock next section
+  correctAnswer: boolean;     // The correct answer
+  rationale: string;          // Explanation shown after answering
+  unlocks: string;            // What this gate unlocks: 'synthesis' | 'complete'
+}
+
 export interface ComparisonData {
   title: string;
   intro: string;
@@ -555,6 +586,17 @@ export interface ComparisonData {
     };
     commonMisconception?: string;
   };
+
+  // Comprehension gates (progressive reveal)
+  gates?: ComparisonGate[];
+
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: any) => void;
 }
 
 export interface ItemDetailData {

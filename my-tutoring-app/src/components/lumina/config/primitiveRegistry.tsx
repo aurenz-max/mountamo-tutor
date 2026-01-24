@@ -131,6 +131,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'comparison-panel': {
     component: ComparisonPanel,
     allowMultiple: false,
+    supportsEvaluation: true,
   },
 
   'generative-table': {
@@ -236,6 +237,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'fraction-bar': {
@@ -245,6 +247,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'geometric-shape': {
@@ -263,6 +266,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'area-model': {
@@ -308,6 +312,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'ratio-table': {
@@ -430,6 +435,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'center',
     allowMultiple: false,
     containerClassName: 'max-w-4xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'take-home-activity': {

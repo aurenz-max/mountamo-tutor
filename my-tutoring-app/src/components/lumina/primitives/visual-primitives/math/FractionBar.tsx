@@ -1,6 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import {
+  usePrimitiveEvaluation,
+  type FractionBarMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
 
 export interface FractionBarData {
   title: string;
@@ -11,6 +16,16 @@ export interface FractionBarData {
   showLabels?: boolean; // Display fraction notation
   allowPartitionEdit?: boolean; // Student can change denominator
   showEquivalentLines?: boolean; // Draw alignment guides
+
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  targetFraction?: string;        // e.g., "3/4" for goal-based tasks
+  taskType?: 'build' | 'compare' | 'explore';  // What they should do
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<FractionBarMetrics>) => void;
 }
 
 interface FractionBarProps {
@@ -26,6 +41,15 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     showLabels = true,
     allowPartitionEdit = false,
     showEquivalentLines = false,
+    // Evaluation props
+    targetFraction,
+    taskType = 'explore',
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
   // State for each bar's configuration
@@ -35,6 +59,25 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       shaded: initialShaded,
     }))
   );
+
+  // Track interaction metrics
+  const [partitionChangeCount, setPartitionChangeCount] = useState(0);
+  const [shadingChangeCount, setShadingChangeCount] = useState(0);
+
+  // Evaluation hook - tracks timing and handles submission
+  const {
+    submitResult,
+    hasSubmitted,
+    resetAttempt,
+  } = usePrimitiveEvaluation<FractionBarMetrics>({
+    primitiveType: 'fraction-bar',
+    instanceId: instanceId || `fraction-bar-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
   // Handle partition change for a specific bar
   const handlePartitionChange = (barIndex: number, newPartitions: number) => {
@@ -47,6 +90,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
           : bar
       )
     );
+    setPartitionChangeCount((prev) => prev + 1);
   };
 
   // Handle shading toggle for a specific partition in a specific bar
@@ -66,6 +110,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
         }
       })
     );
+    setShadingChangeCount((prev) => prev + 1);
   };
 
   // Simplify fraction
@@ -73,6 +118,70 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
     const divisor = gcd(numerator, denominator);
     return { num: numerator / divisor, den: denominator / divisor };
+  };
+
+  // Handle evaluation submission
+  const handleSubmit = () => {
+    if (hasSubmitted) return;
+
+    // Calculate metrics from current state
+    const primaryBar = bars[0]; // Use first bar for single-bar scenarios
+    const selectedFraction = `${primaryBar.shaded}/${primaryBar.partitions}`;
+    const simplified = simplifyFraction(primaryBar.shaded, primaryBar.partitions);
+    const simplifiedFraction = `${simplified.num}/${simplified.den}`;
+
+    // Determine success
+    let isCorrect = true;
+    if (targetFraction) {
+      // Parse target (e.g., "3/4" -> {num: 3, den: 4})
+      const [targetNum, targetDen] = targetFraction.split('/').map(Number);
+      const targetSimplified = simplifyFraction(targetNum, targetDen);
+      isCorrect =
+        simplified.num === targetSimplified.num && simplified.den === targetSimplified.den;
+    }
+
+    // Calculate score based on task type
+    let score = isCorrect ? 100 : 0;
+    if (taskType === 'explore') {
+      // For exploration, score based on engagement
+      score = Math.min(100, (shadingChangeCount + partitionChangeCount) * 10);
+    }
+
+    const metrics: FractionBarMetrics = {
+      type: 'fraction-bar',
+      targetFraction: targetFraction || 'none',
+      selectedFraction,
+      isCorrect,
+      numerator: primaryBar.shaded,
+      denominator: primaryBar.partitions,
+      decimalValue: primaryBar.shaded / primaryBar.partitions,
+      simplifiedFraction,
+      recognizedEquivalence: selectedFraction !== simplifiedFraction,
+      partitionChanges: partitionChangeCount,
+      shadingChanges: shadingChangeCount,
+      finalBarStates: bars.map((bar) => ({
+        partitions: bar.partitions,
+        shaded: bar.shaded,
+      })),
+      barsCompared: barCount,
+    };
+
+    submitResult(isCorrect, score, metrics, {
+      bars: [...bars],
+    });
+  };
+
+  // Handle reset
+  const handleReset = () => {
+    setBars(
+      Array.from({ length: barCount }, () => ({
+        partitions: initialPartitions,
+        shaded: initialShaded,
+      }))
+    );
+    setPartitionChangeCount(0);
+    setShadingChangeCount(0);
+    resetAttempt();
   };
 
   return (
@@ -188,6 +297,43 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
               );
             })}
           </div>
+
+          {/* Submit/Reset Controls */}
+          {(instanceId || onEvaluationSubmit) && (
+            <div className="mt-6 flex gap-3 justify-center">
+              <button
+                onClick={handleSubmit}
+                disabled={hasSubmitted}
+                className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+                  hasSubmitted
+                    ? 'bg-green-500/20 border border-green-500/50 text-green-300 cursor-not-allowed'
+                    : 'bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+                }`}
+              >
+                {hasSubmitted ? (
+                  <>
+                    <span>✓</span>
+                    <span>Submitted</span>
+                  </>
+                ) : (
+                  <>
+                    <span>📊</span>
+                    <span>Submit Answer</span>
+                  </>
+                )}
+              </button>
+
+              {hasSubmitted && (
+                <button
+                  onClick={handleReset}
+                  className="px-6 py-3 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+                >
+                  <span>↺</span>
+                  <span>Try Again</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Instructions */}
           <div className="mt-8 p-6 bg-slate-800/30 rounded-xl border border-slate-700">

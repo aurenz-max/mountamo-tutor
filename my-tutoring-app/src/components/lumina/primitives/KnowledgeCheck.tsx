@@ -11,11 +11,16 @@ import { ProblemRenderer } from '../config/problemTypeRegistry';
  * 1. Legacy mode: Single multiple-choice question (backwards compatible)
  * 2. Problem Registry mode: Single or multiple problems of various types
  *
+ * EVALUATION INTEGRATION:
+ * - Delegates evaluation to individual problem primitives
+ * - Each problem type (MultipleChoiceProblem, etc.) handles its own evaluation
+ * - Supports competency tracking via skillId/subskillId/objectiveId passed to problems
+ *
  * The component automatically detects which mode to use based on the data structure.
  */
 
 interface KnowledgeCheckProps {
-  data: KnowledgeCheckData | { problems: ProblemData[] };
+  data: KnowledgeCheckData | { problems: ProblemData[]; instanceId?: string; skillId?: string; subskillId?: string; objectiveId?: string; exhibitId?: string; onEvaluationSubmit?: (result: any) => void };
 }
 
 // Type guard to check if using legacy format

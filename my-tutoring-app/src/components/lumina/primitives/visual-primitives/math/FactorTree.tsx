@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePrimitiveEvaluation, type FactorTreeMetrics } from '../../../evaluation';
 
 export interface TreeNode {
   value: number;
@@ -16,6 +17,14 @@ export interface FactorTreeData {
   showExponentForm?: boolean; // Display final factorization
   guidedMode?: boolean; // Suggest valid factor pairs
   allowReset?: boolean; // Clear and restart
+
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: import('../../../evaluation').PrimitiveEvaluationResult<import('../../../evaluation').FactorTreeMetrics>) => void;
 }
 
 interface FactorTreeProps {
@@ -30,6 +39,13 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     showExponentForm = true,
     guidedMode = true,
     allowReset = true,
+    // Evaluation props
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
   // Helper function to check if a number is prime
@@ -66,6 +82,27 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
   });
   const [error, setError] = useState<string | null>(null);
 
+  // Evaluation tracking state
+  const [invalidSplitAttempts, setInvalidSplitAttempts] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [manualInputs, setManualInputs] = useState(0);
+  const [resetCount, setResetCount] = useState(0);
+
+  // Evaluation hook - tracks timing and handles submission
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<FactorTreeMetrics>({
+    primitiveType: 'factor-tree',
+    instanceId: instanceId || `factor-tree-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void) | undefined,
+  });
+
   // Split a node into two factors
   const splitNode = (nodeId: string, factor1: number, factor2: number) => {
     const node = tree.get(nodeId);
@@ -74,11 +111,13 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     // Validate factors
     if (factor1 * factor2 !== node.value) {
       setError(`${factor1} × ${factor2} ≠ ${node.value}`);
+      setInvalidSplitAttempts(prev => prev + 1); // Track error
       return;
     }
 
     if (factor1 === 1 || factor2 === 1) {
       setError('Factor pairs cannot include 1');
+      setInvalidSplitAttempts(prev => prev + 1); // Track error
       return;
     }
 
@@ -145,6 +184,87 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     setSelectedNode(null);
     setFactorInput({ factor1: '', factor2: '' });
     setError(null);
+    setResetCount(prev => prev + 1); // Track reset
+    resetEvaluationAttempt(); // Reset evaluation attempt
+  };
+
+  // Calculate optimal splits (minimum depth of factorization)
+  const calculateOptimalSplits = (n: number): number => {
+    let count = 0;
+    let temp = n;
+    for (let i = 2; i <= temp; i++) {
+      while (temp % i === 0) {
+        count++;
+        temp /= i;
+      }
+    }
+    return count - 1; // Splits = factors - 1
+  };
+
+  // Get tree depth
+  const getTreeDepth = (nodeId: string): number => {
+    const node = tree.get(nodeId);
+    if (!node || !node.factors) return 0;
+    return 1 + Math.max(
+      getTreeDepth(`${nodeId}-0`),
+      getTreeDepth(`${nodeId}-1`)
+    );
+  };
+
+  // Handle evaluation submission
+  const handleSubmitEvaluation = () => {
+    if (hasSubmittedEvaluation || !isComplete) return;
+
+    const leaves = getLeaves();
+    const totalSplits = tree.size - leaves.length; // Non-leaf nodes = splits
+    const optimalSplits = calculateOptimalSplits(rootValue);
+
+    // Calculate factor distribution
+    const factorDistribution: Record<number, number> = {};
+    leaves.forEach(prime => {
+      factorDistribution[prime] = (factorDistribution[prime] || 0) + 1;
+    });
+
+    // Check if used largest factor first (good strategy)
+    const firstSplit = tree.get('0-0');
+    const secondSplit = tree.get('0-1');
+    const usedLargestFirst = firstSplit && secondSplit &&
+      (firstSplit.value >= secondSplit.value);
+
+    const success = isComplete;
+    const score = Math.max(0, 100 - (invalidSplitAttempts * 10) - (resetCount * 15));
+
+    const metrics: FactorTreeMetrics = {
+      type: 'factor-tree',
+      targetNumber: rootValue,
+      factorizationComplete: isComplete,
+      finalFactorization: getPrimeFactorization(),
+
+      allFactorsValid: invalidSplitAttempts === 0,
+      invalidSplitAttempts,
+
+      totalPrimeFactors: leaves.length,
+      uniquePrimes: Array.from(new Set(leaves)).sort((a, b) => a - b),
+      factorDistribution,
+
+      totalSplits,
+      optimalSplits,
+      efficiency: totalSplits > 0 ? optimalSplits / totalSplits : 1,
+      usedLargestFactorFirst: usedLargestFirst || false,
+
+      hintsUsed,
+      manualInputs,
+      resetCount,
+
+      treeDepth: getTreeDepth('0'),
+    };
+
+    submitEvaluation(success, score, metrics, {
+      studentWork: {
+        tree: Array.from(tree.entries()),
+        finalFactorization: getPrimeFactorization(),
+      },
+    });
   };
 
   // Render a tree node recursively
@@ -258,9 +378,22 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                   <span className="text-green-200 font-bold text-xl">All leaves are prime!</span>
                 </div>
                 {showExponentForm && (
-                  <div className="text-white font-mono text-xl bg-slate-900/30 backdrop-blur-sm py-2 px-4 rounded-lg border border-green-400/20">
+                  <div className="text-white font-mono text-xl bg-slate-900/30 backdrop-blur-sm py-2 px-4 rounded-lg border border-green-400/20 mb-4">
                     {rootValue} = {getPrimeFactorization()}
                   </div>
+                )}
+
+                {/* Submit button */}
+                {!hasSubmittedEvaluation && instanceId && (
+                  <button
+                    onClick={handleSubmitEvaluation}
+                    className="px-6 py-3 bg-green-500/40 backdrop-blur-sm hover:bg-green-500/60 border border-green-400/50 hover:border-green-400/80 text-white rounded-lg font-semibold transition-all hover:shadow-[0_0_15px_rgba(34,197,94,0.4)] hover:scale-105"
+                  >
+                    Submit Solution
+                  </button>
+                )}
+                {hasSubmittedEvaluation && (
+                  <p className="text-green-300 text-sm">Solution submitted!</p>
                 )}
               </div>
             </div>
@@ -304,6 +437,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                       const f1 = parseInt(factorInput.factor1);
                       const f2 = parseInt(factorInput.factor2);
                       if (!isNaN(f1) && !isNaN(f2)) {
+                        setManualInputs(prev => prev + 1); // Track manual input
                         splitNode(selectedNode, f1, f2);
                       }
                     }}
@@ -326,7 +460,10 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                       {validPairs.map(([f1, f2], idx) => (
                         <button
                           key={idx}
-                          onClick={() => splitNode(selectedNode, f1, f2)}
+                          onClick={() => {
+                            setHintsUsed(prev => prev + 1); // Track hint usage
+                            splitNode(selectedNode, f1, f2);
+                          }}
                           className="px-4 py-2 bg-slate-700/50 backdrop-blur-sm hover:bg-amber-500/30 text-white rounded-lg text-sm transition-all border border-slate-600/50 hover:border-amber-400/60 hover:shadow-[0_0_12px_rgba(251,191,36,0.3)] hover:scale-105"
                         >
                           {f1} × {f2}

@@ -1,5 +1,5 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
-import { PlaceValueChartData } from "../../types";
+import { PlaceValueChartData } from "../../primitives/visual-primitives/math/PlaceValueChart";
 import { ai } from "../geminiClient";
 
 /**

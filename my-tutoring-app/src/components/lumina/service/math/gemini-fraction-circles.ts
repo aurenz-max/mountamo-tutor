@@ -7,17 +7,12 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { FractionCirclesData } from '../../primitives/visual-primitives/math/FractionCircles';
 
 export interface FractionItem {
   numerator: number;
   denominator: number;
   label?: string;
-}
-
-export interface FractionCirclesData {
-  title: string;
-  description: string;
-  fractions: FractionItem[];
 }
 
 /**

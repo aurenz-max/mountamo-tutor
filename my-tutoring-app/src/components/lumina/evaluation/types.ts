@@ -301,6 +301,39 @@ export interface ShortAnswerMetrics extends BasePrimitiveMetrics {
   misconceptionsIdentified?: string[];
 }
 
+export interface ComparisonPanelMetrics extends BasePrimitiveMetrics {
+  type: 'comparison-panel';
+
+  // Content exploration
+  item1Explored: boolean;           // Did student click on item 1
+  item2Explored: boolean;           // Did student click on item 2
+  bothItemsExplored: boolean;       // Required to unlock first gate
+
+  // Gate performance
+  totalGates: number;               // Number of comprehension gates
+  gatesCompleted: number;           // Gates successfully passed
+  gateAttempts: number;             // Total attempts across all gates
+
+  // Per-gate results
+  gateResults: Array<{
+    gateIndex: number;              // 0-based index
+    question: string;               // The gate question
+    correctAnswer: boolean;         // What the correct answer was
+    studentAnswer: boolean;         // What student answered
+    isCorrect: boolean;             // Did they get it right
+    attemptNumber: number;          // Which attempt for this gate (1-based)
+    timeToAnswer: number;           // ms from gate appearance to submission
+  }>;
+
+  // Comprehension quality
+  firstAttemptSuccessRate: number;  // Percentage of gates passed on first try (0-100)
+  overallAccuracy: number;          // Percentage of correct answers (0-100)
+
+  // Content engagement
+  timeSpentExploring: number;       // ms spent before first gate attempt
+  sectionsRevealed: number;         // How many sections unlocked (max = totalGates + 1)
+}
+
 // -----------------------------------------------------------------------------
 // Math Visualization Primitives
 // -----------------------------------------------------------------------------
@@ -349,6 +382,36 @@ export interface NumberLineMetrics extends BasePrimitiveMetrics {
   scaleType: 'integer' | 'decimal' | 'fraction';
 }
 
+export interface FractionBarMetrics extends BasePrimitiveMetrics {
+  type: 'fraction-bar';
+
+  // Goal achievement
+  targetFraction: string;        // e.g., "3/4" (from task description if applicable)
+  selectedFraction: string;      // e.g., "6/8" (what student built)
+  isCorrect: boolean;           // Matches target if provided
+
+  // Fraction understanding
+  numerator: number;            // Shaded parts
+  denominator: number;          // Total partitions
+  decimalValue: number;         // Student's fraction as decimal
+
+  // Equivalence understanding
+  simplifiedFraction: string;   // e.g., "3/4" if student made "6/8"
+  recognizedEquivalence: boolean; // Did they create an equivalent fraction?
+
+  // Interaction patterns
+  partitionChanges: number;     // How many times they changed denominator
+  shadingChanges: number;       // How many times they adjusted shading
+  finalBarStates: Array<{       // State of each bar at submission
+    partitions: number;
+    shaded: number;
+  }>;
+
+  // Comparison tasks (if multiple bars)
+  barsCompared: number;
+  correctComparison?: boolean;  // If comparing fractions (e.g., which is larger)
+}
+
 export interface CoordinateGraphMetrics extends BasePrimitiveMetrics {
   type: 'coordinate-graph';
 
@@ -383,6 +446,102 @@ export interface FunctionMachineMetrics extends BasePrimitiveMetrics {
   hintsUsed: number;
 }
 
+export interface PlaceValueChartMetrics extends BasePrimitiveMetrics {
+  type: 'place-value-chart';
+
+  // Goal achievement
+  targetValue?: number;         // Target number if specified in task
+  finalValue: number;           // Number student created
+  isCorrect: boolean;           // Matches target if provided
+
+  // Place value understanding
+  placeRange: {
+    minPlace: number;           // Smallest place value used (e.g., -2 for hundredths)
+    maxPlace: number;           // Largest place value used (e.g., 3 for thousands)
+  };
+  usesDecimals: boolean;        // Whether student worked with decimal places
+  usesLargeNumbers: boolean;    // Whether number is >= 1000
+
+  // Digit composition
+  totalDigitsEntered: number;   // Count of non-zero digits
+  digitsByPlace: { [place: number]: string }; // Final state of all digits
+
+  // Expanded form accuracy (if shown)
+  expandedFormCorrect: boolean; // Whether expanded form matches digits
+  expandedFormParts: string[];  // Array of parts like ["400", "20", "5"]
+
+  // Interaction patterns
+  digitChanges: number;         // How many times digits were modified
+  placeValueAccuracy: number;   // 0-100 score based on understanding shown
+}
+
+export interface FactorTreeMetrics extends BasePrimitiveMetrics {
+  type: 'factor-tree';
+
+  // Goal achievement
+  targetNumber: number;           // The rootValue being factored
+  factorizationComplete: boolean; // All leaves are prime
+  finalFactorization: string;     // e.g., "2^3 × 3"
+
+  // Correctness
+  allFactorsValid: boolean;       // Every split was mathematically correct
+  invalidSplitAttempts: number;   // Number of incorrect factor pairs entered
+
+  // Prime factorization understanding
+  totalPrimeFactors: number;      // Count of prime leaves (e.g., 4 for 2×2×2×3)
+  uniquePrimes: number[];         // Distinct primes found (e.g., [2, 3])
+  factorDistribution: Record<number, number>; // e.g., {2: 3, 3: 1} for 2^3 × 3
+
+  // Strategy and approach
+  totalSplits: number;            // Number of nodes split
+  optimalSplits: number;          // Minimum splits needed
+  efficiency: number;             // optimalSplits / totalSplits (1.0 = perfect)
+  usedLargestFactorFirst: boolean; // Good strategy indicator
+
+  // Interaction patterns
+  hintsUsed: number;              // How many suggested factor pairs clicked
+  manualInputs: number;           // How many times typed factors manually
+  resetCount: number;             // Times tree was reset
+
+  // Final tree state for replay
+  treeDepth: number;              // Maximum depth of the tree
+}
+
+export interface FormulaCardMetrics extends BasePrimitiveMetrics {
+  type: 'formula-card';
+
+  // Content exploration
+  parametersExplored: number;         // How many parameter cards clicked
+  totalParameters: number;
+  relationshipsViewed: boolean;       // Scrolled to relationships section
+  examplesViewed: boolean;            // Scrolled to examples section
+
+  // Gate performance
+  totalGates: number;                 // Number of comprehension gates (2-3)
+  gatesCompleted: number;             // Gates successfully passed
+  gateAttempts: number;               // Total attempts across all gates
+
+  // Per-gate results
+  gateResults: Array<{
+    gateIndex: number;                // 0-based index
+    question: string;                 // The gate question
+    questionType: 'parameter-unit' | 'relationship' | 'application' | 'example';
+    correctAnswer: string;            // Correct answer text
+    studentAnswer: string;            // Student's answer text
+    isCorrect: boolean;               // Did they get it right
+    attemptNumber: number;            // Which attempt for this gate (1-based)
+    timeToAnswer: number;             // ms from gate appearance to submission
+  }>;
+
+  // Comprehension quality
+  firstAttemptSuccessRate: number;    // Percentage of gates passed on first try (0-100)
+  overallAccuracy: number;            // Percentage of correct answers (0-100)
+
+  // Content engagement
+  timeSpentExploring: number;         // ms spent before first gate attempt
+  formulaTitle: string;               // For analytics
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -403,11 +562,16 @@ export type PrimitiveMetrics =
   | CategorizationActivityMetrics
   | TrueFalseMetrics
   | ShortAnswerMetrics
+  | ComparisonPanelMetrics
   // Math
   | BalanceScaleMetrics
   | FractionCirclesMetrics
+  | FractionBarMetrics
   | NumberLineMetrics
   | CoordinateGraphMetrics
+  | PlaceValueChartMetrics
+  | FactorTreeMetrics
+  | FormulaCardMetrics
   // Exploration
   | FunctionMachineMetrics;
 

@@ -8,12 +8,8 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 
-export interface ComparisonItem {
-  name: string;
-  description: string;
-  visualPrompt: string;
-  points: string[];
-}
+// Import types from the centralized types file
+import type { ComparisonData } from '../../types';
 
 export interface ComparisonSynthesis {
   mainInsight: string;
@@ -26,13 +22,7 @@ export interface ComparisonSynthesis {
   commonMisconception?: string;
 }
 
-export interface ComparisonPanelData {
-  title: string;
-  intro: string;
-  item1: ComparisonItem;
-  item2: ComparisonItem;
-  synthesis: ComparisonSynthesis;
-}
+export interface ComparisonPanelData extends ComparisonData {}
 
 /**
  * Generate Comparison Panel content
@@ -100,9 +90,35 @@ The comparison must help students understand the learning objective above.`
           commonMisconception: { type: Type.STRING }
         },
         required: ["mainInsight", "keyDifferences", "keySimilarities"]
+      },
+      gates: {
+        type: Type.ARRAY,
+        description: "Comprehension gates that progressively unlock content (2 gates recommended)",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            question: {
+              type: Type.STRING,
+              description: "A true/false question that tests understanding of the comparison"
+            },
+            correctAnswer: {
+              type: Type.BOOLEAN,
+              description: "The correct answer (true or false)"
+            },
+            rationale: {
+              type: Type.STRING,
+              description: "Explanation of why the answer is correct, providing teaching value (2-3 sentences)"
+            },
+            unlocks: {
+              type: Type.STRING,
+              description: "What section this gate unlocks: 'synthesis' for first gate, 'complete' for final gate"
+            }
+          },
+          required: ["question", "correctAnswer", "rationale", "unlocks"]
+        }
       }
     },
-    required: ["title", "intro", "item1", "item2", "synthesis"]
+    required: ["title", "intro", "item1", "item2", "synthesis", "gates"]
   };
 
   const response = await ai.models.generateContent({
@@ -123,7 +139,28 @@ For the synthesis section, provide:
 - whenToUse: Explain when/why to use item1 vs item2 (practical application context)
 - commonMisconception: One common mistake students make when comparing these concepts
 
-Make all synthesis points clear, grade-appropriate, and actionable for learning.`,
+CRITICAL - COMPREHENSION GATES:
+Create exactly 2 comprehension gates that ensure students read and understand the content:
+
+Gate 1 (unlocks: "synthesis"):
+- Question should test understanding of KEY DIFFERENCES between the two items
+- Must require reading the comparison cards to answer correctly
+- Should be answerable after exploring both item cards
+- Example: "Item A uses X approach while Item B uses Y approach" (T/F)
+
+Gate 2 (unlocks: "complete"):
+- Question should test understanding of KEY SIMILARITIES or practical application
+- Must require reading the synthesis section to answer correctly
+- Should reinforce the main insight or common misconception
+- Example: "Both items share the characteristic of Z" (T/F)
+
+Gates must:
+- Be answerable ONLY by reading the content (not general knowledge)
+- Target the MOST IMPORTANT concepts in the comparison
+- Have clear, educational rationales that teach when revealed
+- Progress from basic (differences) to deeper (synthesis/application)
+
+Make all content clear, grade-appropriate, and actionable for learning.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,

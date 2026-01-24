@@ -1,6 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import {
+  usePrimitiveEvaluation,
+  type PlaceValueChartMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
 
 export interface PlaceValueChartData {
   title: string;
@@ -11,6 +16,15 @@ export interface PlaceValueChartData {
   showExpandedForm?: boolean;
   showMultipliers?: boolean;
   editableDigits?: boolean;
+  targetValue?: number; // Optional target number for students to create
+
+  // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<PlaceValueChartMetrics>) => void;
 }
 
 interface PlaceValueChartProps {
@@ -26,6 +40,14 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     showExpandedForm = true,
     showMultipliers = true,
     editableDigits = true,
+    targetValue,
+    // Evaluation props
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
   // Convert initial value to digit array
@@ -54,6 +76,22 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
   const [digits, setDigits] = useState<{ [place: number]: string }>(
     getDigitsFromValue(initialValue)
   );
+  const [digitChangeCount, setDigitChangeCount] = useState(0);
+
+  // Evaluation hook
+  const {
+    submitResult,
+    hasSubmitted,
+    resetAttempt,
+  } = usePrimitiveEvaluation<PlaceValueChartMetrics>({
+    primitiveType: 'place-value-chart',
+    instanceId: instanceId || `place-value-chart-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
   // Place value names
   const getPlaceName = (place: number): string => {
@@ -81,7 +119,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
 
   // Handle digit change
   const handleDigitChange = (place: number, value: string) => {
-    if (!editableDigits) return;
+    if (!editableDigits || hasSubmitted) return;
 
     const sanitized = value.replace(/[^0-9]/g, '').slice(-1);
     setDigits((prev) => {
@@ -93,6 +131,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
       }
       return updated;
     });
+    setDigitChangeCount((prev) => prev + 1);
   };
 
   // Calculate expanded form
@@ -107,6 +146,82 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     }
     return parts;
   };
+
+  // Calculate the final numeric value from digits
+  const calculateValueFromDigits = useCallback((): number => {
+    let value = 0;
+    for (let place = maxPlace; place >= minPlace; place--) {
+      const digit = digits[place] || '0';
+      value += parseInt(digit) * Math.pow(10, place);
+    }
+    return value;
+  }, [digits, maxPlace, minPlace]);
+
+  // Submit evaluation
+  const handleSubmit = useCallback(() => {
+    if (hasSubmitted) return;
+
+    const finalValue = calculateValueFromDigits();
+    const isCorrect = targetValue !== undefined ? Math.abs(finalValue - targetValue) < 0.0001 : true;
+
+    // Calculate score
+    let score = 100;
+    if (targetValue !== undefined) {
+      if (isCorrect) {
+        score = 100;
+      } else {
+        // Partial credit based on how close they are
+        const difference = Math.abs(finalValue - targetValue);
+        const magnitude = Math.max(Math.abs(targetValue), 1);
+        const percentError = (difference / magnitude) * 100;
+        score = Math.max(0, 100 - percentError);
+      }
+    }
+
+    const expandedParts = getExpandedForm();
+    const totalDigits = Object.values(digits).filter(d => d !== '0').length;
+    const usesDecimals = minPlace < 0 && Object.keys(digits).some(k => parseInt(k) < 0);
+    const usesLargeNumbers = finalValue >= 1000;
+
+    const metrics: PlaceValueChartMetrics = {
+      type: 'place-value-chart',
+      targetValue,
+      finalValue,
+      isCorrect,
+      placeRange: {
+        minPlace,
+        maxPlace,
+      },
+      usesDecimals,
+      usesLargeNumbers,
+      totalDigitsEntered: totalDigits,
+      digitsByPlace: { ...digits },
+      expandedFormCorrect: expandedParts.length > 0,
+      expandedFormParts: expandedParts,
+      digitChanges: digitChangeCount,
+      placeValueAccuracy: score,
+    };
+
+    submitResult(isCorrect, score, metrics, {
+      studentWork: { digits, finalValue },
+    });
+  }, [
+    hasSubmitted,
+    calculateValueFromDigits,
+    targetValue,
+    digits,
+    digitChangeCount,
+    minPlace,
+    maxPlace,
+    submitResult,
+  ]);
+
+  // Reset for another attempt
+  const handleReset = useCallback(() => {
+    setDigits(getDigitsFromValue(initialValue));
+    setDigitChangeCount(0);
+    resetAttempt();
+  }, [initialValue, resetAttempt]);
 
   // Create place columns
   const places: number[] = [];
@@ -228,6 +343,32 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
                   <span className="text-slate-500">0</span>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Evaluation controls (only show if evaluation is enabled) */}
+          {editableDigits && (instanceId || onEvaluationSubmit) && (
+            <div className="mt-8 flex items-center gap-4 justify-center">
+              {targetValue !== undefined && (
+                <div className="text-sm text-slate-400">
+                  Target: <span className="font-mono text-white">{targetValue}</span>
+                </div>
+              )}
+              <button
+                onClick={handleSubmit}
+                disabled={hasSubmitted}
+                className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg font-semibold transition-all shadow-lg disabled:shadow-none"
+              >
+                {hasSubmitted ? '✓ Submitted' : 'Submit'}
+              </button>
+              {hasSubmitted && (
+                <button
+                  onClick={handleReset}
+                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all"
+                >
+                  Try Again
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -56,11 +56,16 @@ export type {
   CategorizationActivityMetrics,
   TrueFalseMetrics,
   ShortAnswerMetrics,
+  ComparisonPanelMetrics,
   // Math metrics
   BalanceScaleMetrics,
   FractionCirclesMetrics,
+  FractionBarMetrics,
   NumberLineMetrics,
   CoordinateGraphMetrics,
+  PlaceValueChartMetrics,
+  FactorTreeMetrics,
+  FormulaCardMetrics,
   // Exploration metrics
   FunctionMachineMetrics,
   // Session types

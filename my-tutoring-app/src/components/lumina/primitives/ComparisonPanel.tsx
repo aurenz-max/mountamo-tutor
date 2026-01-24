@@ -3,6 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { ComparisonData } from '../types';
 import { generateConceptImage } from '../service/geminiClient-api';
+import {
+  usePrimitiveEvaluation,
+  type ComparisonPanelMetrics,
+  type PrimitiveEvaluationResult,
+} from '../evaluation';
 
 interface ComparisonPanelProps {
   data: ComparisonData;
@@ -13,6 +18,60 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
   const [image2, setImage2] = useState<string | null>(null);
   const [hoveredItem, setHoveredItem] = useState<1 | 2 | null>(null);
   const [selectedItem, setSelectedItem] = useState<1 | 2 | null>(null);
+
+  // Exploration tracking
+  const [item1Clicked, setItem1Clicked] = useState(false);
+  const [item2Clicked, setItem2Clicked] = useState(false);
+  const [explorationStartTime] = useState(Date.now());
+
+  // Gate state
+  const [currentGateIndex, setCurrentGateIndex] = useState(0);
+  const [gateAnswer, setGateAnswer] = useState<boolean | null>(null);
+  const [gateSubmitted, setGateSubmitted] = useState(false);
+  const [gateResults, setGateResults] = useState<Array<{
+    gateIndex: number;
+    question: string;
+    correctAnswer: boolean;
+    studentAnswer: boolean;
+    isCorrect: boolean;
+    attemptNumber: number;
+    timeToAnswer: number;
+  }>>([]);
+  const [gateAttemptStartTime, setGateAttemptStartTime] = useState<number | null>(null);
+  const [gateAttemptCounts, setGateAttemptCounts] = useState<Record<number, number>>({});
+
+  // Evaluation integration
+  const {
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data;
+
+  const {
+    submitResult,
+    hasSubmitted: hasSubmittedEvaluation,
+  } = usePrimitiveEvaluation<ComparisonPanelMetrics>({
+    primitiveType: 'comparison-panel',
+    instanceId: instanceId || `comparison-panel-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  const gates = data.gates || [];
+  const hasGates = gates.length > 0;
+  const currentGate = gates[currentGateIndex];
+  const allGatesCompleted = currentGateIndex >= gates.length;
+
+  // Progressive reveal logic
+  const bothItemsExplored = item1Clicked && item2Clicked;
+  const canShowFirstGate = hasGates && bothItemsExplored && currentGateIndex === 0;
+  const canShowSynthesis = !hasGates || (currentGateIndex > 0 || allGatesCompleted);
 
   useEffect(() => {
     let mounted = true;
@@ -34,6 +93,114 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
     fetchImages();
     return () => { mounted = false; };
   }, [data.item1.visualPrompt, data.item2.visualPrompt]);
+
+  const handleItemClick = (itemNumber: 1 | 2) => {
+    setSelectedItem(selectedItem === itemNumber ? null : itemNumber);
+
+    if (itemNumber === 1 && !item1Clicked) {
+      setItem1Clicked(true);
+    } else if (itemNumber === 2 && !item2Clicked) {
+      setItem2Clicked(true);
+    }
+
+    // Start gate timer when both items explored for the first time
+    if (!item1Clicked || !item2Clicked) {
+      if ((itemNumber === 1 && item2Clicked) || (itemNumber === 2 && item1Clicked)) {
+        setGateAttemptStartTime(Date.now());
+      }
+    }
+  };
+
+  const handleGateAnswer = (answer: boolean) => {
+    if (gateSubmitted) return;
+    setGateAnswer(answer);
+  };
+
+  const handleGateSubmit = () => {
+    if (gateAnswer === null || !currentGate) return;
+
+    const isCorrect = gateAnswer === currentGate.correctAnswer;
+    const attemptNumber = (gateAttemptCounts[currentGateIndex] || 0) + 1;
+    const timeToAnswer = gateAttemptStartTime ? Date.now() - gateAttemptStartTime : 0;
+
+    // Record this gate result
+    const newResult = {
+      gateIndex: currentGateIndex,
+      question: currentGate.question,
+      correctAnswer: currentGate.correctAnswer,
+      studentAnswer: gateAnswer,
+      isCorrect,
+      attemptNumber,
+      timeToAnswer,
+    };
+
+    setGateResults([...gateResults, newResult]);
+    setGateAttemptCounts({
+      ...gateAttemptCounts,
+      [currentGateIndex]: attemptNumber,
+    });
+    setGateSubmitted(true);
+
+    // If correct, advance after a brief moment to show feedback
+    if (isCorrect) {
+      setTimeout(() => {
+        setCurrentGateIndex(currentGateIndex + 1);
+        setGateAnswer(null);
+        setGateSubmitted(false);
+        setGateAttemptStartTime(Date.now());
+
+        // Submit evaluation if all gates completed
+        if (currentGateIndex + 1 >= gates.length) {
+          submitEvaluation([...gateResults, newResult]);
+        }
+      }, 2000);
+    }
+  };
+
+  const handleGateReset = () => {
+    setGateAnswer(null);
+    setGateSubmitted(false);
+    setGateAttemptStartTime(Date.now());
+  };
+
+  const submitEvaluation = (allResults: typeof gateResults) => {
+    if (hasSubmittedEvaluation) return;
+
+    const totalAttempts = allResults.length;
+    const firstAttemptCorrect = allResults.filter(r => r.isCorrect && r.attemptNumber === 1).length;
+    const correctAnswers = new Set(allResults.filter(r => r.isCorrect).map(r => r.gateIndex)).size;
+
+    const firstAttemptSuccessRate = gates.length > 0 ? (firstAttemptCorrect / gates.length) * 100 : 0;
+    const overallAccuracy = totalAttempts > 0 ? (correctAnswers / gates.length) * 100 : 0;
+    const timeSpentExploring = gateAttemptStartTime ? gateAttemptStartTime - explorationStartTime : 0;
+
+    const metrics: ComparisonPanelMetrics = {
+      type: 'comparison-panel',
+      item1Explored: item1Clicked,
+      item2Explored: item2Clicked,
+      bothItemsExplored: item1Clicked && item2Clicked,
+      totalGates: gates.length,
+      gatesCompleted: correctAnswers,
+      gateAttempts: totalAttempts,
+      gateResults: allResults,
+      firstAttemptSuccessRate,
+      overallAccuracy,
+      timeSpentExploring,
+      sectionsRevealed: correctAnswers + 1, // Items + unlocked sections
+    };
+
+    const success = correctAnswers === gates.length;
+    const score = overallAccuracy;
+
+    submitResult(success, score, metrics, {
+      studentWork: {
+        gateResults: allResults,
+        explorationPattern: { item1Clicked, item2Clicked },
+      },
+    });
+  };
+
+  const isGateCorrect = gateSubmitted && gateAnswer === currentGate?.correctAnswer;
 
   return (
     <div className="w-full max-w-7xl mx-auto my-20 animate-fade-in">
@@ -60,6 +227,27 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
         </div>
       )}
 
+      {/* Exploration Prompt (if gates exist and not both explored) */}
+      {hasGates && !bothItemsExplored && (
+        <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl max-w-2xl mx-auto">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm text-blue-300 font-medium mb-1">Click to explore both options</p>
+              <p className="text-xs text-slate-400">
+                {!item1Clicked && !item2Clicked && "Click on each card to read about both options before proceeding"}
+                {item1Clicked && !item2Clicked && "Great! Now explore the second option"}
+                {!item1Clicked && item2Clicked && "Great! Now explore the first option"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Comparison Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
@@ -68,8 +256,9 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
           className={`glass-panel rounded-3xl border overflow-hidden transition-all duration-500 cursor-pointer group
             ${selectedItem === 1 ? 'border-blue-500/60 ring-4 ring-blue-500/20' : 'border-blue-500/20 hover:border-blue-500/40'}
             ${hoveredItem === 2 ? 'opacity-60 scale-[0.98]' : 'hover:scale-[1.02]'}
+            ${item1Clicked ? 'ring-2 ring-green-500/30' : ''}
           `}
-          onClick={() => setSelectedItem(selectedItem === 1 ? null : 1)}
+          onClick={() => handleItemClick(1)}
           onMouseEnter={() => setHoveredItem(1)}
           onMouseLeave={() => setHoveredItem(null)}
         >
@@ -88,6 +277,15 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
             <div className="absolute top-4 left-4 px-3 py-1 bg-blue-500/30 border border-blue-400/40 rounded-full backdrop-blur-md">
               <span className="text-xs font-mono uppercase tracking-wider text-blue-300">Option A</span>
             </div>
+
+            {/* Explored Indicator */}
+            {item1Clicked && (
+              <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-green-500/30 border border-green-400 flex items-center justify-center">
+                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+            )}
 
             {/* Glow effect on hover */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
@@ -128,8 +326,9 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
           className={`glass-panel rounded-3xl border overflow-hidden transition-all duration-500 cursor-pointer group
             ${selectedItem === 2 ? 'border-orange-500/60 ring-4 ring-orange-500/20' : 'border-orange-500/20 hover:border-orange-500/40'}
             ${hoveredItem === 1 ? 'opacity-60 scale-[0.98]' : 'hover:scale-[1.02]'}
+            ${item2Clicked ? 'ring-2 ring-green-500/30' : ''}
           `}
-          onClick={() => setSelectedItem(selectedItem === 2 ? null : 2)}
+          onClick={() => handleItemClick(2)}
           onMouseEnter={() => setHoveredItem(2)}
           onMouseLeave={() => setHoveredItem(null)}
         >
@@ -148,6 +347,15 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
             <div className="absolute top-4 right-4 px-3 py-1 bg-orange-500/30 border border-orange-400/40 rounded-full backdrop-blur-md">
               <span className="text-xs font-mono uppercase tracking-wider text-orange-300">Option B</span>
             </div>
+
+            {/* Explored Indicator */}
+            {item2Clicked && (
+              <div className="absolute top-4 left-4 w-6 h-6 rounded-full bg-green-500/30 border border-green-400 flex items-center justify-center">
+                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+            )}
 
             {/* Glow effect on hover */}
             <div className="absolute top-0 left-0 w-32 h-32 bg-orange-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
@@ -191,127 +399,241 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
         </div>
       </div>
 
-      {/* Synthesis Section */}
-      <div className="mt-8 glass-panel rounded-3xl border border-purple-500/20 p-8 md:p-10 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
-
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
-            <h4 className="text-lg font-bold uppercase tracking-widest text-purple-400">
-              Synthesis & Analysis
-            </h4>
-          </div>
-
-          {/* Main Insight */}
-          <div className="mb-8 pl-7">
-            <div className="text-xs uppercase tracking-widest text-purple-500/70 font-bold mb-3 flex items-center gap-2">
-              <span className="w-3 h-px bg-purple-500/50"></span>
-              Key Insight
-            </div>
-            <p className="text-xl text-white leading-relaxed font-light italic">
-              "{data.synthesis.mainInsight}"
-            </p>
-          </div>
-
-          {/* Differences & Similarities Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Differences */}
-            <div className="p-6 rounded-xl bg-red-500/5 border border-red-500/20">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </div>
-                <h5 className="text-sm font-bold uppercase tracking-wider text-red-400">Key Differences</h5>
+      {/* Comprehension Gate */}
+      {hasGates && canShowFirstGate && !gateSubmitted && currentGate && (
+        <div className="mt-8 mb-8 animate-fade-in">
+          <div className="glass-panel rounded-3xl border border-yellow-500/30 p-8 bg-yellow-500/5 max-w-3xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/30">
+                <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
               </div>
-              <ul className="space-y-2.5">
-                {data.synthesis.keyDifferences.map((diff, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-slate-200">
-                    <span className="text-red-400 mt-1 flex-shrink-0">▸</span>
-                    <span className="leading-relaxed">{diff}</span>
-                  </li>
-                ))}
-              </ul>
+              <div>
+                <h4 className="text-lg font-bold text-yellow-300">Comprehension Check {currentGateIndex + 1} of {gates.length}</h4>
+                <p className="text-xs text-slate-400">Answer correctly to continue</p>
+              </div>
             </div>
 
-            {/* Similarities */}
-            <div className="p-6 rounded-xl bg-green-500/5 border border-green-500/20">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-                <h5 className="text-sm font-bold uppercase tracking-wider text-green-400">Key Similarities</h5>
-              </div>
-              <ul className="space-y-2.5">
-                {data.synthesis.keySimilarities.map((sim, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-slate-200">
-                    <span className="text-green-400 mt-1 flex-shrink-0">▸</span>
-                    <span className="leading-relaxed">{sim}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+            <p className="text-xl text-white mb-6 leading-relaxed">{currentGate.question}</p>
 
-          {/* When to Use */}
-          {data.synthesis.whenToUse && (
-            <div className="mb-8 p-6 rounded-xl bg-blue-500/5 border border-blue-500/20">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                  </svg>
-                </div>
-                <h5 className="text-sm font-bold uppercase tracking-wider text-blue-400">When to Use Each</h5>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-500/10">
-                  <div className="text-xs font-mono uppercase tracking-wider text-blue-300 mb-2 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                    {data.item1.name}
+            {/* True/False Buttons */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {[
+                { value: true, label: 'True', icon: '✓' },
+                { value: false, label: 'False', icon: '✗' }
+              ].map(({ value, label, icon }) => (
+                <button
+                  key={label}
+                  onClick={() => handleGateAnswer(value)}
+                  className={`p-6 rounded-xl border transition-all duration-300 ${
+                    gateAnswer === value
+                      ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                      : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-3xl">{icon}</span>
+                    <span className="text-lg font-bold text-slate-200">{label}</span>
                   </div>
-                  <p className="text-sm text-slate-200 leading-relaxed">{data.synthesis.whenToUse.item1Context}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-orange-900/20 border border-orange-500/10">
-                  <div className="text-xs font-mono uppercase tracking-wider text-orange-300 mb-2 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-                    {data.item2.name}
-                  </div>
-                  <p className="text-sm text-slate-200 leading-relaxed">{data.synthesis.whenToUse.item2Context}</p>
-                </div>
-              </div>
+                </button>
+              ))}
             </div>
-          )}
 
-          {/* Common Misconception */}
-          {data.synthesis.commonMisconception && (
-            <div className="p-6 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h5 className="text-sm font-bold uppercase tracking-wider text-yellow-400 mb-2">Common Misconception</h5>
-                  <p className="text-sm text-slate-200 leading-relaxed italic">{data.synthesis.commonMisconception}</p>
-                </div>
-              </div>
-            </div>
-          )}
+            <button
+              onClick={handleGateSubmit}
+              disabled={gateAnswer === null}
+              className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            >
+              Submit Answer
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Interactive Hint */}
-      {!selectedItem && (
+      {/* Gate Feedback */}
+      {hasGates && gateSubmitted && currentGate && (
+        <div className="mt-8 mb-8 animate-fade-in">
+          <div className={`glass-panel rounded-3xl border p-8 max-w-3xl mx-auto ${
+            isGateCorrect
+              ? 'border-green-500/30 bg-green-500/5'
+              : 'border-red-500/30 bg-red-500/5'
+          }`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                isGateCorrect
+                  ? 'bg-green-500/20 border-green-500/30'
+                  : 'bg-red-500/20 border-red-500/30'
+              }`}>
+                <svg className={`w-6 h-6 ${isGateCorrect ? 'text-green-400' : 'text-red-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {isGateCorrect ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  )}
+                </svg>
+              </div>
+              <h4 className={`text-lg font-bold ${isGateCorrect ? 'text-green-300' : 'text-red-300'}`}>
+                {isGateCorrect ? 'Correct!' : 'Not quite'}
+              </h4>
+            </div>
+
+            <p className="text-slate-300 leading-relaxed mb-4">{currentGate.rationale}</p>
+
+            {!isGateCorrect && (
+              <button
+                onClick={handleGateReset}
+                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all"
+              >
+                Try Again
+              </button>
+            )}
+
+            {isGateCorrect && (
+              <p className="text-sm text-green-400 italic">Unlocking next section...</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Synthesis Section (locked until gate passed) */}
+      {canShowSynthesis && (
+        <div className="mt-8 glass-panel rounded-3xl border border-purple-500/20 p-8 md:p-10 relative overflow-hidden animate-fade-in">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
+              <h4 className="text-lg font-bold uppercase tracking-widest text-purple-400">
+                Synthesis & Analysis
+              </h4>
+            </div>
+
+            {/* Main Insight */}
+            <div className="mb-8 pl-7">
+              <div className="text-xs uppercase tracking-widest text-purple-500/70 font-bold mb-3 flex items-center gap-2">
+                <span className="w-3 h-px bg-purple-500/50"></span>
+                Key Insight
+              </div>
+              <p className="text-xl text-white leading-relaxed font-light italic">
+                "{data.synthesis.mainInsight}"
+              </p>
+            </div>
+
+            {/* Differences & Similarities Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Differences */}
+              <div className="p-6 rounded-xl bg-red-500/5 border border-red-500/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </div>
+                  <h5 className="text-sm font-bold uppercase tracking-wider text-red-400">Key Differences</h5>
+                </div>
+                <ul className="space-y-2.5">
+                  {data.synthesis.keyDifferences.map((diff, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm text-slate-200">
+                      <span className="text-red-400 mt-1 flex-shrink-0">▸</span>
+                      <span className="leading-relaxed">{diff}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Similarities */}
+              <div className="p-6 rounded-xl bg-green-500/5 border border-green-500/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                  <h5 className="text-sm font-bold uppercase tracking-wider text-green-400">Key Similarities</h5>
+                </div>
+                <ul className="space-y-2.5">
+                  {data.synthesis.keySimilarities.map((sim, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm text-slate-200">
+                      <span className="text-green-400 mt-1 flex-shrink-0">▸</span>
+                      <span className="leading-relaxed">{sim}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* When to Use */}
+            {data.synthesis.whenToUse && (
+              <div className="mb-8 p-6 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                  </div>
+                  <h5 className="text-sm font-bold uppercase tracking-wider text-blue-400">When to Use Each</h5>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-500/10">
+                    <div className="text-xs font-mono uppercase tracking-wider text-blue-300 mb-2 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                      {data.item1.name}
+                    </div>
+                    <p className="text-sm text-slate-200 leading-relaxed">{data.synthesis.whenToUse.item1Context}</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-orange-900/20 border border-orange-500/10">
+                    <div className="text-xs font-mono uppercase tracking-wider text-orange-300 mb-2 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+                      {data.item2.name}
+                    </div>
+                    <p className="text-sm text-slate-200 leading-relaxed">{data.synthesis.whenToUse.item2Context}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Common Misconception */}
+            {data.synthesis.commonMisconception && (
+              <div className="p-6 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h5 className="text-sm font-bold uppercase tracking-wider text-yellow-400 mb-2">Common Misconception</h5>
+                    <p className="text-sm text-slate-200 leading-relaxed italic">{data.synthesis.commonMisconception}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Hint (only if no gates) */}
+      {!hasGates && !selectedItem && (
         <div className="mt-6 text-center">
           <p className="text-xs text-slate-500 font-mono">
             💡 Click on either card to highlight and focus
+          </p>
+        </div>
+      )}
+
+      {/* Completion Message */}
+      {allGatesCompleted && hasGates && (
+        <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl max-w-2xl mx-auto text-center animate-fade-in">
+          <div className="flex items-center justify-center gap-2 text-green-400 mb-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span className="font-bold text-sm">Comparison Complete!</span>
+          </div>
+          <p className="text-xs text-slate-400">
+            You've successfully explored and understood this comparison
           </p>
         </div>
       )}

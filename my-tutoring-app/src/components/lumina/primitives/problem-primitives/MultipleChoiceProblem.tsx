@@ -4,6 +4,21 @@ import React, { useState } from 'react';
 import { MultipleChoiceProblemData, VisualObjectCollection, VisualComparisonData, LetterTracingData, LetterPictureData, AlphabetSequenceData, RhymingPairsData, SightWordCardData, SoundSortData } from '../../types';
 import { ObjectCollection, ComparisonPanel, LetterPicture, AlphabetSequence, RhymingPairs, SightWordCard, SoundSort } from '../visual-primitives';
 import { LetterTracing } from '../LetterTracing';
+import {
+  usePrimitiveEvaluation,
+  type MultipleChoiceMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../evaluation';
+
+/**
+ * Multiple Choice Problem Component
+ *
+ * EVALUATION INTEGRATION:
+ * - Tracks student responses and performance on multiple choice questions
+ * - Submits evaluation metrics on answer submission
+ * - Supports competency tracking via skillId/subskillId/objectiveId
+ * - Enables retry mechanism with resetAttempt
+ */
 
 interface MultipleChoiceProblemProps {
   data: MultipleChoiceProblemData;
@@ -12,6 +27,32 @@ interface MultipleChoiceProblemProps {
 export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ data }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [startTime] = useState(Date.now());
+
+  // Destructure evaluation props
+  const {
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data;
+
+  // Initialize evaluation hook
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<MultipleChoiceMetrics>({
+    primitiveType: 'multiple-choice',
+    instanceId: instanceId || `multiple-choice-${data.id}-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
   const handleSelect = (id: string) => {
     if (isSubmitted) return;
@@ -19,7 +60,43 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
   };
 
   const handleSubmit = () => {
-    if (selectedId) setIsSubmitted(true);
+    if (!selectedId || hasSubmittedEvaluation) return;
+
+    setIsSubmitted(true);
+
+    const isCorrect = selectedId === data.correctOptionId;
+    const timeToAnswer = Date.now() - startTime;
+
+    // Build evaluation metrics
+    const metrics: MultipleChoiceMetrics = {
+      type: 'multiple-choice',
+      isCorrect,
+      selectedOptionId: selectedId,
+      correctOptionId: data.correctOptionId,
+      attemptCount: 1,
+      timeToFirstAnswer: timeToAnswer,
+      changedAnswer: false,
+    };
+
+    // Submit evaluation result
+    submitEvaluation(
+      isCorrect,
+      isCorrect ? 100 : 0,
+      metrics,
+      {
+        studentWork: {
+          selectedOptionId: selectedId,
+          question: data.question,
+          options: data.options,
+        },
+      }
+    );
+  };
+
+  const handleReset = () => {
+    setSelectedId(null);
+    setIsSubmitted(false);
+    resetEvaluationAttempt();
   };
 
   const isCorrect = selectedId === data.correctOptionId;
@@ -117,26 +194,35 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
             Verify Answer
           </button>
         ) : (
-          <div className="w-full animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-            <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${isCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {isCorrect ?
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                }
-              </svg>
-              <span>{isCorrect ? 'Correct Analysis' : 'Insight'}</span>
-            </div>
-            <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-              {data.rationale}
-            </p>
-            {data.teachingNote && (
-              <div className="mt-3 pt-3 border-t border-white/5">
-                <p className="text-sm text-slate-400 italic">
-                  💡 {data.teachingNote}
-                </p>
+          <div className="w-full space-y-4">
+            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
+              <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${isCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {isCorrect ?
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  }
+                </svg>
+                <span>{isCorrect ? 'Correct Analysis' : 'Insight'}</span>
               </div>
-            )}
+              <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
+                {data.rationale}
+              </p>
+              {data.teachingNote && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <p className="text-sm text-slate-400 italic">
+                    💡 {data.teachingNote}
+                  </p>
+                </div>
+              )}
+            </div>
+            {/* Try Again Button */}
+            <button
+              onClick={handleReset}
+              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+            >
+              Try Again
+            </button>
           </div>
         )}
       </div>
