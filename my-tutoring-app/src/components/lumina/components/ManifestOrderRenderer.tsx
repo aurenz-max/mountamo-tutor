@@ -3,6 +3,7 @@ import { getPrimitive, SectionHeader, CenteredSectionHeader } from '../config/pr
 import { OrderedComponent } from '../types';
 import { useExhibitContext } from '../contexts/ExhibitContext';
 import { ObjectiveBadge } from './ObjectiveBadge';
+import { useEvaluationContext } from '../evaluation';
 
 interface ManifestOrderRendererProps {
   /**
@@ -40,7 +41,8 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
   onDetailItemClick,
   onTermClick,
 }) => {
-  const { getObjectivesForComponent } = useExhibitContext();
+  const { getObjectivesForComponent, manifestItems } = useExhibitContext();
+  const evaluationContext = useEvaluationContext();
 
   if (!orderedComponents || orderedComponents.length === 0) {
     return null;
@@ -81,6 +83,29 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
         }
         if (componentId === 'feature-exhibit' && onTermClick) {
           additionalProps.onTermClick = onTermClick;
+        }
+
+        // Auto-inject evaluation props for evaluable primitives
+        if (config.supportsEvaluation) {
+          // Find manifest item to extract metadata
+          const manifestItem = manifestItems.find(m => m.instanceId === instanceId);
+
+          // Inject evaluation props into the data object
+          additionalProps.instanceId = instanceId;
+          additionalProps.exhibitId = evaluationContext?.exhibitId;
+
+          // Extract skillId from manifest config if available
+          if (manifestItem?.config?.skillId) {
+            additionalProps.skillId = manifestItem.config.skillId;
+          }
+          if (manifestItem?.config?.subskillId) {
+            additionalProps.subskillId = manifestItem.config.subskillId;
+          }
+
+          // Use first objective ID if available
+          if (objectives.length > 0) {
+            additionalProps.objectiveId = objectives[0].id;
+          }
         }
 
         // Determine header component
@@ -133,7 +158,7 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
             )}
 
             {/* Render the component */}
-            <Component data={data} index={index} {...additionalProps} />
+            <Component data={{ ...data, ...additionalProps }} index={index} />
           </div>
         );
       })}

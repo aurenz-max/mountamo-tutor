@@ -8,6 +8,11 @@ import WheelAxleExplorer from '../primitives/visual-primitives/engineering/Wheel
 import GearTrainBuilder from '../primitives/visual-primitives/engineering/GearTrainBuilder';
 import BridgeBuilder from '../primitives/visual-primitives/engineering/BridgeBuilder';
 import TowerStacker from '../primitives/visual-primitives/engineering/TowerStacker';
+import {
+  EvaluationProvider,
+  useEvaluationContext,
+  type PrimitiveEvaluationResult,
+} from '../evaluation';
 
 interface EngineeringPrimitivesTesterProps {
   onBack: () => void;
@@ -39,7 +44,12 @@ const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
 ];
 
 // Dynamic renderer that maps componentId to the appropriate primitive component
-const PrimitiveRenderer: React.FC<{ componentId: PrimitiveType; data: unknown }> = ({ componentId, data }) => {
+// Now includes evaluation props for primitives that support it
+const PrimitiveRenderer: React.FC<{
+  componentId: PrimitiveType;
+  data: unknown;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult) => void;
+}> = ({ componentId, data, onEvaluationSubmit }) => {
   if (!data) return null;
 
   switch (componentId) {
@@ -54,22 +64,171 @@ const PrimitiveRenderer: React.FC<{ componentId: PrimitiveType; data: unknown }>
     case 'gear-train-builder':
       return <GearTrainBuilder data={data as Parameters<typeof GearTrainBuilder>[0]['data']} />;
     case 'bridge-builder':
-      return <BridgeBuilder data={data as Parameters<typeof BridgeBuilder>[0]['data']} />;
+      // BridgeBuilder now supports evaluation - pass the props
+      return (
+        <BridgeBuilder
+          data={{
+            ...(data as Parameters<typeof BridgeBuilder>[0]['data']),
+            // Evaluation integration props
+            instanceId: `bridge-builder-${Date.now()}`,
+            skillId: 'engineering-structural-design',
+            subskillId: 'bridge-construction',
+            objectiveId: 'understand-load-distribution',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'tower-stacker':
-      return <TowerStacker data={data as Parameters<typeof TowerStacker>[0]['data']} />;
+      // TowerStacker now supports evaluation - pass the props
+      return (
+        <TowerStacker
+          data={{
+            ...(data as Parameters<typeof TowerStacker>[0]['data']),
+            // Evaluation integration props
+            instanceId: `tower-stacker-${Date.now()}`,
+            skillId: 'engineering-structural-stability',
+            subskillId: 'center-of-gravity',
+            objectiveId: 'understand-stability',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     default:
       return <div className="text-slate-400">Unknown primitive: {componentId}</div>;
   }
 };
 
-export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterProps> = ({ onBack }) => {
-  const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('lever-lab');
+// Evaluation Results Panel - Shows submitted results from the session
+const EvaluationResultsPanel: React.FC = () => {
+  const context = useEvaluationContext();
+
+  if (!context) {
+    return (
+      <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+        <p className="text-slate-500 text-sm">Evaluation tracking not available (no provider)</p>
+      </div>
+    );
+  }
+
+  const { submittedResults, pendingSubmissions, isOnline, getSessionSummary } = context;
+  const summary = getSessionSummary();
+
+  return (
+    <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-lg font-semibold text-white">Evaluation Results</h4>
+        <div className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs ${
+          isOnline ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+        }`}>
+          <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-400' : 'bg-red-400'}`} />
+          {isOnline ? 'Online' : 'Offline'}
+        </div>
+      </div>
+
+      {/* Session Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div className="text-2xl font-bold text-white">{summary.totalAttempts}</div>
+          <div className="text-xs text-slate-400">Attempts</div>
+        </div>
+        <div className="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div className="text-2xl font-bold text-green-400">{summary.successfulAttempts}</div>
+          <div className="text-xs text-slate-400">Successes</div>
+        </div>
+        <div className="p-3 bg-slate-700/50 rounded-lg text-center">
+          <div className="text-2xl font-bold text-amber-400">{Math.round(summary.averageScore)}%</div>
+          <div className="text-xs text-slate-400">Avg Score</div>
+        </div>
+      </div>
+
+      {/* Pending Submissions */}
+      {pendingSubmissions.length > 0 && (
+        <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/30">
+          <p className="text-amber-400 text-xs">
+            {pendingSubmissions.length} evaluation(s) pending sync...
+          </p>
+        </div>
+      )}
+
+      {/* Recent Results */}
+      {submittedResults.length > 0 && (
+        <div className="space-y-2">
+          <h5 className="text-sm font-medium text-slate-300">Recent Results</h5>
+          <div className="max-h-48 overflow-y-auto space-y-2">
+            {submittedResults.slice(-5).reverse().map((result) => (
+              <div
+                key={result.attemptId}
+                className={`p-3 rounded-lg border ${
+                  result.success
+                    ? 'bg-green-500/10 border-green-500/30'
+                    : 'bg-red-500/10 border-red-500/30'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-white">
+                    {result.primitiveType}
+                  </span>
+                  <span className={`text-sm font-bold ${
+                    result.success ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {Math.round(result.score)}%
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400">
+                  Duration: {Math.round(result.durationMs / 1000)}s
+                  {result.success ? ' • Passed!' : ' • Try again'}
+                </div>
+                {/* Show TowerStacker-specific metrics */}
+                {result.metrics.type === 'tower-stacker' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Height: {result.metrics.achievedHeight}/{result.metrics.targetHeight}</span>
+                    <span>Stability: {Math.round(result.metrics.stabilityScore)}%</span>
+                    <span>Pieces: {result.metrics.piecesUsed}</span>
+                    <span>Wind: {result.metrics.windTestPassed ? 'Passed' : 'Failed'}</span>
+                  </div>
+                )}
+                {/* Show BridgeBuilder-specific metrics */}
+                {result.metrics.type === 'bridge-builder' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Connected: {result.metrics.bridgeConnected ? 'Yes' : 'No'}</span>
+                    <span>Load Test: {result.metrics.loadTestPassed ? 'Passed' : 'Failed'}</span>
+                    <span>Members: {result.metrics.membersUsed}</span>
+                    <span>Max Stress: {Math.round(result.metrics.maxStressObserved)}%</span>
+                    <span>Triangles: {result.metrics.triangleCount}</span>
+                    <span>Integrity: {Math.round(result.metrics.structuralIntegrity)}%</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {submittedResults.length === 0 && pendingSubmissions.length === 0 && (
+        <p className="text-slate-500 text-sm text-center py-4">
+          No evaluations yet. Complete a challenge to see results!
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Inner component that uses the evaluation context
+const EngineeringPrimitivesTesterInner: React.FC<EngineeringPrimitivesTesterProps> = ({ onBack }) => {
+  const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('tower-stacker'); // Default to tower-stacker to demo evaluation
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
 
   const selectedOption = PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)!;
+
+  // Callback when an evaluation is submitted
+  const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
+    console.log('Evaluation submitted:', result);
+    setLastEvaluationResult(result);
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -125,7 +284,7 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
         <p className="text-slate-400">AI-generated engineering visualizations for any grade level</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto px-4">
         {/* Left Column: Controls */}
         <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 h-fit">
           <h3 className="text-2xl font-bold text-white mb-6">Generate</h3>
@@ -207,7 +366,11 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
           <h3 className="text-2xl font-bold text-white mb-6">Preview</h3>
 
           {generatedData ? (
-            <PrimitiveRenderer componentId={selectedPrimitive} data={generatedData} />
+            <PrimitiveRenderer
+              componentId={selectedPrimitive}
+              data={generatedData}
+              onEvaluationSubmit={handleEvaluationSubmit}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-slate-500">
               <span className="text-4xl mb-4">{selectedOption.icon}</span>
@@ -215,8 +378,40 @@ export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterPr
             </div>
           )}
         </div>
+
+        {/* Evaluation Results Panel - Third Column */}
+        <div className="lg:col-span-2">
+          <EvaluationResultsPanel />
+
+          {/* Last Result Quick View */}
+          {lastEvaluationResult && (
+            <div className="mt-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+              <h4 className="text-sm font-medium text-slate-300 mb-2">Last Evaluation (Raw JSON)</h4>
+              <pre className="text-xs text-slate-400 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded-lg">
+                {JSON.stringify(lastEvaluationResult, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
       </div>
     </div>
+  );
+};
+
+// Main export - wraps with EvaluationProvider for tracking
+export const EngineeringPrimitivesTester: React.FC<EngineeringPrimitivesTesterProps> = (props) => {
+  return (
+    <EvaluationProvider
+      sessionId={`engineering-tester-${Date.now()}`}
+      exhibitId="engineering-primitives-tester"
+      // In production, pass actual studentId from auth context
+      // studentId={currentUser?.studentId}
+      onCompetencyUpdate={(updates) => {
+        console.log('Competency updates received:', updates);
+      }}
+    >
+      <EngineeringPrimitivesTesterInner {...props} />
+    </EvaluationProvider>
   );
 };
 

@@ -1,6 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import {
+  usePrimitiveEvaluation,
+  type TowerStackerMetrics,
+} from '../../../evaluation';
 
 /**
  * Tower Stacker - Interactive vertical building challenge for teaching structural engineering
@@ -13,6 +17,11 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
  * - Wind resistance design (4-5)
  *
  * Real-world connections: buildings, skyscrapers, construction, architecture
+ *
+ * EVALUATION INTEGRATION:
+ * - Tracks height achievement, stability scores, and wind test results
+ * - Submits evaluation metrics on wind test completion
+ * - Supports competency tracking via skillId/subskillId/objectiveId
  */
 
 export interface BuildingPiece {
@@ -60,6 +69,14 @@ export interface TowerStackerData {
   groundWidth: number;                     // Available foundation space (grid units, typically 6-12)
   maxHeight: number;                       // Maximum build height (grid units, typically 10-20)
   theme: 'construction' | 'blocks' | 'city' | 'generic';
+
+  // Evaluation integration (optional)
+  instanceId?: string;                     // Unique instance ID for tracking
+  skillId?: string;                        // Associated skill for competency tracking
+  subskillId?: string;                     // Associated subskill
+  objectiveId?: string;                    // Learning objective this primitive addresses
+  exhibitId?: string;                      // Parent exhibit ID
+  onEvaluationSubmit?: (result: import('../../../evaluation').PrimitiveEvaluationResult<TowerStackerMetrics>) => void;
 }
 
 interface TowerStackerProps {
@@ -81,7 +98,17 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
     groundWidth = 8,
     maxHeight = 15,
     theme = 'generic',
+    // Evaluation props
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
+
+  // Calculate total available pieces for efficiency metric
+  const totalAvailablePieces = availablePieces.reduce((sum, p) => sum + p.count, 0);
 
   // State
   const [placedPieces, setPlacedPieces] = useState<PlacedPiece[]>([]);
@@ -96,6 +123,21 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
   const [currentRotation, setCurrentRotation] = useState(0);
 
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Evaluation hook - tracks timing and handles submission
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<TowerStackerMetrics>({
+    primitiveType: 'tower-stacker',
+    instanceId: instanceId || `tower-stacker-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void) | undefined,
+  });
 
   // SVG dimensions
   const svgWidth = 600;
@@ -218,6 +260,24 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
     return Math.max(0, Math.min(100, stability));
   }, [placedPieces, calculateCenterOfGravity, calculateTowerHeight, groundWidth, maxHeight]);
 
+  // Calculate base width for metrics
+  const calculateBaseWidth = useCallback(() => {
+    const basePieces = placedPieces.filter(p => p.y === 0);
+    if (basePieces.length === 0) return 0;
+    const baseLeft = Math.min(...basePieces.map(p => p.x));
+    const baseRight = Math.max(...basePieces.map(p => p.x + p.width));
+    return baseRight - baseLeft;
+  }, [placedPieces]);
+
+  // Calculate base center for CoG offset
+  const calculateBaseCenter = useCallback(() => {
+    const basePieces = placedPieces.filter(p => p.y === 0);
+    if (basePieces.length === 0) return groundWidth / 2;
+    const baseLeft = Math.min(...basePieces.map(p => p.x));
+    const baseRight = Math.max(...basePieces.map(p => p.x + p.width));
+    return baseLeft + (baseRight - baseLeft) / 2;
+  }, [placedPieces, groundWidth]);
+
   // Wind test simulation
   const runWindTest = useCallback(() => {
     setIsSimulating(true);
@@ -227,6 +287,8 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
 
     const stability = calculateStability();
     const windThreshold = 100 - windStrength;
+    const currentHeight = calculateTowerHeight();
+    const heightGoalMet = currentHeight >= targetHeight;
 
     // Animate wind effect
     let frame = 0;
@@ -246,13 +308,48 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
       } else {
         setWindOffset(0);
 
+        const windTestPassed = stability >= windThreshold;
+
         // Determine if tower survives
-        if (stability >= windThreshold) {
+        if (windTestPassed) {
           setTowerStood(true);
           setHint("Your tower stood strong against the wind!");
         } else {
           setTowerFell(true);
           setHint("The tower was too unstable and fell! Try building a wider base.");
+        }
+
+        // Submit evaluation if not already submitted
+        if (!hasSubmittedEvaluation) {
+          const cog = calculateCenterOfGravity();
+          const baseCenter = calculateBaseCenter();
+          const baseWidth = calculateBaseWidth();
+
+          // Calculate overall success (both height and wind test)
+          const success = heightGoalMet && windTestPassed;
+
+          // Calculate score: 50% height achievement + 50% stability
+          const heightScore = Math.min(currentHeight / targetHeight, 1) * 50;
+          const stabilityScore = (stability / 100) * 50;
+          const score = heightScore + stabilityScore;
+
+          const metrics: TowerStackerMetrics = {
+            type: 'tower-stacker',
+            targetHeight,
+            achievedHeight: currentHeight,
+            heightGoalMet,
+            stabilityScore: stability,
+            windTestPassed,
+            windStrength,
+            piecesUsed: placedPieces.length,
+            piecesAvailable: totalAvailablePieces,
+            efficiency: placedPieces.length > 0 ? currentHeight / placedPieces.length : 0,
+            baseWidth,
+            centerOfGravityOffset: cog ? Math.abs(cog.x - baseCenter) : 0,
+            placedPieces: [...placedPieces], // Clone for immutability
+          };
+
+          submitEvaluation(success, score, metrics, { placedPieces });
         }
 
         setTimeout(() => {
@@ -262,7 +359,19 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
     };
 
     requestAnimationFrame(animate);
-  }, [calculateStability, windStrength]);
+  }, [
+    calculateStability,
+    calculateTowerHeight,
+    calculateCenterOfGravity,
+    calculateBaseWidth,
+    calculateBaseCenter,
+    windStrength,
+    targetHeight,
+    placedPieces,
+    totalAvailablePieces,
+    hasSubmittedEvaluation,
+    submitEvaluation,
+  ]);
 
   // Handle canvas click to place piece
   const handleCanvasClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
@@ -396,6 +505,8 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
     setTowerStood(false);
     setWindOffset(0);
     setIsSimulating(false);
+    // Reset evaluation for a new attempt
+    resetEvaluationAttempt();
   };
 
   // Rotate selected piece

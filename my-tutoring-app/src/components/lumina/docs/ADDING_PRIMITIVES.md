@@ -2,6 +2,25 @@
 
 This guide explains how to add new primitive components to Lumina using the registry-based architecture.
 
+## 🎯 Philosophy: Build Evaluation Into Interactive Primitives
+
+**Interactive primitives with built-in evaluation significantly improve student learning outcomes.** When students can manipulate, build, and experiment with primitives that provide immediate feedback, they develop deeper understanding and retain concepts longer.
+
+**Best Practice: If your primitive is interactive, make it evaluable.**
+
+✅ **Do build evaluation into primitives when:**
+- Students manipulate or construct something (drag, click, build, arrange)
+- There's a clear learning goal or target state
+- You can measure performance quality (accuracy, efficiency, strategy)
+- The primitive involves problem-solving or decision-making
+
+❌ **Skip evaluation for:**
+- Pure display/visualization components (static diagrams, read-only charts)
+- Informational content (text, images, videos without interaction)
+- Navigation or organizational components
+
+**Why this matters:** Primitives with evaluation enable adaptive learning pathways, personalized feedback, and data-driven instruction. They transform passive content into active learning experiences.
+
 ## Quick Start: 6 Files, Zero Switch Statements
 
 Adding a new primitive involves these files:
@@ -14,6 +33,7 @@ Adding a new primitive involves these files:
 | 4 | `service/registry/generators/[domain]Generators.ts` | Register the generator |
 | 5 | `service/manifest/catalog/[domain].ts` | Add to catalog for AI selection |
 | 6 | `config/primitiveRegistry.tsx` | Register UI component for rendering |
+| 7 (Optional) | `evaluation/types.ts` | Add metrics type if supporting evaluation |
 
 **No changes needed to:**
 - ~~`geminiService.ts`~~ - Registry pattern handles all component generation
@@ -28,6 +48,133 @@ Adding a new primitive involves these files:
 Create a standalone React component that accepts a `data` prop.
 
 **Important: Define and export your data interface here.** This component file is the **single source of truth** for the data type. The generator service will import this type rather than redefining it.
+
+#### Evaluable Primitive (Recommended for Interactive Components)
+
+**⭐ Start here if your primitive involves student interaction.** Building evaluation directly into primitives from the start creates better learning experiences and enables personalized instruction.
+
+If your primitive involves student interaction and goal achievement, add optional evaluation props:
+
+```tsx
+// primitives/visual-primitives/math/MyPrimitive.tsx
+import React, { useState } from 'react';
+import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../evaluation';
+import type { MyPrimitiveMetrics } from '../../evaluation/types';
+
+// ✅ EXPORT the data interface - include optional evaluation props
+export interface MyPrimitiveData {
+  // Component-specific props
+  title: string;
+  description: string;
+  targetValue: number;
+
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  // These enable student performance tracking and adaptive learning
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<MyPrimitiveMetrics>) => void;
+}
+
+interface MyPrimitiveProps {
+  data: MyPrimitiveData;
+  className?: string;
+}
+
+const MyPrimitive: React.FC<MyPrimitiveProps> = ({ data, className }) => {
+  const [currentValue, setCurrentValue] = useState(0);
+
+  // Destructure evaluation props
+  const {
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data;
+
+  // Initialize evaluation hook
+  const {
+    submitResult,
+    hasSubmitted,
+    resetAttempt,
+  } = usePrimitiveEvaluation<MyPrimitiveMetrics>({
+    primitiveType: 'my-primitive',
+    instanceId: instanceId || `my-primitive-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit,
+  });
+
+  const handleSubmit = () => {
+    if (hasSubmitted) return;
+
+    const success = currentValue >= data.targetValue;
+    const score = Math.min(100, (currentValue / data.targetValue) * 100);
+
+    const metrics: MyPrimitiveMetrics = {
+      type: 'my-primitive',
+      targetValue: data.targetValue,
+      achievedValue: currentValue,
+      goalMet: success,
+      accuracy: score,
+    };
+
+    submitResult(success, score, metrics, {
+      studentWork: { value: currentValue },
+    });
+  };
+
+  const handleReset = () => {
+    setCurrentValue(0);
+    resetAttempt();
+  };
+
+  return (
+    <div className={className}>
+      <h3 className="text-xl font-semibold mb-4">{data.title}</h3>
+      <p className="text-gray-600 mb-4">{data.description}</p>
+      {/* Your visualization */}
+
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={handleSubmit}
+          disabled={hasSubmitted}
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+        >
+          {hasSubmitted ? 'Submitted' : 'Submit'}
+        </button>
+        {hasSubmitted && (
+          <button
+            onClick={handleReset}
+            className="px-4 py-2 bg-gray-500 text-white rounded"
+          >
+            Try Again
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default MyPrimitive;
+```
+
+**Benefits of building evaluation into your primitive:**
+- 📊 **Student progress tracking** - Automatically records performance in learning analytics
+- 🎯 **Adaptive learning** - Enables personalized difficulty adjustment and skill recommendations
+- 💡 **Immediate feedback** - Students get instant validation of their work
+- 📈 **Data-driven instruction** - Teachers see which concepts students struggle with
+- 🔄 **Retry mechanisms** - Built-in support for multiple attempts and mastery learning
+
+#### Basic (Non-Evaluable) Primitive
+
+Use this pattern **only for display-only components** like static visualizations, informational content, or navigation elements.
 
 ```tsx
 // primitives/visual-primitives/math/MyPrimitive.tsx
@@ -59,6 +206,8 @@ const MyPrimitive: React.FC<MyPrimitiveProps> = ({ data, className }) => {
 
 export default MyPrimitive;
 ```
+
+⚠️ **Consider: Can students interact with this?** If yes, use the evaluable pattern above instead.
 
 ### Step 2: Add TypeScript Types
 
@@ -164,7 +313,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
 
 ### Step 6: Register UI Component
 
-Register the React component for rendering.
+Register the React component for rendering. If your primitive supports evaluation, set `supportsEvaluation: true` to enable automatic prop injection.
 
 ```tsx
 // config/primitiveRegistry.tsx
@@ -181,13 +330,91 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,  // ← Add this if primitive uses evaluation
   },
 };
 ```
 
+**When to set `supportsEvaluation: true`:**
+- ✅ Primitive involves student interaction (e.g., building, selecting, manipulating)
+- ✅ Has a clear goal or target state
+- ✅ You've integrated the `usePrimitiveEvaluation` hook
+- ✅ You've defined metrics in `evaluation/types.ts`
+
+**⭐ Default to `true` for interactive primitives.** Evaluation powers adaptive learning and helps students learn faster.
+
+### Step 7 (Optional): Add Evaluation Metrics
+
+If your primitive supports evaluation, define a custom metrics interface in the evaluation system.
+
+```typescript
+// evaluation/types.ts
+
+// 1. Define your metrics interface
+export interface MyPrimitiveMetrics extends BasePrimitiveMetrics {
+  type: 'my-primitive';
+
+  // Goal achievement
+  targetValue: number;
+  achievedValue: number;
+  goalMet: boolean;
+
+  // Domain-specific metrics
+  accuracy: number;  // 0-100
+  efficiency?: number;  // Optional: steps taken vs optimal
+  attempts?: number;  // Optional: number of tries before success
+}
+
+// 2. Add to the PrimitiveMetrics union
+export type PrimitiveMetrics =
+  | TowerStackerMetrics
+  | BridgeBuilderMetrics
+  | MyPrimitiveMetrics  // ← Add here
+  | /* ... other metrics */;
+```
+
+Then export from the evaluation index:
+
+```typescript
+// evaluation/index.ts
+export type {
+  MyPrimitiveMetrics,
+  // ... other exports
+} from './types';
+```
+
+**What goes in metrics:**
+- **Goal achievement**: Target vs achieved values, success/failure
+- **Performance quality**: Accuracy, efficiency, optimality
+- **Student behavior**: Attempts, time spent, strategy used
+- **Domain concepts**: Specific to your educational domain (e.g., balance ratio, structural stability)
+
+**💡 Pro tip:** Rich metrics enable better adaptive learning. Capture not just whether the student succeeded, but *how* they approached the problem. This data powers personalized learning pathways.
+
 ---
 
 ## Best Practices
+
+### Prioritize Evaluation in Interactive Primitives
+
+**Make evaluation the default for interactive components, not an afterthought.**
+
+Research shows that interactive learning with immediate feedback dramatically improves:
+- **Retention**: Students remember 75% of what they actively practice vs 10% of what they read
+- **Engagement**: Interactive components keep students focused 3x longer
+- **Mastery**: Built-in evaluation enables practice until proficiency is achieved
+
+**Design pattern:**
+1. ✅ **Start with evaluation** - If students interact, plan evaluation from the beginning
+2. ✅ **Capture rich metrics** - Record approach and strategy, not just right/wrong
+3. ✅ **Enable retry** - Use `resetAttempt()` to support mastery learning
+4. ✅ **Provide feedback** - Show students what they achieved vs the goal
+
+**Anti-pattern:**
+1. ❌ Building interactive components without evaluation
+2. ❌ Adding evaluation as an afterthought (requires refactoring)
+3. ❌ Capturing only success/failure (loses valuable learning data)
+4. ❌ One-shot interactions without retry capability
 
 ### Single Source of Truth for Data Types
 
@@ -225,6 +452,49 @@ export interface MyPrimitiveData { title: string; values: number[]; }
 
 // gemini-my-primitive.ts
 import { MyPrimitiveData } from '../../primitives/.../MyPrimitive';
+```
+
+### Evaluation Props are Auto-Injected
+
+When `supportsEvaluation: true` is set in the registry, `ManifestOrderRenderer` automatically injects:
+
+| Prop | Source | Purpose |
+|------|--------|---------|
+| `instanceId` | Manifest | Unique identifier for this component instance |
+| `exhibitId` | EvaluationContext | Parent exhibit containing this primitive |
+| `skillId` | Manifest config | Primary skill being practiced |
+| `subskillId` | Manifest config | Specific subskill being practiced |
+| `objectiveId` | Objectives | Learning objective this maps to |
+
+**You don't need to manually pass these props** - just mark optional in your data interface and they'll be provided at runtime when the primitive is rendered within an exhibit.
+
+### Evaluation Props Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    App.tsx                                   │
+│  <EvaluationProvider sessionId={...} studentId={...}>       │
+│    <ManifestOrderRenderer orderedComponents={...} />         │
+│  </EvaluationProvider>                                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│              ManifestOrderRenderer                           │
+│  if (config.supportsEvaluation) {                            │
+│    inject: instanceId, skillId, exhibitId, objectiveId       │
+│  }                                                           │
+│  <Component data={{...data, ...evalProps}} />               │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Your Primitive                              │
+│  const { submitResult } = usePrimitiveEvaluation({          │
+│    instanceId: data.instanceId,  // ← Auto-injected         │
+│    skillId: data.skillId,        // ← Auto-injected         │
+│  });                                                         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -317,3 +587,36 @@ The registry-based architecture provides:
 ### TypeScript errors
 1. Missing `ComponentId` entry in `types.ts`
 2. Data interface not exported from component file
+3. Evaluation metrics not added to `PrimitiveMetrics` union
+
+### Evaluation not working
+1. Verify `supportsEvaluation: true` in registry
+2. Check that component is wrapped in `EvaluationProvider` (in App.tsx)
+3. Verify metrics interface is defined and exported from `evaluation/types.ts`
+4. Check browser console for warnings from `usePrimitiveEvaluation`
+
+---
+
+## Quick Checklist for New Primitives
+
+Use this checklist when adding a new primitive:
+
+- [ ] **Interaction analysis**: Does this primitive involve student interaction?
+  - If YES → Plan to include evaluation from the start
+  - If NO → Non-evaluable pattern is fine
+- [ ] **Data interface**: Defined in component file with optional evaluation props
+- [ ] **ComponentId**: Added to `types.ts`
+- [ ] **Generator**: Created in `service/[domain]/`
+- [ ] **Registry**: Registered in `generators/[domain]Generators.ts`
+- [ ] **Catalog**: Added to `catalog/[domain].ts` with clear description
+- [ ] **UI config**: Added to `primitiveRegistry.tsx` with `supportsEvaluation: true` if interactive
+- [ ] **Metrics** (if evaluable): Custom metrics interface in `evaluation/types.ts`
+- [ ] **Evaluation hook** (if evaluable): Integrated `usePrimitiveEvaluation` with submit/reset handlers
+- [ ] **Testing**: Verified primitive works standalone and within exhibits
+
+## Additional Resources
+
+- **[INTEGRATION_GUIDE.md](../evaluation/INTEGRATION_GUIDE.md)** - Comprehensive guide to the evaluation system
+- **[TowerStacker.tsx](../primitives/visual-primitives/engineering/TowerStacker.tsx)** - ⭐ Reference implementation with evaluation (recommended starting point)
+- **[BridgeBuilder.tsx](../primitives/visual-primitives/engineering/BridgeBuilder.tsx)** - Another evaluation example with complex metrics
+- **[LeverLab.tsx](../primitives/visual-primitives/engineering/LeverLab.tsx)** - Evaluation with physics-based metrics

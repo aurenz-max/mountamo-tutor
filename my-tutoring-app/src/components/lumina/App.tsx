@@ -33,7 +33,69 @@ import { PracticeMode } from './components/PracticeModeEnhanced';
 import { SpotlightCard } from './components/SpotlightCard';
 import { ExhibitProvider } from './contexts/ExhibitContext';
 import { ScratchPad } from './components/scratch-pad';
+import { EvaluationProvider, useEvaluationContext } from './evaluation';
 
+// Simple evaluation results indicator
+const EvaluationResultsIndicator: React.FC = () => {
+  const context = useEvaluationContext();
+
+  // Log only when a new result is added
+  const prevCountRef = React.useRef(0);
+  React.useEffect(() => {
+    if (context && context.submittedResults.length > prevCountRef.current) {
+      const newResult = context.submittedResults[context.submittedResults.length - 1];
+      console.log('✅ New evaluation result:', {
+        primitive: newResult.primitiveType,
+        success: newResult.success,
+        score: Math.round(newResult.score),
+        duration: `${Math.round(newResult.durationMs / 1000)}s`
+      });
+      prevCountRef.current = context.submittedResults.length;
+    }
+  }, [context?.submittedResults.length]);
+
+  if (!context || context.submittedResults.length === 0) {
+    return null;
+  }
+
+  const { submittedResults } = context;
+  const lastResult = submittedResults[submittedResults.length - 1];
+
+  return (
+    <div className="fixed bottom-6 right-6 z-40 max-w-sm animate-fade-in">
+      <div className={`p-4 rounded-xl border backdrop-blur-sm shadow-xl ${
+        lastResult.success
+          ? 'bg-green-500/20 border-green-500/50'
+          : 'bg-red-500/20 border-red-500/50'
+      }`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+            lastResult.success ? 'bg-green-500/30' : 'bg-red-500/30'
+          }`}>
+            <span className="text-2xl">{lastResult.success ? '✓' : '✗'}</span>
+          </div>
+          <div className="flex-1">
+            <div className="font-semibold text-white capitalize">
+              {lastResult.primitiveType.replace(/-/g, ' ')}
+            </div>
+            <div className={`text-sm font-bold ${
+              lastResult.success ? 'text-green-400' : 'text-red-400'
+            }`}>
+              Score: {Math.round(lastResult.score)}%
+            </div>
+          </div>
+        </div>
+        {submittedResults.length > 1 && (
+          <div className="mt-2 pt-2 border-t border-white/10">
+            <div className="text-xs text-slate-400">
+              Total attempts: {submittedResults.length}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
   const [gameState, setGameState] = useState<GameState>(GameState.IDLE);
@@ -940,11 +1002,19 @@ export default function App() {
 
         {/* EXHIBIT STATE */}
         {gameState === GameState.PLAYING && exhibitData && (
-            <ExhibitProvider
-                objectives={exhibitData.introBriefing?.objectives || []}
-                manifestItems={exhibitData.manifest?.layout || []}
+            <EvaluationProvider
+                sessionId={`exhibit-${Date.now()}`}
+                exhibitId={exhibitData.topic || 'unknown'}
+                localOnly={true}
+                onCompetencyUpdate={(updates) => {
+                    console.log('Competency updates:', updates);
+                }}
             >
-                <div className="w-full animate-fade-in-up">
+                <ExhibitProvider
+                    objectives={exhibitData.introBriefing?.objectives || []}
+                    manifestItems={exhibitData.manifest?.layout || []}
+                >
+                    <div className="w-full animate-fade-in-up">
                     {/* Title Section */}
                     <div className="mb-12 text-center space-y-4">
                         <h2 className="text-5xl font-bold text-white tracking-tight">{exhibitData.topic}</h2>
@@ -961,6 +1031,9 @@ export default function App() {
                     onDetailItemClick={handleDetailItemClick}
                     onTermClick={handleDetailItemClick}
                 />
+
+                {/* Evaluation Results Indicator */}
+                <EvaluationResultsIndicator />
 
                 {/* Related Topics */}
                 {exhibitData.relatedTopics && exhibitData.relatedTopics.length > 0 && (
@@ -1004,6 +1077,7 @@ export default function App() {
                 )}
             </div>
             </ExhibitProvider>
+            </EvaluationProvider>
         )}
 
       </main>

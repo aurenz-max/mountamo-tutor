@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  usePrimitiveEvaluation,
+  type BridgeBuilderMetrics,
+} from '../../../evaluation';
 
 /**
  * Bridge Builder - Interactive 2D bridge construction for teaching structural engineering
@@ -13,6 +17,11 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
  * - Truss design optimization (4-5)
  *
  * Real-world connections: bridges, trusses, construction, architecture
+ *
+ * EVALUATION INTEGRATION:
+ * - Tracks bridge connectivity, load test results, and structural metrics
+ * - Submits evaluation metrics on load test completion
+ * - Supports competency tracking via skillId/subskillId/objectiveId
  */
 
 export interface BridgeMember {
@@ -59,6 +68,14 @@ export interface BridgeBuilderData {
   initialMembers?: BridgeMember[];      // Pre-placed members
   allowFreeBuilding?: boolean;          // Can add joints anywhere
   theme: 'construction' | 'medieval' | 'modern' | 'generic';
+
+  // Evaluation integration (optional)
+  instanceId?: string;                  // Unique instance ID for tracking
+  skillId?: string;                     // Associated skill for competency tracking
+  subskillId?: string;                  // Associated subskill
+  objectiveId?: string;                 // Learning objective this primitive addresses
+  exhibitId?: string;                   // Parent exhibit ID
+  onEvaluationSubmit?: (result: import('../../../evaluation').PrimitiveEvaluationResult<BridgeBuilderMetrics>) => void;
 }
 
 interface BridgeBuilderProps {
@@ -89,6 +106,13 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
     initialMembers = [],
     allowFreeBuilding = true,
     theme = 'generic',
+    // Evaluation props
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
   // State
@@ -119,6 +143,21 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
 
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Evaluation hook - tracks timing and handles submission
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<BridgeBuilderMetrics>({
+    primitiveType: 'bridge-builder',
+    instanceId: instanceId || `bridge-builder-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void) | undefined,
+  });
 
   // SVG dimensions
   const svgWidth = 800;
@@ -233,6 +272,42 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
     return piece.count - usedCount;
   };
 
+  // Estimate triangle count for structural analysis (triangulation = stability)
+  const estimateTriangleCount = useCallback(() => {
+    if (joints.length < 3 || members.length < 3) return 0;
+
+    let triangleCount = 0;
+    // For each joint, check if it's part of a triangle
+    for (let i = 0; i < joints.length; i++) {
+      const jointA = joints[i];
+      // Find all joints connected to jointA
+      const connectedToA = members
+        .filter(m => m.startJointId === jointA.id || m.endJointId === jointA.id)
+        .map(m => m.startJointId === jointA.id ? m.endJointId : m.startJointId);
+
+      // Check pairs of connected joints to see if they're also connected to each other
+      for (let j = 0; j < connectedToA.length; j++) {
+        for (let k = j + 1; k < connectedToA.length; k++) {
+          const jointBId = connectedToA[j];
+          const jointCId = connectedToA[k];
+
+          // Check if B and C are connected
+          const bcConnected = members.some(
+            m => (m.startJointId === jointBId && m.endJointId === jointCId) ||
+                 (m.startJointId === jointCId && m.endJointId === jointBId)
+          );
+
+          if (bcConnected) {
+            triangleCount++;
+          }
+        }
+      }
+    }
+
+    // Each triangle is counted 3 times (once per vertex), so divide by 3
+    return Math.floor(triangleCount / 3);
+  }, [joints, members]);
+
   // Calculate member stress (simplified but more realistic physics)
   const calculateStress = useCallback(() => {
     const results: StressResult[] = [];
@@ -321,6 +396,57 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
     return results;
   }, [members, joints, loadAnimationProgress, loadWeight, materialStrength]);
 
+  // Submit evaluation helper
+  const submitBridgeEvaluation = useCallback((success: boolean, stressResults: StressResult[]) => {
+    const bridgePath = findBridgePath();
+    const bridgeConnected = bridgePath !== null;
+    const failedMembers = stressResults.filter(r => r.failed).length;
+    const loadTestPassed = success && failedMembers === 0;
+
+    // Calculate stress metrics
+    const stressValues = stressResults.map(r => r.stress);
+    const maxStress = stressValues.length > 0 ? Math.max(...stressValues) : 0;
+    const avgStress = stressValues.length > 0 ? stressValues.reduce((a, b) => a + b, 0) / stressValues.length : 0;
+
+    // Count member types
+    const beamCount = members.filter(m => m.type === 'beam').length;
+    const cableCount = members.filter(m => m.type === 'cable').length;
+    const supportCount = members.filter(m => m.type === 'support').length;
+    const nonAnchorJoints = joints.filter(j => !j.isAnchor).length;
+
+    // Calculate score: 40% connectivity + 40% load test + 20% efficiency
+    const connectivityScore = bridgeConnected ? 40 : 0;
+    const loadScore = loadTestPassed ? 40 : (bridgeConnected ? 20 * (1 - failedMembers / Math.max(members.length, 1)) : 0);
+    const efficiencyScore = budget ? 20 * Math.max(0, 1 - members.length / budget) : 20 * Math.max(0, 1 - members.length / 20);
+    const score = connectivityScore + loadScore + efficiencyScore;
+
+    const triangleCount = estimateTriangleCount();
+
+    const metrics: BridgeBuilderMetrics = {
+      type: 'bridge-builder',
+      bridgeConnected,
+      loadTestPassed,
+      loadType,
+      loadWeight,
+      maxStressObserved: maxStress,
+      failedMembers,
+      membersUsed: members.length,
+      membersBudget: budget,
+      budgetEfficiency: budget ? Math.max(0, 1 - members.length / budget) : 1,
+      beamCount,
+      cableCount,
+      supportCount,
+      jointCount: nonAnchorJoints,
+      triangleCount,
+      averageStress: avgStress,
+      structuralIntegrity: Math.max(0, 100 - avgStress),
+      finalJoints: joints.map(j => ({ id: j.id, x: j.x, y: j.y, isAnchor: j.isAnchor })),
+      finalMembers: members.map(m => ({ id: m.id, type: m.type, startJointId: m.startJointId, endJointId: m.endJointId })),
+    };
+
+    submitEvaluation(success, score, metrics, { joints, members });
+  }, [members, joints, budget, loadType, loadWeight, findBridgePath, estimateTriangleCount, submitEvaluation]);
+
   // Run stress test
   const runStressTest = useCallback(() => {
     setIsSimulating(true);
@@ -334,6 +460,12 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
     if (!bridgePath) {
       // No connected path - immediate failure
       setHint("The bridge isn't connected from one side to the other!");
+
+      // Submit evaluation for failed connection
+      if (!hasSubmittedEvaluation) {
+        submitBridgeEvaluation(false, []);
+      }
+
       setTimeout(() => {
         setBridgeFailed(true);
         setIsSimulating(false);
@@ -371,6 +503,12 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
               clearInterval(fallInterval);
               setBridgeFailed(true);
               setHint("The car fell through a gap in the bridge!");
+
+              // Submit evaluation for gap failure
+              if (!hasSubmittedEvaluation) {
+                submitBridgeEvaluation(false, results);
+              }
+
               setTimeout(() => {
                 setIsSimulating(false);
                 setHint(null);
@@ -386,12 +524,17 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
       setStressResults(results);
 
       // Check for member failures
-      const failedMembers = results.filter(r => r.failed);
-      if (failedMembers.length > 0 && !hasFailed) {
+      const failedMembersList = results.filter(r => r.failed);
+      if (failedMembersList.length > 0 && !hasFailed) {
         hasFailed = true;
         clearInterval(animationInterval);
         setBridgeFailed(true);
         setHint("A bridge member broke under the weight!");
+
+        // Submit evaluation for structural failure
+        if (!hasSubmittedEvaluation) {
+          submitBridgeEvaluation(false, results);
+        }
 
         setTimeout(() => {
           setIsSimulating(false);
@@ -405,12 +548,17 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
         setBridgeSuccess(true);
         setCarPosition(null);
 
+        // Submit evaluation on success
+        if (!hasSubmittedEvaluation) {
+          submitBridgeEvaluation(true, results);
+        }
+
         setTimeout(() => {
           setIsSimulating(false);
         }, 1000);
       }
     }, 50);
-  }, [calculateStress, findBridgePath, getBridgeYAtX, carPosition]);
+  }, [calculateStress, findBridgePath, getBridgeYAtX, carPosition, hasSubmittedEvaluation, submitBridgeEvaluation]);
 
   // Handle canvas click to add joint
   const handleCanvasClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
@@ -599,6 +747,8 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
     setBridgeSuccess(false);
     setLoadAnimationProgress(0);
     setIsSimulating(false);
+    // Reset evaluation for a new attempt
+    resetEvaluationAttempt();
   };
 
   // Get stress color
