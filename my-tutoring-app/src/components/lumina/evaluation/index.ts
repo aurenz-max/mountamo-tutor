@@ -71,8 +71,11 @@ export type {
   FormulaCardMetrics,
   ArrayGridMetrics,
   RatioTableMetrics,
+  TapeDiagramMetrics,
   // Exploration metrics
   FunctionMachineMetrics,
+  // Visual Annotation metrics
+  ImagePanelMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

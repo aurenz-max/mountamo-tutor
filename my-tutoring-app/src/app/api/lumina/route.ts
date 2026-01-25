@@ -179,6 +179,22 @@ export async function POST(request: NextRequest) {
         );
         return NextResponse.json(scratchPadProblem);
 
+      // ============================================
+      // IMAGE PANEL EVALUATION
+      // ============================================
+
+      case 'evaluateImageAnnotations':
+        const { evaluateImageAnnotations } = await import(
+          '@/components/lumina/service/image-panel/gemini-image-evaluation'
+        );
+        const imageEvaluation = await evaluateImageAnnotations(
+          params.imageBase64,
+          params.annotations,
+          params.studentPlacements,
+          params.learningObjective
+        );
+        return NextResponse.json(imageEvaluation);
+
       default:
         return NextResponse.json(
           { error: `Unknown action: ${action}` },

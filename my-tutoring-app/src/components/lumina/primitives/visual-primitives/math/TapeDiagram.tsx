@@ -2,6 +2,10 @@
 
 import React, { useState } from 'react';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
+import {
+  usePrimitiveEvaluation,
+  type TapeDiagramMetrics,
+} from '../../../evaluation';
 
 export interface BarSegment {
   value?: number;
@@ -22,6 +26,16 @@ export interface TapeDiagramData {
   comparisonMode?: boolean;
   showBrackets?: boolean;
   unknownSegment?: number | null;
+
+  // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (
+    result: import('../../../evaluation').PrimitiveEvaluationResult<TapeDiagramMetrics>
+  ) => void;
 }
 
 interface TapeDiagramProps {
@@ -29,18 +43,60 @@ interface TapeDiagramProps {
   className?: string;
 }
 
+type LearningPhase = 'explore' | 'practice' | 'apply';
+
+interface SegmentAttempt {
+  barIndex: number;
+  segmentIndex: number;
+  attempts: number;
+  correctOnFirstTry: boolean;
+}
+
 const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   const {
     bars = [],
     comparisonMode = false,
     showBrackets = true,
+    // Evaluation props
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
+
+  // Learning phases
+  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
+  const [wholeValue, setWholeValue] = useState('');
+  const [wholeFound, setWholeFound] = useState(false);
 
   const [selectedSegment, setSelectedSegment] = useState<{ barIndex: number; segmentIndex: number } | null>(null);
   const [userAnswers, setUserAnswers] = useState<{ [key: string]: string }>({});
   const [feedback, setFeedback] = useState<{ [key: string]: 'correct' | 'incorrect' | null }>({});
   const [showHints, setShowHints] = useState(false);
-  const [activeCalculator, setActiveCalculator] = useState<string | null>(null);
+
+  // Tracking for evaluation
+  const [segmentAttempts, setSegmentAttempts] = useState<Map<string, SegmentAttempt>>(new Map());
+  const [phaseAttempts, setPhaseAttempts] = useState({ explore: 0, practice: 0, apply: 0 });
+  const [phaseHints, setPhaseHints] = useState({ explore: 0, practice: 0, apply: 0 });
+
+  // Evaluation hook
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<TapeDiagramMetrics>({
+    primitiveType: 'tape-diagram',
+    instanceId: instanceId || `tape-diagram-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as
+      | ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void)
+      | undefined,
+  });
 
   // Color palette for different bars
   const colorPalette = [
@@ -81,30 +137,63 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     const segment = bar.segments[segmentIndex];
     if (!segment?.isUnknown) return null;
 
-    // Calculate total from totalLabel if it's a number
-    let barTotal: number | null = null;
-    if (bar.totalLabel) {
-      const totalMatch = bar.totalLabel.match(/\d+/);
-      if (totalMatch) {
-        barTotal = parseInt(totalMatch[0]);
-      }
-    }
+    // In our 3-phase structure, the unknown segments already have their values stored
+    // We just need to return them directly since the component architecture
+    // stores the actual values even for "unknown" segments
+    return segment.value || null;
+  };
 
-    // If we have a total, subtract all known segments
-    if (barTotal !== null) {
-      let knownSum = 0;
-      for (const seg of bar.segments) {
-        if (!seg.isUnknown && seg.value !== undefined) {
-          knownSum += seg.value;
+  // Get all unknown segments across all bars
+  const getAllUnknownSegments = (): Array<{ barIndex: number; segmentIndex: number }> => {
+    const unknowns: Array<{ barIndex: number; segmentIndex: number }> = [];
+    bars.forEach((bar, barIndex) => {
+      bar.segments.forEach((segment, segmentIndex) => {
+        if (segment.isUnknown) {
+          unknowns.push({ barIndex, segmentIndex });
         }
+      });
+    });
+    return unknowns;
+  };
+
+  // Phase 1: Check if student correctly identified the whole
+  const handleCheckWhole = () => {
+    if (hasSubmittedEvaluation) return;
+
+    const inputWhole = parseFloat(wholeValue);
+    if (isNaN(inputWhole)) return;
+
+    // Calculate the actual total from the FIRST 2 segments only (knownPart1 + knownPart2)
+    // Phase 1 shows only segments 0 and 1
+    const firstBar = bars[0];
+    if (!firstBar) return;
+
+    let actualTotal = 0;
+    // Only sum the first 2 segments (indices 0 and 1)
+    for (let i = 0; i < 2 && i < firstBar.segments.length; i++) {
+      const seg = firstBar.segments[i];
+      if (seg.value !== undefined) {
+        actualTotal += seg.value;
       }
-      return barTotal - knownSum;
     }
 
-    return null;
+    setPhaseAttempts(prev => ({ ...prev, explore: prev.explore + 1 }));
+
+    if (Math.abs(inputWhole - actualTotal) < 0.01) {
+      setWholeFound(true);
+      setFeedback({ explore: 'correct' });
+      setTimeout(() => {
+        setCurrentPhase('practice');
+        setFeedback({});
+      }, 2000);
+    } else {
+      setFeedback({ explore: 'incorrect' });
+    }
   };
 
   const handleAnswerSubmit = (barIndex: number, segmentIndex: number) => {
+    if (hasSubmittedEvaluation) return;
+
     const key = getSegmentKey(barIndex, segmentIndex);
     const userAnswer = parseFloat(userAnswers[key]);
     const correctAnswer = calculateCorrectAnswer(barIndex, segmentIndex);
@@ -113,10 +202,179 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       return;
     }
 
-    setFeedback({
+    // Track attempts
+    const attemptKey = key;
+    const currentAttempt = segmentAttempts.get(attemptKey) || {
+      barIndex,
+      segmentIndex,
+      attempts: 0,
+      correctOnFirstTry: false,
+    };
+    currentAttempt.attempts += 1;
+
+    const isCorrect = Math.abs(userAnswer - correctAnswer) < 0.01;
+
+    if (isCorrect && currentAttempt.attempts === 1) {
+      currentAttempt.correctOnFirstTry = true;
+    }
+
+    setSegmentAttempts(new Map(segmentAttempts.set(attemptKey, currentAttempt)));
+
+    // Update phase attempts
+    setPhaseAttempts(prev => ({
+      ...prev,
+      [currentPhase]: prev[currentPhase] + 1,
+    }));
+
+    const newFeedback: { [key: string]: 'correct' | 'incorrect' | null } = {
       ...feedback,
-      [key]: userAnswer === correctAnswer ? 'correct' : 'incorrect'
+      [key]: isCorrect ? 'correct' : 'incorrect'
+    };
+
+    setFeedback(newFeedback);
+
+    // Check phase progression with the updated feedback
+    if (isCorrect) {
+      checkPhaseCompletion(newFeedback);
+    }
+  };
+
+  const checkPhaseCompletion = (updatedFeedback: { [key: string]: 'correct' | 'incorrect' | null } = feedback) => {
+    const allUnknowns = getAllUnknownSegments();
+
+    if (currentPhase === 'practice') {
+      // Phase 2: Check if first unknown (segment 2) is solved
+      const firstUnknown = allUnknowns[0]; // This should be segment 2
+      if (firstUnknown) {
+        const key = getSegmentKey(firstUnknown.barIndex, firstUnknown.segmentIndex);
+        if (updatedFeedback[key] === 'correct') {
+          setTimeout(() => {
+            setCurrentPhase('apply');
+          }, 1500);
+        }
+      }
+    } else if (currentPhase === 'apply') {
+      // Phase 3: Check if all unknowns are solved (segments 2 and 3)
+      const allSolved = allUnknowns.every(({ barIndex, segmentIndex }) => {
+        const key = getSegmentKey(barIndex, segmentIndex);
+        return updatedFeedback[key] === 'correct';
+      });
+
+      if (allSolved) {
+        handleFinalSubmit();
+      }
+    }
+  };
+
+  const handleFinalSubmit = () => {
+    if (hasSubmittedEvaluation) return;
+
+    const allUnknowns = getAllUnknownSegments();
+    // Phase 2 has only 1 unknown (the first one, which is segment 2)
+    const practiceUnknowns = allUnknowns.slice(0, 1);
+
+    // Calculate metrics
+    const totalUnknowns = allUnknowns.length;
+    const correctUnknowns = allUnknowns.filter(({ barIndex, segmentIndex }) => {
+      const key = getSegmentKey(barIndex, segmentIndex);
+      return feedback[key] === 'correct';
+    }).length;
+
+    const practiceCorrect = practiceUnknowns.filter(({ barIndex, segmentIndex }) => {
+      const key = getSegmentKey(barIndex, segmentIndex);
+      return feedback[key] === 'correct';
+    }).length;
+
+    const segmentRelationships = allUnknowns.map(({ barIndex, segmentIndex }) => {
+      const key = getSegmentKey(barIndex, segmentIndex);
+      const segment = bars[barIndex].segments[segmentIndex];
+      const expectedValue = calculateCorrectAnswer(barIndex, segmentIndex) || 0;
+      const studentValue = parseFloat(userAnswers[key]) || null;
+      const attempt = segmentAttempts.get(key);
+
+      return {
+        barIndex,
+        segmentIndex,
+        segmentLabel: segment.label,
+        expectedValue,
+        studentValue,
+        correctOnFirstTry: attempt?.correctOnFirstTry || false,
+        attempts: attempt?.attempts || 0,
+      };
     });
+
+    const totalAttempts = phaseAttempts.explore + phaseAttempts.practice + phaseAttempts.apply;
+    const totalHints = phaseHints.explore + phaseHints.practice + phaseHints.apply;
+
+    const metrics: TapeDiagramMetrics = {
+      type: 'tape-diagram',
+
+      // Overall achievement
+      allPhasesCompleted: true,
+      finalSuccess: correctUnknowns === totalUnknowns,
+
+      // Phase completion
+      explorePhaseCompleted: wholeFound,
+      practicePhaseCompleted: practiceCorrect === practiceUnknowns.length,
+      applyPhaseCompleted: correctUnknowns === totalUnknowns,
+
+      // Phase 1: Explore
+      wholeCorrectlyIdentified: wholeFound,
+      exploreAttempts: phaseAttempts.explore,
+      exploreHintsUsed: phaseHints.explore,
+
+      // Phase 2: Practice
+      practiceUnknownsTotal: practiceUnknowns.length,
+      practiceUnknownsCorrect: practiceCorrect,
+      practiceAccuracy: practiceUnknowns.length > 0 ? (practiceCorrect / practiceUnknowns.length) * 100 : 100,
+      practiceAttempts: phaseAttempts.practice,
+      practiceHintsUsed: phaseHints.practice,
+
+      // Phase 3: Apply
+      totalUnknownSegments: totalUnknowns,
+      correctUnknownSegments: correctUnknowns,
+      accuracyPercentage: totalUnknowns > 0 ? (correctUnknowns / totalUnknowns) * 100 : 100,
+      applyAttempts: phaseAttempts.apply,
+      applyHintsUsed: phaseHints.apply,
+
+      // Overall
+      totalAttempts,
+      totalHintsUsed: totalHints,
+      firstAttemptSuccess: totalAttempts === allUnknowns.length + 1, // +1 for explore phase
+
+      // Strategy
+      solvedInSequence: true, // Could track this more rigorously
+      usedPartWholeStrategy: wholeFound,
+      segmentRelationships,
+
+      // Efficiency
+      solvedWithoutHints: totalHints === 0,
+      averageAttemptsPerUnknown: totalUnknowns > 0 ? totalAttempts / totalUnknowns : 0,
+    };
+
+    const score = metrics.accuracyPercentage;
+    const success = metrics.finalSuccess;
+
+    submitEvaluation(success, score, metrics, {
+      studentWork: {
+        userAnswers,
+        feedback,
+        phaseAttempts,
+      },
+    });
+  };
+
+  const handleReset = () => {
+    setCurrentPhase('explore');
+    setWholeValue('');
+    setWholeFound(false);
+    setUserAnswers({});
+    setFeedback({});
+    setSegmentAttempts(new Map());
+    setPhaseAttempts({ explore: 0, practice: 0, apply: 0 });
+    setPhaseHints({ explore: 0, practice: 0, apply: 0 });
+    setShowHints(false);
+    resetEvaluationAttempt();
   };
 
   const handleAnswerChange = (barIndex: number, segmentIndex: number, value: string) => {
@@ -133,6 +391,66 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       });
     }
   };
+
+  const handleShowHints = () => {
+    setShowHints(!showHints);
+    if (!showHints) {
+      setPhaseHints(prev => ({
+        ...prev,
+        [currentPhase]: prev[currentPhase] + 1,
+      }));
+    }
+  };
+
+  // Get segments visible in the current phase
+  // Phase 1: Show only first 2 segments (known parts), no unknowns
+  // Phase 2: Show segment 0 (knownPart1) and segment 2 (unknown1)
+  // Phase 3: Show all 4 segments (knownPart1, knownPart2, unknown1, unknown2)
+  const getVisibleSegments = (barIndex: number): number[] => {
+    const bar = bars[barIndex];
+    if (!bar) return [];
+
+    if (currentPhase === 'explore') {
+      // Phase 1: Show only first 2 segments (the known parts)
+      return [0, 1];
+    } else if (currentPhase === 'practice') {
+      // Phase 2: Show segment 0 (knownPart1) and segment 2 (unknown1)
+      return [0, 2];
+    } else {
+      // Phase 3: Show all segments
+      return bar.segments.map((_, idx) => idx);
+    }
+  };
+
+  // Determine which unknowns to show based on phase
+  const getVisibleUnknowns = (): Array<{ barIndex: number; segmentIndex: number }> => {
+    const allUnknowns = getAllUnknownSegments();
+    if (currentPhase === 'explore') {
+      // Phase 1: No unknowns shown
+      return [];
+    } else if (currentPhase === 'practice') {
+      // Phase 2: Only first unknown (segment 2)
+      return allUnknowns.slice(0, 1);
+    } else {
+      // Phase 3: All unknowns (segments 2 and 3)
+      return allUnknowns;
+    }
+  };
+
+  const visibleUnknowns = getVisibleUnknowns();
+  const hasUnknowns = getAllUnknownSegments().length > 0;
+
+  // Validation: Multi-bar problems with unknowns are not supported for evaluation
+  // This ensures Phase 1 (finding the whole) is unambiguous
+  React.useEffect(() => {
+    if (hasUnknowns && bars.length > 1) {
+      console.warn(
+        'TapeDiagram: Multi-bar problems with unknowns are not supported for 3-phase evaluation. ' +
+        'Only the first bar will be used for evaluation. ' +
+        'Please use a single bar when including unknown segments.'
+      );
+    }
+  }, [hasUnknowns, bars.length]);
 
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
@@ -165,12 +483,91 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
             <p className="text-slate-300 font-light">{data.description}</p>
           </div>
 
+          {/* Phase Progress Indicator */}
+          {hasUnknowns && (
+            <div className="flex items-center justify-center gap-4 mb-8">
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                currentPhase === 'explore'
+                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                  : wholeFound
+                    ? 'bg-green-500/20 border-green-500/50 text-green-300'
+                    : 'bg-slate-700/50 border-slate-600 text-slate-400'
+              }`}>
+                {wholeFound ? '✓' : '1'} Explore
+              </div>
+              <div className="h-px w-8 bg-slate-600"></div>
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                currentPhase === 'practice'
+                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                  : currentPhase === 'apply'
+                    ? 'bg-green-500/20 border-green-500/50 text-green-300'
+                    : 'bg-slate-700/50 border-slate-600 text-slate-400'
+              }`}>
+                {currentPhase === 'apply' ? '✓' : '2'} Practice
+              </div>
+              <div className="h-px w-8 bg-slate-600"></div>
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                currentPhase === 'apply'
+                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                  : 'bg-slate-700/50 border-slate-600 text-slate-400'
+              }`}>
+                3 Apply
+              </div>
+            </div>
+          )}
+
+          {/* Phase Instructions */}
+          {hasUnknowns && !hasSubmittedEvaluation && (
+            <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+              <div className="text-center">
+                <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">
+                  {currentPhase === 'explore' && 'Step 1: Find the Whole'}
+                  {currentPhase === 'practice' && 'Step 2: Find the Unknown Part'}
+                  {currentPhase === 'apply' && 'Step 3: Solve with Multiple Parts'}
+                </div>
+                <p className="text-sm text-blue-200">
+                  {currentPhase === 'explore' && 'Add the two parts together to find the total'}
+                  {currentPhase === 'practice' && 'Use the total and known part to find the unknown part'}
+                  {currentPhase === 'apply' && 'Use all the parts to find the missing values'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Tape Diagram Bars */}
           <div className={`space-y-16 ${comparisonMode ? 'relative' : ''}`}>
             {bars.map((bar, barIndex) => {
+              // Get visible segment indices for current phase
+              const visibleSegmentIndices = getVisibleSegments(barIndex);
+              const visibleSegments = visibleSegmentIndices.map(idx => ({
+                segment: bar.segments[idx],
+                originalIndex: idx
+              }));
+
+              // Calculate total based on visible segments only
+              let phaseTotal = 0;
+              visibleSegmentIndices.forEach(idx => {
+                const seg = bar.segments[idx];
+                if (seg?.value !== undefined) {
+                  phaseTotal += seg.value;
+                }
+              });
+
               const total = calculateTotalValue(bar.segments);
               const maxSegmentValue = Math.max(...bar.segments.map(s => s.value || 1));
-              const hasBracket = showBrackets && bar.totalLabel;
+
+              // Only show bracket in Phase 2 and Phase 3 (not in Phase 1/Explore)
+              const hasBracket = showBrackets && currentPhase !== 'explore';
+
+              // Phase-specific total label
+              let phaseTotalLabel = '';
+              if (currentPhase === 'practice') {
+                // Phase 2: Total of segment 0 + segment 2
+                phaseTotalLabel = `Total = ${phaseTotal}`;
+              } else if (currentPhase === 'apply') {
+                // Phase 3: Grand total of all 4 segments
+                phaseTotalLabel = bar.totalLabel || `Total = ${phaseTotal}`;
+              }
 
               return (
                 <div key={barIndex} className="relative">
@@ -189,8 +586,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                           />
                         </svg>
                         <div className="text-sm font-bold text-white bg-slate-800/80 px-3 py-1 rounded-full border border-slate-600">
-                          {bar.totalLabel}
-                          {total !== null && ` = ${total}`}
+                          {phaseTotalLabel}
                         </div>
                       </div>
                     </div>
@@ -198,7 +594,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
                   {/* The Bar */}
                   <div className={`flex ${comparisonMode ? 'items-start' : 'items-stretch'} gap-1`}>
-                    {bar.segments.map((segment, segmentIndex) => {
+                    {visibleSegments.map(({ segment, originalIndex: segmentIndex }) => {
                       const isSelected = selectedSegment?.barIndex === barIndex && selectedSegment?.segmentIndex === segmentIndex;
                       const isUnknown = segment.isUnknown;
 
@@ -307,98 +703,214 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
             </div>
           )}
 
-          {/* Interactive Solver - Show for unknown segments */}
-          {bars.some(bar => bar.segments.some(seg => seg.isUnknown)) && (
+          {/* Phase 1: Explore - Find the Whole */}
+          {hasUnknowns && currentPhase === 'explore' && !hasSubmittedEvaluation && (
             <div className="mt-8">
-              {/* Section Header - Lumina Style */}
+              <div className="flex items-center gap-4 mb-6">
+                <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">
+                  Phase 1: Explore
+                </span>
+                <div className="h-px flex-1 bg-gradient-to-r from-orange-700 to-transparent"></div>
+              </div>
+
+              <div className="mb-6 text-center">
+                <div className="text-sm text-slate-400 font-mono uppercase tracking-wider mb-2">Find the Whole</div>
+                <h5 className="text-2xl font-bold text-white">
+                  What is the <span className="text-orange-400">total</span> of all the known parts?
+                </h5>
+              </div>
+
+              <CalculatorInput
+                label="Total ="
+                value={wholeValue}
+                onChange={(value) => setWholeValue(value)}
+                onSubmit={handleCheckWhole}
+                showSubmitButton={true}
+                allowNegative={false}
+                allowDecimal={true}
+                className="mb-6"
+              />
+
+              {feedback.explore === 'correct' && (
+                <div className="p-4 bg-green-500/20 border-2 border-green-500/50 rounded-xl">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-green-400 font-bold text-lg">Perfect!</div>
+                      <div className="text-green-300/80 text-sm">You found the whole. Now let's use it to find the unknowns!</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {feedback.explore === 'incorrect' && (
+                <div className="space-y-3">
+                  <div className="p-4 bg-red-500/20 border-2 border-red-500/50 rounded-xl">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-red-500/30 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-red-400 font-bold text-lg">Not Quite</div>
+                        <div className="text-red-300/80 text-sm">Try adding all the known values together.</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <button
+                      onClick={handleShowHints}
+                      className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg
+                        hover:bg-blue-600/30 hover:border-blue-500/60 transition-all duration-200 font-semibold text-sm
+                        flex items-center gap-2 mx-auto"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                      </svg>
+                      {showHints ? 'Hide Hint' : 'Need a Hint?'}
+                    </button>
+                  </div>
+
+                  {showHints && (
+                    <div className="p-4 bg-blue-500/20 border-2 border-blue-500/50 rounded-xl animate-fade-in">
+                      <div className="text-center mb-3">
+                        <div className="inline-block px-3 py-1 bg-blue-600/30 rounded-full text-blue-300 text-xs font-mono uppercase tracking-wider mb-2">
+                          💡 Hint
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-blue-200">
+                        <div className="p-2 bg-blue-900/30 rounded">
+                          <div className="text-blue-300 mb-1">Known values:</div>
+                          <div className="font-mono">
+                            {bars[0]?.segments
+                              .slice(0, 2) // Only show first 2 segments in Phase 1
+                              .filter(s => !s.isUnknown && s.value !== undefined)
+                              .map(s => `${s.label} = ${s.value}`)
+                              .join(', ') || 'None'}
+                          </div>
+                        </div>
+                        <div className="text-center p-2 italic text-blue-300/90">
+                          Add these two values together to find the total!
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Phase 2 & 3: Practice and Apply - Solve for Unknowns */}
+          {hasUnknowns && (currentPhase === 'practice' || currentPhase === 'apply') && !hasSubmittedEvaluation && (
+            <div className="mt-8">
               <div className="flex items-center gap-4 mb-8">
                 <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">
-                  Solve the Problem
+                  {currentPhase === 'practice' ? 'Phase 2: Practice' : 'Phase 3: Apply'}
                 </span>
                 <div className="h-px flex-1 bg-gradient-to-r from-orange-700 to-transparent"></div>
               </div>
 
               <div className="space-y-6">
-                {bars.map((bar, barIndex) =>
-                  bar.segments.map((segment, segmentIndex) => {
-                    if (!segment.isUnknown) return null;
+                {visibleUnknowns.map(({ barIndex, segmentIndex }) => {
+                  const key = getSegmentKey(barIndex, segmentIndex);
+                  const segment = bars[barIndex].segments[segmentIndex];
+                  const segmentFeedback = feedback[key];
+                  const correctAnswer = calculateCorrectAnswer(barIndex, segmentIndex);
+                  const bar = bars[barIndex];
 
-                    const key = getSegmentKey(barIndex, segmentIndex);
-                    const segmentFeedback = feedback[key];
-                    const correctAnswer = calculateCorrectAnswer(barIndex, segmentIndex);
-                    const isCalculatorActive = activeCalculator === key;
+                  return (
+                    <div key={key} className="relative">
+                      {/* Question Header */}
+                      <div className="mb-6 text-center">
+                        <div className="text-sm text-slate-400 font-mono uppercase tracking-wider mb-2">Find the Value</div>
+                        <h5 className="text-2xl font-bold text-white">
+                          What is <span className="text-yellow-400">{segment.label}</span>?
+                        </h5>
+                      </div>
 
-                    return (
-                      <div key={key} className="relative">
-                        {/* Question Header */}
-                        <div className="mb-6 text-center">
-                          <div className="text-sm text-slate-400 font-mono uppercase tracking-wider mb-2">Find the Value</div>
-                          <h5 className="text-2xl font-bold text-white">
-                            What is <span className="text-yellow-400">{segment.label}</span>?
-                          </h5>
+                      {/* Calculator Input Component */}
+                      <CalculatorInput
+                        label={`${segment.label} =`}
+                        value={userAnswers[key] || ''}
+                        onChange={(value) => handleAnswerChange(barIndex, segmentIndex, value)}
+                        onSubmit={() => handleAnswerSubmit(barIndex, segmentIndex)}
+                        showSubmitButton={true}
+                        allowNegative={true}
+                        allowDecimal={true}
+                        className="mb-6"
+                      />
+
+                      {/* Feedback */}
+                      {segmentFeedback === 'correct' && (
+                        <div className="p-4 bg-green-500/20 border-2 border-green-500/50 rounded-xl">
+                          <div className="flex items-center justify-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center">
+                              <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            </div>
+                            <div>
+                              <div className="text-green-400 font-bold text-lg">Correct!</div>
+                              <div className="text-green-300/80 text-sm">Excellent work! You solved it.</div>
+                            </div>
+                          </div>
                         </div>
+                      )}
 
-                        {/* Calculator Input Component */}
-                        <CalculatorInput
-                          label={`${segment.label} =`}
-                          value={userAnswers[key] || ''}
-                          onChange={(value) => handleAnswerChange(barIndex, segmentIndex, value)}
-                          onSubmit={() => handleAnswerSubmit(barIndex, segmentIndex)}
-                          showSubmitButton={true}
-                          allowNegative={true}
-                          allowDecimal={true}
-                          className="mb-6"
-                        />
-
-                        {/* Feedback */}
-                        {segmentFeedback === 'correct' && (
-                          <div className="p-4 bg-green-500/20 border-2 border-green-500/50 rounded-xl">
+                      {segmentFeedback === 'incorrect' && (
+                        <div className="space-y-3">
+                          <div className="p-4 bg-red-500/20 border-2 border-red-500/50 rounded-xl">
                             <div className="flex items-center justify-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                              <div className="w-10 h-10 rounded-full bg-red-500/30 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                               </div>
                               <div>
-                                <div className="text-green-400 font-bold text-lg">Correct!</div>
-                                <div className="text-green-300/80 text-sm">Excellent work! You solved it.</div>
+                                <div className="text-red-400 font-bold text-lg">Not Quite</div>
+                                <div className="text-red-300/80 text-sm">Try again! You can do this.</div>
                               </div>
                             </div>
                           </div>
-                        )}
 
-                        {segmentFeedback === 'incorrect' && (
-                          <div className="space-y-3">
-                            <div className="p-4 bg-red-500/20 border-2 border-red-500/50 rounded-xl">
-                              <div className="flex items-center justify-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-red-500/30 flex items-center justify-center">
-                                  <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path>
-                                  </svg>
-                                </div>
-                                <div>
-                                  <div className="text-red-400 font-bold text-lg">Not Quite</div>
-                                  <div className="text-red-300/80 text-sm">Try again! You can do this.</div>
-                                </div>
-                              </div>
-                            </div>
+                          {/* Hint Section */}
+                          <div className="text-center">
+                            <button
+                              onClick={handleShowHints}
+                              className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg
+                                hover:bg-blue-600/30 hover:border-blue-500/60 transition-all duration-200 font-semibold text-sm
+                                flex items-center gap-2 mx-auto"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                              </svg>
+                              {showHints ? 'Hide Hint' : 'Need a Hint?'}
+                            </button>
+                          </div>
 
-                            {/* Hint Section */}
-                            <div className="text-center">
-                              <button
-                                onClick={() => setShowHints(!showHints)}
-                                className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg
-                                  hover:bg-blue-600/30 hover:border-blue-500/60 transition-all duration-200 font-semibold text-sm
-                                  flex items-center gap-2 mx-auto"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                                </svg>
-                                {showHints ? 'Hide Hint' : 'Need a Hint?'}
-                              </button>
-                            </div>
+                          {showHints && correctAnswer !== null && (() => {
+                            // Get visible segments for the current phase
+                            const visibleIndices = getVisibleSegments(barIndex);
+                            const visibleKnownSegments = visibleIndices
+                              .map(idx => bar.segments[idx])
+                              .filter(s => s && !s.isUnknown && s.value !== undefined);
 
-                            {showHints && correctAnswer !== null && (
+                            // Calculate phase-specific total
+                            let phaseTotal = 0;
+                            visibleIndices.forEach(idx => {
+                              const seg = bar.segments[idx];
+                              if (seg?.value !== undefined) {
+                                phaseTotal += seg.value;
+                              }
+                            });
+
+                            return (
                               <div className="p-4 bg-blue-500/20 border-2 border-blue-500/50 rounded-xl animate-fade-in">
                                 <div className="text-center mb-3">
                                   <div className="inline-block px-3 py-1 bg-blue-600/30 rounded-full text-blue-300 text-xs font-mono uppercase tracking-wider mb-2">
@@ -408,13 +920,12 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                                 <div className="space-y-2 text-sm text-blue-200">
                                   <div className="flex items-center justify-between p-2 bg-blue-900/30 rounded">
                                     <span className="text-blue-300">Total:</span>
-                                    <span className="font-bold">{bar.totalLabel?.match(/\d+/)?.[0] || '?'}</span>
+                                    <span className="font-bold">{phaseTotal}</span>
                                   </div>
                                   <div className="p-2 bg-blue-900/30 rounded">
                                     <div className="text-blue-300 mb-1">Known values:</div>
                                     <div className="font-mono">
-                                      {bar.segments
-                                        .filter(s => !s.isUnknown && s.value !== undefined)
+                                      {visibleKnownSegments
                                         .map(s => `${s.label} = ${s.value}`)
                                         .join(', ')}
                                     </div>
@@ -424,13 +935,39 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                                   </div>
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Final Success State */}
+          {hasSubmittedEvaluation && (
+            <div className="mt-8 p-6 bg-green-500/20 border-2 border-green-500/50 rounded-xl">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-green-500/30 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-green-400 font-bold text-xl">All Complete!</div>
+                  <div className="text-green-300/80">You've mastered this tape diagram problem.</div>
+                </div>
+              </div>
+              <div className="text-center">
+                <button
+                  onClick={handleReset}
+                  className="px-6 py-2 bg-orange-600/20 border-2 border-orange-500/40 text-orange-400 rounded-lg
+                    hover:bg-orange-600/30 hover:border-orange-500/60 transition-all duration-200 font-semibold"
+                >
+                  Try Another Problem
+                </button>
               </div>
             </div>
           )}
@@ -451,7 +988,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                   <span>Bars are aligned for comparison - observe the relative sizes</span>
                 </li>
               )}
-              {bars.some(bar => bar.segments.some(seg => seg.isUnknown)) && (
+              {hasUnknowns && (
                 <li className="flex items-start gap-2">
                   <span className="text-orange-400 mt-1">▸</span>
                   <span>Yellow dashed segments with "?" represent unknown values to solve for</span>

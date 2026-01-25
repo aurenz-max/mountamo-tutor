@@ -97,12 +97,21 @@ const config = {
   					transform: 'scale(1)',
   					opacity: '1'
   				}
+  			},
+  			'bounce-slow': {
+  				'0%, 100%': {
+  					transform: 'translateY(0)'
+  				},
+  				'50%': {
+  					transform: 'translateY(-5px)'
+  				}
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-  			'bounce-in': 'bounce-in 0.6s ease-out'
+  			'bounce-in': 'bounce-in 0.6s ease-out',
+  			'bounce-slow': 'bounce-slow 2s ease-in-out infinite'
   		}
   	}
   },

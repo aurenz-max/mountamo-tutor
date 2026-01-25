@@ -1,19 +1,52 @@
-import React, { useState } from 'react';
-import { ImageIcon, MapIcon, Beaker, BookIcon, GlobeIcon } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ImageIcon, MapIcon, Beaker, BookIcon, GlobeIcon, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
 import { generateConceptImage } from '../service/geminiClient-api';
+import { usePrimitiveEvaluation, type ImagePanelMetrics } from '../evaluation';
+import html2canvas from 'html2canvas';
 
-interface ImagePanelData {
+// Annotation data structure
+export interface ImageAnnotation {
+  id: string;
+  label: string;
+  description: string;
+  category?: string;
+  isKey?: boolean; // Essential for learning objective
+}
+
+// Student's placement of an annotation
+export interface StudentPlacement {
+  annotationId: string;
+  label: string;
+  position: { x: number; y: number }; // Percentage-based (0-100)
+  placedAt?: number; // Timestamp
+}
+
+export interface ImagePanelData {
   title: string;
   description?: string;
   imageUrl: string | null;
   imagePrompt?: string;
   category?: 'geography' | 'history' | 'science' | 'literature' | 'art' | 'general';
   attribution?: string;
+  learningObjective?: string;
+
+  // Interactive annotation features
+  annotations?: ImageAnnotation[];
+  interactionMode?: 'view' | 'identify';
+
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: any) => void;
 }
 
 interface ImagePanelProps {
   data: ImagePanelData;
   className?: string;
+  onPlacementsChange?: (placements: StudentPlacement[]) => void;
 }
 
 const CATEGORY_CONFIG = {
@@ -61,12 +94,48 @@ const CATEGORY_CONFIG = {
   }
 };
 
-const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '' }) => {
+const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlacementsChange }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isWallpaperMode, setIsWallpaperMode] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+
+  // Interactive annotation state
+  const [studentPlacements, setStudentPlacements] = useState<StudentPlacement[]>([]);
+  const [draggedAnnotation, setDraggedAnnotation] = useState<ImageAnnotation | null>(null);
+  const [hoveredPlacement, setHoveredPlacement] = useState<string | null>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+
+  // Evaluation state
+  const [evaluationFeedback, setEvaluationFeedback] = useState<any>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+
+  // Extract evaluation props
+  const {
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data;
+
+  // Initialize evaluation hook (only if interactive mode with annotations)
+  const isInteractive = data.interactionMode === 'identify' && data.annotations && data.annotations.length > 0;
+  const shouldUseEvaluation = isInteractive && instanceId;
+
+  const evaluation = shouldUseEvaluation ? usePrimitiveEvaluation<ImagePanelMetrics>({
+    primitiveType: 'image-panel',
+    instanceId: instanceId || `image-panel-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit,
+  }) : null;
+
+  const { submitResult, hasSubmitted } = evaluation || {};
 
   const category = data.category || 'general';
   const config = CATEGORY_CONFIG[category];
@@ -74,6 +143,66 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '' }) => {
 
   const toggleWallpaperMode = () => {
     setIsWallpaperMode(!isWallpaperMode);
+  };
+
+  // Notify parent when placements change
+  useEffect(() => {
+    if (onPlacementsChange) {
+      onPlacementsChange(studentPlacements);
+    }
+  }, [studentPlacements, onPlacementsChange]);
+
+  // Handle drag start from annotation card
+  const handleDragStart = (annotation: ImageAnnotation) => {
+    setDraggedAnnotation(annotation);
+  };
+
+  // Handle drop on image
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!draggedAnnotation || !imageContainerRef.current) return;
+
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    // Check if this annotation is already placed
+    const existingIndex = studentPlacements.findIndex(
+      p => p.annotationId === draggedAnnotation.id
+    );
+
+    const newPlacement: StudentPlacement = {
+      annotationId: draggedAnnotation.id,
+      label: draggedAnnotation.label,
+      position: { x, y },
+      placedAt: Date.now(),
+    };
+
+    if (existingIndex >= 0) {
+      // Update existing placement
+      const updated = [...studentPlacements];
+      updated[existingIndex] = newPlacement;
+      setStudentPlacements(updated);
+    } else {
+      // Add new placement
+      setStudentPlacements([...studentPlacements, newPlacement]);
+    }
+
+    setDraggedAnnotation(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  // Remove a placement
+  const handleRemovePlacement = (annotationId: string) => {
+    setStudentPlacements(studentPlacements.filter(p => p.annotationId !== annotationId));
+  };
+
+  // Check if annotation is already placed
+  const isAnnotationPlaced = (annotationId: string) => {
+    return studentPlacements.some(p => p.annotationId === annotationId);
   };
 
   // Handle on-demand image generation
@@ -95,6 +224,117 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '' }) => {
       setImageError(true);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Capture annotated image for LLM evaluation
+  const captureAnnotatedImage = async (): Promise<string> => {
+    if (!imageContainerRef.current) {
+      throw new Error('Image container ref not available');
+    }
+
+    try {
+      const canvas = await html2canvas(imageContainerRef.current, {
+        useCORS: true,
+        allowTaint: true,
+      });
+      return canvas.toDataURL('image/png');
+    } catch (error) {
+      console.error('Failed to capture annotated image:', error);
+      throw error;
+    }
+  };
+
+  // Build ImagePanelMetrics from evaluation results
+  const buildImagePanelMetrics = (evaluation: any): ImagePanelMetrics => {
+    const annotationResults = (data.annotations || []).map(annotation => {
+      const evalResult = evaluation.annotationResults.find((r: any) => r.annotationId === annotation.id);
+      const placement = studentPlacements.find(p => p.annotationId === annotation.id);
+
+      return {
+        annotationId: annotation.id,
+        label: annotation.label,
+        isKey: annotation.isKey || false,
+        expectedRegion: evalResult?.expectedRegion,
+        studentPosition: placement?.position || null,
+        placementCorrect: evalResult?.placementCorrect || false,
+        proximityScore: evalResult?.proximityScore || 0,
+      };
+    });
+
+    const correctCount = annotationResults.filter(r => r.placementCorrect).length;
+    const totalCount = annotationResults.length;
+    const placedCount = studentPlacements.length;
+    const accuracy = totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
+    const avgProximity = totalCount > 0
+      ? annotationResults.reduce((sum, r) => sum + r.proximityScore, 0) / totalCount
+      : 0;
+
+    return {
+      type: 'image-panel',
+      allAnnotationsPlaced: placedCount === totalCount,
+      finalSuccess: correctCount === totalCount,
+      totalAnnotations: totalCount,
+      correctAnnotations: correctCount,
+      incorrectAnnotations: totalCount - correctCount,
+      unplacedAnnotations: totalCount - placedCount,
+      annotationAccuracy: accuracy,
+      annotationResults,
+      averageProximityScore: avgProximity,
+      llmEvaluationUsed: true,
+      llmConfidence: evaluation.confidence,
+      llmFeedback: evaluation.overallFeedback,
+    };
+  };
+
+  // Handle evaluation submission
+  const handleEvaluateAnnotations = async () => {
+    if (hasSubmitted) {
+      console.log('Already submitted evaluation');
+      return;
+    }
+
+    setIsEvaluating(true);
+
+    try {
+      // Capture image with student placements rendered
+      const imageBase64 = await captureAnnotatedImage();
+
+      // Call LLM evaluation service via API
+      const response = await fetch('/api/lumina', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'evaluateImageAnnotations',
+          params: {
+            imageBase64,
+            annotations: data.annotations,
+            studentPlacements,
+            learningObjective: data.learningObjective || 'Identify key features in the image',
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Evaluation request failed');
+      }
+
+      const evaluation = await response.json();
+      setEvaluationFeedback(evaluation);
+
+      // Build and submit metrics to evaluation service
+      const metrics = buildImagePanelMetrics(evaluation);
+      const success = metrics.finalSuccess;
+      const score = metrics.annotationAccuracy;
+
+      if (submitResult) {
+        submitResult(success, score, metrics, { studentPlacements, evaluation });
+      }
+    } catch (error) {
+      console.error('Evaluation error:', error);
+      alert('Failed to evaluate annotations. Please try again.');
+    } finally {
+      setIsEvaluating(false);
     }
   };
 
@@ -170,59 +410,254 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '' }) => {
                 )}
               </div>
             ) : displayImageUrl ? (
-              <div className="relative w-full group">
-                {/* Wallpaper Mode Toggle Button */}
-                <button
-                  onClick={toggleWallpaperMode}
-                  className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 transition-all flex items-center gap-2 z-20"
-                  title={isWallpaperMode ? 'Exit Wallpaper Mode' : 'Enter Wallpaper Mode'}
-                >
-                  {isWallpaperMode ? (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                      <span className="hidden sm:inline">Exit Wallpaper</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
-                      </svg>
-                      <span className="hidden sm:inline">Wallpaper Mode</span>
-                    </>
-                  )}
-                </button>
+              <div className="w-full">
+                {/* Interactive Mode with Annotations */}
+                {isInteractive ? (
+                  <div className="flex flex-col lg:flex-row gap-4 p-4">
+                    {/* Annotation Cards Panel */}
+                    <div className="lg:w-80 flex-shrink-0 space-y-3">
+                      <div className={`p-3 ${config.bgColor} rounded-lg border ${config.borderColor}`}>
+                        <h4 className={`text-sm font-bold ${config.textColor} mb-1`}>Learning Objective</h4>
+                        <p className="text-xs text-slate-300">
+                          {data.learningObjective || 'Drag and drop labels to identify features in the image'}
+                        </p>
+                      </div>
 
-                <img
-                  src={displayImageUrl || ''}
-                  alt={data.title}
-                  className={`w-full h-auto object-contain transition-transform duration-700 group-hover:scale-[1.01] ${isWallpaperMode ? 'max-h-[90vh]' : 'max-h-[500px]'}`}
-                  onError={() => setImageError(true)}
-                  loading="lazy"
-                />
-                {/* Hover overlay with details */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="space-y-2">
-                    {data.imagePrompt && (
-                      <p className="text-xs text-slate-300 font-mono">
-                        <span className={`${config.textColor} font-bold`}>VISUALIZATION:</span> {data.imagePrompt}
-                      </p>
-                    )}
-                    {data.attribution && (
-                      <p className="text-xs text-slate-400 italic">
-                        {data.attribution}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between px-2">
+                          <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                            Annotations ({studentPlacements.length}/{data.annotations?.length || 0})
+                          </span>
+                        </div>
 
-                {/* Category badge */}
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className={`px-3 py-1 ${config.bgColor} ${config.textColor} rounded-full text-xs font-medium backdrop-blur-sm`}>
-                    {config.label}
+                        {data.annotations?.map((annotation) => {
+                          const placed = isAnnotationPlaced(annotation.id);
+                          return (
+                            <div
+                              key={annotation.id}
+                              draggable
+                              onDragStart={() => handleDragStart(annotation)}
+                              className={`p-3 rounded-lg border-2 cursor-move transition-all ${
+                                placed
+                                  ? 'bg-green-900/20 border-green-700 opacity-60'
+                                  : `${config.bgColor} ${config.borderColor} hover:scale-[1.02] active:scale-95`
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    {placed ? (
+                                      <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                                    ) : (
+                                      <HelpCircle className={`w-4 h-4 ${config.textColor} flex-shrink-0`} />
+                                    )}
+                                    <span className={`text-sm font-bold ${placed ? 'text-green-300' : config.textColor}`}>
+                                      {annotation.label}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-300 leading-relaxed">
+                                    {annotation.description}
+                                  </p>
+                                  {annotation.category && (
+                                    <span className="inline-block mt-2 px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-xs">
+                                      {annotation.category}
+                                    </span>
+                                  )}
+                                </div>
+                                {placed && (
+                                  <button
+                                    onClick={() => handleRemovePlacement(annotation.id)}
+                                    className="text-slate-400 hover:text-red-400 transition-colors"
+                                    title="Remove placement"
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {studentPlacements.length === data.annotations?.length && (
+                        <div className="p-3 bg-green-900/20 border-2 border-green-700 rounded-lg">
+                          <div className="flex items-center gap-2 text-green-400 text-sm font-bold">
+                            <CheckCircle className="w-5 h-5" />
+                            All annotations placed!
+                          </div>
+                          <p className="text-xs text-slate-300 mt-1">
+                            Ready to submit for evaluation
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Evaluation Feedback Panel */}
+                      {evaluationFeedback && (
+                        <div className="mt-4 p-4 bg-slate-900/80 border-2 border-cyan-500 rounded-lg">
+                          <h4 className="text-sm font-bold text-cyan-400 mb-2">Evaluation Results</h4>
+                          <p className="text-xs text-slate-300 mb-3">{evaluationFeedback.overallFeedback}</p>
+
+                          <div className="space-y-2">
+                            {evaluationFeedback.annotationResults.map((result: any) => (
+                              <div
+                                key={result.annotationId}
+                                className={`p-2 rounded border-2 ${
+                                  result.placementCorrect
+                                    ? 'bg-green-900/20 border-green-700'
+                                    : 'bg-orange-900/20 border-orange-700'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-bold text-slate-200">{result.label}</span>
+                                  <span className="text-xs text-slate-400">{result.proximityScore}/100</span>
+                                </div>
+                                <p className="text-xs text-slate-300">{result.reasoning}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Evaluate Button */}
+                      {shouldUseEvaluation && studentPlacements.length === data.annotations?.length && !hasSubmitted && (
+                        <button
+                          onClick={handleEvaluateAnnotations}
+                          disabled={isEvaluating}
+                          className={`w-full mt-4 p-3 rounded-lg font-bold transition-all ${
+                            isEvaluating
+                              ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white'
+                          }`}
+                        >
+                          {isEvaluating ? 'Evaluating with AI...' : 'Submit for Evaluation'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Image with Drop Zone */}
+                    <div className="flex-1 relative">
+                      <div
+                        ref={imageContainerRef}
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        className={`relative rounded-lg overflow-hidden border-4 ${
+                          draggedAnnotation ? 'border-cyan-500 border-dashed' : 'border-slate-700'
+                        } transition-colors`}
+                      >
+                        <img
+                          src={displayImageUrl}
+                          alt={data.title}
+                          className="w-full h-auto object-contain bg-slate-900"
+                          onError={() => setImageError(true)}
+                          loading="lazy"
+                          draggable={false}
+                        />
+
+                        {/* Placed annotation markers */}
+                        {studentPlacements.map((placement) => (
+                          <div
+                            key={placement.annotationId}
+                            className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+                            style={{
+                              left: `${placement.position.x}%`,
+                              top: `${placement.position.y}%`,
+                            }}
+                            onMouseEnter={() => setHoveredPlacement(placement.annotationId)}
+                            onMouseLeave={() => setHoveredPlacement(null)}
+                          >
+                            {/* Marker pin */}
+                            <div className="relative">
+                              <div className="w-8 h-8 bg-cyan-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center animate-bounce-slow">
+                                <HelpCircle className="w-4 h-4 text-white" />
+                              </div>
+
+                              {/* Label popup on hover */}
+                              {hoveredPlacement === placement.annotationId && (
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 border-2 border-cyan-500 rounded-lg shadow-xl z-10">
+                                  <div className="text-xs font-bold text-cyan-400 mb-1">
+                                    {placement.label}
+                                  </div>
+                                  <div className="text-xs text-slate-300">
+                                    Click marker to remove
+                                  </div>
+                                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                                    <div className="w-2 h-2 bg-cyan-500 rotate-45"></div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Drag instruction overlay */}
+                        {draggedAnnotation && (
+                          <div className="absolute inset-0 bg-cyan-500/10 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+                            <div className="bg-slate-900/90 px-6 py-4 rounded-lg border-2 border-cyan-500">
+                              <p className="text-cyan-400 font-bold text-lg">Drop here to place</p>
+                              <p className="text-slate-300 text-sm mt-1">"{draggedAnnotation.label}"</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* Standard View Mode (existing implementation) */
+                  <div className="relative w-full group">
+                    {/* Wallpaper Mode Toggle Button */}
+                    <button
+                      onClick={toggleWallpaperMode}
+                      className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 transition-all flex items-center gap-2 z-20"
+                      title={isWallpaperMode ? 'Exit Wallpaper Mode' : 'Enter Wallpaper Mode'}
+                    >
+                      {isWallpaperMode ? (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                          </svg>
+                          <span className="hidden sm:inline">Exit Wallpaper</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                          </svg>
+                          <span className="hidden sm:inline">Wallpaper Mode</span>
+                        </>
+                      )}
+                    </button>
+
+                    <img
+                      src={displayImageUrl || ''}
+                      alt={data.title}
+                      className={`w-full h-auto object-contain transition-transform duration-700 group-hover:scale-[1.01] ${isWallpaperMode ? 'max-h-[90vh]' : 'max-h-[500px]'}`}
+                      onError={() => setImageError(true)}
+                      loading="lazy"
+                    />
+                    {/* Hover overlay with details */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="space-y-2">
+                        {data.imagePrompt && (
+                          <p className="text-xs text-slate-300 font-mono">
+                            <span className={`${config.textColor} font-bold`}>VISUALIZATION:</span> {data.imagePrompt}
+                          </p>
+                        )}
+                        {data.attribution && (
+                          <p className="text-xs text-slate-400 italic">
+                            {data.attribution}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Category badge */}
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className={`px-3 py-1 ${config.bgColor} ${config.textColor} rounded-full text-xs font-medium backdrop-blur-sm`}>
+                        {config.label}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : null}
           </div>

@@ -733,6 +733,98 @@ export interface RatioTableMetrics extends BasePrimitiveMetrics {
   finalScaledValues: [number, number]; // Final scaled quantities
 }
 
+export interface TapeDiagramMetrics extends BasePrimitiveMetrics {
+  type: 'tape-diagram';
+
+  // Goal achievement
+  allPhasesCompleted: boolean;        // Did student complete all three phases
+  finalSuccess: boolean;              // Did they solve all unknowns correctly
+
+  // Phase completion tracking
+  explorePhaseCompleted: boolean;     // Phase 1: Identified the whole correctly
+  practicePhaseCompleted: boolean;    // Phase 2: Solved practice unknowns
+  applyPhaseCompleted: boolean;       // Phase 3: Solved all remaining unknowns
+
+  // Phase 1: Explore (Understanding the Whole)
+  wholeCorrectlyIdentified: boolean;  // Did they calculate the total correctly
+  exploreAttempts: number;            // Number of tries to find the whole
+  exploreHintsUsed: number;           // Hints requested in explore phase
+
+  // Phase 2: Practice (Guided Unknown Solving)
+  practiceUnknownsTotal: number;      // Number of unknowns in practice phase (1-2)
+  practiceUnknownsCorrect: number;    // How many they got right
+  practiceAccuracy: number;           // 0-100: practiceCorrect / practiceTotal
+  practiceAttempts: number;           // Total attempts in practice phase
+  practiceHintsUsed: number;          // Hints requested in practice
+
+  // Phase 3: Apply (Full Problem)
+  totalUnknownSegments: number;       // Total unknowns across all bars
+  correctUnknownSegments: number;     // How many unknowns solved correctly
+  accuracyPercentage: number;         // 0-100: correct / total unknowns
+  applyAttempts: number;              // Attempts in final phase
+  applyHintsUsed: number;             // Hints in final phase
+
+  // Overall performance
+  totalAttempts: number;              // Total attempts across all phases
+  totalHintsUsed: number;             // Total hints requested
+  firstAttemptSuccess: boolean;       // Got all unknowns right on first submission
+
+  // Problem-solving strategy
+  solvedInSequence: boolean;          // Did they solve unknowns in order presented
+  usedPartWholeStrategy: boolean;     // Evidence of whole - parts = unknown thinking
+  segmentRelationships: Array<{       // Per-segment tracking
+    barIndex: number;
+    segmentIndex: number;
+    segmentLabel: string;
+    expectedValue: number;
+    studentValue: number | null;
+    correctOnFirstTry: boolean;
+    attempts: number;
+  }>;
+
+  // Efficiency
+  solvedWithoutHints: boolean;        // Completed without using any hints
+  averageAttemptsPerUnknown: number;  // Total attempts / total unknowns
+}
+
+// -----------------------------------------------------------------------------
+// Visual Annotation Primitives
+// -----------------------------------------------------------------------------
+
+export interface ImagePanelMetrics extends BasePrimitiveMetrics {
+  type: 'image-panel';
+
+  // Goal achievement
+  allAnnotationsPlaced: boolean;       // Did student place all annotations
+  finalSuccess: boolean;               // All annotations correctly placed
+
+  // Annotation accuracy
+  totalAnnotations: number;
+  correctAnnotations: number;
+  incorrectAnnotations: number;
+  unplacedAnnotations: number;
+  annotationAccuracy: number;          // 0-100
+
+  // Per-annotation detailed results
+  annotationResults: Array<{
+    annotationId: string;
+    label: string;
+    isKey: boolean;
+    expectedRegion?: string;
+    studentPosition: { x: number; y: number } | null;
+    placementCorrect: boolean;
+    proximityScore: number;            // 0-100
+  }>;
+
+  // Overall performance
+  averageProximityScore: number;
+
+  // LLM evaluation metadata
+  llmEvaluationUsed: boolean;
+  llmConfidence?: number;
+  llmFeedback?: string;
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -768,8 +860,11 @@ export type PrimitiveMetrics =
   | FormulaCardMetrics
   | ArrayGridMetrics
   | RatioTableMetrics
+  | TapeDiagramMetrics
   // Exploration
-  | FunctionMachineMetrics;
+  | FunctionMachineMetrics
+  // Visual Annotation
+  | ImagePanelMetrics;
 
 // =============================================================================
 // Session & Summary Types
