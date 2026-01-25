@@ -64,6 +64,7 @@ export type {
   AreaModelMetrics,
   NumberLineMetrics,
   DoubleNumberLineMetrics,
+  PercentBarMetrics,
   CoordinateGraphMetrics,
   PlaceValueChartMetrics,
   FactorTreeMetrics,

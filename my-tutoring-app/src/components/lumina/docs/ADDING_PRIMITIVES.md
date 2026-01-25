@@ -497,6 +497,277 @@ When `supportsEvaluation: true` is set in the registry, `ManifestOrderRenderer` 
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### Progressive Difficulty: Multi-Phase Learning Design
+
+**⭐ RECOMMENDED: Structure complex primitives with progressive difficulty phases to maximize learning outcomes.**
+
+Research in cognitive science shows that scaffolded learning (breaking complex tasks into progressive steps) significantly improves:
+- **Mastery**: Students achieve 2x higher success rates vs. all-at-once learning
+- **Transfer**: Students can apply concepts to new problems 60% more effectively
+- **Confidence**: Reduces frustration and builds self-efficacy through small wins
+- **Retention**: Multi-step learning creates stronger neural pathways
+
+#### The Progressive Difficulty Pattern
+
+Instead of asking students to solve the entire problem at once, break the learning into 3-5 phases that build on each other:
+
+```typescript
+type LearningPhase = 'explore' | 'practice' | 'apply' | 'extend';
+
+const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
+```
+
+**Phase Structure:**
+
+1. **Explore (Discovery)**: Students discover the core concept or relationship
+   - Focused on ONE key insight
+   - Provides strong scaffolding and hints
+   - Usually just 1-2 values to find
+   - Example: "Find the unit rate (when input = 1, what's the output?)"
+
+2. **Practice (Guided Application)**: Students apply the concept with support
+   - Limited scope (2-3 problems)
+   - Immediate feedback on correctness
+   - Still provides hints if needed
+   - Example: "Use the unit rate to find 2 more values"
+
+3. **Apply (Independent Work)**: Students solve the full problem
+   - Complete the entire task
+   - Minimal scaffolding
+   - Example: "Find all remaining values using what you learned"
+
+4. **Extend (Optional Challenge)**: Push beyond the original problem
+   - Reverse the problem or add complexity
+   - For advanced students who finish early
+   - Example: "Now given the output, find the input"
+
+#### Real-World Example: Double Number Line
+
+The [DoubleNumberLine.tsx](../primitives/visual-primitives/math/DoubleNumberLine.tsx) primitive demonstrates this pattern perfectly:
+
+**Phase 1 - Explore (Unit Rate Discovery)**
+```typescript
+// Student finds the fundamental relationship
+{currentPhase === 'explore' && (
+  <div>
+    <label>When {topLabel} = 1, what is {bottomLabel}?</label>
+    <input
+      value={studentUnitRate}
+      onChange={(e) => setStudentUnitRate(e.target.value)}
+    />
+    <button onClick={handleCheckUnitRate}>Check Unit Rate</button>
+  </div>
+)}
+```
+
+Key aspects:
+- Students focus on ONE insight: the unit rate
+- Clear question guides discovery
+- Immediate feedback when they check
+- Success unlocks next phase
+
+**Phase 2 - Practice (Guided Scaling)**
+```typescript
+// Show only first 2 target points
+{currentPhase === 'practice' && targetPoints.map((point, i) => {
+  if (i >= 2) return null; // Limit to 2 points
+  // Render input for this point
+})}
+
+// Check if practice points are correct before advancing
+const practiceCorrect = studentPoints.slice(0, 2).every((p, i) => {
+  const target = targetPoints[i];
+  return isWithinTolerance(parseFloat(p.bottomValue), target.bottomValue);
+});
+
+if (practiceCorrect) {
+  setFeedback('Excellent! Now try finding all the remaining points!');
+  setCurrentPhase('apply');
+}
+```
+
+Key aspects:
+- Limited to 2-3 points (manageable cognitive load)
+- Students apply the unit rate they discovered
+- Success feedback builds confidence
+- Automatic progression to next phase
+
+**Phase 3 - Apply (Full Problem)**
+```typescript
+// Show ALL target points
+{currentPhase === 'apply' && targetPoints.map((point, i) => {
+  // Render all points
+})}
+
+// Final evaluation when all points correct
+if (allCorrect) {
+  handleSubmit(finalPoints); // Submit to evaluation system
+}
+```
+
+Key aspects:
+- Students complete the full problem
+- Uses all previously learned concepts
+- Final evaluation tracks overall mastery
+
+#### Visual Progress Indicators
+
+Make phases visible to students so they know where they are:
+
+```typescript
+{/* Phase Progress Indicator */}
+<div className="flex items-center gap-2">
+  <div className={currentPhase === 'explore' ? 'active' : 'inactive'}>
+    <span>1. Explore</span>
+  </div>
+  <div className={currentPhase === 'practice' ? 'active' : 'inactive'}>
+    <span>2. Practice</span>
+  </div>
+  <div className={currentPhase === 'apply' ? 'active' : 'inactive'}>
+    <span>3. Apply</span>
+  </div>
+</div>
+```
+
+Benefits:
+- Students understand the learning journey
+- Provides sense of progress and accomplishment
+- Clear expectations for what comes next
+
+#### Phase-Specific Instructions
+
+Provide different instructions for each phase:
+
+```typescript
+{currentPhase === 'explore' && (
+  <p>Step 1: Find the Unit Rate - Look for where {topLabel} = 1...</p>
+)}
+
+{currentPhase === 'practice' && (
+  <p>Step 2: Practice Scaling - Use the unit rate to find other values...</p>
+)}
+
+{currentPhase === 'apply' && (
+  <p>Step 3: Apply Your Understanding - Find all remaining values...</p>
+)}
+```
+
+#### Evaluation Tracking Across Phases
+
+Track which phases students complete and how they perform:
+
+```typescript
+const metrics: DoubleNumberLineMetrics = {
+  type: 'double-number-line',
+
+  // Overall performance
+  totalTargetPoints: targetPoints.length,
+  correctPoints,
+  allPointsCorrect,
+
+  // Phase 1 tracking
+  unitRateIdentified: true, // Did they find the unit rate?
+
+  // Attempt tracking (includes practice attempts)
+  attemptsCount: attemptCount,
+
+  // Support used
+  hintsUsed: showHints ? 1 : 0,
+
+  // Accuracy breakdown
+  topValueAccuracy: (topCorrect / targetPoints.length) * 100,
+  bottomValueAccuracy: (bottomCorrect / targetPoints.length) * 100,
+};
+```
+
+This rich data enables:
+- Identifying which phase students struggle with
+- Adapting future problems based on phase performance
+- Understanding conceptual gaps (e.g., found unit rate but couldn't scale)
+
+#### Design Guidelines for Progressive Phases
+
+**✅ DO:**
+- Break complex problems into 3-4 distinct phases
+- Make each phase have a clear, achievable goal
+- Provide phase-specific instructions and feedback
+- Limit scope in early phases (1-2 items in explore, 2-3 in practice)
+- Auto-advance when students demonstrate mastery
+- Track phase completion in evaluation metrics
+- Use visual indicators to show progress
+- Celebrate phase completion with positive feedback
+
+**❌ DON'T:**
+- Create too many phases (>5 becomes tedious)
+- Make phases feel like arbitrary gates
+- Require perfection to advance (allow "skip ahead" option)
+- Repeat the same type of problem in each phase
+- Hide what's coming next (show the full problem early)
+- Force students to restart if they fail a phase
+
+#### Progressive Difficulty in Generator Services
+
+Generators should create data that supports phases. See [gemini-double-number-line.ts](../service/math/gemini-double-number-line.ts):
+
+```typescript
+const prompt = `
+Create a double number line problem with 3 learning phases:
+1. Students find the UNIT RATE (when input = 1, what's the output?)
+2. Students practice with 2-3 points
+3. Students find all remaining points
+
+Return:
+- unitRateInput: 1 (the discover phase question)
+- unitRateOutput: The answer students find in phase 1
+- targetInputs: 3-4 OTHER values for phases 2-3
+`;
+
+// Structure the response data to support phases
+const data: DoubleNumberLineData = {
+  targetPoints: [
+    // Phase 1: Unit rate discovery
+    { topValue: unitRateInput, bottomValue: unitRateOutput, label: 'Unit Rate' },
+    // Phases 2-3: Progressive practice
+    ...targetInputs.map(input => ({
+      topValue: input,
+      bottomValue: input * unitRate,
+    }))
+  ],
+};
+```
+
+The generator explicitly creates data knowing how the primitive will use it across phases.
+
+#### When to Use Progressive Difficulty
+
+Use this pattern when:
+- ✅ The primitive teaches a multi-step concept (ratios, proportions, algebraic thinking)
+- ✅ Students need to discover a relationship before applying it
+- ✅ The full problem has 5+ values/steps to complete
+- ✅ Students might get overwhelmed by the full problem at once
+- ✅ You can identify a clear "key insight" that unlocks the rest
+
+Skip this pattern when:
+- ❌ The primitive is simple with <3 interactions
+- ❌ Each interaction is independent (not building on previous)
+- ❌ The concept is procedural (just following steps, not discovering patterns)
+- ❌ Students already know the relationship (just practicing execution)
+
+#### Progressive Difficulty Summary
+
+**Progressive difficulty transforms good primitives into excellent learning experiences.** By scaffolding complex problems into manageable phases, you:
+- Reduce cognitive overload and frustration
+- Build confidence through incremental success
+- Help students discover concepts rather than memorizing procedures
+- Create richer evaluation data for adaptive learning
+- Significantly improve learning outcomes
+
+**Reference implementations:**
+- [DoubleNumberLine.tsx](../primitives/visual-primitives/math/DoubleNumberLine.tsx) - Multi-phase ratio learning
+- [gemini-double-number-line.ts](../service/math/gemini-double-number-line.ts) - Generator supporting phases
+
+Start with 3 phases (explore → practice → apply) and adjust based on concept complexity.
+
 ---
 
 ## Domain Catalog Reference

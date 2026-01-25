@@ -417,6 +417,47 @@ export interface DoubleNumberLineMetrics extends BasePrimitiveMetrics {
   overallAccuracy: number;        // 0-100: both correct / total points
 }
 
+export interface PercentBarMetrics extends BasePrimitiveMetrics {
+  type: 'percent-bar';
+
+  // Goal achievement
+  allPhasesCompleted: boolean;      // Did student complete all three phases
+  finalSuccess: boolean;            // Did they successfully complete the main problem
+
+  // Phase completion
+  explorePhaseCompleted: boolean;   // Phase 1: Discovery completed
+  practicePhaseCompleted: boolean;  // Phase 2: Practice completed
+  applyPhaseCompleted: boolean;     // Phase 3: Main problem completed
+
+  // Per-phase performance
+  exploreAccuracy: number;          // 0-100: How close to target in explore phase
+  exploreAttempts: number;          // Number of tries in explore phase
+  exploreHintsUsed: number;         // Hints requested in explore
+
+  practiceQuestionsCorrect: number; // Number of practice questions answered correctly
+  practiceTotalQuestions: number;   // Total practice questions
+  practiceAttempts: number;         // Total attempts across all practice questions
+  practiceHintsUsed: number;        // Hints requested in practice
+
+  mainProblemAccuracy: number;      // 0-100: How close to target in main problem
+  mainProblemAttempts: number;      // Number of tries on main problem
+  mainProblemHintsUsed: number;     // Hints requested on main problem
+
+  // Overall performance
+  totalAttempts: number;            // Total attempts across all phases
+  totalHintsUsed: number;           // Total hints requested
+  averageAccuracy: number;          // 0-100: Average accuracy across all attempts
+
+  // Precision analysis
+  targetPercent: number;            // The final target percentage
+  finalStudentPercent: number;      // Student's final answer
+  percentageError: number;          // Absolute difference from target
+
+  // Efficiency
+  solvedWithoutHints: boolean;      // Completed without using any hints
+  firstAttemptSuccess: boolean;     // Got main problem right on first try
+}
+
 export interface FractionBarMetrics extends BasePrimitiveMetrics {
   type: 'fraction-bar';
 
@@ -720,6 +761,7 @@ export type PrimitiveMetrics =
   | AreaModelMetrics
   | NumberLineMetrics
   | DoubleNumberLineMetrics
+  | PercentBarMetrics
   | CoordinateGraphMetrics
   | PlaceValueChartMetrics
   | FactorTreeMetrics
