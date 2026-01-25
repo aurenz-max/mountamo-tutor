@@ -123,9 +123,10 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
 
   // Initialize evaluation hook (only if interactive mode with annotations)
   const isInteractive = data.interactionMode === 'identify' && data.annotations && data.annotations.length > 0;
-  const shouldUseEvaluation = isInteractive && instanceId;
 
-  const evaluation = shouldUseEvaluation ? usePrimitiveEvaluation<ImagePanelMetrics>({
+  // Use evaluation system when interactive mode is enabled
+  // If instanceId is not provided, generate one (for standalone testing)
+  const evaluation = isInteractive ? usePrimitiveEvaluation<ImagePanelMetrics>({
     primitiveType: 'image-panel',
     instanceId: instanceId || `image-panel-${Date.now()}`,
     skillId,
@@ -150,7 +151,8 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
     if (onPlacementsChange) {
       onPlacementsChange(studentPlacements);
     }
-  }, [studentPlacements, onPlacementsChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentPlacements]);
 
   // Handle drag start from annotation card
   const handleDragStart = (annotation: ImageAnnotation) => {
@@ -245,11 +247,36 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
     }
   };
 
+  // Normalize score with "safe harbor" for high scores
+  // Accounts for minor placement variations in otherwise strong performance
+  const normalizeScore = (avgScore: number): number => {
+    if (avgScore >= 80) return 100;  // 80%+ shows strong understanding
+    if (avgScore >= 70) return 80;   // 70-80% shows good understanding
+    if (avgScore >= 60) return 70;   // 60-70% shows adequate understanding
+    if (avgScore >= 50) return 60;   // 50-60% shows basic understanding
+    if (avgScore >= 40) return 50;   // 40-50% shows partial understanding
+    if (avgScore >= 30) return 40;   // 30-40% shows limited understanding
+    if (avgScore >= 20) return 30;   // 20-30% shows minimal understanding
+    return Math.max(20, avgScore);   // Below 20% return actual score with 20% floor
+  };
+
   // Build ImagePanelMetrics from evaluation results
   const buildImagePanelMetrics = (evaluation: any): ImagePanelMetrics => {
     const annotationResults = (data.annotations || []).map(annotation => {
-      const evalResult = evaluation.annotationResults.find((r: any) => r.annotationId === annotation.id);
       const placement = studentPlacements.find(p => p.annotationId === annotation.id);
+
+      // Match by label (more robust than ID matching since LLM sees the label)
+      // Fallback to ID matching if available
+      const evalResult = evaluation.annotationResults.find((r: any) =>
+        r.label === annotation.label || r.annotationId === annotation.id
+      );
+
+      // Get proximity score and determine if placement is correct
+      const proximityScore = evalResult?.proximityScore || 0;
+      // Consider placement correct if proximity score >= 70 (as per evaluation guidelines)
+      // Key concepts require >= 75
+      const threshold = annotation.isKey ? 75 : 70;
+      const placementCorrect = proximityScore >= threshold;
 
       return {
         annotationId: annotation.id,
@@ -257,23 +284,31 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
         isKey: annotation.isKey || false,
         expectedRegion: evalResult?.expectedRegion,
         studentPosition: placement?.position || null,
-        placementCorrect: evalResult?.placementCorrect || false,
-        proximityScore: evalResult?.proximityScore || 0,
+        placementCorrect,
+        proximityScore,
       };
     });
 
     const correctCount = annotationResults.filter(r => r.placementCorrect).length;
     const totalCount = annotationResults.length;
     const placedCount = studentPlacements.length;
-    const accuracy = totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
+
+    // Calculate raw average proximity score (0-100 scale)
     const avgProximity = totalCount > 0
       ? annotationResults.reduce((sum, r) => sum + r.proximityScore, 0) / totalCount
       : 0;
 
+    // Apply safe harbor normalization to reward strong overall performance
+    // despite minor placement variations (e.g., off-center labels)
+    const accuracy = normalizeScore(avgProximity);
+
+    // Final success requires ALL annotations placed AND ALL meeting threshold
+    const finalSuccess = placedCount === totalCount && correctCount === totalCount;
+
     return {
       type: 'image-panel',
       allAnnotationsPlaced: placedCount === totalCount,
-      finalSuccess: correctCount === totalCount,
+      finalSuccess,
       totalAnnotations: totalCount,
       correctAnnotations: correctCount,
       incorrectAnnotations: totalCount - correctCount,
@@ -519,7 +554,7 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
                       )}
 
                       {/* Evaluate Button */}
-                      {shouldUseEvaluation && studentPlacements.length === data.annotations?.length && !hasSubmitted && (
+                      {isInteractive && studentPlacements.length === data.annotations?.length && !hasSubmitted && (
                         <button
                           onClick={handleEvaluateAnnotations}
                           disabled={isEvaluating}

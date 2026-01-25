@@ -57,8 +57,11 @@ export const generateImagePanel = async (
   gradeContext: string,
   config?: {
     intent?: string;
+    interactionMode?: 'view' | 'identify';
   }
 ): Promise<ImagePanelData> => {
+  const interactionMode = config?.interactionMode || 'view';
+
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
@@ -66,29 +69,71 @@ export const generateImagePanel = async (
       description: { type: Type.STRING, description: "Brief description of what the image shows" },
       imagePrompt: {
         type: Type.STRING,
-        description: "Detailed prompt for generating the image - be specific about style, content, perspective, and educational purpose"
+        description: "Detailed prompt for generating the image - be specific about style, content, perspective, and educational purpose. Ensure the image will have clear, identifiable features for annotation."
       },
       category: {
         type: Type.STRING,
         enum: ["geography", "history", "science", "literature", "art", "general"],
         description: "Category that best fits the image content"
+      },
+      learningObjective: {
+        type: Type.STRING,
+        description: "Clear learning objective for this visualization (e.g., 'Identify key anatomical features of...')"
+      },
+      annotations: {
+        type: Type.ARRAY,
+        description: "List of 4-6 distinct visual features that should be identifiable in the image",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            label: {
+              type: Type.STRING,
+              description: "Short label for the feature (2-5 words)"
+            },
+            description: {
+              type: Type.STRING,
+              description: "Educational description explaining what this feature is and why it matters"
+            },
+            category: {
+              type: Type.STRING,
+              description: "Category/type of this feature (e.g., 'Body Structure', 'Geographic Region', 'Organelle')"
+            },
+            isKey: {
+              type: Type.BOOLEAN,
+              description: "Whether this is a key/essential feature for the learning objective"
+            }
+          },
+          required: ["label", "description", "category", "isKey"]
+        }
       }
     },
-    required: ["title", "imagePrompt", "category"]
+    required: ["title", "imagePrompt", "category", "learningObjective", "annotations"]
   };
 
   const response = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
-    contents: `Create image panel metadata for: "${topic}"
+    contents: `Create a visual learning lesson plan for: "${topic}"
 
 TARGET AUDIENCE: ${gradeContext}
 INTENT: ${config?.intent || 'Provide visual representation of the topic'}
+INTERACTION MODE: ${interactionMode === 'identify' ? 'Students will identify and label features' : 'Display only'}
 
-Generate metadata for an AI image generation request. The imagePrompt should be:
-- Detailed and specific about what to visualize
-- Educational and age-appropriate
-- Clear about style (map, diagram, illustration, photograph-style, etc.)
-- Include relevant context (historical period, geographic region, scientific accuracy)
+Generate complete lesson data including:
+
+1. **Title and Description**: Clear, engaging title and brief description
+2. **Learning Objective**: What students should understand or be able to identify
+3. **Image Prompt**: Detailed prompt for AI image generation that will result in a clear, diagrammatic or photorealistic image with distinct, identifiable features. The image should have:
+   - Clear background (not cluttered)
+   - Distinct, visible features that can be labeled
+   - Appropriate educational style (diagram, cross-section, map, etc.)
+   - Sufficient detail for annotation
+4. **Annotations**: List of 4-6 distinct visual features/elements that should be identifiable in the generated image. Each annotation should:
+   - Have a clear, specific label (e.g., "Magma Chamber", "Left Ventricle", "Cell Wall")
+   - Include an educational description explaining what it is and its significance
+   - Be categorized by type (e.g., "Internal Structure", "Organelle", "Body Part")
+   - Be marked as key (isKey: true) if it's essential to the learning objective
+
+The annotations must correspond to features that WILL appear in the image generated from your imagePrompt.
 
 Choose the most appropriate category based on the content.`,
     config: {
@@ -109,10 +154,21 @@ Choose the most appropriate category based on the content.`,
     // Continue without image - the component will handle the null case
   }
 
+  // Convert annotations to include generated IDs
+  const annotations = metadata.annotations?.map((ann: any, index: number) => ({
+    id: `annotation-${index + 1}`,
+    label: ann.label,
+    description: ann.description,
+    category: ann.category,
+    isKey: ann.isKey,
+  })) || [];
+
   console.log('🖼️ Image Panel Generated from dedicated service:', {
     topic,
     title: metadata.title,
-    hasImage: !!imageUrl
+    hasImage: !!imageUrl,
+    annotationCount: annotations.length,
+    interactionMode
   });
 
   return {
@@ -121,6 +177,9 @@ Choose the most appropriate category based on the content.`,
     imageUrl,
     imagePrompt: metadata.imagePrompt,
     category: metadata.category,
+    learningObjective: metadata.learningObjective,
+    annotations: annotations.length > 0 ? annotations : undefined,
+    interactionMode: interactionMode,
     attribution: 'Generated with Gemini AI'
   };
 };

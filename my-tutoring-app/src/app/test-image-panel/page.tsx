@@ -6,7 +6,6 @@ import type { ImagePanelData } from '@/components/lumina/primitives/ImagePanel';
 import {
   EvaluationProvider,
   useEvaluationContext,
-  type PrimitiveEvaluationResult,
 } from '@/components/lumina/evaluation';
 import { SAMPLE_DATASETS, getAvailableDatasets } from '@/components/lumina/test-data/image-panel-samples';
 
@@ -121,15 +120,12 @@ const TestImagePanelPageInner: React.FC<TestImagePanelPageInnerProps> = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<ImagePanelData | null>(null);
-  const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
+
+  // Get exhibitId from evaluation context
+  const evaluationContext = useEvaluationContext();
+  const exhibitId = evaluationContext?.exhibitId;
 
   const currentData = SAMPLE_DATASETS[selectedDataset as keyof typeof SAMPLE_DATASETS];
-
-  // Callback when an evaluation is submitted
-  const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
-    console.log('Evaluation submitted:', result);
-    setLastEvaluationResult(result);
-  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -168,15 +164,16 @@ const TestImagePanelPageInner: React.FC<TestImagePanelPageInnerProps> = () => {
     }
   };
 
-  // Use generated data if available, otherwise use sample data with evaluation props
-  const displayData: ImagePanelData = generatedData || {
-    ...currentData,
-    // Add evaluation props for the primitive
-    instanceId: `image-panel-${Date.now()}`,
-    skillId: 'science-anatomy',
-    subskillId: 'identify-features',
-    objectiveId: 'understand-anatomy',
-    onEvaluationSubmit: handleEvaluationSubmit,
+  // Use generated data if available, otherwise use sample data
+  // Inject evaluation props into the data
+  const displayData: ImagePanelData = {
+    ...(generatedData || currentData),
+    // Evaluation integration props (auto-injected in production by ManifestOrderRenderer)
+    instanceId: `image-panel-${selectedDataset}-${Date.now()}`,
+    exhibitId: exhibitId || 'image-panel-tester',
+    skillId: 'visual-annotation',
+    subskillId: 'image-labeling',
+    objectiveId: 'identify-features',
   };
 
   return (
@@ -259,16 +256,6 @@ const TestImagePanelPageInner: React.FC<TestImagePanelPageInnerProps> = () => {
         {/* Evaluation Results Panel - Full Width Below */}
         <div className="lg:col-span-2">
           <EvaluationResultsPanel />
-
-          {/* Last Result Quick View */}
-          {lastEvaluationResult && (
-            <div className="mt-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-              <h4 className="text-sm font-medium text-slate-300 mb-2">Last Evaluation (Raw JSON)</h4>
-              <pre className="text-xs text-slate-400 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded-lg">
-                {JSON.stringify(lastEvaluationResult, null, 2)}
-              </pre>
-            </div>
-          )}
         </div>
       </div>
     </div>

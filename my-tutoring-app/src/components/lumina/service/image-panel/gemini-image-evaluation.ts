@@ -76,9 +76,9 @@ export async function evaluateImageAnnotations(
 
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-  // Build expected annotations context
+  // Build expected annotations context (include IDs for matching)
   const expectedLabels = annotations.map(a =>
-    `- "${a.label}"${a.isKey ? ' (KEY CONCEPT - must be accurate)' : ''}: ${a.description}${a.category ? ` [Category: ${a.category}]` : ''}`
+    `- ID: "${a.id}" | Label: "${a.label}"${a.isKey ? ' (KEY CONCEPT - must be accurate)' : ''}: ${a.description}${a.category ? ` [Category: ${a.category}]` : ''}`
   ).join('\n');
 
   // Build student placement info
@@ -97,13 +97,14 @@ STUDENT'S PLACEMENTS:
 ${placementInfo}
 
 Analyze the image and evaluate each annotation placement:
-1. Determine if each label is placed in the anatomically/geographically/conceptually correct region
-2. Give a proximity score (0-100):
+1. For EACH expected annotation, you MUST return a result with the EXACT annotationId from the list above
+2. Determine if each label is placed in the anatomically/geographically/conceptually correct region
+3. Give a proximity score (0-100):
    - 100: Perfect placement in the exact correct location
    - 70-99: In the correct general region but not precisely centered
    - 40-69: In an adjacent or nearby region (student shows partial understanding)
    - 0-39: Completely wrong location (fundamental misunderstanding)
-3. Provide brief, encouraging reasoning explaining the placement accuracy
+4. Provide brief, encouraging reasoning explaining the placement accuracy
 
 EVALUATION GUIDELINES:
 - Be lenient with placements in the right general area (70+ score)
@@ -111,6 +112,7 @@ EVALUATION GUIDELINES:
 - Annotations marked "KEY CONCEPT" require higher accuracy (75+ threshold)
 - Consider the learning objective when evaluating correctness
 - Use encouraging, educational language in reasoning
+- CRITICAL: Use the exact annotation ID from the expected annotations list (e.g., "annotation-1", "annotation-2", etc.)
 
 Identify the expected region name for each annotation (e.g., "cranium", "heart's left ventricle", "Pacific Ocean").`;
 
@@ -118,7 +120,7 @@ Identify the expected region name for each annotation (e.g., "cranium", "heart's
     callbacks?.onProgress?.('analyzing', 'AI is analyzing your annotations...');
 
     const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-flash-lite-latest",
       contents: [
         {
           parts: [

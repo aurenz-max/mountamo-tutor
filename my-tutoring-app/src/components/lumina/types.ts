@@ -769,14 +769,8 @@ export interface NestedHierarchyData {
   defaultExpanded?: string[];
 }
 
-export interface ImagePanelData {
-  title: string;
-  description?: string;
-  imageUrl: string | null;
-  imagePrompt?: string;
-  category?: 'geography' | 'history' | 'science' | 'literature' | 'art' | 'general';
-  attribution?: string;
-}
+// Re-export from component (single source of truth)
+export type { ImagePanelData, ImageAnnotation, StudentPlacement } from './primitives/ImagePanel';
 
 // Take Home Activity Types
 export interface MaterialItem {
