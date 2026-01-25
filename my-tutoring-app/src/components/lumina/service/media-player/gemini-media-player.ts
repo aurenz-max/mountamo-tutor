@@ -60,19 +60,53 @@ const generateLessonPlan = async (
         imagePrompt: {
           type: Type.STRING,
           description: "Detailed visual description for image generation that illustrates the concept clearly (photorealistic or diagrammatic as appropriate)"
+        },
+        knowledgeCheck: {
+          type: Type.OBJECT,
+          description: "Comprehension question to verify understanding of this segment",
+          properties: {
+            question: {
+              type: Type.STRING,
+              description: "Clear question testing the KEY concept from this segment"
+            },
+            options: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "3-4 answer choices (include 1 correct answer and plausible distractors)"
+            },
+            correctOptionIndex: {
+              type: Type.NUMBER,
+              description: "Index (0-based) of the correct answer in the options array"
+            },
+            explanation: {
+              type: Type.STRING,
+              description: "Brief explanation of why this answer is correct (optional but recommended)"
+            }
+          },
+          required: ["question", "options", "correctOptionIndex"]
         }
       },
-      required: ["title", "script", "imagePrompt"]
+      required: ["title", "script", "imagePrompt", "knowledgeCheck"]
     }
   };
 
   const prompt = `Create a ${segmentCount}-part educational walkthrough about the following topic: "${topic}".
 The audience is ${gradeLevelContext}
 
-For each part, provide:
+For EACH segment, provide:
 1. A short, catchy title (3-5 words)
 2. A clear, engaging explanation script (2-3 sentences, intended to be spoken aloud with natural pacing)
 3. A detailed visual description prompt for an image generation model that illustrates the concept clearly
+4. A comprehension question with 3-4 multiple choice options to verify understanding
+
+KNOWLEDGE CHECK REQUIREMENTS:
+- Each question should test the KEY concept from that specific segment
+- Options should include 1 correct answer and 2-3 plausible distractors
+- Questions should be answerable ONLY from information in that segment
+- Avoid trivial questions - test true understanding, not just recall
+- Include a brief explanation of why the correct answer is right
+- Make distractors believable but clearly incorrect upon reflection
+- Questions should be grade-appropriate for ${gradeLevelContext}
 
 The segments should build on each other progressively, starting with fundamentals and moving to more complex ideas.
 Use age-appropriate language and relatable examples.`;

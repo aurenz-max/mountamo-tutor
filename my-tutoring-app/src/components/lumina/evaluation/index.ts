@@ -76,6 +76,8 @@ export type {
   FunctionMachineMetrics,
   // Visual Annotation metrics
   ImagePanelMetrics,
+  // Media metrics
+  MediaPlayerMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

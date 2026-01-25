@@ -497,6 +497,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-7xl mx-auto mb-20',
+    supportsEvaluation: true,  // Enable evaluation for knowledge checks
   },
 
   'flashcard-deck': {

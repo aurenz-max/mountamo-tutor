@@ -897,11 +897,19 @@ export interface PeriodicTableData {
   focusCategory?: string; // Optional category to focus on
 }
 
-// Media Player Types (Audio-Visual Lesson Player)
+// Media Player Types (Audio-Visual Lesson Player with Knowledge Checks)
+export interface SegmentKnowledgeCheck {
+  question: string;              // Comprehension question about segment content
+  options: string[];             // 2-4 answer choices
+  correctOptionIndex: number;    // Index of correct answer (0-based)
+  explanation?: string;          // Why this answer is correct
+}
+
 export interface LessonSegment {
   title: string;
   script: string;
   imagePrompt: string;
+  knowledgeCheck?: SegmentKnowledgeCheck;  // Optional knowledge check per segment
 }
 
 export interface GeneratedMediaAsset {
@@ -916,6 +924,14 @@ export interface MediaPlayerData {
   description?: string;
   segments: FullLessonSegment[];
   imageResolution?: '1K' | '2K' | '4K';
+
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: any) => void;
 }
 
 // Flashcard Types (Rapid-Fire Study Tool)

@@ -825,6 +825,50 @@ export interface ImagePanelMetrics extends BasePrimitiveMetrics {
   llmFeedback?: string;
 }
 
+// -----------------------------------------------------------------------------
+// Media Primitives
+// -----------------------------------------------------------------------------
+
+export interface MediaPlayerMetrics extends BasePrimitiveMetrics {
+  type: 'media-player';
+
+  // Overall completion
+  totalSegments: number;
+  segmentsCompleted: number;        // How many segments watched AND answered
+  allSegmentsCompleted: boolean;
+
+  // Knowledge check performance
+  totalQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  knowledgeCheckAccuracy: number;   // 0-100
+
+  // Per-segment detailed results
+  segmentResults: Array<{
+    segmentIndex: number;
+    segmentTitle: string;
+    audioPlayed: boolean;           // Did student listen to audio?
+    questionAnswered: boolean;
+    question: string;
+    correctAnswer: string;
+    studentAnswer: string | null;
+    isCorrect: boolean;
+    attempts: number;               // How many tries (1-3)
+    maxAttemptsReached: boolean;    // Hit 3 attempts without correct answer
+    skippedAfterMaxAttempts: boolean; // Clicked skip after seeing answer
+    timeToAnswer?: number;          // ms from segment start to final answer/skip
+  }>;
+
+  // Engagement metrics
+  totalAttempts: number;            // Sum of all question attempts
+  firstAttemptSuccessRate: number;  // % answered correctly on first try
+  averageAttemptsPerQuestion: number;
+
+  // Learning quality indicators
+  passedWithoutErrors: boolean;     // True if all first-attempt correct
+  skippedSegments: number;          // Number of segments skipped after max attempts
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -864,7 +908,9 @@ export type PrimitiveMetrics =
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation
-  | ImagePanelMetrics;
+  | ImagePanelMetrics
+  // Media
+  | MediaPlayerMetrics;
 
 // =============================================================================
 // Session & Summary Types

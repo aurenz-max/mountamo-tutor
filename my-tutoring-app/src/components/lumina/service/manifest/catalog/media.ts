@@ -9,8 +9,8 @@ import { ComponentDefinition } from '../../../types';
 export const MEDIA_CATALOG: ComponentDefinition[] = [
   {
     id: 'media-player',
-    description: 'Audio-visual lesson player with synchronized narration and images. Multi-segment interactive presentation where each segment has AI-generated voiceover narration and accompanying visuals. Perfect for step-by-step explanations, processes, stories, or any content that benefits from multimedia presentation. Features play/pause controls, progress tracking, and segment navigation.',
-    constraints: 'Best for topics that benefit from sequential, narrative-driven explanation (processes, stories, step-by-step concepts). Each lesson typically has 3-5 segments. Works for all grade levels - narration and visuals adapt to audience.'
+    description: 'Interactive audio-visual lesson player with synchronized narration, images, and segment-by-segment knowledge checks. Multi-segment presentation where each segment has AI-generated voiceover narration, accompanying visuals, and a comprehension question to verify understanding. Students must answer correctly (or exhaust 3 attempts) to unlock the next segment. Perfect for step-by-step explanations, processes, stories, or any content that benefits from multimedia presentation with active learning verification. Features play/pause controls, progress tracking, segment navigation, and built-in evaluation for student performance analytics. ESSENTIAL for interactive multimedia learning experiences with comprehension tracking.',
+    constraints: 'Best for topics that benefit from sequential, narrative-driven explanation with comprehension checks (processes, stories, step-by-step concepts). Each lesson typically has 3-4 segments. Each segment includes one multiple-choice knowledge check question. Best for grades 3+ due to knowledge check reading requirements. Students progress through segments sequentially and can retry questions up to 3 times before seeing the answer.'
   },
   {
     id: 'flashcard-deck',
