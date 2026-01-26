@@ -121,6 +121,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'feature-exhibit': {
     component: FeatureExhibit,
     allowMultiple: false,
+    supportsEvaluation: true, // 3-phase comprehension assessment
   },
 
   'detail-drawer': {

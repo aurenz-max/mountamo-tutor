@@ -247,17 +247,13 @@ export type SpecializedExhibit = EquationData | SentenceSchemaData | MathVisualD
 
 // ---------------------------
 
-export interface FeatureSection {
-  heading: string;
-  content: string;
-}
-
-export interface FeatureExhibitData {
-  title: string;
-  sections: FeatureSection[];
-  relatedTerms: string[];
-  visualPrompt: string;
-}
+// FeatureExhibit types now defined in generator service (single source of truth)
+export type {
+  FeatureSection,
+  EvidenceClaim,
+  SynthesisOption,
+  FeatureExhibitData,
+} from './service/feature-exhibit/gemini-feature-exhibit';
 
 export interface RelatedTopic {
   title: string;

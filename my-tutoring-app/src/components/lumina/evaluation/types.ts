@@ -334,6 +334,67 @@ export interface ComparisonPanelMetrics extends BasePrimitiveMetrics {
   sectionsRevealed: number;         // How many sections unlocked (max = totalGates + 1)
 }
 
+export interface FeatureExhibitMetrics extends BasePrimitiveMetrics {
+  type: 'feature-exhibit';
+
+  // Overall completion
+  allPhasesCompleted: boolean;      // Did student complete all three phases
+  finalSuccess: boolean;            // Did they successfully complete Phase 3
+
+  // Phase completion tracking
+  explorePhaseCompleted: boolean;   // Phase 1: True/False completed
+  practicePhaseCompleted: boolean;  // Phase 2: Evidence matching completed
+  applyPhaseCompleted: boolean;     // Phase 3: Synthesis question completed
+
+  // Phase 1: Explore (True/False) performance
+  exploreQuestion: string;          // The true/false statement
+  exploreCorrectAnswer: boolean;    // Correct answer
+  exploreStudentAnswer: boolean | null; // Student's answer
+  exploreIsCorrect: boolean;        // Did they get it right
+  exploreAttempts: number;          // Number of attempts (should be 1 with no retry)
+
+  // Phase 2: Practice (Evidence Matching) performance
+  totalClaims: number;              // Number of claims to match (typically 2-3)
+  correctMatches: number;           // Number of correct matches made
+  evidenceMatchingAccuracy: number; // 0-100: correctMatches / totalClaims
+  matchAttempts: number;            // Number of times they submitted matches
+
+  // Per-claim matching results
+  claimMatchResults: Array<{
+    claimIndex: number;
+    claimText: string;
+    correctSectionIndex: number;
+    studentSectionIndex: number | null;
+    isCorrect: boolean;
+  }>;
+
+  // Phase 3: Apply (Multiple Choice Synthesis) performance
+  synthesisQuestion: string;        // The synthesis question asked
+  synthesisCorrectOptionId: string; // ID of correct answer
+  synthesisStudentOptionId: string | null; // Student's selected option
+  synthesisIsCorrect: boolean;      // Did they get it right
+  synthesisAttempts: number;        // Number of attempts (should be 1)
+  timeToAnswerSynthesis: number;    // ms from question display to answer
+
+  // Overall performance metrics
+  totalAttempts: number;            // Sum of attempts across all phases
+  overallAccuracy: number;          // 0-100: weighted average of phase performance
+  comprehensionScore: number;       // 0-100: quality of understanding demonstrated
+
+  // Engagement metrics
+  totalTimeSpent: number;           // ms spent on entire exhibit
+  sectionsRead: number;             // Number of sections navigated through
+  relatedTermsExplored: number;     // Number of related term buttons clicked
+
+  // Reading behavior
+  pagesNavigated: number;           // Total page turns in the exhibit
+  timePerSection: number[];         // ms spent on each section page
+
+  // Efficiency
+  completedWithoutErrors: boolean;  // True if all phases correct on first try
+  phaseProgressionSmooth: boolean;  // True if completed phases in order without reset
+}
+
 // -----------------------------------------------------------------------------
 // Math Visualization Primitives
 // -----------------------------------------------------------------------------
@@ -890,6 +951,7 @@ export type PrimitiveMetrics =
   | TrueFalseMetrics
   | ShortAnswerMetrics
   | ComparisonPanelMetrics
+  | FeatureExhibitMetrics
   // Math
   | BalanceScaleMetrics
   | FractionCirclesMetrics

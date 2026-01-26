@@ -57,6 +57,7 @@ export type {
   TrueFalseMetrics,
   ShortAnswerMetrics,
   ComparisonPanelMetrics,
+  FeatureExhibitMetrics,
   // Math metrics
   BalanceScaleMetrics,
   FractionCirclesMetrics,

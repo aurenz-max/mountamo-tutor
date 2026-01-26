@@ -426,24 +426,77 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       {/* Intro Overlay */}
       {!hasStarted && (
         <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center rounded-3xl">
-          <div className="text-center space-y-6 max-w-md px-6">
-            <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-indigo-500/20 mb-4">
-              <Play className="h-10 w-10 text-indigo-400 fill-current ml-1" />
+          <div className="w-full max-w-2xl mx-auto px-6">
+            {/* Glass Panel Card */}
+            <div className="glass-panel rounded-3xl overflow-hidden border border-indigo-500/20 relative animate-fade-in-up">
+              {/* Terminal-style Header */}
+              <div className="bg-slate-900/80 p-4 flex items-center justify-between border-b border-white/5">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                    <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+                    <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+                  </div>
+                  <span className="text-xs font-mono uppercase tracking-widest text-indigo-400">
+                    Interactive Media Lesson
+                  </span>
+                </div>
+                <div className="text-xs text-slate-500 font-mono">
+                  {data.segments.length} SEGMENTS
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-8 md:p-12 text-center space-y-6">
+                {/* Icon */}
+                <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 mb-2">
+                  <Play className="h-10 w-10 text-indigo-400 fill-current ml-1" />
+                </div>
+
+                {/* Title */}
+                <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                  {data.title || 'Interactive Lesson'}
+                </h2>
+
+                {/* Description */}
+                <p className="text-slate-300 text-lg leading-relaxed max-w-md mx-auto">
+                  Experience a multi-segment lesson with audio narration, visual illustrations, and knowledge checks
+                </p>
+
+                {/* Features Grid */}
+                <div className="grid grid-cols-3 gap-4 max-w-md mx-auto pt-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-indigo-400">{data.segments.length}</div>
+                    <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Segments</div>
+                  </div>
+                  <div className="text-center border-l border-r border-slate-700">
+                    <div className="text-2xl font-bold text-indigo-400">
+                      {data.segments.filter(s => s.knowledgeCheck).length}
+                    </div>
+                    <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Checks</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-indigo-400">
+                      <Volume2 className="h-6 w-6 inline-block" />
+                    </div>
+                    <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Audio</div>
+                  </div>
+                </div>
+
+                {/* CTA Button */}
+                <div className="pt-4">
+                  <button
+                    onClick={handlePlayPause}
+                    disabled={!audioBuffer || isLoadingAudio}
+                    className="group inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-lg shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                    <Play className="h-5 w-5 fill-current relative z-10" />
+                    <span className="relative z-10">{isLoadingAudio ? 'Loading...' : 'Begin Lesson'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
-            <h2 className="text-3xl font-bold text-white">
-              {data.title || 'Interactive Lesson'}
-            </h2>
-            <p className="text-slate-400 text-lg leading-relaxed">
-              {data.segments.length} segments with audio narration and visual illustrations
-            </p>
-            <button
-              onClick={handlePlayPause}
-              disabled={!audioBuffer || isLoadingAudio}
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-lg shadow-lg shadow-indigo-500/25 ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              <Play className="h-5 w-5 fill-current" />
-              {isLoadingAudio ? 'Loading...' : 'Begin Lesson'}
-            </button>
           </div>
         </div>
       )}
@@ -549,9 +602,10 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
                 <button
                   onClick={() => handleAnswerSubmit(currentIndex)}
                   disabled={selectedAnswers[currentIndex] === undefined}
-                  className="mt-4 w-full py-3 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="group mt-4 w-full py-3 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-95 disabled:hover:scale-100 relative overflow-hidden"
                 >
-                  Submit Answer
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                  <span className="relative z-10">Submit Answer</span>
                 </button>
 
                 {/* Error Feedback */}
@@ -602,9 +656,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
                 )}
                 <button
                   onClick={() => handleSkipAfterMaxAttempts(currentIndex)}
-                  className="w-full py-3 px-6 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold transition-all"
+                  className="group w-full py-3 px-6 rounded-xl bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white font-semibold shadow-lg shadow-slate-700/30 border border-slate-500/30 transition-all transform hover:scale-[1.02] active:scale-95 relative overflow-hidden"
                 >
-                  {currentIndex < data.segments.length - 1 ? 'Continue to Next Segment' : 'Complete Lesson'}
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                  <span className="relative z-10">
+                    {currentIndex < data.segments.length - 1 ? 'Continue to Next Segment' : 'Complete Lesson'}
+                  </span>
                 </button>
               </div>
             )}
