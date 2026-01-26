@@ -195,6 +195,17 @@ export async function POST(request: NextRequest) {
         );
         return NextResponse.json(imageEvaluation);
 
+      // ============================================
+      // BIOLOGY PRIMITIVES
+      // ============================================
+
+      case 'generateSpeciesImage':
+        const { generateSpeciesImage } = await import(
+          '@/components/lumina/service/biology/gemini-species-profile'
+        );
+        const speciesImageUrl = await generateSpeciesImage(params.imagePrompt);
+        return NextResponse.json({ imageUrl: speciesImageUrl });
+
       default:
         return NextResponse.json(
           { error: `Unknown action: ${action}` },

@@ -1093,6 +1093,9 @@ export type ComponentId =
   | 'molecule-viewer'    // 3D molecular structure viewer
   | 'periodic-table'     // Interactive periodic table of elements
 
+  // Biology Primitives
+  | 'species-profile'    // Comprehensive species information with taxonomy, habitat, and characteristics (perfect for dinosaurs!)
+
   // Media & Multimedia
   | 'media-player'       // Audio-visual lesson player with synchronized narration and images
 

@@ -333,6 +333,7 @@ STRUCTURE:
 - Precalculus (Function Families, Transformations) → 'coordinate-graph'
 - Math Problem-Solving → 'annotated-example' for worked solutions, 'tape-diagram' for word problems
 - Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'
+- Biology/Life Sciences (K-8) → 'species-profile' for dinosaurs, animals, plants, extinct/living species; perfect for paleontology, zoology, taxonomy, habitats, adaptations, ecosystems, food chains
 - Engineering/Simple Machines (K-5) → 'lever-lab' for levers, balance, mechanical advantage; 'pulley-system-builder' for pulleys, lifting, rope systems; 'ramp-lab' for inclined planes, ramps, friction, force trade-offs; 'wheel-axle-explorer' for wheel and axle, doorknobs, winches, steering wheels, gear ratios
 - Foundational Concepts (IDENTIFY objectives) → 'foundation-explorer' for introducing key vocabulary, parts, and components across all subjects
 - History/Social Studies → 'comparison-panel', 'generative-table', 'feature-exhibit'

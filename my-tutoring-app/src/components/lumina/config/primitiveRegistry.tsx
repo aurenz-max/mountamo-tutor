@@ -41,6 +41,7 @@ import InteractivePassage from '../primitives/InteractivePassage';
 import WordBuilder from '../primitives/WordBuilder';
 import MoleculeViewer from '../primitives/MoleculeViewer';
 import PeriodicTable from '../primitives/PeriodicTable';
+import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -489,6 +490,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: false,
     containerClassName: 'max-w-7xl mx-auto mb-20',
+  },
+
+  'species-profile': {
+    component: SpeciesProfile,
+    sectionTitle: 'Species Profile',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
   },
 
   'media-player': {
