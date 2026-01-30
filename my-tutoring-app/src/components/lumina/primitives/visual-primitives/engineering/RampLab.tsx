@@ -384,6 +384,8 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const animationRef = useRef<number | null>(null);
+  const velocityRef = useRef<number>(0); // Current velocity in position units per frame
+  const lastTimeRef = useRef<number | null>(null);
 
   // SVG dimensions
   const svgWidth = 800;
@@ -490,38 +492,74 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
     return { x, y };
   }, [loadPosition, rampBaseX, rampBaseY, rampWidth, rampHeight]);
 
-  // Animation for sliding/pushing
+  // Animation for sliding/pushing with proper physics
   useEffect(() => {
     if (!isAnimating) {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
       }
+      velocityRef.current = 0;
+      lastTimeRef.current = null;
       return;
     }
 
-    const animate = () => {
+    const animate = (currentTime: number) => {
+      // Initialize time tracking
+      if (lastTimeRef.current === null) {
+        lastTimeRef.current = currentTime;
+        animationRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      // Calculate time delta in seconds
+      const deltaTime = (currentTime - lastTimeRef.current) / 1000;
+      lastTimeRef.current = currentTime;
+
+      // Clamp deltaTime to prevent huge jumps (e.g., when tab is inactive)
+      const clampedDeltaTime = Math.min(deltaTime, 0.1);
+
       setLoadPosition(prev => {
-        let newPos = prev;
-        const speed = Math.abs(netForce) * 0.02;
+        // Calculate physics
+        const mass = loadWeight;
+        let acceleration = 0;
 
         if (canMoveUp && pushForce > 0) {
-          newPos = Math.min(100, prev + speed);
-          if (newPos >= 100) {
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 2000);
-            setIsAnimating(false);
-            return 100;
-          }
+          // Moving up: a = F_net / m
+          const thresholdForce = parallelForce + frictionForce;
+          acceleration = (pushForce - thresholdForce) / mass;
         } else if (canSlideDown) {
-          newPos = Math.max(0, prev - speed);
-          if (newPos <= 0) {
-            setIsAnimating(false);
-            return 0;
-          }
+          // Sliding down: a = (F_parallel - F_friction) / m (negative direction)
+          acceleration = -(parallelForce - frictionForce) / mass;
         } else {
+          // No movement, friction holds it in place
+          velocityRef.current = 0;
           setIsAnimating(false);
           return prev;
+        }
+
+        // Update velocity: v = v0 + a*t
+        velocityRef.current += acceleration * clampedDeltaTime;
+
+        // Convert velocity to position change
+        // Scale factor to convert m/s to position percentage per second
+        // Assuming the ramp is about 10 meters long (rampLength units)
+        const scaleFactor = 100 / (rampLength * 2); // Adjust for reasonable speed
+        const positionChange = velocityRef.current * clampedDeltaTime * scaleFactor;
+
+        let newPos = prev + positionChange;
+
+        // Check boundaries
+        if (newPos >= 100) {
+          newPos = 100;
+          velocityRef.current = 0;
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 2000);
+          setIsAnimating(false);
+        } else if (newPos <= 0) {
+          newPos = 0;
+          velocityRef.current = 0;
+          setIsAnimating(false);
         }
 
         return newPos;
@@ -537,18 +575,24 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isAnimating, canMoveUp, canSlideDown, netForce, pushForce]);
+  }, [isAnimating, canMoveUp, canSlideDown, pushForce, parallelForce, frictionForce, loadWeight, rampLength]);
 
   // Handle angle change
   const handleAngleChange = (newAngle: number) => {
     setRampAngle(Math.max(0, Math.min(60, newAngle)));
     setHasUserInteracted(true);
+    // Stop animation and reset velocity when angle changes
+    setIsAnimating(false);
+    velocityRef.current = 0;
   };
 
   // Handle push force change
   const handlePushForceChange = (force: number) => {
     setPushForce(Math.max(0, Math.min(100, force)));
     setHasUserInteracted(true);
+    // Stop animation and reset velocity when force changes
+    setIsAnimating(false);
+    velocityRef.current = 0;
   };
 
   // Start pushing
@@ -567,6 +611,8 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
     setHint(null);
     setShowSuccess(false);
     setHasUserInteracted(false);
+    velocityRef.current = 0;
+    lastTimeRef.current = null;
   };
 
   // Provide a hint

@@ -1113,6 +1113,9 @@ export type ComponentId =
   | 'gear-train-builder' // Interactive gear train sandbox for teaching speed/torque trade-offs
   | 'bridge-builder'     // Interactive 2D bridge construction for structural engineering concepts
   | 'tower-stacker'      // Interactive vertical building challenge for stability and center of gravity
+  | 'shape-strength-tester' // Interactive shape testing rig for teaching triangulation and structural rigidity
+  | 'foundation-builder' // Interactive soil/foundation simulator for teaching pressure, soil capacity, and foundation design
+  | 'excavator-arm-simulator' // Multi-jointed excavator arm with boom, stick, and bucket for teaching hydraulics and kinematics
 
   // Foundational Concept Teaching
   | 'foundation-explorer'; // Objective-driven concept exploration with diagrams and self-checks

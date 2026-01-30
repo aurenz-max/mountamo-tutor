@@ -53,6 +53,9 @@ import WheelAxleExplorer from '../primitives/visual-primitives/engineering/Wheel
 import GearTrainBuilder from '../primitives/visual-primitives/engineering/GearTrainBuilder';
 import BridgeBuilder from '../primitives/visual-primitives/engineering/BridgeBuilder';
 import TowerStacker from '../primitives/visual-primitives/engineering/TowerStacker';
+import ShapeStrengthTester from '../primitives/visual-primitives/engineering/ShapeStrengthTester';
+import FoundationBuilder from '../primitives/visual-primitives/engineering/FoundationBuilder';
+import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/ExcavatorArmSimulator';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -593,6 +596,36 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'tower-stacker': {
     component: TowerStacker,
     sectionTitle: 'Tower Stacker',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'shape-strength-tester': {
+    component: ShapeStrengthTester,
+    sectionTitle: 'Shape Strength Tester',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'foundation-builder': {
+    component: FoundationBuilder,
+    sectionTitle: 'Foundation Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'excavator-arm-simulator': {
+    component: ExcavatorArmSimulator,
+    sectionTitle: 'Excavator Arm Simulator',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

@@ -17,6 +17,9 @@ import { generateWheelAxleExplorer } from '../../engineering/gemini-wheel-axle';
 import { generateGearTrainBuilder } from '../../engineering/gemini-gear-train';
 import { generateBridgeBuilder } from '../../engineering/gemini-bridge-builder';
 import { generateTowerStacker } from '../../engineering/gemini-tower-stacker';
+import { generateShapeStrengthTester } from '../../engineering/gemini-shape-strength-tester';
+import { generateFoundationBuilder } from '../../engineering/gemini-foundation-builder';
+import { generateExcavatorArmSimulator } from '../../engineering/gemini-excavator-arm-simulator';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -71,6 +74,27 @@ registerGenerator('tower-stacker', async (item, topic, gradeContext) => ({
   data: await generateTowerStacker(topic, gradeContext, item.config),
 }));
 
+// Shape Strength Tester
+registerGenerator('shape-strength-tester', async (item, topic, gradeContext) => ({
+  type: 'shape-strength-tester',
+  instanceId: item.instanceId,
+  data: await generateShapeStrengthTester(topic, gradeContext, item.config),
+}));
+
+// Foundation Builder
+registerGenerator('foundation-builder', async (item, topic, gradeContext) => ({
+  type: 'foundation-builder',
+  instanceId: item.instanceId,
+  data: await generateFoundationBuilder(topic, gradeContext, item.config),
+}));
+
+// Excavator Arm Simulator
+registerGenerator('excavator-arm-simulator', async (item, topic, gradeContext) => ({
+  type: 'excavator-arm-simulator',
+  instanceId: item.instanceId,
+  data: await generateExcavatorArmSimulator(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 7/7 engineering primitives registered
+// Migration status: 10/10 engineering primitives registered
 // ============================================================================

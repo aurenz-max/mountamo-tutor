@@ -344,9 +344,9 @@ STRUCTURE:
 ## RULES FOR EACH OBJECTIVE BLOCK:
 1. Include 2-4 components per objective (not too few, not too many)
 2. Components should PROGRESS within each objective through these PHASES:
-   - Phase 1 (Introduce): Explain core vocabulary/concepts
+   - Phase 1 (Introduce): Explain core vocabulary/concepts, including visual exhibits if relevant
    - Phase 2 (Visualize): Demonstrate with an interactive or visual tool
-   - Phase 3 (Apply): Practice or worked examples
+   - Phase 3 (Apply): Practice or applications
    
 3. **CRITICAL: For each phase, consult the COMPONENT SELECTION BY SUBJECT section above 
    to choose the MOST SPECIFIC component for the topic.** 

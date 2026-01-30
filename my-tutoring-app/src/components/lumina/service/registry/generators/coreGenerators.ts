@@ -264,7 +264,8 @@ registerGenerator('formula-card', async (item, topic, gradeContext) => {
 // Image Panel (AI-generated images)
 registerGenerator('image-panel', async (item, topic, gradeContext) => {
   const data = await generateImagePanel(topic, gradeContext, {
-    intent: item.intent
+    intent: item.intent,
+    interactionMode: 'identify' // Always enable annotation mode with evaluation
   });
   return {
     type: 'image-panel',

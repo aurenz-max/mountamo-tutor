@@ -203,6 +203,84 @@ export interface RampLabMetrics extends BasePrimitiveMetrics {
   variablesExplored: string[];  // ['angle', 'mass', 'friction']
 }
 
+export interface ShapeStrengthTesterMetrics extends BasePrimitiveMetrics {
+  type: 'shape-strength-tester';
+
+  // Discovery achievement
+  shapesTested: number;         // Unique shapes tested
+  totalTests: number;           // Total test runs
+  triangleDiscovered: boolean;  // Did student discover triangles are strong?
+  bracingUsed: boolean;         // Did student add diagonal bracing?
+
+  // Load testing
+  maxLoadAchieved: number;      // Highest load achieved across all tests
+
+  // Challenge completion
+  targetShapeMet: boolean;      // If target shape specified, was it tested?
+  targetLoadMet: boolean;       // If target load specified, was it achieved?
+
+  // Test history for analysis
+  testResults: Array<{
+    shapeType: string;
+    load: number;
+    deformation: number;
+    survived: boolean;
+    withBracing: boolean;
+  }>;
+}
+
+export interface FoundationBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'foundation-builder';
+
+  // Soil and loading
+  soilType: string;             // Soil type tested (rock, gravel, sand, clay, mud)
+  buildingLoad: number;         // Building weight in kN
+  soilCapacity: number;         // Bearing capacity of soil (kN/m²)
+
+  // Foundation design
+  footingArea: number;          // Footing area designed (m²)
+  pressure: number;             // Calculated pressure (kN/m²)
+  foundationType: string;       // Foundation type used (spread, strip, slab, piles)
+
+  // Test results
+  foundationPassed: boolean;    // Did foundation support the building?
+  settlementAmount: number;     // Settlement observed (0 if passed, >0 if failed)
+  safetyFactor: number;         // Ratio of capacity to actual pressure (>1 is good)
+
+  // Design process
+  designsAttempted: number;     // Number of designs tested
+  successfulDesigns: number;    // Number of designs that passed
+
+  // Challenge completion
+  targetHeightMet: boolean;     // If target height specified, was it achieved?
+  targetAreaMet: boolean;       // If target area specified, was it achieved?
+  efficiency: number;           // How close to optimal area (0 = perfect, higher = less efficient)
+}
+
+export interface ExcavatorArmSimulatorMetrics extends BasePrimitiveMetrics {
+  type: 'excavator-arm-simulator';
+
+  // Goal achievement
+  targetAmount: number;         // Target amount of material to excavate
+  excavatedAmount: number;      // Actual amount excavated
+  goalMet: boolean;             // Did student meet the excavation goal?
+
+  // Efficiency
+  digOperations: number;        // Number of dig operations performed
+  dumpOperations: number;       // Number of dump operations performed
+  efficiency: number;           // Excavated amount per dig operation
+
+  // Control mastery
+  boomAngleRange: number;       // Range of boom angles available
+  stickAngleRange: number;      // Range of stick angles available
+  bucketAngleRange: number;     // Range of bucket angles available
+
+  // Final state
+  finalBoomAngle: number;       // Final boom angle in degrees
+  finalStickAngle: number;      // Final stick angle in degrees
+  finalBucketAngle: number;     // Final bucket angle in degrees
+}
+
 // -----------------------------------------------------------------------------
 // Assessment Primitives (Problem Types)
 // -----------------------------------------------------------------------------
@@ -942,6 +1020,9 @@ export type PrimitiveMetrics =
   | PulleySystemMetrics
   | GearTrainMetrics
   | RampLabMetrics
+  | ShapeStrengthTesterMetrics
+  | FoundationBuilderMetrics
+  | ExcavatorArmSimulatorMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics

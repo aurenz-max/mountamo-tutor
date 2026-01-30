@@ -48,6 +48,9 @@ export type {
   PulleySystemMetrics,
   GearTrainMetrics,
   RampLabMetrics,
+  ShapeStrengthTesterMetrics,
+  FoundationBuilderMetrics,
+  ExcavatorArmSimulatorMetrics,
   // Assessment metrics
   MultipleChoiceMetrics,
   FillInBlanksMetrics,

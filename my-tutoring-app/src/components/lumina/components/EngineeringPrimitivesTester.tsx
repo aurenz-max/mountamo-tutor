@@ -8,6 +8,9 @@ import WheelAxleExplorer from '../primitives/visual-primitives/engineering/Wheel
 import GearTrainBuilder from '../primitives/visual-primitives/engineering/GearTrainBuilder';
 import BridgeBuilder from '../primitives/visual-primitives/engineering/BridgeBuilder';
 import TowerStacker from '../primitives/visual-primitives/engineering/TowerStacker';
+import ShapeStrengthTester from '../primitives/visual-primitives/engineering/ShapeStrengthTester';
+import FoundationBuilder from '../primitives/visual-primitives/engineering/FoundationBuilder';
+import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/ExcavatorArmSimulator';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -18,7 +21,7 @@ interface EngineeringPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder' | 'bridge-builder' | 'tower-stacker';
+type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder' | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder' | 'excavator-arm-simulator';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -29,6 +32,9 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'gear-train-builder', label: 'Gear Train Builder', icon: '🔩', topic: 'Understanding gears and speed ratios' },
   { value: 'bridge-builder', label: 'Bridge Builder', icon: '🌉', topic: 'Understanding bridges and structural engineering' },
   { value: 'tower-stacker', label: 'Tower Stacker', icon: '🏗️', topic: 'Understanding stability and center of gravity' },
+  { value: 'shape-strength-tester', label: 'Shape Strength Tester', icon: '🔺', topic: 'Understanding shape strength and triangulation' },
+  { value: 'foundation-builder', label: 'Foundation Builder', icon: '🏛️', topic: 'Understanding foundations and soil pressure' },
+  { value: 'excavator-arm-simulator', label: 'Excavator Arm Simulator', icon: '🚜', topic: 'Understanding excavators and multi-joint systems' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -89,6 +95,51 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'engineering-structural-stability',
             subskillId: 'center-of-gravity',
             objectiveId: 'understand-stability',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'shape-strength-tester':
+      // ShapeStrengthTester supports evaluation - pass the props
+      return (
+        <ShapeStrengthTester
+          data={{
+            ...(data as Parameters<typeof ShapeStrengthTester>[0]['data']),
+            // Evaluation integration props
+            instanceId: `shape-strength-tester-${Date.now()}`,
+            skillId: 'engineering-structural-design',
+            subskillId: 'triangulation',
+            objectiveId: 'understand-shape-strength',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'foundation-builder':
+      // FoundationBuilder supports evaluation - pass the props
+      return (
+        <FoundationBuilder
+          data={{
+            ...(data as Parameters<typeof FoundationBuilder>[0]['data']),
+            // Evaluation integration props
+            instanceId: `foundation-builder-${Date.now()}`,
+            skillId: 'engineering-foundations',
+            subskillId: 'soil-pressure',
+            objectiveId: 'understand-foundations',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'excavator-arm-simulator':
+      // ExcavatorArmSimulator supports evaluation - pass the props
+      return (
+        <ExcavatorArmSimulator
+          data={{
+            ...(data as Parameters<typeof ExcavatorArmSimulator>[0]['data']),
+            // Evaluation integration props
+            instanceId: `excavator-arm-simulator-${Date.now()}`,
+            skillId: 'engineering-hydraulics',
+            subskillId: 'multi-joint-systems',
+            objectiveId: 'understand-excavators',
             onEvaluationSubmit,
           }}
         />
@@ -196,6 +247,43 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Max Stress: {Math.round(result.metrics.maxStressObserved)}%</span>
                     <span>Triangles: {result.metrics.triangleCount}</span>
                     <span>Integrity: {Math.round(result.metrics.structuralIntegrity)}%</span>
+                  </div>
+                )}
+                {/* Show ShapeStrengthTester-specific metrics */}
+                {result.metrics.type === 'shape-strength-tester' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Shapes Tested: {result.metrics.shapesTested}</span>
+                    <span>Total Tests: {result.metrics.totalTests}</span>
+                    <span>Triangle Found: {result.metrics.triangleDiscovered ? 'Yes' : 'No'}</span>
+                    <span>Bracing Used: {result.metrics.bracingUsed ? 'Yes' : 'No'}</span>
+                    <span>Max Load: {result.metrics.maxLoadAchieved}N</span>
+                    <span>Challenge: {result.metrics.targetShapeMet && result.metrics.targetLoadMet ? 'Complete' : 'Incomplete'}</span>
+                  </div>
+                )}
+                {/* Show FoundationBuilder-specific metrics */}
+                {result.metrics.type === 'foundation-builder' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Soil: {result.metrics.soilType}</span>
+                    <span>Load: {result.metrics.buildingLoad} kN</span>
+                    <span>Area: {result.metrics.footingArea.toFixed(1)} m²</span>
+                    <span>Pressure: {result.metrics.pressure.toFixed(1)} kN/m²</span>
+                    <span>Type: {result.metrics.foundationType}</span>
+                    <span>Safety: {result.metrics.safetyFactor.toFixed(2)}x</span>
+                    <span>Designs: {result.metrics.designsAttempted}</span>
+                    <span>Success: {result.metrics.successfulDesigns}</span>
+                  </div>
+                )}
+                {/* Show ExcavatorArmSimulator-specific metrics */}
+                {result.metrics.type === 'excavator-arm-simulator' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Excavated: {result.metrics.excavatedAmount}/{result.metrics.targetAmount}</span>
+                    <span>Digs: {result.metrics.digOperations}</span>
+                    <span>Dumps: {result.metrics.dumpOperations}</span>
+                    <span>Efficiency: {result.metrics.efficiency.toFixed(1)}</span>
+                    <span>Boom: {Math.round(result.metrics.finalBoomAngle)}°</span>
+                    <span>Stick: {Math.round(result.metrics.finalStickAngle)}°</span>
+                    <span>Bucket: {Math.round(result.metrics.finalBucketAngle)}°</span>
+                    <span>Goal: {result.metrics.goalMet ? 'Met' : 'Not Met'}</span>
                   </div>
                 )}
               </div>
