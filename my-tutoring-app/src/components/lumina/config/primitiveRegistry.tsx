@@ -56,6 +56,7 @@ import TowerStacker from '../primitives/visual-primitives/engineering/TowerStack
 import ShapeStrengthTester from '../primitives/visual-primitives/engineering/ShapeStrengthTester';
 import FoundationBuilder from '../primitives/visual-primitives/engineering/FoundationBuilder';
 import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/ExcavatorArmSimulator';
+import DumpTruckLoader from '../primitives/visual-primitives/engineering/DumpTruckLoader';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -633,6 +634,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  'dump-truck-loader': {
+    component: DumpTruckLoader,
+    sectionTitle: 'Dump Truck Loader',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   // Foundational Concept Teaching
   'foundation-explorer': {
     component: FoundationExplorer,
@@ -642,6 +653,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
   },
+
 };
 
 /**

@@ -281,6 +281,31 @@ export interface ExcavatorArmSimulatorMetrics extends BasePrimitiveMetrics {
   finalBucketAngle: number;     // Final bucket angle in degrees
 }
 
+export interface DumpTruckLoaderMetrics extends BasePrimitiveMetrics {
+  type: 'dump-truck-loader';
+
+  // Goal achievement
+  targetLoads: number;          // Target number of loads to complete
+  loadsCompleted: number;       // Actual loads completed
+  totalMaterialMoved: number;   // Total material transported
+  sourceSize: number;           // Total material available to move
+  goalMet: boolean;             // Did student complete the challenge?
+
+  // Capacity management
+  truckCapacity: number;        // Maximum weight capacity
+  bedVolume: number;            // Maximum volume capacity
+  materialType: string;         // Type of material ('dirt', 'gravel', 'sand', 'debris')
+  averageLoadSize: number;      // Average material per load
+
+  // Efficiency
+  efficiency: number;           // Material moved per operation
+  overloadAttempts: number;     // Number of times student tried to overload
+  operationCount: number;       // Total loading operations
+
+  // Time
+  timeElapsed: number;          // Time taken in seconds
+}
+
 // -----------------------------------------------------------------------------
 // Assessment Primitives (Problem Types)
 // -----------------------------------------------------------------------------
@@ -1023,6 +1048,7 @@ export type PrimitiveMetrics =
   | ShapeStrengthTesterMetrics
   | FoundationBuilderMetrics
   | ExcavatorArmSimulatorMetrics
+  | DumpTruckLoaderMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics
@@ -1033,6 +1059,7 @@ export type PrimitiveMetrics =
   | ShortAnswerMetrics
   | ComparisonPanelMetrics
   | FeatureExhibitMetrics
+
   // Math
   | BalanceScaleMetrics
   | FractionCirclesMetrics

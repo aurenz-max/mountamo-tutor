@@ -11,6 +11,7 @@ import TowerStacker from '../primitives/visual-primitives/engineering/TowerStack
 import ShapeStrengthTester from '../primitives/visual-primitives/engineering/ShapeStrengthTester';
 import FoundationBuilder from '../primitives/visual-primitives/engineering/FoundationBuilder';
 import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/ExcavatorArmSimulator';
+import DumpTruckLoader from '../primitives/visual-primitives/engineering/DumpTruckLoader';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -21,7 +22,7 @@ interface EngineeringPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder' | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder' | 'excavator-arm-simulator';
+type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder' | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder' | 'excavator-arm-simulator' | 'dump-truck-loader';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -35,6 +36,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'shape-strength-tester', label: 'Shape Strength Tester', icon: '🔺', topic: 'Understanding shape strength and triangulation' },
   { value: 'foundation-builder', label: 'Foundation Builder', icon: '🏛️', topic: 'Understanding foundations and soil pressure' },
   { value: 'excavator-arm-simulator', label: 'Excavator Arm Simulator', icon: '🚜', topic: 'Understanding excavators and multi-joint systems' },
+  { value: 'dump-truck-loader', label: 'Dump Truck Loader', icon: '🚚', topic: 'Understanding capacity, weight, and material transport' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -140,6 +142,21 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'engineering-hydraulics',
             subskillId: 'multi-joint-systems',
             objectiveId: 'understand-excavators',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'dump-truck-loader':
+      // DumpTruckLoader supports evaluation - pass the props
+      return (
+        <DumpTruckLoader
+          data={{
+            ...(data as Parameters<typeof DumpTruckLoader>[0]['data']),
+            // Evaluation integration props
+            instanceId: `dump-truck-loader-${Date.now()}`,
+            skillId: 'engineering-material-handling',
+            subskillId: 'capacity-management',
+            objectiveId: 'understand-dump-trucks',
             onEvaluationSubmit,
           }}
         />
@@ -284,6 +301,19 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Stick: {Math.round(result.metrics.finalStickAngle)}°</span>
                     <span>Bucket: {Math.round(result.metrics.finalBucketAngle)}°</span>
                     <span>Goal: {result.metrics.goalMet ? 'Met' : 'Not Met'}</span>
+                  </div>
+                )}
+                {/* Show DumpTruckLoader-specific metrics */}
+                {result.metrics.type === 'dump-truck-loader' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Loads: {result.metrics.loadsCompleted}/{result.metrics.targetLoads}</span>
+                    <span>Material: {Math.round(result.metrics.totalMaterialMoved)}/{result.metrics.sourceSize}</span>
+                    <span>Type: {result.metrics.materialType}</span>
+                    <span>Avg Load: {result.metrics.averageLoadSize.toFixed(1)}</span>
+                    <span>Efficiency: {result.metrics.efficiency.toFixed(2)}</span>
+                    <span>Operations: {result.metrics.operationCount}</span>
+                    <span>Overloads: {result.metrics.overloadAttempts}</span>
+                    <span>Time: {Math.round(result.metrics.timeElapsed)}s</span>
                   </div>
                 )}
               </div>

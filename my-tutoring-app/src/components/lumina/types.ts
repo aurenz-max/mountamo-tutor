@@ -1116,9 +1116,10 @@ export type ComponentId =
   | 'shape-strength-tester' // Interactive shape testing rig for teaching triangulation and structural rigidity
   | 'foundation-builder' // Interactive soil/foundation simulator for teaching pressure, soil capacity, and foundation design
   | 'excavator-arm-simulator' // Multi-jointed excavator arm with boom, stick, and bucket for teaching hydraulics and kinematics
+  | 'dump-truck-loader' // Interactive dump truck loading and hauling simulation for teaching capacity and material handling
 
   // Foundational Concept Teaching
-  | 'foundation-explorer'; // Objective-driven concept exploration with diagrams and self-checks
+  | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks
 
 export interface ComponentDefinition {
   id: ComponentId;
@@ -1217,3 +1218,7 @@ export interface ExhibitManifest {
   // Legacy flat layout - computed from objectiveBlocks for backward compatibility
   layout?: ManifestItem[];
 }
+
+// Re-export component data types for external use
+export type { CounterexamplePairData } from './primitives/visual-primitives/core/CounterexamplePair';
+export type { DecisionFlowchartData, DecisionNode } from './primitives/visual-primitives/core/DecisionFlowchart';
