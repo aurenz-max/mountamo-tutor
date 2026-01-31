@@ -1117,6 +1117,7 @@ export type ComponentId =
   | 'foundation-builder' // Interactive soil/foundation simulator for teaching pressure, soil capacity, and foundation design
   | 'excavator-arm-simulator' // Multi-jointed excavator arm with boom, stick, and bucket for teaching hydraulics and kinematics
   | 'dump-truck-loader' // Interactive dump truck loading and hauling simulation for teaching capacity and material handling
+  | 'construction-sequence-planner' // Interactive timeline/flowchart tool for ordering construction tasks and understanding dependencies
 
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks

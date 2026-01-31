@@ -21,6 +21,7 @@ import { generateShapeStrengthTester } from '../../engineering/gemini-shape-stre
 import { generateFoundationBuilder } from '../../engineering/gemini-foundation-builder';
 import { generateExcavatorArmSimulator } from '../../engineering/gemini-excavator-arm-simulator';
 import { generateDumpTruckLoader } from '../../engineering/gemini-dump-truck-loader';
+import { generateConstructionSequencePlanner } from '../../engineering/gemini-construction-sequence-planner';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -103,6 +104,13 @@ registerGenerator('dump-truck-loader', async (item, topic, gradeContext) => ({
   data: await generateDumpTruckLoader(topic, gradeContext, item.config),
 }));
 
+// Construction Sequence Planner
+registerGenerator('construction-sequence-planner', async (item, topic, gradeContext) => ({
+  type: 'construction-sequence-planner',
+  instanceId: item.instanceId,
+  data: await generateConstructionSequencePlanner(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 11/11 engineering primitives registered
+// Migration status: 12/12 engineering primitives registered
 // ============================================================================

@@ -12,6 +12,7 @@ import ShapeStrengthTester from '../primitives/visual-primitives/engineering/Sha
 import FoundationBuilder from '../primitives/visual-primitives/engineering/FoundationBuilder';
 import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/ExcavatorArmSimulator';
 import DumpTruckLoader from '../primitives/visual-primitives/engineering/DumpTruckLoader';
+import ConstructionSequencePlanner from '../primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -22,7 +23,7 @@ interface EngineeringPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder' | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder' | 'excavator-arm-simulator' | 'dump-truck-loader';
+type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder' | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder' | 'excavator-arm-simulator' | 'dump-truck-loader' | 'construction-sequence-planner';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -37,6 +38,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'foundation-builder', label: 'Foundation Builder', icon: '🏛️', topic: 'Understanding foundations and soil pressure' },
   { value: 'excavator-arm-simulator', label: 'Excavator Arm Simulator', icon: '🚜', topic: 'Understanding excavators and multi-joint systems' },
   { value: 'dump-truck-loader', label: 'Dump Truck Loader', icon: '🚚', topic: 'Understanding capacity, weight, and material transport' },
+  { value: 'construction-sequence-planner', label: 'Construction Sequence Planner', icon: '📋', topic: 'Understanding construction sequencing and task dependencies' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -157,6 +159,21 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'engineering-material-handling',
             subskillId: 'capacity-management',
             objectiveId: 'understand-dump-trucks',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'construction-sequence-planner':
+      // ConstructionSequencePlanner supports evaluation - pass the props
+      return (
+        <ConstructionSequencePlanner
+          data={{
+            ...(data as Parameters<typeof ConstructionSequencePlanner>[0]['data']),
+            // Evaluation integration props
+            instanceId: `construction-sequence-planner-${Date.now()}`,
+            skillId: 'engineering-project-planning',
+            subskillId: 'task-sequencing',
+            objectiveId: 'understand-construction-order',
             onEvaluationSubmit,
           }}
         />

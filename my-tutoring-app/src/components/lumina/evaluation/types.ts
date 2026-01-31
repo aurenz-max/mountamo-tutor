@@ -306,6 +306,61 @@ export interface DumpTruckLoaderMetrics extends BasePrimitiveMetrics {
   timeElapsed: number;          // Time taken in seconds
 }
 
+export interface ConstructionSequencePlannerMetrics extends BasePrimitiveMetrics {
+  type: 'construction-sequence-planner';
+
+  // Overall completion
+  allPhasesCompleted: boolean;       // Did student complete all three phases
+  finalSuccess: boolean;             // Did they correctly sequence all tasks
+
+  // Phase completion tracking
+  explorePhaseCompleted: boolean;    // Phase 1: Identified first task
+  practicePhaseCompleted: boolean;   // Phase 2: Ordered initial sequence
+  applyPhaseCompleted: boolean;      // Phase 3: Completed full sequence
+
+  // Phase 1: Explore (Identify First Task)
+  firstTaskQuestion: string;         // The question asked
+  correctFirstTask: string;          // Correct first task
+  studentFirstTask: string | null;   // Student's selection
+  firstTaskCorrect: boolean;         // Did they identify it correctly
+  exploreAttempts: number;           // Number of attempts in explore phase
+
+  // Phase 2: Practice (Order 3-4 tasks with dependencies)
+  practiceTasks: number;             // Number of tasks in practice sequence
+  practiceSequenceCorrect: boolean;  // Was the practice sequence valid
+  dependencyViolations: number;      // Number of dependency errors in practice
+  practiceAttempts: number;          // Attempts in practice phase
+
+  // Phase 3: Apply (Full Task Sequencing)
+  totalTasks: number;                // Total construction tasks to sequence
+  correctlyOrderedTasks: number;     // Tasks in valid positions
+  sequenceAccuracy: number;          // 0-100: correctly ordered / total
+  totalDependencyViolations: number; // Dependency rules violated
+  criticalPathIdentified: boolean;   // For grades 3-5: Did they find critical path
+
+  // Sequencing approach
+  usedDependencyArrows: boolean;     // Did they draw dependency connections
+  parallelTasksIdentified: number;   // Tasks recognized as parallelizable
+  sequentialTasksCorrect: number;    // Sequential dependencies handled correctly
+
+  // Interaction tracking
+  totalAttempts: number;             // Total submission attempts
+  tasksRearranged: number;           // Number of times tasks were reordered
+  animationUsed: boolean;            // Did they run the sequence animation
+
+  // Final sequence for replay
+  studentSequence: string[];         // Task IDs in student's final order
+  correctSequence: string[];         // Task IDs in a valid correct order
+  dependenciesDrawn: Array<{         // Dependencies student identified
+    fromTask: string;
+    toTask: string;
+  }>;
+
+  // Efficiency
+  solvedOnFirstTry: boolean;         // Got sequence right first time
+  hintsUsed: number;                 // Number of hints requested
+}
+
 // -----------------------------------------------------------------------------
 // Assessment Primitives (Problem Types)
 // -----------------------------------------------------------------------------
@@ -1049,6 +1104,7 @@ export type PrimitiveMetrics =
   | FoundationBuilderMetrics
   | ExcavatorArmSimulatorMetrics
   | DumpTruckLoaderMetrics
+  | ConstructionSequencePlannerMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics
