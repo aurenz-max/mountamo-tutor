@@ -195,6 +195,19 @@ export async function POST(request: NextRequest) {
         );
         return NextResponse.json(imageEvaluation);
 
+      case 'evaluateBlueprintCanvas':
+        const { evaluateBlueprintCanvas } = await import(
+          '@/components/lumina/service/engineering/gemini-blueprint-evaluation'
+        );
+        const blueprintEvaluation = await evaluateBlueprintCanvas(
+          params.canvasImageBase64,
+          params.assignment,
+          params.targetRoomCount,
+          params.viewType,
+          params.gradeLevel
+        );
+        return NextResponse.json(blueprintEvaluation);
+
       // ============================================
       // BIOLOGY PRIMITIVES
       // ============================================

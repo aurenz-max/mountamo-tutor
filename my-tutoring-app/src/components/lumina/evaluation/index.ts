@@ -52,6 +52,7 @@ export type {
   FoundationBuilderMetrics,
   ExcavatorArmSimulatorMetrics,
   DumpTruckLoaderMetrics,
+  BlueprintCanvasMetrics,
   // Assessment metrics
   MultipleChoiceMetrics,
   FillInBlanksMetrics,

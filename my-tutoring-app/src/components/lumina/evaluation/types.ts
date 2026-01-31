@@ -306,6 +306,27 @@ export interface DumpTruckLoaderMetrics extends BasePrimitiveMetrics {
   timeElapsed: number;          // Time taken in seconds
 }
 
+export interface BlueprintCanvasMetrics extends BasePrimitiveMetrics {
+  type: 'blueprint-canvas';
+
+  // Drawing information
+  viewType: 'plan' | 'elevation' | 'section';
+  gridSize: [number, number];
+
+  // Goal achievement
+  roomsDrawn: number;
+  targetRoomCount: number;
+  targetMet: boolean;
+
+  // Process metrics
+  timeSpent: number;                // Total time spent drawing (ms)
+  measurementsAdded: boolean;       // Whether measurements were shown
+  gridUsed: boolean;                // Whether snap-to-grid was enabled
+
+  // Quality
+  completionScore: number;          // 0-100 based on target achievement
+}
+
 export interface ConstructionSequencePlannerMetrics extends BasePrimitiveMetrics {
   type: 'construction-sequence-planner';
 
@@ -1105,6 +1126,7 @@ export type PrimitiveMetrics =
   | ExcavatorArmSimulatorMetrics
   | DumpTruckLoaderMetrics
   | ConstructionSequencePlannerMetrics
+  | BlueprintCanvasMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics

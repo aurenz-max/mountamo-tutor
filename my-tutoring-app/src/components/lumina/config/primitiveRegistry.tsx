@@ -58,6 +58,7 @@ import FoundationBuilder from '../primitives/visual-primitives/engineering/Found
 import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/ExcavatorArmSimulator';
 import DumpTruckLoader from '../primitives/visual-primitives/engineering/DumpTruckLoader';
 import ConstructionSequencePlanner from '../primitives/visual-primitives/engineering/ConstructionSequencePlanner';
+import BlueprintCanvas from '../primitives/visual-primitives/engineering/BlueprintCanvas';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -648,6 +649,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'construction-sequence-planner': {
     component: ConstructionSequencePlanner,
     sectionTitle: 'Construction Sequence Planner',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'blueprint-canvas': {
+    component: BlueprintCanvas,
+    sectionTitle: 'Blueprint Canvas',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

@@ -13,6 +13,7 @@ import FoundationBuilder from '../primitives/visual-primitives/engineering/Found
 import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/ExcavatorArmSimulator';
 import DumpTruckLoader from '../primitives/visual-primitives/engineering/DumpTruckLoader';
 import ConstructionSequencePlanner from '../primitives/visual-primitives/engineering/ConstructionSequencePlanner';
+import BlueprintCanvas from '../primitives/visual-primitives/engineering/BlueprintCanvas';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -23,7 +24,7 @@ interface EngineeringPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder' | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder' | 'excavator-arm-simulator' | 'dump-truck-loader' | 'construction-sequence-planner';
+type PrimitiveType = 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder' | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder' | 'excavator-arm-simulator' | 'dump-truck-loader' | 'construction-sequence-planner' | 'blueprint-canvas';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -39,6 +40,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'excavator-arm-simulator', label: 'Excavator Arm Simulator', icon: '🚜', topic: 'Understanding excavators and multi-joint systems' },
   { value: 'dump-truck-loader', label: 'Dump Truck Loader', icon: '🚚', topic: 'Understanding capacity, weight, and material transport' },
   { value: 'construction-sequence-planner', label: 'Construction Sequence Planner', icon: '📋', topic: 'Understanding construction sequencing and task dependencies' },
+  { value: 'blueprint-canvas', label: 'Blueprint Canvas', icon: '📐', topic: 'Understanding technical drawings and floor plans' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -174,6 +176,21 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'engineering-project-planning',
             subskillId: 'task-sequencing',
             objectiveId: 'understand-construction-order',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'blueprint-canvas':
+      // BlueprintCanvas supports evaluation - pass the props
+      return (
+        <BlueprintCanvas
+          data={{
+            ...(data as Parameters<typeof BlueprintCanvas>[0]['data']),
+            // Evaluation integration props
+            instanceId: `blueprint-canvas-${Date.now()}`,
+            skillId: 'engineering-technical-drawing',
+            subskillId: 'floor-plans',
+            objectiveId: 'understand-blueprint-drawing',
             onEvaluationSubmit,
           }}
         />
@@ -331,6 +348,19 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Operations: {result.metrics.operationCount}</span>
                     <span>Overloads: {result.metrics.overloadAttempts}</span>
                     <span>Time: {Math.round(result.metrics.timeElapsed)}s</span>
+                  </div>
+                )}
+                {/* Show BlueprintCanvas-specific metrics */}
+                {result.metrics.type === 'blueprint-canvas' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>View: {result.metrics.viewType}</span>
+                    <span>Grid: {result.metrics.gridSize[0]}×{result.metrics.gridSize[1]}</span>
+                    <span>Rooms: {result.metrics.roomsDrawn}/{result.metrics.targetRoomCount}</span>
+                    <span>Target Met: {result.metrics.targetMet ? 'Yes' : 'No'}</span>
+                    <span>Time: {Math.round(result.metrics.timeSpent / 1000)}s</span>
+                    <span>Measurements: {result.metrics.measurementsAdded ? 'Yes' : 'No'}</span>
+                    <span>Grid Used: {result.metrics.gridUsed ? 'Yes' : 'No'}</span>
+                    <span>Score: {Math.round(result.metrics.completionScore)}%</span>
                   </div>
                 )}
               </div>

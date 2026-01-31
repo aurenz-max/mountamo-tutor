@@ -22,6 +22,7 @@ import { generateFoundationBuilder } from '../../engineering/gemini-foundation-b
 import { generateExcavatorArmSimulator } from '../../engineering/gemini-excavator-arm-simulator';
 import { generateDumpTruckLoader } from '../../engineering/gemini-dump-truck-loader';
 import { generateConstructionSequencePlanner } from '../../engineering/gemini-construction-sequence-planner';
+import { generateBlueprintCanvas } from '../../engineering/gemini-blueprint-canvas';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -111,6 +112,13 @@ registerGenerator('construction-sequence-planner', async (item, topic, gradeCont
   data: await generateConstructionSequencePlanner(topic, gradeContext, item.config),
 }));
 
+// Blueprint Canvas
+registerGenerator('blueprint-canvas', async (item, topic, gradeContext) => ({
+  type: 'blueprint-canvas',
+  instanceId: item.instanceId,
+  data: await generateBlueprintCanvas(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 12/12 engineering primitives registered
+// Migration status: 13/13 engineering primitives registered
 // ============================================================================
