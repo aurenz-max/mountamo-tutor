@@ -1120,6 +1120,9 @@ export type ComponentId =
   | 'construction-sequence-planner' // Interactive timeline/flowchart tool for ordering construction tasks and understanding dependencies
   | 'blueprint-canvas' // Grid-based drawing surface for creating technical drawings and floor plans
 
+  // Astronomy Primitives (K-5)
+  | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
+
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks
 

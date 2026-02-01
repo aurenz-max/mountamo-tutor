@@ -10,12 +10,13 @@
  * This will register all generators from:
  * - coreGenerators.ts (21 core/narrative/assessment primitives)
  * - mathGenerators.ts (23 math primitives)
- * - engineeringGenerators.ts (4 primitives)
+ * - engineeringGenerators.ts (13 primitives)
  * - mediaGenerators.ts (3 primitives)
  * - foundationGenerators.ts (1 primitive)
  * - biologyGenerators.ts (1 primitive)
+ * - astronomyGenerators.ts (1 primitive)
  *
- * Total: 53 registered generators
+ * Total: 63 registered generators
  */
 
 // Import all generator modules for side-effect registration
@@ -25,6 +26,7 @@ import './engineeringGenerators';
 import './mediaGenerators';
 import './foundationGenerators';
 import './biologyGenerators';
+import './astronomyGenerators';
 
 // Re-export registry functions for convenience
 export {

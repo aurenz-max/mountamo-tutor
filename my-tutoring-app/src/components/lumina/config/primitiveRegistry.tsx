@@ -59,6 +59,8 @@ import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/E
 import DumpTruckLoader from '../primitives/visual-primitives/engineering/DumpTruckLoader';
 import ConstructionSequencePlanner from '../primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 import BlueprintCanvas from '../primitives/visual-primitives/engineering/BlueprintCanvas';
+// Astronomy Primitives
+import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -659,6 +661,17 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'blueprint-canvas': {
     component: BlueprintCanvas,
     sectionTitle: 'Blueprint Canvas',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  // Astronomy Primitives
+  'solar-system-explorer': {
+    component: SolarSystemExplorer,
+    sectionTitle: 'Solar System Explorer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
