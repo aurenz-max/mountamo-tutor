@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
+import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -12,11 +13,12 @@ interface AstronomyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'solar-system-explorer';
+type PrimitiveType = 'solar-system-explorer' | 'scale-comparator';
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
   { value: 'solar-system-explorer', label: 'Solar System', icon: '🪐', topic: 'Exploring our solar system' },
+  { value: 'scale-comparator', label: 'Scale Comparator', icon: '📏', topic: 'Understanding cosmic scales' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -42,6 +44,15 @@ const PrimitiveRenderer: React.FC<{
         <SolarSystemExplorer
           data={{
             ...(data as Parameters<typeof SolarSystemExplorer>[0]['data']),
+          }}
+        />
+      );
+    case 'scale-comparator':
+      return (
+        <ScaleComparator
+          data={{
+            ...(data as Parameters<typeof ScaleComparator>[0]['data']),
+            onEvaluationSubmit,
           }}
         />
       );

@@ -11,6 +11,7 @@ import { registerGenerator } from '../contentRegistry';
 
 // Astronomy Generator Imports
 import { generateSolarSystemExplorer } from '../../astronomy/gemini-solar-system-explorer';
+import { generateScaleComparator } from '../../astronomy/gemini-scale-comparator';
 
 // ============================================================================
 // Astronomy Primitives Registration (K-5)
@@ -23,6 +24,13 @@ registerGenerator('solar-system-explorer', async (item, topic, gradeContext) => 
   data: await generateSolarSystemExplorer(topic, gradeContext, item.config),
 }));
 
+// Scale Comparator
+registerGenerator('scale-comparator', async (item, topic, gradeContext) => ({
+  type: 'scale-comparator',
+  instanceId: item.instanceId,
+  data: await generateScaleComparator(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 1/1 astronomy primitives registered
+// Migration status: 2/2 astronomy primitives registered
 // ============================================================================

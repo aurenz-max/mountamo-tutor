@@ -61,6 +61,7 @@ import ConstructionSequencePlanner from '../primitives/visual-primitives/enginee
 import BlueprintCanvas from '../primitives/visual-primitives/engineering/BlueprintCanvas';
 // Astronomy Primitives
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
+import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -677,6 +678,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true,
+  },
+  'scale-comparator': {
+    component: ScaleComparator,
+    sectionTitle: 'Scale Comparator',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: false, // Display-only primitive for exploration
   },
 
   // Foundational Concept Teaching

@@ -1109,6 +1109,28 @@ export interface MediaPlayerMetrics extends BasePrimitiveMetrics {
   skippedSegments: number;          // Number of segments skipped after max attempts
 }
 
+// -----------------------------------------------------------------------------
+// Astronomy Primitives
+// -----------------------------------------------------------------------------
+
+export interface ScaleComparatorMetrics extends BasePrimitiveMetrics {
+  type: 'scale-comparator';
+
+  // Exploration tracking
+  comparisonsViewed: number;      // How many object pairs compared
+  objectsExplored: number;        // Number of unique objects viewed
+  modesUsed: string[];            // ['comparison', 'scale-model', 'walk']
+
+  // Feature usage
+  scaleModelBuilt: boolean;       // Did they use the scale model builder
+  walkModeUsed: boolean;          // Did they explore walk-through mode
+  referenceObjectsToggled: number; // Number of times reference objects shown/hidden
+
+  // Engagement
+  timeSpent: number;              // Total seconds in primitive
+  zoomInteractions: number;       // How many times they zoomed in/out
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1158,7 +1180,9 @@ export type PrimitiveMetrics =
   // Visual Annotation
   | ImagePanelMetrics
   // Media
-  | MediaPlayerMetrics;
+  | MediaPlayerMetrics
+  // Astronomy
+  | ScaleComparatorMetrics;
 
 // =============================================================================
 // Session & Summary Types

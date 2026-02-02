@@ -1122,6 +1122,7 @@ export type ComponentId =
 
   // Astronomy Primitives (K-5)
   | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
+  | 'scale-comparator' // Interactive scale comparison tool for celestial objects with familiar references
 
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks
@@ -1227,3 +1228,4 @@ export interface ExhibitManifest {
 // Re-export component data types for external use
 export type { CounterexamplePairData } from './primitives/visual-primitives/core/CounterexamplePair';
 export type { DecisionFlowchartData, DecisionNode } from './primitives/visual-primitives/core/DecisionFlowchart';
+export type { ScaleComparatorData, CelestialObject, ReferenceObject } from './primitives/visual-primitives/astronomy/ScaleComparator';
