@@ -84,6 +84,10 @@ export type {
   ImagePanelMetrics,
   // Media metrics
   MediaPlayerMetrics,
+  // Astronomy metrics
+  ScaleComparatorMetrics,
+  DayNightSeasonsMetrics,
+  MoonPhasesLabMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

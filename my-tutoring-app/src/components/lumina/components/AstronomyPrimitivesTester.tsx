@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
 import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
+import DayNightSeasons from '../primitives/visual-primitives/astronomy/DayNightSeasons';
+import MoonPhasesLab from '../primitives/visual-primitives/astronomy/MoonPhasesLab';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -13,12 +15,14 @@ interface AstronomyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'solar-system-explorer' | 'scale-comparator';
+type PrimitiveType = 'solar-system-explorer' | 'scale-comparator' | 'day-night-seasons' | 'moon-phases-lab';
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
   { value: 'solar-system-explorer', label: 'Solar System', icon: '🪐', topic: 'Exploring our solar system' },
   { value: 'scale-comparator', label: 'Scale Comparator', icon: '📏', topic: 'Understanding cosmic scales' },
+  { value: 'day-night-seasons', label: 'Day/Night & Seasons', icon: '🌍', topic: 'How Earth creates day, night, and seasons' },
+  { value: 'moon-phases-lab', label: 'Moon Phases', icon: '🌙', topic: 'Why the Moon appears to change shape' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -52,6 +56,24 @@ const PrimitiveRenderer: React.FC<{
         <ScaleComparator
           data={{
             ...(data as Parameters<typeof ScaleComparator>[0]['data']),
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'day-night-seasons':
+      return (
+        <DayNightSeasons
+          data={{
+            ...(data as Parameters<typeof DayNightSeasons>[0]['data']),
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'moon-phases-lab':
+      return (
+        <MoonPhasesLab
+          data={{
+            ...(data as Parameters<typeof MoonPhasesLab>[0]['data']),
             onEvaluationSubmit,
           }}
         />

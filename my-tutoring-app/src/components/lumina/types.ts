@@ -1123,6 +1123,8 @@ export type ComponentId =
   // Astronomy Primitives (K-5)
   | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
   | 'scale-comparator' // Interactive scale comparison tool for celestial objects with familiar references
+  | 'day-night-seasons' // Interactive Earth model showing rotation (day/night) and orbit (seasons) with tilt visualization
+  | 'moon-phases-lab' // Interactive Earth-Moon-Sun model showing why Moon phases occur, with multiple view perspectives
 
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks
@@ -1229,3 +1231,5 @@ export interface ExhibitManifest {
 export type { CounterexamplePairData } from './primitives/visual-primitives/core/CounterexamplePair';
 export type { DecisionFlowchartData, DecisionNode } from './primitives/visual-primitives/core/DecisionFlowchart';
 export type { ScaleComparatorData, CelestialObject, ReferenceObject } from './primitives/visual-primitives/astronomy/ScaleComparator';
+export type { DayNightSeasonsData, LocationMarker } from './primitives/visual-primitives/astronomy/DayNightSeasons';
+export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './primitives/visual-primitives/astronomy/MoonPhasesLab';

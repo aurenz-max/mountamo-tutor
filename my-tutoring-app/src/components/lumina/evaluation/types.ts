@@ -1131,6 +1131,43 @@ export interface ScaleComparatorMetrics extends BasePrimitiveMetrics {
   zoomInteractions: number;       // How many times they zoomed in/out
 }
 
+export interface DayNightSeasonsMetrics extends BasePrimitiveMetrics {
+  type: 'day-night-seasons';
+
+  // Learning focus
+  focusMode: 'day-night' | 'seasons' | 'both';
+
+  // Understanding assessment
+  questionsAnswered: number;      // Number of questions attempted
+  totalQuestions: number;         // Total questions available
+  understandingScore: number;     // Percentage score on questions (0-100)
+
+  // Exploration tracking
+  locationsExplored: number;      // Number of different latitude locations viewed
+  animationsViewed: boolean;      // Did they watch rotation/orbit animations
+
+  // Concept mastery
+  conceptsMastered: boolean;      // Did they demonstrate understanding of key concepts
+}
+
+export interface MoonPhasesLabMetrics extends BasePrimitiveMetrics {
+  type: 'moon-phases-lab';
+
+  // Exploration tracking
+  phasesExplored: number;         // Number of unique phases viewed (0-8)
+  totalPhases: number;            // Total phases (8)
+
+  // Challenge completion (if applicable)
+  challengeCompleted: boolean;    // Did they find the target phase
+
+  // Engagement
+  animationWatched: boolean;      // Did they watch the lunar cycle animation
+  viewModesUsed: string[];        // Which view modes they used
+
+  // Understanding
+  comprehensionScore: number;     // 0-100 based on exploration and challenge
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1182,7 +1219,9 @@ export type PrimitiveMetrics =
   // Media
   | MediaPlayerMetrics
   // Astronomy
-  | ScaleComparatorMetrics;
+  | ScaleComparatorMetrics
+  | DayNightSeasonsMetrics
+  | MoonPhasesLabMetrics;
 
 // =============================================================================
 // Session & Summary Types

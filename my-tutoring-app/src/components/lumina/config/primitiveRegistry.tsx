@@ -62,6 +62,8 @@ import BlueprintCanvas from '../primitives/visual-primitives/engineering/Bluepri
 // Astronomy Primitives
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
 import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
+import DayNightSeasons from '../primitives/visual-primitives/astronomy/DayNightSeasons';
+import MoonPhasesLab from '../primitives/visual-primitives/astronomy/MoonPhasesLab';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -686,7 +688,25 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'day-night-seasons': {
+    component: DayNightSeasons,
+    sectionTitle: 'Day, Night, and Seasons',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: false, // Display-only primitive for exploration
+  },
+  'moon-phases-lab': {
+    component: MoonPhasesLab,
+    sectionTitle: 'Moon Phases Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   // Foundational Concept Teaching
