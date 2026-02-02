@@ -1125,6 +1125,7 @@ export type ComponentId =
   | 'scale-comparator' // Interactive scale comparison tool for celestial objects with familiar references
   | 'day-night-seasons' // Interactive Earth model showing rotation (day/night) and orbit (seasons) with tilt visualization
   | 'moon-phases-lab' // Interactive Earth-Moon-Sun model showing why Moon phases occur, with multiple view perspectives
+  | 'rocket-builder' // Comprehensive rocket design and simulation tool for spaceflight education
 
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks
@@ -1233,3 +1234,4 @@ export type { DecisionFlowchartData, DecisionNode } from './primitives/visual-pr
 export type { ScaleComparatorData, CelestialObject, ReferenceObject } from './primitives/visual-primitives/astronomy/ScaleComparator';
 export type { DayNightSeasonsData, LocationMarker } from './primitives/visual-primitives/astronomy/DayNightSeasons';
 export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './primitives/visual-primitives/astronomy/MoonPhasesLab';
+export type { RocketBuilderData, RocketComponent } from './primitives/visual-primitives/astronomy/RocketBuilder';

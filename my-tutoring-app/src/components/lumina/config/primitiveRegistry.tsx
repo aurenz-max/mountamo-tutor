@@ -64,6 +64,7 @@ import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/Solar
 import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
 import DayNightSeasons from '../primitives/visual-primitives/astronomy/DayNightSeasons';
 import MoonPhasesLab from '../primitives/visual-primitives/astronomy/MoonPhasesLab';
+import RocketBuilder from '../primitives/visual-primitives/astronomy/RocketBuilder';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -706,6 +707,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'rocket-builder': {
+    component: RocketBuilder,
+    sectionTitle: 'Rocket Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 

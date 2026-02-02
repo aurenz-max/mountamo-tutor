@@ -14,6 +14,7 @@ import { generateSolarSystemExplorer } from '../../astronomy/gemini-solar-system
 import { generateScaleComparator } from '../../astronomy/gemini-scale-comparator';
 import { generateDayNightSeasons } from '../../astronomy/gemini-day-night-seasons';
 import { generateMoonPhasesLab } from '../../astronomy/gemini-moon-phases-lab';
+import { generateRocketBuilder } from '../../astronomy/gemini-rocket-builder';
 
 // ============================================================================
 // Astronomy Primitives Registration (K-5)
@@ -47,6 +48,13 @@ registerGenerator('moon-phases-lab', async (item, topic, gradeContext) => ({
   data: await generateMoonPhasesLab(topic, gradeContext, item.config),
 }));
 
+// Rocket Builder
+registerGenerator('rocket-builder', async (item, topic, gradeContext) => ({
+  type: 'rocket-builder',
+  instanceId: item.instanceId,
+  data: await generateRocketBuilder(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 4/4 astronomy primitives registered
+// Migration status: 5/5 astronomy primitives registered
 // ============================================================================

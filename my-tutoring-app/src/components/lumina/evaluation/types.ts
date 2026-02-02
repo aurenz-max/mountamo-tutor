@@ -1168,6 +1168,38 @@ export interface MoonPhasesLabMetrics extends BasePrimitiveMetrics {
   comprehensionScore: number;     // 0-100 based on exploration and challenge
 }
 
+export interface RocketBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'rocket-builder';
+
+  // Goal achievement
+  targetAltitudeKm: number;       // Mission target altitude
+  achievedAltitudeKm: number;     // Actual maximum altitude reached
+  targetOrbitRequired: boolean;   // Whether orbit was required
+  achievedOrbit: boolean;         // Whether orbit was achieved
+  goalMet: boolean;               // Did student meet the mission objective
+
+  // Rocket design
+  totalMassKg: number;            // Total rocket mass at launch
+  propellantMassKg: number;       // Total propellant mass
+  totalThrustKN: number;          // Total thrust at launch
+  thrustToWeightRatio: number;    // TWR at launch
+  deltaVMs: number;               // Estimated delta-v in m/s
+
+  // Staging
+  stagesUsed: number;             // Number of stages in design
+  componentsUsed: number;         // Total components placed
+  stagingEventsCount: number;     // Number of staging separations during flight
+
+  // Budget (if applicable)
+  budgetUsed?: number;            // Total cost of components
+  budgetLimit?: number;           // Budget constraint (if any)
+  withinBudget: boolean;          // Did they stay within budget
+
+  // Attempt tracking
+  launchAttempts: number;         // Number of launch attempts
+  hintsUsed: number;              // Number of hints requested
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1221,7 +1253,8 @@ export type PrimitiveMetrics =
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics
-  | MoonPhasesLabMetrics;
+  | MoonPhasesLabMetrics
+  | RocketBuilderMetrics;
 
 // =============================================================================
 // Session & Summary Types
