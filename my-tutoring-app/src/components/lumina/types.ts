@@ -1126,6 +1126,7 @@ export type ComponentId =
   | 'day-night-seasons' // Interactive Earth model showing rotation (day/night) and orbit (seasons) with tilt visualization
   | 'moon-phases-lab' // Interactive Earth-Moon-Sun model showing why Moon phases occur, with multiple view perspectives
   | 'rocket-builder' // Comprehensive rocket design and simulation tool for spaceflight education
+  | 'orbit-mechanics-lab' // Interactive orbital mechanics sandbox for learning orbits, burns, and transfers
 
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks
@@ -1235,3 +1236,4 @@ export type { ScaleComparatorData, CelestialObject, ReferenceObject } from './pr
 export type { DayNightSeasonsData, LocationMarker } from './primitives/visual-primitives/astronomy/DayNightSeasons';
 export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './primitives/visual-primitives/astronomy/MoonPhasesLab';
 export type { RocketBuilderData, RocketComponent } from './primitives/visual-primitives/astronomy/RocketBuilder';
+export type { OrbitMechanicsLabData, OrbitConfig, OrbitalBody } from './primitives/visual-primitives/astronomy/OrbitMechanicsLab';

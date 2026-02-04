@@ -1200,6 +1200,43 @@ export interface RocketBuilderMetrics extends BasePrimitiveMetrics {
   hintsUsed: number;              // Number of hints requested
 }
 
+export interface OrbitMechanicsLabMetrics extends BasePrimitiveMetrics {
+  type: 'orbit-mechanics-lab';
+
+  // Challenge information
+  challengeType: 'reach_altitude' | 'circularize' | 'rendezvous' | 'change_orbit' | 'reach_orbit' | 'free_exploration';
+  challengeCompleted: boolean;    // Did student complete the challenge
+
+  // Attempt tracking
+  launchAttempts: number;         // Number of launch attempts
+  burnsPerformed: number;         // Total orbital burns performed
+  maxBurnsAllowed?: number;       // Maximum burns allowed (if constrained)
+
+  // Final orbital state
+  finalOrbitEccentricity: number; // Final orbit shape (0 = circular, <1 = elliptical, >=1 = escape)
+  finalOrbitApogee: number;       // Final highest point (km)
+  finalOrbitPerigee: number;      // Final lowest point (km)
+  achievedStableOrbit: boolean;   // Did they achieve a stable (non-crashing) orbit
+
+  // Rocket physics metrics (connects to RocketBuilder)
+  totalMassKg?: number;           // Rocket mass at launch
+  totalThrustKN?: number;         // Selected thrust
+  thrustToWeightRatio?: number;   // TWR at launch
+  propellantUsedKg?: number;      // Fuel consumed
+
+  // Challenge-specific metrics
+  targetAltitudeReached?: boolean;  // For reach_altitude challenges
+  orbitCircularized?: boolean;      // For circularize challenges (e < 0.1)
+  rendezvousAchieved?: boolean;     // For rendezvous challenges
+  targetOrbitAchieved?: boolean;    // For change_orbit challenges
+  reachedOrbit?: boolean;           // For reach_orbit challenges
+
+  // Efficiency metrics (for advanced grades)
+  deltaVUsed?: number;            // Total velocity change used
+  optimalDeltaV?: number;         // Theoretical optimal delta-v
+  efficiency?: number;            // deltaVUsed / optimalDeltaV (lower is better)
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1254,7 +1291,8 @@ export type PrimitiveMetrics =
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics
   | MoonPhasesLabMetrics
-  | RocketBuilderMetrics;
+  | RocketBuilderMetrics
+  | OrbitMechanicsLabMetrics;
 
 // =============================================================================
 // Session & Summary Types

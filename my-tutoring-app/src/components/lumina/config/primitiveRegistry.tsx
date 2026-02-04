@@ -65,6 +65,7 @@ import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComp
 import DayNightSeasons from '../primitives/visual-primitives/astronomy/DayNightSeasons';
 import MoonPhasesLab from '../primitives/visual-primitives/astronomy/MoonPhasesLab';
 import RocketBuilder from '../primitives/visual-primitives/astronomy/RocketBuilder';
+import OrbitMechanicsLab from '../primitives/visual-primitives/astronomy/OrbitMechanicsLab';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -712,6 +713,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'rocket-builder': {
     component: RocketBuilder,
     sectionTitle: 'Rocket Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'orbit-mechanics-lab': {
+    component: OrbitMechanicsLab,
+    sectionTitle: 'Orbit Mechanics Lab',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

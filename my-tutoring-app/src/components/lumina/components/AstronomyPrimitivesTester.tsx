@@ -6,6 +6,7 @@ import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComp
 import DayNightSeasons from '../primitives/visual-primitives/astronomy/DayNightSeasons';
 import MoonPhasesLab from '../primitives/visual-primitives/astronomy/MoonPhasesLab';
 import RocketBuilder from '../primitives/visual-primitives/astronomy/RocketBuilder';
+import OrbitMechanicsLab from '../primitives/visual-primitives/astronomy/OrbitMechanicsLab';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -16,7 +17,7 @@ interface AstronomyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'solar-system-explorer' | 'scale-comparator' | 'day-night-seasons' | 'moon-phases-lab' | 'rocket-builder';
+type PrimitiveType = 'solar-system-explorer' | 'scale-comparator' | 'day-night-seasons' | 'moon-phases-lab' | 'rocket-builder' | 'orbit-mechanics-lab';
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -25,6 +26,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'day-night-seasons', label: 'Day/Night & Seasons', icon: '🌍', topic: 'How Earth creates day, night, and seasons' },
   { value: 'moon-phases-lab', label: 'Moon Phases', icon: '🌙', topic: 'Why the Moon appears to change shape' },
   { value: 'rocket-builder', label: 'Rocket Builder', icon: '🚀', topic: 'Build and launch rockets to space' },
+  { value: 'orbit-mechanics-lab', label: 'Orbit Mechanics', icon: '🛰️', topic: 'Learn how orbits work with launches and burns' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -85,6 +87,15 @@ const PrimitiveRenderer: React.FC<{
         <RocketBuilder
           data={{
             ...(data as Parameters<typeof RocketBuilder>[0]['data']),
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'orbit-mechanics-lab':
+      return (
+        <OrbitMechanicsLab
+          data={{
+            ...(data as Parameters<typeof OrbitMechanicsLab>[0]['data']),
             onEvaluationSubmit,
           }}
         />
