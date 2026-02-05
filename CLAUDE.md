@@ -2,6 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Adding Primitives
+
+When implementing new primitives or components, follow the existing ADDING_PRIMITIVES checklist exactly. Create all files (component, generator, types, registry entries, catalog, tester) before moving to verification. Do not skip steps or deviate from the documented pattern.
+
+## Development Workflow
+
+This is a TypeScript project. Always ensure edits compile cleanly before considering a task done. Run `npx tsc --noEmit` after significant changes to catch type errors early rather than discovering them after multiple edits.
+
+## Code Editing Conventions
+
+When editing React components, prefer writing complete replacement files over incremental multi-step edits. Partial edits with missing closing tags or broken JSX structure have caused repeated issues.
+
+## UI / Styling
+
+This project uses a Lumina design system with glass card styling. When styling components, reference existing Lumina-styled components for the correct patterns (glass backgrounds, backdrop-blur, border colors, etc.) rather than using generic styling.
+
 ## Development Commands
 
 ### Frontend (Next.js)

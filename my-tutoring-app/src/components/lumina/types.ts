@@ -1127,6 +1127,7 @@ export type ComponentId =
   | 'moon-phases-lab' // Interactive Earth-Moon-Sun model showing why Moon phases occur, with multiple view perspectives
   | 'rocket-builder' // Comprehensive rocket design and simulation tool for spaceflight education
   | 'orbit-mechanics-lab' // Interactive orbital mechanics sandbox for learning orbits, burns, and transfers
+  | 'mission-planner' // Interactive mission design tool for planning trips to the Moon, Mars, and beyond
 
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks

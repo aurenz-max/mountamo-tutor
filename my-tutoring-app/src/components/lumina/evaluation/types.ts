@@ -1237,6 +1237,31 @@ export interface OrbitMechanicsLabMetrics extends BasePrimitiveMetrics {
   efficiency?: number;            // deltaVUsed / optimalDeltaV (lower is better)
 }
 
+export interface MissionPlannerMetrics extends BasePrimitiveMetrics {
+  type: 'mission-planner';
+
+  // Mission configuration
+  destination: string;            // Selected destination id
+  missionType: string;            // flyby, orbit, landing, return
+  trajectoryType: string;         // direct or gravity_assist
+  crewed: boolean;                // Whether mission is crewed
+
+  // Planning quality
+  travelDays: number;             // Calculated travel time
+  suppliesPacked: boolean;        // Whether sufficient supplies were packed
+  launchWindowSelected: boolean;  // Whether a launch window was chosen
+  optimalLaunchWindow: boolean;   // Whether the optimal window was selected
+  gravityAssistUsed: boolean;     // Whether gravity assist trajectory was chosen
+  fuelEfficiency: number;         // 0-100, how efficient the fuel usage was
+
+  // Phase completion
+  phasesCompleted: number;        // Number of learning phases completed
+  totalPhases: number;            // Total available phases
+
+  // Overall outcome
+  missionSuccess: boolean;        // Whether mission reached destination
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1292,7 +1317,8 @@ export type PrimitiveMetrics =
   | DayNightSeasonsMetrics
   | MoonPhasesLabMetrics
   | RocketBuilderMetrics
-  | OrbitMechanicsLabMetrics;
+  | OrbitMechanicsLabMetrics
+  | MissionPlannerMetrics;
 
 // =============================================================================
 // Session & Summary Types

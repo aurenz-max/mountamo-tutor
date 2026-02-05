@@ -88,6 +88,7 @@ export type {
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,
   MoonPhasesLabMetrics,
+  MissionPlannerMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,
