@@ -597,6 +597,7 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
                               left: `${placement.position.x}%`,
                               top: `${placement.position.y}%`,
                             }}
+                            onClick={() => handleRemovePlacement(placement.annotationId)}
                             onMouseEnter={() => setHoveredPlacement(placement.annotationId)}
                             onMouseLeave={() => setHoveredPlacement(null)}
                           >

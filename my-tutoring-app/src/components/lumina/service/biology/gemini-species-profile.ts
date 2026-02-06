@@ -300,7 +300,7 @@ Generate similarly detailed and accurate information for "${speciesName}".`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-lite-latest',
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",

@@ -42,6 +42,8 @@ import WordBuilder from '../primitives/WordBuilder';
 import MoleculeViewer from '../primitives/MoleculeViewer';
 import PeriodicTable from '../primitives/PeriodicTable';
 import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
+import OrganismCard from '../primitives/visual-primitives/biology/OrganismCard';
+import ClassificationSorter from '../primitives/visual-primitives/biology/ClassificationSorter';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -509,6 +511,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-7xl mx-auto mb-20',
   },
 
+  'organism-card': {
+    component: OrganismCard,
+    sectionTitle: 'Organism Card',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: false, // Display-only reference card
+  },
+
   'species-profile': {
     component: SpeciesProfile,
     sectionTitle: 'Species Profile',
@@ -516,6 +528,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'classification-sorter': {
+    component: ClassificationSorter,
+    sectionTitle: 'Classification Activity',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true, // Interactive sorting with evaluation
   },
 
   'media-player': {

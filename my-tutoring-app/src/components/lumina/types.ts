@@ -1095,6 +1095,8 @@ export type ComponentId =
 
   // Biology Primitives
   | 'species-profile'    // Comprehensive species information with taxonomy, habitat, and characteristics (perfect for dinosaurs!)
+  | 'organism-card'      // Foundational organism card with key biological attributes (K-8, scales by grade)
+  | 'classification-sorter' // Interactive drag-and-drop categorization for organisms and characteristics (K-8)
 
   // Media & Multimedia
   | 'media-player'       // Audio-visual lesson player with synchronized narration and images
@@ -1244,3 +1246,5 @@ export type { RocketBuilderData, RocketComponent } from './primitives/visual-pri
 export type { OrbitMechanicsLabData, OrbitConfig, OrbitalBody } from './primitives/visual-primitives/astronomy/OrbitMechanicsLab';
 export type { TelescopeSimulatorData, CelestialTarget, JournalEntry, TelescopeType, SkyViewMode } from './primitives/visual-primitives/astronomy/TelescopeSimulator';
 export type { MotionDiagramData, PositionMarker, MotionType } from './primitives/visual-primitives/physics/MotionDiagram';
+export type { OrganismCardData, OrganismInfo, OrganismAttributes, OrganismClassification } from './primitives/visual-primitives/biology/OrganismCard';
+export type { ClassificationSorterData, ClassificationCategory, ClassificationItem } from './primitives/visual-primitives/biology/ClassificationSorter';

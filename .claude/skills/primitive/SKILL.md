@@ -23,16 +23,17 @@ All paths above are relative to `my-tutoring-app/src/components/`.
 
 ## Domain Directories
 
-| Domain | Component Dir | Generator Dir | Catalog | Generator Registry |
-|--------|--------------|---------------|---------|-------------------|
-| astronomy | `primitives/visual-primitives/astronomy/` | `service/astronomy/` | `catalog/astronomy.ts` | `generators/astronomyGenerators.ts` |
-| math | `primitives/visual-primitives/math/` | `service/math/` | `catalog/math.ts` | `generators/mathGenerators.ts` |
-| engineering | `primitives/visual-primitives/engineering/` | `service/engineering/` | `catalog/engineering.ts` | `generators/engineeringGenerators.ts` |
-| science | `primitives/visual-primitives/science/` | `service/science/` | `catalog/science.ts` | `generators/scienceGenerators.ts` |
-| literacy | `primitives/visual-primitives/literacy/` | `service/literacy/` | `catalog/literacy.ts` | `generators/literacyGenerators.ts` |
-| media | `primitives/visual-primitives/media/` | `service/media/` | `catalog/media.ts` | `generators/mediaGenerators.ts` |
-| assessment | `primitives/visual-primitives/assessment/` | `service/assessment/` | `catalog/assessment.ts` | N/A |
-| core | `primitives/visual-primitives/core/` | `service/core/` | `catalog/core.ts` | `generators/coreGenerators.ts` |
+| Domain | Component Dir | Generator Dir | Catalog | Generator Registry | Tester Component |
+|--------|--------------|---------------|---------|-------------------|------------------|
+| astronomy | `primitives/visual-primitives/astronomy/` | `service/astronomy/` | `catalog/astronomy.ts` | `generators/astronomyGenerators.ts` | `components/AstronomyPrimitivesTester.tsx` |
+| math | `primitives/visual-primitives/math/` | `service/math/` | `catalog/math.ts` | `generators/mathGenerators.ts` | `components/MathPrimitivesTester.tsx` |
+| engineering | `primitives/visual-primitives/engineering/` | `service/engineering/` | `catalog/engineering.ts` | `generators/engineeringGenerators.ts` | `components/EngineeringPrimitivesTester.tsx` |
+| physics | `primitives/visual-primitives/physics/` | `service/physics/` | `catalog/physics.ts` | `generators/physicsGenerators.ts` | `components/PhysicsPrimitivesTester.tsx` |
+| science | `primitives/visual-primitives/science/` | `service/science/` | `catalog/science.ts` | `generators/scienceGenerators.ts` | N/A |
+| literacy | `primitives/visual-primitives/literacy/` | `service/literacy/` | `catalog/literacy.ts` | `generators/literacyGenerators.ts` | N/A |
+| media | `primitives/visual-primitives/media/` | `service/media/` | `catalog/media.ts` | `generators/mediaGenerators.ts` | N/A |
+| assessment | `primitives/visual-primitives/assessment/` | `service/assessment/` | `catalog/assessment.ts` | N/A | N/A |
+| core | `primitives/visual-primitives/core/` | `service/core/` | `catalog/core.ts` | `generators/coreGenerators.ts` | N/A |
 
 ## Index Files to Update
 
@@ -62,7 +63,7 @@ When adding a new domain or generator, also update these index files:
 2. Read ADDING_PRIMITIVES.md and at least one reference example from the same domain
 3. Read `lumina/types.ts` and `lumina/config/primitiveRegistry.tsx` to see current registrations
 4. Create all files following the checklist in order (steps 1-7)
-5. Run `cd my-tutoring-app && npx tsc --noEmit` to verify compilation
+5. Add the new primitive to the relevant tester component (e.g., `lumina/components/EngineeringPrimitivesTester.tsx` for engineering domain, `lumina/components/AstronomyPrimitivesTester.tsx` for astronomy, etc.)
 6. Report all files created/modified
 
 ## PRD Reference

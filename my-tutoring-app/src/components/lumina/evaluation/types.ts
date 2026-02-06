@@ -1110,6 +1110,36 @@ export interface MediaPlayerMetrics extends BasePrimitiveMetrics {
 }
 
 // -----------------------------------------------------------------------------
+// Biology Primitives
+// -----------------------------------------------------------------------------
+
+export interface ClassificationSorterMetrics extends BasePrimitiveMetrics {
+  type: 'classification-sorter';
+
+  // Classification task
+  sortingRule: string;                // The classification principle being applied
+
+  // Overall performance
+  totalItems: number;
+  totalCorrectFirstAttempt: number;   // Items sorted correctly on first try
+  totalCorrect: number;                // Total items sorted correctly (any attempt)
+  allCorrect: boolean;
+
+  // Detailed attempt tracking
+  attempts: Array<{
+    itemId: string;
+    placedCategoryId: string;
+    correctCategoryId: string;
+    isCorrect: boolean;
+    attemptNumber: number;
+    timeMs: number;                   // Time when placed (ms since start)
+  }>;
+
+  // Category-level analysis
+  categoryAccuracy: Record<string, number>; // categoryId -> accuracy percentage
+}
+
+// -----------------------------------------------------------------------------
 // Astronomy Primitives
 // -----------------------------------------------------------------------------
 
@@ -1368,6 +1398,8 @@ export type PrimitiveMetrics =
   | ImagePanelMetrics
   // Media
   | MediaPlayerMetrics
+  // Biology
+  | ClassificationSorterMetrics
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics

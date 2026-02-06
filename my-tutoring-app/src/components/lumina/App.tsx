@@ -32,7 +32,7 @@ import { EngineeringPrimitivesTester } from './components/EngineeringPrimitivesT
 import AstronomyPrimitivesTester from './components/AstronomyPrimitivesTester';
 import { PhysicsPrimitivesTester } from './components/PhysicsPrimitivesTester';
 import { FeatureExhibitTester } from './components/FeatureExhibitTester';
-import { SpeciesProfileTester } from './components/SpeciesProfileTester';
+import BiologyPrimitivesTester from './components/BiologyPrimitivesTester';
 import { PracticeMode } from './components/PracticeModeEnhanced';
 import { SpotlightCard } from './components/SpotlightCard';
 import { ExhibitProvider } from './contexts/ExhibitContext';
@@ -158,8 +158,8 @@ export default function App() {
   // Feature Exhibit Testing State
   const [showFeatureExhibitTester, setShowFeatureExhibitTester] = useState(false);
 
-  // Species Profile Testing State
-  const [showSpeciesProfileTester, setShowSpeciesProfileTester] = useState(false);
+  // Biology Primitives Testing State
+  const [showBiologyPrimitivesTester, setShowBiologyPrimitivesTester] = useState(false);
 
   // Practice Mode State
   const [showPracticeMode, setShowPracticeMode] = useState(false);
@@ -560,8 +560,8 @@ export default function App() {
                    ← Exit Tester
                 </button>
             )}
-            {showSpeciesProfileTester && (
-                <button onClick={() => setShowSpeciesProfileTester(false)} className="hover:text-white transition-colors">
+            {showBiologyPrimitivesTester && (
+                <button onClick={() => setShowBiologyPrimitivesTester(false)} className="hover:text-white transition-colors">
                    ← Exit Tester
                 </button>
             )}
@@ -581,7 +581,7 @@ export default function App() {
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showAstronomyPrimitivesTester && !showPhysicsPrimitivesTester && !showFeatureExhibitTester && !showSpeciesProfileTester && !showPracticeMode && !showScratchPad && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showAstronomyPrimitivesTester && !showPhysicsPrimitivesTester && !showFeatureExhibitTester && !showBiologyPrimitivesTester && !showPracticeMode && !showScratchPad && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -895,22 +895,22 @@ export default function App() {
                         </div>
                       </SpotlightCard>
 
-                      {/* Species Profile Tester */}
+                      {/* Biology Primitives Tester */}
                       <SpotlightCard
                         color="34, 197, 94"
-                        onClick={() => setShowSpeciesProfileTester(true)}
+                        onClick={() => setShowBiologyPrimitivesTester(true)}
                         className="bg-gradient-to-br from-green-900/20 to-emerald-900/20"
                       >
                         <div className="p-6 flex items-start gap-4">
                           <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">🦖</span>
+                            <span className="text-2xl">🧬</span>
                           </div>
                           <div className="flex-1">
                             <h3 className="text-lg font-bold text-white mb-1 group-hover:text-green-200 transition-colors">
-                              Species Profile Tester
+                              Biology Primitives Tester
                             </h3>
                             <p className="text-slate-400 text-xs leading-relaxed">
-                              Test biological profiles for any species with detailed taxonomy and facts
+                              Test organism cards and species profiles with detailed biological information
                             </p>
                           </div>
                           <svg className="w-5 h-5 text-slate-600 group-hover:text-green-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -992,10 +992,10 @@ export default function App() {
           </div>
         )}
 
-        {/* SPECIES PROFILE TESTER STATE */}
-        {gameState === GameState.IDLE && showSpeciesProfileTester && (
+        {/* BIOLOGY PRIMITIVES TESTER STATE */}
+        {gameState === GameState.IDLE && showBiologyPrimitivesTester && (
           <div className="flex-1 animate-fade-in">
-            <SpeciesProfileTester onBack={() => setShowSpeciesProfileTester(false)} />
+            <BiologyPrimitivesTester onBack={() => setShowBiologyPrimitivesTester(false)} />
           </div>
         )}
 

@@ -822,6 +822,8 @@ grep "my-primitive" src/components/lumina/service/manifest/catalog/*.ts
 
 All four checks should return results.
 
+**Note:** TypeScript compilation checking (`npx tsc --noEmit`) may fail due to syntax issues in other parts of the codebase. Focus on verifying the four integration points above instead.
+
 ---
 
 ## Architecture Benefits

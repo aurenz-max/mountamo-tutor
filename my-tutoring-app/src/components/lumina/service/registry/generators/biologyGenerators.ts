@@ -18,6 +18,8 @@ import { registerGenerator } from '../contentRegistry';
 // Biology Component Imports (from dedicated service files)
 // ============================================================================
 import { generateSpeciesProfile } from '../../biology/gemini-species-profile';
+import { generateOrganismCard } from '../../biology/gemini-organism-card';
+import { generateClassificationSorter } from '../../biology/gemini-classification-sorter';
 
 // ============================================================================
 // Helper Types
@@ -68,11 +70,119 @@ registerGenerator('species-profile', async (item, topic, gradeContext) => {
   };
 });
 
+/**
+ * Organism Card - Foundational organism information card
+ *
+ * Perfect for:
+ * - K-8 biology lessons (scales from simple to complex)
+ * - Classification activities (sorting organisms by attributes)
+ * - Comparison lessons (side-by-side organism cards)
+ * - Reference material (quick organism facts)
+ * - Introduction to taxonomy and biological diversity
+ *
+ * Features:
+ * - Grade-appropriate complexity (K-2: basic, 3-5: intermediate, 6-8: advanced)
+ * - Configurable visible fields based on grade level
+ * - Key biological attributes (habitat, diet, size, locomotion, lifespan)
+ * - Optional taxonomy for upper grades
+ * - Fun facts to engage students
+ * - Visual image prompts
+ *
+ * Grade Scaling:
+ * - K-2: Simple vocabulary, 3-4 basic attributes, no scientific names
+ * - 3-5: Scientific names, body temperature, reproduction, adaptations
+ * - 6-8: Full taxonomy, cellular characteristics, evolutionary context
+ */
+registerGenerator('organism-card', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Extract organism name from config or topic
+  const organismName = config.organismName || config.speciesName || topic;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
+    'K': 'K-2',
+    '1': 'K-2',
+    '2': 'K-2',
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    'K-2': 'K-2',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
+
+  return {
+    type: 'organism-card',
+    instanceId: item.instanceId,
+    data: await generateOrganismCard(organismName, gradeBand, config),
+  };
+});
+
+/**
+ * Classification Sorter - Interactive drag-and-drop categorization
+ *
+ * Perfect for:
+ * - Classification activities (sorting organisms into groups)
+ * - Property-based sorting (warm-blooded vs cold-blooded)
+ * - Taxonomic classification lessons
+ * - Habitat sorting (aquatic vs terrestrial)
+ * - Diet sorting (herbivore vs carnivore vs omnivore)
+ * - Characteristic discrimination
+ *
+ * Features:
+ * - Drag-and-drop interface with immediate feedback
+ * - Binary sorts (K-2) to multi-category sorts (3-5, 6-8)
+ * - Hierarchical classification support (6-8)
+ * - Helpful hints on incorrect placements
+ * - Boundary case items to challenge thinking
+ * - Evaluation with first-attempt tracking
+ *
+ * Grade Scaling:
+ * - K-2: Binary sorts (2 categories), 6-8 items, simple vocabulary
+ * - 3-5: Multi-category sorts (3-5 categories), 8-10 items, scientific terms introduced
+ * - 6-8: Complex/hierarchical sorts, 10-12 items, formal classification systems
+ */
+registerGenerator('classification-sorter', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
+    'K': 'K-2',
+    '1': 'K-2',
+    '2': 'K-2',
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    'K-2': 'K-2',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
+
+  return {
+    type: 'classification-sorter',
+    instanceId: item.instanceId,
+    data: await generateClassificationSorter(topic, gradeBand, config),
+  };
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 1 biology generator
+// Total: 3 biology generators
 // - species-profile
+// - organism-card
+// - classification-sorter
 
-console.log('✅ Biology Generators Registered: species-profile');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter');
