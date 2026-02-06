@@ -17,6 +17,7 @@ import { generateMoonPhasesLab } from '../../astronomy/gemini-moon-phases-lab';
 import { generateRocketBuilder } from '../../astronomy/gemini-rocket-builder';
 import { generateOrbitMechanicsLab } from '../../astronomy/gemini-orbit-mechanics-lab';
 import { generateMissionPlanner } from '../../astronomy/gemini-mission-planner';
+import { generateTelescopeSimulator } from '../../astronomy/gemini-telescope-simulator';
 
 // ============================================================================
 // Astronomy Primitives Registration (K-5)
@@ -71,6 +72,13 @@ registerGenerator('mission-planner', async (item, topic, gradeContext) => ({
   data: await generateMissionPlanner(topic, gradeContext, item.config),
 }));
 
+// Telescope Simulator
+registerGenerator('telescope-simulator', async (item, topic, gradeContext) => ({
+  type: 'telescope-simulator',
+  instanceId: item.instanceId,
+  data: await generateTelescopeSimulator(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 7/7 astronomy primitives registered
+// Migration status: 8/8 astronomy primitives registered
 // ============================================================================

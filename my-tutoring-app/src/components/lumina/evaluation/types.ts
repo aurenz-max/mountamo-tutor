@@ -1262,6 +1262,33 @@ export interface MissionPlannerMetrics extends BasePrimitiveMetrics {
   missionSuccess: boolean;        // Whether mission reached destination
 }
 
+export interface TelescopeSimulatorMetrics extends BasePrimitiveMetrics {
+  type: 'telescope-simulator';
+
+  // Target finding performance
+  targetObjectsTotal: number;       // Number of objects student must find
+  targetObjectsFound: number;       // Number of targets successfully found
+  allTargetsFound: boolean;         // Whether all targets were located
+
+  // Observation logging
+  observationsLogged: number;       // Number of journal entries created
+
+  // Focus quality (for manual focus mode)
+  focusAccuracy: number;            // Average focus quality 0-100
+  focusMode: 'auto' | 'manual';     // Which focus mode was used
+  manualFocusAttempts?: number;     // Number of focus adjustments (manual mode)
+
+  // Exploration breadth
+  objectsExplored: number;          // Total unique objects clicked/examined
+  viewModesUsed: string[];          // View modes used (visible, infrared, radio)
+  telescopeTypesUsed: string[];     // Telescope types used (binoculars, small, large, space)
+  magnificationRange: [number, number]; // Min and max magnification used
+
+  // Engagement
+  timeSpent: number;                // Time spent in ms
+  panDistance: number;              // Approximate pixels panned (exploration measure)
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1318,7 +1345,8 @@ export type PrimitiveMetrics =
   | MoonPhasesLabMetrics
   | RocketBuilderMetrics
   | OrbitMechanicsLabMetrics
-  | MissionPlannerMetrics;
+  | MissionPlannerMetrics
+  | TelescopeSimulatorMetrics;
 
 // =============================================================================
 // Session & Summary Types

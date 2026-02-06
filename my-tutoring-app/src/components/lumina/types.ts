@@ -1128,6 +1128,7 @@ export type ComponentId =
   | 'rocket-builder' // Comprehensive rocket design and simulation tool for spaceflight education
   | 'orbit-mechanics-lab' // Interactive orbital mechanics sandbox for learning orbits, burns, and transfers
   | 'mission-planner' // Interactive mission design tool for planning trips to the Moon, Mars, and beyond
+  | 'telescope-simulator' // Virtual telescope experience for exploring the night sky with adjustable telescopes, magnification, and view modes
 
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks
@@ -1238,3 +1239,4 @@ export type { DayNightSeasonsData, LocationMarker } from './primitives/visual-pr
 export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './primitives/visual-primitives/astronomy/MoonPhasesLab';
 export type { RocketBuilderData, RocketComponent } from './primitives/visual-primitives/astronomy/RocketBuilder';
 export type { OrbitMechanicsLabData, OrbitConfig, OrbitalBody } from './primitives/visual-primitives/astronomy/OrbitMechanicsLab';
+export type { TelescopeSimulatorData, CelestialTarget, JournalEntry, TelescopeType, SkyViewMode } from './primitives/visual-primitives/astronomy/TelescopeSimulator';

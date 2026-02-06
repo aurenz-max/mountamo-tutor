@@ -67,6 +67,7 @@ import MoonPhasesLab from '../primitives/visual-primitives/astronomy/MoonPhasesL
 import RocketBuilder from '../primitives/visual-primitives/astronomy/RocketBuilder';
 import OrbitMechanicsLab from '../primitives/visual-primitives/astronomy/OrbitMechanicsLab';
 import MissionPlanner from '../primitives/visual-primitives/astronomy/MissionPlanner';
+import TelescopeSimulator from '../primitives/visual-primitives/astronomy/TelescopeSimulator';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -736,6 +737,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-7xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'telescope-simulator': {
+    component: TelescopeSimulator,
+    sectionTitle: 'Telescope Simulator',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 
