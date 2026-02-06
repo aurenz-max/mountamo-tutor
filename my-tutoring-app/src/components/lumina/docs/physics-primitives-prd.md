@@ -82,7 +82,7 @@ This document defines the complete set of interactive visual primitives required
 | `editMode` | enum | `draw`, `points`, `equation`, `none` |
 | `multipleObjects` | boolean | Compare several motions |
 
----
+---2
 
 #### 1.3 Velocity-Time Graph
 

@@ -27,6 +27,7 @@ import './mediaGenerators';
 import './foundationGenerators';
 import './biologyGenerators';
 import './astronomyGenerators';
+import './physicsGenerators';
 
 // Re-export registry functions for convenience
 export {

@@ -68,6 +68,8 @@ import RocketBuilder from '../primitives/visual-primitives/astronomy/RocketBuild
 import OrbitMechanicsLab from '../primitives/visual-primitives/astronomy/OrbitMechanicsLab';
 import MissionPlanner from '../primitives/visual-primitives/astronomy/MissionPlanner';
 import TelescopeSimulator from '../primitives/visual-primitives/astronomy/TelescopeSimulator';
+// Physics Primitives
+import MotionDiagram from '../primitives/visual-primitives/physics/MotionDiagram';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -742,6 +744,17 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'telescope-simulator': {
     component: TelescopeSimulator,
     sectionTitle: 'Telescope Simulator',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  // Physics Primitives (Middle School - High School)
+  'motion-diagram': {
+    component: MotionDiagram,
+    sectionTitle: 'Motion Diagram',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

@@ -1289,6 +1289,35 @@ export interface TelescopeSimulatorMetrics extends BasePrimitiveMetrics {
   panDistance: number;              // Approximate pixels panned (exploration measure)
 }
 
+// -----------------------------------------------------------------------------
+// Physics Primitives
+// -----------------------------------------------------------------------------
+
+export interface MotionDiagramMetrics extends BasePrimitiveMetrics {
+  type: 'motion-diagram';
+
+  // Motion identification
+  motionType: 'uniform' | 'accelerated' | 'projectile' | 'circular' | 'custom';
+  targetMotionType?: 'uniform' | 'accelerated' | 'projectile' | 'circular';
+  motionTypeCorrect: boolean;     // If target specified, did student identify correctly?
+
+  // Position markers
+  markersPlaced: number;           // Number of position markers placed/analyzed
+  markerCount: number;             // Target/expected number of markers
+
+  // Vector analysis
+  velocityVectorsShown: number;    // Number of velocity vectors displayed
+  accelerationVectorsShown: number; // Number of acceleration vectors displayed
+  averageVelocity: number;         // Average velocity magnitude (arbitrary units)
+  averageAcceleration: number;     // Average acceleration magnitude (arbitrary units)
+  uniformMotion: boolean;          // Is motion uniform (acceleration near zero)?
+
+  // Interactive parameters
+  timeInterval: number;            // Time between markers in seconds
+  vectorsPlaced: number;           // Number of vectors student placed (evaluation mode)
+  vectorsCorrect: boolean;         // If target specified, did student place correct vectors?
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1346,7 +1375,9 @@ export type PrimitiveMetrics =
   | RocketBuilderMetrics
   | OrbitMechanicsLabMetrics
   | MissionPlannerMetrics
-  | TelescopeSimulatorMetrics;
+  | TelescopeSimulatorMetrics
+  // Physics
+  | MotionDiagramMetrics;
 
 // =============================================================================
 // Session & Summary Types

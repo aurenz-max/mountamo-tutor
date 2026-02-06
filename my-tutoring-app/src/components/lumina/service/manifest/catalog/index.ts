@@ -21,6 +21,7 @@ import { ENGINEERING_CATALOG } from './engineering';
 import { SCIENCE_CATALOG } from './science';
 import { BIOLOGY_CATALOG } from './biology';
 import { ASTRONOMY_CATALOG } from './astronomy';
+import { PHYSICS_CATALOG } from './physics';
 import { LITERACY_CATALOG } from './literacy';
 import { MEDIA_CATALOG } from './media';
 import { ASSESSMENT_CATALOG } from './assessment';
@@ -36,6 +37,7 @@ export {
   SCIENCE_CATALOG,
   BIOLOGY_CATALOG,
   ASTRONOMY_CATALOG,
+  PHYSICS_CATALOG,
   LITERACY_CATALOG,
   MEDIA_CATALOG,
   ASSESSMENT_CATALOG,
@@ -58,6 +60,7 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
   ...SCIENCE_CATALOG,
   ...BIOLOGY_CATALOG,
   ...ASTRONOMY_CATALOG,
+  ...PHYSICS_CATALOG,
   ...LITERACY_CATALOG,
   ...MEDIA_CATALOG,
   ...ASSESSMENT_CATALOG,
@@ -79,6 +82,7 @@ export const CATALOGS_BY_DOMAIN: Record<string, ComponentDefinition[]> = {
   science: SCIENCE_CATALOG,
   biology: BIOLOGY_CATALOG,
   astronomy: ASTRONOMY_CATALOG,
+  physics: PHYSICS_CATALOG,
   literacy: LITERACY_CATALOG,
   media: MEDIA_CATALOG,
   assessment: ASSESSMENT_CATALOG,

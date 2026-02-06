@@ -1133,6 +1133,9 @@ export type ComponentId =
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks
 
+  // Physics Primitives (Middle School - High School)
+  | 'motion-diagram'     // Strobe diagram visualization for teaching kinematics and motion concepts
+
 export interface ComponentDefinition {
   id: ComponentId;
   description: string;
@@ -1240,3 +1243,4 @@ export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './pr
 export type { RocketBuilderData, RocketComponent } from './primitives/visual-primitives/astronomy/RocketBuilder';
 export type { OrbitMechanicsLabData, OrbitConfig, OrbitalBody } from './primitives/visual-primitives/astronomy/OrbitMechanicsLab';
 export type { TelescopeSimulatorData, CelestialTarget, JournalEntry, TelescopeType, SkyViewMode } from './primitives/visual-primitives/astronomy/TelescopeSimulator';
+export type { MotionDiagramData, PositionMarker, MotionType } from './primitives/visual-primitives/physics/MotionDiagram';
