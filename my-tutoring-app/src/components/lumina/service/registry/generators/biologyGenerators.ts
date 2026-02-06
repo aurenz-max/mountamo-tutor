@@ -20,6 +20,7 @@ import { registerGenerator } from '../contentRegistry';
 import { generateSpeciesProfile } from '../../biology/gemini-species-profile';
 import { generateOrganismCard } from '../../biology/gemini-organism-card';
 import { generateClassificationSorter } from '../../biology/gemini-classification-sorter';
+import { generateLifeCycleSequencer } from '../../biology/gemini-life-cycle-sequencer';
 
 // ============================================================================
 // Helper Types
@@ -176,13 +177,66 @@ registerGenerator('classification-sorter', async (item, topic, gradeContext) => 
   };
 });
 
+/**
+ * Life Cycle Sequencer - Interactive temporal sequencing activity
+ *
+ * Perfect for:
+ * - Organismal life cycles (butterfly, frog, plant, human development)
+ * - Cellular processes (mitosis phases, meiosis, cell cycle)
+ * - Ecological cycles (water cycle, carbon cycle, nitrogen cycle, rock cycle)
+ * - Developmental sequences (embryo to adult, seed to plant)
+ * - Teaching temporal relationships and transformation
+ *
+ * Features:
+ * - Drag-and-drop interface with stage cards
+ * - Linear layout for developmental sequences (embryo → adult)
+ * - Circular layout for repeating cycles (water cycle, cell cycle)
+ * - Connecting arrows show transitions between stages
+ * - Duration indicators for each stage
+ * - Misconception traps highlight common errors
+ * - Evaluation with first-attempt tracking
+ *
+ * Grade Scaling:
+ * - K-2: Simple linear sequences (4-6 stages), basic vocabulary, observable changes
+ * - 3-5: More complex cycles (5-7 stages), scientific terms introduced, mechanisms explained
+ * - 6-8: Complex circular/linear cycles (6-8 stages), molecular details, precise mechanisms
+ */
+registerGenerator('life-cycle-sequencer', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
+    'K': 'K-2',
+    '1': 'K-2',
+    '2': 'K-2',
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    'K-2': 'K-2',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
+
+  return {
+    type: 'life-cycle-sequencer',
+    instanceId: item.instanceId,
+    data: await generateLifeCycleSequencer(topic, gradeBand, config),
+  };
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 3 biology generators
+// Total: 4 biology generators
 // - species-profile
 // - organism-card
 // - classification-sorter
+// - life-cycle-sequencer
 
-console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer');

@@ -1139,6 +1139,30 @@ export interface ClassificationSorterMetrics extends BasePrimitiveMetrics {
   categoryAccuracy: Record<string, number>; // categoryId -> accuracy percentage
 }
 
+export interface LifeCycleSequencerMetrics extends BasePrimitiveMetrics {
+  type: 'life-cycle-sequencer';
+
+  // Cycle information
+  cycleType: 'linear' | 'circular';   // Type of sequence (developmental vs repeating)
+
+  // Overall performance
+  totalStages: number;
+  totalCorrectFirstAttempt: number;   // Stages placed correctly on first check
+  completionTimeMs: number;
+  allStagesCorrect: boolean;
+
+  // Detailed attempt tracking
+  stageAttempts: Array<{
+    stageId: string;
+    placedPosition: number;           // Where student placed it (0-indexed)
+    correctPosition: number;          // Correct position (0-indexed)
+    isCorrect: boolean;
+  }>;
+
+  // Learning progression
+  attemptsBeforeSuccess: number;      // How many times student checked before getting all correct
+}
+
 // -----------------------------------------------------------------------------
 // Astronomy Primitives
 // -----------------------------------------------------------------------------
@@ -1400,6 +1424,7 @@ export type PrimitiveMetrics =
   | MediaPlayerMetrics
   // Biology
   | ClassificationSorterMetrics
+  | LifeCycleSequencerMetrics
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics

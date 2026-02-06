@@ -1097,6 +1097,7 @@ export type ComponentId =
   | 'species-profile'    // Comprehensive species information with taxonomy, habitat, and characteristics (perfect for dinosaurs!)
   | 'organism-card'      // Foundational organism card with key biological attributes (K-8, scales by grade)
   | 'classification-sorter' // Interactive drag-and-drop categorization for organisms and characteristics (K-8)
+  | 'life-cycle-sequencer' // Interactive temporal sequencing for life cycles, cellular processes, and ecological cycles (K-8)
 
   // Media & Multimedia
   | 'media-player'       // Audio-visual lesson player with synchronized narration and images
@@ -1248,3 +1249,4 @@ export type { TelescopeSimulatorData, CelestialTarget, JournalEntry, TelescopeTy
 export type { MotionDiagramData, PositionMarker, MotionType } from './primitives/visual-primitives/physics/MotionDiagram';
 export type { OrganismCardData, OrganismInfo, OrganismAttributes, OrganismClassification } from './primitives/visual-primitives/biology/OrganismCard';
 export type { ClassificationSorterData, ClassificationCategory, ClassificationItem } from './primitives/visual-primitives/biology/ClassificationSorter';
+export type { LifeCycleSequencerData, LifeCycleStage, MisconceptionTrap } from './primitives/visual-primitives/biology/LifeCycleSequencer';

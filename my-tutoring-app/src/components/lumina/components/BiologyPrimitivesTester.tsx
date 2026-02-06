@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import OrganismCard from '../primitives/visual-primitives/biology/OrganismCard';
 import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
 import ClassificationSorter from '../primitives/visual-primitives/biology/ClassificationSorter';
+import LifeCycleSequencer from '../primitives/visual-primitives/biology/LifeCycleSequencer';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -14,13 +15,14 @@ interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
   { value: 'organism-card', label: 'Organism Card', icon: '🦋', topic: 'Basic organism characteristics' },
   { value: 'species-profile', label: 'Species Profile', icon: '🦖', topic: 'Detailed species information' },
   { value: 'classification-sorter', label: 'Classification Sorter', icon: '🔍', topic: 'Interactive sorting activity' },
+  { value: 'life-cycle-sequencer', label: 'Life Cycle Sequencer', icon: '🔄', topic: 'Temporal sequence learning' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -73,6 +75,16 @@ const PrimitiveRenderer: React.FC<{
             ...(data as Parameters<typeof ClassificationSorter>[0]['data']),
             instanceId: `classification-sorter-${Date.now()}`,
             onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'life-cycle-sequencer':
+      return (
+        <LifeCycleSequencer
+          data={{
+            ...(data as Parameters<typeof LifeCycleSequencer>[0]['data']),
+            instanceId: `life-cycle-sequencer-${Date.now()}`,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
       );
@@ -197,6 +209,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
       const defaultTopic =
         selectedPrimitive === 'species-profile' ? 'Tyrannosaurus Rex' :
         selectedPrimitive === 'classification-sorter' ? 'Sort animals by vertebrate class' :
+        selectedPrimitive === 'life-cycle-sequencer' ? 'Butterfly metamorphosis' :
         'Monarch Butterfly';
       const currentTopic = topic.trim() || defaultTopic;
 
@@ -315,13 +328,19 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
             {/* Topic Input */}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
-                {selectedPrimitive === 'classification-sorter' ? 'Topic (optional)' : 'Species/Organism (optional)'}
+                {selectedPrimitive === 'classification-sorter' ? 'Topic (optional)' :
+                 selectedPrimitive === 'life-cycle-sequencer' ? 'Life Cycle (optional)' :
+                 'Species/Organism (optional)'}
               </label>
               <input
                 type="text"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder={selectedPrimitive === 'classification-sorter' ? 'e.g., "Sort by diet"' : 'Leave blank for default...'}
+                placeholder={
+                  selectedPrimitive === 'classification-sorter' ? 'e.g., "Sort by diet"' :
+                  selectedPrimitive === 'life-cycle-sequencer' ? 'e.g., "Frog life cycle"' :
+                  'Leave blank for default...'
+                }
                 className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>

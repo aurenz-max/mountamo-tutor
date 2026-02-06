@@ -44,6 +44,7 @@ import PeriodicTable from '../primitives/PeriodicTable';
 import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
 import OrganismCard from '../primitives/visual-primitives/biology/OrganismCard';
 import ClassificationSorter from '../primitives/visual-primitives/biology/ClassificationSorter';
+import LifeCycleSequencer from '../primitives/visual-primitives/biology/LifeCycleSequencer';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -538,6 +539,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true, // Interactive sorting with evaluation
+  },
+
+  'life-cycle-sequencer': {
+    component: LifeCycleSequencer,
+    sectionTitle: 'Life Cycle Sequencer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true, // Interactive temporal sequencing with evaluation
   },
 
   'media-player': {
