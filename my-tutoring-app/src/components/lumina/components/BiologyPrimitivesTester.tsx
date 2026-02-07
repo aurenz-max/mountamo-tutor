@@ -6,6 +6,8 @@ import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
 import ClassificationSorter from '../primitives/visual-primitives/biology/ClassificationSorter';
 import LifeCycleSequencer from '../primitives/visual-primitives/biology/LifeCycleSequencer';
 import BodySystemExplorer from '../primitives/visual-primitives/biology/BodySystemExplorer';
+import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiorama';
+import CompareContrast from '../primitives/visual-primitives/biology/CompareContrast';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -16,7 +18,7 @@ interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -25,6 +27,8 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'classification-sorter', label: 'Classification Sorter', icon: '🔍', topic: 'Interactive sorting activity' },
   { value: 'life-cycle-sequencer', label: 'Life Cycle Sequencer', icon: '🔄', topic: 'Temporal sequence learning' },
   { value: 'body-system-explorer', label: 'Body System Explorer', icon: '🫁', topic: 'Interactive anatomy exploration' },
+  { value: 'habitat-diorama', label: 'Habitat Diorama', icon: '🌳', topic: 'Interactive ecosystem explorer' },
+  { value: 'bio-compare-contrast', label: 'Compare & Contrast', icon: '🔄', topic: 'Frogs vs Toads' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -94,6 +98,26 @@ const PrimitiveRenderer: React.FC<{
       return (
         <BodySystemExplorer
           data={data as Parameters<typeof BodySystemExplorer>[0]['data']}
+        />
+      );
+    case 'habitat-diorama':
+      return (
+        <HabitatDiorama
+          data={data as Parameters<typeof HabitatDiorama>[0]['data']}
+          instanceId={`habitat-diorama-${Date.now()}`}
+          onInteraction={(interaction) => {
+            console.log('Habitat interaction:', interaction);
+          }}
+        />
+      );
+    case 'bio-compare-contrast':
+      return (
+        <CompareContrast
+          data={{
+            ...(data as Parameters<typeof CompareContrast>[0]['data']),
+            instanceId: `bio-compare-contrast-${Date.now()}`,
+            onEvaluationSubmit,
+          }}
         />
       );
     default:
@@ -219,6 +243,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
         selectedPrimitive === 'classification-sorter' ? 'Sort animals by vertebrate class' :
         selectedPrimitive === 'life-cycle-sequencer' ? 'Butterfly metamorphosis' :
         selectedPrimitive === 'body-system-explorer' ? 'digestive system' :
+        selectedPrimitive === 'habitat-diorama' ? 'Coral Reef Ecosystem' :
         'Monarch Butterfly';
       const currentTopic = topic.trim() || defaultTopic;
 
@@ -349,6 +374,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
               <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
                 {selectedPrimitive === 'classification-sorter' ? 'Topic (optional)' :
                  selectedPrimitive === 'life-cycle-sequencer' ? 'Life Cycle (optional)' :
+                 selectedPrimitive === 'habitat-diorama' ? 'Ecosystem/Habitat (optional)' :
                  'Species/Organism (optional)'}
               </label>
               <input
@@ -358,6 +384,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                 placeholder={
                   selectedPrimitive === 'classification-sorter' ? 'e.g., "Sort by diet"' :
                   selectedPrimitive === 'life-cycle-sequencer' ? 'e.g., "Frog life cycle"' :
+                  selectedPrimitive === 'habitat-diorama' ? 'e.g., "African Savanna"' :
                   'Leave blank for default...'
                 }
                 className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500"

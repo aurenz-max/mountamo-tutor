@@ -16,7 +16,17 @@ When editing React components, prefer writing complete replacement files over in
 
 ## UI / Styling
 
-This project uses a Lumina design system with glass card styling. When styling components, reference existing Lumina-styled components for the correct patterns (glass backgrounds, backdrop-blur, border colors, etc.) rather than using generic styling.
+This project uses a Lumina design system with glass card styling built on shadcn/ui components.
+
+**IMPORTANT: Always use shadcn/ui components with Lumina theming for primitives.** Do not create custom div-based UI patterns.
+
+**Lumina theming pattern:**
+- Cards: `<Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">`
+- Buttons: `<Button variant="ghost" className="bg-white/5 border border-white/20 hover:bg-white/10">`
+- Accordions: Use `<Accordion>` for expandable sections instead of custom state management
+- Text colors: `text-slate-100` (primary), `text-slate-400` (secondary), `text-slate-600` (muted)
+
+See `my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md` for complete guidelines.
 
 ## Development Commands
 

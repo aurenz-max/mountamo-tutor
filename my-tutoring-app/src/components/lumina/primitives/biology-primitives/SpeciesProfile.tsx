@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { Skull, Ruler, Weight, Utensils, MapPin, Clock, Users, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { Skull, Ruler, Weight, Utensils, MapPin, Clock, Users, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { SpotlightCard } from '../../components/SpotlightCard';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 // Species characteristic data structure
 export interface PhysicalStats {
@@ -94,17 +98,12 @@ const DIET_ICONS = {
 };
 
 const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' }) => {
-  const [expandedSection, setExpandedSection] = useState<string | null>('physical');
   const [imageError, setImageError] = useState(false);
   const [isLoadingImage, setIsLoadingImage] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
   const category = data.category || 'dinosaur';
   const colors = CATEGORY_COLORS[category];
-
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
 
   // Handle on-demand image generation
   const handleGenerateImage = async () => {
@@ -146,10 +145,10 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
 
   return (
     <div className={`w-full max-w-6xl mx-auto mb-16 ${className}`}>
-      <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl overflow-hidden">
 
         {/* Header Section */}
-        <div className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl border-b border-white/10 p-6">
+        <CardHeader className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl border-b border-white/10">
           {/* Ambient glow */}
           <div
             className="absolute top-0 right-0 w-96 h-96 rounded-full blur-[120px] opacity-20"
@@ -158,28 +157,28 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
 
           <div className="relative flex items-start justify-between">
             <div className="flex-1">
-              <h2 className={`text-4xl font-bold ${colors.text} mb-2 drop-shadow-lg`}>
+              <CardTitle className={`text-4xl font-bold ${colors.text} mb-2 drop-shadow-lg`}>
                 {data.commonName}
-              </h2>
-              <p className="text-slate-300 italic text-lg mb-1">
+              </CardTitle>
+              <CardDescription className="text-slate-300 italic text-lg mb-1">
                 {data.scientificName}
-              </p>
+              </CardDescription>
               {data.nameMeaning && (
                 <p className="text-slate-400 text-sm">
                   <span className="font-semibold">Name Meaning:</span> {data.nameMeaning}
                 </p>
               )}
             </div>
-            <div className="px-4 py-2 bg-white/5 backdrop-blur-sm border border-white/20 rounded-lg">
-              <p className={`text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+            <Badge className="bg-white/5 backdrop-blur-sm border-white/20">
+              <span className={`text-xs font-bold ${colors.text} uppercase tracking-wider`}>
                 {category}
-              </p>
-            </div>
+              </span>
+            </Badge>
           </div>
-        </div>
+        </CardHeader>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 bg-slate-900/40 backdrop-blur-xl">
+        <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 bg-slate-900/40 backdrop-blur-xl">
 
           {/* Left Column: Image & Ecological Role */}
           <div className="space-y-4">
@@ -226,15 +225,14 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                     {data.imagePrompt}
                   </p>
                   {!imageError && (
-                    <button
+                    <Button
                       onClick={handleGenerateImage}
-                      className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 bg-white/5 ${colors.text} border border-white/20 hover:bg-white/10 hover:scale-105 active:scale-95`}
+                      variant="ghost"
+                      className={`bg-white/5 ${colors.text} border border-white/20 hover:bg-white/10`}
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                      </svg>
+                      <ImageIcon className="w-4 h-4 mr-2" />
                       Generate Visual
-                    </button>
+                    </Button>
                   )}
                   <p className="text-xs text-slate-500 text-center mt-3 italic">
                     {imageError ? 'Image generation failed. Please try again.' : 'Click to generate an AI visualization'}
@@ -246,265 +244,245 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
             {/* Biological Niche */}
             {data.biologicalNiche && (
               <SpotlightCard color={colors.rgb}>
-                <div className="glass-panel p-4 rounded-lg border border-white/10">
-                  <h4 className={`text-sm font-bold ${colors.text} mb-2 flex items-center gap-2`}>
-                    <Sparkles className="w-4 h-4" />
-                    Ecological Role
-                  </h4>
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    {data.biologicalNiche}
-                  </p>
-                </div>
+                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                  <CardHeader className="pb-3">
+                    <CardTitle className={`text-sm font-bold ${colors.text} flex items-center gap-2`}>
+                      <Sparkles className="w-4 h-4" />
+                      Ecological Role
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-slate-300 text-sm leading-relaxed">
+                      {data.biologicalNiche}
+                    </p>
+                  </CardContent>
+                </Card>
               </SpotlightCard>
             )}
           </div>
 
           {/* Right Column: Characteristics */}
           <div className="space-y-3">
+            <Accordion type="single" collapsible defaultValue="physical">
 
-            {/* Physical Stats Section */}
-            {data.physicalStats && (
-              <SpotlightCard color={colors.rgb}>
-                <div className="glass-panel rounded-lg overflow-hidden border border-white/10">
-                  <button
-                    onClick={() => toggleSection('physical')}
-                    className="w-full px-4 py-3 bg-white/5 flex items-center justify-between hover:bg-white/10 transition-all group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Ruler className={`w-5 h-5 ${colors.text} group-hover:scale-110 transition-transform`} />
-                      <span className={`font-bold ${colors.text}`}>Physical Stats</span>
-                    </div>
-                    {expandedSection === 'physical' ? (
-                      <ChevronUp className={`w-5 h-5 ${colors.text}`} />
-                    ) : (
-                      <ChevronDown className={`w-5 h-5 ${colors.text}`} />
-                    )}
-                  </button>
-                  {expandedSection === 'physical' && (
-                    <div className="p-4 bg-black/20 space-y-3">
-                      {data.physicalStats.height && (
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-white/5 rounded border border-white/10">
-                            <Ruler className={`w-4 h-4 ${colors.text}`} />
-                          </div>
-                          <div>
-                            <p className="text-slate-200 font-semibold text-sm">Height</p>
-                            <p className="text-slate-300 text-sm">{data.physicalStats.height}</p>
-                            {data.physicalStats.heightComparison && (
-                              <p className="text-slate-400 text-xs italic">{data.physicalStats.heightComparison}</p>
-                            )}
-                          </div>
+              {/* Physical Stats Section */}
+              {data.physicalStats && (
+                <AccordionItem value="physical" className="border-white/10">
+                  <SpotlightCard color={colors.rgb}>
+                    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                      <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Ruler className={`w-5 h-5 ${colors.text}`} />
+                          <span className={`font-bold ${colors.text}`}>Physical Stats</span>
                         </div>
-                      )}
-                      {data.physicalStats.length && (
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-white/5 rounded border border-white/10">
-                            <Ruler className={`w-4 h-4 ${colors.text}`} />
-                          </div>
-                          <div>
-                            <p className="text-slate-200 font-semibold text-sm">Length</p>
-                            <p className="text-slate-300 text-sm">{data.physicalStats.length}</p>
-                          </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="space-y-3">
+                          {data.physicalStats.height && (
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-white/5 rounded border border-white/10">
+                                <Ruler className={`w-4 h-4 ${colors.text}`} />
+                              </div>
+                              <div>
+                                <p className="text-slate-200 font-semibold text-sm">Height</p>
+                                <p className="text-slate-300 text-sm">{data.physicalStats.height}</p>
+                                {data.physicalStats.heightComparison && (
+                                  <p className="text-slate-400 text-xs italic">{data.physicalStats.heightComparison}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {data.physicalStats.length && (
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-white/5 rounded border border-white/10">
+                                <Ruler className={`w-4 h-4 ${colors.text}`} />
+                              </div>
+                              <div>
+                                <p className="text-slate-200 font-semibold text-sm">Length</p>
+                                <p className="text-slate-300 text-sm">{data.physicalStats.length}</p>
+                              </div>
+                            </div>
+                          )}
+                          {data.physicalStats.weight && (
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-white/5 rounded border border-white/10">
+                                <Weight className={`w-4 h-4 ${colors.text}`} />
+                              </div>
+                              <div>
+                                <p className="text-slate-200 font-semibold text-sm">Weight</p>
+                                <p className="text-slate-300 text-sm">{data.physicalStats.weight}</p>
+                                {data.physicalStats.weightComparison && (
+                                  <p className="text-slate-400 text-xs italic">{data.physicalStats.weightComparison}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {data.physicalStats.weight && (
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-white/5 rounded border border-white/10">
-                            <Weight className={`w-4 h-4 ${colors.text}`} />
-                          </div>
-                          <div>
-                            <p className="text-slate-200 font-semibold text-sm">Weight</p>
-                            <p className="text-slate-300 text-sm">{data.physicalStats.weight}</p>
-                            {data.physicalStats.weightComparison && (
-                              <p className="text-slate-400 text-xs italic">{data.physicalStats.weightComparison}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </SpotlightCard>
-            )}
+                      </AccordionContent>
+                    </Card>
+                  </SpotlightCard>
+                </AccordionItem>
+              )}
 
-            {/* Diet Section */}
-            {data.diet && (
-              <SpotlightCard color={colors.rgb}>
-                <div className="glass-panel rounded-lg overflow-hidden border border-white/10">
-                  <button
-                    onClick={() => toggleSection('diet')}
-                    className="w-full px-4 py-3 bg-white/5 flex items-center justify-between hover:bg-white/10 transition-all group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Utensils className={`w-5 h-5 ${colors.text} group-hover:scale-110 transition-transform`} />
-                      <span className={`font-bold ${colors.text}`}>Diet & Behavior</span>
-                      <span className="text-2xl ml-2">{DIET_ICONS[data.diet.type]}</span>
-                    </div>
-                    {expandedSection === 'diet' ? (
-                      <ChevronUp className={`w-5 h-5 ${colors.text}`} />
-                    ) : (
-                      <ChevronDown className={`w-5 h-5 ${colors.text}`} />
-                    )}
-                  </button>
-                  {expandedSection === 'diet' && (
-                    <div className="p-4 bg-black/20 space-y-3">
-                      <div>
-                        <p className={`text-xs font-bold ${colors.text} uppercase tracking-wider mb-1`}>
-                          {data.diet.type}
-                        </p>
-                        <p className="text-slate-300 text-sm leading-relaxed">
-                          {data.diet.description}
-                        </p>
-                      </div>
-                      {data.diet.primaryFood && data.diet.primaryFood.length > 0 && (
-                        <div>
-                          <p className="text-slate-200 font-semibold text-sm mb-1">Primary Food Sources</p>
-                          <div className="flex flex-wrap gap-2">
-                            {data.diet.primaryFood.map((food, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-white/5 border border-white/10 rounded text-xs text-slate-300">
-                                {food}
-                              </span>
-                            ))}
-                          </div>
+              {/* Diet Section */}
+              {data.diet && (
+                <AccordionItem value="diet" className="border-white/10">
+                  <SpotlightCard color={colors.rgb}>
+                    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                      <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Utensils className={`w-5 h-5 ${colors.text}`} />
+                          <span className={`font-bold ${colors.text}`}>Diet & Behavior</span>
+                          <span className="text-2xl ml-2">{DIET_ICONS[data.diet.type]}</span>
                         </div>
-                      )}
-                      {data.diet.huntingStrategy && (
-                        <div>
-                          <p className="text-slate-200 font-semibold text-sm mb-1">Hunting Strategy</p>
-                          <p className="text-slate-300 text-sm">{data.diet.huntingStrategy}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </SpotlightCard>
-            )}
-
-            {/* Habitat Section */}
-            {data.habitat && (
-              <SpotlightCard color={colors.rgb}>
-                <div className="glass-panel rounded-lg overflow-hidden border border-white/10">
-                  <button
-                    onClick={() => toggleSection('habitat')}
-                    className="w-full px-4 py-3 bg-white/5 flex items-center justify-between hover:bg-white/10 transition-all group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <MapPin className={`w-5 h-5 ${colors.text} group-hover:scale-110 transition-transform`} />
-                      <span className={`font-bold ${colors.text}`}>Habitat & Era</span>
-                    </div>
-                    {expandedSection === 'habitat' ? (
-                      <ChevronUp className={`w-5 h-5 ${colors.text}`} />
-                    ) : (
-                      <ChevronDown className={`w-5 h-5 ${colors.text}`} />
-                    )}
-                  </button>
-                  {expandedSection === 'habitat' && (
-                    <div className="p-4 bg-black/20 space-y-3">
-                      {data.habitat.period && (
-                        <div className="flex items-start gap-3">
-                          <Clock className={`w-4 h-4 ${colors.text} mt-1`} />
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="space-y-3">
                           <div>
-                            <p className="text-slate-200 font-semibold text-sm">Period</p>
-                            <p className="text-slate-300 text-sm">{data.habitat.period}</p>
-                            {data.habitat.timeRange && (
-                              <p className="text-slate-400 text-xs">{data.habitat.timeRange}</p>
-                            )}
+                            <p className={`text-xs font-bold ${colors.text} uppercase tracking-wider mb-1`}>
+                              {data.diet.type}
+                            </p>
+                            <p className="text-slate-300 text-sm leading-relaxed">
+                              {data.diet.description}
+                            </p>
                           </div>
+                          {data.diet.primaryFood && data.diet.primaryFood.length > 0 && (
+                            <div>
+                              <p className="text-slate-200 font-semibold text-sm mb-1">Primary Food Sources</p>
+                              <div className="flex flex-wrap gap-2">
+                                {data.diet.primaryFood.map((food, idx) => (
+                                  <Badge key={idx} className="bg-white/5 border-white/10 text-slate-300">
+                                    {food}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {data.diet.huntingStrategy && (
+                            <div>
+                              <p className="text-slate-200 font-semibold text-sm mb-1">Hunting Strategy</p>
+                              <p className="text-slate-300 text-sm">{data.diet.huntingStrategy}</p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {data.habitat.location && (
-                        <div className="flex items-start gap-3">
-                          <MapPin className={`w-4 h-4 ${colors.text} mt-1`} />
-                          <div>
-                            <p className="text-slate-200 font-semibold text-sm">Location</p>
-                            <p className="text-slate-300 text-sm">{data.habitat.location}</p>
-                          </div>
-                        </div>
-                      )}
-                      {data.habitat.environment && (
-                        <div>
-                          <p className="text-slate-200 font-semibold text-sm mb-1">Environment</p>
-                          <p className="text-slate-300 text-sm">{data.habitat.environment}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </SpotlightCard>
-            )}
+                      </AccordionContent>
+                    </Card>
+                  </SpotlightCard>
+                </AccordionItem>
+              )}
 
-            {/* Taxonomy Section */}
-            {data.taxonomy && (
-              <SpotlightCard color={colors.rgb}>
-                <div className="glass-panel rounded-lg overflow-hidden border border-white/10">
-                  <button
-                    onClick={() => toggleSection('taxonomy')}
-                    className="w-full px-4 py-3 bg-white/5 flex items-center justify-between hover:bg-white/10 transition-all group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Users className={`w-5 h-5 ${colors.text} group-hover:scale-110 transition-transform`} />
-                      <span className={`font-bold ${colors.text}`}>Family Tree</span>
-                    </div>
-                    {expandedSection === 'taxonomy' ? (
-                      <ChevronUp className={`w-5 h-5 ${colors.text}`} />
-                    ) : (
-                      <ChevronDown className={`w-5 h-5 ${colors.text}`} />
-                    )}
-                  </button>
-                  {expandedSection === 'taxonomy' && (
-                    <div className="p-4 bg-black/20">
-                      <div className="space-y-2 mb-3">
-                        {data.taxonomy.kingdom && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-400">Kingdom:</span>
-                            <span className="text-slate-200 font-mono">{data.taxonomy.kingdom}</span>
+              {/* Habitat Section */}
+              {data.habitat && (
+                <AccordionItem value="habitat" className="border-white/10">
+                  <SpotlightCard color={colors.rgb}>
+                    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                      <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <MapPin className={`w-5 h-5 ${colors.text}`} />
+                          <span className={`font-bold ${colors.text}`}>Habitat & Era</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="space-y-3">
+                          {data.habitat.period && (
+                            <div className="flex items-start gap-3">
+                              <Clock className={`w-4 h-4 ${colors.text} mt-1`} />
+                              <div>
+                                <p className="text-slate-200 font-semibold text-sm">Period</p>
+                                <p className="text-slate-300 text-sm">{data.habitat.period}</p>
+                                {data.habitat.timeRange && (
+                                  <p className="text-slate-400 text-xs">{data.habitat.timeRange}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {data.habitat.location && (
+                            <div className="flex items-start gap-3">
+                              <MapPin className={`w-4 h-4 ${colors.text} mt-1`} />
+                              <div>
+                                <p className="text-slate-200 font-semibold text-sm">Location</p>
+                                <p className="text-slate-300 text-sm">{data.habitat.location}</p>
+                              </div>
+                            </div>
+                          )}
+                          {data.habitat.environment && (
+                            <div>
+                              <p className="text-slate-200 font-semibold text-sm mb-1">Environment</p>
+                              <p className="text-slate-300 text-sm">{data.habitat.environment}</p>
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </Card>
+                  </SpotlightCard>
+                </AccordionItem>
+              )}
+
+              {/* Taxonomy Section */}
+              {data.taxonomy && (
+                <AccordionItem value="taxonomy" className="border-white/10">
+                  <SpotlightCard color={colors.rgb}>
+                    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                      <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Users className={`w-5 h-5 ${colors.text}`} />
+                          <span className={`font-bold ${colors.text}`}>Family Tree</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="space-y-2 mb-3">
+                          {data.taxonomy.kingdom && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-400">Kingdom:</span>
+                              <span className="text-slate-200 font-mono">{data.taxonomy.kingdom}</span>
+                            </div>
+                          )}
+                          {data.taxonomy.phylum && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-400">Phylum:</span>
+                              <span className="text-slate-200 font-mono">{data.taxonomy.phylum}</span>
+                            </div>
+                          )}
+                          {data.taxonomy.class && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-400">Class:</span>
+                              <span className="text-slate-200 font-mono">{data.taxonomy.class}</span>
+                            </div>
+                          )}
+                          {data.taxonomy.order && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-400">Order:</span>
+                              <span className="text-slate-200 font-mono">{data.taxonomy.order}</span>
+                            </div>
+                          )}
+                          {data.taxonomy.family && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-400">Family:</span>
+                              <span className="text-slate-200 font-mono">{data.taxonomy.family}</span>
+                            </div>
+                          )}
+                        </div>
+                        {data.taxonomy.relatedSpecies && data.taxonomy.relatedSpecies.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-white/10">
+                            <p className="text-slate-200 font-semibold text-sm mb-2">Related Species</p>
+                            <div className="flex flex-wrap gap-2">
+                              {data.taxonomy.relatedSpecies.map((species, idx) => (
+                                <Badge key={idx} className="bg-white/5 border-white/10 text-slate-300 italic">
+                                  {species}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
                         )}
-                        {data.taxonomy.phylum && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-400">Phylum:</span>
-                            <span className="text-slate-200 font-mono">{data.taxonomy.phylum}</span>
-                          </div>
-                        )}
-                        {data.taxonomy.class && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-400">Class:</span>
-                            <span className="text-slate-200 font-mono">{data.taxonomy.class}</span>
-                          </div>
-                        )}
-                        {data.taxonomy.order && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-400">Order:</span>
-                            <span className="text-slate-200 font-mono">{data.taxonomy.order}</span>
-                          </div>
-                        )}
-                        {data.taxonomy.family && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-400">Family:</span>
-                            <span className="text-slate-200 font-mono">{data.taxonomy.family}</span>
-                          </div>
-                        )}
-                      </div>
-                      {data.taxonomy.relatedSpecies && data.taxonomy.relatedSpecies.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-white/10">
-                          <p className="text-slate-200 font-semibold text-sm mb-2">Related Species</p>
-                          <div className="flex flex-wrap gap-2">
-                            {data.taxonomy.relatedSpecies.map((species, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-white/5 border border-white/10 rounded text-xs text-slate-300 italic">
-                                {species}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </SpotlightCard>
-            )}
+                      </AccordionContent>
+                    </Card>
+                  </SpotlightCard>
+                </AccordionItem>
+              )}
 
+            </Accordion>
           </div>
-        </div>
+        </CardContent>
 
         {/* Interesting Facts Section */}
         {data.interestingFacts && data.interestingFacts.length > 0 && (
@@ -516,14 +494,18 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {data.interestingFacts.map((fact, idx) => (
                 <SpotlightCard key={idx} color={colors.rgb}>
-                  <div className="glass-panel border border-white/10 rounded-lg p-4">
-                    <h4 className={`text-sm font-bold ${colors.text} mb-2`}>
-                      {fact.title}
-                    </h4>
-                    <p className="text-slate-300 text-sm leading-relaxed">
-                      {fact.description}
-                    </p>
-                  </div>
+                  <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                    <CardHeader className="pb-3">
+                      <CardTitle className={`text-sm font-bold ${colors.text}`}>
+                        {fact.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-slate-300 text-sm leading-relaxed">
+                        {fact.description}
+                      </p>
+                    </CardContent>
+                  </Card>
                 </SpotlightCard>
               ))}
             </div>
@@ -539,7 +521,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
           </div>
         )}
 
-      </div>
+      </Card>
     </div>
   );
 };

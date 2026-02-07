@@ -1372,6 +1372,30 @@ export interface MotionDiagramMetrics extends BasePrimitiveMetrics {
   vectorsCorrect: boolean;         // If target specified, did student place correct vectors?
 }
 
+// -----------------------------------------------------------------------------
+// Biology Primitives
+// -----------------------------------------------------------------------------
+
+export interface CompareContrastMetrics extends BasePrimitiveMetrics {
+  type: 'bio-compare-contrast';
+
+  // Mode and scope
+  mode: 'side-by-side' | 'venn-interactive';
+  totalAttributes: number;
+
+  // Performance (venn-interactive mode only)
+  correctPlacements: number;
+  accuracy: number;             // 0-100 percentage correct
+
+  // Detailed placements (venn-interactive mode)
+  placements: Array<{
+    attributeValue: string;
+    placedRegion: string;       // 'A-only' | 'B-only' | 'shared' | 'unplaced'
+    correctRegion: string;      // 'A-only' | 'B-only' | 'shared'
+    isCorrect: boolean;
+  }>;
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1425,6 +1449,7 @@ export type PrimitiveMetrics =
   // Biology
   | ClassificationSorterMetrics
   | LifeCycleSequencerMetrics
+  | CompareContrastMetrics
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics

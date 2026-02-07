@@ -22,6 +22,9 @@ import { generateOrganismCard } from '../../biology/gemini-organism-card';
 import { generateClassificationSorter } from '../../biology/gemini-classification-sorter';
 import { generateLifeCycleSequencer } from '../../biology/gemini-life-cycle-sequencer';
 import { generateBodySystemExplorer } from '../../biology/gemini-body-system-explorer';
+import { generateHabitatDiorama } from '../../biology/gemini-habitat-diorama';
+import { generateCompareContrast } from '../../biology/gemini-compare-contrast';
+import { generateCompareContrastWithImages, generateCompareContrastWithImagesFromTopic } from '../../biology/gemini-compare-contrast-with-images';
 
 // ============================================================================
 // Helper Types
@@ -321,15 +324,157 @@ registerGenerator('body-system-explorer', async (item, topic, gradeContext) => {
   };
 });
 
+/**
+ * Habitat Diorama - Interactive ecosystem explorer
+ *
+ * Perfect for:
+ * - Ecosystem and habitat studies (coral reef, rainforest, desert, tundra)
+ * - Food chain and food web lessons
+ * - Understanding ecological relationships (predator-prey, symbiosis, competition)
+ * - Teaching about producers, consumers, and decomposers
+ * - Exploring environmental features (water, sunlight, shelter)
+ * - Ecosystem disruption scenarios (grades 3-8)
+ * - Systems thinking and trophic cascades (grades 6-8)
+ *
+ * Features:
+ * - Interactive organisms with detailed info cards
+ * - Relationship visualization showing connections
+ * - Environmental features (abiotic factors)
+ * - Disruption scenarios for critical thinking
+ * - Grade-appropriate complexity (K-2: observation, 3-5: food chains, 6-8: ecosystem dynamics)
+ *
+ * Grade Scaling:
+ * - K-2: Simple observation (4-5 organisms, basic predator-prey relationships, no disruption)
+ * - 3-5: Food chains (6-8 organisms, introduce symbiosis, simple disruption scenario)
+ * - 6-8: Complex food webs (8-10 organisms, all relationship types, trophic cascade scenarios)
+ */
+registerGenerator('habitat-diorama', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
+    'K': 'K-2',
+    '1': 'K-2',
+    '2': 'K-2',
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    'K-2': 'K-2',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
+
+  return {
+    type: 'habitat-diorama',
+    instanceId: item.instanceId,
+    data: await generateHabitatDiorama(topic, gradeBand, config),
+  };
+});
+
+/**
+ * Compare & Contrast - Side-by-side or Venn diagram comparison
+ *
+ * Perfect for:
+ * - Organism comparisons (frog vs toad, shark vs dolphin, bee vs wasp)
+ * - Cell comparisons (plant cell vs animal cell, prokaryote vs eukaryote)
+ * - Organ/system comparisons (heart vs lungs, roots vs stems)
+ * - Process comparisons (mitosis vs meiosis, photosynthesis vs respiration)
+ * - Biome comparisons (desert vs rainforest, tundra vs taiga)
+ * - Teaching similarities and differences
+ *
+ * Features:
+ * - Two modes: side-by-side (viewing) or venn-interactive (student activity)
+ * - Side-by-side mode shows aligned attributes with highlights for shared/unique
+ * - Venn-interactive mode: drag attributes into correct regions (A-only, B-only, Both)
+ * - Key insight explaining why the comparison matters
+ * - Evaluation support in venn-interactive mode
+ * - Optional AI-generated images when config.generateImages is true
+ *
+ * Grade Scaling:
+ * - K-2: 4-6 attributes per entity, simple vocabulary, observable characteristics
+ * - 3-5: 6-8 attributes, scientific terms introduced, functional characteristics
+ * - 6-8: 8-10 attributes, cellular/molecular details, evolutionary context
+ */
+registerGenerator('bio-compare-contrast', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
+    'K': 'K-2',
+    '1': 'K-2',
+    '2': 'K-2',
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    'K-2': 'K-2',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
+
+  // Determine mode: default to 'side-by-side' for viewing, use config.mode if specified
+  const mode = config.mode || 'side-by-side';
+
+  // Check if images should be generated
+  const generateImages = config.generateImages === true;
+
+  // If topic contains "vs" or "versus", use the topic-based generator
+  if (topic.match(/\s+(?:vs\.?|versus)\s+/i)) {
+    if (generateImages) {
+      return {
+        type: 'bio-compare-contrast',
+        instanceId: item.instanceId,
+        data: await generateCompareContrastWithImagesFromTopic(topic, gradeBand, mode),
+      };
+    } else {
+      const { generateCompareContrastFromTopic } = await import('../../biology/gemini-compare-contrast');
+      return {
+        type: 'bio-compare-contrast',
+        instanceId: item.instanceId,
+        data: await generateCompareContrastFromTopic(topic, gradeBand, mode),
+      };
+    }
+  }
+
+  // Otherwise, expect entityA and entityB in config
+  const entityA = config.entityA || 'Frog';
+  const entityB = config.entityB || 'Toad';
+
+  if (generateImages) {
+    return {
+      type: 'bio-compare-contrast',
+      instanceId: item.instanceId,
+      data: await generateCompareContrastWithImages(entityA, entityB, gradeBand, mode, config),
+    };
+  } else {
+    return {
+      type: 'bio-compare-contrast',
+      instanceId: item.instanceId,
+      data: await generateCompareContrast(entityA, entityB, gradeBand, mode, config),
+    };
+  }
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 5 biology generators
+// Total: 7 biology generators
 // - species-profile
 // - organism-card
 // - classification-sorter
 // - life-cycle-sequencer
 // - body-system-explorer
+// - habitat-diorama
+// - bio-compare-contrast
 
-console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast');

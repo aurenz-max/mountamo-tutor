@@ -41,6 +41,72 @@ Adding a new primitive involves these files:
 
 ---
 
+## UI Component Guidelines
+
+**IMPORTANT: Use shadcn/ui with Lumina theming for all primitives.**
+
+### Why shadcn/ui?
+
+- **Reduces code overhead** - 60 lines vs 500+ lines of custom styling
+- **Consistent patterns** - Same components across all primitives
+- **Built-in accessibility** - ARIA attributes and keyboard navigation
+- **Easier to maintain** - Design system changes propagate automatically
+
+### shadcn/ui Components for Lumina
+
+| shadcn Component | Use For |
+|-----------------|---------|
+| `Card`, `CardHeader`, `CardTitle`, `CardContent` | Main containers |
+| `Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent` | Expandable sections |
+| `Button` | Interactive elements |
+| `Badge` | Labels and categories |
+| `Separator` | Dividers |
+| `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | Multi-section content |
+| `Skeleton` | Loading states |
+
+### Lumina Theming Classes
+
+Apply these classes to shadcn components for the Lumina glass design:
+
+**Cards:**
+```tsx
+<Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl">
+```
+
+**Accordion Items:**
+```tsx
+<AccordionItem value="section" className="border-white/10">
+  <AccordionTrigger className="text-slate-300 hover:text-slate-100 hover:no-underline">
+```
+
+**Buttons:**
+```tsx
+<Button variant="ghost" className="bg-white/5 border border-white/20 hover:bg-white/10">
+```
+
+**Badges:**
+```tsx
+<Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300">
+```
+
+### Lumina Color Palette
+
+Use these Tailwind classes for consistency:
+
+| Element | Class | Usage |
+|---------|-------|-------|
+| Background (dark) | `bg-slate-900/40`, `bg-slate-800/30` | Card backgrounds with transparency |
+| Background (darker) | `bg-black/20`, `bg-slate-900/60` | Nested sections |
+| Border | `border-white/10`, `border-slate-700/50` | Subtle borders |
+| Text (primary) | `text-slate-100`, `text-slate-200` | Main content |
+| Text (secondary) | `text-slate-300`, `text-slate-400` | Descriptions |
+| Text (muted) | `text-slate-500`, `text-slate-600` | Labels, metadata |
+| Accent colors | `text-orange-300`, `text-emerald-300`, etc. | Kingdom/category colors |
+| Hover states | `hover:bg-white/10`, `hover:border-white/20` | Interactive elements |
+| Blur effects | `backdrop-blur-xl`, `backdrop-blur-sm` | Glass morphism |
+
+---
+
 ## Step-by-Step Guide
 
 ### Step 1: Create the Primitive Component
@@ -58,6 +124,8 @@ If your primitive involves student interaction and goal achievement, add optiona
 ```tsx
 // primitives/visual-primitives/math/MyPrimitive.tsx
 import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../evaluation';
 import type { MyPrimitiveMetrics } from '../../evaluation/types';
 
@@ -136,29 +204,35 @@ const MyPrimitive: React.FC<MyPrimitiveProps> = ({ data, className }) => {
   };
 
   return (
-    <div className={className}>
-      <h3 className="text-xl font-semibold mb-4">{data.title}</h3>
-      <p className="text-gray-600 mb-4">{data.description}</p>
-      {/* Your visualization */}
+    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
+      <CardHeader>
+        <CardTitle className="text-slate-100">{data.title}</CardTitle>
+        <CardDescription className="text-slate-400">{data.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Your visualization */}
 
-      <div className="flex gap-2 mt-4">
-        <button
-          onClick={handleSubmit}
-          disabled={hasSubmitted}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
-        >
-          {hasSubmitted ? 'Submitted' : 'Submit'}
-        </button>
-        {hasSubmitted && (
-          <button
-            onClick={handleReset}
-            className="px-4 py-2 bg-gray-500 text-white rounded"
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSubmit}
+            disabled={hasSubmitted}
+            variant="ghost"
+            className="bg-white/5 border border-white/20 hover:bg-white/10"
           >
-            Try Again
-          </button>
-        )}
-      </div>
-    </div>
+            {hasSubmitted ? 'Submitted' : 'Submit'}
+          </Button>
+          {hasSubmitted && (
+            <Button
+              onClick={handleReset}
+              variant="ghost"
+              className="bg-white/5 border border-white/20 hover:bg-white/10"
+            >
+              Try Again
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -179,6 +253,7 @@ Use this pattern **only for display-only components** like static visualizations
 ```tsx
 // primitives/visual-primitives/math/MyPrimitive.tsx
 import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 // ✅ EXPORT the data interface - this is the single source of truth
 export interface MyPrimitiveData {
@@ -196,11 +271,15 @@ const MyPrimitive: React.FC<MyPrimitiveProps> = ({ data, className }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   return (
-    <div className={className}>
-      <h3 className="text-xl font-semibold mb-4">{data.title}</h3>
-      <p className="text-gray-600 mb-4">{data.description}</p>
-      {/* Your visualization */}
-    </div>
+    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
+      <CardHeader>
+        <CardTitle className="text-slate-100">{data.title}</CardTitle>
+        <CardDescription className="text-slate-400">{data.description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {/* Your visualization */}
+      </CardContent>
+    </Card>
   );
 };
 
@@ -889,6 +968,7 @@ Use this checklist when adding a new primitive:
 
 ## Additional Resources
 
+- **[MIGRATING_TO_SHADCN.md](MIGRATING_TO_SHADCN.md)** - Guide for converting existing primitives to use shadcn/ui
 - **[INTEGRATION_GUIDE.md](../evaluation/INTEGRATION_GUIDE.md)** - Comprehensive guide to the evaluation system
 - **[TowerStacker.tsx](../primitives/visual-primitives/engineering/TowerStacker.tsx)** - ⭐ Reference implementation with evaluation (recommended starting point)
 - **[BridgeBuilder.tsx](../primitives/visual-primitives/engineering/BridgeBuilder.tsx)** - Another evaluation example with complex metrics
