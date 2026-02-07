@@ -8,6 +8,7 @@ import LifeCycleSequencer from '../primitives/visual-primitives/biology/LifeCycl
 import BodySystemExplorer from '../primitives/visual-primitives/biology/BodySystemExplorer';
 import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiorama';
 import CompareContrast from '../primitives/visual-primitives/biology/CompareContrast';
+import ProcessAnimator from '../primitives/visual-primitives/biology/ProcessAnimator';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -18,7 +19,7 @@ interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -29,6 +30,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'body-system-explorer', label: 'Body System Explorer', icon: '🫁', topic: 'Interactive anatomy exploration' },
   { value: 'habitat-diorama', label: 'Habitat Diorama', icon: '🌳', topic: 'Interactive ecosystem explorer' },
   { value: 'bio-compare-contrast', label: 'Compare & Contrast', icon: '🔄', topic: 'Frogs vs Toads' },
+  { value: 'bio-process-animator', label: 'Process Animator', icon: '🎬', topic: 'Photosynthesis' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -116,6 +118,16 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof CompareContrast>[0]['data']),
             instanceId: `bio-compare-contrast-${Date.now()}`,
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'bio-process-animator':
+      return (
+        <ProcessAnimator
+          data={{
+            ...(data as Parameters<typeof ProcessAnimator>[0]['data']),
+            instanceId: `bio-process-animator-${Date.now()}`,
             onEvaluationSubmit,
           }}
         />

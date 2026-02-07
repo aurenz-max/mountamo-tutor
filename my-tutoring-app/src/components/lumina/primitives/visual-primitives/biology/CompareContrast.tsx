@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CheckCircle, XCircle, Info, ArrowLeftRight } from 'lucide-react';
+import { CheckCircle, XCircle, Info, ArrowLeftRight, Image as ImageIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { CompareContrastMetrics } from '../../../evaluation/types';
 
@@ -67,6 +68,89 @@ interface CompareContrastProps {
 }
 
 // ============================================================================
+// Entity Image Component (shared between views)
+// ============================================================================
+
+const EntityImage: React.FC<{
+  entity: EntityInfo;
+  colorScheme: 'blue' | 'purple';
+  generatedUrl: string | null;
+  isLoading: boolean;
+  hasError: boolean;
+  onGenerate: () => void;
+  loadingAny: boolean;
+}> = ({ entity, colorScheme, generatedUrl, isLoading, hasError, onGenerate, loadingAny }) => {
+  const borderColor = colorScheme === 'blue' ? 'border-blue-400/30' : 'border-purple-400/30';
+  const textColor = colorScheme === 'blue' ? 'text-blue-300' : 'text-purple-300';
+  const accentColor = colorScheme === 'blue' ? '#60a5fa' : '#c084fc';
+  const bgColor = colorScheme === 'blue' ? 'rgba(96, 165, 250, 0.05)' : 'rgba(192, 132, 252, 0.05)';
+  const borderDashed = colorScheme === 'blue' ? 'border-blue-400/20' : 'border-purple-400/20';
+
+  const displayUrl = entity.imageUrl || generatedUrl;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div
+        className={`mt-4 rounded-xl flex flex-col items-center justify-center min-h-[200px] border-2 ${borderDashed}`}
+        style={{ backgroundColor: bgColor }}
+      >
+        <div
+          className="w-10 h-10 border-4 border-white/10 border-t-current rounded-full animate-spin mb-3"
+          style={{ color: accentColor }}
+        />
+        <p className="text-sm font-medium" style={{ color: accentColor }}>
+          Generating visualization...
+        </p>
+        <p className="text-xs text-slate-500 text-center italic max-w-xs mt-2 px-4">
+          "{entity.imagePrompt}"
+        </p>
+      </div>
+    );
+  }
+
+  // Generated or provided image
+  if (displayUrl) {
+    return (
+      <div className={`mt-4 rounded-xl overflow-hidden border ${borderColor} relative`}>
+        <img
+          src={displayUrl}
+          alt={entity.name}
+          className="w-full h-48 object-cover"
+        />
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent p-3">
+          <p className="text-xs text-slate-400 italic">{entity.imagePrompt}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Placeholder with generate button
+  return (
+    <div
+      className={`mt-4 rounded-xl flex flex-col items-center justify-center min-h-[200px] border-2 border-dashed ${borderDashed} p-6`}
+      style={{ backgroundColor: bgColor }}
+    >
+      <p className="text-sm text-slate-400 italic text-center mb-4">{entity.imagePrompt}</p>
+      {!hasError && (
+        <Button
+          onClick={onGenerate}
+          disabled={loadingAny}
+          variant="ghost"
+          className={`bg-white/5 border border-white/20 hover:bg-white/10 ${textColor}`}
+        >
+          <ImageIcon className="w-4 h-4 mr-2" />
+          Generate Visual
+        </Button>
+      )}
+      <p className="text-xs text-slate-500 text-center mt-3 italic">
+        {hasError ? 'Image generation failed. Try again later.' : 'Click to generate an AI visualization'}
+      </p>
+    </div>
+  );
+};
+
+// ============================================================================
 // Helper Components
 // ============================================================================
 
@@ -76,6 +160,47 @@ interface CompareContrastProps {
  */
 const SideBySideView: React.FC<{ data: CompareContrastData }> = ({ data }) => {
   const { entityA, entityB, sharedAttributes } = data;
+
+  // Image generation state
+  const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
+  const [loadingEntity, setLoadingEntity] = useState<string | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+  const handleGenerateImage = async (entity: EntityInfo, entityKey: string) => {
+    if (!entity.imagePrompt || loadingEntity || generatedImages[entityKey] || entity.imageUrl) return;
+
+    setLoadingEntity(entityKey);
+    setImageErrors(prev => ({ ...prev, [entityKey]: false }));
+
+    try {
+      const response = await fetch('/api/lumina', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generateSpeciesImage',
+          params: {
+            imagePrompt: entity.imagePrompt,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Image generation request failed');
+      }
+
+      const result = await response.json();
+      if (result.imageUrl) {
+        setGeneratedImages(prev => ({ ...prev, [entityKey]: result.imageUrl }));
+      } else {
+        setImageErrors(prev => ({ ...prev, [entityKey]: true }));
+      }
+    } catch (error) {
+      console.error('Failed to generate entity image:', error);
+      setImageErrors(prev => ({ ...prev, [entityKey]: true }));
+    } finally {
+      setLoadingEntity(null);
+    }
+  };
 
   // Get all unique category names
   const allCategories = Array.from(
@@ -93,33 +218,29 @@ const SideBySideView: React.FC<{ data: CompareContrastData }> = ({ data }) => {
         {/* Entity A */}
         <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-sm rounded-2xl border border-blue-400/20 p-6">
           <h3 className="text-2xl font-bold text-blue-300 mb-2">{entityA.name}</h3>
-          {entityA.imageUrl ? (
-            <div className="mt-4 rounded-xl overflow-hidden border border-blue-400/30">
-              <img
-                src={entityA.imageUrl}
-                alt={entityA.name}
-                className="w-full h-48 object-cover"
-              />
-            </div>
-          ) : (
-            <div className="text-sm text-slate-400 italic mt-2">{entityA.imagePrompt}</div>
-          )}
+          <EntityImage
+            entity={entityA}
+            colorScheme="blue"
+            generatedUrl={generatedImages['entityA'] || null}
+            isLoading={loadingEntity === 'entityA'}
+            hasError={imageErrors['entityA'] || false}
+            onGenerate={() => handleGenerateImage(entityA, 'entityA')}
+            loadingAny={!!loadingEntity}
+          />
         </div>
 
         {/* Entity B */}
         <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 backdrop-blur-sm rounded-2xl border border-purple-400/20 p-6">
           <h3 className="text-2xl font-bold text-purple-300 mb-2">{entityB.name}</h3>
-          {entityB.imageUrl ? (
-            <div className="mt-4 rounded-xl overflow-hidden border border-purple-400/30">
-              <img
-                src={entityB.imageUrl}
-                alt={entityB.name}
-                className="w-full h-48 object-cover"
-              />
-            </div>
-          ) : (
-            <div className="text-sm text-slate-400 italic mt-2">{entityB.imagePrompt}</div>
-          )}
+          <EntityImage
+            entity={entityB}
+            colorScheme="purple"
+            generatedUrl={generatedImages['entityB'] || null}
+            isLoading={loadingEntity === 'entityB'}
+            hasError={imageErrors['entityB'] || false}
+            onGenerate={() => handleGenerateImage(entityB, 'entityB')}
+            loadingAny={!!loadingEntity}
+          />
         </div>
       </div>
 

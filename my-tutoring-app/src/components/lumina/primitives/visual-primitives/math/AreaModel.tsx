@@ -3,6 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { usePrimitiveEvaluation, type AreaModelMetrics } from '../../../evaluation';
 import type { PrimitiveEvaluationResult } from '../../../evaluation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export interface AreaModelData {
   title: string;
@@ -360,26 +364,26 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
           <h2 className="text-2xl font-bold text-white tracking-tight">Area Model</h2>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-            <p className="text-xs text-blue-400 font-mono uppercase tracking-wider">
+            <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 text-xs font-mono uppercase tracking-wider">
               {algebraicMode ? 'Algebraic Multiplication' : 'Interactive Multiplication'}
-            </p>
+            </Badge>
           </div>
         </div>
       </div>
 
-      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-blue-500/20 relative overflow-hidden">
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl">
         {/* Background Texture */}
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-10 rounded-3xl"
           style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <div className="relative z-10 w-full">
-          <div className="mb-8 text-center max-w-3xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-2">{data.title}</h3>
-            <p className="text-slate-300 font-light">{data.description}</p>
-          </div>
+        <CardHeader className="relative z-10 text-center">
+          <CardTitle className="text-xl text-slate-100">{data.title}</CardTitle>
+          <CardDescription className="text-slate-300">{data.description}</CardDescription>
+        </CardHeader>
 
+        <CardContent className="relative z-10">
           {/* Progress Indicator */}
           {!hasSubmitted && (
             <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700">
@@ -528,11 +532,13 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
           {/* Input Section for Selected Cell */}
           {selectedCell && !hasSubmitted && (
-            <div className="mt-8 p-6 bg-blue-900/20 rounded-xl border border-blue-500/30">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-4">
-                Step 1: Calculate Partial Product
-              </h4>
-              <div className="space-y-4">
+            <Card className="mt-8 bg-blue-900/20 border-blue-500/30">
+              <CardHeader>
+                <CardTitle className="text-sm font-mono uppercase tracking-wider text-blue-400">
+                  Step 1: Calculate Partial Product
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
                   <label className="block text-sm text-slate-300 mb-2">
                     What is {formatCellEquation(selectedCell[0], selectedCell[1])}?
@@ -552,34 +558,35 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                       placeholder="Enter answer"
                       disabled={hasSubmitted}
                     />
-                    <button
+                    <Button
                       onClick={handleCellSubmit}
                       disabled={!currentInput || hasSubmitted}
-                      className="px-6 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+                      variant="ghost"
+                      className="bg-blue-500/80 text-white border border-blue-400/30 hover:bg-blue-500"
                     >
                       Check
-                    </button>
+                    </Button>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Sum Section */}
           {showSumSection && !hasSubmitted && (
-            <div className="mt-8 p-6 bg-purple-900/20 rounded-xl border border-purple-500/30">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-purple-400 mb-4">
-                Step 2: Add All Partial Products
-              </h4>
-              <div className="mb-4">
+            <Card className="mt-8 bg-purple-900/20 border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="text-sm font-mono uppercase tracking-wider text-purple-400">
+                  Step 2: Add All Partial Products
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="text-center font-mono text-slate-300">
                   {Array.from(cellStates.values())
                     .filter(s => s.isCorrect)
                     .map(s => s.studentAnswer)
                     .join(' + ')}
                 </div>
-              </div>
-              <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-slate-300 mb-2">
                     What is the sum of all partial products?
@@ -597,78 +604,88 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                       className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white font-mono"
                       placeholder="Enter sum"
                     />
-                    <button
+                    <Button
                       onClick={() => {
                         console.log('Button clicked!', { sumInput, hasSubmitted });
                         handleSumSubmit();
                       }}
                       disabled={!sumInput || isSubmitting || hasSubmitted}
-                      className="px-6 py-2 bg-purple-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-600 transition-colors"
+                      variant="ghost"
+                      className="bg-purple-500/80 text-white border border-purple-400/30 hover:bg-purple-500"
                     >
                       {isSubmitting ? 'Submitting...' : 'Submit Final Answer'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Feedback Section */}
           {(hasSubmitted || sumAttempted) && (
-            <div className={`mt-8 p-6 rounded-xl border ${
+            <Card className={`mt-8 ${
               sumCorrect
                 ? 'bg-green-900/20 border-green-500/30'
                 : 'bg-yellow-900/20 border-yellow-500/30'
             }`}>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className={`text-lg font-bold ${sumCorrect ? 'text-green-400' : 'text-yellow-400'}`}>
-                  {sumCorrect ? '✓ Perfect! All correct!' : 'Good effort!'}
-                </h4>
-                <button
-                  onClick={handleReset}
-                  className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors"
-                >
-                  Try Another Problem
-                </button>
-              </div>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className={`text-lg font-bold ${sumCorrect ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {sumCorrect ? '✓ Perfect! All correct!' : 'Good effort!'}
+                  </h4>
+                  <Button
+                    onClick={handleReset}
+                    variant="ghost"
+                    className="bg-slate-600/80 text-white border border-slate-500/30 hover:bg-slate-500"
+                  >
+                    Try Another Problem
+                  </Button>
+                </div>
 
-              <div className="text-sm text-slate-300 space-y-2">
-                <p>You completed {correctCells} of {totalCells} partial products correctly.</p>
-                {sumCorrect ? (
-                  <p>Your final answer of <span className="font-bold text-white">{sumInput}</span> is correct!</p>
-                ) : (
-                  <p>The correct answer is: <span className="font-bold text-white">{totalProduct}</span></p>
-                )}
-              </div>
-            </div>
+                <div className="text-sm text-slate-300 space-y-2">
+                  <p>You completed {correctCells} of {totalCells} partial products correctly.</p>
+                  {sumCorrect ? (
+                    <p>Your final answer of <span className="font-bold text-white">{sumInput}</span> is correct!</p>
+                  ) : (
+                    <p>The correct answer is: <span className="font-bold text-white">{totalProduct}</span></p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Instructions */}
-          <div className="mt-8 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
-            <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">
-              How to Use This Tool
-            </h4>
-            <ul className="text-sm text-slate-300 space-y-2">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-400 mt-1">1.</span>
-                <span>Click on each cell and calculate the partial product (e.g., 30 × 4 = 120)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-400 mt-1">2.</span>
-                <span>Complete all cells to unlock Step 2</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-400 mt-1">3.</span>
-                <span>Add all your partial products together to get the final answer</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-400 mt-1">4.</span>
-                <span>This demonstrates the Distributive Property of multiplication</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
+          <Accordion type="single" collapsible className="mt-8">
+            <AccordionItem value="instructions" className="border-white/10 bg-slate-800/30 rounded-xl px-6">
+              <AccordionTrigger className="text-slate-300 hover:text-slate-100 hover:no-underline">
+                <span className="text-sm font-mono uppercase tracking-wider text-slate-400">
+                  How to Use This Tool
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="pt-3 pb-4">
+                <ul className="text-sm text-slate-300 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 mt-0.5">1</Badge>
+                    <span>Click on each cell and calculate the partial product (e.g., 30 × 4 = 120)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 mt-0.5">2</Badge>
+                    <span>Complete all cells to unlock Step 2</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 mt-0.5">3</Badge>
+                    <span>Add all your partial products together to get the final answer</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 mt-0.5">4</Badge>
+                    <span>This demonstrates the Distributive Property of multiplication</span>
+                  </li>
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
     </div>
   );
 };

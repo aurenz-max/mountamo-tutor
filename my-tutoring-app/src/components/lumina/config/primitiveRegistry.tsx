@@ -48,6 +48,7 @@ import LifeCycleSequencer from '../primitives/visual-primitives/biology/LifeCycl
 import BodySystemExplorer from '../primitives/visual-primitives/biology/BodySystemExplorer';
 import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiorama';
 import CompareContrast from '../primitives/visual-primitives/biology/CompareContrast';
+import ProcessAnimator from '../primitives/visual-primitives/biology/ProcessAnimator';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -582,6 +583,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true, // Venn-interactive mode supports evaluation
+  },
+
+  'bio-process-animator': {
+    component: ProcessAnimator,
+    sectionTitle: 'Process Animation',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true, // Checkpoint questions support evaluation
   },
 
   'media-player': {

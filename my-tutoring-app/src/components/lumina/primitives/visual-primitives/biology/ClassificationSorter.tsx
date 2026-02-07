@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ClassificationSorterMetrics } from '../../../evaluation/types';
 import { Lightbulb, CheckCircle2, XCircle, RotateCcw, Sparkles } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * Classification Sorter - Interactive biology primitive for categorizing organisms
@@ -338,41 +341,34 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
     const isHovered = hoveredCategory === category.id;
 
     return (
-      <div
+      <Card
         key={category.id}
         onDragOver={(e) => handleDragOver(e, category.id)}
         onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, category.id)}
         className={`
-          min-h-[200px] p-4 rounded-xl border-2 transition-all
-          ${isHovered
-            ? 'border-white/30 bg-white/5'
-            : 'border-slate-700/50 bg-slate-800/30'
-          }
+          min-h-[200px] backdrop-blur-xl bg-slate-900/40 border-white/10 transition-all
+          ${isHovered ? 'border-white/30 bg-white/5' : ''}
         `}
       >
-        {/* Category Header */}
-        <div className="mb-4">
-          <div className="text-lg font-bold text-slate-200 mb-1">
-            {category.label}
+        <CardHeader className="pb-3">
+          <CardTitle className="text-slate-200">{category.label}</CardTitle>
+          <CardDescription className="text-slate-400">{category.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Items in Category */}
+          <div className="space-y-2">
+            {itemsInCategory.map(item => renderItem(item, true))}
           </div>
-          <div className="text-xs text-slate-400">
-            {category.description}
-          </div>
-        </div>
 
-        {/* Items in Category */}
-        <div className="space-y-2">
-          {itemsInCategory.map(item => renderItem(item, true))}
-        </div>
-
-        {/* Empty State */}
-        {itemsInCategory.length === 0 && (
-          <div className="h-32 flex items-center justify-center text-slate-600 text-sm border-2 border-dashed border-slate-700/50 rounded-lg">
-            Drop items here
-          </div>
-        )}
-      </div>
+          {/* Empty State */}
+          {itemsInCategory.length === 0 && (
+            <div className="h-32 flex items-center justify-center text-slate-600 text-sm border-2 border-dashed border-slate-700/50 rounded-lg">
+              Drop items here
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   };
 
@@ -391,22 +387,20 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
   return (
     <div className={`w-full ${className}`}>
       {/* Header */}
-      <div className="mb-8">
-        <h3 className="text-2xl font-bold text-slate-100 mb-2">
-          {data.title}
-        </h3>
-        <p className="text-slate-400 mb-4">
-          {data.instructions}
-        </p>
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl mb-8">
+        <CardHeader>
+          <CardTitle className="text-slate-100">{data.title}</CardTitle>
+          <CardDescription className="text-slate-400">{data.instructions}</CardDescription>
 
-        {/* Sorting Rule */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
-          <Sparkles className="w-4 h-4" style={{ color: colors.primary }} />
-          <span className="text-sm font-mono text-slate-300">
-            {data.sortingRule}
-          </span>
-        </div>
-      </div>
+          {/* Sorting Rule Badge */}
+          <div className="flex items-center gap-2 pt-2">
+            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300">
+              <Sparkles className="w-3 h-3 mr-1" style={{ color: colors.primary }} />
+              {data.sortingRule}
+            </Badge>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Progress Bar */}
       {!hasSubmitted && (
@@ -442,43 +436,50 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
 
       {/* Unplaced Items */}
       {!hasSubmitted && getUnplacedItems().length > 0 && (
-        <div className="mb-6 p-6 rounded-xl bg-slate-800/20 border border-slate-700/50">
-          <div className="text-sm font-mono text-slate-400 uppercase tracking-wider mb-4">
-            Items to Sort ({getUnplacedItems().length} remaining)
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {getUnplacedItems().map(item => renderItem(item, false))}
-          </div>
-        </div>
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 mb-6">
+          <CardHeader>
+            <CardTitle className="text-sm font-mono text-slate-400 uppercase tracking-wider">
+              Items to Sort ({getUnplacedItems().length} remaining)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {getUnplacedItems().map(item => renderItem(item, false))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Action Buttons */}
       <div className="flex gap-3">
-        <button
+        <Button
           onClick={handleSubmit}
           disabled={hasSubmitted || correctItems < totalItems}
+          variant="ghost"
           className={`
-            px-6 py-3 rounded-lg font-medium transition-all
+            px-6 py-3 font-medium
             ${hasSubmitted || correctItems < totalItems
               ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
-              : 'text-white hover:scale-105 active:scale-95'
+              : 'bg-white/5 text-white border border-white/20 hover:bg-white/10'
             }
           `}
           style={{
             backgroundColor: hasSubmitted || correctItems < totalItems ? undefined : colors.primary,
+            borderColor: hasSubmitted || correctItems < totalItems ? undefined : 'transparent',
           }}
         >
           {hasSubmitted ? 'Submitted' : 'Submit Classification'}
-        </button>
+        </Button>
 
         {hasSubmitted && (
-          <button
+          <Button
             onClick={handleReset}
-            className="px-6 py-3 rounded-lg font-medium bg-slate-700 text-slate-300 hover:bg-slate-600 transition-all flex items-center gap-2"
+            variant="ghost"
+            className="px-6 py-3 bg-slate-700 text-slate-300 hover:bg-slate-600"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-4 h-4 mr-2" />
             Try Again
-          </button>
+          </Button>
         )}
       </div>
 

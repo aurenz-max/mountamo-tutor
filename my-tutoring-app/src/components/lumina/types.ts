@@ -1101,6 +1101,7 @@ export type ComponentId =
   | 'body-system-explorer' // Interactive layered anatomy diagram with organ details and pathway tracing (grades 2-8)
   | 'habitat-diorama'    // Interactive ecosystem explorer with organisms, relationships, and environmental features (K-8)
   | 'bio-compare-contrast' // Side-by-side or Venn diagram comparison of biological entities (organisms, cells, organs, processes, biomes) (K-8)
+  | 'bio-process-animator' // Step-through animation of biological processes with narrated stages and checkpoint questions (grades 2-8)
 
   // Media & Multimedia
   | 'media-player'       // Audio-visual lesson player with synchronized narration and images
@@ -1256,3 +1257,4 @@ export type { LifeCycleSequencerData, LifeCycleStage, MisconceptionTrap } from '
 export type { BodySystemExplorerData, OrganInfo, Pathway, PathwayStep, Layer, BodySystem } from './primitives/visual-primitives/biology/BodySystemExplorer';
 export type { HabitatDioramaData, Organism, Relationship, EnvironmentalFeature, DisruptionScenario } from './primitives/visual-primitives/biology/HabitatDiorama';
 export type { CompareContrastData, EntityAttribute, EntityInfo, SharedAttribute } from './primitives/visual-primitives/biology/CompareContrast';
+export type { ProcessAnimatorData, ProcessStage, CheckpointQuestion } from './primitives/visual-primitives/biology/ProcessAnimator';

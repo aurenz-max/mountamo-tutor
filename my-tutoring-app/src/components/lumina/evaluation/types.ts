@@ -1376,6 +1376,34 @@ export interface MotionDiagramMetrics extends BasePrimitiveMetrics {
 // Biology Primitives
 // -----------------------------------------------------------------------------
 
+export interface ProcessAnimatorMetrics extends BasePrimitiveMetrics {
+  type: 'bio-process-animator';
+
+  // Process identification
+  processName: string;
+  scale: 'molecular' | 'cellular' | 'organ' | 'organism' | 'ecosystem';
+
+  // Scope
+  totalStages: number;
+  totalCheckpoints: number;
+
+  // Checkpoint performance
+  checkpointResponses: Array<{
+    checkpointIndex: number;
+    selectedIndex: number;
+    correctIndex: number;
+    isCorrect: boolean;
+    timeMs: number;
+  }>;
+
+  // Completion
+  completedFullAnimation: boolean;
+  replayCount: number;
+
+  // Overall performance
+  allCheckpointsCorrect: boolean;
+}
+
 export interface CompareContrastMetrics extends BasePrimitiveMetrics {
   type: 'bio-compare-contrast';
 
@@ -1450,6 +1478,7 @@ export type PrimitiveMetrics =
   | ClassificationSorterMetrics
   | LifeCycleSequencerMetrics
   | CompareContrastMetrics
+  | ProcessAnimatorMetrics
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics

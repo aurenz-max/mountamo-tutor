@@ -25,6 +25,7 @@ import { generateBodySystemExplorer } from '../../biology/gemini-body-system-exp
 import { generateHabitatDiorama } from '../../biology/gemini-habitat-diorama';
 import { generateCompareContrast } from '../../biology/gemini-compare-contrast';
 import { generateCompareContrastWithImages, generateCompareContrastWithImagesFromTopic } from '../../biology/gemini-compare-contrast-with-images';
+import { generateProcessAnimator } from '../../biology/gemini-process-animator';
 
 // ============================================================================
 // Helper Types
@@ -464,11 +465,60 @@ registerGenerator('bio-compare-contrast', async (item, topic, gradeContext) => {
   }
 });
 
+/**
+ * Process Animator - Step-through biological process animation
+ *
+ * Perfect for:
+ * - Photosynthesis, cellular respiration, fermentation
+ * - Digestion, blood circulation, breathing
+ * - Pollination, germination, transpiration
+ * - Protein synthesis, DNA replication
+ * - Any multi-step biological process
+ *
+ * Features:
+ * - Step-by-step animation control (play, pause, step forward/back)
+ * - Narrated stages with visual descriptions
+ * - Checkpoint questions embedded at key moments
+ * - Progress tracking with stage indicator bar
+ * - Evaluation support for checkpoint responses
+ * - Grade-appropriate scaling (2-8)
+ *
+ * Grade Scaling:
+ * - 2-4: Simple vocabulary, 3-5 stages, basic comprehension questions
+ * - 5-6: Scientific terms introduced, 4-6 stages, causal understanding questions
+ * - 7-8: Advanced terminology, 5-8 stages, application and synthesis questions
+ */
+registerGenerator('bio-process-animator', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band for process animator
+  const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
+    '2': '2-4',
+    '3': '2-4',
+    '4': '2-4',
+    '5': '5-6',
+    '6': '5-6',
+    '7': '7-8',
+    '8': '7-8',
+    '2-4': '2-4',
+    '5-6': '5-6',
+    '7-8': '7-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
+
+  return {
+    type: 'bio-process-animator',
+    instanceId: item.instanceId,
+    data: await generateProcessAnimator(topic, gradeBand, config),
+  };
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 7 biology generators
+// Total: 8 biology generators
 // - species-profile
 // - organism-card
 // - classification-sorter
@@ -476,5 +526,6 @@ registerGenerator('bio-compare-contrast', async (item, topic, gradeContext) => {
 // - body-system-explorer
 // - habitat-diorama
 // - bio-compare-contrast
+// - bio-process-animator
 
-console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator');
