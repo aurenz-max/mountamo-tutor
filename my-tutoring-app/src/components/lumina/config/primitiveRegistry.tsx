@@ -45,6 +45,7 @@ import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
 import OrganismCard from '../primitives/visual-primitives/biology/OrganismCard';
 import ClassificationSorter from '../primitives/visual-primitives/biology/ClassificationSorter';
 import LifeCycleSequencer from '../primitives/visual-primitives/biology/LifeCycleSequencer';
+import BodySystemExplorer from '../primitives/visual-primitives/biology/BodySystemExplorer';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -549,6 +550,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true, // Interactive temporal sequencing with evaluation
+  },
+
+  'body-system-explorer': {
+    component: BodySystemExplorer,
+    sectionTitle: 'Body System Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
+    supportsEvaluation: false, // Exploratory anatomy tool (could add evaluation later)
   },
 
   'media-player': {

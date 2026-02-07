@@ -5,6 +5,7 @@ import OrganismCard from '../primitives/visual-primitives/biology/OrganismCard';
 import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
 import ClassificationSorter from '../primitives/visual-primitives/biology/ClassificationSorter';
 import LifeCycleSequencer from '../primitives/visual-primitives/biology/LifeCycleSequencer';
+import BodySystemExplorer from '../primitives/visual-primitives/biology/BodySystemExplorer';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -15,7 +16,7 @@ interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -23,6 +24,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'species-profile', label: 'Species Profile', icon: '🦖', topic: 'Detailed species information' },
   { value: 'classification-sorter', label: 'Classification Sorter', icon: '🔍', topic: 'Interactive sorting activity' },
   { value: 'life-cycle-sequencer', label: 'Life Cycle Sequencer', icon: '🔄', topic: 'Temporal sequence learning' },
+  { value: 'body-system-explorer', label: 'Body System Explorer', icon: '🫁', topic: 'Interactive anatomy exploration' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -86,6 +88,12 @@ const PrimitiveRenderer: React.FC<{
             instanceId: `life-cycle-sequencer-${Date.now()}`,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
+        />
+      );
+    case 'body-system-explorer':
+      return (
+        <BodySystemExplorer
+          data={data as Parameters<typeof BodySystemExplorer>[0]['data']}
         />
       );
     default:
@@ -210,8 +218,19 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
         selectedPrimitive === 'species-profile' ? 'Tyrannosaurus Rex' :
         selectedPrimitive === 'classification-sorter' ? 'Sort animals by vertebrate class' :
         selectedPrimitive === 'life-cycle-sequencer' ? 'Butterfly metamorphosis' :
+        selectedPrimitive === 'body-system-explorer' ? 'digestive system' :
         'Monarch Butterfly';
       const currentTopic = topic.trim() || defaultTopic;
+
+      // Build config based on primitive type
+      const config: Record<string, unknown> = {};
+      if (selectedPrimitive === 'body-system-explorer') {
+        // For body system explorer, extract the system from the topic
+        const systemMatch = currentTopic.toLowerCase().match(/(digestive|circulatory|respiratory|nervous|skeletal|muscular|immune|endocrine|reproductive|urinary)/);
+        if (systemMatch) {
+          config.system = systemMatch[1];
+        }
+      }
 
       const response = await fetch('/api/lumina', {
         method: 'POST',
@@ -222,7 +241,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
             componentId: selectedPrimitive,
             topic: currentTopic,
             gradeLevel: selectedGrade,
-            config: {},
+            config,
           },
         }),
       });

@@ -21,6 +21,7 @@ import { generateSpeciesProfile } from '../../biology/gemini-species-profile';
 import { generateOrganismCard } from '../../biology/gemini-organism-card';
 import { generateClassificationSorter } from '../../biology/gemini-classification-sorter';
 import { generateLifeCycleSequencer } from '../../biology/gemini-life-cycle-sequencer';
+import { generateBodySystemExplorer } from '../../biology/gemini-body-system-explorer';
 
 // ============================================================================
 // Helper Types
@@ -229,14 +230,106 @@ registerGenerator('life-cycle-sequencer', async (item, topic, gradeContext) => {
   };
 });
 
+/**
+ * Body System Explorer - Interactive layered anatomy diagram
+ *
+ * Perfect for:
+ * - Human body systems (digestive, circulatory, respiratory, nervous, etc.)
+ * - Anatomy lessons with organ details
+ * - Understanding how organs work together
+ * - Tracing pathways (blood flow, digestion, nerve signals)
+ * - Teaching structure-function relationships
+ *
+ * Features:
+ * - Toggle layers to show/hide different systems or organ groups
+ * - Click organs to see detailed function information and fun facts
+ * - Interactive pathway tracing (e.g., path of food, blood circulation)
+ * - Visual connections between organs
+ * - Grade-appropriate complexity and vocabulary
+ * - SVG-based layered body diagram
+ *
+ * Grade Scaling:
+ * - 2-4: Simple vocabulary, 4-6 main organs, basic pathways (3-5 steps)
+ * - 5-6: Scientific terms, 6-8 organs, moderate complexity pathways (5-7 steps)
+ * - 7-8: Medical terminology, 8-10+ organs, complex pathways with cellular detail (7-10+ steps)
+ */
+registerGenerator('body-system-explorer', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band for body system explorer
+  const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
+    '2': '2-4',
+    '3': '2-4',
+    '4': '2-4',
+    '5': '5-6',
+    '6': '5-6',
+    '7': '7-8',
+    '8': '7-8',
+    '2-4': '2-4',
+    '5-6': '5-6',
+    '7-8': '7-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
+
+  // Extract system from config or try to infer from topic
+  const systemKeywords: Record<string, string> = {
+    'digest': 'digestive',
+    'stomach': 'digestive',
+    'intestine': 'digestive',
+    'heart': 'circulatory',
+    'blood': 'circulatory',
+    'circul': 'circulatory',
+    'lung': 'respiratory',
+    'breath': 'respiratory',
+    'respir': 'respiratory',
+    'brain': 'nervous',
+    'nerve': 'nervous',
+    'neuron': 'nervous',
+    'bone': 'skeletal',
+    'skeleton': 'skeletal',
+    'muscle': 'muscular',
+    'immune': 'immune',
+    'lymph': 'immune',
+    'hormone': 'endocrine',
+    'gland': 'endocrine',
+    'kidney': 'urinary',
+    'bladder': 'urinary',
+    'urin': 'urinary',
+  };
+
+  let system = config.system;
+  if (!system) {
+    const topicLower = topic.toLowerCase();
+    for (const [keyword, systemName] of Object.entries(systemKeywords)) {
+      if (topicLower.includes(keyword)) {
+        system = systemName;
+        break;
+      }
+    }
+  }
+
+  // Default to digestive if no system detected
+  if (!system) {
+    system = 'digestive';
+  }
+
+  return {
+    type: 'body-system-explorer',
+    instanceId: item.instanceId,
+    data: await generateBodySystemExplorer(system, gradeBand, config),
+  };
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 4 biology generators
+// Total: 5 biology generators
 // - species-profile
 // - organism-card
 // - classification-sorter
 // - life-cycle-sequencer
+// - body-system-explorer
 
-console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer');
