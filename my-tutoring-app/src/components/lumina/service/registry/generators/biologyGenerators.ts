@@ -26,6 +26,7 @@ import { generateHabitatDiorama } from '../../biology/gemini-habitat-diorama';
 import { generateCompareContrast } from '../../biology/gemini-compare-contrast';
 import { generateCompareContrastWithImages, generateCompareContrastWithImagesFromTopic } from '../../biology/gemini-compare-contrast-with-images';
 import { generateProcessAnimator } from '../../biology/gemini-process-animator';
+import { generateMicroscopeViewer } from '../../biology/gemini-microscope-viewer';
 
 // ============================================================================
 // Helper Types
@@ -514,11 +515,56 @@ registerGenerator('bio-process-animator', async (item, topic, gradeContext) => {
   };
 });
 
+/**
+ * Microscope Viewer - Simulated microscope experience
+ *
+ * Perfect for:
+ * - Cell biology (plant cells, animal cells, bacteria)
+ * - Tissue examination (muscle, epithelial, nerve)
+ * - Microorganism observation (paramecium, amoeba, euglena)
+ * - Mineral/crystal structures
+ * - Teaching microscope skills and scientific observation
+ *
+ * Features:
+ * - Circular lens viewport with zoom levels (40x, 100x, 400x)
+ * - Structure labeling tasks at each magnification
+ * - Guided observation prompts
+ * - AI-generated microscope images
+ * - Evaluation support for labeling accuracy and observation quality
+ *
+ * Grade Scaling:
+ * - 3-5: Simple vocabulary, 2-3 zoom levels, 2-4 structures per level, observable features
+ * - 6-8: Scientific terms, 3-4 zoom levels, 3-6 structures per level, organelle detail
+ */
+registerGenerator('microscope-viewer', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '3-5' | '6-8'> = {
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
+
+  return {
+    type: 'microscope-viewer',
+    instanceId: item.instanceId,
+    data: await generateMicroscopeViewer(topic, gradeBand, config),
+  };
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 8 biology generators
+// Total: 9 biology generators
 // - species-profile
 // - organism-card
 // - classification-sorter
@@ -528,4 +574,4 @@ registerGenerator('bio-process-animator', async (item, topic, gradeContext) => {
 // - bio-compare-contrast
 // - bio-process-animator
 
-console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer');

@@ -90,6 +90,8 @@ export type {
   MoonPhasesLabMetrics,
   MissionPlannerMetrics,
   TelescopeSimulatorMetrics,
+  // Biology metrics
+  MicroscopeViewerMetrics,
   // Physics metrics
   MotionDiagramMetrics,
   // Session types

@@ -49,6 +49,7 @@ import BodySystemExplorer from '../primitives/visual-primitives/biology/BodySyst
 import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiorama';
 import CompareContrast from '../primitives/visual-primitives/biology/CompareContrast';
 import ProcessAnimator from '../primitives/visual-primitives/biology/ProcessAnimator';
+import MicroscopeViewer from '../primitives/visual-primitives/biology/MicroscopeViewer';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -593,6 +594,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true, // Checkpoint questions support evaluation
+  },
+
+  'microscope-viewer': {
+    component: MicroscopeViewer,
+    sectionTitle: 'Microscope Viewer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
+    supportsEvaluation: true, // Labeling and observation tracking
   },
 
   'media-player': {

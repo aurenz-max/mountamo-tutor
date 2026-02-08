@@ -9,6 +9,7 @@ import BodySystemExplorer from '../primitives/visual-primitives/biology/BodySyst
 import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiorama';
 import CompareContrast from '../primitives/visual-primitives/biology/CompareContrast';
 import ProcessAnimator from '../primitives/visual-primitives/biology/ProcessAnimator';
+import MicroscopeViewer from '../primitives/visual-primitives/biology/MicroscopeViewer';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -19,7 +20,7 @@ interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -31,6 +32,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'habitat-diorama', label: 'Habitat Diorama', icon: '🌳', topic: 'Interactive ecosystem explorer' },
   { value: 'bio-compare-contrast', label: 'Compare & Contrast', icon: '🔄', topic: 'Frogs vs Toads' },
   { value: 'bio-process-animator', label: 'Process Animator', icon: '🎬', topic: 'Photosynthesis' },
+  { value: 'microscope-viewer', label: 'Microscope Viewer', icon: '🔬', topic: 'Onion cell' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -128,6 +130,16 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof ProcessAnimator>[0]['data']),
             instanceId: `bio-process-animator-${Date.now()}`,
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'microscope-viewer':
+      return (
+        <MicroscopeViewer
+          data={{
+            ...(data as Parameters<typeof MicroscopeViewer>[0]['data']),
+            instanceId: `microscope-viewer-${Date.now()}`,
             onEvaluationSubmit,
           }}
         />
@@ -256,6 +268,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
         selectedPrimitive === 'life-cycle-sequencer' ? 'Butterfly metamorphosis' :
         selectedPrimitive === 'body-system-explorer' ? 'digestive system' :
         selectedPrimitive === 'habitat-diorama' ? 'Coral Reef Ecosystem' :
+        selectedPrimitive === 'microscope-viewer' ? 'Onion epidermal cell' :
         'Monarch Butterfly';
       const currentTopic = topic.trim() || defaultTopic;
 
@@ -387,6 +400,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                 {selectedPrimitive === 'classification-sorter' ? 'Topic (optional)' :
                  selectedPrimitive === 'life-cycle-sequencer' ? 'Life Cycle (optional)' :
                  selectedPrimitive === 'habitat-diorama' ? 'Ecosystem/Habitat (optional)' :
+                 selectedPrimitive === 'microscope-viewer' ? 'Specimen (optional)' :
                  'Species/Organism (optional)'}
               </label>
               <input
@@ -397,6 +411,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                   selectedPrimitive === 'classification-sorter' ? 'e.g., "Sort by diet"' :
                   selectedPrimitive === 'life-cycle-sequencer' ? 'e.g., "Frog life cycle"' :
                   selectedPrimitive === 'habitat-diorama' ? 'e.g., "African Savanna"' :
+                  selectedPrimitive === 'microscope-viewer' ? 'e.g., "Onion cell", "Paramecium"' :
                   'Leave blank for default...'
                 }
                 className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500"

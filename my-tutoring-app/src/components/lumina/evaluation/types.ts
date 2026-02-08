@@ -1424,6 +1424,37 @@ export interface CompareContrastMetrics extends BasePrimitiveMetrics {
   }>;
 }
 
+export interface MicroscopeViewerMetrics extends BasePrimitiveMetrics {
+  type: 'microscope-viewer';
+
+  // Specimen info
+  specimenName: string;
+  specimenType: string;
+
+  // Exploration
+  totalZoomLevels: number;
+  zoomLevelsExplored: number;
+
+  // Labeling performance
+  totalStructures: number;
+  correctlyLabeled: number;
+  labelingAttempts: Array<{
+    structureId: string;
+    studentLabel: string;
+    correctLabel: string;
+    isCorrect: boolean;
+  }>;
+  labelAccuracy: number;               // 0-100
+
+  // Observation responses
+  observationResponses: Array<{
+    zoomLevel: string;
+    prompt: string;
+    studentResponse: string;
+  }>;
+  observationsSubmitted: number;
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1479,6 +1510,7 @@ export type PrimitiveMetrics =
   | LifeCycleSequencerMetrics
   | CompareContrastMetrics
   | ProcessAnimatorMetrics
+  | MicroscopeViewerMetrics
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics
