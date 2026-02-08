@@ -263,14 +263,14 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
           onMouseLeave={() => setHoveredItem(null)}
         >
           {/* Image Section */}
-          <div className="relative h-48 overflow-hidden bg-slate-900">
+          <div className="relative h-72 overflow-hidden bg-slate-900">
             <div className="absolute inset-0 transition-all duration-700 group-hover:scale-110">
               {image1 ? (
-                <img src={image1} alt={data.item1.name} className="w-full h-full object-cover opacity-60" />
+                <img src={image1} alt={data.item1.name} className="w-full h-full object-cover opacity-80" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-blue-900/40 to-slate-900 animate-pulse"></div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
             </div>
 
             {/* Label Badge */}
@@ -333,14 +333,14 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
           onMouseLeave={() => setHoveredItem(null)}
         >
           {/* Image Section */}
-          <div className="relative h-48 overflow-hidden bg-slate-900">
+          <div className="relative h-72 overflow-hidden bg-slate-900">
             <div className="absolute inset-0 transition-all duration-700 group-hover:scale-110">
               {image2 ? (
-                <img src={image2} alt={data.item2.name} className="w-full h-full object-cover opacity-60" />
+                <img src={image2} alt={data.item2.name} className="w-full h-full object-cover opacity-80" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-orange-900/40 to-slate-900 animate-pulse"></div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
             </div>
 
             {/* Label Badge */}

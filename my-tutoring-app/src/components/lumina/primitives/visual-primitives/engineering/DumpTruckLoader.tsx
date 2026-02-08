@@ -21,7 +21,6 @@ import {
  * EVALUATION INTEGRATION:
  * - Tracks loads completed, capacity management, weight distribution
  * - Submits evaluation metrics on challenge completion
- * - Uses Verlet integration for realistic material physics
  */
 
 export interface DumpTruckLoaderData {
@@ -62,19 +61,15 @@ interface DumpTruckLoaderProps {
   className?: string;
 }
 
-// Verlet physics particle for material
-interface MaterialParticle {
+type TruckState = 'loading' | 'driving-to-dump' | 'dumping' | 'driving-back';
+
+// Dump pile particle (settled at dump zone)
+interface DumpPileParticle {
   x: number;
   y: number;
-  oldX: number;
-  oldY: number;
   radius: number;
   color: string;
-  inTruck: boolean;
-  dumped: boolean;
 }
-
-type TruckState = 'loading' | 'driving-to-dump' | 'dumping' | 'driving-back';
 
 const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) => {
   const {
@@ -106,14 +101,22 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
 
   // Truck state
   const [truckState, setTruckState] = useState<TruckState>('loading');
-  const [truckX, setTruckX] = useState(100); // Truck position
-  const [bedAngle, setBedAngle] = useState(0); // Bed tilt angle (0 = flat, 45 = dumping)
+  const [truckX, setTruckX] = useState(100);
+  const [bedAngle, setBedAngle] = useState(0);
 
-  // Material and loading state
-  const [particles, setParticles] = useState<MaterialParticle[]>([]);
+  // Material state - track as counts, not individual particles
   const [currentWeight, setCurrentWeight] = useState(0);
   const [currentVolume, setCurrentVolume] = useState(0);
   const [sourceRemaining, setSourceRemaining] = useState(sourceSize);
+
+  // Dump pile accumulation
+  const [dumpPileParticles, setDumpPileParticles] = useState<DumpPileParticle[]>([]);
+
+  // Source pile visual size (shrinks as material is taken)
+  const [sourcePileSize, setSourcePileSize] = useState(1.0); // 0-1 fraction
+
+  // Dumping animation state
+  const [dumpAnimProgress, setDumpAnimProgress] = useState(0); // 0 to 1
 
   // Progress tracking
   const [loadsCompleted, setLoadsCompleted] = useState(0);
@@ -124,7 +127,6 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
 
   // Animation
   const animationFrameRef = useRef<number>();
-  const lastTimeRef = useRef<number>(Date.now());
   const startTimeRef = useRef<number>(Date.now());
 
   // Evaluation hook
@@ -132,7 +134,6 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
     submitResult,
     hasSubmitted,
     resetAttempt,
-    isEvaluationEnabled,
   } = usePrimitiveEvaluation<DumpTruckLoaderMetrics>({
     primitiveType: 'dump-truck-loader',
     instanceId: instanceId || `dump-truck-loader-${Date.now()}`,
@@ -156,142 +157,52 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
 
   const materialColor = getMaterialColor(materialType);
 
-  // Initialize material source pile
+  // Helper to darken a color
+  function darkenColor(hex: string, factor: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgb(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)})`;
+  }
+
+  // Helper to draw a rounded rect
+  const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  };
+
+  // Update source pile size when remaining changes
   useEffect(() => {
-    const initialParticles: MaterialParticle[] = [];
-    const pileX = 100;
-    const pileY = canvasSize.height - 100;
-    const particlesCount = Math.min(100, Math.floor(sourceSize / 2)); // Limit particle count for performance
-
-    for (let i = 0; i < particlesCount; i++) {
-      const angle = Math.random() * Math.PI;
-      const distance = Math.random() * 60;
-      const x = pileX + Math.cos(angle) * distance;
-      const y = pileY - Math.random() * 40;
-
-      initialParticles.push({
-        x,
-        y,
-        oldX: x,
-        oldY: y,
-        radius: 3 + Math.random() * 2,
-        color: materialColor,
-        inTruck: false,
-        dumped: false,
-      });
-    }
-
-    setParticles(initialParticles);
-  }, [sourceSize, materialColor, canvasSize.height]);
-
-  // Verlet integration physics update
-  const updatePhysics = useCallback((deltaTime: number) => {
-    const dt = Math.min(deltaTime / 1000, 0.05); // Cap delta time for stability
-    const gravity = 400; // Pixels per second squared
-    const damping = 0.98;
-
-    setParticles(prevParticles => {
-      const updated = prevParticles.map(particle => {
-        if (particle.inTruck && truckState === 'loading') {
-          // Particles in truck bed stay put during loading
-          return particle;
-        }
-
-        if (particle.inTruck && truckState === 'dumping') {
-          // Particles slide out when dumping
-          const bedTilt = bedAngle * Math.PI / 180;
-          const slideForce = Math.sin(bedTilt) * 300;
-
-          const vx = particle.x - particle.oldX;
-          const vy = particle.y - particle.oldY;
-
-          const newX = particle.x + vx * damping + slideForce * dt * dt;
-          const newY = particle.y + vy * damping + gravity * dt * dt;
-
-          return {
-            ...particle,
-            oldX: particle.x,
-            oldY: particle.y,
-            x: newX,
-            y: newY,
-          };
-        }
-
-        if (particle.dumped) {
-          // Dumped particles settle on the ground
-          const vx = particle.x - particle.oldX;
-          const vy = particle.y - particle.oldY;
-
-          let newX = particle.x + vx * damping;
-          let newY = particle.y + vy * damping + gravity * dt * dt;
-
-          // Ground collision
-          const groundY = canvasSize.height - 50;
-          if (newY + particle.radius > groundY) {
-            newY = groundY - particle.radius;
-            // Bounce with energy loss
-            const bounceVy = (newY - particle.y) * 0.3;
-            newY = groundY - particle.radius;
-            particle.oldY = newY + bounceVy;
-          }
-
-          return {
-            ...particle,
-            oldX: particle.x,
-            oldY: particle.y,
-            x: newX,
-            y: newY,
-          };
-        }
-
-        return particle;
-      });
-
-      return updated;
-    });
-  }, [bedAngle, truckState, canvasSize.height]);
+    setSourcePileSize(Math.max(0, sourceRemaining / sourceSize));
+  }, [sourceRemaining, sourceSize]);
 
   // Handle loading material into truck
   const handleLoadMaterial = () => {
     if (truckState !== 'loading') return;
     if (sourceRemaining <= 0) return;
 
-    const loadAmount = Math.min(5, sourceRemaining); // Load 5 units at a time
+    const loadAmount = Math.min(5, sourceRemaining);
     const loadWeight = loadAmount * materialDensity;
     const loadVolume = loadAmount;
 
-    // Check capacity constraints
     if (currentWeight + loadWeight > truckCapacity) {
       setOverloadAttempts(prev => prev + 1);
-      return; // Too heavy
+      return;
     }
 
     if (currentVolume + loadVolume > bedVolume) {
       setOverloadAttempts(prev => prev + 1);
-      return; // Too full
+      return;
     }
-
-    // Add particles to truck
-    setParticles(prevParticles => {
-      let addedCount = 0;
-      const updated = prevParticles.map(particle => {
-        if (!particle.inTruck && !particle.dumped && addedCount < 5) {
-          addedCount++;
-          const truckBedX = truckX + 40;
-          const truckBedY = canvasSize.height - 150 - currentVolume * 1.5;
-          return {
-            ...particle,
-            x: truckBedX + Math.random() * 30,
-            y: truckBedY,
-            oldX: truckBedX + Math.random() * 30,
-            oldY: truckBedY,
-            inTruck: true,
-          };
-        }
-        return particle;
-      });
-      return updated;
-    });
 
     setCurrentWeight(prev => prev + loadWeight);
     setCurrentVolume(prev => prev + loadVolume);
@@ -302,57 +213,51 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
   // Start driving to dump location
   const handleDriveToDump = () => {
     if (truckState !== 'loading') return;
-    if (currentVolume === 0) return; // Nothing to dump
-
+    if (currentVolume === 0) return;
     setTruckState('driving-to-dump');
-  };
-
-  // Start dumping
-  const handleStartDump = () => {
-    if (truckState !== 'driving-to-dump') return;
-    setTruckState('dumping');
   };
 
   // Finish dumping and return
   const handleFinishDump = () => {
     if (truckState !== 'dumping') return;
 
-    // Mark all truck particles as dumped
-    setParticles(prevParticles => prevParticles.map(particle => {
-      if (particle.inTruck) {
-        return {
-          ...particle,
-          inTruck: false,
-          dumped: true,
-        };
-      }
-      return particle;
-    }));
+    // Add particles to dump pile
+    const dumpZoneX = canvasSize.width - 150;
+    const groundY = canvasSize.height - 50;
+    const existingHeight = dumpPileParticles.length * 0.3;
 
+    const newPileParticles: DumpPileParticle[] = [];
+    const particleCount = Math.min(30, Math.round(currentVolume * 2));
+    for (let i = 0; i < particleCount; i++) {
+      const spread = 40 + existingHeight * 0.5;
+      newPileParticles.push({
+        x: dumpZoneX + (Math.random() - 0.5) * spread,
+        y: groundY - Math.random() * (10 + existingHeight + particleCount * 0.4),
+        radius: 3 + Math.random() * 2,
+        color: materialColor,
+      });
+    }
+
+    setDumpPileParticles(prev => [...prev, ...newPileParticles]);
     setTotalMaterialMoved(prev => prev + currentVolume);
     setLoadsCompleted(prev => prev + 1);
     setCurrentWeight(0);
     setCurrentVolume(0);
     setBedAngle(0);
+    setDumpAnimProgress(0);
     setTruckState('driving-back');
   };
 
-  // Return to loading position
-  const handleReturnToLoad = () => {
-    if (truckState !== 'driving-back') return;
-    setTruckState('loading');
-  };
-
-  // Truck position animation
+  // Truck driving animation
   useEffect(() => {
     if (truckState === 'driving-to-dump') {
       const targetX = canvasSize.width - 200;
       const interval = setInterval(() => {
         setTruckX(prev => {
-          const newX = prev + 3;
+          const newX = prev + 4;
           if (newX >= targetX) {
             clearInterval(interval);
-            handleStartDump();
+            setTruckState('dumping');
             return targetX;
           }
           return newX;
@@ -365,10 +270,10 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
       const targetX = 100;
       const interval = setInterval(() => {
         setTruckX(prev => {
-          const newX = prev - 3;
+          const newX = prev - 4;
           if (newX <= targetX) {
             clearInterval(interval);
-            handleReturnToLoad();
+            setTruckState('loading');
             return targetX;
           }
           return newX;
@@ -390,10 +295,12 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
           }
           return newAngle;
         });
+        setDumpAnimProgress(prev => Math.min(1, prev + 0.04));
       }, 50);
       return () => clearInterval(interval);
     } else {
       setBedAngle(0);
+      setDumpAnimProgress(0);
     }
   }, [truckState]);
 
@@ -406,15 +313,323 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
     return () => clearInterval(interval);
   }, [hasSubmitted]);
 
-  // Physics animation loop
+  // Canvas rendering
+  const render = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = canvasSize.width;
+    const H = canvasSize.height;
+    const groundY = H - 50;
+
+    // --- Sky ---
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+    skyGrad.addColorStop(0, '#1a2a3a');
+    skyGrad.addColorStop(1, '#2d4a5a');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // --- Ground ---
+    const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
+    groundGrad.addColorStop(0, '#5a7a5a');
+    groundGrad.addColorStop(0.3, '#4a6a4a');
+    groundGrad.addColorStop(1, '#3a5a3a');
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, groundY, W, H - groundY);
+
+    // Grass blades at top of ground
+    ctx.fillStyle = '#6a9a6a';
+    for (let gx = 0; gx < W; gx += 8) {
+      ctx.fillRect(gx, groundY - 2, 3, 4);
+    }
+
+    // --- Road ---
+    ctx.fillStyle = '#4a4a4a';
+    ctx.fillRect(0, groundY, W, 30);
+    // Road edge lines
+    ctx.fillStyle = '#5a5a5a';
+    ctx.fillRect(0, groundY, W, 2);
+    ctx.fillRect(0, groundY + 28, W, 2);
+    // Center line dashes
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([12, 8]);
+    ctx.beginPath();
+    ctx.moveTo(0, groundY + 15);
+    ctx.lineTo(W, groundY + 15);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Road markers (small dots)
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    for (let mx = 50; mx < W; mx += 60) {
+      ctx.beginPath();
+      ctx.arc(mx, groundY + 8, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // --- Source pile area ---
+    const pileX = 100;
+    const pileBaseY = groundY;
+    const pileRadius = 70 * Math.max(0.2, sourcePileSize);
+    const pileHeight = 60 * Math.max(0.1, sourcePileSize);
+
+    // Pile shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(pileX, pileBaseY + 3, pileRadius + 10, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pile body (mound shape)
+    const pileGrad = ctx.createRadialGradient(pileX, pileBaseY - pileHeight * 0.4, 0, pileX, pileBaseY, pileRadius);
+    pileGrad.addColorStop(0, materialColor);
+    pileGrad.addColorStop(1, darkenColor(materialColor, 0.6));
+    ctx.fillStyle = pileGrad;
+    ctx.beginPath();
+    ctx.moveTo(pileX - pileRadius, pileBaseY);
+    ctx.quadraticCurveTo(pileX - pileRadius * 0.5, pileBaseY - pileHeight, pileX, pileBaseY - pileHeight);
+    ctx.quadraticCurveTo(pileX + pileRadius * 0.5, pileBaseY - pileHeight, pileX + pileRadius, pileBaseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Pile texture
+    if (sourcePileSize > 0.1) {
+      ctx.fillStyle = darkenColor(materialColor, 0.8);
+      for (let i = 0; i < 15 * sourcePileSize; i++) {
+        const angle = Math.random() * Math.PI;
+        const dist = Math.random() * pileRadius * 0.8;
+        const px = pileX + Math.cos(angle) * dist - dist * 0.3;
+        const py = pileBaseY - Math.random() * pileHeight * 0.7;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.5 + Math.random() * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // "Load Here" label
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Load Here', pileX, pileBaseY - pileHeight - 15);
+
+    // --- Dump zone ---
+    const dumpZoneX = W - 150;
+
+    // Dump zone area marker
+    ctx.fillStyle = 'rgba(200, 200, 150, 0.15)';
+    ctx.fillRect(dumpZoneX - 60, groundY - 80, 120, 80);
+    ctx.strokeStyle = 'rgba(200, 200, 150, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(dumpZoneX - 60, groundY - 80, 120, 80);
+    ctx.setLineDash([]);
+
+    // Dump pile (accumulated material)
+    dumpPileParticles.forEach(particle => {
+      ctx.fillStyle = particle.color;
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = darkenColor(particle.color, 0.7);
+      ctx.beginPath();
+      ctx.arc(particle.x + 0.5, particle.y + 0.5, particle.radius * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // "Dump Here" label
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Dump Here', dumpZoneX, groundY - 85);
+    ctx.textAlign = 'start';
+
+    // --- Truck ---
+    const truckBaseY = groundY - 8; // sits on road
+    const cabW = 35;
+    const cabH = 45;
+    const bedW = 55;
+    const bedH = 35;
+    const wheelR = 10;
+
+    // Truck shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(truckX + 40, truckBaseY + 5, 50, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // --- Cab ---
+    const cabX = truckX;
+    const cabY = truckBaseY - cabH;
+
+    const cabGrad = ctx.createLinearGradient(cabX, cabY, cabX, cabY + cabH);
+    cabGrad.addColorStop(0, truckColor);
+    cabGrad.addColorStop(1, darkenColor(truckColor, 0.7));
+    ctx.fillStyle = cabGrad;
+    drawRoundedRect(ctx, cabX, cabY, cabW, cabH, 4);
+    ctx.fill();
+    ctx.strokeStyle = darkenColor(truckColor, 0.5);
+    ctx.lineWidth = 1.5;
+    drawRoundedRect(ctx, cabX, cabY, cabW, cabH, 4);
+    ctx.stroke();
+
+    // Cab window
+    const winGrad = ctx.createLinearGradient(cabX + 4, cabY + 4, cabX + cabW - 6, cabY + cabH * 0.5);
+    winGrad.addColorStop(0, '#a8d8f0');
+    winGrad.addColorStop(1, '#6bb8e0');
+    ctx.fillStyle = winGrad;
+    drawRoundedRect(ctx, cabX + 5, cabY + 5, cabW - 10, cabH * 0.4, 2);
+    ctx.fill();
+
+    // Window glare
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(cabX + 7, cabY + 6, 3, cabH * 0.3);
+
+    // Headlight
+    ctx.fillStyle = '#FBBF24';
+    ctx.beginPath();
+    ctx.arc(cabX + cabW - 2, cabY + cabH - 10, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // --- Bed (with tilt for dumping) ---
+    const bedPivotX = cabX + cabW;
+    const bedPivotY = truckBaseY;
+
+    ctx.save();
+    ctx.translate(bedPivotX, bedPivotY);
+    ctx.rotate(-bedAngle * Math.PI / 180);
+
+    // Bed body
+    const bedGrad = ctx.createLinearGradient(0, -bedH, 0, 0);
+    bedGrad.addColorStop(0, truckColor);
+    bedGrad.addColorStop(1, darkenColor(truckColor, 0.7));
+    ctx.fillStyle = bedGrad;
+    ctx.fillRect(0, -bedH, bedW, bedH);
+    ctx.strokeStyle = darkenColor(truckColor, 0.5);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(0, -bedH, bedW, bedH);
+
+    // Bed ridges (structural lines)
+    ctx.strokeStyle = darkenColor(truckColor, 0.6);
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) {
+      const ry = -bedH + (bedH / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(2, ry);
+      ctx.lineTo(bedW - 2, ry);
+      ctx.stroke();
+    }
+
+    // Material in bed (drawn relative to bed, moves with truck!)
+    if (currentVolume > 0) {
+      const fillFraction = currentVolume / bedVolume;
+      const fillHeight = bedH * fillFraction * 0.85;
+
+      // Material gradient
+      const matGrad = ctx.createLinearGradient(0, -fillHeight, 0, 0);
+      matGrad.addColorStop(0, materialColor);
+      matGrad.addColorStop(1, darkenColor(materialColor, 0.7));
+      ctx.fillStyle = matGrad;
+
+      // Bumpy top surface
+      ctx.beginPath();
+      ctx.moveTo(3, 0);
+      ctx.lineTo(3, -fillHeight + 4);
+      for (let bx = 3; bx <= bedW - 3; bx += 6) {
+        const bump = Math.sin(bx * 0.3) * 3 + Math.random() * 2;
+        ctx.lineTo(bx, -fillHeight + bump);
+      }
+      ctx.lineTo(bedW - 3, -fillHeight + 4);
+      ctx.lineTo(bedW - 3, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // Texture dots on material
+      ctx.fillStyle = darkenColor(materialColor, 0.8);
+      for (let i = 0; i < 10 * fillFraction; i++) {
+        const dx = 5 + Math.random() * (bedW - 10);
+        const dy = -(Math.random() * fillHeight * 0.8);
+        ctx.beginPath();
+        ctx.arc(dx, dy, 1 + Math.random(), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Dumping animation: material sliding out
+      if (truckState === 'dumping' && dumpAnimProgress > 0.3) {
+        const slideProgress = (dumpAnimProgress - 0.3) / 0.7;
+        ctx.fillStyle = materialColor;
+        for (let i = 0; i < 8 * slideProgress; i++) {
+          const px = bedW + 5 + Math.random() * 20 * slideProgress;
+          const py = -Math.random() * fillHeight * 0.5;
+          ctx.beginPath();
+          ctx.arc(px, py, 2 + Math.random() * 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // Tailgate
+    ctx.fillStyle = darkenColor(truckColor, 0.6);
+    ctx.fillRect(bedW - 3, -bedH, 3, bedH);
+
+    ctx.restore();
+
+    // --- Wheels ---
+    const wheel1X = truckX + 15;
+    const wheel2X = truckX + cabW + bedW - 10;
+    const wheelY = truckBaseY + 2;
+
+    [wheel1X, wheel2X].forEach(wx => {
+      // Tire
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath();
+      ctx.arc(wx, wheelY, wheelR, 0, Math.PI * 2);
+      ctx.fill();
+      // Rim
+      ctx.fillStyle = '#888';
+      ctx.beginPath();
+      ctx.arc(wx, wheelY, wheelR * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      // Hub
+      ctx.fillStyle = '#aaa';
+      ctx.beginPath();
+      ctx.arc(wx, wheelY, wheelR * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      // Tire tread
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      for (let a = 0; a < 6; a++) {
+        const angle = (a / 6) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(wx + Math.cos(angle) * wheelR * 0.6, wheelY + Math.sin(angle) * wheelR * 0.6);
+        ctx.lineTo(wx + Math.cos(angle) * wheelR * 0.9, wheelY + Math.sin(angle) * wheelR * 0.9);
+        ctx.stroke();
+      }
+    });
+
+    // --- Exhaust pipe ---
+    ctx.fillStyle = '#555';
+    ctx.fillRect(cabX + 2, cabY - 12, 4, 12);
+    // Smoke puff when driving
+    if (truckState === 'driving-to-dump' || truckState === 'driving-back') {
+      ctx.fillStyle = 'rgba(180,180,180,0.3)';
+      ctx.beginPath();
+      ctx.arc(cabX + 4, cabY - 18, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(180,180,180,0.15)';
+      ctx.beginPath();
+      ctx.arc(cabX + 1, cabY - 26, 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+  }, [canvasSize, truckX, bedAngle, truckColor, materialColor, currentVolume, bedVolume, sourcePileSize, sourceSize, dumpPileParticles, truckState, dumpAnimProgress]);
+
+  // Animation loop
   useEffect(() => {
     const animate = () => {
-      const now = Date.now();
-      const deltaTime = now - lastTimeRef.current;
-      lastTimeRef.current = now;
-
-      updatePhysics(deltaTime);
-
+      render();
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
@@ -425,91 +640,7 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [updatePhysics]);
-
-  // Canvas rendering
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
-
-    // Draw ground
-    ctx.fillStyle = '#86A789';
-    ctx.fillRect(0, canvasSize.height - 50, canvasSize.width, 50);
-
-    // Draw source pile area
-    ctx.fillStyle = 'rgba(139, 115, 85, 0.3)';
-    ctx.beginPath();
-    ctx.arc(100, canvasSize.height - 100, 80, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Draw dump zone
-    const dumpZoneX = canvasSize.width - 150;
-    ctx.fillStyle = 'rgba(200, 200, 200, 0.3)';
-    ctx.fillRect(dumpZoneX - 50, canvasSize.height - 50, 100, 50);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(dumpZoneX - 50, canvasSize.height - 50, 100, 50);
-
-    // Draw road
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([10, 5]);
-    ctx.beginPath();
-    ctx.moveTo(150, canvasSize.height - 25);
-    ctx.lineTo(canvasSize.width - 200, canvasSize.height - 25);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Draw truck
-    const truckBodyY = canvasSize.height - 120;
-    const truckBodyHeight = 40;
-    const truckBodyWidth = 80;
-
-    // Truck cab
-    ctx.fillStyle = truckColor;
-    ctx.fillRect(truckX, truckBodyY, 30, truckBodyHeight);
-
-    // Truck bed (with tilt)
-    ctx.save();
-    ctx.translate(truckX + 30, truckBodyY + truckBodyHeight);
-    ctx.rotate(-bedAngle * Math.PI / 180);
-    ctx.fillStyle = truckColor;
-    ctx.fillRect(0, -truckBodyHeight, 50, truckBodyHeight);
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, -truckBodyHeight, 50, truckBodyHeight);
-    ctx.restore();
-
-    // Truck wheels
-    ctx.fillStyle = '#222';
-    ctx.beginPath();
-    ctx.arc(truckX + 15, truckBodyY + truckBodyHeight + 5, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(truckX + 65, truckBodyY + truckBodyHeight + 5, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Draw material particles
-    particles.forEach(particle => {
-      ctx.fillStyle = particle.color;
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // Draw labels
-    ctx.fillStyle = '#333';
-    ctx.font = '14px Arial';
-    ctx.fillText('Load Here', 60, canvasSize.height - 150);
-    ctx.fillText('Dump Here', dumpZoneX - 40, canvasSize.height - 60);
-
-  }, [canvasSize, truckX, bedAngle, particles, truckColor]);
+  }, [render]);
 
   // Check if challenge is complete
   const isComplete = targetLoads ? loadsCompleted >= targetLoads : sourceRemaining <= 0;
@@ -517,7 +648,7 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
 
   // Submit evaluation
   const handleSubmitEvaluation = () => {
-    if (hasSubmitted || !isEvaluationEnabled) return;
+    if (hasSubmitted) return;
 
     const success = isComplete && (!timeLimit || elapsedTime <= timeLimit);
     const score = Math.min(100, (totalMaterialMoved / sourceSize) * 100);
@@ -551,10 +682,10 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
 
   // Auto-submit when complete
   useEffect(() => {
-    if (isComplete && !hasSubmitted && isEvaluationEnabled) {
+    if (isComplete && !hasSubmitted && data.instanceId) {
       handleSubmitEvaluation();
     }
-  }, [isComplete, hasSubmitted, isEvaluationEnabled]);
+  }, [isComplete, hasSubmitted]);
 
   return (
     <div className={`w-full max-w-7xl mx-auto my-8 animate-fade-in ${className || ''}`}>
@@ -593,15 +724,15 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
 
         {showWeight && (
           <div className="group bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]">
-            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Current Weight</div>
+            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Fill Level</div>
             <div className="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">
-              {Math.round(currentWeight)}
-              <span className="text-sm text-slate-400">/{truckCapacity}</span>
+              {Math.round((currentVolume / bedVolume) * 100)}
+              <span className="text-sm text-slate-400">%</span>
             </div>
             <div className="mt-2 h-1.5 bg-slate-700 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
-                style={{ width: `${Math.min(100, (currentWeight / truckCapacity) * 100)}%` }}
+                style={{ width: `${Math.min(100, (currentVolume / bedVolume) * 100)}%` }}
               />
             </div>
           </div>
@@ -609,15 +740,15 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
 
         {showFillLevel && (
           <div className="group bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 hover:border-purple-500/50 transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]">
-            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Fill Level</div>
+            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Weight</div>
             <div className="text-2xl font-bold text-white group-hover:text-purple-400 transition-colors">
-              {Math.round((currentVolume / bedVolume) * 100)}
-              <span className="text-sm text-slate-400">%</span>
+              {Math.round(currentWeight)}
+              <span className="text-sm text-slate-400">/{truckCapacity}</span>
             </div>
             <div className="mt-2 h-1.5 bg-slate-700 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
-                style={{ width: `${Math.min(100, (currentVolume / bedVolume) * 100)}%` }}
+                style={{ width: `${Math.min(100, (currentWeight / truckCapacity) * 100)}%` }}
               />
             </div>
           </div>
@@ -678,7 +809,7 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
             Finish Dump
           </button>
 
-          {!hasSubmitted && isComplete && isEvaluationEnabled && (
+          {!hasSubmitted && isComplete && data.instanceId && (
             <button
               onClick={handleSubmitEvaluation}
               className="px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(168,85,247,0.3)] ml-auto flex items-center gap-2"

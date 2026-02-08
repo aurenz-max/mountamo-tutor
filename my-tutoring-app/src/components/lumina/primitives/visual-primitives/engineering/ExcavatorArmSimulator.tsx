@@ -119,6 +119,29 @@ interface MaterialParticle {
   materialType: string;
 }
 
+// Helper: darken a hex color
+function darkenColor(hex: string, factor: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgb(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)})`;
+}
+
+// Helper to draw a rounded rect
+function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
 const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, className }) => {
   const {
     title,
@@ -153,36 +176,45 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize] = useState({ width: 800, height: 600 });
 
-  // Arm joint angles (in degrees)
+  // Arm joint angles (in degrees) — state for UI, refs for animation loop
   const [boomAngle, setBoomAngle] = useState(45);
   const [stickAngle, setStickAngle] = useState(-45);
   const [bucketAngle, setBucketAngle] = useState(0);
+  const boomAngleRef = useRef(45);
+  const stickAngleRef = useRef(-45);
+  const bucketAngleRef = useRef(0);
 
-  // Excavator base position
+  // Excavator base position — state for UI, ref for animation loop
   const [excavatorX, setExcavatorX] = useState(100);
+  const excavatorXRef = useRef(100);
 
-  // Verlet nodes for realistic physics
-  const [nodes, setNodes] = useState<VerletNode[]>([]);
+  // Verlet nodes for realistic physics — ref only (never shown in JSX)
+  const nodesRef = useRef<VerletNode[]>([]);
 
   // Excavation state
   const [bucketContents, setBucketContents] = useState<MaterialParticle[]>([]);
+  const bucketContentsRef = useRef<MaterialParticle[]>([]);
   const [totalExcavated, setTotalExcavated] = useState(0);
   const [digOperations, setDigOperations] = useState(0);
   const [dumpOperations, setDumpOperations] = useState(0);
 
   // Terrain state (modified by digging)
   const [currentTerrain, setCurrentTerrain] = useState<TerrainPoint[]>(terrainProfile);
+  const currentTerrainRef = useRef<TerrainPoint[]>(terrainProfile);
 
   // Animation
   const animationFrameRef = useRef<number>();
-  const [isDragging, setIsDragging] = useState<number | null>(null); // Which joint is being dragged
+
+  // Pre-computed random speckle positions (stable across frames)
+  const specklesRef = useRef<{ x: number; y: number }[]>(
+    Array.from({ length: 60 }, () => ({ x: Math.random(), y: Math.random() }))
+  );
 
   // Evaluation hook
   const {
     submitResult,
     hasSubmitted,
     resetAttempt,
-    isEvaluationEnabled,
   } = usePrimitiveEvaluation<ExcavatorArmSimulatorMetrics>({
     primitiveType: 'excavator-arm-simulator',
     instanceId: instanceId || `excavator-arm-${Date.now()}`,
@@ -195,247 +227,504 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
 
   // Initialize Verlet nodes for the arm
   useEffect(() => {
-    const baseX = excavatorX;
+    const baseX = excavatorXRef.current;
     const baseY = canvasSize.height - 150;
 
-    // Create nodes: base, boom end, stick end, bucket tip
-    const initialNodes: VerletNode[] = [
-      { x: baseX, y: baseY, oldX: baseX, oldY: baseY, pinned: true }, // Base (pinned)
-      { x: baseX + boomLength, y: baseY, oldX: baseX + boomLength, oldY: baseY, pinned: false }, // Boom end
-      { x: baseX + boomLength + stickLength, y: baseY, oldX: baseX + boomLength + stickLength, oldY: baseY, pinned: false }, // Stick end
-      { x: baseX + boomLength + stickLength + 30, y: baseY, oldX: baseX + boomLength + stickLength + 30, oldY: baseY, pinned: false }, // Bucket tip
+    nodesRef.current = [
+      { x: baseX, y: baseY, oldX: baseX, oldY: baseY, pinned: true },
+      { x: baseX + boomLength, y: baseY, oldX: baseX + boomLength, oldY: baseY, pinned: false },
+      { x: baseX + boomLength + stickLength, y: baseY, oldX: baseX + boomLength + stickLength, oldY: baseY, pinned: false },
+      { x: baseX + boomLength + stickLength + 30, y: baseY, oldX: baseX + boomLength + stickLength + 30, oldY: baseY, pinned: false },
     ];
+  }, [boomLength, stickLength, canvasSize.height]);
 
-    setNodes(initialNodes);
-  }, [boomLength, stickLength, canvasSize.height, excavatorX]);
-
-  // Update Verlet positions based on joint angles
-  const updateNodePositions = useCallback(() => {
-    if (nodes.length === 0) return;
-
-    const baseX = excavatorX;
-    const baseY = canvasSize.height - 150;
-
-    // Convert angles to radians
-    const boomRad = (boomAngle * Math.PI) / 180;
-    const stickRad = ((boomAngle + stickAngle) * Math.PI) / 180;
-    const bucketRad = ((boomAngle + stickAngle + bucketAngle) * Math.PI) / 180;
-
-    // Calculate positions using forward kinematics
-    const boomEndX = baseX + Math.cos(boomRad) * boomLength;
-    const boomEndY = baseY - Math.sin(boomRad) * boomLength;
-
-    const stickEndX = boomEndX + Math.cos(stickRad) * stickLength;
-    const stickEndY = boomEndY - Math.sin(stickRad) * stickLength;
-
-    const bucketTipX = stickEndX + Math.cos(bucketRad) * 30; // Bucket length is 30px
-    const bucketTipY = stickEndY - Math.sin(bucketRad) * 30;
-
-    // Update nodes with Verlet integration (simple damping)
-    const damping = 0.95;
-
-    setNodes(prev => {
-      const updated = [...prev];
-
-      // Update base position
-      updated[0].x = baseX;
-      updated[0].oldX = baseX;
-
-      // Boom end (node 1)
-      if (!updated[1].pinned) {
-        const vx = (updated[1].x - updated[1].oldX) * damping;
-        const vy = (updated[1].y - updated[1].oldY) * damping;
-        updated[1].oldX = updated[1].x;
-        updated[1].oldY = updated[1].y;
-        updated[1].x = boomEndX + vx * 0.1;
-        updated[1].y = boomEndY + vy * 0.1;
-      }
-
-      // Stick end (node 2)
-      if (!updated[2].pinned) {
-        const vx = (updated[2].x - updated[2].oldX) * damping;
-        const vy = (updated[2].y - updated[2].oldY) * damping;
-        updated[2].oldX = updated[2].x;
-        updated[2].oldY = updated[2].y;
-        updated[2].x = stickEndX + vx * 0.1;
-        updated[2].y = stickEndY + vy * 0.1;
-      }
-
-      // Bucket tip (node 3)
-      if (!updated[3].pinned) {
-        const vx = (updated[3].x - updated[3].oldX) * damping;
-        const vy = (updated[3].y - updated[3].oldY) * damping;
-        updated[3].oldX = updated[3].x;
-        updated[3].oldY = updated[3].y;
-        updated[3].x = bucketTipX + vx * 0.1;
-        updated[3].y = bucketTipY + vy * 0.1;
-      }
-
-      return updated;
-    });
-  }, [nodes.length, boomAngle, stickAngle, bucketAngle, boomLength, stickLength, canvasSize.height, excavatorX]);
-
-  // Render the excavator and terrain
-  const render = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.fillStyle = '#87CEEB'; // Sky blue
-    ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
-
-    // Draw ground
-    const groundY = canvasSize.height - 100;
-    ctx.fillStyle = '#8B7355';
-    ctx.fillRect(0, groundY, canvasSize.width, canvasSize.height - groundY);
-
-    // Draw material layers
-    materialLayers.forEach((layer) => {
-      ctx.fillStyle = layer.color;
-      const layerY = groundY + layer.depth;
-      ctx.fillRect(0, layerY, canvasSize.width, canvasSize.height - layerY);
-    });
-
-    // Draw terrain profile (modified by digging)
-    if (currentTerrain.length > 0) {
-      ctx.fillStyle = '#6B5B47';
-      ctx.beginPath();
-      ctx.moveTo(0, canvasSize.height);
-      currentTerrain.forEach(point => {
-        ctx.lineTo(point.x, groundY - point.height);
-      });
-      ctx.lineTo(canvasSize.width, canvasSize.height);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Draw target zone if present
-    if (targetZone) {
-      ctx.fillStyle = 'rgba(34, 197, 94, 0.3)';
-      ctx.strokeStyle = '#22C55E';
-      ctx.lineWidth = 2;
-      ctx.fillRect(targetZone.x - targetZone.width / 2, targetZone.y - targetZone.height / 2, targetZone.width, targetZone.height);
-      ctx.strokeRect(targetZone.x - targetZone.width / 2, targetZone.y - targetZone.height / 2, targetZone.width, targetZone.height);
-
-      ctx.fillStyle = '#22C55E';
-      ctx.font = '14px sans-serif';
-      ctx.fillText(targetZone.label, targetZone.x - 30, targetZone.y - targetZone.height / 2 - 10);
-    }
-
-    // Draw reach envelope if enabled
-    if (showReach && nodes.length > 0) {
-      const baseX = nodes[0].x;
-      const baseY = nodes[0].y;
-      const maxReach = boomLength + stickLength + 30; // Including bucket
-
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.beginPath();
-      ctx.arc(baseX, baseY, maxReach, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    // Draw excavator arm (Verlet nodes connected)
-    if (nodes.length >= 4) {
-      // Draw excavator base/body
-      const baseWidth = 60;
-      const baseHeight = 40;
-      const trackHeight = 15;
-
-      // Tracks
-      ctx.fillStyle = '#1F2937';
-      ctx.fillRect(nodes[0].x - baseWidth / 2, nodes[0].y + baseHeight - trackHeight, baseWidth, trackHeight);
-
-      // Body
-      ctx.fillStyle = excavatorColor;
-      ctx.fillRect(nodes[0].x - baseWidth / 2, nodes[0].y, baseWidth, baseHeight);
-
-      // Cab
-      ctx.fillStyle = '#60A5FA';
-      ctx.fillRect(nodes[0].x - 20, nodes[0].y - 20, 40, 20);
-
-      ctx.strokeStyle = excavatorColor;
-      ctx.lineWidth = 8;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
-      // Boom (base to boom end)
-      ctx.beginPath();
-      ctx.moveTo(nodes[0].x, nodes[0].y);
-      ctx.lineTo(nodes[1].x, nodes[1].y);
-      ctx.stroke();
-
-      // Stick (boom end to stick end)
-      ctx.beginPath();
-      ctx.moveTo(nodes[1].x, nodes[1].y);
-      ctx.lineTo(nodes[2].x, nodes[2].y);
-      ctx.stroke();
-
-      // Bucket (stick end to bucket tip)
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(nodes[2].x, nodes[2].y);
-      ctx.lineTo(nodes[3].x, nodes[3].y);
-      ctx.stroke();
-
-      // Draw bucket scoop
-      const bucketRad = ((boomAngle + stickAngle + bucketAngle) * Math.PI) / 180;
-      const scoopWidth = 25;
-      const scoopDepth = 20;
-
-      ctx.fillStyle = excavatorColor;
-      ctx.beginPath();
-      ctx.moveTo(nodes[3].x, nodes[3].y);
-      ctx.lineTo(
-        nodes[3].x + Math.cos(bucketRad + Math.PI / 2) * scoopWidth,
-        nodes[3].y - Math.sin(bucketRad + Math.PI / 2) * scoopWidth
-      );
-      ctx.lineTo(
-        nodes[3].x + Math.cos(bucketRad + Math.PI / 2) * scoopWidth + Math.cos(bucketRad) * scoopDepth,
-        nodes[3].y - Math.sin(bucketRad + Math.PI / 2) * scoopWidth - Math.sin(bucketRad) * scoopDepth
-      );
-      ctx.lineTo(
-        nodes[3].x + Math.cos(bucketRad) * scoopDepth,
-        nodes[3].y - Math.sin(bucketRad) * scoopDepth
-      );
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw joints
-      ctx.fillStyle = '#374151';
-      [nodes[0], nodes[1], nodes[2]].forEach(node => {
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, 6, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // Draw material particles in bucket
-      bucketContents.forEach(particle => {
-        ctx.fillStyle = particle.color;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    }
-
-    // Draw angle indicators
-    if (showAngles && nodes.length >= 4) {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '12px monospace';
-      ctx.fillText(`Boom: ${Math.round(boomAngle)}°`, 10, 20);
-      ctx.fillText(`Stick: ${Math.round(stickAngle)}°`, 10, 40);
-      ctx.fillText(`Bucket: ${Math.round(bucketAngle)}°`, 10, 60);
-    }
-  }, [nodes, canvasSize, boomAngle, stickAngle, bucketAngle, excavatorColor, showAngles, showReach, boomLength, stickLength, currentTerrain, materialLayers, targetZone, bucketContents]);
-
-  // Animation loop
+  // Animation loop — reads from refs, never triggers React re-renders
   useEffect(() => {
+    const updateNodePositions = () => {
+      const nodes = nodesRef.current;
+      if (nodes.length === 0) return;
+
+      const exX = excavatorXRef.current;
+      const baseY = canvasSize.height - 150;
+      const ba = boomAngleRef.current;
+      const sa = stickAngleRef.current;
+      const bka = bucketAngleRef.current;
+
+      const boomRad = (ba * Math.PI) / 180;
+      const stickRad = ((ba + sa) * Math.PI) / 180;
+      const bucketRad = ((ba + sa + bka) * Math.PI) / 180;
+
+      const boomEndX = exX + Math.cos(boomRad) * boomLength;
+      const boomEndY = baseY - Math.sin(boomRad) * boomLength;
+
+      const stickEndX = boomEndX + Math.cos(stickRad) * stickLength;
+      const stickEndY = boomEndY - Math.sin(stickRad) * stickLength;
+
+      const bucketTipX = stickEndX + Math.cos(bucketRad) * 30;
+      const bucketTipY = stickEndY - Math.sin(bucketRad) * 30;
+
+      const damping = 0.95;
+
+      // Mutate nodes directly — no setState
+      nodes[0].x = exX;
+      nodes[0].oldX = exX;
+
+      if (!nodes[1].pinned) {
+        const vx = (nodes[1].x - nodes[1].oldX) * damping;
+        const vy = (nodes[1].y - nodes[1].oldY) * damping;
+        nodes[1].oldX = nodes[1].x;
+        nodes[1].oldY = nodes[1].y;
+        nodes[1].x = boomEndX + vx * 0.1;
+        nodes[1].y = boomEndY + vy * 0.1;
+      }
+
+      if (!nodes[2].pinned) {
+        const vx = (nodes[2].x - nodes[2].oldX) * damping;
+        const vy = (nodes[2].y - nodes[2].oldY) * damping;
+        nodes[2].oldX = nodes[2].x;
+        nodes[2].oldY = nodes[2].y;
+        nodes[2].x = stickEndX + vx * 0.1;
+        nodes[2].y = stickEndY + vy * 0.1;
+      }
+
+      if (!nodes[3].pinned) {
+        const vx = (nodes[3].x - nodes[3].oldX) * damping;
+        const vy = (nodes[3].y - nodes[3].oldY) * damping;
+        nodes[3].oldX = nodes[3].x;
+        nodes[3].oldY = nodes[3].y;
+        nodes[3].x = bucketTipX + vx * 0.1;
+        nodes[3].y = bucketTipY + vy * 0.1;
+      }
+    };
+
+    const render = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const nodes = nodesRef.current;
+      const ba = boomAngleRef.current;
+      const sa = stickAngleRef.current;
+      const bka = bucketAngleRef.current;
+      const terrain = currentTerrainRef.current;
+      const contents = bucketContentsRef.current;
+
+      const W = canvasSize.width;
+      const H = canvasSize.height;
+
+      // --- Sky gradient ---
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.7);
+      skyGrad.addColorStop(0, '#1e3a5f');
+      skyGrad.addColorStop(0.5, '#3b82a0');
+      skyGrad.addColorStop(1, '#87CEEB');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Clouds
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      [[120, 60, 50], [350, 40, 35], [600, 80, 45], [750, 55, 30]].forEach(([cx, cy, r]) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.arc(cx + r * 0.8, cy - r * 0.2, r * 0.7, 0, Math.PI * 2);
+        ctx.arc(cx - r * 0.6, cy + r * 0.1, r * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // --- Ground ---
+      const groundY = H - 100;
+
+      // Dirt gradient
+      const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
+      groundGrad.addColorStop(0, '#8B6914');
+      groundGrad.addColorStop(0.3, '#7A5C12');
+      groundGrad.addColorStop(1, '#5C4410');
+      ctx.fillStyle = groundGrad;
+      ctx.fillRect(0, groundY, W, H - groundY);
+
+      // Top grass strip
+      ctx.fillStyle = '#4a7c3f';
+      ctx.fillRect(0, groundY, W, 6);
+      ctx.fillStyle = '#5a9c4a';
+      ctx.fillRect(0, groundY, W, 3);
+
+      // Material layers
+      materialLayers.forEach((layer) => {
+        ctx.fillStyle = layer.color;
+        const layerY = groundY + layer.depth;
+        ctx.fillRect(0, layerY, W, H - layerY);
+      });
+
+      // Terrain profile
+      if (terrain.length > 0) {
+        ctx.fillStyle = '#6B5B47';
+        ctx.beginPath();
+        ctx.moveTo(0, H);
+        terrain.forEach(point => {
+          ctx.lineTo(point.x, groundY - point.height);
+        });
+        ctx.lineTo(W, H);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Dirt texture speckles — pre-computed positions
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      for (const sp of specklesRef.current) {
+        const sx = sp.x * W;
+        const sy = groundY + 8 + sp.y * (H - groundY - 8);
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+
+      // Small rocks on surface
+      ctx.fillStyle = '#9E8E7E';
+      [[80, groundY + 2], [220, groundY + 1], [500, groundY + 3], [650, groundY + 2]].forEach(([rx, ry]) => {
+        ctx.beginPath();
+        ctx.ellipse(rx, ry, 5, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // --- Target zone ---
+      if (targetZone) {
+        const tzX = targetZone.x - targetZone.width / 2;
+        const tzY = targetZone.y - targetZone.height / 2;
+
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.15)';
+        ctx.fillRect(tzX - 4, tzY - 4, targetZone.width + 8, targetZone.height + 8);
+
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
+        ctx.fillRect(tzX, tzY, targetZone.width, targetZone.height);
+
+        ctx.strokeStyle = '#22C55E';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(tzX, tzY, targetZone.width, targetZone.height);
+        ctx.setLineDash([]);
+
+        const arrowX = targetZone.x;
+        const arrowY = tzY - 20;
+        ctx.fillStyle = '#22C55E';
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY + 12);
+        ctx.lineTo(arrowX - 6, arrowY);
+        ctx.lineTo(arrowX + 6, arrowY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#22C55E';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(targetZone.label, targetZone.x, tzY - 24);
+        ctx.textAlign = 'start';
+      }
+
+      // --- Reach envelope ---
+      if (showReach && nodes.length > 0) {
+        const baseNodeX = nodes[0].x;
+        const baseNodeY = nodes[0].y;
+        const maxReach = boomLength + stickLength + 30;
+
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.arc(baseNodeX, baseNodeY, maxReach, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // --- Excavator ---
+      if (nodes.length >= 4) {
+        const baseNodeX = nodes[0].x;
+        const baseNodeY = nodes[0].y;
+
+        // --- Tracks ---
+        const trackW = 70;
+        const trackH = 20;
+        const trackY = baseNodeY + 30;
+
+        ctx.fillStyle = '#1a1a1a';
+        drawRoundedRect(ctx, baseNodeX - trackW / 2, trackY, trackW, trackH, 8);
+        ctx.fill();
+
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 6; i++) {
+          const lx = baseNodeX - trackW / 2 + 10 + i * 10;
+          ctx.beginPath();
+          ctx.moveTo(lx, trackY + 3);
+          ctx.lineTo(lx, trackY + trackH - 3);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = '#2a2a2a';
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 2;
+        [baseNodeX - trackW / 2 + 10, baseNodeX + trackW / 2 - 10].forEach(wx => {
+          ctx.beginPath();
+          ctx.arc(wx, trackY + trackH / 2, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        });
+
+        // --- Main body ---
+        const bodyW = 55;
+        const bodyH = 30;
+        const bodyY = baseNodeY;
+
+        const bodyGrad = ctx.createLinearGradient(0, bodyY, 0, bodyY + bodyH);
+        bodyGrad.addColorStop(0, excavatorColor);
+        bodyGrad.addColorStop(1, darkenColor(excavatorColor, 0.7));
+        ctx.fillStyle = bodyGrad;
+        drawRoundedRect(ctx, baseNodeX - bodyW / 2, bodyY, bodyW, bodyH, 5);
+        ctx.fill();
+
+        ctx.strokeStyle = darkenColor(excavatorColor, 0.5);
+        ctx.lineWidth = 1.5;
+        drawRoundedRect(ctx, baseNodeX - bodyW / 2, bodyY, bodyW, bodyH, 5);
+        ctx.stroke();
+
+        ctx.fillStyle = darkenColor(excavatorColor, 0.6);
+        ctx.fillRect(baseNodeX - bodyW / 2 + 4, bodyY + 6, 12, bodyH - 12);
+
+        // --- Cab ---
+        const cabW = 32;
+        const cabH = 28;
+        const cabX = baseNodeX - cabW / 2 + 5;
+        const cabY = bodyY - cabH;
+
+        const cabGrad = ctx.createLinearGradient(0, cabY, 0, cabY + cabH);
+        cabGrad.addColorStop(0, excavatorColor);
+        cabGrad.addColorStop(1, darkenColor(excavatorColor, 0.8));
+        ctx.fillStyle = cabGrad;
+        drawRoundedRect(ctx, cabX, cabY, cabW, cabH, 4);
+        ctx.fill();
+
+        ctx.strokeStyle = darkenColor(excavatorColor, 0.5);
+        ctx.lineWidth = 1.5;
+        drawRoundedRect(ctx, cabX, cabY, cabW, cabH, 4);
+        ctx.stroke();
+
+        const winGrad = ctx.createLinearGradient(cabX + 4, cabY + 3, cabX + cabW - 6, cabY + cabH * 0.6);
+        winGrad.addColorStop(0, '#a8d8f0');
+        winGrad.addColorStop(1, '#6bb8e0');
+        ctx.fillStyle = winGrad;
+        drawRoundedRect(ctx, cabX + 4, cabY + 3, cabW - 8, cabH * 0.55, 3);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(cabX + 6, cabY + 4, 4, cabH * 0.4);
+
+        // --- ARM SEGMENTS ---
+        const armPivotX = baseNodeX + 5;
+        const armPivotY = baseNodeY + 2;
+
+        // Boom segment
+        const boomW = 12;
+        ctx.strokeStyle = excavatorColor;
+        ctx.lineWidth = boomW;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(armPivotX, armPivotY);
+        ctx.lineTo(nodes[1].x, nodes[1].y);
+        ctx.stroke();
+
+        ctx.strokeStyle = darkenColor(excavatorColor, 0.6);
+        ctx.lineWidth = boomW + 2;
+        ctx.beginPath();
+        ctx.moveTo(armPivotX, armPivotY);
+        ctx.lineTo(nodes[1].x, nodes[1].y);
+        ctx.stroke();
+
+        ctx.strokeStyle = excavatorColor;
+        ctx.lineWidth = boomW - 2;
+        ctx.beginPath();
+        ctx.moveTo(armPivotX, armPivotY);
+        ctx.lineTo(nodes[1].x, nodes[1].y);
+        ctx.stroke();
+
+        // Hydraulic cylinder on boom
+        const boomMidX = (armPivotX + nodes[1].x) / 2;
+        const boomMidY = (armPivotY + nodes[1].y) / 2;
+        const boomDx = nodes[1].x - armPivotX;
+        const boomDy = nodes[1].y - armPivotY;
+        const boomLen = Math.sqrt(boomDx * boomDx + boomDy * boomDy);
+        const boomNx = -boomDy / boomLen;
+        const boomNy = boomDx / boomLen;
+        ctx.strokeStyle = '#C0C0C0';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(armPivotX + boomNx * 8, armPivotY + boomNy * 8);
+        ctx.lineTo(boomMidX + boomNx * 6, boomMidY + boomNy * 6);
+        ctx.stroke();
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(boomMidX + boomNx * 6, boomMidY + boomNy * 6);
+        ctx.lineTo(nodes[1].x + boomNx * 4, nodes[1].y + boomNy * 4);
+        ctx.stroke();
+
+        // Stick segment
+        const stickW = 10;
+        ctx.strokeStyle = darkenColor(excavatorColor, 0.6);
+        ctx.lineWidth = stickW + 2;
+        ctx.beginPath();
+        ctx.moveTo(nodes[1].x, nodes[1].y);
+        ctx.lineTo(nodes[2].x, nodes[2].y);
+        ctx.stroke();
+
+        ctx.strokeStyle = excavatorColor;
+        ctx.lineWidth = stickW - 2;
+        ctx.beginPath();
+        ctx.moveTo(nodes[1].x, nodes[1].y);
+        ctx.lineTo(nodes[2].x, nodes[2].y);
+        ctx.stroke();
+
+        // Hydraulic on stick
+        const stickMidX = (nodes[1].x + nodes[2].x) / 2;
+        const stickMidY = (nodes[1].y + nodes[2].y) / 2;
+        const stickDx = nodes[2].x - nodes[1].x;
+        const stickDy = nodes[2].y - nodes[1].y;
+        const stickLen = Math.sqrt(stickDx * stickDx + stickDy * stickDy);
+        const stickNx = -stickDy / stickLen;
+        const stickNy = stickDx / stickLen;
+        ctx.strokeStyle = '#C0C0C0';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(nodes[1].x + stickNx * 7, nodes[1].y + stickNy * 7);
+        ctx.lineTo(stickMidX + stickNx * 5, stickMidY + stickNy * 5);
+        ctx.stroke();
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(stickMidX + stickNx * 5, stickMidY + stickNy * 5);
+        ctx.lineTo(nodes[2].x + stickNx * 3, nodes[2].y + stickNy * 3);
+        ctx.stroke();
+
+        // Bucket link
+        ctx.strokeStyle = darkenColor(excavatorColor, 0.6);
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(nodes[2].x, nodes[2].y);
+        ctx.lineTo(nodes[3].x, nodes[3].y);
+        ctx.stroke();
+
+        ctx.strokeStyle = excavatorColor;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(nodes[2].x, nodes[2].y);
+        ctx.lineTo(nodes[3].x, nodes[3].y);
+        ctx.stroke();
+
+        // --- Bucket scoop ---
+        const bucketRad = ((ba + sa + bka) * Math.PI) / 180;
+        const scoopWidth = 30;
+        const scoopDepth = 25;
+
+        const tipX = nodes[3].x;
+        const tipY = nodes[3].y;
+
+        const perpX = Math.cos(bucketRad + Math.PI / 2);
+        const perpY = -Math.sin(bucketRad + Math.PI / 2);
+        const fwdX = Math.cos(bucketRad);
+        const fwdY = -Math.sin(bucketRad);
+
+        const p1x = tipX;
+        const p1y = tipY;
+        const p2x = tipX + perpX * scoopWidth;
+        const p2y = tipY + perpY * scoopWidth;
+        const p3x = p2x + fwdX * scoopDepth;
+        const p3y = p2y + fwdY * scoopDepth;
+        const p4x = p1x + fwdX * scoopDepth;
+        const p4y = p1y + fwdY * scoopDepth;
+
+        ctx.fillStyle = darkenColor(excavatorColor, 0.6);
+        ctx.beginPath();
+        ctx.moveTo(p3x, p3y);
+        ctx.lineTo(p4x, p4y);
+        ctx.lineTo(p4x + fwdX * 4, p4y + fwdY * 4);
+        ctx.lineTo(p3x + fwdX * 4, p3y + fwdY * 4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = excavatorColor;
+        ctx.beginPath();
+        ctx.moveTo(p1x, p1y);
+        ctx.lineTo(p2x, p2y);
+        ctx.lineTo(p3x, p3y);
+        ctx.lineTo(p4x, p4y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = darkenColor(excavatorColor, 0.5);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Teeth on bucket edge
+        ctx.fillStyle = '#9CA3AF';
+        const teethCount = 4;
+        for (let t = 0; t < teethCount; t++) {
+          const frac = (t + 0.5) / teethCount;
+          const tx = p1x + (p2x - p1x) * frac;
+          const ty = p1y + (p2y - p1y) * frac;
+          ctx.beginPath();
+          ctx.moveTo(tx - perpX * 2, ty - perpY * 2);
+          ctx.lineTo(tx + fwdX * 6, ty + fwdY * 6);
+          ctx.lineTo(tx + perpX * 3, ty + perpY * 3);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // --- Joints ---
+        [
+          { node: { x: armPivotX, y: armPivotY }, r: 8 },
+          { node: nodes[1], r: 7 },
+          { node: nodes[2], r: 6 },
+        ].forEach(({ node, r }) => {
+          ctx.fillStyle = '#555';
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, r + 2, 0, Math.PI * 2);
+          ctx.fill();
+          const pinGrad = ctx.createRadialGradient(node.x - 1, node.y - 1, 0, node.x, node.y, r);
+          pinGrad.addColorStop(0, '#888');
+          pinGrad.addColorStop(1, '#444');
+          ctx.fillStyle = pinGrad;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.beginPath();
+          ctx.arc(node.x - r * 0.3, node.y - r * 0.3, r * 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Material particles in bucket
+        contents.forEach(particle => {
+          ctx.fillStyle = particle.color;
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = darkenColor(particle.color, 0.7);
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        });
+      }
+
+      // Angle indicators (HUD-style)
+      if (showAngles && nodes.length >= 4) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        drawRoundedRect(ctx, 8, 8, 140, 68, 6);
+        ctx.fill();
+        ctx.fillStyle = '#F59E0B';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText(`Boom:   ${Math.round(ba)}°`, 16, 28);
+        ctx.fillStyle = '#FB923C';
+        ctx.fillText(`Stick:  ${Math.round(sa)}°`, 16, 46);
+        ctx.fillStyle = '#FBBF24';
+        ctx.fillText(`Bucket: ${Math.round(bka)}°`, 16, 64);
+      }
+    };
+
     const animate = () => {
       updateNodePositions();
       render();
@@ -449,39 +738,47 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [updateNodePositions, render]);
+  }, [canvasSize, excavatorColor, showAngles, showReach, boomLength, stickLength, materialLayers, targetZone]);
 
-  // Handle angle changes with constraints
-  const handleBoomAngleChange = (value: number) => {
-    setBoomAngle(Math.max(minBoomAngle, Math.min(maxBoomAngle, value)));
-  };
+  // Handle angle changes with constraints — update both state and ref
+  const handleBoomAngleChange = useCallback((value: number) => {
+    const clamped = Math.max(minBoomAngle, Math.min(maxBoomAngle, value));
+    setBoomAngle(clamped);
+    boomAngleRef.current = clamped;
+  }, [minBoomAngle, maxBoomAngle]);
 
-  const handleStickAngleChange = (value: number) => {
-    setStickAngle(Math.max(minStickAngle, Math.min(maxStickAngle, value)));
-  };
+  const handleStickAngleChange = useCallback((value: number) => {
+    const clamped = Math.max(minStickAngle, Math.min(maxStickAngle, value));
+    setStickAngle(clamped);
+    stickAngleRef.current = clamped;
+  }, [minStickAngle, maxStickAngle]);
 
-  const handleBucketAngleChange = (value: number) => {
-    setBucketAngle(Math.max(minBucketAngle, Math.min(maxBucketAngle, value)));
-  };
+  const handleBucketAngleChange = useCallback((value: number) => {
+    const clamped = Math.max(minBucketAngle, Math.min(maxBucketAngle, value));
+    setBucketAngle(clamped);
+    bucketAngleRef.current = clamped;
+  }, [minBucketAngle, maxBucketAngle]);
 
-  // Handle excavator position changes
-  const handleExcavatorMove = (deltaX: number) => {
-    setExcavatorX(prev => Math.max(80, Math.min(canvasSize.width - 80, prev + deltaX)));
-  };
+  const handleExcavatorMove = useCallback((deltaX: number) => {
+    setExcavatorX(prev => {
+      const next = Math.max(80, Math.min(canvasSize.width - 80, prev + deltaX));
+      excavatorXRef.current = next;
+      return next;
+    });
+  }, [canvasSize.width]);
 
-  // Dig operation - excavate material at bucket location
-  const handleDig = () => {
+  // Dig operation
+  const handleDig = useCallback(() => {
+    const nodes = nodesRef.current;
     if (nodes.length < 4) return;
-    if (bucketContents.length >= bucketSize) return; // Bucket full
+    if (bucketContentsRef.current.length >= bucketSize) return;
 
     const bucketX = nodes[3].x;
     const bucketY = nodes[3].y;
     const groundY = canvasSize.height - 100;
 
-    // Check if bucket is in the ground
-    if (bucketY < groundY) return; // Bucket above ground
+    if (bucketY < groundY) return;
 
-    // Determine material type at this location
     let materialType = 'dirt';
     let materialColor = '#8B7355';
     let hardness = 1;
@@ -495,10 +792,8 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       }
     }
 
-    // Excavate material (harder materials yield less)
-    const amountExcavated = Math.min(bucketSize - bucketContents.length, Math.ceil(3 / hardness));
+    const amountExcavated = Math.min(bucketSize - bucketContentsRef.current.length, Math.ceil(3 / hardness));
 
-    // Create material particles
     const newParticles: MaterialParticle[] = [];
     for (let i = 0; i < amountExcavated; i++) {
       newParticles.push({
@@ -511,14 +806,16 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       });
     }
 
-    setBucketContents(prev => [...prev, ...newParticles]);
+    setBucketContents(prev => {
+      const next = [...prev, ...newParticles];
+      bucketContentsRef.current = next;
+      return next;
+    });
     setTotalExcavated(prev => prev + amountExcavated);
     setDigOperations(prev => prev + 1);
 
-    // Modify terrain (create a scoop mark)
     setCurrentTerrain(prev => {
       const updated = [...prev];
-      // Simplified terrain modification - remove height at bucket position
       const terrainIndex = Math.floor((bucketX / canvasSize.width) * updated.length);
       if (terrainIndex >= 0 && terrainIndex < updated.length) {
         updated[terrainIndex] = {
@@ -526,15 +823,16 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
           height: Math.max(0, updated[terrainIndex].height - amountExcavated * 2),
         };
       }
+      currentTerrainRef.current = updated;
       return updated;
     });
-  };
+  }, [bucketSize, canvasSize.height, canvasSize.width, materialLayers]);
 
-  // Dump operation - release material from bucket
-  const handleDump = () => {
-    if (bucketContents.length === 0) return;
+  // Dump operation
+  const handleDump = useCallback(() => {
+    if (bucketContentsRef.current.length === 0) return;
 
-    // Check if bucket is over target zone
+    const nodes = nodesRef.current;
     if (targetZone && nodes.length >= 4) {
       const bucketX = nodes[3].x;
       const bucketY = nodes[3].y;
@@ -543,20 +841,18 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       const inTargetY = Math.abs(bucketY - targetZone.y) < targetZone.height / 2;
 
       if (inTargetX && inTargetY) {
-        // Successful dump in target zone
         setDumpOperations(prev => prev + 1);
       }
     }
 
-    // Clear bucket
     setBucketContents([]);
-  };
+    bucketContentsRef.current = [];
+  }, [targetZone]);
 
   // Submit evaluation
   const handleSubmit = () => {
-    if (hasSubmitted || !isEvaluationEnabled) return;
+    if (hasSubmitted) return;
 
-    // Determine success based on challenge
     let success = true;
     let score = 100;
 
@@ -572,23 +868,15 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
 
     const metrics: ExcavatorArmSimulatorMetrics = {
       type: 'excavator-arm-simulator',
-
-      // Goal achievement
       targetAmount: challenge?.targetAmount || 0,
       excavatedAmount: totalExcavated,
       goalMet: success,
-
-      // Efficiency
       digOperations,
       dumpOperations,
       efficiency,
-
-      // Control mastery
       boomAngleRange: Math.abs(maxBoomAngle - minBoomAngle),
       stickAngleRange: Math.abs(maxStickAngle - minStickAngle),
       bucketAngleRange: Math.abs(maxBucketAngle - minBucketAngle),
-
-      // Final state
       finalBoomAngle: boomAngle,
       finalStickAngle: stickAngle,
       finalBucketAngle: bucketAngle,
@@ -609,22 +897,28 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
     setStickAngle(-45);
     setBucketAngle(0);
     setExcavatorX(100);
+    boomAngleRef.current = 45;
+    stickAngleRef.current = -45;
+    bucketAngleRef.current = 0;
+    excavatorXRef.current = 100;
     setBucketContents([]);
+    bucketContentsRef.current = [];
     setTotalExcavated(0);
     setDigOperations(0);
     setDumpOperations(0);
     setCurrentTerrain(terrainProfile);
+    currentTerrainRef.current = terrainProfile;
     resetAttempt();
   };
 
   return (
-    <div className={className}>
-      <div className="mb-4">
+    <div className={`w-full max-w-7xl mx-auto my-8 animate-fade-in ${className || ''}`}>
+      <div className="mb-6">
         <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
         <p className="text-slate-300">{description}</p>
 
         {challenge && (
-          <div className="mt-3 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+          <div className="mt-3 p-4 bg-blue-500/15 border border-blue-500/40 rounded-xl backdrop-blur-sm">
             <p className="text-blue-200 text-sm">
               <strong>Challenge:</strong> {challenge.description}
             </p>
@@ -636,19 +930,19 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       </div>
 
       {/* Canvas */}
-      <div className="mb-4 rounded-lg overflow-hidden border border-slate-600">
+      <div className="mb-6 rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl bg-slate-800/40 backdrop-blur-sm">
         <canvas
           ref={canvasRef}
           width={canvasSize.width}
           height={canvasSize.height}
-          className="w-full bg-slate-900"
+          className="w-full"
         />
       </div>
 
       {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Boom Control */}
-        <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+        <div className="p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Boom Angle: {Math.round(boomAngle)}°
           </label>
@@ -660,20 +954,20 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
               step="1"
               value={boomAngle}
               onChange={(e) => handleBoomAngleChange(Number(e.target.value))}
-              className="w-full"
+              className="w-full accent-amber-500"
             />
           )}
           {jointControl === 'buttons' && (
             <div className="flex gap-2">
               <button
                 onClick={() => handleBoomAngleChange(boomAngle - 5)}
-                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded"
+                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
               >
                 -5°
               </button>
               <button
                 onClick={() => handleBoomAngleChange(boomAngle + 5)}
-                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded"
+                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
               >
                 +5°
               </button>
@@ -682,7 +976,7 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         </div>
 
         {/* Stick Control */}
-        <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+        <div className="p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Stick Angle: {Math.round(stickAngle)}°
           </label>
@@ -694,20 +988,20 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
               step="1"
               value={stickAngle}
               onChange={(e) => handleStickAngleChange(Number(e.target.value))}
-              className="w-full"
+              className="w-full accent-amber-500"
             />
           )}
           {jointControl === 'buttons' && (
             <div className="flex gap-2">
               <button
                 onClick={() => handleStickAngleChange(stickAngle - 5)}
-                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded"
+                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
               >
                 -5°
               </button>
               <button
                 onClick={() => handleStickAngleChange(stickAngle + 5)}
-                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded"
+                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
               >
                 +5°
               </button>
@@ -716,7 +1010,7 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         </div>
 
         {/* Bucket Control */}
-        <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+        <div className="p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Bucket Angle: {Math.round(bucketAngle)}°
           </label>
@@ -728,20 +1022,20 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
               step="1"
               value={bucketAngle}
               onChange={(e) => handleBucketAngleChange(Number(e.target.value))}
-              className="w-full"
+              className="w-full accent-amber-500"
             />
           )}
           {jointControl === 'buttons' && (
             <div className="flex gap-2">
               <button
                 onClick={() => handleBucketAngleChange(bucketAngle - 5)}
-                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded"
+                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
               >
                 -5°
               </button>
               <button
                 onClick={() => handleBucketAngleChange(bucketAngle + 5)}
-                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded"
+                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
               >
                 +5°
               </button>
@@ -751,14 +1045,14 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       </div>
 
       {/* Movement Controls */}
-      <div className="mb-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+      <div className="mb-4 p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
         <label className="block text-sm font-medium text-slate-300 mb-2">
           Excavator Position
         </label>
         <div className="flex gap-2 items-center">
           <button
             onClick={() => handleExcavatorMove(-20)}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all"
+            className="px-4 py-2 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg font-semibold transition-all"
           >
             ← Move Left
           </button>
@@ -767,7 +1061,7 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
           </div>
           <button
             onClick={() => handleExcavatorMove(20)}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all"
+            className="px-4 py-2 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg font-semibold transition-all"
           >
             Move Right →
           </button>
@@ -779,14 +1073,14 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         <button
           onClick={handleDig}
           disabled={bucketContents.length >= bucketSize}
-          className="flex-1 px-4 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all"
+          className="flex-1 px-4 py-3 bg-amber-500/20 hover:bg-amber-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-amber-500/50 text-amber-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] disabled:shadow-none"
         >
           ⛏️ Dig ({bucketContents.length}/{bucketSize})
         </button>
         <button
           onClick={handleDump}
           disabled={bucketContents.length === 0}
-          className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all"
+          className="flex-1 px-4 py-3 bg-green-500/20 hover:bg-green-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-green-500/50 text-green-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:shadow-none"
         >
           🚛 Dump
         </button>
@@ -794,34 +1088,34 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 text-center">
+        <div className="p-3 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 text-center">
           <div className="text-2xl font-bold text-amber-400">{totalExcavated}</div>
           <div className="text-xs text-slate-400">Total Excavated</div>
         </div>
-        <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 text-center">
+        <div className="p-3 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 text-center">
           <div className="text-2xl font-bold text-orange-400">{digOperations}</div>
           <div className="text-xs text-slate-400">Digs</div>
         </div>
-        <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 text-center">
+        <div className="p-3 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 text-center">
           <div className="text-2xl font-bold text-green-400">{dumpOperations}</div>
           <div className="text-xs text-slate-400">Dumps</div>
         </div>
       </div>
 
       {/* Evaluation Controls */}
-      {isEvaluationEnabled && (
+      {data.instanceId && (
         <div className="flex gap-2">
           <button
             onClick={handleSubmit}
             disabled={hasSubmitted}
-            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all"
+            className="flex-1 px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-blue-500/50 text-blue-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] disabled:shadow-none"
           >
             {hasSubmitted ? '✓ Submitted' : 'Submit Work'}
           </button>
           {hasSubmitted && (
             <button
               onClick={handleReset}
-              className="px-4 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-semibold transition-all"
+              className="px-4 py-3 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all"
             >
               Reset
             </button>

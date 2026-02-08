@@ -117,14 +117,16 @@ export { UNIVERSAL_CATALOG };
 
 /**
  * Schema for a single component within an objective
+ * Note: componentId is not enum-constrained in the schema because the catalog
+ * has 100+ entries which can exceed Gemini structured output limits.
+ * The prompt text already lists all valid component IDs.
  */
 const objectiveComponentSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     componentId: {
       type: Type.STRING,
-      enum: UNIVERSAL_CATALOG.map(c => c.id),
-      description: "Component type from the universal catalog"
+      description: "Component type from the universal catalog. Must be one of the component IDs listed in the prompt."
     },
     instanceId: {
       type: Type.STRING,
