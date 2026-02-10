@@ -27,6 +27,9 @@ import { generateCompareContrast } from '../../biology/gemini-compare-contrast';
 import { generateCompareContrastWithImages, generateCompareContrastWithImagesFromTopic } from '../../biology/gemini-compare-contrast-with-images';
 import { generateProcessAnimator } from '../../biology/gemini-process-animator';
 import { generateMicroscopeViewer } from '../../biology/gemini-microscope-viewer';
+import { generateFoodWebBuilder } from '../../biology/gemini-food-web-builder';
+import { generateAdaptationInvestigator } from '../../biology/gemini-adaptation-investigator';
+import { generateCellBuilder } from '../../biology/gemini-cell-builder';
 
 // ============================================================================
 // Helper Types
@@ -560,11 +563,147 @@ registerGenerator('microscope-viewer', async (item, topic, gradeContext) => {
   };
 });
 
+/**
+ * Food Web Builder - Interactive food web construction
+ *
+ * Perfect for:
+ * - Understanding food chains and food webs
+ * - Teaching trophic levels and energy flow
+ * - Producer/consumer/decomposer relationships
+ * - Ecosystem disruption scenarios (keystone species, trophic cascades)
+ * - Systems thinking and ecological balance
+ *
+ * Features:
+ * - Node-graph interface with positioned organisms
+ * - Draw directional arrows showing energy flow (prey → predator)
+ * - Color coding by trophic level
+ * - Disruption mode to explore ecosystem cascades
+ * - Evaluation with connection accuracy and cascade prediction
+ *
+ * Grade Scaling:
+ * - 3-5: Simple food chains (6-8 organisms), clear linear relationships, optional disruption
+ * - 6-8: Complex food webs (8-10 organisms), interconnected relationships, required disruption scenarios
+ */
+registerGenerator('food-web-builder', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '3-5' | '6-8'> = {
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
+
+  return {
+    type: 'food-web-builder',
+    instanceId: item.instanceId,
+    data: await generateFoodWebBuilder(topic, gradeBand, config),
+  };
+});
+
+/**
+ * Adaptation Investigator - Structure-function-environment reasoning
+ *
+ * Perfect for:
+ * - Teaching why organisms have specific traits (structural, behavioral, physiological)
+ * - Connecting adaptations to environmental pressures
+ * - Causal reasoning about structure-function relationships
+ * - "What If?" environmental change prediction scenarios
+ * - Addressing common misconceptions about adaptation and evolution
+ *
+ * Features:
+ * - Three-panel layout: The Trait, The Environment, The Connection
+ * - "What If?" mode for grades 5-8 with predictive reasoning
+ * - Common misconception section with correction
+ * - AI-generated organism images
+ * - Evaluation support for What If? scenario accuracy
+ *
+ * Grade Scaling:
+ * - 2-4: Simple vocabulary, observable traits, 2 What If? scenarios
+ * - 5-6: Scientific vocabulary introduced, functional descriptions, 2-3 scenarios
+ * - 7-8: Evolutionary context, natural selection concepts, 3 nuanced scenarios
+ */
+registerGenerator('adaptation-investigator', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
+    '2': '2-4',
+    '3': '2-4',
+    '4': '2-4',
+    '5': '5-6',
+    '6': '5-6',
+    '7': '7-8',
+    '8': '7-8',
+    '2-4': '2-4',
+    '5-6': '5-6',
+    '7-8': '7-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
+
+  return {
+    type: 'adaptation-investigator',
+    instanceId: item.instanceId,
+    data: await generateAdaptationInvestigator(topic, gradeBand, config),
+  };
+});
+
+/**
+ * Cell Builder - Three-phase interactive cell biology primitive
+ *
+ * Perfect for:
+ * - Cell structure lessons (animal, plant, prokaryotic, fungal cells)
+ * - Specialized cell contexts (muscle, nerve, leaf, root cells)
+ * - Organelle classification (which belong vs distractors)
+ * - Zone-based spatial reasoning (center, peripheral, near-nucleus, etc.)
+ * - Quantity reasoning (muscle cells need lots of mitochondria)
+ * - Structure-function mapping via matching quiz
+ *
+ * Three Phases:
+ * 1. Sort: Classify organelles as belonging or not belonging (distractors)
+ * 2. Place + Quantity: Zone-based placement + quantity reasoning for specialized cells
+ * 3. Match Functions: Click-to-match organelles with function descriptions
+ *
+ * Grade Scaling:
+ * - 4-5: Simple vocabulary, 5-7 organelles + 2-3 distractors, everyday analogies
+ * - 6-8: Scientific terminology, 7-10 organelles + 3-4 distractors, detailed functions
+ */
+registerGenerator('cell-builder', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '4-5' | '6-8'> = {
+    '4': '4-5',
+    '5': '4-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    '4-5': '4-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '4-5';
+
+  return {
+    type: 'cell-builder',
+    instanceId: item.instanceId,
+    data: await generateCellBuilder(topic, gradeBand, config),
+  };
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 9 biology generators
+// Total: 12 biology generators
 // - species-profile
 // - organism-card
 // - classification-sorter
@@ -573,5 +712,8 @@ registerGenerator('microscope-viewer', async (item, topic, gradeContext) => {
 // - habitat-diorama
 // - bio-compare-contrast
 // - bio-process-animator
+// - microscope-viewer
+// - food-web-builder
+// - adaptation-investigator
 
-console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer, food-web-builder, adaptation-investigator, cell-builder');

@@ -10,6 +10,9 @@ import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiora
 import CompareContrast from '../primitives/visual-primitives/biology/CompareContrast';
 import ProcessAnimator from '../primitives/visual-primitives/biology/ProcessAnimator';
 import MicroscopeViewer from '../primitives/visual-primitives/biology/MicroscopeViewer';
+import AdaptationInvestigator from '../primitives/visual-primitives/biology/AdaptationInvestigator';
+import FoodWebBuilder from '../primitives/visual-primitives/biology/FoodWebBuilder';
+import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -20,7 +23,7 @@ interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer' | 'adaptation-investigator' | 'food-web-builder' | 'cell-builder';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -33,6 +36,9 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'bio-compare-contrast', label: 'Compare & Contrast', icon: '🔄', topic: 'Frogs vs Toads' },
   { value: 'bio-process-animator', label: 'Process Animator', icon: '🎬', topic: 'Photosynthesis' },
   { value: 'microscope-viewer', label: 'Microscope Viewer', icon: '🔬', topic: 'Onion cell' },
+  { value: 'adaptation-investigator', label: 'Adaptation Investigator', icon: '🧬', topic: 'Structure-function reasoning' },
+  { value: 'food-web-builder', label: 'Food Web Builder', icon: '🕸️', topic: 'Ecosystem energy flow' },
+  { value: 'cell-builder', label: 'Cell Builder', icon: '🧫', topic: 'Cell structure and organelles' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -140,6 +146,36 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof MicroscopeViewer>[0]['data']),
             instanceId: `microscope-viewer-${Date.now()}`,
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'adaptation-investigator':
+      return (
+        <AdaptationInvestigator
+          data={{
+            ...(data as Parameters<typeof AdaptationInvestigator>[0]['data']),
+            instanceId: `adaptation-investigator-${Date.now()}`,
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'food-web-builder':
+      return (
+        <FoodWebBuilder
+          data={{
+            ...(data as Parameters<typeof FoodWebBuilder>[0]['data']),
+            instanceId: `food-web-builder-${Date.now()}`,
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'cell-builder':
+      return (
+        <CellBuilder
+          data={{
+            ...(data as Parameters<typeof CellBuilder>[0]['data']),
+            instanceId: `cell-builder-${Date.now()}`,
             onEvaluationSubmit,
           }}
         />
@@ -269,6 +305,9 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
         selectedPrimitive === 'body-system-explorer' ? 'digestive system' :
         selectedPrimitive === 'habitat-diorama' ? 'Coral Reef Ecosystem' :
         selectedPrimitive === 'microscope-viewer' ? 'Onion epidermal cell' :
+        selectedPrimitive === 'adaptation-investigator' ? 'Arctic Fox fur color change' :
+        selectedPrimitive === 'food-web-builder' ? 'Grassland ecosystem' :
+        selectedPrimitive === 'cell-builder' ? 'Muscle cell' :
         'Monarch Butterfly';
       const currentTopic = topic.trim() || defaultTopic;
 
@@ -401,6 +440,9 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                  selectedPrimitive === 'life-cycle-sequencer' ? 'Life Cycle (optional)' :
                  selectedPrimitive === 'habitat-diorama' ? 'Ecosystem/Habitat (optional)' :
                  selectedPrimitive === 'microscope-viewer' ? 'Specimen (optional)' :
+                 selectedPrimitive === 'adaptation-investigator' ? 'Adaptation (optional)' :
+                 selectedPrimitive === 'food-web-builder' ? 'Ecosystem (optional)' :
+                 selectedPrimitive === 'cell-builder' ? 'Cell Type (optional)' :
                  'Species/Organism (optional)'}
               </label>
               <input
@@ -412,6 +454,9 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                   selectedPrimitive === 'life-cycle-sequencer' ? 'e.g., "Frog life cycle"' :
                   selectedPrimitive === 'habitat-diorama' ? 'e.g., "African Savanna"' :
                   selectedPrimitive === 'microscope-viewer' ? 'e.g., "Onion cell", "Paramecium"' :
+                  selectedPrimitive === 'adaptation-investigator' ? 'e.g., "Cactus spines", "Chameleon camouflage"' :
+                  selectedPrimitive === 'food-web-builder' ? 'e.g., "Coral reef", "Temperate forest"' :
+                  selectedPrimitive === 'cell-builder' ? 'e.g., "Muscle cell", "Leaf cell", "Nerve cell", "Plant cell"' :
                   'Leave blank for default...'
                 }
                 className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500"

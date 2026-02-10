@@ -171,6 +171,9 @@ Show the organism in its natural habitat with clear details. No text in the imag
       }],
       config: {
         responseModalities: ['IMAGE', 'TEXT'],
+        imageConfig: {
+          aspectRatio: '16:9',
+        },
       }
     });
 

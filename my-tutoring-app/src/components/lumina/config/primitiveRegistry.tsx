@@ -50,6 +50,9 @@ import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiora
 import CompareContrast from '../primitives/visual-primitives/biology/CompareContrast';
 import ProcessAnimator from '../primitives/visual-primitives/biology/ProcessAnimator';
 import MicroscopeViewer from '../primitives/visual-primitives/biology/MicroscopeViewer';
+import FoodWebBuilder from '../primitives/visual-primitives/biology/FoodWebBuilder';
+import AdaptationInvestigator from '../primitives/visual-primitives/biology/AdaptationInvestigator';
+import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -604,6 +607,36 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-7xl mx-auto mb-20',
     supportsEvaluation: true, // Labeling and observation tracking
+  },
+
+  'food-web-builder': {
+    component: FoodWebBuilder,
+    sectionTitle: 'Food Web Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
+    supportsEvaluation: true, // Connection accuracy and disruption prediction tracking
+  },
+
+  'adaptation-investigator': {
+    component: AdaptationInvestigator,
+    sectionTitle: 'Adaptation Investigator',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true, // What If? scenario accuracy tracking
+  },
+
+  'cell-builder': {
+    component: CellBuilder,
+    sectionTitle: 'Cell Structure Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true, // Organelle placement accuracy tracking
   },
 
   'media-player': {

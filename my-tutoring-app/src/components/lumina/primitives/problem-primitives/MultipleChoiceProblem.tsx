@@ -9,6 +9,10 @@ import {
   type MultipleChoiceMetrics,
   type PrimitiveEvaluationResult,
 } from '../../evaluation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle2, Info } from 'lucide-react';
 
 /**
  * Multiple Choice Problem Component
@@ -141,44 +145,56 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
       {/* Options Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {data.options.map((option) => {
-          let statusClass = "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20";
+          const isSelected = selectedId === option.id;
+          const isCorrectOption = option.id === data.correctOptionId;
+          const isIncorrectChoice = isSubmitted && isSelected && !isCorrectOption;
 
-          if (selectedId === option.id) {
-            statusClass = "border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]";
-          }
+          // Determine button variant and styling based on state
+          let buttonClasses = "h-auto text-left p-6 border transition-all duration-300";
 
-          if (isSubmitted) {
-            if (option.id === data.correctOptionId) {
-              statusClass = "border-emerald-500 bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
-            } else if (selectedId === option.id && option.id !== data.correctOptionId) {
-              statusClass = "border-red-500 bg-red-500/20 opacity-60";
+          if (!isSubmitted) {
+            buttonClasses += isSelected
+              ? " border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+              : " border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20";
+          } else {
+            if (isCorrectOption) {
+              buttonClasses += " border-emerald-500 bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
+            } else if (isIncorrectChoice) {
+              buttonClasses += " border-red-500 bg-red-500/20 opacity-60";
             } else {
-              statusClass = "opacity-40 border-transparent bg-black/20";
+              buttonClasses += " opacity-40 border-transparent bg-black/20";
             }
           }
 
           return (
-            <button
+            <Button
               key={option.id}
               onClick={() => handleSelect(option.id)}
               disabled={isSubmitted}
-              className={`relative text-left p-6 rounded-xl border transition-all duration-300 group ${statusClass}`}
+              variant="ghost"
+              className={buttonClasses}
             >
-              <div className="flex items-center gap-4">
-                <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold font-mono border transition-colors
-                  ${selectedId === option.id || (isSubmitted && option.id === data.correctOptionId) ? 'bg-white text-slate-900 border-white' : 'bg-black/30 text-slate-400 border-white/10'}
-                `}>
-                  {option.id}
-                </span>
-                <span className="text-lg text-slate-200 font-light group-hover:text-white transition-colors">{option.text}</span>
-              </div>
-
-              {isSubmitted && option.id === data.correctOptionId && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold border
+                      ${isSelected || (isSubmitted && isCorrectOption)
+                        ? 'bg-white text-slate-900 border-white'
+                        : 'bg-black/30 text-slate-400 border-white/10'}
+                    `}
+                  >
+                    {option.id}
+                  </Badge>
+                  <span className="text-lg text-slate-200 font-light group-hover:text-white transition-colors">
+                    {option.text}
+                  </span>
                 </div>
-              )}
-            </button>
+
+                {isSubmitted && isCorrectOption && (
+                  <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                )}
+              </div>
+            </Button>
           );
         })}
       </div>
@@ -186,43 +202,45 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
       {/* Action Area */}
       <div className="flex flex-col items-center">
         {!isSubmitted ? (
-          <button
+          <Button
             onClick={handleSubmit}
             disabled={!selectedId}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 hover:shadow-blue-500/40 hover:-translate-y-0.5"
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide shadow-lg shadow-blue-600/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 disabled:opacity-50"
           >
             Verify Answer
-          </button>
+          </Button>
         ) : (
           <div className="w-full space-y-4">
-            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-              <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${isCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {isCorrect ?
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  }
-                </svg>
-                <span>{isCorrect ? 'Correct Analysis' : 'Insight'}</span>
-              </div>
-              <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-                {data.rationale}
-              </p>
-              {data.teachingNote && (
-                <div className="mt-3 pt-3 border-t border-white/5">
-                  <p className="text-sm text-slate-400 italic">
-                    💡 {data.teachingNote}
-                  </p>
+            <Card className="animate-fade-in backdrop-blur-xl bg-black/20 border-white/5">
+              <CardContent className="pt-6">
+                <div className={`flex items-center gap-3 mb-3 font-bold uppercase tracking-wider ${isCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
+                  {isCorrect ? (
+                    <CheckCircle2 className="w-5 h-5" />
+                  ) : (
+                    <Info className="w-5 h-5" />
+                  )}
+                  <span>{isCorrect ? 'Correct Analysis' : 'Insight'}</span>
                 </div>
-              )}
-            </div>
-            {/* Try Again Button */}
-            <button
+                <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
+                  {data.rationale}
+                </p>
+                {data.teachingNote && (
+                  <div className="mt-3 pt-3 border-t border-white/5">
+                    <p className="text-sm text-slate-400 italic">
+                      💡 {data.teachingNote}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Button
               onClick={handleReset}
-              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+              variant="ghost"
+              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide"
             >
               Try Again
-            </button>
+            </Button>
           </div>
         )}
       </div>

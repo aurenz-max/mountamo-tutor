@@ -92,6 +92,9 @@ export type {
   TelescopeSimulatorMetrics,
   // Biology metrics
   MicroscopeViewerMetrics,
+  FoodWebBuilderMetrics,
+  AdaptationInvestigatorMetrics,
+  CellBuilderMetrics,
   // Physics metrics
   MotionDiagramMetrics,
   // Session types

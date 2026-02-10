@@ -1455,6 +1455,144 @@ export interface MicroscopeViewerMetrics extends BasePrimitiveMetrics {
   observationsSubmitted: number;
 }
 
+export interface AdaptationInvestigatorMetrics extends BasePrimitiveMetrics {
+  type: 'adaptation-investigator';
+
+  // Organism and adaptation info
+  organism: string;
+  adaptationType: 'structural' | 'behavioral' | 'physiological';
+  gradeBand: '2-4' | '5-6' | '7-8';
+
+  // Exploration tracking
+  panelsExplored: number;             // 0-3: how many panels clicked
+  allPanelsExplored: boolean;         // Did they explore trait, environment, and connection
+
+  // What If? scenario performance
+  totalWhatIfScenarios: number;
+  correctWhatIfResponses: number;
+  whatIfAccuracy: number;             // 0-100 percentage
+
+  // Per-scenario results
+  whatIfResponses: Array<{
+    scenarioIndex: number;
+    studentAnswer: boolean | null;    // true = "still useful", false = "not useful"
+    correctAnswer: boolean;
+    isCorrect: boolean;
+  }>;
+
+  // Engagement
+  misconceptionViewed: boolean;       // Did they open the misconception section
+
+  // Overall
+  allCorrect: boolean;
+}
+
+export type CellZone =
+  | 'center'
+  | 'peripheral'
+  | 'near-nucleus'
+  | 'membrane-associated'
+  | 'large-central'
+  | 'scattered';
+
+export type QuantityLevel = 'few' | 'some' | 'many' | 'lots';
+
+export interface CellBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'cell-builder';
+
+  // Cell information
+  cellType: 'animal' | 'plant' | 'prokaryotic' | 'fungal';
+  cellContext: string;            // "muscle cell", "nerve cell", "generic animal cell"
+  gradeBand: '4-5' | '6-8';
+
+  // Phase completion
+  phase1Completed: boolean;       // Sort phase
+  phase2Completed: boolean;       // Place phase
+  phase3Completed: boolean;       // Function match phase
+  allPhasesCompleted: boolean;
+
+  // Phase 1: Sort (Belongs vs Doesn't Belong)
+  totalOrganelles: number;        // Total organelles including distractors
+  validOrganelles: number;        // Organelles that belong
+  distractorOrganelles: number;   // Organelles that don't belong
+  correctlySorted: number;        // Correctly classified (both accepted valid + rejected distractors)
+  sortAccuracy: number;           // 0-100
+  sortResults: Array<{
+    organelleId: string;
+    belongsInCell: boolean;       // Ground truth
+    studentSaidBelongs: boolean;  // Student's answer
+    isCorrect: boolean;
+  }>;
+
+  // Phase 2: Place (Zone-Based Placement)
+  totalToPlace: number;           // Number of organelles to place
+  correctZonePlacements: number;  // Placed in correct zone
+  incorrectZonePlacements: number;
+  unplacedOrganelles: number;
+  zoneAccuracy: number;           // 0-100
+  zonePlacements: Array<{
+    organelleId: string;
+    correctZone: CellZone;
+    placedZone: CellZone | null;
+    isCorrect: boolean;
+  }>;
+
+  // Quantity reasoning (for specialized cells)
+  quantityQuestionsTotal: number;
+  quantityQuestionsCorrect: number;
+  quantityAccuracy: number;       // 0-100
+  quantityResults: Array<{
+    organelleId: string;
+    expectedQuantity: QuantityLevel;
+    studentQuantity: QuantityLevel | null;
+    isCorrect: boolean;
+  }>;
+
+  // Phase 3: Function Matching
+  totalFunctionMatches: number;
+  correctFunctionMatches: number;
+  functionMatchAccuracy: number;  // 0-100
+  functionMatchResults: Array<{
+    organelleId: string;
+    selectedFunctionId: string | null;
+    correctFunctionId: string;
+    isCorrect: boolean;
+  }>;
+
+  // Overall
+  allCorrect: boolean;
+  accuracy: number;               // 0-100, weighted across phases (sort 30%, place 40%, match 30%)
+}
+
+export interface FoodWebBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'food-web-builder';
+
+  // Web construction performance
+  totalConnections: number;         // Number of correct connections in the food web
+  correctConnections: number;       // Number of connections student got right
+  missingConnections: number;       // Number of correct connections student didn't make
+  extraConnections: number;         // Number of incorrect connections student made
+  webComplete: boolean;             // Did student build the complete web correctly
+
+  // Accuracy
+  accuracy: number;                 // 0-100 percentage of correct connections
+
+  // Connection attempts
+  connectionAttempts: Array<{
+    fromId: string;
+    toId: string;
+    isCorrect: boolean;
+  }>;
+
+  // Disruption scenario performance (optional - for grades 6-8)
+  disruptionPredictions?: Array<{
+    removedOrganismId: string;
+    studentPredictions: string[];
+    matchedExpected: number;
+    totalExpected: number;
+  }>;
+}
+
 // =============================================================================
 // Discriminated Union of All Metrics
 // =============================================================================
@@ -1511,6 +1649,9 @@ export type PrimitiveMetrics =
   | CompareContrastMetrics
   | ProcessAnimatorMetrics
   | MicroscopeViewerMetrics
+  | FoodWebBuilderMetrics
+  | AdaptationInvestigatorMetrics
+  | CellBuilderMetrics
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics

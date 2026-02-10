@@ -1103,6 +1103,9 @@ export type ComponentId =
   | 'bio-compare-contrast' // Side-by-side or Venn diagram comparison of biological entities (organisms, cells, organs, processes, biomes) (K-8)
   | 'bio-process-animator' // Step-through animation of biological processes with narrated stages and checkpoint questions (grades 2-8)
   | 'microscope-viewer'   // Simulated microscope experience with zoom levels, labeling tasks, and guided observation prompts (grades 3-8)
+  | 'food-web-builder'    // Interactive food web construction by drawing energy-flow connections between organisms (grades 3-8)
+  | 'adaptation-investigator' // Structure-function-environment reasoning: why organisms have specific traits (grades 2-8)
+  | 'cell-builder'           // Interactive cell diagram builder for placing and identifying organelles (grades 4-8)
 
   // Media & Multimedia
   | 'media-player'       // Audio-visual lesson player with synchronized narration and images
@@ -1260,3 +1263,6 @@ export type { HabitatDioramaData, Organism, Relationship, EnvironmentalFeature, 
 export type { CompareContrastData, EntityAttribute, EntityInfo, SharedAttribute } from './primitives/visual-primitives/biology/CompareContrast';
 export type { ProcessAnimatorData, ProcessStage, CheckpointQuestion } from './primitives/visual-primitives/biology/ProcessAnimator';
 export type { MicroscopeViewerData, VisibleStructure, ZoomLevel } from './primitives/visual-primitives/biology/MicroscopeViewer';
+export type { FoodWebBuilderData, Organism as FoodWebOrganism, Connection as FoodWebConnection, DisruptionChallenge } from './primitives/visual-primitives/biology/FoodWebBuilder';
+export type { AdaptationInvestigatorData, AdaptationInfo, EnvironmentInfo, ConnectionInfo, WhatIfScenario, MisconceptionInfo } from './primitives/visual-primitives/biology/AdaptationInvestigator';
+export type { CellBuilderData, OrganelleInfo, CellMembraneInfo, CellWallInfo, CellZone, FunctionMatch } from './primitives/visual-primitives/biology/CellBuilder';
