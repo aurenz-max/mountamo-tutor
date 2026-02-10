@@ -12,7 +12,6 @@ import TelescopeSimulator from '../primitives/visual-primitives/astronomy/Telesc
 import {
   EvaluationProvider,
   useEvaluationContext,
-  type PrimitiveEvaluationResult,
 } from '../evaluation';
 
 interface AstronomyPrimitivesTesterProps {
@@ -46,10 +45,11 @@ const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
 const PrimitiveRenderer: React.FC<{
   componentId: PrimitiveType;
   data: unknown;
-  onEvaluationSubmit?: (result: PrimitiveEvaluationResult) => void;
-}> = ({ componentId, data, onEvaluationSubmit }) => {
+}> = ({ componentId, data }) => {
   if (!data) return null;
 
+  // Don't pass onEvaluationSubmit to primitives - the usePrimitiveEvaluation hook
+  // already handles context submission. Passing it causes double submissions.
   switch (componentId) {
     case 'solar-system-explorer':
       return (
@@ -64,7 +64,6 @@ const PrimitiveRenderer: React.FC<{
         <ScaleComparator
           data={{
             ...(data as Parameters<typeof ScaleComparator>[0]['data']),
-            onEvaluationSubmit,
           }}
         />
       );
@@ -73,7 +72,6 @@ const PrimitiveRenderer: React.FC<{
         <DayNightSeasons
           data={{
             ...(data as Parameters<typeof DayNightSeasons>[0]['data']),
-            onEvaluationSubmit,
           }}
         />
       );
@@ -82,7 +80,6 @@ const PrimitiveRenderer: React.FC<{
         <MoonPhasesLab
           data={{
             ...(data as Parameters<typeof MoonPhasesLab>[0]['data']),
-            onEvaluationSubmit,
           }}
         />
       );
@@ -91,7 +88,6 @@ const PrimitiveRenderer: React.FC<{
         <RocketBuilder
           data={{
             ...(data as Parameters<typeof RocketBuilder>[0]['data']),
-            onEvaluationSubmit,
           }}
         />
       );
@@ -100,7 +96,6 @@ const PrimitiveRenderer: React.FC<{
         <OrbitMechanicsLab
           data={{
             ...(data as Parameters<typeof OrbitMechanicsLab>[0]['data']),
-            onEvaluationSubmit,
           }}
         />
       );
@@ -109,7 +104,6 @@ const PrimitiveRenderer: React.FC<{
         <MissionPlanner
           data={{
             ...(data as Parameters<typeof MissionPlanner>[0]['data']),
-            onEvaluationSubmit,
           }}
         />
       );
@@ -118,7 +112,6 @@ const PrimitiveRenderer: React.FC<{
         <TelescopeSimulator
           data={{
             ...(data as Parameters<typeof TelescopeSimulator>[0]['data']),
-            onEvaluationSubmit,
           }}
         />
       );
@@ -223,7 +216,6 @@ const EvaluationResultsPanel: React.FC = () => {
 
 // Main component with content generation
 const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps> = ({ onBack }) => {
-  const context = useEvaluationContext();
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('solar-system-explorer');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('3');
   const [topic, setTopic] = useState('');
@@ -266,12 +258,6 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
-    if (context) {
-      context.submitEvaluation(result);
     }
   };
 
@@ -425,7 +411,6 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
                 <PrimitiveRenderer
                   componentId={selectedPrimitive}
                   data={generatedData}
-                  onEvaluationSubmit={handleEvaluationSubmit}
                 />
               </div>
             )}

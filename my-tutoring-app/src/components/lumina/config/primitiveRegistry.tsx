@@ -53,6 +53,7 @@ import MicroscopeViewer from '../primitives/visual-primitives/biology/Microscope
 import FoodWebBuilder from '../primitives/visual-primitives/biology/FoodWebBuilder';
 import AdaptationInvestigator from '../primitives/visual-primitives/biology/AdaptationInvestigator';
 import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
+import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceLab';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -637,6 +638,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true, // Organelle placement accuracy tracking
+  },
+
+  'inheritance-lab': {
+    component: InheritanceLab,
+    sectionTitle: 'Genetics Inheritance Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true, // Punnett square accuracy tracking
   },
 
   'media-player': {

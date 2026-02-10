@@ -13,17 +13,17 @@ import MicroscopeViewer from '../primitives/visual-primitives/biology/Microscope
 import AdaptationInvestigator from '../primitives/visual-primitives/biology/AdaptationInvestigator';
 import FoodWebBuilder from '../primitives/visual-primitives/biology/FoodWebBuilder';
 import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
+import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceLab';
 import {
   EvaluationProvider,
   useEvaluationContext,
-  type PrimitiveEvaluationResult,
 } from '../evaluation';
 
 interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer' | 'adaptation-investigator' | 'food-web-builder' | 'cell-builder';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer' | 'adaptation-investigator' | 'food-web-builder' | 'cell-builder' | 'inheritance-lab';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -39,6 +39,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'adaptation-investigator', label: 'Adaptation Investigator', icon: '🧬', topic: 'Structure-function reasoning' },
   { value: 'food-web-builder', label: 'Food Web Builder', icon: '🕸️', topic: 'Ecosystem energy flow' },
   { value: 'cell-builder', label: 'Cell Builder', icon: '🧫', topic: 'Cell structure and organelles' },
+  { value: 'inheritance-lab', label: 'Inheritance Lab', icon: '🧬', topic: 'Flower color inheritance' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -67,8 +68,7 @@ const EXAMPLE_ORGANISMS = [
 const PrimitiveRenderer: React.FC<{
   componentId: PrimitiveType;
   data: unknown;
-  onEvaluationSubmit?: (result: PrimitiveEvaluationResult) => void;
-}> = ({ componentId, data, onEvaluationSubmit }) => {
+}> = ({ componentId, data }) => {
   if (!data) return null;
 
   switch (componentId) {
@@ -90,7 +90,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof ClassificationSorter>[0]['data']),
             instanceId: `classification-sorter-${Date.now()}`,
-            onEvaluationSubmit,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
       );
@@ -126,7 +126,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof CompareContrast>[0]['data']),
             instanceId: `bio-compare-contrast-${Date.now()}`,
-            onEvaluationSubmit,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
       );
@@ -136,7 +136,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof ProcessAnimator>[0]['data']),
             instanceId: `bio-process-animator-${Date.now()}`,
-            onEvaluationSubmit,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
       );
@@ -146,7 +146,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof MicroscopeViewer>[0]['data']),
             instanceId: `microscope-viewer-${Date.now()}`,
-            onEvaluationSubmit,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
       );
@@ -156,7 +156,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof AdaptationInvestigator>[0]['data']),
             instanceId: `adaptation-investigator-${Date.now()}`,
-            onEvaluationSubmit,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
       );
@@ -166,7 +166,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof FoodWebBuilder>[0]['data']),
             instanceId: `food-web-builder-${Date.now()}`,
-            onEvaluationSubmit,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
       );
@@ -176,7 +176,17 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof CellBuilder>[0]['data']),
             instanceId: `cell-builder-${Date.now()}`,
-            onEvaluationSubmit,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
+          }}
+        />
+      );
+    case 'inheritance-lab':
+      return (
+        <InheritanceLab
+          data={{
+            ...(data as Parameters<typeof InheritanceLab>[0]['data']),
+            instanceId: `inheritance-lab-${Date.now()}`,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
       );
@@ -281,7 +291,6 @@ const EvaluationResultsPanel: React.FC = () => {
 
 // Main component with content generation
 const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = ({ onBack }) => {
-  const context = useEvaluationContext();
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('organism-card');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('elementary');
   const [topic, setTopic] = useState('');
@@ -308,6 +317,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
         selectedPrimitive === 'adaptation-investigator' ? 'Arctic Fox fur color change' :
         selectedPrimitive === 'food-web-builder' ? 'Grassland ecosystem' :
         selectedPrimitive === 'cell-builder' ? 'Muscle cell' :
+        selectedPrimitive === 'inheritance-lab' ? 'Flower color' :
         'Monarch Butterfly';
       const currentTopic = topic.trim() || defaultTopic;
 
@@ -347,12 +357,6 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
-    if (context) {
-      context.submitEvaluation(result);
     }
   };
 
@@ -443,6 +447,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                  selectedPrimitive === 'adaptation-investigator' ? 'Adaptation (optional)' :
                  selectedPrimitive === 'food-web-builder' ? 'Ecosystem (optional)' :
                  selectedPrimitive === 'cell-builder' ? 'Cell Type (optional)' :
+                 selectedPrimitive === 'inheritance-lab' ? 'Trait (optional)' :
                  'Species/Organism (optional)'}
               </label>
               <input
@@ -457,6 +462,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                   selectedPrimitive === 'adaptation-investigator' ? 'e.g., "Cactus spines", "Chameleon camouflage"' :
                   selectedPrimitive === 'food-web-builder' ? 'e.g., "Coral reef", "Temperate forest"' :
                   selectedPrimitive === 'cell-builder' ? 'e.g., "Muscle cell", "Leaf cell", "Nerve cell", "Plant cell"' :
+                  selectedPrimitive === 'inheritance-lab' ? 'e.g., "Flower color", "Eye color", "Sickle cell"' :
                   'Leave blank for default...'
                 }
                 className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -553,7 +559,6 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                 <PrimitiveRenderer
                   componentId={selectedPrimitive}
                   data={generatedData}
-                  onEvaluationSubmit={handleEvaluationSubmit}
                 />
               </div>
             )}

@@ -1597,6 +1597,34 @@ export interface FoodWebBuilderMetrics extends BasePrimitiveMetrics {
 // Discriminated Union of All Metrics
 // =============================================================================
 
+export interface InheritanceLabMetrics extends BasePrimitiveMetrics {
+  type: 'inheritance-lab';
+
+  // Cross information
+  crossType: 'monohybrid' | 'dihybrid' | 'x-linked';
+  inheritancePattern: 'complete-dominance' | 'incomplete-dominance' | 'codominance' | 'x-linked';
+  gradeBand: '6-7' | '8';
+
+  // Punnett square performance
+  totalCells: number;
+  correctCells: number;
+  allCellsCorrect: boolean;
+  punnettSquareAccuracy: number;  // 0-100
+
+  // Per-cell results
+  punnettSquareFilled: Array<{
+    row: number;
+    col: number;
+    studentGenotype: string;
+    correctGenotype: string;
+    isCorrect: boolean;
+  }>;
+
+  // Simulation engagement
+  simulationRun: boolean;
+  simulationPopulation: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -1652,6 +1680,7 @@ export type PrimitiveMetrics =
   | FoodWebBuilderMetrics
   | AdaptationInvestigatorMetrics
   | CellBuilderMetrics
+  | InheritanceLabMetrics
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics

@@ -95,6 +95,7 @@ export type {
   FoodWebBuilderMetrics,
   AdaptationInvestigatorMetrics,
   CellBuilderMetrics,
+  InheritanceLabMetrics,
   // Physics metrics
   MotionDiagramMetrics,
   // Session types

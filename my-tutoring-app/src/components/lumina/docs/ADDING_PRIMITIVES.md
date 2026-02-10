@@ -533,6 +533,64 @@ export interface MyPrimitiveData { title: string; values: number[]; }
 import { MyPrimitiveData } from '../../primitives/.../MyPrimitive';
 ```
 
+### Avoiding Double Evaluation Submissions
+
+**CRITICAL: Do NOT pass `onEvaluationSubmit` to primitives that use `usePrimitiveEvaluation`.**
+
+The `usePrimitiveEvaluation` hook already submits results to the `EvaluationContext` automatically (via `evaluationContext.submitEvaluation()`). If you *also* pass an `onEvaluationSubmit` callback that calls `context.submitEvaluation()`, the result gets submitted **twice** — causing 2x evaluations and 2x attempt counts per student interaction.
+
+**How the double submission happens:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Tester passes onEvaluationSubmit to primitive               │
+│                                                             │
+│  handleEvaluationSubmit = (result) => {                     │
+│    context.submitEvaluation(result);  ← SUBMISSION #1       │
+│  }                                                          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ usePrimitiveEvaluation hook receives it as onSubmit         │
+│                                                             │
+│  submitResult() {                                           │
+│    onSubmit?.(result);                 ← calls #1 above     │
+│    evaluationContext.submitEvaluation(result); ← SUBMIT #2  │
+│  }                                                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Correct pattern in tester components:**
+
+```tsx
+// ✅ CORRECT: Don't pass onEvaluationSubmit — the hook handles context submission
+<MyPrimitive
+  data={{
+    ...(data as Parameters<typeof MyPrimitive>[0]['data']),
+    instanceId: `my-primitive-${Date.now()}`,
+    // The usePrimitiveEvaluation hook already submits to EvaluationContext
+  }}
+/>
+
+// ❌ WRONG: Causes double submission
+<MyPrimitive
+  data={{
+    ...(data as Parameters<typeof MyPrimitive>[0]['data']),
+    instanceId: `my-primitive-${Date.now()}`,
+    onEvaluationSubmit,  // ← DO NOT DO THIS
+  }}
+/>
+```
+
+**When is `onEvaluationSubmit` safe to use?**
+
+The `onSubmit` / `onEvaluationSubmit` callback in `usePrimitiveEvaluation` is intended for **local-only side effects** (logging, updating local UI state) — not for submitting to the evaluation context. If your tester's `handleEvaluationSubmit` only logs or stores results locally without calling `context.submitEvaluation()`, passing it is safe but unnecessary since the hook handles submission.
+
+**Rule of thumb:** If a primitive uses `usePrimitiveEvaluation`, never pass it an `onEvaluationSubmit` that calls `context.submitEvaluation()`.
+
+---
+
 ### Evaluation Props are Auto-Injected
 
 When `supportsEvaluation: true` is set in the registry, `ManifestOrderRenderer` automatically injects:
@@ -947,6 +1005,9 @@ The registry-based architecture provides:
 3. Verify metrics interface is defined and exported from `evaluation/types.ts`
 4. Check browser console for warnings from `usePrimitiveEvaluation`
 
+### Double evaluations / 2x attempts per submission
+This happens when `onEvaluationSubmit` is passed to a primitive that uses `usePrimitiveEvaluation`, and the callback calls `context.submitEvaluation()`. The hook already submits to the context, so the result is submitted twice. **Fix:** Remove `onEvaluationSubmit` from the primitive's data props in the tester. See [Avoiding Double Evaluation Submissions](#avoiding-double-evaluation-submissions) above.
+
 ---
 
 ## Quick Checklist for New Primitives
@@ -964,6 +1025,7 @@ Use this checklist when adding a new primitive:
 - [ ] **UI config**: Added to `primitiveRegistry.tsx` with `supportsEvaluation: true` if interactive
 - [ ] **Metrics** (if evaluable): Custom metrics interface in `evaluation/types.ts`
 - [ ] **Evaluation hook** (if evaluable): Integrated `usePrimitiveEvaluation` with submit/reset handlers
+- [ ] **No double submission** (if evaluable): Tester does NOT pass `onEvaluationSubmit` that calls `context.submitEvaluation()` — the hook handles this
 - [ ] **Testing**: Verified primitive works standalone and within exhibits
 
 ## Additional Resources

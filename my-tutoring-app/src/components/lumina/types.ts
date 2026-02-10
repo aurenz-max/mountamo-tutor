@@ -1106,6 +1106,7 @@ export type ComponentId =
   | 'food-web-builder'    // Interactive food web construction by drawing energy-flow connections between organisms (grades 3-8)
   | 'adaptation-investigator' // Structure-function-environment reasoning: why organisms have specific traits (grades 2-8)
   | 'cell-builder'           // Interactive cell diagram builder for placing and identifying organelles (grades 4-8)
+  | 'inheritance-lab'        // Interactive Punnett square and trait prediction tool for genetics inheritance (grades 6-8)
 
   // Media & Multimedia
   | 'media-player'       // Audio-visual lesson player with synchronized narration and images
@@ -1266,3 +1267,4 @@ export type { MicroscopeViewerData, VisibleStructure, ZoomLevel } from './primit
 export type { FoodWebBuilderData, Organism as FoodWebOrganism, Connection as FoodWebConnection, DisruptionChallenge } from './primitives/visual-primitives/biology/FoodWebBuilder';
 export type { AdaptationInvestigatorData, AdaptationInfo, EnvironmentInfo, ConnectionInfo, WhatIfScenario, MisconceptionInfo } from './primitives/visual-primitives/biology/AdaptationInvestigator';
 export type { CellBuilderData, OrganelleInfo, CellMembraneInfo, CellWallInfo, CellZone, FunctionMatch } from './primitives/visual-primitives/biology/CellBuilder';
+export type { InheritanceLabData, TraitInfo, ParentInfo, PunnettCell, AlleleInfo, ExpectedRatios } from './primitives/visual-primitives/biology/InheritanceLab';

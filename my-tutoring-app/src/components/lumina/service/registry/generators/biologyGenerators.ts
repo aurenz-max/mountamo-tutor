@@ -30,6 +30,7 @@ import { generateMicroscopeViewer } from '../../biology/gemini-microscope-viewer
 import { generateFoodWebBuilder } from '../../biology/gemini-food-web-builder';
 import { generateAdaptationInvestigator } from '../../biology/gemini-adaptation-investigator';
 import { generateCellBuilder } from '../../biology/gemini-cell-builder';
+import { generateInheritanceLab } from '../../biology/gemini-inheritance-lab';
 
 // ============================================================================
 // Helper Types
@@ -699,11 +700,55 @@ registerGenerator('cell-builder', async (item, topic, gradeContext) => {
   };
 });
 
+/**
+ * Inheritance Lab - Interactive Punnett square and trait prediction tool
+ *
+ * Perfect for:
+ * - Mendelian genetics (monohybrid crosses, dominant/recessive traits)
+ * - Dihybrid crosses and independent assortment (grade 8)
+ * - Incomplete dominance and codominance (grade 8)
+ * - X-linked inheritance patterns (grade 8)
+ * - Probability and ratio prediction in biology
+ * - Connecting genetics to real-world traits (flower color, eye color, etc.)
+ *
+ * Features:
+ * - Interactive Punnett square grid with student-fillable cells
+ * - Genotype and phenotype visualization
+ * - Population simulation showing predicted vs observed ratios
+ * - Expected genotypic and phenotypic ratio display
+ * - Real-world trait examples
+ * - Evaluation tracking for Punnett square accuracy
+ *
+ * Grade Scaling:
+ * - 6-7: Monohybrid crosses only, complete dominance, 2x2 grid, simple vocabulary
+ * - 8: Mono- or dihybrid crosses, incomplete dominance/codominance/x-linked, scientific terminology
+ */
+registerGenerator('inheritance-lab', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '6-7' | '8'> = {
+    '6': '6-7',
+    '7': '6-7',
+    '8': '8',
+    '6-7': '6-7',
+    '8': '8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '6-7';
+
+  return {
+    type: 'inheritance-lab',
+    instanceId: item.instanceId,
+    data: await generateInheritanceLab(topic, gradeBand, config),
+  };
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 12 biology generators
+// Total: 13 biology generators
 // - species-profile
 // - organism-card
 // - classification-sorter
@@ -715,5 +760,6 @@ registerGenerator('cell-builder', async (item, topic, gradeContext) => {
 // - microscope-viewer
 // - food-web-builder
 // - adaptation-investigator
+// - inheritance-lab
 
-console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer, food-web-builder, adaptation-investigator, cell-builder');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer, food-web-builder, adaptation-investigator, cell-builder, inheritance-lab');
