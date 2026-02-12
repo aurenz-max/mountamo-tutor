@@ -96,6 +96,9 @@ export type {
   AdaptationInvestigatorMetrics,
   CellBuilderMetrics,
   InheritanceLabMetrics,
+  DnaExplorerMetrics,
+  ProteinFolderMetrics,
+  EnergyCycleEngineMetrics,
   // Physics metrics
   MotionDiagramMetrics,
   // Session types

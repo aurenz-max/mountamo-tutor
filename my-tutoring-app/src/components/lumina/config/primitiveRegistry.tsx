@@ -54,6 +54,9 @@ import FoodWebBuilder from '../primitives/visual-primitives/biology/FoodWebBuild
 import AdaptationInvestigator from '../primitives/visual-primitives/biology/AdaptationInvestigator';
 import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
 import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceLab';
+import DnaExplorer from '../primitives/visual-primitives/biology/DnaExplorer';
+import ProteinFolder from '../primitives/visual-primitives/biology/ProteinFolder';
+import EnergyCycleEngine from '../primitives/visual-primitives/biology/EnergyCycleEngine';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -648,6 +651,36 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true, // Punnett square accuracy tracking
+  },
+
+  'dna-explorer': {
+    component: DnaExplorer,
+    sectionTitle: 'DNA Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true, // Build challenge accuracy tracking
+  },
+
+  'protein-folder': {
+    component: ProteinFolder,
+    sectionTitle: 'Protein Folding Simulator',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true, // Folding placement and mutation prediction tracking
+  },
+
+  'energy-cycle-engine': {
+    component: EnergyCycleEngine,
+    sectionTitle: 'Energy Cycle Engine',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
+    supportsEvaluation: true, // Experiment completion and systems thinking tracking
   },
 
   'media-player': {

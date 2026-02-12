@@ -31,6 +31,9 @@ import { generateFoodWebBuilder } from '../../biology/gemini-food-web-builder';
 import { generateAdaptationInvestigator } from '../../biology/gemini-adaptation-investigator';
 import { generateCellBuilder } from '../../biology/gemini-cell-builder';
 import { generateInheritanceLab } from '../../biology/gemini-inheritance-lab';
+import { generateDnaExplorer } from '../../biology/gemini-dna-explorer';
+import { generateProteinFolder } from '../../biology/gemini-protein-folder';
+import { generateEnergyCycleEngine } from '../../biology/gemini-energy-cycle-engine';
 
 // ============================================================================
 // Helper Types
@@ -744,11 +747,126 @@ registerGenerator('inheritance-lab', async (item, topic, gradeContext) => {
   };
 });
 
+/**
+ * DNA Explorer - Interactive DNA structure with base pairing challenges
+ *
+ * Perfect for:
+ * - DNA structure and the double helix
+ * - Base pairing rules (A-T, C-G)
+ * - Nucleotide composition (purines vs pyrimidines)
+ * - Central dogma introduction (DNA → RNA → Protein)
+ * - Molecular-level genetics exploration
+ *
+ * Features:
+ * - SVG double helix visualization with clickable bases
+ * - Zoom levels from chromosome to molecular scale
+ * - Build challenges for complementary strand construction
+ * - Nucleotide reference panel with base pairing info
+ * - Structural features exploration (backbone, grooves, antiparallel)
+ * - Evaluation support for build challenge accuracy
+ *
+ * Grade Scaling:
+ * - 5-6: Base pairing rules (A-T, C-G), short sequences (6-8 bases), simple vocabulary
+ * - 7-8: Hydrogen bond specifics, longer sequences (8-12 bases), transcription/replication modes
+ */
+registerGenerator('dna-explorer', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '5-6' | '7-8'> = {
+    '5': '5-6',
+    '6': '5-6',
+    '7': '7-8',
+    '8': '7-8',
+    '5-6': '5-6',
+    '7-8': '7-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
+
+  return {
+    type: 'dna-explorer',
+    instanceId: item.instanceId,
+    data: await generateDnaExplorer(topic, gradeBand, config),
+  };
+});
+
+/**
+ * Protein Folder - Interactive protein folding simulator
+ *
+ * Perfect for:
+ * - Understanding how amino acid sequence determines protein shape
+ * - Learning about hydrophobic/hydrophilic interactions
+ * - Exploring structure-function relationships at molecular level
+ * - Connecting mutations to diseases (sickle cell, cystic fibrosis)
+ *
+ * Features:
+ * - Linear amino acid sequence with color-coded chemical properties
+ * - Simplified 3D folding visualization
+ * - Folding challenge: classify residues as interior or surface
+ * - Mutation mode: swap amino acids and predict consequences
+ * - Real-world disease connections
+ * - Three-phase learning: Explore → Fold → Mutate
+ *
+ * Grade: 7-8 only (molecular biology concepts)
+ */
+registerGenerator('protein-folder', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  return {
+    type: 'protein-folder',
+    instanceId: item.instanceId,
+    data: await generateProteinFolder(topic, '7-8', config),
+  };
+});
+
+/**
+ * Energy Cycle Engine - Interactive photosynthesis-respiration coupled cycle
+ *
+ * Perfect for:
+ * - Understanding the coupled relationship between photosynthesis and respiration
+ * - Input-output reasoning and systems thinking
+ * - Energy transformation and conservation concepts
+ * - "What if?" experimental scenarios showing cascade effects
+ *
+ * Features:
+ * - Dual-panel visualization (chloroplast + mitochondrion)
+ * - Adjustable input sliders (light, CO₂, glucose, O₂)
+ * - Coupling points showing shared molecules
+ * - Disruption experiments demonstrating interdependence
+ * - Evaluation support for experiment completion
+ *
+ * Grade Scaling:
+ * - 5-6: Simple vocabulary, 2-3 stages per process, 3-4 experiments
+ * - 7-8: Scientific terminology, 3-4 stages with subcellular detail, 4-5 experiments
+ */
+registerGenerator('energy-cycle-engine', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '5-6' | '7-8'> = {
+    '5': '5-6',
+    '6': '5-6',
+    '7': '7-8',
+    '8': '7-8',
+    '5-6': '5-6',
+    '7-8': '7-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
+
+  return {
+    type: 'energy-cycle-engine',
+    instanceId: item.instanceId,
+    data: await generateEnergyCycleEngine(topic, gradeBand, config),
+  };
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 13 biology generators
+// Total: 16 biology generators
 // - species-profile
 // - organism-card
 // - classification-sorter
@@ -762,4 +880,4 @@ registerGenerator('inheritance-lab', async (item, topic, gradeContext) => {
 // - adaptation-investigator
 // - inheritance-lab
 
-console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer, food-web-builder, adaptation-investigator, cell-builder, inheritance-lab');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer, food-web-builder, adaptation-investigator, cell-builder, inheritance-lab, dna-explorer, protein-folder, energy-cycle-engine');

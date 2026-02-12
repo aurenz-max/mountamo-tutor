@@ -1625,6 +1625,96 @@ export interface InheritanceLabMetrics extends BasePrimitiveMetrics {
   simulationPopulation: number;
 }
 
+export interface DnaExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'dna-explorer';
+
+  // Mode and configuration
+  mode: 'structure' | 'base-pairing' | 'transcription' | 'replication';
+  gradeBand: '5-6' | '7-8';
+  sequenceLength: number;
+
+  // Base pairing attempts
+  basePairingAttempts: Array<{
+    position: number;
+    givenBase: string;
+    studentBase: string;
+    correctBase: string;
+    isCorrect: boolean;
+  }>;
+
+  // Build challenge results
+  buildChallengeResults: Array<{
+    challengeIndex: number;
+    studentAnswer: string;
+    correctAnswer: string;
+    accuracy: number; // 0-1
+  }>;
+
+  // Exploration tracking
+  zoomLevelsExplored: string[];
+
+  // Overall performance
+  totalChallenges: number;
+  correctChallenges: number;
+  accuracy: number; // 0-100
+}
+
+export interface ProteinFolderMetrics extends BasePrimitiveMetrics {
+  type: 'protein-folder';
+
+  // Protein info
+  proteinName: string;
+
+  // Folding performance
+  totalResidues: number;
+  correctPlacements: number;
+  foldingAccuracy: number;           // 0-100
+
+  // Per-residue folding results
+  foldingPredictions: Array<{
+    residueId: number;
+    studentPlacement: 'interior' | 'surface';
+    correctPlacement: 'interior' | 'surface';
+    isCorrect: boolean;
+  }>;
+
+  // Mutation challenge performance
+  totalMutationChallenges: number;
+  mutationPredictions: Array<{
+    challengeIndex: number;
+    studentPredictedEffect: string;
+    accuracyScore: number;           // 0-1
+  }>;
+  mutationAccuracy: number;          // 0-100
+
+  // Overall
+  overallAccuracy: number;           // 0-100 (weighted: 60% folding, 40% mutation)
+}
+
+export interface EnergyCycleEngineMetrics extends BasePrimitiveMetrics {
+  type: 'energy-cycle-engine';
+
+  // Mode and context
+  mode: 'photosynthesis' | 'respiration' | 'coupled';
+  gradeBand: '5-6' | '7-8';
+
+  // Experiment performance
+  totalExperiments: number;
+  experimentsCompleted: number;
+  experimentsCorrect: number;
+  experimentAccuracy: number;           // 0-100
+
+  // Exploration tracking
+  couplingPointsExplored: number;       // How many coupling points were visible
+  photosynthesisExplored: boolean;      // Did student view photosynthesis tab
+  respirationExplored: boolean;         // Did student view respiration tab
+  coupledModeUsed: boolean;             // Did student use coupled view
+
+  // Interaction depth
+  inputsAdjusted: boolean;              // Did they adjust any sliders
+  processDisrupted: boolean;            // Did they break a process via experiment
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -1681,6 +1771,9 @@ export type PrimitiveMetrics =
   | AdaptationInvestigatorMetrics
   | CellBuilderMetrics
   | InheritanceLabMetrics
+  | DnaExplorerMetrics
+  | ProteinFolderMetrics
+  | EnergyCycleEngineMetrics
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics

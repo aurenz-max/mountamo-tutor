@@ -1107,6 +1107,9 @@ export type ComponentId =
   | 'adaptation-investigator' // Structure-function-environment reasoning: why organisms have specific traits (grades 2-8)
   | 'cell-builder'           // Interactive cell diagram builder for placing and identifying organelles (grades 4-8)
   | 'inheritance-lab'        // Interactive Punnett square and trait prediction tool for genetics inheritance (grades 6-8)
+  | 'dna-explorer'           // Interactive DNA structure explorer with base pairing, zoom levels, and build challenges (grades 5-8)
+  | 'protein-folder'         // Interactive protein folding simulator with amino acid placement, structure visualization, and mutation challenges (grades 7-8)
+  | 'energy-cycle-engine'    // Interactive photosynthesis-respiration cycle engine showing coupled energy processes with input manipulation and experiments (grades 5-8)
 
   // Media & Multimedia
   | 'media-player'       // Audio-visual lesson player with synchronized narration and images
@@ -1268,3 +1271,6 @@ export type { FoodWebBuilderData, Organism as FoodWebOrganism, Connection as Foo
 export type { AdaptationInvestigatorData, AdaptationInfo, EnvironmentInfo, ConnectionInfo, WhatIfScenario, MisconceptionInfo } from './primitives/visual-primitives/biology/AdaptationInvestigator';
 export type { CellBuilderData, OrganelleInfo, CellMembraneInfo, CellWallInfo, CellZone, FunctionMatch } from './primitives/visual-primitives/biology/CellBuilder';
 export type { InheritanceLabData, TraitInfo, ParentInfo, PunnettCell, AlleleInfo, ExpectedRatios } from './primitives/visual-primitives/biology/InheritanceLab';
+export type { DnaExplorerData, NucleotideInfo, SequenceInfo, StructuralFeatures, ZoomLevelInfo, BuildChallenge, HighlightedRegion } from './primitives/visual-primitives/biology/DnaExplorer';
+export type { ProteinFolderData, AminoAcidResidue, KeyInteraction, FoldingLevels, MutationChallenge } from './primitives/visual-primitives/biology/ProteinFolder';
+export type { EnergyCycleEngineData, MoleculeInput, MoleculeOutput, PhotosynthesisData, CellularRespirationData, CouplingPoint, ExperimentScenario } from './primitives/visual-primitives/biology/EnergyCycleEngine';

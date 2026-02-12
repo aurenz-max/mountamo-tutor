@@ -14,6 +14,9 @@ import AdaptationInvestigator from '../primitives/visual-primitives/biology/Adap
 import FoodWebBuilder from '../primitives/visual-primitives/biology/FoodWebBuilder';
 import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
 import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceLab';
+import DnaExplorer from '../primitives/visual-primitives/biology/DnaExplorer';
+import ProteinFolder from '../primitives/visual-primitives/biology/ProteinFolder';
+import EnergyCycleEngine from '../primitives/visual-primitives/biology/EnergyCycleEngine';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -23,7 +26,7 @@ interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer' | 'adaptation-investigator' | 'food-web-builder' | 'cell-builder' | 'inheritance-lab';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer' | 'adaptation-investigator' | 'food-web-builder' | 'cell-builder' | 'inheritance-lab' | 'dna-explorer' | 'protein-folder' | 'energy-cycle-engine';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -40,6 +43,9 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'food-web-builder', label: 'Food Web Builder', icon: '🕸️', topic: 'Ecosystem energy flow' },
   { value: 'cell-builder', label: 'Cell Builder', icon: '🧫', topic: 'Cell structure and organelles' },
   { value: 'inheritance-lab', label: 'Inheritance Lab', icon: '🧬', topic: 'Flower color inheritance' },
+  { value: 'dna-explorer', label: 'DNA Explorer', icon: '🔬', topic: 'DNA structure and base pairing' },
+  { value: 'protein-folder', label: 'Protein Folder', icon: '🧪', topic: 'Protein folding and structure' },
+  { value: 'energy-cycle-engine', label: 'Energy Cycle Engine', icon: '⚡', topic: 'Photosynthesis and cellular respiration' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -190,6 +196,36 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'dna-explorer':
+      return (
+        <DnaExplorer
+          data={{
+            ...(data as Parameters<typeof DnaExplorer>[0]['data']),
+            instanceId: `dna-explorer-${Date.now()}`,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
+          }}
+        />
+      );
+    case 'protein-folder':
+      return (
+        <ProteinFolder
+          data={{
+            ...(data as Parameters<typeof ProteinFolder>[0]['data']),
+            instanceId: `protein-folder-${Date.now()}`,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
+          }}
+        />
+      );
+    case 'energy-cycle-engine':
+      return (
+        <EnergyCycleEngine
+          data={{
+            ...(data as Parameters<typeof EnergyCycleEngine>[0]['data']),
+            instanceId: `energy-cycle-engine-${Date.now()}`,
+            // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
+          }}
+        />
+      );
     default:
       return <div className="text-slate-400">Unknown primitive: {componentId}</div>;
   }
@@ -318,6 +354,9 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
         selectedPrimitive === 'food-web-builder' ? 'Grassland ecosystem' :
         selectedPrimitive === 'cell-builder' ? 'Muscle cell' :
         selectedPrimitive === 'inheritance-lab' ? 'Flower color' :
+        selectedPrimitive === 'dna-explorer' ? 'DNA structure and base pairing' :
+        selectedPrimitive === 'protein-folder' ? 'Hemoglobin and sickle cell disease' :
+        selectedPrimitive === 'energy-cycle-engine' ? 'Photosynthesis and cellular respiration' :
         'Monarch Butterfly';
       const currentTopic = topic.trim() || defaultTopic;
 
@@ -448,6 +487,9 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                  selectedPrimitive === 'food-web-builder' ? 'Ecosystem (optional)' :
                  selectedPrimitive === 'cell-builder' ? 'Cell Type (optional)' :
                  selectedPrimitive === 'inheritance-lab' ? 'Trait (optional)' :
+                 selectedPrimitive === 'dna-explorer' ? 'DNA Topic (optional)' :
+                 selectedPrimitive === 'protein-folder' ? 'Protein/Disease (optional)' :
+                 selectedPrimitive === 'energy-cycle-engine' ? 'Energy Topic (optional)' :
                  'Species/Organism (optional)'}
               </label>
               <input
@@ -463,6 +505,9 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                   selectedPrimitive === 'food-web-builder' ? 'e.g., "Coral reef", "Temperate forest"' :
                   selectedPrimitive === 'cell-builder' ? 'e.g., "Muscle cell", "Leaf cell", "Nerve cell", "Plant cell"' :
                   selectedPrimitive === 'inheritance-lab' ? 'e.g., "Flower color", "Eye color", "Sickle cell"' :
+                  selectedPrimitive === 'dna-explorer' ? 'e.g., "DNA structure", "Base pairing", "DNA replication"' :
+                  selectedPrimitive === 'protein-folder' ? 'e.g., "Hemoglobin", "Insulin", "Sickle cell disease"' :
+                  selectedPrimitive === 'energy-cycle-engine' ? 'e.g., "Photosynthesis and respiration", "Plant energy cycle"' :
                   'Leave blank for default...'
                 }
                 className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500"
