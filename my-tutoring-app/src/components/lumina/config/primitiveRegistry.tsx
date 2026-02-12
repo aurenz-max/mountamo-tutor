@@ -57,6 +57,7 @@ import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceL
 import DnaExplorer from '../primitives/visual-primitives/biology/DnaExplorer';
 import ProteinFolder from '../primitives/visual-primitives/biology/ProteinFolder';
 import EnergyCycleEngine from '../primitives/visual-primitives/biology/EnergyCycleEngine';
+import EvolutionTimeline from '../primitives/visual-primitives/biology/EvolutionTimeline';
 import MediaPlayer from '../primitives/MediaPlayer';
 import FlashcardDeck from '../primitives/FlashcardDeck';
 import ImageComparison from '../primitives/ImageComparison';
@@ -85,6 +86,11 @@ import MissionPlanner from '../primitives/visual-primitives/astronomy/MissionPla
 import TelescopeSimulator from '../primitives/visual-primitives/astronomy/TelescopeSimulator';
 // Physics Primitives
 import MotionDiagram from '../primitives/visual-primitives/physics/MotionDiagram';
+// Literacy Primitives (Wave 1 - K-6 ELA)
+import ParagraphArchitect from '../primitives/visual-primitives/literacy/ParagraphArchitect';
+import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
+import StoryMap from '../primitives/visual-primitives/literacy/StoryMap';
+import ListenAndRespond from '../primitives/visual-primitives/literacy/ListenAndRespond';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -683,6 +689,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true, // Experiment completion and systems thinking tracking
   },
 
+  'evolution-timeline': {
+    component: EvolutionTimeline,
+    sectionTitle: 'Evolution Timeline',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
+    supportsEvaluation: true, // Exploration tracking (events, lineages, extinctions)
+  },
+
   'media-player': {
     component: MediaPlayer,
     sectionTitle: 'Interactive Lesson',
@@ -936,6 +952,63 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
   },
+
+  // Literacy Primitives — Wave 1 (K-6 ELA)
+  'paragraph-architect': {
+    component: ParagraphArchitect,
+    sectionTitle: 'Paragraph Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'sentence-builder': {
+    component: SentenceBuilder,
+    sectionTitle: 'Sentence Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'story-map': {
+    component: StoryMap,
+    sectionTitle: 'Story Map',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'listen-and-respond': {
+    component: ListenAndRespond,
+    sectionTitle: 'Listening Comprehension',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  // Literacy Primitives — Wave 2-4 (placeholder entries for scaffolded ComponentIds)
+  'phonics-blender': { component: () => null, allowMultiple: true },
+  'decodable-reader': { component: () => null, allowMultiple: true },
+  'character-web': { component: () => null, allowMultiple: true },
+  'poetry-lab': { component: () => null, allowMultiple: true },
+  'genre-explorer': { component: () => null, allowMultiple: true },
+  'text-structure-analyzer': { component: () => null, allowMultiple: true },
+  'evidence-finder': { component: () => null, allowMultiple: true },
+  'story-planner': { component: () => null, allowMultiple: true },
+  'opinion-builder': { component: () => null, allowMultiple: true },
+  'revision-workshop': { component: () => null, allowMultiple: true },
+  'read-aloud-studio': { component: () => null, allowMultiple: true },
+  'context-clues-detective': { component: () => null, allowMultiple: true },
+  'figurative-language-finder': { component: () => null, allowMultiple: true },
+  'spelling-pattern-explorer': { component: () => null, allowMultiple: true },
 
 };
 

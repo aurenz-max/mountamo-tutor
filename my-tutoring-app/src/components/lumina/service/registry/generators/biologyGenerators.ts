@@ -34,6 +34,7 @@ import { generateInheritanceLab } from '../../biology/gemini-inheritance-lab';
 import { generateDnaExplorer } from '../../biology/gemini-dna-explorer';
 import { generateProteinFolder } from '../../biology/gemini-protein-folder';
 import { generateEnergyCycleEngine } from '../../biology/gemini-energy-cycle-engine';
+import { generateEvolutionTimeline } from '../../biology/gemini-evolution-timeline';
 
 // ============================================================================
 // Helper Types
@@ -862,11 +863,56 @@ registerGenerator('energy-cycle-engine', async (item, topic, gradeContext) => {
   };
 });
 
+/**
+ * Evolution Timeline - Interactive deep-time timeline
+ *
+ * Perfect for:
+ * - History of life on Earth (4.5 billion years)
+ * - Evolution of specific groups (mammals, birds, plants)
+ * - Mass extinction events and their aftermath
+ * - Understanding deep time and geological scale
+ * - Tracing evolutionary lineages and branching points
+ *
+ * Features:
+ * - Horizontal scrollable/zoomable timeline with era bands
+ * - Clickable event markers with detail cards
+ * - Lineage Trace mode highlighting evolutionary paths
+ * - Scale anchors for grasping deep time
+ * - Mass extinction explorer with cause/effect analysis
+ * - Evaluation support for exploration tracking
+ *
+ * Grade Scaling:
+ * - 4-5: 8-12 events, simple vocabulary, 2-3 lineages, dramatic mass extinctions
+ * - 6-8: 12-18 events, scientific vocabulary, 3-5 lineages, all 5 major extinctions
+ */
+registerGenerator('evolution-timeline', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '4-5' | '6-8'> = {
+    '4': '4-5',
+    '5': '4-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    '4-5': '4-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '4-5';
+
+  return {
+    type: 'evolution-timeline',
+    instanceId: item.instanceId,
+    data: await generateEvolutionTimeline(topic, gradeBand, config),
+  };
+});
+
 // ============================================================================
 // Export generator count for documentation
 // ============================================================================
 
-// Total: 16 biology generators
+// Total: 17 biology generators
 // - species-profile
 // - organism-card
 // - classification-sorter
@@ -880,4 +926,4 @@ registerGenerator('energy-cycle-engine', async (item, topic, gradeContext) => {
 // - adaptation-investigator
 // - inheritance-lab
 
-console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer, food-web-builder, adaptation-investigator, cell-builder, inheritance-lab, dna-explorer, protein-folder, energy-cycle-engine');
+console.log('✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer, food-web-builder, adaptation-investigator, cell-builder, inheritance-lab, dna-explorer, protein-folder, energy-cycle-engine, evolution-timeline');

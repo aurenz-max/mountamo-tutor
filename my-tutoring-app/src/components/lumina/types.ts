@@ -1086,6 +1086,26 @@ export type ComponentId =
   | 'interactive-passage' // Reading comprehension with evidence highlighting
   | 'word-builder'        // Vocabulary & Morphology - construct words from roots, prefixes, suffixes
 
+  // Language Arts Suite (K-6 ELA Expansion — PRD_LANGUAGE_ARTS_SUITE.md)
+  | 'phonics-blender'           // Sound-by-sound word building with phoneme tiles and audio (K-2)
+  | 'decodable-reader'          // Controlled-vocabulary reading with per-word TTS and comprehension (K-2)
+  | 'story-map'                 // Interactive plot structure diagram (K-6)
+  | 'character-web'             // Character analysis and relationship mapping (grades 2-6)
+  | 'poetry-lab'                // Poetry analysis and composition (grades 1-6)
+  | 'genre-explorer'            // Text genre classification with feature checklists (grades 1-6)
+  | 'text-structure-analyzer'   // Informational text organizational pattern identification (grades 2-6)
+  | 'evidence-finder'           // Text evidence citing with CER framework (grades 2-6)
+  | 'paragraph-architect'       // Scaffolded paragraph construction (grades 1-6)
+  | 'story-planner'             // Narrative pre-writing organizer (K-6)
+  | 'opinion-builder'           // Argument/persuasive writing scaffold (grades 2-6)
+  | 'revision-workshop'         // Edit and revise drafts with targeted feedback (grades 2-6)
+  | 'listen-and-respond'        // Audio comprehension with hidden text (K-6)
+  | 'read-aloud-studio'         // Fluency practice with model reading and recording (grades 1-6)
+  | 'sentence-builder'          // Construct grammatical sentences from word tiles (grades 1-6)
+  | 'context-clues-detective'   // Determine word meaning from context clues (grades 2-6)
+  | 'figurative-language-finder' // Identify and interpret figurative language (grades 3-6)
+  | 'spelling-pattern-explorer' // Discover spelling rules through pattern investigation (grades 1-6)
+
   // Assessment
   | 'knowledge-check'   // Quiz
 
@@ -1110,6 +1130,7 @@ export type ComponentId =
   | 'dna-explorer'           // Interactive DNA structure explorer with base pairing, zoom levels, and build challenges (grades 5-8)
   | 'protein-folder'         // Interactive protein folding simulator with amino acid placement, structure visualization, and mutation challenges (grades 7-8)
   | 'energy-cycle-engine'    // Interactive photosynthesis-respiration cycle engine showing coupled energy processes with input manipulation and experiments (grades 5-8)
+  | 'evolution-timeline'     // Interactive deep-time timeline showing evolutionary events, branching points, mass extinctions, and lineage tracing (grades 4-8)
 
   // Media & Multimedia
   | 'media-player'       // Audio-visual lesson player with synchronized narration and images
@@ -1274,3 +1295,4 @@ export type { InheritanceLabData, TraitInfo, ParentInfo, PunnettCell, AlleleInfo
 export type { DnaExplorerData, NucleotideInfo, SequenceInfo, StructuralFeatures, ZoomLevelInfo, BuildChallenge, HighlightedRegion } from './primitives/visual-primitives/biology/DnaExplorer';
 export type { ProteinFolderData, AminoAcidResidue, KeyInteraction, FoldingLevels, MutationChallenge } from './primitives/visual-primitives/biology/ProteinFolder';
 export type { EnergyCycleEngineData, MoleculeInput, MoleculeOutput, PhotosynthesisData, CellularRespirationData, CouplingPoint, ExperimentScenario } from './primitives/visual-primitives/biology/EnergyCycleEngine';
+export type { EvolutionTimelineData, TimelineEra, TimelineEvent, Lineage, ScaleAnchor, MassExtinction } from './primitives/visual-primitives/biology/EvolutionTimeline';

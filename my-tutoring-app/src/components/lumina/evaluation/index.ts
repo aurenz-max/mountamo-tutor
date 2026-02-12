@@ -99,8 +99,14 @@ export type {
   DnaExplorerMetrics,
   ProteinFolderMetrics,
   EnergyCycleEngineMetrics,
+  EvolutionTimelineMetrics,
   // Physics metrics
   MotionDiagramMetrics,
+  // Literacy metrics (Wave 1)
+  ParagraphArchitectMetrics,
+  SentenceBuilderMetrics,
+  StoryMapMetrics,
+  ListenAndRespondMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

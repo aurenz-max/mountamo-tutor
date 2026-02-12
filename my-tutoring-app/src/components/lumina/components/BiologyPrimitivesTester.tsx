@@ -442,7 +442,11 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                 {PRIMITIVE_OPTIONS.map((option) => (
                   <button
                     key={option.value}
-                    onClick={() => setSelectedPrimitive(option.value)}
+                    onClick={() => {
+                      setSelectedPrimitive(option.value);
+                      setGeneratedData(null);
+                      setError(null);
+                    }}
                     className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
                       selectedPrimitive === option.value
                         ? 'bg-green-600 text-white shadow-lg shadow-green-500/20'

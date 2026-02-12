@@ -1691,6 +1691,23 @@ export interface ProteinFolderMetrics extends BasePrimitiveMetrics {
   overallAccuracy: number;           // 0-100 (weighted: 60% folding, 40% mutation)
 }
 
+export interface EvolutionTimelineMetrics extends BasePrimitiveMetrics {
+  type: 'evolution-timeline';
+
+  // Exploration scope
+  totalEvents: number;
+  eventsExplored: number;
+  totalLineages: number;
+  lineagesTraced: number;
+  totalExtinctions: number;
+  extinctionsExplored: number;
+  scaleAnchorsViewed: boolean;
+
+  // Overall engagement
+  explorationScore: number;        // 0-100 weighted exploration percentage
+  zoomInteractions: number;        // Number of zoom/pan operations
+}
+
 export interface EnergyCycleEngineMetrics extends BasePrimitiveMetrics {
   type: 'energy-cycle-engine';
 
@@ -1713,6 +1730,147 @@ export interface EnergyCycleEngineMetrics extends BasePrimitiveMetrics {
   // Interaction depth
   inputsAdjusted: boolean;              // Did they adjust any sliders
   processDisrupted: boolean;            // Did they break a process via experiment
+}
+
+// -----------------------------------------------------------------------------
+// Literacy Primitives (Wave 1)
+// -----------------------------------------------------------------------------
+
+export interface ParagraphArchitectMetrics extends BasePrimitiveMetrics {
+  type: 'paragraph-architect';
+
+  // Structure
+  paragraphType: 'informational' | 'narrative' | 'opinion';
+  structureComplete: boolean;
+  topicSentencePresent: boolean;
+  detailSentencesCount: number;
+  concludingSentencePresent: boolean;
+
+  // Writing quality
+  linkingWordsUsed: number;
+  sentenceFramesUsed: number;
+  sentenceFramesAvailable: number;
+
+  // Phases
+  explorePhaseCompleted: boolean;
+  practicePhaseCompleted: boolean;
+  applyPhaseCompleted: boolean;
+  allPhasesCompleted: boolean;
+
+  // Revision
+  revisionsAfterReadBack: number;
+
+  // Accuracy
+  accuracy: number;               // 0-100
+  attemptsCount: number;
+}
+
+export interface SentenceBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'sentence-builder';
+
+  // Sentence type and grade
+  sentenceType: 'simple' | 'compound' | 'complex' | 'compound-complex';
+  gradeLevel: string;
+
+  // Challenge tracking
+  totalChallenges: number;
+  challengesCompleted: number;
+
+  // Phases
+  explorePhaseCompleted: boolean;
+  practicePhaseCompleted: boolean;
+  applyPhaseCompleted: boolean;
+
+  // Attempts and hints
+  totalAttempts: number;
+  totalHintsUsed: number;
+  averageAttemptsPerChallenge: number;
+
+  // Per-challenge results
+  challengeResults: Array<{
+    challengeId: string;
+    completed: boolean;
+    attempts: number;
+    hintsUsed: number;
+  }>;
+
+  // Accuracy
+  accuracy: number;               // 0-100
+}
+
+export interface StoryMapMetrics extends BasePrimitiveMetrics {
+  type: 'story-map';
+
+  // Structure info
+  structureType: 'bme' | 'story-mountain' | 'plot-diagram' | 'heros-journey';
+  gradeLevel: string;
+
+  // Phase 1: Identify
+  charactersIdentified: number;
+  totalCharacters: number;
+  charactersCorrect: boolean;
+  settingCorrect: boolean;
+  identifyPhaseComplete: boolean;
+
+  // Phase 2: Sequence
+  totalEvents: number;
+  eventsPlaced: number;
+  eventsCorrectlyPlaced: number;
+  allEventsCorrect: boolean;
+  sequencePhaseComplete: boolean;
+
+  // Per-event placement results
+  eventPlacementResults: Array<{
+    eventId: string;
+    placedPosition: string;
+    correctPosition: string;
+    isCorrect: boolean;
+  }>;
+
+  // Phase 3: Analyze (grades 4+)
+  conflictTypeCorrect: boolean;
+  selectedConflictType?: string;
+  correctConflictType?: string;
+  analyzePhaseComplete: boolean;
+
+  // Overall
+  totalAttempts: number;
+  completionTimeMs: number;
+  overallAccuracy: number;         // 0-100
+}
+
+export interface ListenAndRespondMetrics extends BasePrimitiveMetrics {
+  type: 'listen-and-respond';
+
+  // Listening comprehension
+  questionsCorrect: number;
+  questionsTotal: number;
+
+  // Replay behavior
+  replaysUsed: number;
+  answeredBeforeReplay: number;
+
+  // Passage info
+  passageType: 'narrative' | 'informational' | 'persuasive' | 'dialogue';
+  listeningDurationSeconds: number;
+  speedUsed: number;
+
+  // Per-question results
+  questionResults: Array<{
+    questionId: string;
+    difficulty: 'literal' | 'inferential' | 'evaluative';
+    isCorrect: boolean;
+    answeredBeforeReplay: boolean;
+  }>;
+
+  // Phases
+  listenPhaseCompleted: boolean;
+  respondPhaseCompleted: boolean;
+  reviewPhaseCompleted: boolean;
+
+  // Accuracy
+  accuracy: number;               // 0-100
+  attemptsCount: number;
 }
 
 export type PrimitiveMetrics =
@@ -1774,6 +1932,7 @@ export type PrimitiveMetrics =
   | DnaExplorerMetrics
   | ProteinFolderMetrics
   | EnergyCycleEngineMetrics
+  | EvolutionTimelineMetrics
   // Astronomy
   | ScaleComparatorMetrics
   | DayNightSeasonsMetrics
@@ -1783,7 +1942,12 @@ export type PrimitiveMetrics =
   | MissionPlannerMetrics
   | TelescopeSimulatorMetrics
   // Physics
-  | MotionDiagramMetrics;
+  | MotionDiagramMetrics
+  // Literacy (Wave 1)
+  | ParagraphArchitectMetrics
+  | SentenceBuilderMetrics
+  | StoryMapMetrics
+  | ListenAndRespondMetrics;
 
 // =============================================================================
 // Session & Summary Types
