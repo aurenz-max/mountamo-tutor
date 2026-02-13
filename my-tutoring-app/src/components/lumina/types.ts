@@ -1203,6 +1203,20 @@ export interface TutoringScaffold {
     pattern: string;
     response: string;
   }>;
+
+  /**
+   * Special AI directives injected into the system prompt.
+   * Use this for primitive-specific commands the AI must follow
+   * (e.g., pronunciation commands, drawing instructions, special interaction modes).
+   * Each directive becomes a titled section in the prompt.
+   * Supports {{key}} interpolation from primitive_data.
+   */
+  aiDirectives?: Array<{
+    /** Section title rendered as **TITLE:** in the prompt */
+    title: string;
+    /** Instruction text. Supports {{key}} template variables. */
+    instruction: string;
+  }>;
 }
 
 export interface ComponentDefinition {

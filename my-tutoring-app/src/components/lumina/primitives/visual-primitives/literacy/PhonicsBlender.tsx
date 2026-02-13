@@ -189,8 +189,8 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     setActiveSoundId(phonemeId);
     setListenedSounds(prev => new Set(Array.from(prev).concat(phonemeId)));
 
-    // Ask the AI tutor to pronounce just this sound
-    sendText(`[PRONOUNCE] Say the sound ${phoneme.sound} clearly. Just the sound, nothing else.`);
+    // Ask the AI tutor to pronounce just this sound (silent: no UI state change)
+    sendText(`[PRONOUNCE] Say the sound ${phoneme.sound} clearly. Just the sound, nothing else.`, { silent: true });
 
     // Visual feedback timeout (AI audio playback is handled by the context provider)
     setTimeout(() => setActiveSoundId(null), 1200);
@@ -202,8 +202,8 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
     setActiveSoundId('blended');
 
-    // Ask the AI tutor to say the whole word
-    sendText(`[PRONOUNCE] Say the word "${currentWord.targetWord}" clearly. Just the word, nothing else.`);
+    // Ask the AI tutor to say the whole word (silent: no UI state change)
+    sendText(`[PRONOUNCE] Say the word "${currentWord.targetWord}" clearly. Just the word, nothing else.`, { silent: true });
 
     // Visual feedback timeout
     setTimeout(() => setActiveSoundId(null), 1500);

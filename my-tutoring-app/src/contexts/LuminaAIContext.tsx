@@ -75,7 +75,7 @@ interface LuminaAIContextType {
   // AI interaction
   requestHint: (level: 1 | 2 | 3, currentState?: any) => void;
   sendVoice: (audioData: string) => void;
-  sendText: (text: string) => void;
+  sendText: (text: string, options?: { silent?: boolean }) => void;
   updateContext: (newState: any, progress?: any) => void;
 
   // State
@@ -445,29 +445,32 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
   }, []);
 
-  const sendText = useCallback((text: string) => {
+  const sendText = useCallback((text: string, options?: { silent?: boolean }) => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       console.warn('Cannot send text: not connected');
       return;
     }
 
-    setAIMetrics(prev => ({
-      ...prev,
-      conversationTurns: prev.conversationTurns + 1,
-      totalInteractions: prev.totalInteractions + 1,
-    }));
+    // Silent mode: send command without affecting UI state (e.g. [PRONOUNCE])
+    if (!options?.silent) {
+      setAIMetrics(prev => ({
+        ...prev,
+        conversationTurns: prev.conversationTurns + 1,
+        totalInteractions: prev.totalInteractions + 1,
+      }));
 
-    setConversation(prev => [
-      ...prev,
-      {
-        role: 'user',
-        content: text,
-        timestamp: Date.now(),
-        isAudio: false,
-      },
-    ]);
+      setConversation(prev => [
+        ...prev,
+        {
+          role: 'user',
+          content: text,
+          timestamp: Date.now(),
+          isAudio: false,
+        },
+      ]);
 
-    setIsAIResponding(true);
+      setIsAIResponding(true);
+    }
 
     socketRef.current.send(JSON.stringify({
       type: 'text',

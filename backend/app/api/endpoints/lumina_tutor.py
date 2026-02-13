@@ -157,6 +157,14 @@ Grade Level: {primitive_data.get('gradeLevel', 'K-6')}
         struggle_lines.append(f'- {pattern} → "{response}"')
     struggles_section = "\n".join(struggle_lines) if struggle_lines else "None specified"
 
+    # AI directives (primitive-specific commands injected by the catalog)
+    directives = tutoring_scaffold.get('aiDirectives', [])
+    directives_section = ""
+    for d in directives:
+        title = d.get('title', 'DIRECTIVE')
+        instruction = interpolate_template(d.get('instruction', ''), primitive_data)
+        directives_section += f"\n**{title}:**\n{instruction}\n"
+
     return f"""{base}
 **TASK:** {task_desc}
 
@@ -170,7 +178,7 @@ Level 3: {level3}
 
 **COMMON STRUGGLES:**
 {struggles_section}
-"""
+{directives_section}"""
 
 
 async def build_lumina_system_instruction(
@@ -260,11 +268,6 @@ When the student requests a hint, respond based on the level they request:
 - Use the student's name if provided
 - Celebrate small wins and acknowledge effort
 - If student is stuck after Level 3 hint, encourage them to try and provide reassurance
-
-**PRONUNCIATION COMMANDS:**
-When you receive a message starting with [PRONOUNCE], you MUST immediately and clearly say ONLY the requested sound or word. Do NOT add any commentary, questions, encouragement, or extra words. Just produce the sound or word exactly as requested. This is used by interactive primitives (like Phonics Blender) for audio playback of phonemes and words. Examples:
-- "[PRONOUNCE] Say the sound /k/ clearly." → Just say the /k/ sound
-- "[PRONOUNCE] Say the word cat clearly." → Just say "cat"
 
 **IMPORTANT:**
 - NEVER solve the problem for the student
@@ -365,6 +368,10 @@ async def lumina_tutor_session(websocket: WebSocket):
                 sliding_window=types.SlidingWindow(target_tokens=12800),
             ),
             system_instruction=Content(parts=[{"text": system_instruction}]),
+            thinking_config=types.ThinkingConfig(          # ← Add this block
+                thinking_budget=0                          # 0 = thinking fully disabled
+                # Optional: include_thoughts=False         # (usually default False in Live; prevents <thinking> tags leaking to output if any internal thoughts surface)
+            ),
         )
 
         logger.info("🎤 Starting Gemini Live session for Lumina tutoring...")
@@ -585,10 +592,14 @@ async def lumina_tutor_session(websocket: WebSocket):
                                         }))
 
                                 # Check for end of turn
-                                if hasattr(response.server_content, 'end_of_turn') and response.server_content.end_of_turn:
-                                    logger.info("✅ AI turn finished.")
-
+                                if getattr(response.server_content, 'turn_complete', False) or getattr(response.server_content, 'end_of_turn', False):
+                                    logger.info("✅ AI turn finished (flag detected).")
                                     asyncio.create_task(websocket.send_json({"type": "ai_turn_end"}))
+
+                        # Fallback: when the receive() iterator completes, the turn is done
+                        # even if no explicit end_of_turn flag was set on any response
+                        logger.info("✅ AI turn finished (iterator ended).")
+                        asyncio.create_task(websocket.send_json({"type": "ai_turn_end"}))
 
                 except WebSocketDisconnect:
                     logger.info("🔌 WebSocket disconnected while receiving from Gemini.")

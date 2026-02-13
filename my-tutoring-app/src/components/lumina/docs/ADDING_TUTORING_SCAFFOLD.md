@@ -82,6 +82,10 @@ export interface TutoringScaffold {
     pattern: string;              // Observable student behavior
     response: string;             // Recommended AI response
   }>;
+  aiDirectives?: Array<{
+    title: string;                // Section heading (e.g. "PRONUNCIATION COMMANDS")
+    instruction: string;          // Instruction text (supports {{key}} interpolation)
+  }>;
 }
 ```
 
@@ -99,7 +103,7 @@ At runtime, if `primitive_data = { patternType: 'CVC', currentWord: 'cat' }`, th
 
 Unresolved keys are replaced with `(not set)`.
 
-You can also use `{{key}}` in `scaffoldingLevels` and `commonStruggles.response`:
+You can also use `{{key}}` in `scaffoldingLevels`, `commonStruggles.response`, and `aiDirectives.instruction`:
 
 ```typescript
 scaffoldingLevels: {
@@ -120,6 +124,38 @@ contextKeys: ['currentWord', 'targetPhonemes', 'patternType']
 ```
 
 **Best practice:** Specify `contextKeys` to keep the AI prompt focused and avoid sending irrelevant internal state.
+
+### aiDirectives
+
+Use `aiDirectives` for primitive-specific commands the AI must follow — things like pronunciation modes, drawing instructions, or special interaction protocols. Each directive becomes a titled section in the system prompt. This keeps the backend **primitive-agnostic**: it renders whatever directives you define, with no backend code changes needed.
+
+```typescript
+aiDirectives: [
+  {
+    title: 'PRONUNCIATION COMMANDS',
+    instruction:
+      'When you receive [PRONOUNCE], say ONLY the requested sound or word. '
+      + 'No extra commentary. Examples:\n'
+      + '- "[PRONOUNCE] Say the sound /k/" → Just say the /k/ sound\n'
+      + '- "[PRONOUNCE] Say the word cat" → Just say "cat"',
+  },
+],
+```
+
+At runtime, this generates:
+
+```
+**PRONUNCIATION COMMANDS:**
+When you receive [PRONOUNCE], say ONLY the requested sound or word. No extra commentary. Examples:
+- "[PRONOUNCE] Say the sound /k/" → Just say the /k/ sound
+- "[PRONOUNCE] Say the word cat" → Just say "cat"
+```
+
+`aiDirectives` supports `{{key}}` interpolation just like other fields.
+
+**When to use `aiDirectives` vs `taskDescription`:**
+- `taskDescription` — describes *what the student is doing* and gives the AI context
+- `aiDirectives` — defines *special commands or behaviors* the AI must follow
 
 ---
 
@@ -227,6 +263,7 @@ The AI will still have lesson context, student progress, and general tutoring in
 - [ ] `contextKeys` lists the relevant `primitive_data` fields
 - [ ] All three scaffolding levels are defined (gentle → specific → detailed)
 - [ ] Common struggles describe observable behavior, not vague labels
+- [ ] Any primitive-specific commands (e.g., `[PRONOUNCE]`) are in `aiDirectives`, not hardcoded in the backend
 - [ ] Tested with Lumina Tutor Tester to verify scaffold is sent and formatted correctly
 
 ## Additional Resources

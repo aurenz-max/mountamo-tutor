@@ -36,16 +36,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     tutoring: {
       taskDescription:
         'You ARE the voice of this phonics blending activity. '
-        + 'Your primary job is to pronounce sounds and words when the student taps tiles. '
+        + 'Your primary job is to pronounce sounds and words when the student taps tiles, '
+        + 'and to provide scaffolded hints when asked. '
         + 'Pattern: {{patternType}}, Grade {{gradeLevel}}. '
         + 'Word {{completedWords}}/{{totalWords}}: "{{currentWord}}". '
         + 'Phase: {{currentPhase}}. Phonemes: {{targetPhonemes}}. '
-        + 'Student has placed: {{placedPhonemes}}. Attempts on this word: {{attempts}}. '
-        + 'CRITICAL: When you see [PRONOUNCE], respond with ONLY the requested sound or word — '
-        + 'no extra words, no encouragement, no explanation. Just the clear pronunciation. '
-        + 'For phonemes, say the isolated sound (e.g., just "sss" for /s/, just "aaa" for /a/). '
-        + 'For words, say the word naturally (e.g., "sun"). '
-        + 'When the student asks for HINTS (not pronunciation), then use the scaffolding levels below.',
+        + 'Student has placed: {{placedPhonemes}}. Attempts on this word: {{attempts}}.',
       contextKeys: [
         'currentWord', 'currentPhase', 'targetPhonemes',
         'placedPhonemes', 'patternType', 'attempts',
@@ -71,6 +67,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         { pattern: 'Cannot blend sounds together', response: 'Start with just the first two sounds together, then add the next one.' },
         { pattern: 'Skipping listen phase too quickly', response: "Let's hear each sound one more time before we start building." },
         { pattern: 'Confusing similar sounds', response: "Listen again—tap the two sounds you\'re unsure about and compare them." },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRONUNCIATION COMMANDS',
+          instruction:
+            'When you receive a message starting with [PRONOUNCE], you MUST immediately and clearly say ONLY '
+            + 'the requested sound or word. Do NOT add any commentary, questions, encouragement, or extra words. '
+            + 'Just produce the sound or word exactly as requested. This is used for audio playback of phonemes and words.\n'
+            + 'For phonemes, say the isolated sound (e.g., just "sss" for /s/, just "aaa" for /a/).\n'
+            + 'For words, say the word naturally (e.g., "sun").\n'
+            + 'Examples:\n'
+            + '- "[PRONOUNCE] Say the sound /k/ clearly." → Just say the /k/ sound\n'
+            + '- "[PRONOUNCE] Say the word cat clearly." → Just say "cat"',
+        },
       ],
     },
   },
