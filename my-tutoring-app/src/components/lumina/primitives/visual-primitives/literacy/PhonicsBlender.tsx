@@ -268,6 +268,12 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       setIsCelebrating(true);
       setTimeout(() => setIsCelebrating(false), 1500);
 
+      // Tell the AI the student built the word correctly
+      sendText(
+        `[BUILD_CORRECT] The student arranged the sounds for "${currentWord.targetWord}" in the correct order${(attemptsPerWord[wordId] || 0) === 0 ? ' on the first try!' : ` after ${(attemptsPerWord[wordId] || 0) + 1} attempts.`} Congratulate briefly and tell them to click the word to hear it blended together.`,
+        { silent: true }
+      );
+
       // Move to blend phase
       setTimeout(() => {
         setCurrentPhase('blend');
@@ -275,12 +281,22 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
         setFeedbackType('');
       }, 1000);
     } else {
+      const placedSounds = placedPhonemeIds
+        .map(id => currentWord.phonemes.find(p => p.id === id)?.sound)
+        .filter(Boolean)
+        .join(' + ');
       setFeedback('Not quite! Try rearranging the sounds.');
       setFeedbackType('error');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
+
+      // Tell the AI the student got it wrong so it can help
+      sendText(
+        `[BUILD_INCORRECT] The student tried to build "${currentWord.targetWord}" but placed the sounds as: ${placedSounds}. The correct order is: ${currentWord.phonemes.map(p => p.sound).join(' + ')}. This is attempt ${(attemptsPerWord[wordId] || 0) + 1}. Give a brief hint without giving the answer.`,
+        { silent: true }
+      );
     }
-  }, [currentWord, placedPhonemeIds, attemptsPerWord, startTimes]);
+  }, [currentWord, placedPhonemeIds, attemptsPerWord, startTimes, sendText]);
 
   // Complete blending for current word
   const handleBlendComplete = useCallback(() => {
@@ -289,11 +305,18 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     setCompletedWords(prev => new Set(Array.from(prev).concat(currentWord.id)));
     setIsCelebrating(true);
     setTimeout(() => setIsCelebrating(false), 1500);
-  }, [currentWord]);
+
+    // Tell the AI the student blended successfully — triggers a spoken response
+    sendText(
+      `[STUDENT_BLENDED] The student successfully blended the word "${currentWord.targetWord}"! Celebrate briefly (one sentence).`,
+      { silent: true }
+    );
+  }, [currentWord, sendText]);
 
   // Move to next word
   const handleNextWord = useCallback(() => {
     if (currentWordIndex < words.length - 1) {
+      const nextWord = words[currentWordIndex + 1];
       setCurrentWordIndex(prev => prev + 1);
       setCurrentPhase('listen');
       setPlacedPhonemeIds([]);
@@ -302,11 +325,20 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       setIsBlended(false);
       setIsShaking(false);
       setIsCelebrating(false);
+
+      // Tell the AI about the new word — triggers a spoken introduction
+      if (nextWord) {
+        const phonemeList = nextWord.phonemes.map(p => p.sound).join(' + ');
+        sendText(
+          `[NEXT_WORD] The student is moving to word ${currentWordIndex + 2} of ${words.length}: "${nextWord.targetWord}" (${phonemeList}). Briefly introduce the new word and encourage them to tap each sound.`,
+          { silent: true }
+        );
+      }
     } else {
       // All words done - submit evaluation
       submitFinalEvaluation();
     }
-  }, [currentWordIndex, words.length]);
+  }, [currentWordIndex, words, sendText]);
 
   // Advance from listen to build phase
   const handleStartBuild = useCallback(() => {

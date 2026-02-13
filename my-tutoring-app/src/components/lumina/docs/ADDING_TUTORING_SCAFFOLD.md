@@ -159,6 +159,140 @@ When you receive [PRONOUNCE], say ONLY the requested sound or word. No extra com
 
 ---
 
+## Triggering AI Speech from Primitives
+
+The catalog scaffold configures *what* the AI knows. But the **primitive component** must also tell the AI *when* to speak. There are two communication channels, and understanding the difference is critical:
+
+| Channel | Method | Backend `end_of_turn` | AI Speaks? | Use For |
+|---------|--------|----------------------|------------|---------|
+| Context update | `updateContext()` | `False` | **No** — silent injection | Background state sync (phase changes, score updates) |
+| Text message | `sendText(text, { silent: true })` | `True` | **Yes** — triggers a response | Pedagogical moments where the AI should react |
+
+### The Problem: Silent Context Updates
+
+The `useLuminaAI` hook automatically sends `updateContext()` whenever `primitiveData` changes. These become `[CONTEXT UPDATE]` messages on the backend, sent to Gemini with `end_of_turn=False`. Gemini absorbs the info but **never responds** — the system prompt explicitly tells it: *"Note it but do not speak unless the student is clearly struggling."*
+
+This means if your primitive only relies on context updates for state transitions, **the AI will go silent** after its initial greeting. The student clicks buttons, the state changes, context updates flow... and Gemini says nothing.
+
+### The Fix: `sendText` at Pedagogical Moments
+
+For key moments where the AI should speak, call `sendText()` with `{ silent: true }`. The `silent` flag only affects the frontend (doesn't add to the conversation UI or set `isAIResponding`). On the backend, it's sent as a regular `type: 'text'` message with `end_of_turn=True`, so Gemini **will** respond with speech.
+
+Use bracketed tags (e.g., `[NEXT_WORD]`, `[BUILD_CORRECT]`) so the AI can distinguish these from student chat messages, and include brief instructions for what kind of response you want.
+
+### Identifying Pedagogical Moments
+
+Every primitive has key interaction points where AI speech adds educational value. Ask yourself: **"Would a human tutor say something here?"**
+
+| Moment Type | Example | AI Should... |
+|-------------|---------|-------------|
+| **Correct answer** | Student builds a word correctly | Celebrate, instruct on next step |
+| **Incorrect answer** | Student arranges sounds wrong | Give a hint without the answer |
+| **Phase transition** | Moving from listening to building | Introduce the new task |
+| **Item progression** | Moving to the next word/problem | Introduce the new item |
+| **Completion** | Finishing all items | Celebrate the full session |
+| **Pronunciation/audio** | Student taps a sound tile | Say the sound (no commentary) |
+
+### Implementation Pattern
+
+In your primitive component, use `sendText` from the `useLuminaAI` hook:
+
+```typescript
+const { sendText } = useLuminaAI({
+  primitiveType: 'my-primitive',
+  instanceId: resolvedInstanceId,
+  primitiveData: aiPrimitiveData,
+  gradeLevel,
+});
+```
+
+Then call it at each pedagogical moment:
+
+```typescript
+// ✅ Correct answer — celebrate and guide to next step
+sendText(
+  `[ANSWER_CORRECT] The student answered correctly on attempt ${attempts}. ` +
+  `Congratulate briefly and tell them what to do next.`,
+  { silent: true }
+);
+
+// ✅ Incorrect answer — hint without giving the answer
+sendText(
+  `[ANSWER_INCORRECT] The student chose "${studentAnswer}" but the correct ` +
+  `answer is "${correctAnswer}". This is attempt ${attempts}. ` +
+  `Give a brief hint without revealing the answer.`,
+  { silent: true }
+);
+
+// ✅ Moving to next item — introduce it
+sendText(
+  `[NEXT_ITEM] The student is moving to item ${index} of ${total}: ` +
+  `"${newItem.title}". Briefly introduce it.`,
+  { silent: true }
+);
+
+// ✅ Pronunciation — just say the sound, no commentary
+sendText(
+  `[PRONOUNCE] Say the word "${word}" clearly. Just the word, nothing else.`,
+  { silent: true }
+);
+```
+
+### Real Example: PhonicsBlender
+
+PhonicsBlender defines these pedagogical moments:
+
+```typescript
+// 1. Pronunciation (listen/blend phases) — AI says the sound, nothing else
+sendText(`[PRONOUNCE] Say the sound ${phoneme.sound} clearly. Just the sound, nothing else.`, { silent: true });
+
+// 2. Build correct — celebrate and guide to blend phase
+sendText(
+  `[BUILD_CORRECT] The student arranged the sounds for "${word}" in the correct order` +
+  `${firstTry ? ' on the first try!' : ` after ${attempts} attempts.`}` +
+  ` Congratulate briefly and tell them to click the word to hear it blended together.`,
+  { silent: true }
+);
+
+// 3. Build incorrect — hint based on what they placed vs correct order
+sendText(
+  `[BUILD_INCORRECT] The student tried to build "${word}" but placed: ${placed}. ` +
+  `Correct order: ${correct}. Attempt ${attempts}. Give a brief hint without giving the answer.`,
+  { silent: true }
+);
+
+// 4. Blend complete — brief celebration
+sendText(
+  `[STUDENT_BLENDED] The student successfully blended "${word}"! Celebrate briefly (one sentence).`,
+  { silent: true }
+);
+
+// 5. Next word — introduce the new word
+sendText(
+  `[NEXT_WORD] The student is moving to word ${n} of ${total}: "${nextWord}" (${phonemes}). ` +
+  `Briefly introduce the new word and encourage them to tap each sound.`,
+  { silent: true }
+);
+```
+
+### Guidelines for `sendText` Messages
+
+1. **Use bracketed tags** like `[BUILD_CORRECT]`, `[NEXT_WORD]` — makes it easy for the AI to parse intent and for you to add matching `aiDirectives` in the catalog if needed.
+
+2. **Include context** — give the AI the student's answer, the correct answer, attempt count, etc. The more context, the better the pedagogical response.
+
+3. **Include brief instructions** — tell the AI what *kind* of response you want ("Celebrate briefly", "Give a hint without the answer", "Just the word, nothing else"). Keep the AI on-task.
+
+4. **Keep instructions short** — "Congratulate briefly (one sentence)" is better than a paragraph. The AI's system prompt already has the scaffolding strategy and tone.
+
+5. **Always use `{ silent: true }`** — these are system-to-AI messages, not student chat. The `silent` flag prevents them from appearing in the conversation UI.
+
+6. **Don't over-trigger** — not every micro-interaction needs AI speech. Placing a single phoneme tile? Context update is fine. Checking the final answer? That's a `sendText` moment.
+
+7. **Document your tags in `aiDirectives`** — if a tag requires special AI behavior (like `[PRONOUNCE]` requiring no commentary), add an `aiDirective` to the catalog entry so it's part of the system prompt.
+
+---
+
 ## What Gets Generated
 
 The backend formats the scaffold into this prompt section:
@@ -264,6 +398,10 @@ The AI will still have lesson context, student progress, and general tutoring in
 - [ ] All three scaffolding levels are defined (gentle → specific → detailed)
 - [ ] Common struggles describe observable behavior, not vague labels
 - [ ] Any primitive-specific commands (e.g., `[PRONOUNCE]`) are in `aiDirectives`, not hardcoded in the backend
+- [ ] Identified pedagogical moments in the component (correct/incorrect, phase transitions, item progression)
+- [ ] Added `sendText('[TAG] ...', { silent: true })` calls at each pedagogical moment
+- [ ] Each `sendText` includes context (student answer, correct answer, attempt count) and brief instructions
+- [ ] Documented any special tags in `aiDirectives` if they require non-default AI behavior
 - [ ] Tested with Lumina Tutor Tester to verify scaffold is sent and formatted correctly
 
 ## Additional Resources
