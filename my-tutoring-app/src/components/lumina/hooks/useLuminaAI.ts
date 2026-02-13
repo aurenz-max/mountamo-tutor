@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { ComponentId } from '../types';
 
@@ -15,8 +15,15 @@ export interface UseLuminaAIOptions {
 /**
  * Hook for primitives to access Lumina AI assistance.
  *
- * Automatically connects when the primitive mounts and disconnects when it unmounts.
- * Updates the AI context when primitive data changes.
+ * Mode-aware behavior:
+ * - **lesson mode**: Does NOT connect/disconnect. Calls switchPrimitive() on mount
+ *   to tell the existing session about this primitive. On unmount, does nothing
+ *   (the session belongs to the lesson, not the primitive).
+ * - **standalone mode / idle**: Auto-connects on mount, disconnects on unmount
+ *   (original behavior for testers).
+ *
+ * Implicit activation: calling sendText or requestHint from a non-active primitive
+ * in lesson mode will automatically switch to this primitive first.
  *
  * @example
  * const { requestHint, aiMetrics, isConnected } = useLuminaAI({
@@ -41,43 +48,44 @@ export function useLuminaAI({
 }: UseLuminaAIOptions) {
   const context = useLuminaAIContext();
   const hasConnectedRef = useRef(false);
-  // Synchronous flag to prevent duplicate async connect calls
   const isConnectingRef = useRef(false);
+  // Track whether lesson-mode switch has been done for this primitive
+  const hasLessonSwitchedRef = useRef(false);
 
   // Stabilize instanceId — callers often use `id || \`prefix-${Date.now()}\`` which
   // produces a new string every render, triggering the connect effect in a loop.
-  // Capture the first value and reuse it for the lifetime of this hook instance.
   const stableInstanceIdRef = useRef(instanceId);
 
   // Stable ref for context — avoids re-triggering effects when provider state changes
   const contextRef = useRef(context);
   contextRef.current = context;
 
-  // Auto-connect when primitive mounts
-  useEffect(() => {
-    if (!enabled) {
-      return;
-    }
+  // Stable ref for primitiveData to use in ensureActive without triggering effects
+  const primitiveDataRef = useRef(primitiveData);
+  primitiveDataRef.current = primitiveData;
 
-    // Guard against both completed connections AND in-flight async connects
-    if (hasConnectedRef.current || isConnectingRef.current) {
-      return;
-    }
+  // Effect 1: Standalone auto-connect (testers, backward compat)
+  // Only runs when sessionMode is idle — reads mode from ref to avoid dep cycle.
+  useEffect(() => {
+    if (!enabled) return;
+
+    const ctx = contextRef.current;
+
+    // If a lesson session is active or pending, don't auto-connect
+    if (ctx.sessionMode === 'lesson') return;
+
+    // Guard against duplicate connects
+    if (hasConnectedRef.current || isConnectingRef.current) return;
 
     let cancelled = false;
+    const stableId = stableInstanceIdRef.current;
 
     const connectAI = async () => {
-      // DEBUG: trace who triggers connection
-      console.trace(`[useLuminaAI] connectAI() called for ${primitiveType} (${instanceId})`);
-
-      // Set synchronous flag BEFORE any awaits to prevent races
+      console.trace(`[useLuminaAI] connectAI() called for ${primitiveType} (${stableId})`);
       isConnectingRef.current = true;
 
       try {
-        // Get student ID from auth
         const { getAuth } = await import('firebase/auth');
-
-        // Check if effect was cleaned up during the await
         if (cancelled) {
           isConnectingRef.current = false;
           return;
@@ -92,8 +100,7 @@ export function useLuminaAI({
           return;
         }
 
-        // For now, use UID as student_id (you may need to map this)
-        const studentId = parseInt(user.uid.substring(0, 8), 16); // Convert first 8 chars of UID to number
+        const studentId = parseInt(user.uid.substring(0, 8), 16);
 
         if (cancelled) {
           isConnectingRef.current = false;
@@ -102,8 +109,8 @@ export function useLuminaAI({
 
         await contextRef.current.connect({
           primitive_type: primitiveType,
-          instance_id: stableInstanceIdRef.current,
-          primitive_data: primitiveData,
+          instance_id: stableId,
+          primitive_data: primitiveDataRef.current,
           student_id: studentId,
           exhibit_id: exhibitId,
           topic: topic,
@@ -123,7 +130,7 @@ export function useLuminaAI({
 
     connectAI();
 
-    // Cleanup: disconnect when component unmounts
+    // Cleanup: disconnect when component unmounts (standalone only)
     return () => {
       cancelled = true;
       isConnectingRef.current = false;
@@ -136,23 +143,88 @@ export function useLuminaAI({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, primitiveType, exhibitId, topic, gradeLevel]);
 
-  // Auto-update context when primitive state changes (but don't reconnect)
+  // Effect 2: Lesson-mode activation
+  // Watches for session becoming 'lesson' + connected, then switches primitive.
+  // No cleanup — lesson session is owned by LessonAIBootstrap, not this hook.
   useEffect(() => {
-    if (contextRef.current.isConnected && hasConnectedRef.current) {
-      // Debounce updates to avoid spamming the server
-      const timeoutId = setTimeout(() => {
-        contextRef.current.updateContext(primitiveData);
-      }, 500);
+    if (!enabled) return;
+    if (context.sessionMode !== 'lesson' || !context.isConnected) return;
+    if (hasLessonSwitchedRef.current) return;
 
-      return () => clearTimeout(timeoutId);
+    const stableId = stableInstanceIdRef.current;
+    console.log(`[useLuminaAI] Lesson mode ready — switching to ${primitiveType} (${stableId})`);
+
+    contextRef.current.switchPrimitive({
+      primitive_type: primitiveType,
+      instance_id: stableId,
+      primitive_data: primitiveDataRef.current,
+      exhibit_id: exhibitId,
+      topic: topic,
+      grade_level: gradeLevel,
+    });
+    hasConnectedRef.current = true;
+    hasLessonSwitchedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, primitiveType, context.sessionMode, context.isConnected]);
+
+  // Reset lesson switch flag on unmount so remounting triggers a fresh switch
+  useEffect(() => {
+    return () => {
+      hasLessonSwitchedRef.current = false;
+    };
+  }, []);
+
+  // Auto-update context when primitive state changes (but don't reconnect)
+  // In lesson mode, only send updates if this primitive is the active one
+  useEffect(() => {
+    const ctx = contextRef.current;
+    if (!ctx.isConnected || !hasConnectedRef.current) return;
+
+    // In lesson mode, skip context updates from non-active primitives
+    if (ctx.sessionMode === 'lesson' && ctx.activePrimitiveId !== stableInstanceIdRef.current) {
+      return;
     }
+
+    // Debounce updates to avoid spamming the server
+    const timeoutId = setTimeout(() => {
+      contextRef.current.updateContext(primitiveData);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
   }, [primitiveData]);
 
+  // Implicit activation: ensure this primitive is active before interacting
+  const ensureActive = useCallback(() => {
+    const ctx = contextRef.current;
+    if (ctx.sessionMode === 'lesson' && ctx.activePrimitiveId !== stableInstanceIdRef.current) {
+      ctx.switchPrimitive({
+        primitive_type: primitiveType,
+        instance_id: stableInstanceIdRef.current,
+        primitive_data: primitiveDataRef.current,
+        exhibit_id: exhibitId,
+        topic: topic,
+        grade_level: gradeLevel,
+      });
+    }
+  }, [primitiveType, exhibitId, topic, gradeLevel]);
+
+  // Wrapped sendText with implicit activation
+  const sendText = useCallback((text: string, options?: { silent?: boolean }) => {
+    ensureActive();
+    contextRef.current.sendText(text, options);
+  }, [ensureActive]);
+
+  // Wrapped requestHint with implicit activation
+  const requestHint = useCallback((level: 1 | 2 | 3, currentState?: any) => {
+    ensureActive();
+    contextRef.current.requestHint(level, currentState);
+  }, [ensureActive]);
+
   return {
-    // AI interaction methods
-    requestHint: context.requestHint,
+    // AI interaction methods (with implicit activation wrappers)
+    requestHint,
     sendVoice: context.sendVoice,
-    sendText: context.sendText,
+    sendText,
     startListening: context.startListening,
     stopListening: context.stopListening,
 
@@ -161,6 +233,10 @@ export function useLuminaAI({
     isAIResponding: context.isAIResponding,
     isListening: context.isListening,
     conversation: context.conversation,
+
+    // Session info
+    sessionMode: context.sessionMode,
+    activePrimitiveId: context.activePrimitiveId,
 
     // Metrics (for evaluation integration)
     aiMetrics: context.aiMetrics,

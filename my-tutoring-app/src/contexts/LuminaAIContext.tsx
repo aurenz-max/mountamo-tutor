@@ -66,11 +66,26 @@ interface AIMetrics {
   };
 }
 
+// Session modes: idle (no session), standalone (per-primitive), lesson (per-exhibit)
+export type SessionMode = 'idle' | 'standalone' | 'lesson';
+
+// Info needed to start a lesson-mode session
+export interface LessonConnectionInfo {
+  exhibit_id: string;
+  topic: string;
+  grade_level: string;
+  firstPrimitive: PrimitiveContext;
+}
+
 interface LuminaAIContextType {
   // Connection
   connect: (primitiveContext: PrimitiveContext) => Promise<void>;
+  connectLesson: (info: LessonConnectionInfo) => Promise<void>;
+  switchPrimitive: (primitiveContext: PrimitiveContext) => void;
   disconnect: () => void;
   isConnected: boolean;
+  sessionMode: SessionMode;
+  activePrimitiveId: string | null;
 
   // AI interaction
   requestHint: (level: 1 | 2 | 3, currentState?: any) => void;
@@ -112,6 +127,10 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isAIResponding, setIsAIResponding] = useState(false);
   const [conversation, setConversation] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
+
+  // Session mode and active primitive tracking
+  const [sessionMode, setSessionMode] = useState<SessionMode>('idle');
+  const [activePrimitiveId, setActivePrimitiveId] = useState<string | null>(null);
 
   // Metrics tracking
   const [aiMetrics, setAIMetrics] = useState<AIMetrics>({
@@ -174,11 +193,93 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, []);
 
-  const connect = useCallback(async (primitiveContext: PrimitiveContext) => {
-    // DEBUG: trace who is calling connect()
-    console.trace(`[LuminaAI] connect() called for ${primitiveContext.primitive_type}`);
+  // Shared WebSocket setup for both connect modes
+  const setupSocket = useCallback((
+    socket: WebSocket,
+    onOpen: (socket: WebSocket) => void
+  ) => {
+    socket.onopen = () => {
+      console.log('Lumina AI WebSocket connected');
+      sessionStartTimeRef.current = Date.now();
+      onOpen(socket);
+    };
 
-    // Prevent duplicate connections — close any existing socket first
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        const messageType = message.type;
+
+        if (messageType === 'ai_response') {
+          setConversation(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: message.content,
+              timestamp: Date.now(),
+              isAudio: false,
+            },
+          ]);
+          setIsAIResponding(false);
+        } else if (messageType === 'ai_audio') {
+          processAndPlayRawAudio(message.data, message.sampleRate || 24000);
+        } else if (messageType === 'ai_transcription') {
+          setConversation(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: message.content,
+              timestamp: Date.now(),
+              isAudio: true,
+            },
+          ]);
+        } else if (messageType === 'user_transcription') {
+          setConversation(prev => [
+            ...prev,
+            {
+              role: 'user',
+              content: message.content,
+              timestamp: Date.now(),
+              isAudio: true,
+            },
+          ]);
+        } else if (messageType === 'metrics_update') {
+          setAIMetrics(prev => ({
+            ...prev,
+            hintsGiven: message.hintsGiven || prev.hintsGiven,
+            totalInteractions: message.totalInteractions || prev.totalInteractions,
+          }));
+        } else if (messageType === 'ai_turn_end') {
+          setIsAIResponding(false);
+        } else if (messageType === 'primitive_switched') {
+          console.log(`Lumina AI: switched to ${message.primitive_type} (${message.instance_id})`);
+          setActivePrimitiveId(message.instance_id);
+        } else if (messageType === 'auth_success' || messageType === 'session_ready') {
+          console.log('Lumina AI session ready:', message.message);
+        }
+      } catch (error) {
+        console.error('Error handling Lumina AI message:', error);
+      }
+    };
+
+    socket.onclose = (event) => {
+      console.log('Lumina AI WebSocket closed:', event.code, event.reason);
+      setIsConnected(false);
+      setSessionMode('idle');
+      setActivePrimitiveId(null);
+
+      if (sessionStartTimeRef.current > 0) {
+        const totalTime = Date.now() - sessionStartTimeRef.current;
+        setAIMetrics(prev => ({ ...prev, timeWithAI: totalTime }));
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error('Lumina AI WebSocket error:', error);
+    };
+  }, [processAndPlayRawAudio]);
+
+  // Helper to close any existing socket
+  const closeExistingSocket = useCallback(() => {
     if (socketRef.current) {
       const state = socketRef.current.readyState;
       if (state === WebSocket.CONNECTING || state === WebSocket.OPEN) {
@@ -187,15 +288,10 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       socketRef.current = null;
     }
+  }, []);
 
-    // Read current context values from refs (hooks called at top level)
-    const { objectives, manifestItems } = exhibitContextRef.current;
-    const evalCtx = evaluationContextRef.current;
-
-    // Store primitive context
-    currentPrimitiveRef.current = primitiveContext;
-
-    // Initialize audio service
+  // Helper to initialize audio service
+  const ensureAudioService = useCallback(() => {
     if (!audioServiceRef.current) {
       audioServiceRef.current = new AudioCaptureService();
       audioServiceRef.current.setCallbacks({
@@ -205,8 +301,32 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         onError: (error) => console.error('Audio capture error:', error)
       });
     }
+  }, []);
 
-    // Build lesson context
+  // Helper to get Firebase token
+  const getFirebaseToken = useCallback(async (): Promise<string | null> => {
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const token = await auth.currentUser?.getIdToken();
+      return token || null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Standalone connect — one WebSocket per primitive (tester mode)
+  const connect = useCallback(async (primitiveContext: PrimitiveContext) => {
+    console.trace(`[LuminaAI] connect() called for ${primitiveContext.primitive_type}`);
+
+    closeExistingSocket();
+
+    const { objectives, manifestItems } = exhibitContextRef.current;
+    const evalCtx = evaluationContextRef.current;
+
+    currentPrimitiveRef.current = primitiveContext;
+    ensureAudioService();
+
     const lessonContext = buildLessonContext(
       primitiveContext,
       manifestItems,
@@ -217,40 +337,25 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
       const wsUrl = `${wsBaseUrl}/api/lumina-tutor`;
-
-      console.log(`Connecting to Lumina AI: ${wsUrl}`);
+      console.log(`Connecting to Lumina AI (standalone): ${wsUrl}`);
 
       const socket = new WebSocket(wsUrl);
       socketRef.current = socket;
 
-      socket.onopen = async () => {
-        console.log('Lumina AI WebSocket connected');
-        sessionStartTimeRef.current = Date.now();
-
-        // Send authentication FIRST, before setting up audio service
-        // to avoid audio service sending binary data before auth
+      setupSocket(socket, async () => {
         try {
-          // Get Firebase token
-          const { getAuth } = await import('firebase/auth');
-          const auth = getAuth();
-          const token = await auth.currentUser?.getIdToken();
-
-          if (!token) {
-            throw new Error('No authentication token available');
-          }
-
-          // Verify socket is still the current one (not replaced during await)
+          const token = await getFirebaseToken();
+          if (!token) throw new Error('No authentication token available');
           if (socketRef.current !== socket) {
-            console.log('Lumina AI: socket replaced during auth, aborting');
             socket.close();
             return;
           }
 
-          // Look up catalog-driven tutoring scaffold
           const componentDef = getComponentById(primitiveContext.primitive_type);
 
           socket.send(JSON.stringify({
             type: 'authenticate',
+            session_mode: 'standalone',
             token,
             primitive_context: {
               primitive_type: primitiveContext.primitive_type,
@@ -266,101 +371,130 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             },
           }));
 
-          // Set up audio service AFTER auth message is sent
           if (audioServiceRef.current) {
             audioServiceRef.current.setWebSocket(socket);
           }
 
           setIsConnected(true);
-          console.log('Lumina AI authenticated with lesson context');
+          setSessionMode('standalone');
+          setActivePrimitiveId(primitiveContext.instance_id);
+          console.log('Lumina AI authenticated (standalone)');
         } catch (error) {
           console.error('Error authenticating Lumina AI:', error);
           socket.close();
           setIsConnected(false);
         }
-      };
-
-      socket.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          const messageType = message.type;
-
-          if (messageType === 'ai_response') {
-            // Text response from AI
-            setConversation(prev => [
-              ...prev,
-              {
-                role: 'assistant',
-                content: message.content,
-                timestamp: Date.now(),
-                isAudio: false,
-              },
-            ]);
-            setIsAIResponding(false);
-          } else if (messageType === 'ai_audio') {
-            // Audio response from AI - queued playback
-            processAndPlayRawAudio(message.data, message.sampleRate || 24000);
-          } else if (messageType === 'ai_transcription') {
-            // AI's speech transcribed
-            setConversation(prev => [
-              ...prev,
-              {
-                role: 'assistant',
-                content: message.content,
-                timestamp: Date.now(),
-                isAudio: true,
-              },
-            ]);
-          } else if (messageType === 'user_transcription') {
-            // User's speech transcribed
-            setConversation(prev => [
-              ...prev,
-              {
-                role: 'user',
-                content: message.content,
-                timestamp: Date.now(),
-                isAudio: true,
-              },
-            ]);
-          } else if (messageType === 'metrics_update') {
-            // Update metrics from server
-            setAIMetrics(prev => ({
-              ...prev,
-              hintsGiven: message.hintsGiven || prev.hintsGiven,
-              totalInteractions: message.totalInteractions || prev.totalInteractions,
-            }));
-          } else if (messageType === 'ai_turn_end') {
-            setIsAIResponding(false);
-          } else if (messageType === 'auth_success' || messageType === 'session_ready') {
-            console.log('Lumina AI session ready:', message.message);
-          }
-        } catch (error) {
-          console.error('Error handling Lumina AI message:', error);
-        }
-      };
-
-      socket.onclose = (event) => {
-        console.log('Lumina AI WebSocket closed:', event.code, event.reason);
-        setIsConnected(false);
-
-        // Calculate total time
-        if (sessionStartTimeRef.current > 0) {
-          const totalTime = Date.now() - sessionStartTimeRef.current;
-          setAIMetrics(prev => ({ ...prev, timeWithAI: totalTime }));
-        }
-      };
-
-      socket.onerror = (error) => {
-        console.error('Lumina AI WebSocket error:', error);
-        // Don't set isConnected here — onclose always fires after onerror
-        // and will handle the state update. Setting it in both causes double re-renders.
-      };
+      });
 
     } catch (error) {
       console.error('Error connecting to Lumina AI:', error);
       setIsConnected(false);
     }
-  }, [buildLessonContext, processAndPlayRawAudio]);
+  }, [buildLessonContext, setupSocket, closeExistingSocket, ensureAudioService, getFirebaseToken]);
+
+  // Lesson connect — one WebSocket for the entire exhibit
+  const connectLesson = useCallback(async (info: LessonConnectionInfo) => {
+    console.log(`[LuminaAI] connectLesson() called for exhibit ${info.exhibit_id}`);
+
+    closeExistingSocket();
+
+    currentPrimitiveRef.current = info.firstPrimitive;
+    ensureAudioService();
+
+    const { objectives, manifestItems } = exhibitContextRef.current;
+    const evalCtx = evaluationContextRef.current;
+
+    const lessonContext = buildLessonContext(
+      info.firstPrimitive,
+      manifestItems,
+      objectives,
+      evalCtx?.submittedResults
+    );
+
+    try {
+      const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+      const wsUrl = `${wsBaseUrl}/api/lumina-tutor`;
+      console.log(`Connecting to Lumina AI (lesson): ${wsUrl}`);
+
+      const socket = new WebSocket(wsUrl);
+      socketRef.current = socket;
+
+      setupSocket(socket, async () => {
+        try {
+          const token = await getFirebaseToken();
+          if (!token) throw new Error('No authentication token available');
+          if (socketRef.current !== socket) {
+            socket.close();
+            return;
+          }
+
+          const componentDef = getComponentById(info.firstPrimitive.primitive_type);
+
+          socket.send(JSON.stringify({
+            type: 'authenticate',
+            session_mode: 'lesson',
+            token,
+            primitive_context: {
+              primitive_type: info.firstPrimitive.primitive_type,
+              instance_id: info.firstPrimitive.instance_id,
+              primitive_data: info.firstPrimitive.primitive_data,
+              tutoring: componentDef?.tutoring ?? null,
+            },
+            lesson_context: lessonContext,
+            student_progress: {
+              attempts: 0,
+              hints_used: 0,
+              success_rate: 0,
+            },
+          }));
+
+          if (audioServiceRef.current) {
+            audioServiceRef.current.setWebSocket(socket);
+          }
+
+          setIsConnected(true);
+          setSessionMode('lesson');
+          setActivePrimitiveId(info.firstPrimitive.instance_id);
+          console.log('Lumina AI authenticated (lesson mode)');
+        } catch (error) {
+          console.error('Error authenticating Lumina AI (lesson):', error);
+          socket.close();
+          setIsConnected(false);
+        }
+      });
+
+    } catch (error) {
+      console.error('Error connecting to Lumina AI (lesson):', error);
+      setIsConnected(false);
+    }
+  }, [buildLessonContext, setupSocket, closeExistingSocket, ensureAudioService, getFirebaseToken]);
+
+  // Switch the active primitive within a lesson session (no new WebSocket)
+  const switchPrimitive = useCallback((primitiveContext: PrimitiveContext) => {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      console.warn('Cannot switch primitive: not connected');
+      return;
+    }
+
+    console.log(`[LuminaAI] switchPrimitive() to ${primitiveContext.primitive_type} (${primitiveContext.instance_id})`);
+
+    currentPrimitiveRef.current = primitiveContext;
+
+    const componentDef = getComponentById(primitiveContext.primitive_type);
+
+    socketRef.current.send(JSON.stringify({
+      type: 'switch_primitive',
+      primitive_context: {
+        primitive_type: primitiveContext.primitive_type,
+        instance_id: primitiveContext.instance_id,
+        primitive_data: primitiveContext.primitive_data,
+        tutoring: componentDef?.tutoring ?? null,
+      },
+    }));
+
+    // Optimistically set active — server will confirm via primitive_switched
+    setActivePrimitiveId(primitiveContext.instance_id);
+  }, []);
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
@@ -373,13 +507,13 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       audioServiceRef.current = null;
     }
 
-    // Stop any queued audio playback
     stopAudioPlayback();
 
     setIsConnected(false);
+    setSessionMode('idle');
+    setActivePrimitiveId(null);
     setConversation([]);
 
-    // Calculate final time
     if (sessionStartTimeRef.current > 0) {
       const totalTime = Date.now() - sessionStartTimeRef.current;
       setAIMetrics(prev => ({ ...prev, timeWithAI: totalTime }));
@@ -394,7 +528,6 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     setIsAIResponding(true);
 
-    // Track hint request locally
     setAIMetrics(prev => ({
       ...prev,
       totalHints: prev.totalHints + 1,
@@ -405,7 +538,6 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       },
     }));
 
-    // Add to conversation
     setConversation(prev => [
       ...prev,
       {
@@ -416,7 +548,6 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       },
     ]);
 
-    // Send to server
     socketRef.current.send(JSON.stringify({
       type: 'request_hint',
       hint_level: level,
@@ -451,7 +582,6 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
-    // Silent mode: send command without affecting UI state (e.g. [PRONOUNCE])
     if (!options?.silent) {
       setAIMetrics(prev => ({
         ...prev,
@@ -483,7 +613,6 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
-    // Update local primitive context
     if (currentPrimitiveRef.current) {
       currentPrimitiveRef.current.primitive_data = {
         ...currentPrimitiveRef.current.primitive_data,
@@ -491,7 +620,6 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       };
     }
 
-    // Send update to server
     socketRef.current.send(JSON.stringify({
       type: 'update_context',
       primitive_data: newState,
@@ -526,8 +654,12 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const value: LuminaAIContextType = {
     connect,
+    connectLesson,
+    switchPrimitive,
     disconnect,
     isConnected,
+    sessionMode,
+    activePrimitiveId,
     requestHint,
     sendVoice,
     sendText,

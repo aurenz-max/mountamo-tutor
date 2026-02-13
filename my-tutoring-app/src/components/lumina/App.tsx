@@ -40,6 +40,8 @@ import { SpotlightCard } from './components/SpotlightCard';
 import { ExhibitProvider } from './contexts/ExhibitContext';
 import { ScratchPad } from './components/scratch-pad';
 import { EvaluationProvider, useEvaluationContext } from './evaluation';
+import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 
 // Simple evaluation results indicator
 const EvaluationResultsIndicator: React.FC = () => {
@@ -101,6 +103,49 @@ const EvaluationResultsIndicator: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// Bootstraps the lesson-mode AI session when the exhibit mounts.
+// Must be rendered inside LuminaAIProvider + ExhibitProvider.
+const LessonAIBootstrap: React.FC<{
+  exhibitData: ExhibitData;
+  gradeLevel: string;
+}> = ({ exhibitData, gradeLevel }) => {
+  const aiContext = useLuminaAIContext();
+  const hasBootstrappedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (hasBootstrappedRef.current) return;
+
+    const orderedComponents = exhibitData.orderedComponents || [];
+    if (orderedComponents.length === 0) return;
+
+    const first = orderedComponents[0];
+    const info: LessonConnectionInfo = {
+      exhibit_id: exhibitData.topic || 'unknown',
+      topic: exhibitData.topic || 'Learning Activity',
+      grade_level: gradeLevel,
+      firstPrimitive: {
+        primitive_type: first.componentId,
+        instance_id: first.instanceId,
+        primitive_data: first.data || {},
+        exhibit_id: exhibitData.topic || 'unknown',
+        topic: exhibitData.topic,
+        grade_level: gradeLevel,
+      },
+    };
+
+    hasBootstrappedRef.current = true;
+    aiContext.connectLesson(info);
+
+    return () => {
+      aiContext.disconnect();
+      hasBootstrappedRef.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
 };
 
 export default function App() {
@@ -1249,6 +1294,8 @@ export default function App() {
                     objectives={exhibitData.introBriefing?.objectives || []}
                     manifestItems={exhibitData.manifest?.layout || []}
                 >
+                <LuminaAIProvider>
+                    <LessonAIBootstrap exhibitData={exhibitData} gradeLevel={gradeLevel} />
                     <div className="w-full animate-fade-in-up">
                     {/* Title Section */}
                     <div className="mb-12 text-center space-y-4">
@@ -1311,6 +1358,7 @@ export default function App() {
                     </div>
                 )}
             </div>
+            </LuminaAIProvider>
             </ExhibitProvider>
             </EvaluationProvider>
         )}
