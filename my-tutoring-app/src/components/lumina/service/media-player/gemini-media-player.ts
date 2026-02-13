@@ -1,7 +1,6 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { MediaPlayerData, LessonSegment, FullLessonSegment } from "../../types";
 import { ai } from "../geminiClient";
-import { generateAudioSegment } from "../tts/ttsService";
 
 /**
  * Convert grade level to descriptive educational context for prompts
@@ -140,8 +139,6 @@ Use age-appropriate language and relatable examples.`;
   }
 };
 
-// TTS generation handled by ttsService using Gemini
-
 /**
  * Generate image for a specific prompt
  * Returns base64 data URL or null if generation fails
@@ -195,24 +192,17 @@ export const generateMediaPlayer = async (
     // Step 1: Generate the lesson plan (text only)
     const lessonPlan = await generateLessonPlan(topic, gradeLevel, segmentCount);
 
-    // Step 2: Generate assets (audio + images) for all segments in parallel
+    // Step 2: Generate images for all segments in parallel
     const fullSegments: FullLessonSegment[] = await Promise.all(
       lessonPlan.map(async (segment: LessonSegment) => {
-        // Generate audio and image in parallel for each segment
-        const [audioBase64, imageUrl] = await Promise.all([
-          generateAudioSegment(segment.script).catch(e => {
-            console.error("Audio generation failed for segment:", segment.title, e);
-            return null;
-          }),
-          generateImageSegment(segment.imagePrompt, imageResolution).catch(e => {
-            console.error("Image generation failed for segment:", segment.title, e);
-            return null;
-          })
-        ]);
+        const imageUrl = await generateImageSegment(segment.imagePrompt, imageResolution).catch(e => {
+          console.error("Image generation failed for segment:", segment.title, e);
+          return null;
+        });
 
         return {
           ...segment,
-          audioBase64,
+          audioBase64: null,
           imageUrl
         };
       })

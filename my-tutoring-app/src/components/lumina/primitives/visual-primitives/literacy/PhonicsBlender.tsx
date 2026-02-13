@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PhonicsBlenderMetrics } from '../../../evaluation/types';
-import { base64ToAudioBuffer, getAudioContext } from '../../../utils/audioUtils';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -28,10 +28,8 @@ export interface PhonicsBlenderData {
       id: string;
       sound: string;                  // The phoneme display (e.g., "/k/", "/æ/", "/t/")
       letters: string;                // The letter(s) this phoneme maps to (e.g., "c", "a", "t")
-      audioBase64?: string;            // Gemini TTS audio for this phoneme (base64 PCM, 24kHz, 16-bit)
     }>;
     imageDescription?: string;         // Description of the target word for visual context
-    audioBase64?: string;              // Gemini TTS audio for the blended word
   }>;
 
   // Evaluation props (optional, auto-injected)
@@ -110,12 +108,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   const [startTimes, setStartTimes] = useState<Record<string, number>>({});
   const [blendTimes, setBlendTimes] = useState<Record<string, number>>({});
 
-  // Audio state
-  const [phonemeAudioBuffers, setPhonemeAudioBuffers] = useState<Map<string, AudioBuffer>>(new Map());
-  const [wordAudioBuffers, setWordAudioBuffers] = useState<Map<string, AudioBuffer>>(new Map());
-
-  // Audio playback refs
-  const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  // Stable fallback instance ID — must not change across renders
+  const stableInstanceIdRef = useRef(instanceId || `phonics-blender-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // Evaluation hook
   const {
@@ -123,7 +118,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     hasSubmitted: hasSubmittedEvaluation,
   } = usePrimitiveEvaluation<PhonicsBlenderMetrics>({
     primitiveType: 'phonics-blender',
-    instanceId: instanceId || `phonics-blender-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
@@ -134,65 +129,35 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   const currentWord = words[currentWordIndex];
 
   // ---------------------------------------------------------------------------
-  // Decode audio buffers on mount
+  // AI Tutoring Integration — the AI tutor is the voice of this primitive.
+  // All pronunciation (phoneme sounds, blended words) goes through Gemini Live
+  // via sendText, replacing 20+ individual TTS calls with one persistent session.
   // ---------------------------------------------------------------------------
-  useEffect(() => {
-    let cancelled = false;
+  const aiPrimitiveData = useMemo(() => ({
+    patternType,
+    gradeLevel,
+    totalWords: words.length,
+    currentWord: currentWord?.targetWord ?? '',
+    currentPhase,
+    targetPhonemes: currentWord?.phonemes.map(p => p.sound).join(' + ') ?? '',
+    placedPhonemes: placedPhonemeIds
+      .map(id => currentWord?.phonemes.find(p => p.id === id)?.sound)
+      .filter(Boolean)
+      .join(' + '),
+    completedWords: completedWords.size,
+    attempts: attemptsPerWord[currentWord?.id || ''] || 0,
+  }), [
+    patternType, gradeLevel, words.length,
+    currentWord, currentPhase, placedPhonemeIds,
+    completedWords, attemptsPerWord,
+  ]);
 
-    const decodeAudio = async () => {
-      try {
-        const phonemeBuffers = new Map<string, AudioBuffer>();
-        const wordBuffers = new Map<string, AudioBuffer>();
-
-        // Decode all phoneme audio and word audio
-        for (const word of words) {
-          // Decode phoneme audio
-          for (const phoneme of word.phonemes) {
-            if (phoneme.audioBase64 && !cancelled) {
-              try {
-                const buffer = await base64ToAudioBuffer(phoneme.audioBase64);
-                phonemeBuffers.set(phoneme.id, buffer);
-              } catch (err) {
-                console.warn(`Failed to decode audio for phoneme ${phoneme.id}:`, err);
-              }
-            }
-          }
-
-          // Decode word audio
-          if (word.audioBase64 && !cancelled) {
-            try {
-              const buffer = await base64ToAudioBuffer(word.audioBase64);
-              wordBuffers.set(word.id, buffer);
-            } catch (err) {
-              console.warn(`Failed to decode audio for word ${word.id}:`, err);
-            }
-          }
-        }
-
-        if (!cancelled) {
-          setPhonemeAudioBuffers(phonemeBuffers);
-          setWordAudioBuffers(wordBuffers);
-        }
-      } catch (err) {
-        console.error('Failed to decode audio:', err);
-      }
-    };
-
-    decodeAudio();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [words]);
-
-  // Cleanup audio on unmount
-  useEffect(() => {
-    return () => {
-      if (audioSourceRef.current) {
-        try { audioSourceRef.current.stop(); } catch { /* already stopped */ }
-      }
-    };
-  }, []);
+  const { sendText } = useLuminaAI({
+    primitiveType: 'phonics-blender',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
 
   // Shuffled phonemes for the bank (build phase)
   const shuffledPhonemes = useMemo(() => {
@@ -212,82 +177,37 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     return shuffledPhonemes.filter(p => !placedPhonemeIds.includes(p.id));
   }, [currentWord, shuffledPhonemes, placedPhonemeIds]);
 
-  // Play phoneme sound using Gemini TTS audio
+  // ---------------------------------------------------------------------------
+  // Audio via AI Tutor — pronounce phonemes and words through Gemini Live
+  // ---------------------------------------------------------------------------
+
+  // Play a single phoneme sound via the AI tutor
   const handlePlaySound = useCallback((phonemeId: string) => {
-    // Stop any currently playing audio
-    if (audioSourceRef.current) {
-      try { audioSourceRef.current.stop(); } catch { /* already stopped */ }
-      audioSourceRef.current = null;
-    }
+    const phoneme = currentWord?.phonemes.find(p => p.id === phonemeId);
+    if (!phoneme) return;
 
     setActiveSoundId(phonemeId);
     setListenedSounds(prev => new Set(Array.from(prev).concat(phonemeId)));
 
-    // Get the audio buffer for this phoneme
-    const audioBuffer = phonemeAudioBuffers.get(phonemeId);
-    if (audioBuffer) {
-      try {
-        const audioContext = getAudioContext();
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
+    // Ask the AI tutor to pronounce just this sound
+    sendText(`[PRONOUNCE] Say the sound ${phoneme.sound} clearly. Just the sound, nothing else.`);
 
-        audioSourceRef.current = source;
+    // Visual feedback timeout (AI audio playback is handled by the context provider)
+    setTimeout(() => setActiveSoundId(null), 1200);
+  }, [currentWord, sendText]);
 
-        source.onended = () => {
-          setActiveSoundId(null);
-          audioSourceRef.current = null;
-        };
-
-        source.start(0);
-      } catch (error) {
-        console.error('Error playing phoneme audio:', error);
-        setActiveSoundId(null);
-      }
-    } else {
-      // Fallback to visual indicator if no audio
-      setTimeout(() => setActiveSoundId(null), 600);
-    }
-  }, [phonemeAudioBuffers]);
-
-  // Play the full blended word using Gemini TTS audio
+  // Play the full blended word via the AI tutor
   const handlePlayBlendedWord = useCallback(() => {
     if (!currentWord) return;
 
-    // Stop any currently playing audio
-    if (audioSourceRef.current) {
-      try { audioSourceRef.current.stop(); } catch { /* already stopped */ }
-      audioSourceRef.current = null;
-    }
-
     setActiveSoundId('blended');
 
-    // Get the audio buffer for this word
-    const audioBuffer = wordAudioBuffers.get(currentWord.id);
-    if (audioBuffer) {
-      try {
-        const audioContext = getAudioContext();
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
+    // Ask the AI tutor to say the whole word
+    sendText(`[PRONOUNCE] Say the word "${currentWord.targetWord}" clearly. Just the word, nothing else.`);
 
-        audioSourceRef.current = source;
-
-        source.onended = () => {
-          setActiveSoundId(null);
-          audioSourceRef.current = null;
-        };
-
-        source.start(0);
-      } catch (error) {
-        console.error('Error playing word audio:', error);
-        setActiveSoundId(null);
-      }
-    } else {
-      // Fallback to visual indicator if no audio
-      setTimeout(() => setActiveSoundId(null), 800);
-    }
-  }, [currentWord, wordAudioBuffers]);
+    // Visual feedback timeout
+    setTimeout(() => setActiveSoundId(null), 1500);
+  }, [currentWord, sendText]);
 
   // Add phoneme to build area
   const handlePlacePhoneme = useCallback((phonemeId: string) => {

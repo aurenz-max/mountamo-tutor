@@ -88,108 +88,97 @@ def format_activities(activities: List[Dict], results: Optional[List[Dict]] = No
     return "\n".join(formatted)
 
 
-def get_primitive_specific_instructions(primitive_type: str, primitive_data: Dict) -> str:
+def interpolate_template(template: str, data: Dict) -> str:
     """
-    Get primitive-specific scaffolding instructions.
-    This is where we define how the AI should help with each primitive type.
+    Replace {{key}} placeholders with values from data dict.
+    Unresolved placeholders are replaced with '(not set)'.
     """
+    import re
+    def replacer(match):
+        key = match.group(1).strip()
+        value = data.get(key)
+        if value is None:
+            return '(not set)'
+        return str(value)
+    return re.sub(r'\{\{(\w+)\}\}', replacer, template)
 
+
+def get_primitive_specific_instructions(
+    primitive_type: str,
+    primitive_data: Dict,
+    tutoring_scaffold: Optional[Dict] = None
+) -> str:
+    """
+    Build primitive-specific scaffolding from catalog-provided tutoring metadata.
+
+    The tutoring scaffold is sent by the frontend from the component catalog,
+    keeping scaffolding instructions co-located with component definitions
+    (single source of truth). If no scaffold is provided, returns a generic fallback.
+    """
     # Base template for all primitives
     base = f"""
 **CURRENT PRIMITIVE: {primitive_type}**
 Grade Level: {primitive_data.get('gradeLevel', 'K-6')}
 """
 
-    # Primitive-specific scaffolding strategies
-    # TODO: Add more primitives as needed
-    specific_instructions = {
-        "phonics-blender": f"""
-**TASK:** Help student blend phonemes to read words ({primitive_data.get('patternType', 'CVC')} pattern)
-Current word: {primitive_data.get('currentWord', '(not set)')}
-Target phonemes: {primitive_data.get('targetPhonemes', [])}
+    if not tutoring_scaffold:
+        return base + "\nNo specific scaffolding instructions for this primitive type."
+
+    # Interpolate task description
+    task_desc = interpolate_template(
+        tutoring_scaffold.get('taskDescription', ''), primitive_data
+    )
+
+    # Build context snapshot from specified keys
+    context_keys = tutoring_scaffold.get('contextKeys')
+    if context_keys:
+        context_lines = []
+        for key in context_keys:
+            value = primitive_data.get(key, '(not set)')
+            context_lines.append(f"  {key}: {value}")
+        context_section = "\n".join(context_lines)
+    else:
+        context_section = "\n".join(
+            f"  {k}: {v}" for k, v in primitive_data.items()
+        )
+
+    # Scaffolding levels
+    levels = tutoring_scaffold.get('scaffoldingLevels', {})
+    level1 = interpolate_template(levels.get('level1', ''), primitive_data)
+    level2 = interpolate_template(levels.get('level2', ''), primitive_data)
+    level3 = interpolate_template(levels.get('level3', ''), primitive_data)
+
+    # Common struggles
+    struggles = tutoring_scaffold.get('commonStruggles', [])
+    struggle_lines = []
+    for s in struggles:
+        pattern = s.get('pattern', '')
+        response = interpolate_template(s.get('response', ''), primitive_data)
+        struggle_lines.append(f'- {pattern} → "{response}"')
+    struggles_section = "\n".join(struggle_lines) if struggle_lines else "None specified"
+
+    return f"""{base}
+**TASK:** {task_desc}
+
+**RUNTIME STATE:**
+{context_section}
 
 **SCAFFOLDING STRATEGY:**
-Level 1: Point to first sound, ask "What sound does this letter make?"
-Level 2: Model blending first two sounds, have student add third
-Level 3: Slow blend demonstration, guide each sound connection
+Level 1: {level1}
+Level 2: {level2}
+Level 3: {level3}
 
 **COMMON STRUGGLES:**
-- Skipping sounds → "Let's make sure we say every sound"
-- Fast blending → "Try saying it slow-motion first"
-- Forgetting sounds → "Let's tap each letter as we say the sound"
-""",
-
-        "fraction-bar": f"""
-**TASK:** Build and compare fractions
-Target: {primitive_data.get('targetFraction', '(not set)')}
-Current: {primitive_data.get('currentFraction', '(not set)')}
-
-**SCAFFOLDING STRATEGY:**
-Level 1: "How many parts is the whole divided into?"
-Level 2: "You need {primitive_data.get('denominator', 'X')} equal pieces. How many should be shaded?"
-Level 3: "Denominator = bottom number = total pieces. Numerator = top = shaded pieces."
-
-**COMMON STRUGGLES:**
-- Confusing num/denom → Use "out of" language
-- Unequal parts → "Are all the pieces the same size?"
-- Equivalence → Show different ways to divide same whole
-""",
-
-        "story-map": f"""
-**TASK:** Map story elements to {primitive_data.get('structureType', 'BME')} structure
-Current phase: {primitive_data.get('currentPhase', 'introduction')}
-Elements found: {primitive_data.get('elementsIdentified', [])}
-
-**SCAFFOLDING STRATEGY:**
-Level 1: "Think about what happens at this part of the story."
-Level 2: "Remember when [character] did [action]? Which part does that belong in?"
-Level 3: "The [element] usually comes here. Look for clues like [signal words]"
-
-**COMMON STRUGGLES:**
-- Confusing parts → Point to visual structure, ask where event fits
-- Missing elements → "What haven't we filled in yet?"
-- Wrong sequence → "Think about what happened first, next, last"
-""",
-
-        "evidence-finder": f"""
-**TASK:** Find textual evidence for claims
-Claim: {primitive_data.get('currentClaim', '(analyzing)')}
-
-**SCAFFOLDING STRATEGY:**
-Level 1: "What part of the text talks about this idea?"
-Level 2: "Look for sentences with words like [keywords]"
-Level 3: "The evidence is in paragraph X. Highlight the sentence that proves the claim"
-
-**COMMON STRUGGLES:**
-- Opinion vs evidence → "Did the author say that, or is it your idea?"
-- Weak evidence → "Does this PROVE the claim or just mention it?"
-- Wrong section → Direct to correct paragraph
-""",
-
-        "balance-scale": f"""
-**TASK:** Balance equations using the scale model
-Target equation: {primitive_data.get('targetEquation', 'X = Y')}
-
-**SCAFFOLDING STRATEGY:**
-Level 1: "What do you notice about the two sides?"
-Level 2: "If we add/remove this from one side, what happens to the other?"
-Level 3: "We need the same weight on both sides. Let's solve step-by-step."
-
-**COMMON STRUGGLES:**
-- One-sided changes → "Remember: what you do to one side, do to the other"
-- Goal confusion → "We're trying to get X by itself"
-""",
-    }
-
-    # Return base + specific if available
-    return base + specific_instructions.get(primitive_type, "\nNo specific instructions for this primitive type yet.")
+{struggles_section}
+"""
 
 
 async def build_lumina_system_instruction(
     primitive_type: str,
     primitive_data: Dict,
     lesson_context: Dict,
-    student_progress: Dict
+    student_progress: Dict,
+    tutoring_scaffold: Optional[Dict] = None
 ) -> str:
     """
     Generate context-aware system prompt with lesson progression.
@@ -241,7 +230,7 @@ Current: {current_activity.get('title', 'Unknown')} (Activity {current_index + 1
 **UPCOMING ACTIVITIES:**
 {format_activities(upcoming_activities[:2])}
 
-{get_primitive_specific_instructions(primitive_type, primitive_data)}
+{get_primitive_specific_instructions(primitive_type, primitive_data, tutoring_scaffold)}
 
 **STUDENT CONTEXT:**
 - Current attempt: {attempts}
@@ -272,9 +261,14 @@ When the student requests a hint, respond based on the level they request:
 - Celebrate small wins and acknowledge effort
 - If student is stuck after Level 3 hint, encourage them to try and provide reassurance
 
+**PRONUNCIATION COMMANDS:**
+When you receive a message starting with [PRONOUNCE], you MUST immediately and clearly say ONLY the requested sound or word. Do NOT add any commentary, questions, encouragement, or extra words. Just produce the sound or word exactly as requested. This is used by interactive primitives (like Phonics Blender) for audio playback of phonemes and words. Examples:
+- "[PRONOUNCE] Say the sound /k/ clearly." → Just say the /k/ sound
+- "[PRONOUNCE] Say the word cat clearly." → Just say "cat"
+
 **IMPORTANT:**
 - NEVER solve the problem for the student
-- ALWAYS wait for the student to respond before continuing
+- ALWAYS wait for the student to respond before continuing (except for [PRONOUNCE] commands)
 - BE PATIENT - learning takes time
 - ENCOURAGE mistakes as learning opportunities
 """
@@ -306,6 +300,9 @@ async def lumina_tutor_session(websocket: WebSocket):
         # Step 1: Authenticate user
         logger.info("🔐 Waiting for authentication...")
         auth_message = await asyncio.wait_for(websocket.receive(), timeout=10.0)
+        if "text" not in auth_message:
+            logger.warning("⚠️ Received non-text message during auth (likely client disconnected)")
+            return
         auth_data = json.loads(auth_message["text"])
 
         if auth_data.get("type") != "authenticate":
@@ -329,6 +326,7 @@ async def lumina_tutor_session(websocket: WebSocket):
         primitive_type = primitive_context.get("primitive_type", "unknown")
         instance_id = primitive_context.get("instance_id", "unknown")
         primitive_data = primitive_context.get("primitive_data", {})
+        tutoring_scaffold = primitive_context.get("tutoring")
 
         logger.info(f"🚀 Initializing Lumina AI session for primitive: {primitive_type} (instance: {instance_id})")
         logger.info(f"📚 Lesson: {lesson_context.get('topic', 'Unknown')} - Activity {lesson_context.get('current_index', 0) + 1} of {len(lesson_context.get('ordered_components', []))}")
@@ -345,7 +343,8 @@ async def lumina_tutor_session(websocket: WebSocket):
             primitive_type,
             primitive_data,
             lesson_context,
-            student_progress
+            student_progress,
+            tutoring_scaffold=tutoring_scaffold
         )
         logger.info(f"📋 System instruction built for {primitive_type} in lesson: {lesson_context.get('topic', 'Unknown')}")
 
@@ -359,6 +358,7 @@ async def lumina_tutor_session(websocket: WebSocket):
         config = LiveConnectConfig(
             response_modalities=["AUDIO"],
             speech_config=speech_config,
+            output_audio_transcription=types.AudioTranscriptionConfig(),
             realtime_input_config=types.RealtimeInputConfig(turn_coverage="TURN_INCLUDES_ALL_INPUT"),
             context_window_compression=types.ContextWindowCompressionConfig(
                 trigger_tokens=25600,
@@ -487,8 +487,10 @@ async def lumina_tutor_session(websocket: WebSocket):
                         text = await text_queue.get()
                         logger.info(f"📤 Sending text to Gemini: {text[:100]}...")
                         await session.send(input=text, end_of_turn=True)
+                        logger.info(f"✅ Text sent to Gemini successfully (end_of_turn=True)")
                 except Exception as e:
                     logger.error(f"❌ Error sending text to Gemini: {e}")
+                    logger.error(f"❌ Full traceback: {traceback.format_exc()}")
 
             async def handle_audio_to_gemini():
                 """Send audio data to Gemini"""
@@ -509,7 +511,10 @@ async def lumina_tutor_session(websocket: WebSocket):
             async def handle_gemini_responses():
                 """Handle responses from Gemini and send to client"""
                 try:
+                    turn_count = 0
                     while True:
+                        turn_count += 1
+                        logger.info(f"👂 Waiting for Gemini response (turn {turn_count})...")
                         async for response in session.receive():
                             if hasattr(response, 'server_content') and response.server_content:
                                 # Handle model turn (AI speaking)
@@ -518,12 +523,22 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                                     if hasattr(model_turn, 'parts') and model_turn.parts:
                                         for part in model_turn.parts:
+                                            # Debug: log part attributes
+                                            part_attrs = [a for a in dir(part) if not a.startswith('_')]
+                                            gemini_logger.debug(f"🔍 Part attributes: {part_attrs}")
+
                                             # Handle text parts
                                             if hasattr(part, 'text') and part.text:
+                                                # Check if this is model thinking (not student-facing)
+                                                is_thought = getattr(part, 'thought', False)
+                                                if is_thought:
+                                                    gemini_logger.info(f"💭 Model thinking: {part.text[:100]}...")
+                                                    continue
+
                                                 gemini_logger.info(f"📥 Received text from Gemini: {part.text[:100]}...")
                                                 clean_text = part.text.strip()
                                                 if clean_text:
-                                                    logger.info(f"🎯 AI speaking: {clean_text}")
+                                                    logger.info(f"🎯 AI text response: {clean_text}")
 
                                                     asyncio.create_task(websocket.send_json({
                                                         "type": "ai_response",
@@ -531,18 +546,23 @@ async def lumina_tutor_session(websocket: WebSocket):
                                                     }))
 
                                             # Handle audio data
-                                            elif hasattr(part, 'inline_data') and part.inline_data and hasattr(part.inline_data, 'data') and part.inline_data.data:
-                                                import base64
-                                                audio_b64 = base64.b64encode(part.inline_data.data).decode()
+                                            if hasattr(part, 'inline_data') and part.inline_data:
+                                                audio_data = getattr(part.inline_data, 'data', None)
+                                                if audio_data:
+                                                    import base64
+                                                    audio_b64 = base64.b64encode(audio_data).decode()
+                                                    logger.debug(f"🔊 Sending audio chunk to client ({len(audio_data)} bytes)")
 
-                                                asyncio.create_task(websocket.send_json({
-                                                    "type": "ai_audio",
-                                                    "format": "raw-pcm",
-                                                    "sampleRate": RECEIVE_SAMPLE_RATE,
-                                                    "bitsPerSample": 16,
-                                                    "channels": CHANNELS,
-                                                    "data": audio_b64
-                                                }))
+                                                    asyncio.create_task(websocket.send_json({
+                                                        "type": "ai_audio",
+                                                        "format": "raw-pcm",
+                                                        "sampleRate": RECEIVE_SAMPLE_RATE,
+                                                        "bitsPerSample": 16,
+                                                        "channels": CHANNELS,
+                                                        "data": audio_b64
+                                                    }))
+                                                else:
+                                                    gemini_logger.warning(f"⚠️ inline_data present but no data: {part.inline_data}")
 
                                 # Handle user's speech transcription
                                 if hasattr(response.server_content, 'input_transcription') and response.server_content.input_transcription:

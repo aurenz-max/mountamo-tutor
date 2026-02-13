@@ -1,7 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { ListenAndRespondData } from "../../primitives/visual-primitives/literacy/ListenAndRespond";
-import { generateTTSAudio } from "../tts/ttsService";
 
 /**
  * Schema definition for Listen and Respond Data
@@ -126,8 +125,6 @@ const listenAndRespondSchema: Schema = {
   },
   required: ["title", "gradeLevel", "passageType", "passage", "questions", "segments"]
 };
-
-// TTS generation handled by ttsService using Gemini
 
 /**
  * Generate Listen and Respond data using Gemini AI
@@ -315,42 +312,9 @@ Generate the complete listening comprehension activity now.`;
 
     const result = JSON.parse(text) as ListenAndRespondData;
 
-    // Step 2: Generate TTS audio for the full passage and each segment
-    const passageText = result.passage.text;
-    const words = passageText.split(/\s+/);
-
-    // Generate full passage audio
-    console.log('Generating TTS audio for full passage...');
-    const passageAudio = await generateTTSAudio(passageText);
-
-    // Generate audio for each segment (for replay)
-    const segmentsWithAudio = await Promise.all(
-      (result.segments || []).map(async (segment) => {
-        const segmentWords = words.slice(segment.startWord, segment.endWord);
-        const segmentText = segmentWords.join(' ');
-
-        if (!segmentText.trim()) {
-          return segment;
-        }
-
-        console.log(`Generating TTS audio for segment "${segment.label}"...`);
-        const segmentAudio = await generateTTSAudio(segmentText);
-
-        return {
-          ...segment,
-          audioBase64: segmentAudio || undefined,
-        };
-      })
-    );
-
     // Merge with any config overrides
     const finalData: ListenAndRespondData = {
       ...result,
-      passage: {
-        ...result.passage,
-        audioBase64: passageAudio || undefined,
-      },
-      segments: segmentsWithAudio,
       ...config,
     };
 
@@ -368,8 +332,6 @@ Generate the complete listening comprehension activity now.`;
       questions: finalData.questions.length,
       questionDifficulty: { literal: literalCount, inferential: inferentialCount, evaluative: evaluativeCount },
       segments: finalData.segments?.length || 0,
-      hasPassageAudio: !!finalData.passage.audioBase64,
-      segmentsWithAudio: finalData.segments?.filter(s => s.audioBase64).length || 0,
     });
 
     return finalData;

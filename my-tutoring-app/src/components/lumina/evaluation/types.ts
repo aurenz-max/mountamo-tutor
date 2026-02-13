@@ -55,6 +55,20 @@ export interface PrimitiveEvaluationResult<TMetrics extends PrimitiveMetrics = P
  */
 export interface BasePrimitiveMetrics {
   type: string;
+
+  // AI assistance metadata (optional - only present if AI was enabled)
+  aiAssistance?: {
+    enabled: boolean;
+    hintsUsed: {
+      level1: number;
+      level2: number;
+      level3: number;
+    };
+    totalInteractions: number;      // Total messages exchanged (hints + questions)
+    conversationTurns: number;       // Back-and-forth exchanges
+    voiceInteractions: number;       // Voice-only interactions
+    timeWithAI: number;              // Total milliseconds interacting with AI
+  };
 }
 
 // -----------------------------------------------------------------------------

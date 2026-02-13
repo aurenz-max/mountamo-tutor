@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // ============================================================================
 // Primitive Imports
 // ============================================================================
@@ -33,6 +33,11 @@ import {
   EvaluationProvider,
   useEvaluationContext,
 } from '../evaluation';
+import { ExhibitProvider } from '../contexts/ExhibitContext';
+import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { getComponentById } from '../service/manifest/catalog';
+import type { ComponentId } from '../types';
+import { Bot, Send, Mic, MicOff, Loader2, CheckCircle, XCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface LanguageArtsPrimitivesTesterProps {
   onBack: () => void;
@@ -54,7 +59,7 @@ interface PrimitiveOption {
   icon: string;
   topic: string;
   strand: string;
-  wave: number; // implementation priority wave from PRD
+  wave: number;
 }
 
 const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
@@ -273,14 +278,326 @@ const EvaluationResultsPanel: React.FC = () => {
   );
 };
 
+// ============================================================================
+// AI Tutor Panel - connects to backend WebSocket for real-time scaffolding
+// ============================================================================
+
+const AITutorPanel: React.FC<{
+  primitiveType: PrimitiveType;
+  gradeLevel: string;
+  topic: string;
+  generatedData: unknown;
+}> = ({ primitiveType, gradeLevel, topic, generatedData }) => {
+  const ai = useLuminaAIContext();
+  const [textInput, setTextInput] = useState('');
+  const [connectionAttempted, setConnectionAttempted] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [ai.conversation]);
+
+  // Disconnect when primitive changes
+  useEffect(() => {
+    if (ai.isConnected) {
+      ai.disconnect();
+      setConnectionAttempted(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [primitiveType]);
+
+  // Extract primitive-specific context keys from generated data for the backend
+  const buildPrimitiveData = (): Record<string, unknown> => {
+    const base: Record<string, unknown> = {
+      gradeLevel,
+    };
+
+    if (!generatedData || typeof generatedData !== 'object') return base;
+    const d = generatedData as Record<string, unknown>;
+
+    // Extract fields the tutoring scaffold's contextKeys reference
+    if (primitiveType === 'phonics-blender') {
+      const words = d.words as Array<Record<string, unknown>> | undefined;
+      const firstWord = words?.[0];
+      base.patternType = d.patternType || 'CVC';
+      base.currentWord = firstWord?.targetWord || '';
+      base.targetPhonemes = firstWord?.phonemes
+        ? (firstWord.phonemes as Array<Record<string, unknown>>).map(p => p.sound)
+        : [];
+    } else if (primitiveType === 'story-map') {
+      base.structureType = d.structureType || 'BME';
+      base.currentPhase = 'beginning';
+      base.elementsIdentified = [];
+    } else if (primitiveType === 'evidence-finder') {
+      base.currentClaim = d.claim || d.centralClaim || '';
+    } else {
+      // Generic: pass top-level scalar fields
+      for (const [k, v] of Object.entries(d)) {
+        if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+          base[k] = v;
+        }
+      }
+    }
+    return base;
+  };
+
+  const handleConnect = async () => {
+    setConnectionAttempted(true);
+    const primitiveData = buildPrimitiveData();
+    try {
+      await ai.connect({
+        primitive_type: primitiveType,
+        instance_id: `tester-${primitiveType}-${Date.now()}`,
+        primitive_data: primitiveData,
+        topic: topic || 'Tester Session',
+        grade_level: gradeLevel,
+      });
+    } catch (err) {
+      console.error('Connection failed:', err);
+    }
+  };
+
+  const handleDisconnect = () => {
+    ai.disconnect();
+    setConnectionAttempted(false);
+  };
+
+  const handleSendText = () => {
+    if (textInput.trim()) {
+      ai.sendText(textInput);
+      setTextInput('');
+    }
+  };
+
+  const handleHint = (level: 1 | 2 | 3) => {
+    ai.requestHint(level, buildPrimitiveData());
+  };
+
+  const handleToggleVoice = () => {
+    if (ai.isListening) {
+      ai.stopListening();
+    } else {
+      ai.startListening();
+    }
+  };
+
+  // Check if scaffold exists for this primitive
+  const catalogEntry = getComponentById(primitiveType as ComponentId);
+  const hasScaffold = !!catalogEntry?.tutoring;
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-slate-700/50">
+        <div className="flex items-center gap-2 mb-1">
+          <Bot className="w-4 h-4 text-indigo-400" />
+          <h3 className="text-sm font-semibold text-slate-200">AI Tutor</h3>
+          {hasScaffold && (
+            <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">
+              Scaffold
+            </span>
+          )}
+        </div>
+        <p className="text-slate-500 text-[10px]">
+          {generatedData
+            ? 'Connect to get real-time tutoring for this activity.'
+            : 'Generate content first, then connect.'}
+        </p>
+      </div>
+
+      {/* Connection Status */}
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between p-2.5 bg-slate-800/50 rounded-lg border border-slate-700">
+          <div className="flex items-center gap-2">
+            {ai.isConnected ? (
+              <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+            ) : (
+              <XCircle className="w-3.5 h-3.5 text-slate-500" />
+            )}
+            <span className={`text-xs font-medium ${ai.isConnected ? 'text-green-400' : 'text-slate-400'}`}>
+              {ai.isConnected ? 'Connected' : connectionAttempted ? 'Disconnected' : 'Not connected'}
+            </span>
+          </div>
+          {!ai.isConnected ? (
+            <button
+              onClick={handleConnect}
+              disabled={!generatedData}
+              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white text-xs font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+            >
+              Connect
+            </button>
+          ) : (
+            <button
+              onClick={handleDisconnect}
+              className="px-3 py-1 bg-red-600/80 hover:bg-red-600 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              Disconnect
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Hint Buttons */}
+      {ai.isConnected && (
+        <div className="px-4 pb-3">
+          <div className="grid grid-cols-3 gap-1.5">
+            {([1, 2, 3] as const).map((level) => {
+              const labels = ['Gentle Nudge', 'Specific', 'Walkthrough'];
+              const icons = ['💡', '🔍', '🎯'];
+              const used = ai.aiMetrics.hintsGiven[`level${level}` as keyof typeof ai.aiMetrics.hintsGiven];
+              return (
+                <button
+                  key={level}
+                  onClick={() => handleHint(level)}
+                  disabled={ai.isAIResponding}
+                  className={`flex flex-col items-center gap-0.5 p-2 rounded-lg border transition-colors disabled:opacity-50 ${
+                    used > 0
+                      ? 'bg-indigo-500/10 border-indigo-500/50'
+                      : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/50'
+                  }`}
+                >
+                  <span className="text-base">{icons[level - 1]}</span>
+                  <span className="text-[10px] text-slate-400">{labels[level - 1]}</span>
+                  {used > 0 && (
+                    <span className="text-[10px] text-indigo-400">({used})</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Chat Messages */}
+      {ai.isConnected && (
+        <div className="flex-1 flex flex-col min-h-0 px-4 pb-3">
+          <div className="flex-1 bg-slate-900/50 rounded-lg border border-slate-700 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {ai.conversation.length === 0 && (
+                <p className="text-slate-500 text-xs text-center py-4">
+                  Connected. Request a hint or type a message to start.
+                </p>
+              )}
+              {ai.conversation.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-lg p-2 ${
+                    msg.role === 'user'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-800 border border-slate-700 text-slate-200'
+                  }`}>
+                    <p className="text-xs whitespace-pre-wrap">{msg.content}</p>
+                    {msg.isAudio && (
+                      <span className="text-[10px] opacity-60 flex items-center gap-1 mt-1">
+                        <Mic className="w-2.5 h-2.5" /> Voice
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {ai.isAIResponding && (
+                <div className="flex justify-start">
+                  <div className="bg-slate-800 border border-slate-700 rounded-lg p-2">
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span className="text-xs">Thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="border-t border-slate-700 p-2 flex gap-1.5">
+              <input
+                type="text"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendText()}
+                placeholder="Type a message..."
+                disabled={!ai.isConnected}
+                className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-700 rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs disabled:opacity-50"
+              />
+              <button
+                onClick={handleSendText}
+                disabled={!ai.isConnected || !textInput.trim()}
+                className="p-1.5 bg-indigo-600 hover:bg-indigo-700 rounded disabled:opacity-50 transition-colors"
+              >
+                <Send className="w-3.5 h-3.5 text-white" />
+              </button>
+              <button
+                onClick={handleToggleVoice}
+                disabled={!ai.isConnected}
+                className={`p-1.5 rounded disabled:opacity-50 transition-colors ${
+                  ai.isListening ? 'bg-red-600 hover:bg-red-700' : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+              >
+                {ai.isListening ? (
+                  <MicOff className="w-3.5 h-3.5 text-white" />
+                ) : (
+                  <Mic className="w-3.5 h-3.5 text-white" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Metrics */}
+      {ai.isConnected && ai.aiMetrics.totalInteractions > 0 && (
+        <div className="px-4 pb-3 flex justify-between text-[10px] text-slate-500">
+          <span>Hints: {ai.aiMetrics.totalHints}</span>
+          <span>Interactions: {ai.aiMetrics.totalInteractions}</span>
+          <span>Voice: {ai.aiMetrics.voiceInteractions}</span>
+        </div>
+      )}
+
+      {/* Scaffold Info (when not connected) */}
+      {!ai.isConnected && hasScaffold && catalogEntry?.tutoring && (
+        <div className="px-4 pb-4 flex-1 overflow-y-auto">
+          <details className="text-left">
+            <summary className="text-slate-500 text-xs cursor-pointer hover:text-slate-300 transition-colors mb-2">
+              View scaffold config
+            </summary>
+            <div className="space-y-2">
+              <div className="p-2 bg-slate-800/50 rounded-lg border border-slate-700">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Task</div>
+                <p className="text-slate-300 text-xs">{catalogEntry.tutoring.taskDescription}</p>
+              </div>
+              <div className="p-2 bg-slate-800/50 rounded-lg border border-slate-700">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Levels</div>
+                <div className="space-y-1">
+                  {(['level1', 'level2', 'level3'] as const).map((level, i) => (
+                    <p key={level} className="text-slate-400 text-[11px]">
+                      <span className={`font-bold mr-1 ${
+                        i === 0 ? 'text-blue-400' : i === 1 ? 'text-yellow-400' : 'text-orange-400'
+                      }`}>{i + 1}.</span>
+                      {catalogEntry.tutoring!.scaffoldingLevels[level]}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================================================
 // Main content component
+// ============================================================================
+
 const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTesterProps> = ({ onBack }) => {
-  const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('paragraph-architect');
-  const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('3');
+  const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('phonics-blender');
+  const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('K');
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tutorPanelOpen, setTutorPanelOpen] = useState(true);
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
 
@@ -327,27 +644,39 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
       {/* Header */}
       <div className="border-b border-slate-800 bg-slate-900/50 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
               className="text-slate-400 hover:text-white transition-colors"
             >
-              ← Back
+              &larr; Back
             </button>
             <div className="h-6 w-px bg-slate-700" />
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <span>📚</span>
-              <span>Language Arts Primitives Tester</span>
+              <span>Language Arts Primitives</span>
             </h1>
           </div>
+          <button
+            onClick={() => setTutorPanelOpen(!tutorPanelOpen)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              tutorPanelOpen
+                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
+            }`}
+          >
+            <Bot className="w-3.5 h-3.5" />
+            AI Tutor
+            {tutorPanelOpen ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+          </button>
         </div>
       </div>
 
       {/* Main Layout */}
       <div className="flex h-[calc(100vh-73px)]">
         {/* Compact Left Panel */}
-        <div className="w-72 border-r border-slate-800 bg-slate-900/30 backdrop-blur p-4 overflow-y-auto flex-shrink-0">
+        <div className="w-64 border-r border-slate-800 bg-slate-900/30 backdrop-blur p-4 overflow-y-auto flex-shrink-0">
           <div className="space-y-4">
             {/* Primitive Selector grouped by strand */}
             <div>
@@ -364,29 +693,37 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
                         {strand}: {strandInfo.label}
                       </div>
                       <div className="space-y-1">
-                        {strandPrimitives.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              setSelectedPrimitive(option.value);
-                              setGeneratedData(null);
-                              setError(null);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
-                              selectedPrimitive === option.value
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">{option.icon}</span>
-                              <div className="flex-1 min-w-0">
-                                <span className="text-sm font-medium block truncate">{option.label}</span>
+                        {strandPrimitives.map((option) => {
+                          const entry = getComponentById(option.value as ComponentId);
+                          const hasScaffold = !!entry?.tutoring;
+                          return (
+                            <button
+                              key={option.value}
+                              onClick={() => {
+                                setSelectedPrimitive(option.value);
+                                setGeneratedData(null);
+                                setError(null);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
+                                selectedPrimitive === option.value
+                                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                  : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{option.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-sm font-medium block truncate">{option.label}</span>
+                                </div>
+                                {hasScaffold && (
+                                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                    selectedPrimitive === option.value ? 'bg-green-300' : 'bg-green-500'
+                                  }`} />
+                                )}
                               </div>
-                              <span className="text-[9px] text-slate-500 font-mono">W{option.wave}</span>
-                            </div>
-                          </button>
-                        ))}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -453,7 +790,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
                   Generating...
                 </span>
               ) : (
-                '✨ Generate Content'
+                'Generate Content'
               )}
             </button>
 
@@ -464,7 +801,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
           </div>
         </div>
 
-        {/* Main Content Area */}
+        {/* Main Content Area - the actual rendered primitive */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6">
             {error && (
@@ -482,7 +819,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
                   </h3>
                   <p className="text-slate-400 max-w-md mb-6">
                     Select a primitive from the sidebar, choose a grade level, and click Generate
-                    to test interactive language arts components.
+                    to test interactive language arts components with AI tutoring.
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
                     {strands.map((strand) => {
@@ -509,16 +846,32 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
             )}
           </div>
         </div>
+
+        {/* Right Panel - AI Tutor */}
+        {tutorPanelOpen && (
+          <div className="w-80 border-l border-slate-800 bg-slate-900/30 backdrop-blur flex-shrink-0 flex flex-col">
+            <AITutorPanel
+              primitiveType={selectedPrimitive}
+              gradeLevel={selectedGrade}
+              topic={topic || selectedOption?.topic || ''}
+              generatedData={generatedData}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-// Wrapper with EvaluationProvider
+// Wrapper with all required providers
 const LanguageArtsPrimitivesTester: React.FC<LanguageArtsPrimitivesTesterProps> = (props) => {
   return (
     <EvaluationProvider>
-      <LanguageArtsPrimitivesTesterContent {...props} />
+      <ExhibitProvider objectives={[]} manifestItems={[]}>
+        <LuminaAIProvider>
+          <LanguageArtsPrimitivesTesterContent {...props} />
+        </LuminaAIProvider>
+      </ExhibitProvider>
     </EvaluationProvider>
   );
 };

@@ -1,7 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { PhonicsBlenderData } from "../../primitives/visual-primitives/literacy/PhonicsBlender";
-import { generateTTSAudio } from "../tts/ttsService";
 
 /**
  * Schema definition for Phonics Blender Data
@@ -74,8 +73,6 @@ const phonicsBlenderSchema: Schema = {
   },
   required: ["title", "gradeLevel", "patternType", "words"]
 };
-
-// TTS generation handled by ttsService using Gemini
 
 /**
  * Generate phonics blender data using Gemini AI
@@ -251,42 +248,9 @@ Now generate a phonics blending activity for "${topic}" at grade level ${gradeLe
 
     const result = JSON.parse(text) as PhonicsBlenderData;
 
-    // Step 2: Generate TTS audio for each phoneme and each blended word
-    console.log('Generating TTS audio for phonemes and words...');
-    const wordsWithAudio = await Promise.all(
-      result.words.map(async (word) => {
-        // Generate audio for each phoneme
-        const phonemesWithAudio = await Promise.all(
-          word.phonemes.map(async (phoneme) => {
-            // For phoneme sounds, we'll pronounce just the sound
-            // Remove slashes from sound notation for TTS (e.g., "/k/" -> "kuh" or just the sound)
-            const soundText = phoneme.sound.replace(/\//g, '').trim();
-            console.log(`Generating TTS for phoneme: ${phoneme.sound} (${soundText})`);
-            const audioBase64 = await generateTTSAudio(soundText);
-
-            return {
-              ...phoneme,
-              audioBase64: audioBase64 || undefined,
-            };
-          })
-        );
-
-        // Generate audio for the blended word
-        console.log(`Generating TTS for word: ${word.targetWord}`);
-        const wordAudioBase64 = await generateTTSAudio(word.targetWord);
-
-        return {
-          ...word,
-          phonemes: phonemesWithAudio,
-          audioBase64: wordAudioBase64 || undefined,
-        };
-      })
-    );
-
     // Merge with any config overrides
     const finalData: PhonicsBlenderData = {
       ...result,
-      words: wordsWithAudio,
       ...config,
     };
 
@@ -296,8 +260,6 @@ Now generate a phonics blending activity for "${topic}" at grade level ${gradeLe
       patternType: finalData.patternType,
       wordCount: finalData.words?.length || 0,
       words: finalData.words?.map(w => w.targetWord) || [],
-      phonemesWithAudio: finalData.words?.reduce((sum, w) => sum + w.phonemes.filter(p => p.audioBase64).length, 0),
-      wordsWithAudio: finalData.words?.filter(w => w.audioBase64).length,
     });
 
     return finalData;

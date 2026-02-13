@@ -101,3 +101,11 @@ export function getCatalogByDomain(domain: string): ComponentDefinition[] | unde
 export function getDomainNames(): string[] {
   return Object.keys(CATALOGS_BY_DOMAIN);
 }
+
+/**
+ * Look up a single component definition by its ID.
+ * Used by the AI tutoring pipeline to retrieve scaffolding metadata.
+ */
+export function getComponentById(id: string): ComponentDefinition | undefined {
+  return UNIVERSAL_CATALOG.find(c => c.id === id);
+}

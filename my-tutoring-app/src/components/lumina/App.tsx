@@ -34,6 +34,7 @@ import { PhysicsPrimitivesTester } from './components/PhysicsPrimitivesTester';
 import { FeatureExhibitTester } from './components/FeatureExhibitTester';
 import BiologyPrimitivesTester from './components/BiologyPrimitivesTester';
 import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
+import LuminaTutorTester from './components/LuminaTutorTester';
 import { PracticeMode } from './components/PracticeModeEnhanced';
 import { SpotlightCard } from './components/SpotlightCard';
 import { ExhibitProvider } from './contexts/ExhibitContext';
@@ -164,6 +165,9 @@ export default function App() {
 
   // Language Arts Primitives Testing State
   const [showLanguageArtsTester, setShowLanguageArtsTester] = useState(false);
+
+  // Lumina Tutor Testing State
+  const [showLuminaTutorTester, setShowLuminaTutorTester] = useState(false);
 
   // Practice Mode State
   const [showPracticeMode, setShowPracticeMode] = useState(false);
@@ -569,6 +573,11 @@ export default function App() {
                    ← Exit Tester
                 </button>
             )}
+            {showLuminaTutorTester && (
+                <button onClick={() => setShowLuminaTutorTester(false)} className="hover:text-white transition-colors">
+                   ← Exit Tester
+                </button>
+            )}
             {showLanguageArtsTester && (
                 <button onClick={() => setShowLanguageArtsTester(false)} className="hover:text-white transition-colors">
                    ← Exit Tester
@@ -590,7 +599,7 @@ export default function App() {
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showAstronomyPrimitivesTester && !showPhysicsPrimitivesTester && !showFeatureExhibitTester && !showBiologyPrimitivesTester && !showLanguageArtsTester && !showPracticeMode && !showScratchPad && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showAstronomyPrimitivesTester && !showPhysicsPrimitivesTester && !showFeatureExhibitTester && !showBiologyPrimitivesTester && !showLanguageArtsTester && !showLuminaTutorTester && !showPracticeMode && !showScratchPad && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -951,6 +960,30 @@ export default function App() {
                           </svg>
                         </div>
                       </SpotlightCard>
+
+                      {/* Lumina Tutor Tester */}
+                      <SpotlightCard
+                        color="129, 140, 248"
+                        onClick={() => setShowLuminaTutorTester(true)}
+                        className="bg-gradient-to-br from-indigo-900/20 to-violet-900/20"
+                      >
+                        <div className="p-6 flex items-start gap-4">
+                          <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <span className="text-2xl">🤖</span>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-indigo-200 transition-colors">
+                              Lumina Tutor Tester
+                            </h3>
+                            <p className="text-slate-400 text-xs leading-relaxed">
+                              Test AI tutoring scaffolding: inspect catalog metadata, verify WebSocket connection, test hints
+                            </p>
+                          </div>
+                          <svg className="w-5 h-5 text-slate-600 group-hover:text-indigo-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                          </svg>
+                        </div>
+                      </SpotlightCard>
                     </div>
                   </div>
                 </div>
@@ -1036,6 +1069,13 @@ export default function App() {
         {gameState === GameState.IDLE && showLanguageArtsTester && (
           <div className="flex-1 animate-fade-in">
             <LanguageArtsPrimitivesTester onBack={() => setShowLanguageArtsTester(false)} />
+          </div>
+        )}
+
+        {/* LUMINA TUTOR TESTER STATE */}
+        {gameState === GameState.IDLE && showLuminaTutorTester && (
+          <div className="flex-1 animate-fade-in">
+            <LuminaTutorTester onBack={() => setShowLuminaTutorTester(false)} />
           </div>
         )}
 

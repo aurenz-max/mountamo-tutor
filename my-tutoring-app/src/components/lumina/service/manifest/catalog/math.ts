@@ -31,7 +31,21 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'fraction-bar',
     description: 'Interactive rectangular bar models showing fractional parts with adjustable partitions. Perfect for teaching fractions, equivalent fractions, comparing fractions, and fraction operations. Students can click to shade/unshade parts. ESSENTIAL for elementary math.',
-    constraints: 'Requires fraction values (numerator/denominator). Supports multiple bars for comparison.'
+    constraints: 'Requires fraction values (numerator/denominator). Supports multiple bars for comparison.',
+    tutoring: {
+      taskDescription: 'Build and compare fractions. Target: {{targetFraction}}. Current: {{currentFraction}}.',
+      contextKeys: ['targetFraction', 'currentFraction', 'denominator', 'numerator'],
+      scaffoldingLevels: {
+        level1: '"How many parts is the whole divided into?"',
+        level2: '"You need {{denominator}} equal pieces. How many should be shaded?"',
+        level3: '"Denominator = bottom number = total pieces. Numerator = top = shaded pieces."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing numerator/denominator', response: 'Use "out of" language: 3 out of 4 pieces' },
+        { pattern: 'Unequal parts', response: '"Are all the pieces the same size?"' },
+        { pattern: 'Equivalence confusion', response: 'Show different ways to divide the same whole' },
+      ],
+    },
   },
   {
     id: 'place-value-chart',
@@ -76,7 +90,20 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'balance-scale',
     description: 'Interactive balance scale showing equality and equation solving. Perfect for teaching algebraic thinking, equation solving, equality concepts, conservation of equality, inverse operations, and maintaining balance. Visual representation of "what you do to one side, do to the other." ESSENTIAL for pre-algebra and algebra (grades 5-8).',
-    constraints: 'Requires an equation or equality relationship. Best for linear equations and simple algebraic expressions. Shows balanced or unbalanced states.'
+    constraints: 'Requires an equation or equality relationship. Best for linear equations and simple algebraic expressions. Shows balanced or unbalanced states.',
+    tutoring: {
+      taskDescription: 'Balance equations using the scale model. Target equation: {{targetEquation}}.',
+      contextKeys: ['targetEquation'],
+      scaffoldingLevels: {
+        level1: '"What do you notice about the two sides?"',
+        level2: '"If we add/remove this from one side, what happens to the other?"',
+        level3: '"We need the same weight on both sides. Let\'s solve step-by-step."',
+      },
+      commonStruggles: [
+        { pattern: 'One-sided changes', response: 'Remember: what you do to one side, do to the other' },
+        { pattern: 'Goal confusion', response: "We're trying to get X by itself" },
+      ],
+    },
   },
   {
     id: 'function-machine',

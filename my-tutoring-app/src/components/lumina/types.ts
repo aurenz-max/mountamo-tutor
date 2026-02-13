@@ -1172,10 +1172,45 @@ export type ComponentId =
   // Physics Primitives (Middle School - High School)
   | 'motion-diagram'     // Strobe diagram visualization for teaching kinematics and motion concepts
 
+/**
+ * Tutoring scaffold metadata for AI-assisted learning.
+ * Embedded in the catalog so scaffolding instructions live alongside
+ * component definitions (single source of truth).
+ *
+ * Template variables use {{key}} syntax (Mustache-style).
+ * Keys reference fields in primitive_data at runtime.
+ * Example: "Help student blend phonemes ({{patternType}} pattern)"
+ */
+export interface TutoringScaffold {
+  /** Template describing the task. Supports {{key}} interpolation from primitive_data. */
+  taskDescription: string;
+
+  /**
+   * Which primitive_data keys to include in the AI context.
+   * If omitted, all primitive_data keys are passed.
+   */
+  contextKeys?: string[];
+
+  /** Three progressive levels of scaffolding strategy */
+  scaffoldingLevels: {
+    level1: string;
+    level2: string;
+    level3: string;
+  };
+
+  /** Common student struggles and recommended responses */
+  commonStruggles?: Array<{
+    pattern: string;
+    response: string;
+  }>;
+}
+
 export interface ComponentDefinition {
   id: ComponentId;
   description: string;
   constraints?: string; // e.g. "Max 1 per page" or "Requires numeric data"
+  /** Optional AI tutoring scaffold. When present, sent to backend during WebSocket auth. */
+  tutoring?: TutoringScaffold;
 }
 
 /**
