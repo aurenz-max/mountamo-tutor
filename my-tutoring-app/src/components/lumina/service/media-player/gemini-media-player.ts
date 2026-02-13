@@ -1,6 +1,7 @@
-import { Type, Schema, Modality, ThinkingLevel } from "@google/genai";
+import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { MediaPlayerData, LessonSegment, FullLessonSegment } from "../../types";
 import { ai } from "../geminiClient";
+import { generateAudioSegment } from "../tts/ttsService";
 
 /**
  * Convert grade level to descriptive educational context for prompts
@@ -139,39 +140,7 @@ Use age-appropriate language and relatable examples.`;
   }
 };
 
-/**
- * Generate audio (TTS) for a specific script
- * Returns raw base64 PCM audio data or null if generation fails
- */
-const generateAudioSegment = async (text: string): Promise<string | null> => {
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Fenrir' }, // Deep, engaging voice
-          },
-        },
-      },
-    });
-
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-    if (!base64Audio) {
-      console.warn('No audio data returned for segment');
-      return null;
-    }
-
-    // Return raw base64 (client will decode to AudioBuffer)
-    return base64Audio;
-  } catch (error) {
-    console.error('Error generating audio segment:', error);
-    return null;
-  }
-};
+// TTS generation handled by ttsService using Gemini
 
 /**
  * Generate image for a specific prompt

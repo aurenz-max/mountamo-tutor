@@ -27,6 +27,28 @@ import { generateStoryMap } from '../../literacy/gemini-story-map';
 import { generateListenAndRespond } from '../../literacy/gemini-listen-and-respond';
 
 // ============================================================================
+// Wave 2 Imports
+// ============================================================================
+import { generatePhonicsBlender } from '../../literacy/gemini-phonics-blender';
+import { generateDecodableReader } from '../../literacy/gemini-decodable-reader';
+import { generateEvidenceFinder } from '../../literacy/gemini-evidence-finder';
+import { generateContextCluesDetective } from '../../literacy/gemini-context-clues-detective';
+import { generateOpinionBuilder } from '../../literacy/gemini-opinion-builder';
+import { generateTextStructureAnalyzer } from '../../literacy/gemini-text-structure-analyzer';
+import { generateCharacterWeb } from '../../literacy/gemini-character-web';
+import { generateFigurativeLanguageFinder } from '../../literacy/gemini-figurative-language-finder';
+
+// ============================================================================
+// Wave 4 Imports
+// ============================================================================
+import { generatePoetryLab } from '../../literacy/gemini-poetry-lab';
+import { generateReadAloudStudio } from '../../literacy/gemini-read-aloud-studio';
+import { generateStoryPlanner } from '../../literacy/gemini-story-planner';
+import { generateRevisionWorkshop } from '../../literacy/gemini-revision-workshop';
+import { generateGenreExplorer } from '../../literacy/gemini-genre-explorer';
+import { generateSpellingPatternExplorer } from '../../literacy/gemini-spelling-pattern-explorer';
+
+// ============================================================================
 // Helper Types
 // ============================================================================
 
@@ -169,7 +191,254 @@ registerGenerator('listen-and-respond', async (item, topic, gradeContext) => {
 });
 
 // ============================================================================
+// Wave 2: Reading Foundational Skills — Phonics Blender
+// ============================================================================
+
+/**
+ * Phonics Blender - Sound-by-sound word building with phoneme tiles
+ *
+ * Perfect for:
+ * - K-2 phonics instruction and decoding practice
+ * - Phonemic awareness (blending sounds into words)
+ * - CVC, CVCE, blends, digraphs, r-controlled vowels, diphthongs
+ *
+ * Grade Scaling:
+ * - K: CVC words (3 sounds), onset-rime blending
+ * - Grade 1: CVCE, blends, digraphs, short vs long vowels
+ * - Grade 2: R-controlled, diphthongs, multisyllabic blending
+ */
+registerGenerator('phonics-blender', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  const patternType = config.patternType || undefined;
+
+  return {
+    type: 'phonics-blender',
+    instanceId: item.instanceId,
+    data: await generatePhonicsBlender(topic, gradeContext, {
+      patternType,
+      ...config,
+    }),
+  };
+});
+
+// ============================================================================
+// Wave 2: Reading Foundational Skills — Decodable Reader
+// ============================================================================
+
+/**
+ * Decodable Reader - Controlled-vocabulary reading with per-word TTS
+ *
+ * Perfect for:
+ * - K-2 reading fluency and decoding practice
+ * - Controlled-vocabulary passages matching decoding level
+ * - Per-word pronunciation support via tap-to-hear
+ * - Tracking which words students need help with
+ *
+ * Grade Scaling:
+ * - K: 2-3 sentences, CVC + sight words only
+ * - Grade 1: 4-6 sentences, CVCE, blends, digraphs
+ * - Grade 2: 6-8 sentences, r-controlled, diphthongs, multisyllabic
+ */
+registerGenerator('decodable-reader', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  return {
+    type: 'decodable-reader',
+    instanceId: item.instanceId,
+    data: await generateDecodableReader(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 2: Reading Informational Text — Evidence Finder
+// ============================================================================
+
+/**
+ * Evidence Finder - Find and highlight text evidence for claims
+ *
+ * Perfect for:
+ * - Grades 2-6 evidence-based reading comprehension
+ * - Claim-Evidence-Reasoning (CER) framework practice
+ * - Distinguishing evidence from opinion
+ * - Evidence strength evaluation
+ *
+ * Grade Scaling:
+ * - Grade 2: "Find the sentence that tells you..." (1 claim, explicit evidence)
+ * - Grade 3: Fact vs opinion, 1 claim, 2-3 evidence sentences
+ * - Grade 4: CER enabled, evidence strength rating, 1-2 claims
+ * - Grade 5-6: Competing claims, nuanced evidence quality
+ */
+registerGenerator('evidence-finder', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  return {
+    type: 'evidence-finder',
+    instanceId: item.instanceId,
+    data: await generateEvidenceFinder(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 2: Language — Context Clues Detective
+// ============================================================================
+
+/**
+ * Context Clues Detective - Determine word meaning from surrounding text
+ *
+ * Perfect for:
+ * - Grades 2-6 vocabulary instruction
+ * - Teaching context clue strategies (definition, synonym, antonym, example, inference)
+ * - Building independent word-learning skills
+ *
+ * Grade Scaling:
+ * - Grade 2: Definition and example clues, simple vocabulary
+ * - Grade 3: Add synonym clues, grade 3 vocabulary
+ * - Grade 4: All five clue types, academic vocabulary
+ * - Grade 5: Emphasis on inference, Greek/Latin root connections
+ * - Grade 6: Connotation vs denotation, multiple-meaning words
+ */
+registerGenerator('context-clues-detective', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+
+  return {
+    type: 'context-clues-detective',
+    instanceId: item.instanceId,
+    data: await generateContextCluesDetective(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 3: Writing — Opinion Builder
+// ============================================================================
+
+registerGenerator('opinion-builder', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'opinion-builder',
+    instanceId: item.instanceId,
+    data: await generateOpinionBuilder(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 3: Reading Informational Text — Text Structure Analyzer
+// ============================================================================
+
+registerGenerator('text-structure-analyzer', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'text-structure-analyzer',
+    instanceId: item.instanceId,
+    data: await generateTextStructureAnalyzer(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 3: Reading Literature — Character Web
+// ============================================================================
+
+registerGenerator('character-web', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'character-web',
+    instanceId: item.instanceId,
+    data: await generateCharacterWeb(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 3: Language — Figurative Language Finder
+// ============================================================================
+
+registerGenerator('figurative-language-finder', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'figurative-language-finder',
+    instanceId: item.instanceId,
+    data: await generateFigurativeLanguageFinder(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 4: Reading Literature — Poetry Lab
+// ============================================================================
+
+registerGenerator('poetry-lab', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'poetry-lab',
+    instanceId: item.instanceId,
+    data: await generatePoetryLab(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
 // Registration Complete
 // ============================================================================
 
-console.log('📚 Literacy generators registered: 4 (Wave 1)');
+// ============================================================================
+// Wave 4: Reading Foundational Skills — Read Aloud Studio
+// ============================================================================
+
+registerGenerator('read-aloud-studio', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'read-aloud-studio',
+    instanceId: item.instanceId,
+    data: await generateReadAloudStudio(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 4: Writing — Story Planner
+// ============================================================================
+
+registerGenerator('story-planner', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'story-planner',
+    instanceId: item.instanceId,
+    data: await generateStoryPlanner(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 4: Writing — Revision Workshop
+// ============================================================================
+
+registerGenerator('revision-workshop', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'revision-workshop',
+    instanceId: item.instanceId,
+    data: await generateRevisionWorkshop(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 4: Reading Literature — Genre Explorer
+// ============================================================================
+
+registerGenerator('genre-explorer', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'genre-explorer',
+    instanceId: item.instanceId,
+    data: await generateGenreExplorer(topic, gradeContext, config),
+  };
+});
+
+// ============================================================================
+// Wave 4: Language — Spelling Pattern Explorer
+// ============================================================================
+
+registerGenerator('spelling-pattern-explorer', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  return {
+    type: 'spelling-pattern-explorer',
+    instanceId: item.instanceId,
+    data: await generateSpellingPatternExplorer(topic, gradeContext, config),
+  };
+});
+
+console.log('📚 Literacy generators registered: 18 (Wave 1-4 complete)');

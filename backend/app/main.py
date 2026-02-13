@@ -19,6 +19,7 @@ from .api.endpoints import (
     daily_briefing_live,
     packages,
     practice_tutor,
+    lumina_tutor,
     assessments,
     parent_portal,
     weekly_planner
@@ -177,6 +178,13 @@ app.include_router(
     practice_tutor.router,
     prefix="/api",
     tags=["practice-tutor"]
+)
+
+# Lumina AI Tutor WebSocket Router (no auth dependency - handled in websocket)
+app.include_router(
+    lumina_tutor.router,
+    prefix="/api",
+    tags=["lumina-tutor"]
 )
 
 # Assessment Router

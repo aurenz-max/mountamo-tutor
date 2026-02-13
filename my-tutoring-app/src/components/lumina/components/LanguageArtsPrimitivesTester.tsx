@@ -2,32 +2,32 @@
 
 import React, { useState } from 'react';
 // ============================================================================
-// Primitive Imports — uncomment as each primitive is implemented
+// Primitive Imports
 // ============================================================================
 // RF: Reading Foundational Skills
-// import PhonicsBlender from '../primitives/visual-primitives/literacy/PhonicsBlender';
-// import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
+import PhonicsBlender from '../primitives/visual-primitives/literacy/PhonicsBlender';
+import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
 // RL: Reading Literature
 import StoryMap from '../primitives/visual-primitives/literacy/StoryMap';
-// import CharacterWeb from '../primitives/visual-primitives/literacy/CharacterWeb';
-// import PoetryLab from '../primitives/visual-primitives/literacy/PoetryLab';
-// import GenreExplorer from '../primitives/visual-primitives/literacy/GenreExplorer';
+import CharacterWeb from '../primitives/visual-primitives/literacy/CharacterWeb';
+import PoetryLab from '../primitives/visual-primitives/literacy/PoetryLab';
+import GenreExplorer from '../primitives/visual-primitives/literacy/GenreExplorer';
 // RI: Reading Informational Text
-// import TextStructureAnalyzer from '../primitives/visual-primitives/literacy/TextStructureAnalyzer';
-// import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
+import TextStructureAnalyzer from '../primitives/visual-primitives/literacy/TextStructureAnalyzer';
+import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
 // W: Writing
 import ParagraphArchitect from '../primitives/visual-primitives/literacy/ParagraphArchitect';
-// import StoryPlanner from '../primitives/visual-primitives/literacy/StoryPlanner';
-// import OpinionBuilder from '../primitives/visual-primitives/literacy/OpinionBuilder';
-// import RevisionWorkshop from '../primitives/visual-primitives/literacy/RevisionWorkshop';
+import StoryPlanner from '../primitives/visual-primitives/literacy/StoryPlanner';
+import OpinionBuilder from '../primitives/visual-primitives/literacy/OpinionBuilder';
+import RevisionWorkshop from '../primitives/visual-primitives/literacy/RevisionWorkshop';
 // SL: Speaking & Listening
 import ListenAndRespond from '../primitives/visual-primitives/literacy/ListenAndRespond';
-// import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
+import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
 // L: Language
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
-// import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
-// import FigurativeLanguageFinder from '../primitives/visual-primitives/literacy/FigurativeLanguageFinder';
-// import SpellingPatternExplorer from '../primitives/visual-primitives/literacy/SpellingPatternExplorer';
+import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
+import FigurativeLanguageFinder from '../primitives/visual-primitives/literacy/FigurativeLanguageFinder';
+import SpellingPatternExplorer from '../primitives/visual-primitives/literacy/SpellingPatternExplorer';
 
 import {
   EvaluationProvider,
@@ -110,44 +110,43 @@ const PrimitiveRenderer: React.FC<{
 }> = ({ componentId, data }) => {
   if (!data) return null;
 
-  // Uncomment each case as the primitive component is built:
   switch (componentId) {
-    // case 'phonics-blender':
-    //   return <PhonicsBlender data={data as Parameters<typeof PhonicsBlender>[0]['data']} />;
-    // case 'decodable-reader':
-    //   return <DecodableReader data={data as Parameters<typeof DecodableReader>[0]['data']} />;
+    case 'phonics-blender':
+      return <PhonicsBlender data={data as Parameters<typeof PhonicsBlender>[0]['data']} />;
+    case 'decodable-reader':
+      return <DecodableReader data={data as Parameters<typeof DecodableReader>[0]['data']} />;
     case 'story-map':
       return <StoryMap data={data as Parameters<typeof StoryMap>[0]['data']} />;
-    // case 'character-web':
-    //   return <CharacterWeb data={data as Parameters<typeof CharacterWeb>[0]['data']} />;
-    // case 'poetry-lab':
-    //   return <PoetryLab data={data as Parameters<typeof PoetryLab>[0]['data']} />;
-    // case 'genre-explorer':
-    //   return <GenreExplorer data={data as Parameters<typeof GenreExplorer>[0]['data']} />;
-    // case 'text-structure-analyzer':
-    //   return <TextStructureAnalyzer data={data as Parameters<typeof TextStructureAnalyzer>[0]['data']} />;
-    // case 'evidence-finder':
-    //   return <EvidenceFinder data={data as Parameters<typeof EvidenceFinder>[0]['data']} />;
+    case 'character-web':
+      return <CharacterWeb data={data as Parameters<typeof CharacterWeb>[0]['data']} />;
+    case 'poetry-lab':
+      return <PoetryLab data={data as Parameters<typeof PoetryLab>[0]['data']} />;
+    case 'genre-explorer':
+      return <GenreExplorer data={data as Parameters<typeof GenreExplorer>[0]['data']} />;
+    case 'text-structure-analyzer':
+      return <TextStructureAnalyzer data={data as Parameters<typeof TextStructureAnalyzer>[0]['data']} />;
+    case 'evidence-finder':
+      return <EvidenceFinder data={data as Parameters<typeof EvidenceFinder>[0]['data']} />;
     case 'paragraph-architect':
       return <ParagraphArchitect data={data as Parameters<typeof ParagraphArchitect>[0]['data']} />;
-    // case 'story-planner':
-    //   return <StoryPlanner data={data as Parameters<typeof StoryPlanner>[0]['data']} />;
-    // case 'opinion-builder':
-    //   return <OpinionBuilder data={data as Parameters<typeof OpinionBuilder>[0]['data']} />;
-    // case 'revision-workshop':
-    //   return <RevisionWorkshop data={data as Parameters<typeof RevisionWorkshop>[0]['data']} />;
+    case 'story-planner':
+      return <StoryPlanner data={data as Parameters<typeof StoryPlanner>[0]['data']} />;
+    case 'opinion-builder':
+      return <OpinionBuilder data={data as Parameters<typeof OpinionBuilder>[0]['data']} />;
+    case 'revision-workshop':
+      return <RevisionWorkshop data={data as Parameters<typeof RevisionWorkshop>[0]['data']} />;
     case 'listen-and-respond':
       return <ListenAndRespond data={data as Parameters<typeof ListenAndRespond>[0]['data']} />;
-    // case 'read-aloud-studio':
-    //   return <ReadAloudStudio data={data as Parameters<typeof ReadAloudStudio>[0]['data']} />;
+    case 'read-aloud-studio':
+      return <ReadAloudStudio data={data as Parameters<typeof ReadAloudStudio>[0]['data']} />;
     case 'sentence-builder':
       return <SentenceBuilder data={data as Parameters<typeof SentenceBuilder>[0]['data']} />;
-    // case 'context-clues-detective':
-    //   return <ContextCluesDetective data={data as Parameters<typeof ContextCluesDetective>[0]['data']} />;
-    // case 'figurative-language-finder':
-    //   return <FigurativeLanguageFinder data={data as Parameters<typeof FigurativeLanguageFinder>[0]['data']} />;
-    // case 'spelling-pattern-explorer':
-    //   return <SpellingPatternExplorer data={data as Parameters<typeof SpellingPatternExplorer>[0]['data']} />;
+    case 'context-clues-detective':
+      return <ContextCluesDetective data={data as Parameters<typeof ContextCluesDetective>[0]['data']} />;
+    case 'figurative-language-finder':
+      return <FigurativeLanguageFinder data={data as Parameters<typeof FigurativeLanguageFinder>[0]['data']} />;
+    case 'spelling-pattern-explorer':
+      return <SpellingPatternExplorer data={data as Parameters<typeof SpellingPatternExplorer>[0]['data']} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">

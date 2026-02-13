@@ -91,6 +91,20 @@ import ParagraphArchitect from '../primitives/visual-primitives/literacy/Paragra
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
 import StoryMap from '../primitives/visual-primitives/literacy/StoryMap';
 import ListenAndRespond from '../primitives/visual-primitives/literacy/ListenAndRespond';
+import PhonicsBlender from '../primitives/visual-primitives/literacy/PhonicsBlender';
+import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
+import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
+import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
+import OpinionBuilder from '../primitives/visual-primitives/literacy/OpinionBuilder';
+import TextStructureAnalyzer from '../primitives/visual-primitives/literacy/TextStructureAnalyzer';
+import CharacterWeb from '../primitives/visual-primitives/literacy/CharacterWeb';
+import FigurativeLanguageFinder from '../primitives/visual-primitives/literacy/FigurativeLanguageFinder';
+import PoetryLab from '../primitives/visual-primitives/literacy/PoetryLab';
+import StoryPlanner from '../primitives/visual-primitives/literacy/StoryPlanner';
+import RevisionWorkshop from '../primitives/visual-primitives/literacy/RevisionWorkshop';
+import GenreExplorer from '../primitives/visual-primitives/literacy/GenreExplorer';
+import SpellingPatternExplorer from '../primitives/visual-primitives/literacy/SpellingPatternExplorer';
+import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -994,21 +1008,136 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  // Literacy Primitives — Wave 2
+  'phonics-blender': {
+    component: PhonicsBlender,
+    sectionTitle: 'Phonics Blender',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'decodable-reader': {
+    component: DecodableReader,
+    sectionTitle: 'Decodable Reader',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   // Literacy Primitives — Wave 2-4 (placeholder entries for scaffolded ComponentIds)
-  'phonics-blender': { component: () => null, allowMultiple: true },
-  'decodable-reader': { component: () => null, allowMultiple: true },
-  'character-web': { component: () => null, allowMultiple: true },
-  'poetry-lab': { component: () => null, allowMultiple: true },
-  'genre-explorer': { component: () => null, allowMultiple: true },
-  'text-structure-analyzer': { component: () => null, allowMultiple: true },
-  'evidence-finder': { component: () => null, allowMultiple: true },
-  'story-planner': { component: () => null, allowMultiple: true },
-  'opinion-builder': { component: () => null, allowMultiple: true },
-  'revision-workshop': { component: () => null, allowMultiple: true },
-  'read-aloud-studio': { component: () => null, allowMultiple: true },
-  'context-clues-detective': { component: () => null, allowMultiple: true },
-  'figurative-language-finder': { component: () => null, allowMultiple: true },
-  'spelling-pattern-explorer': { component: () => null, allowMultiple: true },
+  'character-web': {
+    component: CharacterWeb,
+    sectionTitle: 'Character Web',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'poetry-lab': {
+    component: PoetryLab,
+    sectionTitle: 'Poetry Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'genre-explorer': {
+    component: GenreExplorer,
+    sectionTitle: 'Genre Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'text-structure-analyzer': {
+    component: TextStructureAnalyzer,
+    sectionTitle: 'Text Structure Analyzer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'evidence-finder': {
+    component: EvidenceFinder,
+    sectionTitle: 'Evidence Finder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'story-planner': {
+    component: StoryPlanner,
+    sectionTitle: 'Story Planner',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'opinion-builder': {
+    component: OpinionBuilder,
+    sectionTitle: 'Opinion Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'revision-workshop': {
+    component: RevisionWorkshop,
+    sectionTitle: 'Revision Workshop',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'read-aloud-studio': {
+    component: ReadAloudStudio,
+    sectionTitle: 'Read Aloud Studio',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'context-clues-detective': {
+    component: ContextCluesDetective,
+    sectionTitle: 'Context Clues Detective',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'figurative-language-finder': {
+    component: FigurativeLanguageFinder,
+    sectionTitle: 'Figurative Language Finder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'spelling-pattern-explorer': {
+    component: SpellingPatternExplorer,
+    sectionTitle: 'Spelling Pattern Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
 
 };
 

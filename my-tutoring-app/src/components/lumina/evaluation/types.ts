@@ -1733,6 +1733,223 @@ export interface EnergyCycleEngineMetrics extends BasePrimitiveMetrics {
 }
 
 // -----------------------------------------------------------------------------
+// Literacy Primitives (Wave 3)
+// -----------------------------------------------------------------------------
+
+export interface SpellingPatternExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'spelling-pattern-explorer';
+  patternIdentified: boolean;
+  ruleFormulatedCorrectly: boolean;
+  wordsSpelledCorrectly: number;
+  wordsTotal: number;
+  patternType: 'short-vowel' | 'long-vowel' | 'r-controlled' | 'suffix-change' | 'latin-root' | 'silent-letter';
+  dictationAccuracy: number;            // 0-100
+  attemptsCount: number;
+}
+
+export interface GenreExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'genre-explorer';
+  genresIdentifiedCorrectly: number;
+  genresTotal: number;
+  featuresCheckedCorrectly: number;
+  featuresTotal: number;
+  comparisonMade: boolean;
+  attemptsCount: number;
+}
+
+export interface RevisionWorkshopMetrics extends BasePrimitiveMetrics {
+  type: 'revision-workshop';
+  revisionSkill: 'add-details' | 'word-choice' | 'combine-sentences' | 'transitions' | 'reorganize' | 'concision';
+  revisionsApplied: number;
+  revisionTargets: number;
+  improvementScore: number;           // 0-100
+  beforeAfterCompared: boolean;
+  readAloudUsed: boolean;
+  attemptsCount: number;
+}
+
+export interface StoryPlannerMetrics extends BasePrimitiveMetrics {
+  type: 'story-planner';
+  elementsPlanned: number;
+  elementsRequired: number;
+  characterDepth: 'surface' | 'moderate' | 'deep';
+  eventCount: number;
+  conflictIdentified: boolean;
+  resolutionConnectsToConflict: boolean;
+  descriptiveLanguageUsed: number;
+}
+
+export interface ReadAloudStudioMetrics extends BasePrimitiveMetrics {
+  type: 'read-aloud-studio';
+  modelListened: boolean;
+  studentRecordingMade: boolean;
+  recordingDurationSeconds: number;
+  estimatedWPM: number;
+  comparisonUsed: boolean;
+  selfAssessmentRating: number;         // 1-5
+  passageLexileLevel: string;
+}
+
+export interface PoetryLabMetrics extends BasePrimitiveMetrics {
+  type: 'poetry-lab';
+  mode: 'analysis' | 'composition';
+  figurativeLanguageIdentified: number;
+  figurativeLanguageTotal: number;
+  rhymeSchemeCorrect: boolean;
+  syllableCountAccurate: boolean;
+  elementsExplored: number;
+  poemCompleted: boolean;
+  templateType: 'haiku' | 'limerick' | 'acrostic' | 'free-verse' | 'sonnet-intro';
+}
+
+export interface FigurativeLanguageFinderMetrics extends BasePrimitiveMetrics {
+  type: 'figurative-language-finder';
+  instancesFound: number;
+  instancesTotal: number;
+  classificationsCorrect: number;
+  classificationsTotal: number;
+  literalTranslationAccuracy: number;     // 0-100
+  typesEncountered: string[];             // figurative language types in the passage
+  falsePositives: number;
+  attemptsCount: number;
+}
+
+export interface CharacterWebMetrics extends BasePrimitiveMetrics {
+  type: 'character-web';
+  charactersProfiled: number;
+  charactersRequired: number;
+  traitsWithEvidence: number;
+  traitsTotal: number;
+  relationshipsIdentified: number;
+  relationshipsTotal: number;
+  characterChangeIdentified: boolean;
+  analysisDepth: 'surface' | 'moderate' | 'deep';
+  attemptsCount: number;
+}
+
+export interface TextStructureAnalyzerMetrics extends BasePrimitiveMetrics {
+  type: 'text-structure-analyzer';
+  structureIdentifiedCorrectly: boolean;
+  signalWordsFound: number;
+  signalWordsTotal: number;
+  templateMappingAccuracy: number;        // 0-100
+  structureType: 'cause-effect' | 'compare-contrast' | 'problem-solution' | 'chronological' | 'description';
+  attemptsCount: number;
+}
+
+export interface OpinionBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'opinion-builder';
+  framework: 'oreo' | 'cer';
+  gradeLevel: string;
+  claimPresent: boolean;
+  reasonsProvided: number;
+  evidenceForEachReason: boolean;
+  counterArgumentPresent: boolean;
+  linkingWordsUsed: number;
+  structureComplete: boolean;
+  startersUsed: number;
+  startersAvailable: number;
+}
+
+// -----------------------------------------------------------------------------
+// Literacy Primitives (Wave 2)
+// -----------------------------------------------------------------------------
+
+export interface ContextCluesDetectiveMetrics extends BasePrimitiveMetrics {
+  type: 'context-clues-detective';
+
+  // Grade context
+  gradeLevel: string;
+
+  // Phase accuracy
+  clueHighlightedCorrectly: boolean;     // Found a valid clue sentence
+  clueTypeIdentified: boolean;           // Correctly classified clue type
+  meaningCorrect: boolean;               // Correct meaning provided
+
+  // Clue info
+  clueType: 'definition' | 'synonym' | 'antonym' | 'example' | 'inference';
+
+  // Dictionary
+  dictionaryComparisonViewed: boolean;
+
+  // Challenge tracking
+  attemptsCount: number;
+  totalChallenges: number;
+  challengesCorrect: number;
+}
+
+export interface EvidenceFinderMetrics extends BasePrimitiveMetrics {
+  type: 'evidence-finder';
+
+  // Grade context
+  gradeLevel: string;
+
+  // Evidence finding accuracy
+  correctEvidenceFound: number;          // Correctly highlighted evidence sentences
+  evidenceTotal: number;                 // Total evidence sentences in passage
+  falseEvidenceSelected: number;         // Non-evidence sentences incorrectly highlighted
+
+  // Strength rating
+  evidenceStrengthRatingAccuracy: number;  // 0-100
+
+  // CER framework
+  reasoningProvided: boolean;            // Did they write reasoning
+  cerFrameworkComplete: boolean;         // All three CER parts filled
+
+  // Attempts
+  attemptsCount: number;
+}
+
+export interface DecodableReaderMetrics extends BasePrimitiveMetrics {
+  type: 'decodable-reader';
+
+  // Grade context
+  gradeLevel: string;
+
+  // Reading tracking
+  wordsTapped: number;                 // Words student tapped for help (lower = more independent)
+  wordsTotal: number;                  // Total words in the passage
+
+  // Comprehension
+  comprehensionCorrect: boolean;
+
+  // Pattern tracking
+  phonicsPatternsInPassage: string[];  // Array of patterns represented
+
+  // Sight word tracking
+  sightWordsIdentified: number;        // Sight words read without tapping
+
+  // Time
+  readingTimeSeconds: number;
+
+  // Attempts
+  attemptsOnComprehension: number;
+}
+
+export interface PhonicsBlenderMetrics extends BasePrimitiveMetrics {
+  type: 'phonics-blender';
+
+  // Pattern info
+  patternType: 'cvc' | 'cvce' | 'blend' | 'digraph' | 'r-controlled' | 'diphthong';
+  gradeLevel: string;
+
+  // Word-level tracking
+  wordsBlended: number;
+  wordsTotal: number;
+
+  // Phoneme accuracy
+  phonemeAccuracy: number;             // 0-100
+  averageBlendingSpeed: number;        // seconds from first tap to successful blend
+
+  // First-try tracking
+  soundsCorrectOnFirstTry: number;
+  soundsTotal: number;
+
+  // Attempts
+  attemptsCount: number;
+}
+
+// -----------------------------------------------------------------------------
 // Literacy Primitives (Wave 1)
 // -----------------------------------------------------------------------------
 
@@ -1947,7 +2164,24 @@ export type PrimitiveMetrics =
   | ParagraphArchitectMetrics
   | SentenceBuilderMetrics
   | StoryMapMetrics
-  | ListenAndRespondMetrics;
+  | ListenAndRespondMetrics
+  // Literacy (Wave 2)
+  | PhonicsBlenderMetrics
+  | DecodableReaderMetrics
+  | EvidenceFinderMetrics
+  | ContextCluesDetectiveMetrics
+  // Literacy (Wave 3)
+  | OpinionBuilderMetrics
+  | TextStructureAnalyzerMetrics
+  | CharacterWebMetrics
+  | FigurativeLanguageFinderMetrics
+  // Literacy (Wave 4)
+  | PoetryLabMetrics
+  | ReadAloudStudioMetrics
+  | StoryPlannerMetrics
+  | RevisionWorkshopMetrics
+  | GenreExplorerMetrics
+  | SpellingPatternExplorerMetrics;
 
 // =============================================================================
 // Session & Summary Types

@@ -1,6 +1,7 @@
-import { Type, Schema, Modality } from "@google/genai";
+import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { ListenAndRespondData } from "../../primitives/visual-primitives/literacy/ListenAndRespond";
+import { generateTTSAudio } from "../tts/ttsService";
 
 /**
  * Schema definition for Listen and Respond Data
@@ -126,40 +127,7 @@ const listenAndRespondSchema: Schema = {
   required: ["title", "gradeLevel", "passageType", "passage", "questions", "segments"]
 };
 
-/**
- * Generate TTS audio for text using Gemini TTS
- * Returns base64 PCM audio data (24kHz, 16-bit mono) or null on failure
- *
- * Uses the same pattern as gemini-media-player.ts generateAudioSegment
- */
-const generateTTSAudio = async (text: string): Promise<string | null> => {
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' }, // Clear, warm voice for K-6 students
-          },
-        },
-      },
-    });
-
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-    if (!base64Audio) {
-      console.warn('No audio data returned from Gemini TTS');
-      return null;
-    }
-
-    return base64Audio;
-  } catch (error) {
-    console.error('Error generating TTS audio:', error);
-    return null;
-  }
-};
+// TTS generation handled by ttsService using Gemini
 
 /**
  * Generate Listen and Respond data using Gemini AI
