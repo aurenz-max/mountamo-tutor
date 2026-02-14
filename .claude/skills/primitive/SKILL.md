@@ -6,6 +6,7 @@ All primitive code lives under `my-tutoring-app/src/components/lumina/`. Do NOT 
 
 Before starting, read the full checklist:
 - `my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md`
+- `my-tutoring-app/src/components/lumina/docs/ADDING_TUTORING_SCAFFOLD.md` (for interactive primitives)
 
 ## Exact File Paths (6-7 files)
 
@@ -15,7 +16,7 @@ Before starting, read the full checklist:
 | 2 | `lumina/types.ts` | Add to `ComponentId` union type + re-export data type |
 | 3 | `lumina/service/<domain>/gemini-<name>.ts` | Create Gemini generator service (import type from component) |
 | 4 | `lumina/service/registry/generators/<domain>Generators.ts` | Register generator with `registerGenerator()` |
-| 5 | `lumina/service/manifest/catalog/<domain>.ts` | Add `ComponentDefinition` entry for AI selection |
+| 5 | `lumina/service/manifest/catalog/<domain>.ts` | Add `ComponentDefinition` entry for AI selection (include `tutoring` field for interactive primitives) |
 | 6 | `lumina/config/primitiveRegistry.tsx` | Register UI component for rendering |
 | 7 | `lumina/evaluation/types.ts` | (Optional) Add metrics type if primitive supports evaluation |
 
@@ -46,6 +47,7 @@ When adding a new domain or generator, also update these index files:
 1. **Single source of truth**: Define and export the data interface in the component file. The generator imports it — never redefine it.
 2. **Evaluation by default**: If the primitive is interactive, use the evaluable pattern with `usePrimitiveEvaluation` hook and set `supportsEvaluation: true` in the primitive registry.
 3. **Progressive difficulty**: For complex primitives, implement explore → practice → apply phases.
+4. **AI tutoring awareness**: If the primitive has interactions where a human tutor would speak (correct/incorrect, phase transitions, new items), design those as AI touchpoints from the start. Add a `tutoring` field to the catalog entry and `sendText` triggers in the component. A primitive with 2-3 well-placed speech triggers is dramatically more engaging than one where the AI goes silent after the greeting. See `ADDING_TUTORING_SCAFFOLD.md` or use the `add-tutoring-scaffold` skill for the full workflow.
 
 ## Reference Examples
 
@@ -56,15 +58,19 @@ When adding a new domain or generator, also update these index files:
 - Primitive registry: `lumina/config/primitiveRegistry.tsx`
 - Types: `lumina/types.ts`
 - Evaluation types: `lumina/evaluation/types.ts`
+- Catalog with tutoring: `lumina/service/manifest/catalog/literacy.ts` (PhonicsBlender is the reference)
 
 ## Workflow
 
 1. Ask the user for: primitive name, domain, purpose, interactive or display-only, grade range
 2. Read ADDING_PRIMITIVES.md and at least one reference example from the same domain
 3. Read `lumina/types.ts` and `lumina/config/primitiveRegistry.tsx` to see current registrations
-4. Create all files following the checklist in order (steps 1-7)
-5. Add the new primitive to the relevant tester component (e.g., `lumina/components/EngineeringPrimitivesTester.tsx` for engineering domain, `lumina/components/AstronomyPrimitivesTester.tsx` for astronomy, etc.)
-6. Report all files created/modified
+4. **Identify AI interaction points**: If the primitive is interactive, ask: "Where would a human tutor speak?" Map out the pedagogical moments (correct/incorrect, phase transitions, item progression, completion). These will become `sendText` triggers.
+5. Create all files following the checklist in order (steps 1-7). When building the component (step 1), wire `sendText` calls at the pedagogical moments identified in step 4. When writing the catalog entry (step 5), include the `tutoring` field with scaffolding levels, contextKeys, and commonStruggles.
+6. Add the new primitive to the relevant tester component (e.g., `lumina/components/EngineeringPrimitivesTester.tsx` for engineering domain, `lumina/components/AstronomyPrimitivesTester.tsx` for astronomy, etc.)
+7. Report all files created/modified, including: pedagogical moments wired, sendText tags defined, tutoring scaffold added (or why it was skipped for display-only primitives)
+
+**Note:** For adding tutoring scaffolding to an *existing* primitive that was built without it, use the `add-tutoring-scaffold` skill instead.
 
 ## PRD Reference
 

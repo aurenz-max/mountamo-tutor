@@ -510,6 +510,47 @@ export type {
 
 **💡 Pro tip:** Rich metrics enable better adaptive learning. Capture not just whether the student succeeded, but *how* they approached the problem. This data powers personalized learning pathways.
 
+### Step 8 (Recommended for Interactive): Add AI Tutoring Scaffolding
+
+If your primitive has interaction points where a human tutor would naturally speak, add AI tutoring support. This is a two-part process:
+
+**Part A: Catalog scaffolding** — Already done if you added a `tutoring` field in Step 5. This tells the AI *what* the student is doing and *how* to scaffold help.
+
+**Part B: Speech triggers** — Add `sendText` calls in the component at pedagogical moments so the AI knows *when* to speak.
+
+```tsx
+// In your component, get sendText from the AI hook
+const { sendText } = useLuminaAI({
+  primitiveType: 'my-primitive',
+  instanceId: resolvedInstanceId,
+  primitiveData: aiPrimitiveData,
+  gradeLevel,
+});
+
+// Then call it at key interaction points:
+// ✅ Correct answer — celebrate and guide
+sendText(
+  `[ANSWER_CORRECT] Student answered correctly on attempt ${attempts}. ` +
+  `Congratulate briefly and tell them what to do next.`,
+  { silent: true }
+);
+
+// ✅ Incorrect answer — hint without giving the answer
+sendText(
+  `[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${target}". ` +
+  `Attempt ${attempts}. Give a brief hint without revealing the answer.`,
+  { silent: true }
+);
+```
+
+**Key rules:**
+- Always use `{ silent: true }` — these are system-to-AI messages, not student chat
+- Use bracketed tags (`[ANSWER_CORRECT]`, `[NEXT_ITEM]`) so the AI can parse intent
+- Include context (student answer, correct answer, attempt count)
+- Don't over-trigger — only at moments where a human tutor would speak
+
+See **[ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md)** for the full guide, including `aiDirectives`, `contextKeys`, and the two communication channels (`updateContext` vs `sendText`).
+
 ---
 
 ## Best Practices
@@ -1055,21 +1096,24 @@ This happens when `onEvaluationSubmit` is passed to a primitive that uses `usePr
 Use this checklist when adding a new primitive:
 
 - [ ] **Interaction analysis**: Does this primitive involve student interaction?
-  - If YES → Plan to include evaluation from the start
-  - If NO → Non-evaluable pattern is fine
+  - If YES → Plan to include evaluation **and** AI tutoring scaffolding from the start
+  - If NO → Non-evaluable pattern is fine, AI tutoring optional
 - [ ] **Data interface**: Defined in component file with optional evaluation props
 - [ ] **ComponentId**: Added to `types.ts`
 - [ ] **Generator**: Created in `service/[domain]/`
 - [ ] **Registry**: Registered in `generators/[domain]Generators.ts`
-- [ ] **Catalog**: Added to `catalog/[domain].ts` with clear description
+- [ ] **Catalog**: Added to `catalog/[domain].ts` with clear description and `tutoring` field if interactive
 - [ ] **UI config**: Added to `primitiveRegistry.tsx` with `supportsEvaluation: true` if interactive
 - [ ] **Metrics** (if evaluable): Custom metrics interface in `evaluation/types.ts`
 - [ ] **Evaluation hook** (if evaluable): Integrated `usePrimitiveEvaluation` with submit/reset handlers
 - [ ] **No double submission** (if evaluable): Tester does NOT pass `onEvaluationSubmit` that calls `context.submitEvaluation()` — the hook handles this
-- [ ] **Testing**: Verified primitive works standalone and within exhibits
+- [ ] **AI tutoring scaffold** (if interactive): Added `tutoring` field to catalog entry with taskDescription, scaffoldingLevels, contextKeys, and commonStruggles (see [ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md))
+- [ ] **Pedagogical speech triggers** (if interactive): Added `sendText('[TAG] ...', { silent: true })` calls at key interaction points (correct/incorrect, phase transitions, item progression, completion)
+- [ ] **Testing**: Verified primitive works standalone and within exhibits; tested AI scaffolding with Lumina Tutor Tester
 
 ## Additional Resources
 
+- **[ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md)** - Full guide for adding AI tutoring scaffolding and speech triggers to primitives
 - **[MIGRATING_TO_SHADCN.md](MIGRATING_TO_SHADCN.md)** - Guide for converting existing primitives to use shadcn/ui
 - **[INTEGRATION_GUIDE.md](../evaluation/INTEGRATION_GUIDE.md)** - Comprehensive guide to the evaluation system
 - **[TowerStacker.tsx](../primitives/visual-primitives/engineering/TowerStacker.tsx)** - ⭐ Reference implementation with evaluation (recommended starting point)

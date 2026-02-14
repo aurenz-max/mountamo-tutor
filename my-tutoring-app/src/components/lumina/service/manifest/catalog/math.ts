@@ -11,22 +11,75 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'bar-model',
     description: 'Comparative bar visualization showing relative values. Perfect for comparing quantities, showing differences, or teaching basic arithmetic comparisons. ESSENTIAL for elementary math.',
-    constraints: 'Requires numeric values to compare'
+    constraints: 'Requires numeric values to compare',
+    tutoring: {
+      taskDescription: 'Compare quantities using proportional bars. Values: {{values}}.',
+      contextKeys: ['values'],
+      scaffoldingLevels: {
+        level1: '"Which bar is taller? What does that tell us?"',
+        level2: '"Look at the difference between the bars. How much more is the larger one?"',
+        level3: '"The first bar shows {{value1}} and the second shows {{value2}}. Subtract to find the difference."',
+      },
+      commonStruggles: [
+        { pattern: 'Ignoring scale', response: 'Look at the numbers on each bar, not just the height' },
+        { pattern: 'Confusing more/less', response: '"Taller bar = bigger number. Which bar is taller?"' },
+      ],
+    },
   },
   {
     id: 'number-line',
     description: 'Interactive number line with highlighted points. Perfect for teaching addition, subtraction, counting, number sequencing, and basic operations. ESSENTIAL for toddlers/kindergarten/elementary math.',
-    constraints: 'Requires numeric range and values to highlight'
+    constraints: 'Requires numeric range and values to highlight',
+    tutoring: {
+      taskDescription: 'Explore numbers on a number line from {{rangeMin}} to {{rangeMax}}.',
+      contextKeys: ['rangeMin', 'rangeMax', 'highlights'],
+      scaffoldingLevels: {
+        level1: '"Can you find where the highlighted number is on the line?"',
+        level2: '"Start at {{startValue}} and count {{direction}} to reach the target."',
+        level3: '"Each mark on the line is one number. Count the jumps from {{startValue}} to {{endValue}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Counting tick marks instead of jumps', response: '"Count the spaces between the marks, not the marks themselves"' },
+        { pattern: 'Direction confusion', response: '"Numbers get bigger going right, smaller going left"' },
+      ],
+    },
   },
   {
     id: 'base-ten-blocks',
     description: 'Place value visualization using hundreds, tens, and ones blocks. Perfect for teaching place value, decomposing numbers, and understanding multi-digit numbers. ESSENTIAL for elementary math.',
-    constraints: 'Requires a whole number to decompose (best for numbers 1-999)'
+    constraints: 'Requires a whole number to decompose (best for numbers 1-999)',
+    tutoring: {
+      taskDescription: 'Understand place value by decomposing {{numberValue}} into hundreds, tens, and ones blocks.',
+      contextKeys: ['numberValue'],
+      scaffoldingLevels: {
+        level1: '"How many big squares (hundreds) do you see?"',
+        level2: '"Count the hundreds blocks, then the tens sticks, then the ones cubes."',
+        level3: '"Each big square = 100, each stick = 10, each small cube = 1. Add them all up."',
+      },
+      commonStruggles: [
+        { pattern: 'Mixing up block sizes', response: '"The biggest block is hundreds, the stick is tens, the tiny cube is ones"' },
+        { pattern: 'Forgetting to add all groups', response: '"Make sure you count all three types: hundreds + tens + ones"' },
+      ],
+    },
   },
   {
     id: 'fraction-circles',
     description: 'Visual pie charts showing fractional parts. Perfect for teaching fractions, parts of a whole, equivalent fractions, and basic fraction comparison. ESSENTIAL for elementary math.',
-    constraints: 'Requires fraction values (numerator/denominator)'
+    constraints: 'Requires fraction values (numerator/denominator)',
+    tutoring: {
+      taskDescription: 'Explore fractions using circle diagrams. Target: {{targetFraction}}. Task: {{taskType}}.',
+      contextKeys: ['targetFraction', 'taskType', 'shadedSections', 'totalSections'],
+      scaffoldingLevels: {
+        level1: '"How many total pieces is this circle cut into?"',
+        level2: '"You shaded {{shadedSections}} out of {{totalSections}} pieces. What fraction is that?"',
+        level3: '"The denominator (bottom) is total pieces = {{totalSections}}. The numerator (top) is shaded pieces = {{shadedSections}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Counting unshaded instead of shaded', response: '"Count only the colored pieces for the numerator"' },
+        { pattern: 'Not recognizing equivalent fractions', response: '"Do both circles have the same amount shaded? Then they are equivalent even with different numbers"' },
+        { pattern: 'Confusing numerator and denominator', response: '"Denominator = total slices, numerator = slices you ate"' },
+      ],
+    },
   },
   {
     id: 'fraction-bar',
@@ -50,42 +103,171 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'place-value-chart',
     description: 'Interactive place value chart showing digit positions from millions to thousandths. Perfect for teaching place value, decimal notation, expanded form, and number decomposition. Students can edit digits to explore different numbers. ESSENTIAL for elementary math.',
-    constraints: 'Best for numbers with clear place value structure (whole numbers and decimals)'
+    constraints: 'Best for numbers with clear place value structure (whole numbers and decimals)',
+    tutoring: {
+      taskDescription: 'Build or decompose numbers using place value positions. Target: {{targetValue}}.',
+      contextKeys: ['targetValue', 'initialValue', 'showExpandedForm'],
+      scaffoldingLevels: {
+        level1: '"What place is this digit in? What is it worth?"',
+        level2: '"The digit {{digit}} is in the {{placeName}} place, so it is worth {{digit}} × {{placeValue}}."',
+        level3: '"Write each digit times its place value, then add them all together for the expanded form."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing place values', response: '"Each place is 10 times the one to its right"' },
+        { pattern: 'Decimal place confusion', response: '"After the decimal point, places get 10 times smaller: tenths, hundredths, thousandths"' },
+      ],
+    },
   },
   {
     id: 'area-model',
     description: 'Visual area model for multiplication using rectangles divided by factor decomposition. Perfect for teaching multi-digit multiplication, distributive property, partial products, binomial multiplication (FOIL), and polynomial expansion. Shows how (a+b)×(c+d) breaks into partial products. ESSENTIAL for grades 3-8 math and algebra.',
-    constraints: 'Requires two factors that can be decomposed (e.g., 23×15 or (x+3)(x+5)). Supports both numeric and algebraic modes.'
+    constraints: 'Requires two factors that can be decomposed (e.g., 23×15 or (x+3)(x+5)). Supports both numeric and algebraic modes.',
+    tutoring: {
+      taskDescription: 'Calculate partial products in the area model. Factors: ({{factor1Parts}}) × ({{factor2Parts}}). Total cells: {{totalCells}}.',
+      contextKeys: ['factor1Parts', 'factor2Parts', 'correctCells', 'totalCells', 'algebraicMode'],
+      scaffoldingLevels: {
+        level1: '"What two numbers are multiplied in this cell?"',
+        level2: '"This cell is {{factor1Part}} × {{factor2Part}}. What is that product?"',
+        level3: '"Multiply the column header by the row header for each cell, then add all the partial products together."',
+      },
+      commonStruggles: [
+        { pattern: 'Wrong partial product', response: '"Check: which number is on top of this column? Which is beside this row? Multiply those two."' },
+        { pattern: 'Forgetting to add partial products', response: '"You found all the pieces! Now add them all together for the total product."' },
+        { pattern: 'Place value errors in decomposition', response: '"23 breaks into 20 + 3, not 2 + 3. Keep the place values."' },
+      ],
+    },
   },
   {
     id: 'array-grid',
     description: 'Rectangular array of discrete objects (dots, squares, stars) arranged in rows and columns. Perfect for teaching multiplication introduction, repeated addition, skip counting, commutative property, area concepts, and combinatorics. Interactive highlighting by row, column, or cell. ESSENTIAL for elementary multiplication (grades 2-5).',
-    constraints: 'Best for multiplication facts and concrete counting. Keep arrays reasonable size (2-10 rows, 2-12 columns).'
+    constraints: 'Best for multiplication facts and concrete counting. Keep arrays reasonable size (2-10 rows, 2-12 columns).',
+    tutoring: {
+      taskDescription: 'Build an array with {{targetRows}} rows and {{targetColumns}} columns, then find the total.',
+      contextKeys: ['targetRows', 'targetColumns', 'currentRows', 'currentColumns', 'totalAnswer'],
+      scaffoldingLevels: {
+        level1: '"How many rows do you need? How many columns?"',
+        level2: '"You need {{targetRows}} rows of {{targetColumns}}. Can you count by {{targetColumns}}s?"',
+        level3: '"{{targetRows}} rows × {{targetColumns}} columns = {{targetRows}} groups of {{targetColumns}}. Count: {{targetColumns}}, {{targetColumns2}}, {{targetColumns3}}..."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing rows and columns', response: '"Rows go across (left to right). Columns go up and down."' },
+        { pattern: 'Counting one-by-one instead of skip counting', response: '"Try counting by rows: each row has {{targetColumns}} items"' },
+        { pattern: 'Swapping dimensions', response: '"3 rows of 5 and 5 rows of 3 give the same total — that is the commutative property!"' },
+      ],
+    },
   },
   {
     id: 'double-number-line',
     description: 'INTERACTIVE PROBLEM-SOLVING PRIMITIVE: Students find missing values on two parallel number lines by calculating proportional relationships. Perfect for teaching ratios, unit rates, proportional relationships, measurement conversions, percent problems, and speed/distance relationships through active problem-solving. Students enter values in input fields and receive immediate feedback. Critical bridge from additive to multiplicative reasoning. ESSENTIAL for grades 5-8 ratios and proportions practice.',
-    constraints: 'Requires two quantity labels and proportional relationship. Automatically generates 2-4 target points for students to solve. Can optionally provide 1-2 hint points (like origin or unit rate). Example config: { targetPoints: [...], givenPoints: [...], showUnitRate: true }'
+    constraints: 'Requires two quantity labels and proportional relationship. Automatically generates 2-4 target points for students to solve. Can optionally provide 1-2 hint points (like origin or unit rate). Example config: { targetPoints: [...], givenPoints: [...], showUnitRate: true }',
+    tutoring: {
+      taskDescription: 'Find proportional relationships between {{topLabel}} and {{bottomLabel}}. Unit rate: 1 {{topLabel}} = {{unitRate}} {{bottomLabel}}. Phase: {{currentPhase}}.',
+      contextKeys: ['topLabel', 'bottomLabel', 'currentPhase', 'unitRateFound', 'correctPoints', 'totalTargetPoints'],
+      scaffoldingLevels: {
+        level1: '"What is the relationship between {{topLabel}} and {{bottomLabel}}? Look at the given point."',
+        level2: '"When {{topLabel}} = 1, what is {{bottomLabel}}? That is the unit rate — the key to everything."',
+        level3: '"Multiply the {{topLabel}} value by the unit rate to get the {{bottomLabel}} value. {{topLabel}} × {{unitRate}} = {{bottomLabel}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Adding instead of multiplying', response: '"Ratios use multiplication, not addition. If 1 costs $3, then 4 costs 4 × $3, not 1 + $3."' },
+        { pattern: 'Cannot find unit rate', response: '"Look at the given point. Divide the bottom value by the top value to find the rate for 1 unit."' },
+        { pattern: 'Scaling errors', response: '"Check: does your answer make sense? More {{topLabel}} should mean more {{bottomLabel}}."' },
+      ],
+    },
   },
   {
     id: 'tape-diagram',
     description: 'Rectangular bars divided into labeled segments representing part-part-whole and comparison relationships. The single most versatile visual for word problems from elementary through algebra. Perfect for addition/subtraction word problems, comparison problems (more than, less than), multi-step word problems, ratio and proportion, and algebraic equation setup. Students click segments to explore values. Supports unknown segments marked with "?" for algebra. ESSENTIAL for word problem solving (grades 1-algebra).',
-    constraints: 'Requires clear part-whole or comparison relationship. Use 1 bar for part-whole problems, 2+ bars for comparison. Can include unknown segments for algebra (marked with isUnknown: true).'
+    constraints: 'Requires clear part-whole or comparison relationship. Use 1 bar for part-whole problems, 2+ bars for comparison. Can include unknown segments for algebra (marked with isUnknown: true).',
+    tutoring: {
+      taskDescription: 'Solve a part-whole word problem using a tape diagram. Phase: {{currentPhase}}. Total segments: {{totalSegments}}. Unknown segments: {{unknownCount}}.',
+      contextKeys: ['currentPhase', 'totalSegments', 'unknownCount', 'wholeFound', 'title', 'description'],
+      scaffoldingLevels: {
+        level1: '"Look at the parts you can see. What do you notice about their values?"',
+        level2: '"Add the known parts together to find the whole. Then use subtraction to find the unknown."',
+        level3: '"The whole = all parts added together. If the whole is {{wholeValue}} and the known part is {{knownPart}}, then the unknown = {{wholeValue}} - {{knownPart}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Cannot identify the whole', response: '"The whole is all the parts combined. Add the values you can see."' },
+        { pattern: 'Using wrong operation', response: '"If you know the whole and one part, subtract to find the missing part."' },
+        { pattern: 'Ignoring phase structure', response: '"Start with Step 1: find the total. You will need it for the next steps."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PHASE-AWARE GUIDANCE',
+          instruction:
+            'In Phase 1 (Explore), guide the student to add the known parts. '
+            + 'In Phase 2 (Practice), guide subtraction from the total. '
+            + 'In Phase 3 (Apply), encourage independence with minimal hints.',
+        },
+      ],
+    },
   },
   {
     id: 'factor-tree',
     description: 'Visual tree diagram showing prime factorization of a number. Perfect for teaching prime numbers, composite numbers, factor decomposition, greatest common factor (GCF), least common multiple (LCM), and divisibility rules. Interactive branches show the breakdown process from composite numbers to prime factors. ESSENTIAL for grades 4-6 number theory.',
-    constraints: 'Requires a composite number (not prime). Best for numbers with interesting factorizations (e.g., 24, 36, 48, 60, 72).'
+    constraints: 'Requires a composite number (not prime). Best for numbers with interesting factorizations (e.g., 24, 36, 48, 60, 72).',
+    tutoring: {
+      taskDescription: 'Find the prime factorization of {{rootValue}} by splitting composite numbers into factor pairs.',
+      contextKeys: ['rootValue', 'currentFactorization', 'leavesCount', 'allPrime', 'guidedMode'],
+      scaffoldingLevels: {
+        level1: '"Is this number prime or composite? If composite, can you think of two numbers that multiply to make it?"',
+        level2: '"Try dividing {{selectedValue}} by small primes: 2, 3, 5, 7. Which one divides evenly?"',
+        level3: '"{{selectedValue}} ÷ {{smallestFactor}} = {{otherFactor}}. So {{selectedValue}} = {{smallestFactor}} × {{otherFactor}}. Now check if each factor is prime."',
+      },
+      commonStruggles: [
+        { pattern: 'Using 1 as a factor', response: '"1 is not useful in factor trees. Find two factors that are both greater than 1."' },
+        { pattern: 'Not recognizing primes', response: '"A prime number has exactly 2 factors: 1 and itself. 2, 3, 5, 7, 11, 13 are primes."' },
+        { pattern: 'Stopping before all leaves are prime', response: '"Keep splitting until every leaf is a prime number (green). Are there any yellow nodes left?"' },
+      ],
+    },
   },
   {
     id: 'ratio-table',
     description: 'Structured table showing equivalent ratios in rows with columns for each quantity in the ratio relationship. Perfect for teaching equivalent ratios, unit rates, proportional reasoning, scaling relationships, and ratio problem-solving. Shows multiplicative relationships between rows. ESSENTIAL for grades 5-7 ratios and proportions.',
-    constraints: 'Requires a ratio relationship between 2-3 quantities. Best with 3-5 rows showing equivalent ratios.'
+    constraints: 'Requires a ratio relationship between 2-3 quantities. Best with 3-5 rows showing equivalent ratios.',
+    tutoring: {
+      taskDescription: 'Explore equivalent ratios for {{rowLabel1}}:{{rowLabel2}} = {{baseRatio1}}:{{baseRatio2}}. Task: {{taskType}}.',
+      contextKeys: ['rowLabels', 'baseRatio', 'taskType', 'multiplier', 'studentAnswer'],
+      scaffoldingLevels: {
+        level1: '"What happens to both values when you move the slider? Do they grow at the same rate?"',
+        level2: '"The base ratio is {{baseRatio1}}:{{baseRatio2}}. If you multiply both by {{multiplier}}, what do you get?"',
+        level3: '"{{baseRatio1}} × {{multiplier}} = {{scaledValue1}} and {{baseRatio2}} × {{multiplier}} = {{scaledValue2}}. Equivalent ratios keep the same multiplier."',
+      },
+      commonStruggles: [
+        { pattern: 'Only scaling one value', response: '"To keep the ratio equivalent, multiply BOTH values by the same number."' },
+        { pattern: 'Adding instead of multiplying', response: '"Ratios scale by multiplication. 2:3 doubled is 4:6, not 4:5."' },
+        { pattern: 'Cannot find unit rate', response: '"Divide both values by the first value to find the ratio to 1."' },
+      ],
+    },
   },
   {
     id: 'percent-bar',
     description: 'Horizontal bar model with percentage markings showing the relationship between a part and whole. Perfect for teaching percentages, percent of a quantity, discounts, tax, tips, percent increase/decrease, and part-to-whole relationships. Visual representation with 0% to 100% scale. ESSENTIAL for grades 6-8 percent concepts.',
-    constraints: 'Requires a percent value and context (total amount). Best for concrete percent problems with real-world applications.'
+    constraints: 'Requires a percent value and context (total amount). Best for concrete percent problems with real-world applications.',
+    tutoring: {
+      taskDescription: 'Find {{currentPhaseTarget}}% of {{wholeValue}} ({{wholeValueLabel}}). Scenario: {{scenario}}. Phase: {{currentPhase}}.',
+      contextKeys: ['wholeValue', 'wholeValueLabel', 'currentPhase', 'currentPercent', 'scenario'],
+      scaffoldingLevels: {
+        level1: '"What benchmark percentage is closest — 25%, 50%, or 75%? Start there."',
+        level2: '"{{targetPercent}}% means {{targetPercent}} out of 100. What is {{targetPercent}}/100 × {{wholeValue}}?"',
+        level3: '"Convert the percent to a decimal: {{targetPercent}}% = {{decimalValue}}. Multiply: {{decimalValue}} × {{wholeValue}} = {{result}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Not connecting percent to fraction', response: '"Percent means per hundred. 25% = 25/100 = 1/4 of the whole."' },
+        { pattern: 'Confusing part and whole', response: '"The whole (100%) is {{wholeValue}}. You are finding a part of it."' },
+        { pattern: 'Difficulty with non-benchmark percents', response: '"Break it down: find 10% first (divide by 10), then scale up."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PHASE-AWARE GUIDANCE',
+          instruction:
+            'In Phase 1 (Explore), help the student discover the concept through the bar. '
+            + 'In Phase 2 (Practice), reinforce the calculation method. '
+            + 'In Phase 3 (Apply), encourage solving the real-world problem independently.',
+        },
+      ],
+    },
   },
   {
     id: 'balance-scale',
@@ -108,46 +290,171 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'function-machine',
     description: 'Visual "machine" with input hopper, rule display, and output chute. Numbers enter, get transformed by the rule, and exit. Perfect for teaching input/output patterns, function concepts, function notation f(x), linear functions, composition of functions, and inverse functions. Students can drop values in, watch transformations, and guess the rule from input-output pairs. ESSENTIAL for grades 3-4 patterns, grades 5-8 function introduction, and Algebra 1-2 function concepts.',
-    constraints: 'Requires a transformation rule using variable x (e.g., "x+3", "2*x", "x^2"). Best for discovery mode (hide rule) or learning mode (show rule). Supports one-step, two-step, and expression rules.'
+    constraints: 'Requires a transformation rule using variable x (e.g., "x+3", "2*x", "x^2"). Best for discovery mode (hide rule) or learning mode (show rule). Supports one-step, two-step, and expression rules.',
+    tutoring: {
+      taskDescription: 'Discover or apply the function rule. Rule: {{rule}} ({{ruleVisibility}}). Processed pairs: {{pairsCount}}.',
+      contextKeys: ['rule', 'showRule', 'processedPairs', 'guessedRule'],
+      scaffoldingLevels: {
+        level1: '"Look at the input and output. What changed? What stayed the same?"',
+        level2: '"Compare the pairs: input {{input1}} → output {{output1}}, input {{input2}} → output {{output2}}. What pattern do you see?"',
+        level3: '"Each output = input {{operation}} {{operand}}. Try it: {{input}} {{operation}} {{operand}} = {{output}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Guessing additively for multiplicative rules', response: '"The change is not the same each time. Try multiplying instead of adding."' },
+        { pattern: 'Only looking at one pair', response: '"Look at multiple input-output pairs. The rule works for ALL of them."' },
+        { pattern: 'Confusing two-step rules', response: '"Some rules have two steps. Try: first multiply, then add (or subtract)."' },
+      ],
+    },
   },
   {
     id: 'coordinate-graph',
     description: 'Full-featured 2D Cartesian coordinate plane for plotting points, graphing lines, curves, and functions. Perfect for teaching ordered pairs, linear equations, slope, intercepts, systems of equations, quadratic functions, and function families. Students can click to plot points, view graphed equations, trace curves to read coordinates, and identify key features like intercepts. ESSENTIAL for grades 5-6 (ordered pairs), grades 7-8 (linear equations), Algebra 1-2 (function graphing), and Precalculus (function transformations).',
-    constraints: 'Requires axis ranges (xRange, yRange). Supports plotMode: "points" for plotting practice or "equation" for graphing functions. Equations must use y= format with * for multiplication and ** for exponents (e.g., "y = 2*x + 1", "y = x**2 - 4*x + 3").'
+    constraints: 'Requires axis ranges (xRange, yRange). Supports plotMode: "points" for plotting practice or "equation" for graphing functions. Equations must use y= format with * for multiplication and ** for exponents (e.g., "y = 2*x + 1", "y = x**2 - 4*x + 3").',
+    tutoring: {
+      taskDescription: 'Work with the coordinate plane. Mode: {{plotMode}}. Equations: {{equations}}.',
+      contextKeys: ['plotMode', 'equations', 'points', 'xRange', 'yRange'],
+      scaffoldingLevels: {
+        level1: '"Where is the origin? Which direction is positive x? Positive y?"',
+        level2: '"To plot ({{x}}, {{y}}): start at the origin, go {{x}} units right, then {{y}} units up."',
+        level3: '"For the equation y = {{equation}}, pick an x value, calculate y, and plot the point. Repeat for 3-4 points, then connect them."',
+      },
+      commonStruggles: [
+        { pattern: 'Swapping x and y coordinates', response: '"Remember: (x, y) means go RIGHT first, then UP. Alphabetical order: x before y."' },
+        { pattern: 'Negative coordinate confusion', response: '"Negative x means go LEFT. Negative y means go DOWN."' },
+        { pattern: 'Cannot identify intercepts', response: '"The y-intercept is where the line crosses the vertical axis (x=0). The x-intercept is where it crosses the horizontal axis (y=0)."' },
+      ],
+    },
   },
   {
     id: 'slope-triangle',
     description: 'Interactive right triangle overlay on a linear graph showing rise and run for slope visualization. Perfect for teaching slope concept, rise over run, Δy/Δx notation, rate of change, angle of inclination, and connecting slope to trigonometry. Students can drag triangles along the line, resize them to see different rise/run pairs, toggle between rise/run and delta notation, and view angle measurements. Shows that different-sized triangles on the same line always yield the same slope. ESSENTIAL for grades 7-8 (slope introduction), Algebra 1 (slope calculation, linear equations), Geometry (parallel/perpendicular lines, angles), and Precalculus (connecting slope to tangent).',
-    constraints: 'Requires a linear equation to attach triangles to. Equations must use y= format with * for multiplication (e.g., "y = 2*x + 1"). Best for linear functions with clear, visible slopes. Can show 1-3 triangles at different positions or sizes.'
+    constraints: 'Requires a linear equation to attach triangles to. Equations must use y= format with * for multiplication (e.g., "y = 2*x + 1"). Best for linear functions with clear, visible slopes. Can show 1-3 triangles at different positions or sizes.',
+    tutoring: {
+      taskDescription: 'Explore slope using rise/run triangles on the line {{equation}}. Slope = {{slope}}.',
+      contextKeys: ['attachedLine', 'slope', 'rise', 'run', 'allowDrag', 'allowResize'],
+      scaffoldingLevels: {
+        level1: '"How steep is this line? Does it go uphill or downhill?"',
+        level2: '"Count the rise (vertical change) and the run (horizontal change). Divide rise by run."',
+        level3: '"Rise = {{rise}}, Run = {{run}}. Slope = rise ÷ run = {{rise}} ÷ {{run}} = {{slope}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing rise and run', response: '"Rise is vertical (up/down). Run is horizontal (left/right). Rise over run."' },
+        { pattern: 'Negative slope confusion', response: '"If the line goes downhill (left to right), the slope is negative."' },
+        { pattern: 'Thinking slope changes with triangle size', response: '"Drag the triangle to a different spot. The slope stays the same! The ratio rise/run is constant."' },
+      ],
+    },
   },
   {
     id: 'systems-equations-visualizer',
     description: 'Comprehensive systems of linear equations visualizer combining graphical and algebraic solution methods. Perfect for teaching solving systems by graphing, substitution, and elimination methods. Displays 2-3 equations graphed simultaneously with intersection points highlighted. Side-by-side panels show graphical solution and step-by-step algebraic work. Students can toggle between solution methods, view animated step-by-step solutions, and understand system classification (one solution, no solution, infinite solutions). ESSENTIAL for grade 8 (systems introduction), Algebra 1 (solving systems, graphing method), and Algebra 2 (complex systems, choosing efficient methods).',
-    constraints: 'Requires 2-3 linear equations in y = mx + b format. Equations must use * for multiplication (e.g., "y = 2*x + 1"). Include intersection point for systems with one solution. Provide step-by-step algebraic solution based on chosen method (graphing, substitution, or elimination). Best for integer or simple decimal solutions at grades 8-Algebra 1.'
+    constraints: 'Requires 2-3 linear equations in y = mx + b format. Equations must use * for multiplication (e.g., "y = 2*x + 1"). Include intersection point for systems with one solution. Provide step-by-step algebraic solution based on chosen method (graphing, substitution, or elimination). Best for integer or simple decimal solutions at grades 8-Algebra 1.',
+    tutoring: {
+      taskDescription: 'Solve the system of equations: {{equations}}. Method: {{solutionMethod}}. System type: {{systemType}}.',
+      contextKeys: ['equations', 'solutionMethod', 'systemType', 'intersectionPoint'],
+      scaffoldingLevels: {
+        level1: '"Look at the graph. Do the lines cross? How many times?"',
+        level2: '"If the lines intersect, the crossing point is the solution. What are its coordinates?"',
+        level3: '"The lines meet at ({{x}}, {{y}}). Verify: plug x={{x}} into both equations. Do you get y={{y}} both times?"',
+      },
+      commonStruggles: [
+        { pattern: 'Cannot find intersection visually', response: '"Trace each line carefully. Where do they share the same point?"' },
+        { pattern: 'Confusing no solution and infinite solutions', response: '"Parallel lines (same slope, different y-intercept) = no solution. Same line = infinite solutions."' },
+        { pattern: 'Algebraic method errors', response: '"Check each step. Did you distribute correctly? Did you combine like terms?"' },
+      ],
+    },
   },
   {
     id: 'matrix-display',
     description: 'Interactive m×n matrix display and editor with comprehensive step-by-step operations including determinant calculation, matrix inverse, transpose, multiplication, addition, row operations, and augmented matrix solving. Perfect for teaching matrix concepts, organizing data in rows and columns, matrix arithmetic, determinants, inverse matrices, geometric transformations, and solving systems of linear equations using matrices. Features detailed animated explanations for each operation step, highlighting cells involved in calculations, displaying intermediate results, and providing educational context. Shows formulas, calculations, and WHY each step is performed. Supports 2×2 to 4×4 matrices with optional cell editing, operation buttons, and augmented matrix display for system solving. ESSENTIAL for grade 7-8 (data organization in matrices), Algebra 2 (matrix operations, determinants, solving systems with matrices), Precalculus (matrix transformations, inverses), and Linear Algebra (all matrix operations, eigenvalues).',
-    constraints: 'Matrix dimensions typically 2×2 to 4×4 (or 2×3 to 3×4 for augmented). Use simple integers for elementary/middle school, include fractions/decimals for advanced topics. For determinant visualization, show step-by-step calculation with cell highlighting. For inverse, show method (adjugate for 2×2, Gaussian elimination for 3×3+). For row operations, label each operation clearly (e.g., "R₂ - 2R₁ → R₂"). Include educational explanations that can be toggled. Ensure all step-by-step operations show intermediate matrices with proper highlighting.'
+    constraints: 'Matrix dimensions typically 2×2 to 4×4 (or 2×3 to 3×4 for augmented). Use simple integers for elementary/middle school, include fractions/decimals for advanced topics. For determinant visualization, show step-by-step calculation with cell highlighting. For inverse, show method (adjugate for 2×2, Gaussian elimination for 3×3+). For row operations, label each operation clearly (e.g., "R₂ - 2R₁ → R₂"). Include educational explanations that can be toggled. Ensure all step-by-step operations show intermediate matrices with proper highlighting.',
+    tutoring: {
+      taskDescription: 'Perform matrix operations. Matrix: {{rows}}×{{columns}}. Operation: {{operationType}}.',
+      contextKeys: ['rows', 'columns', 'operationType', 'values'],
+      scaffoldingLevels: {
+        level1: '"What operation are we performing? What does it do to the matrix?"',
+        level2: '"For {{operationType}}: follow the highlighted cells. What values are being combined?"',
+        level3: '"Step through the calculation: multiply the highlighted values, then add/subtract as shown in the formula."',
+      },
+      commonStruggles: [
+        { pattern: 'Wrong determinant formula', response: '"For a 2×2 matrix [[a,b],[c,d]], the determinant = ad - bc. Cross-multiply diagonals."' },
+        { pattern: 'Matrix multiplication order', response: '"Row from the first matrix × column from the second matrix. Multiply corresponding entries and add."' },
+        { pattern: 'Row operation errors', response: '"Write out the operation before applying it: R₂ → R₂ - 2R₁ means replace each entry in row 2."' },
+      ],
+    },
   },
   {
     id: 'dot-plot',
     description: 'Interactive dot plot (also called line plot) with stacked dots representing data values on a number line. Perfect for teaching data representation, frequency concepts, mean, median, mode, data distribution shape, and comparing datasets. Students click to add/remove data points, view frequency at each value, and calculate statistical measures. Supports parallel dot plots for comparing two datasets (e.g., morning vs afternoon temperatures). Stack styles include dots, X marks, or custom icons. ESSENTIAL for grades 2-3 (counting and data representation), grades 3-4 (frequency concepts), grades 5-6 (mean, median, mode), and grades 6-7 (data distribution, comparing datasets).',
-    constraints: 'Requires number line range [min, max] and data points array. Data values should be within the range. For younger grades (2-3), use small whole numbers (0-10) and disable statistics. For grades 5+, enable showStatistics for mean/median/mode. For comparison activities, enable parallel mode with labeled datasets. Keep data size manageable: 8-20 values per dataset.'
+    constraints: 'Requires number line range [min, max] and data points array. Data values should be within the range. For younger grades (2-3), use small whole numbers (0-10) and disable statistics. For grades 5+, enable showStatistics for mean/median/mode. For comparison activities, enable parallel mode with labeled datasets. Keep data size manageable: 8-20 values per dataset.',
+    tutoring: {
+      taskDescription: 'Explore data using a dot plot. Data points: {{dataCount}}. Statistics: {{showStatistics}}.',
+      contextKeys: ['dataPoints', 'showStatistics', 'parallel', 'mean', 'median', 'mode'],
+      scaffoldingLevels: {
+        level1: '"Which value has the most dots stacked above it? That is the mode."',
+        level2: '"To find the median, arrange all values in order and find the middle one."',
+        level3: '"Mean = sum of all values ÷ number of values. Add all the numbers, then divide by {{dataCount}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing mean and median', response: '"Mean = average (add all, divide by count). Median = middle value when sorted."' },
+        { pattern: 'Ignoring frequency', response: '"If a value has 3 dots, it appears 3 times in the dataset. Count each dot."' },
+        { pattern: 'Comparing datasets incorrectly', response: '"Compare the shapes and centers, not just individual values."' },
+      ],
+    },
   },
   {
     id: 'histogram',
     description: 'Interactive histogram (bar chart showing frequency distribution) with adjustable bin widths. Perfect for teaching grouped data, distribution shapes (normal, skewed, bimodal), data analysis, and statistics. Students can adjust bin width to see how distribution shape changes, add/remove data points, and optionally overlay a normal curve. Shows frequency labels on bars and calculates statistics (mean, standard deviation, min, max, skewness). ESSENTIAL for grades 6-7 (grouped data, distribution shape), grades 7-Statistics (comparing distributions), and Statistics courses (normal distribution, data analysis).',
-    constraints: 'Requires data array with 15-50 numeric values. binWidth and binStart define the histogram bins. For younger grades (6-7), use showFrequency: true and showCurve: false. For statistics lessons about normal distribution, enable showCurve: true. Set editable: true to allow students to explore bin width adjustments.'
+    constraints: 'Requires data array with 15-50 numeric values. binWidth and binStart define the histogram bins. For younger grades (6-7), use showFrequency: true and showCurve: false. For statistics lessons about normal distribution, enable showCurve: true. Set editable: true to allow students to explore bin width adjustments.',
+    tutoring: {
+      taskDescription: 'Analyze data distribution using a histogram. Data points: {{dataCount}}. Bin width: {{binWidth}}.',
+      contextKeys: ['data', 'binWidth', 'showCurve', 'mean', 'standardDeviation', 'skewness'],
+      scaffoldingLevels: {
+        level1: '"What is the overall shape of the histogram? Is it symmetric, skewed, or bimodal?"',
+        level2: '"Which bin has the tallest bar? That is where most data values fall."',
+        level3: '"The mean is {{mean}} and the data spreads about {{standardDeviation}} units from the mean. A wider spread means more variability."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing histogram with bar chart', response: '"Histograms show ranges of continuous data (bins). Bar charts show separate categories."' },
+        { pattern: 'Ignoring bin width effects', response: '"Try changing the bin width. Notice how the shape changes? Wider bins smooth out the data."' },
+        { pattern: 'Misidentifying skewness', response: '"The tail tells the skew direction. Long tail on the right = right-skewed."' },
+      ],
+    },
   },
   {
     id: 'two-way-table',
     description: 'Interactive two-way table (contingency table) for categorical data with convertible Venn diagram view. Perfect for teaching categorical data organization, joint and marginal frequencies, conditional probability, set relationships (union, intersection), and independence testing. Students can click cells to see joint, marginal, and conditional probabilities. Supports table view, Venn diagram view, or both. Venn diagram circles dynamically size based on set proportions and intersection. Toggle between frequencies and relative frequencies (probabilities). ESSENTIAL for grade 7 (categorical data, set relationships), grade 7-Statistics (joint probability, conditional probability), and Statistics courses (independence testing, contingency tables).',
-    constraints: 'Requires rowCategories and columnCategories arrays (2-4 categories each), and 2D frequencies array matching dimensions. For Venn diagram view, use 2x2 tables. For grade 7, use displayMode: "both" to show table and Venn. For Statistics, use showProbabilities toggle. Set editable: true for exploration, false for assessment. Include questionPrompt for guided probability questions.'
+    constraints: 'Requires rowCategories and columnCategories arrays (2-4 categories each), and 2D frequencies array matching dimensions. For Venn diagram view, use 2x2 tables. For grade 7, use displayMode: "both" to show table and Venn. For Statistics, use showProbabilities toggle. Set editable: true for exploration, false for assessment. Include questionPrompt for guided probability questions.',
+    tutoring: {
+      taskDescription: 'Analyze categorical data in a two-way table. Categories: {{rowCategories}} × {{columnCategories}}.',
+      contextKeys: ['rowCategories', 'columnCategories', 'frequencies', 'displayMode', 'showProbabilities'],
+      scaffoldingLevels: {
+        level1: '"What two categories does each cell represent? Look at the row and column headers."',
+        level2: '"The row total tells you how many are in that category overall. The cell tells you the joint count."',
+        level3: '"P(A and B) = joint count ÷ grand total. P(A given B) = joint count ÷ B total."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing joint and marginal', response: '"Joint = inside the table (both categories). Marginal = totals on the edges (one category)."' },
+        { pattern: 'Conditional probability errors', response: '"Given B means you only look at column B. Divide the cell by the column total, not the grand total."' },
+        { pattern: 'Independence misconception', response: '"Independent means P(A and B) = P(A) × P(B). Multiply the marginal probabilities and compare to the joint."' },
+      ],
+    },
   },
   {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
-    constraints: 'Requires a shape name and measurable properties'
+    constraints: 'Requires a shape name and measurable properties',
+    tutoring: {
+      taskDescription: 'Explore the properties of a {{shapeName}}.',
+      contextKeys: ['shapeName', 'attributes'],
+      scaffoldingLevels: {
+        level1: '"How many sides does this shape have? How many corners (vertices)?"',
+        level2: '"Look at the labeled measurements. Can you find the perimeter by adding all the sides?"',
+        level3: '"Perimeter = sum of all sides. Area depends on the shape: for rectangles, area = length × width."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing perimeter and area', response: '"Perimeter is the distance around (add the sides). Area is the space inside (multiply length × width for rectangles)."' },
+        { pattern: 'Irregular shape difficulty', response: '"Break it into simpler shapes you already know how to measure."' },
+      ],
+    },
   },
 ];
