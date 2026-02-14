@@ -19,6 +19,8 @@ import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot from '../primitives/visual-primitives/math/DotPlot';
 import Histogram from '../primitives/visual-primitives/math/Histogram';
 import TwoWayTable from '../primitives/visual-primitives/math/TwoWayTable';
+import TenFrame from '../primitives/visual-primitives/math/TenFrame';
+import CountingBoard from '../primitives/visual-primitives/math/CountingBoard';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -29,7 +31,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -51,6 +53,8 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'dot-plot', label: 'Dot Plot', icon: '⚬', topic: 'Mean, median, and mode with data sets' },
   { value: 'histogram', label: 'Histogram', icon: '📊', topic: 'Distribution shapes and frequency analysis' },
   { value: 'two-way-table', label: 'Two-Way Table', icon: '⊞', topic: 'Categorical data and conditional probability' },
+  { value: 'ten-frame', label: 'Ten Frame', icon: '🔟', topic: 'Building numbers, subitizing, and making ten' },
+  { value: 'counting-board', label: 'Counting Board', icon: '🧸', topic: 'Counting objects, subitizing, and one-to-one correspondence' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -163,6 +167,32 @@ const PrimitiveRenderer: React.FC<{
       return <Histogram data={data as Parameters<typeof Histogram>[0]['data']} />;
     case 'two-way-table':
       return <TwoWayTable data={data as Parameters<typeof TwoWayTable>[0]['data']} />;
+    case 'ten-frame':
+      return (
+        <TenFrame
+          data={{
+            ...(data as Parameters<typeof TenFrame>[0]['data']),
+            instanceId: `ten-frame-${Date.now()}`,
+            skillId: 'math-number-sense',
+            subskillId: 'ten-frame-operations',
+            objectiveId: 'build-numbers-make-ten',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'counting-board':
+      return (
+        <CountingBoard
+          data={{
+            ...(data as Parameters<typeof CountingBoard>[0]['data']),
+            instanceId: `counting-board-${Date.now()}`,
+            skillId: 'math-counting',
+            subskillId: 'one-to-one-correspondence',
+            objectiveId: 'count-objects-subitize',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     default:
       return <div className="text-slate-400">Unknown primitive: {componentId}</div>;
   }

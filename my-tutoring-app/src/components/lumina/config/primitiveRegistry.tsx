@@ -32,6 +32,8 @@ import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot from '../primitives/visual-primitives/math/DotPlot';
 import Histogram from '../primitives/visual-primitives/math/Histogram';
 import TwoWayTable from '../primitives/visual-primitives/math/TwoWayTable';
+import TenFrame from '../primitives/visual-primitives/math/TenFrame';
+import CountingBoard from '../primitives/visual-primitives/math/CountingBoard';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -75,6 +77,12 @@ import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/E
 import DumpTruckLoader from '../primitives/visual-primitives/engineering/DumpTruckLoader';
 import ConstructionSequencePlanner from '../primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 import BlueprintCanvas from '../primitives/visual-primitives/engineering/BlueprintCanvas';
+import MachineProfile from '../primitives/visual-primitives/engineering/MachineProfile';
+import FlightForcesExplorer from '../primitives/visual-primitives/engineering/FlightForcesExplorer';
+import AirfoilLab from '../primitives/visual-primitives/engineering/AirfoilLab';
+import VehicleComparisonLab from '../primitives/visual-primitives/engineering/VehicleComparisonLab';
+import PropulsionLab from '../primitives/visual-primitives/engineering/PropulsionLab';
+import PropulsionTimeline from '../primitives/visual-primitives/engineering/PropulsionTimeline';
 // Astronomy Primitives
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
 import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
@@ -478,6 +486,27 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-6xl mx-auto mb-20',
   },
 
+  // Math Phase 2 Primitives (K-5 Foundations)
+  'ten-frame': {
+    component: TenFrame,
+    sectionTitle: 'Ten Frame',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'counting-board': {
+    component: CountingBoard,
+    sectionTitle: 'Counting Board',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   // Deprecated: Use specific math primitives instead
   'math-visual': {
     component: MathVisuals,
@@ -865,6 +894,67 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'blueprint-canvas': {
     component: BlueprintCanvas,
     sectionTitle: 'Blueprint Canvas',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  // Vehicles, Flight & Machines Primitives
+  'machine-profile': {
+    component: MachineProfile,
+    sectionTitle: 'Machine Profile',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: false,
+  },
+
+  'flight-forces-explorer': {
+    component: FlightForcesExplorer,
+    sectionTitle: 'Flight Forces Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'airfoil-lab': {
+    component: AirfoilLab,
+    sectionTitle: 'Airfoil Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'vehicle-comparison-lab': {
+    component: VehicleComparisonLab,
+    sectionTitle: 'Vehicle Comparison Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'propulsion-lab': {
+    component: PropulsionLab,
+    sectionTitle: 'Propulsion Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'propulsion-timeline': {
+    component: PropulsionTimeline,
+    sectionTitle: 'Propulsion Timeline',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

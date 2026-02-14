@@ -439,6 +439,64 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
   },
+  // Math Phase 2 Primitives (K-5 Foundations)
+  {
+    id: 'ten-frame',
+    description: 'Interactive 2×5 grid manipulative for building number sense in K-2. Students place counters to build numbers (0-20), develop subitizing skills (instant quantity recognition), compose and decompose numbers with two-color counters, practice "make ten" strategy, and solve addition/subtraction using the frame. Supports single frame (0-10) and double frame (0-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, counting, addition, and subtraction.',
+    constraints: 'Best for grades K-2. Counter-based manipulative. Single frame for K (numbers 0-10), double frame for grades 1-2 (numbers 0-20).',
+    tutoring: {
+      taskDescription: 'Student is building numbers on a ten frame. Challenge: {{instruction}}. Target: {{targetCount}} counters. Current count: {{currentCount}}. Empty spaces: {{emptySpaces}}.',
+      contextKeys: ['instruction', 'targetCount', 'currentCount', 'mode', 'challengeType', 'emptySpaces', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"How many counters do you see? Can you count them?"',
+        level2: '"Look at the empty spaces on the frame. How many empty spaces do you see?"',
+        level3: '"You have {{currentCount}} counters. The frame holds 10. So {{currentCount}} + {{emptySpaces}} = 10. That is the make-ten strategy!"',
+      },
+      commonStruggles: [
+        { pattern: 'Counting past 10 on single frame', response: '"A single ten frame only holds 10. Let\'s count the spaces: each row has 5."' },
+        { pattern: 'Not seeing empty spaces as meaningful', response: '"The empty spaces are important! They tell us how many more we need to make 10."' },
+        { pattern: 'Double-counting counters', response: '"Try touching each counter as you count it. That way you won\'t count any twice."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'K-LEVEL COUNTING ENCOURAGEMENT',
+          instruction:
+            'Use warm, simple language. Count along with the student: "1, 2, 3..." '
+            + 'Celebrate each counter placed. Use "how many more?" to build towards make-ten thinking. '
+            + 'If the student fills one row (5), note: "You filled a whole row! That is 5!"',
+        },
+      ],
+    },
+  },
+  {
+    id: 'counting-board',
+    description: 'Flexible K-1 counting workspace with tappable objects (bears, apples, stars, fish, butterflies, blocks) arranged in different patterns (scattered, line, groups, circle). Supports counting strategies: count-all (tap each object), subitizing (flash and recognize), count-on (start from a known group), group counting (count by 2s/5s/10s), and compare (which group has more). Builds one-to-one correspondence, cardinality principle, and subitizing fluency. ESSENTIAL for grades K-1 counting, number sense, and early addition foundations.',
+    constraints: 'Best for grades K-1. Object counting and subitizing. K: count 1-20 objects, count_all and subitize only. Grade 1: count to 30, count-on and group counting.',
+    tutoring: {
+      taskDescription: 'Student is counting objects on a counting board. Challenge: {{instruction}}. Target answer: {{targetAnswer}}. Current count: {{currentCount}}. Arrangement: {{arrangement}}. Object type: {{objectType}}. Challenge type: {{challengeType}}. Attempt: {{attemptNumber}}.',
+      contextKeys: ['instruction', 'targetAnswer', 'currentCount', 'arrangement', 'objectType', 'challengeType', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"Touch each {{objectType}} as you count it. Ready? Let\'s count together: 1, 2, 3..."',
+        level2: '"Try grouping the {{objectType}} together. Can you see groups of 5? Count by groups!"',
+        level3: '"You already know there are {{startFrom}}. Now count on from {{startFrom}}: {{startFrom}}+1, {{startFrom}}+2... What is the total?"',
+      },
+      commonStruggles: [
+        { pattern: 'Double-counting objects', response: '"Oops, you counted that one already! Try touching each {{objectType}} just once as you count."' },
+        { pattern: 'Skipping objects when counting', response: '"Some {{objectType}} got left out! Try starting from one side and moving across so you don\'t miss any."' },
+        { pattern: 'Not stating final count (cardinality)', response: '"You counted to {{currentCount}}. So how many {{objectType}} are there altogether? The last number you say tells you the total!"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'K-LEVEL COUNTING ENCOURAGEMENT',
+          instruction:
+            'Use warm, enthusiastic language appropriate for K-1. Count along with the student. '
+            + 'Celebrate each correct count. For subitize challenges, express wonder: "Wow, you saw that fast!" '
+            + 'Emphasize cardinality: "So there are 7 bears altogether!" '
+            + 'For count-on, model the strategy: "We know there are 5 already. Let\'s count on: 6, 7, 8..."',
+        },
+      ],
+    },
+  },
   {
     id: 'geometric-shape',
     description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',

@@ -53,6 +53,11 @@ export type {
   ExcavatorArmSimulatorMetrics,
   DumpTruckLoaderMetrics,
   BlueprintCanvasMetrics,
+  FlightForcesExplorerMetrics,
+  AirfoilLabMetrics,
+  VehicleComparisonLabMetrics,
+  PropulsionLabMetrics,
+  PropulsionTimelineMetrics,
   // Assessment metrics
   MultipleChoiceMetrics,
   FillInBlanksMetrics,
@@ -84,6 +89,9 @@ export type {
   ImagePanelMetrics,
   // Media metrics
   MediaPlayerMetrics,
+  // Math Phase 2 metrics
+  TenFrameMetrics,
+  CountingBoardMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,

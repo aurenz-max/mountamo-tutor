@@ -23,6 +23,12 @@ import { generateExcavatorArmSimulator } from '../../engineering/gemini-excavato
 import { generateDumpTruckLoader } from '../../engineering/gemini-dump-truck-loader';
 import { generateConstructionSequencePlanner } from '../../engineering/gemini-construction-sequence-planner';
 import { generateBlueprintCanvas } from '../../engineering/gemini-blueprint-canvas';
+import { generateMachineProfile } from '../../engineering/gemini-machine-profile';
+import { generateFlightForcesExplorer } from '../../engineering/gemini-flight-forces-explorer';
+import { generateAirfoilLab } from '../../engineering/gemini-airfoil-lab';
+import { generateVehicleComparisonLab } from '../../engineering/gemini-vehicle-comparison-lab';
+import { generatePropulsionLab } from '../../engineering/gemini-propulsion-lab';
+import { generatePropulsionTimeline } from '../../engineering/gemini-propulsion-timeline';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -119,6 +125,48 @@ registerGenerator('blueprint-canvas', async (item, topic, gradeContext) => ({
   data: await generateBlueprintCanvas(topic, gradeContext, item.config),
 }));
 
+// Machine Profile (display-only vehicle/machine profiles)
+registerGenerator('machine-profile', async (item, topic, gradeContext) => ({
+  type: 'machine-profile',
+  instanceId: item.instanceId,
+  data: await generateMachineProfile(topic, gradeContext, item.config),
+}));
+
+// Flight Forces Explorer (interactive four forces of flight)
+registerGenerator('flight-forces-explorer', async (item, topic, gradeContext) => ({
+  type: 'flight-forces-explorer',
+  instanceId: item.instanceId,
+  data: await generateFlightForcesExplorer(topic, gradeContext, item.config),
+}));
+
+// Airfoil Lab (wing shape and lift exploration)
+registerGenerator('airfoil-lab', async (item, topic, gradeContext) => ({
+  type: 'airfoil-lab',
+  instanceId: item.instanceId,
+  data: await generateAirfoilLab(topic, gradeContext, item.config),
+}));
+
+// Vehicle Comparison Lab (side-by-side vehicle data analysis)
+registerGenerator('vehicle-comparison-lab', async (item, topic, gradeContext) => ({
+  type: 'vehicle-comparison-lab',
+  instanceId: item.instanceId,
+  data: await generateVehicleComparisonLab(topic, gradeContext, item.config),
+}));
+
+// Propulsion Lab (Newton's Third Law across propulsion types)
+registerGenerator('propulsion-lab', async (item, topic, gradeContext) => ({
+  type: 'propulsion-lab',
+  instanceId: item.instanceId,
+  data: await generatePropulsionLab(topic, gradeContext, item.config),
+}));
+
+// Propulsion Timeline (history of transportation)
+registerGenerator('propulsion-timeline', async (item, topic, gradeContext) => ({
+  type: 'propulsion-timeline',
+  instanceId: item.instanceId,
+  data: await generatePropulsionTimeline(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 13/13 engineering primitives registered
+// Migration status: 19/19 engineering primitives registered
 // ============================================================================

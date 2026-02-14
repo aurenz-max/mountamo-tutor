@@ -1073,6 +1073,10 @@ export type ComponentId =
   | 'histogram'          // Bar chart showing frequency distribution with adjustable bin widths
   | 'two-way-table'      // Two-way table / contingency table with Venn diagram view for categorical data analysis
 
+  // Math Phase 2 Primitives (K-5 Foundations)
+  | 'ten-frame'          // 2x5 grid manipulative for subitizing, composing/decomposing numbers, and making ten (K-2)
+  | 'counting-board'     // Flexible counting workspace with draggable objects, subitizing, and counting strategies (K-1)
+
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape
 
@@ -1155,6 +1159,12 @@ export type ComponentId =
   | 'dump-truck-loader' // Interactive dump truck loading and hauling simulation for teaching capacity and material handling
   | 'construction-sequence-planner' // Interactive timeline/flowchart tool for ordering construction tasks and understanding dependencies
   | 'blueprint-canvas' // Grid-based drawing surface for creating technical drawings and floor plans
+  | 'machine-profile' // Rich display profile for any vehicle or machine (airplane, car, train, ship, etc.)
+  | 'flight-forces-explorer' // Interactive four forces of flight (lift, weight, thrust, drag) exploration
+  | 'airfoil-lab' // Wing shape and lift exploration in simulated wind tunnel
+  | 'vehicle-comparison-lab' // Side-by-side vehicle data analysis across speed, weight, capacity, range
+  | 'propulsion-lab' // Newton's Third Law across propulsion types (jet, propeller, rocket, wheel)
+  | 'propulsion-timeline' // Interactive timeline of transportation history from wheel to spacecraft
 
   // Astronomy Primitives (K-5)
   | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
@@ -1345,3 +1355,13 @@ export type { DnaExplorerData, NucleotideInfo, SequenceInfo, StructuralFeatures,
 export type { ProteinFolderData, AminoAcidResidue, KeyInteraction, FoldingLevels, MutationChallenge } from './primitives/visual-primitives/biology/ProteinFolder';
 export type { EnergyCycleEngineData, MoleculeInput, MoleculeOutput, PhotosynthesisData, CellularRespirationData, CouplingPoint, ExperimentScenario } from './primitives/visual-primitives/biology/EnergyCycleEngine';
 export type { EvolutionTimelineData, TimelineEra, TimelineEvent, Lineage, ScaleAnchor, MassExtinction } from './primitives/visual-primitives/biology/EvolutionTimeline';
+export type { MachineProfileData, QuickStats, KeyComponent, MachineHistory, FascinatingFact } from './primitives/visual-primitives/engineering/MachineProfile';
+export type { FlightForcesExplorerData, AircraftProfile, ForceInfo, FlightState, FlightChallenge } from './primitives/visual-primitives/engineering/FlightForcesExplorer';
+export type { AirfoilLabData, AirfoilShape, AerodynamicResults, PresetComparison, AirfoilChallenge } from './primitives/visual-primitives/engineering/AirfoilLab';
+export type { VehicleComparisonLabData, ComparisonVehicle, ComparisonChallenge, SurprisingFact, VehicleMetric } from './primitives/visual-primitives/engineering/VehicleComparisonLab';
+export type { PropulsionLabData, PropulsionType, NewtonThirdLaw, WhatIfExperiment, PropulsionComparison } from './primitives/visual-primitives/engineering/PropulsionLab';
+export type { PropulsionTimelineData, TimelineMilestone, TimelineEra as PropulsionTimelineEra, SpeedRecord, SequencingChallenge, InnovationChain } from './primitives/visual-primitives/engineering/PropulsionTimeline';
+
+// Math Phase 2
+export type { TenFrameData } from './primitives/visual-primitives/math/TenFrame';
+export type { CountingBoardData } from './primitives/visual-primitives/math/CountingBoard';

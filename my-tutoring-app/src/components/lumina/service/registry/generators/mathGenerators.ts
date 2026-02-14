@@ -27,6 +27,8 @@ import { generateMatrix } from '../../math/gemini-matrix';
 import { generateDotPlot } from '../../math/gemini-dot-plot';
 import { generateHistogram } from '../../math/gemini-histogram';
 import { generateTwoWayTable } from '../../math/gemini-two-way-table';
+import { generateTenFrame } from '../../math/gemini-ten-frame';
+import { generateCountingBoard } from '../../math/gemini-counting-board';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -157,6 +159,24 @@ registerGenerator('two-way-table', async (item, topic, gradeContext) => ({
   type: 'two-way-table',
   instanceId: item.instanceId,
   data: await generateTwoWayTable(topic, gradeContext, item.config),
+}));
+
+// ============================================================================
+// Math Phase 2 Primitives (K-5 Foundations)
+// ============================================================================
+
+// Ten Frame (K-2 number sense manipulative)
+registerGenerator('ten-frame', async (item, topic, gradeContext) => ({
+  type: 'ten-frame',
+  instanceId: item.instanceId,
+  data: await generateTenFrame(topic, gradeContext, item.config),
+}));
+
+// Counting Board (K-1 counting and subitizing)
+registerGenerator('counting-board', async (item, topic, gradeContext) => ({
+  type: 'counting-board',
+  instanceId: item.instanceId,
+  data: await generateCountingBoard(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

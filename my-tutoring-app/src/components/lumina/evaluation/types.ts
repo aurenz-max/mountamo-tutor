@@ -2104,10 +2104,183 @@ export interface ListenAndRespondMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface FlightForcesExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'flight-forces-explorer';
+
+  // Challenge completion
+  challengesCompleted: number;
+  challengesTotal: number;
+
+  // Force identification
+  forcesIdentifiedCorrectly: number;
+  forcesTotal: number;            // Always 4
+
+  // Performance
+  timeToAchieveLevel: number;     // Seconds to reach target conditions in challenge mode
+  stateTransitionsExplored: number; // How many flight states discovered
+  aircraftProfilesCompared: number;
+  stallTriggered: boolean;
+  attemptsPerChallenge: number;   // Average attempts per challenge
+}
+
+// -----------------------------------------------------------------------------
+// Math Phase 2 Primitives
+// -----------------------------------------------------------------------------
+
+export interface TenFrameMetrics extends BasePrimitiveMetrics {
+  type: 'ten-frame';
+
+  // Challenge completion
+  challengesCompleted: number;
+  challengesTotal: number;
+
+  // Subitize performance
+  subitizeAccuracy: number;           // 0-100: correct flash identifications
+  subitizeAverageTime: number;        // ms average response time in flash mode
+
+  // Make-ten performance
+  makeTenCorrect: number;
+  makeTenTotal: number;
+
+  // Strategy indicators
+  usedMakeTenStrategy: boolean;       // In addition, did they fill to 10 first
+  counterPlacementEfficiency: boolean; // Placed without removing/replacing
+
+  // Exploration
+  twoColorDecompositionsExplored: number; // Count of different decompositions tried
+
+  // Attempts
+  attemptsCount: number;
+}
+
+export interface CountingBoardMetrics extends BasePrimitiveMetrics {
+  type: 'counting-board';
+
+  // Counting accuracy
+  countingAccuracy: number;         // 0-100: correct final count / total challenges
+  oneToOneCorrespondence: boolean;  // Did they tap each object exactly once
+
+  // Subitize performance
+  subitizeAccuracy: number;         // 0-100: correct flash identifications
+  subitizeSpeed: number;            // ms average response time in flash mode
+
+  // Strategy indicators
+  countOnUsed: boolean;             // Counted on from a group instead of starting from 1
+  groupingUsed: boolean;            // Organized objects before counting
+  cardinalityUnderstood: boolean;   // Stated the total as "how many"
+
+  // Attempts
+  attemptsCount: number;
+}
+
+export interface AirfoilLabMetrics extends BasePrimitiveMetrics {
+  type: 'airfoil-lab';
+
+  // Exploration
+  shapesExplored: number;
+  variablesManipulated: string[]; // Which of: shape, angle, speed were changed
+
+  // Predictions
+  predictionsCorrect: number;
+  predictionsTotal: number;
+
+  // Discovery
+  comparisonCompleted: boolean;
+  stallDiscovered: boolean;
+
+  // Challenge performance
+  challengeOptimality: number;    // 0-100, how close to optimal design
+  attemptsCount: number;
+}
+
+// -----------------------------------------------------------------------------
+// Vehicle Comparison Lab
+// -----------------------------------------------------------------------------
+
+export interface VehicleComparisonLabMetrics extends BasePrimitiveMetrics {
+  type: 'vehicle-comparison-lab';
+
+  // Exploration
+  vehiclesCompared: number;        // Count of unique comparison pairs
+  metricsExplored: string[];       // Which metrics did they examine
+
+  // Challenge performance
+  challengeAnswersCorrect: number;
+  challengesTotal: number;
+  challengeJustificationProvided: boolean;
+
+  // Engagement
+  chartTypesUsed: string[];        // Which visualization modes explored
+  surprisingFactsDiscovered: number;
+  surprisingFactsTotal: number;
+  attemptsCount: number;
+}
+
+// -----------------------------------------------------------------------------
+// Propulsion Lab
+// -----------------------------------------------------------------------------
+
+export interface PropulsionLabMetrics extends BasePrimitiveMetrics {
+  type: 'propulsion-lab';
+
+  // Action/Reaction understanding
+  actionReactionPairsIdentified: number;
+  pairsTotal: number;
+
+  // What-If experiments
+  whatIfCorrect: number;
+  whatIfTotal: number;
+
+  // Exploration
+  propulsionTypesExplored: number;
+  newtonThirdUnderstood: boolean;
+
+  // Comparisons
+  comparisonsCompleted: number;
+  comparisonsTotal: number;
+
+  // Key insight
+  mediumDependencyUnderstood: boolean;
+  attemptsCount: number;
+}
+
+// -----------------------------------------------------------------------------
+// Propulsion Timeline
+// -----------------------------------------------------------------------------
+
+export interface PropulsionTimelineMetrics extends BasePrimitiveMetrics {
+  type: 'propulsion-timeline';
+
+  // Exploration
+  milestonesExplored: number;
+  milestonesTotal: number;
+
+  // Sequencing challenges
+  sequencingCorrect: number;
+  sequencingTotal: number;
+
+  // Innovation chains
+  innovationChainsTraced: number;
+
+  // Era & domain coverage
+  erasExplored: number;
+  erasTotal: number;
+  domainsExplored: string[];      // Which of land/sea/air/space
+
+  // Speed records
+  speedTrendObserved: boolean;
+  attemptsCount: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
   | BridgeBuilderMetrics
+  | FlightForcesExplorerMetrics
+  | AirfoilLabMetrics
+  | VehicleComparisonLabMetrics
+  | PropulsionLabMetrics
+  | PropulsionTimelineMetrics
   | LeverLabMetrics
   | PulleySystemMetrics
   | GearTrainMetrics
@@ -2144,6 +2317,9 @@ export type PrimitiveMetrics =
   | ArrayGridMetrics
   | RatioTableMetrics
   | TapeDiagramMetrics
+  // Math Phase 2
+  | TenFrameMetrics
+  | CountingBoardMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

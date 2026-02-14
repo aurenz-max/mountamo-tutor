@@ -600,7 +600,7 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                             await text_queue.put(TextQueueEntry(
                                 text=context_summary,
-                                end_of_turn=False,  # Silent injection — don't trigger a response
+                                end_of_turn=True,  # Silent injection — don't trigger a response
                             ))
 
                         elif message_type == "student_action":
@@ -616,7 +616,7 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                             await text_queue.put(TextQueueEntry(
                                 text=action_text,
-                                end_of_turn=False,  # Silent injection
+                                end_of_turn=True,  # Silent injection
                             ))
 
                         elif message_type == "switch_primitive":

@@ -219,6 +219,17 @@ export async function POST(request: NextRequest) {
         const speciesImageUrl = await generateSpeciesImage(params.imagePrompt);
         return NextResponse.json({ imageUrl: speciesImageUrl });
 
+      // ============================================
+      // ENGINEERING PRIMITIVES
+      // ============================================
+
+      case 'generateMachineImage':
+        const { generateMachineImage } = await import(
+          '@/components/lumina/service/engineering/gemini-machine-profile'
+        );
+        const machineImageUrl = await generateMachineImage(params.imagePrompt);
+        return NextResponse.json({ imageUrl: machineImageUrl });
+
       default:
         return NextResponse.json(
           { error: `Unknown action: ${action}` },
