@@ -21,6 +21,30 @@ This guide explains how to add new primitive components to Lumina using the regi
 
 **Why this matters:** Primitives with evaluation enable adaptive learning pathways, personalized feedback, and data-driven instruction. They transform passive content into active learning experiences.
 
+## 🤖 Philosophy: Design for AI Tutoring Awareness
+
+**If your primitive has interactions, the AI tutor should know about them.** A primitive where students click buttons, make choices, and transition between phases — but the AI goes silent after "hello" — is wasted potential. The difference between a good primitive and a great one is often just 2-3 well-placed signals that let the AI respond contextually.
+
+Primitives fall on a spectrum of AI awareness:
+
+| Tier | Example | What the AI Sees | Tutoring Value |
+|------|---------|-------------------|----------------|
+| **Display-only** | Static diagram, info card | Nothing after initial load | Low — one-shot narration at best |
+| **Interactive but AI-blind** | Buttons/drag that update local state only | Nothing — AI goes silent | Wasted potential |
+| **AI-aware interactive** | PhonicsBlender, FractionBar | `sendText` at key moments + catalog scaffolding | High — real contextual tutoring |
+
+**Best Practice: When designing an interactive primitive, ask three questions:**
+
+1. **Where would a human tutor speak?** — Correct/incorrect answers, phase transitions, new items, completion. These become `sendText('[TAG] ...', { silent: true })` calls in the component.
+2. **What state does the tutor need to see?** — The relevant runtime values (current answer, target, attempt count). These become `contextKeys` in the catalog's `tutoring` field.
+3. **Does the AI need special behavior?** — Pronunciation-only mode, no-commentary responses, drawing narration. These become `aiDirectives` in the catalog.
+
+**You don't need to make every primitive fully AI-aware.** A static concept card is fine without speech triggers. But if students are clicking, building, choosing, or solving — and a human tutor would naturally say something — wire those moments up. The scaffolding lives in the catalog (one field), the triggers live in the component (`sendText` calls), and the backend stays completely primitive-agnostic.
+
+See **[ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md)** for the full implementation guide.
+
+---
+
 ## Quick Start: 6 Files, Zero Switch Statements
 
 Adding a new primitive involves these files:
@@ -385,10 +409,26 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'my-primitive',
     description: 'Clear description of what this does. Perfect for [use case]. ESSENTIAL for [grade level] [subject].',
-    constraints: 'Any limitations (e.g., "Requires numeric data", "Best for grades 3-8")'
+    constraints: 'Any limitations (e.g., "Requires numeric data", "Best for grades 3-8")',
+
+    // ⭐ Add tutoring scaffolding for interactive primitives (see ADDING_TUTORING_SCAFFOLD.md)
+    tutoring: {
+      taskDescription: 'What the student is doing. Target: {{targetValue}}. Current: {{currentValue}}.',
+      contextKeys: ['targetValue', 'currentValue', 'attempts'],
+      scaffoldingLevels: {
+        level1: '"Ask a question or point to a feature"',
+        level2: '"Break the task into smaller steps, reference {{targetValue}}"',
+        level3: '"Walk through step-by-step with concrete details"',
+      },
+      commonStruggles: [
+        { pattern: 'Observable student behavior', response: 'Actionable tutor response' },
+      ],
+    },
   },
 ];
 ```
+
+**The `tutoring` field is optional but recommended for interactive primitives.** It tells the AI tutor what the student is doing, what runtime state to watch, and how to scaffold help at progressive levels. Primitives without it still work — they just get a generic fallback. See [ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md) for the full guide.
 
 ### Step 6: Register UI Component
 

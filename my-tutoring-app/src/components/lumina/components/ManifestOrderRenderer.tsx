@@ -134,7 +134,7 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
                     className="w-full flex justify-center"
                     style={{ animationDelay: `${cardIndex * 150}ms` }}
                   >
-                    <Component data={card} index={cardIndex} />
+                    <Component data={card} index={cardIndex} instanceId={`${instanceId}-card-${cardIndex}`} totalCards={cards.length} />
                   </div>
                 ))}
               </div>

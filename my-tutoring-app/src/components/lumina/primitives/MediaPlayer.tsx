@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Pause, Play, RefreshCw, RotateCcw, Volume2, XCircle } from 'lucide-react';
 import { MediaPlayerData } from '../types';
 import { base64ToAudioBuffer, getAudioContext } from '../utils/audioUtils';
 import { usePrimitiveEvaluation, type MediaPlayerMetrics } from '../evaluation';
+import { useLuminaAI } from '../hooks/useLuminaAI';
 
 interface MediaPlayerProps {
   data: MediaPlayerData;
@@ -55,6 +56,34 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
   const animationFrameRef = useRef<number>(0);
 
   const currentSegment = data.segments[currentIndex];
+
+  // Refs to prevent duplicate AI triggers
+  const hasTriggeredReadAloudRef = useRef<Set<number>>(new Set());
+  const hasTriggeredKnowledgeCheckRef = useRef<Set<number>>(new Set());
+  const hasTriggeredNextSegmentRef = useRef<Set<number>>(new Set());
+  const hasTriggeredLessonCompleteRef = useRef(false);
+
+  // ── AI Tutoring Hook ───────────────────────────────────────────────────────
+  const resolvedInstanceId = data.instanceId || `media-player-${Date.now()}`;
+
+  const aiPrimitiveData = useMemo(() => ({
+    title: data.title || 'Interactive Lesson',
+    currentSegmentIndex: currentIndex + 1,
+    totalSegments: data.segments.length,
+    currentSegmentTitle: currentSegment.title,
+    currentSegmentScript: currentSegment.script,
+    segmentPhase: segmentPhases[currentIndex],
+    hasKnowledgeCheck: !!currentSegment.knowledgeCheck,
+    knowledgeCheckQuestion: currentSegment.knowledgeCheck?.question || '',
+    knowledgeCheckOptions: currentSegment.knowledgeCheck?.options?.join(' | ') || '',
+  }), [data.title, data.segments.length, currentIndex, currentSegment, segmentPhases]);
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'media-player',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    exhibitId: data.exhibitId,
+  });
 
   // Initialize evaluation hook
   const {
@@ -156,7 +185,16 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       pausedAtRef.current = currentTime;
       stopAudio();
     } else {
-      // Play/Resume
+      // Play/Resume — trigger read-aloud on first play of each segment
+      if (!hasTriggeredReadAloudRef.current.has(currentIndex)) {
+        hasTriggeredReadAloudRef.current.add(currentIndex);
+        sendText(
+          `[READ_ALOUD] The student pressed play on segment ${currentIndex + 1} of ${data.segments.length}: "${currentSegment.title}". ` +
+          `Read the following content aloud in a clear, engaging narrator voice:\n\n` +
+          `"${currentSegment.script}"`,
+          { silent: true }
+        );
+      }
       if (progress >= 100) {
         pausedAtRef.current = 0;
         setProgress(0);
@@ -232,6 +270,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       });
       setFeedback({ ...feedback, [segmentIndex]: '' });
 
+      // AI: Celebrate correct answer
+      sendText(
+        `[ANSWER_CORRECT] The student answered the knowledge check correctly on attempt ${attempts} ` +
+        `for segment "${segment.title}". Briefly congratulate them!`,
+        { silent: true }
+      );
+
       // Show success feedback, then auto-advance
       setTimeout(() => {
         advanceToNextSegment(segmentIndex);
@@ -247,12 +292,32 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
           return updated;
         });
         setFeedback({ ...feedback, [segmentIndex]: '' });
+
+        // AI: Comfort after max attempts
+        const correctAnswer = knowledgeCheck.options[knowledgeCheck.correctOptionIndex];
+        sendText(
+          `[MAX_ATTEMPTS] The student used all ${MAX_ATTEMPTS_PER_SEGMENT} attempts on segment "${segment.title}". ` +
+          `The correct answer was "${correctAnswer}". ` +
+          (knowledgeCheck.explanation ? `Explanation: ${knowledgeCheck.explanation}. ` : '') +
+          `Read the correct answer aloud and reassure them that learning from mistakes is valuable.`,
+          { silent: true }
+        );
       } else {
         // Show error feedback, allow retry
         setFeedback({
           ...feedback,
           [segmentIndex]: 'Not quite right. Review the content above and try again.'
         });
+
+        // AI: Give a hint without revealing the answer
+        const studentAnswer = knowledgeCheck.options[selectedIndex];
+        sendText(
+          `[ANSWER_INCORRECT] The student chose "${studentAnswer}" but that's not correct. ` +
+          `Attempt ${attempts} of ${MAX_ATTEMPTS_PER_SEGMENT} for segment "${segment.title}". ` +
+          `Give a brief, encouraging hint without revealing the answer. ` +
+          `Suggest they re-listen to the narration if needed.`,
+          { silent: true }
+        );
       }
     }
   };
@@ -266,19 +331,42 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
   const advanceToNextSegment = (currentSegmentIndex: number) => {
     if (currentSegmentIndex === data.segments.length - 1) {
       // Last segment - submit final evaluation
+      if (!hasTriggeredLessonCompleteRef.current) {
+        hasTriggeredLessonCompleteRef.current = true;
+        const correctCount = Object.entries(segmentAnswered)
+          .filter(([, answered]) => answered).length;
+        sendText(
+          `[LESSON_COMPLETE] The student finished all ${data.segments.length} segments of "${data.title || 'the lesson'}"! ` +
+          `They answered ${correctCount} knowledge checks. ` +
+          `Celebrate their accomplishment and summarize what they learned.`,
+          { silent: true }
+        );
+      }
       submitFinalEvaluation();
     } else {
       // Move to next segment
-      setCurrentIndex(currentSegmentIndex + 1);
+      const nextIndex = currentSegmentIndex + 1;
+      const nextSegment = data.segments[nextIndex];
+      setCurrentIndex(nextIndex);
       setSegmentStartTimes({
         ...segmentStartTimes,
-        [currentSegmentIndex + 1]: Date.now()
+        [nextIndex]: Date.now()
       });
       setSegmentPhases(prev => {
         const updated = [...prev];
-        updated[currentSegmentIndex + 1] = 'watching';
+        updated[nextIndex] = 'watching';
         return updated;
       });
+
+      // AI: Introduce the next segment
+      if (!hasTriggeredNextSegmentRef.current.has(nextIndex)) {
+        hasTriggeredNextSegmentRef.current.add(nextIndex);
+        sendText(
+          `[NEXT_SEGMENT] Moving to segment ${nextIndex + 1} of ${data.segments.length}: "${nextSegment.title}". ` +
+          `Briefly introduce this segment and tell the student to press play to listen.`,
+          { silent: true }
+        );
+      }
     }
   };
 
@@ -362,8 +450,25 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       if (!segmentStartTimes[currentIndex]) {
         setSegmentStartTimes({ ...segmentStartTimes, [currentIndex]: Date.now() });
       }
+
+      // Trigger AI to read the knowledge check question and options
+      if (!hasTriggeredKnowledgeCheckRef.current.has(currentIndex)) {
+        hasTriggeredKnowledgeCheckRef.current.add(currentIndex);
+        const kc = currentSegment.knowledgeCheck;
+        const optionsText = kc.options
+          .map((opt, i) => `${String.fromCharCode(65 + i)}: ${opt}`)
+          .join('. ');
+        sendText(
+          `[READ_KNOWLEDGE_CHECK] A knowledge check has appeared for segment "${currentSegment.title}". ` +
+          `Read the question aloud, then read each answer option:\n\n` +
+          `Question: "${kc.question}"\n` +
+          `Options: ${optionsText}\n\n` +
+          `Read these clearly and encourage the student to choose an answer. Do NOT hint at the correct answer.`,
+          { silent: true }
+        );
+      }
     }
-  }, [isFinished, currentIndex, currentSegment.knowledgeCheck, segmentAnswered, segmentStartTimes]);
+  }, [isFinished, currentIndex, currentSegment.knowledgeCheck, segmentAnswered, segmentStartTimes, currentSegment.title, sendText]);
 
   // Load audio buffer when segment changes
   useEffect(() => {

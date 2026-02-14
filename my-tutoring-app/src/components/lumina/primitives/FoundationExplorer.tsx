@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FoundationExplorerData, FoundationConcept } from '../types';
 import { generateConceptImage } from '../service/geminiClient-api';
+import { useLuminaAI } from '../hooks/useLuminaAI';
 import { Target, CheckCircle2, Lightbulb, HelpCircle, ChevronRight } from 'lucide-react';
 
 /**
@@ -44,8 +45,48 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
   const [diagramImageUrl, setDiagramImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
 
+  // AI trigger guards (prevent double-firing)
+  const hasTriggeredAllCompleteRef = useRef(false);
+
   const selectedConcept = concepts.find(c => c.id === selectedConceptId);
   const verbConfig = VERB_CONFIG[objectiveVerb] || VERB_CONFIG.identify;
+
+  const completedCount = Object.values(conceptsCompleted).filter(Boolean).length;
+  const allCompleted = completedCount === concepts.length;
+
+  // --- AI Tutoring Integration ---
+  const resolvedInstanceId = (data as any).instanceId || `foundation-explorer-${Date.now()}`;
+
+  const aiPrimitiveData = {
+    objectiveText,
+    objectiveVerb,
+    selectedConceptName: selectedConcept?.name || '',
+    completedCount,
+    totalConcepts: concepts.length,
+    allCompleted,
+  };
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'foundation-explorer',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    exhibitId: (data as any).exhibitId,
+  });
+
+  // AI trigger: All concepts completed
+  useEffect(() => {
+    if (allCompleted && !hasTriggeredAllCompleteRef.current) {
+      hasTriggeredAllCompleteRef.current = true;
+      const conceptNames = concepts.map(c => c.name).join(', ');
+      sendText(
+        `[ALL_COMPLETE] The student has explored all ${concepts.length} concepts: ${conceptNames}. ` +
+        `Learning objective: "${objectiveText}". ` +
+        `Celebrate their effort and briefly recap how these concepts connect to the objective.`,
+        { silent: true }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allCompleted]);
 
   // Generate diagram image
   useEffect(() => {
@@ -67,25 +108,59 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
   }, [diagram.imagePrompt]);
 
   const handleConceptSelect = (conceptId: string) => {
-    setSelectedConceptId(conceptId);
+    const concept = concepts.find(c => c.id === conceptId);
+    if (concept && conceptId !== selectedConceptId) {
+      setSelectedConceptId(conceptId);
+      const exploredSoFar = Object.values(conceptsCompleted).filter(Boolean).length;
+      sendText(
+        `[CONCEPT_SELECTED] The student selected concept "${concept.name}". ` +
+        `Definition: "${concept.briefDefinition}". ` +
+        `Progress: ${exploredSoFar} of ${concepts.length} concepts completed so far. ` +
+        `Briefly introduce this concept and encourage them to read the definition and check the diagram.`,
+        { silent: true }
+      );
+    }
   };
 
   const handleSelfCheckReveal = (conceptId: string) => {
     setSelfCheckRevealed(prev => ({ ...prev, [conceptId]: true }));
+    const concept = concepts.find(c => c.id === conceptId);
+    if (concept) {
+      sendText(
+        `[HINT_REQUESTED] The student asked for a hint on the self-check for "${concept.name}". ` +
+        `Self-check question: "${concept.selfCheck.prompt}". ` +
+        `Encourage them to think about the definition and diagram before reading the hint. ` +
+        `Do NOT reveal the answer.`,
+        { silent: true }
+      );
+    }
   };
 
   const handleConceptComplete = (conceptId: string) => {
     setConceptsCompleted(prev => ({ ...prev, [conceptId]: true }));
+    const concept = concepts.find(c => c.id === conceptId);
     // Auto-advance to next incomplete concept
     const currentIndex = concepts.findIndex(c => c.id === conceptId);
     const nextConcept = concepts.find((c, i) => i > currentIndex && !conceptsCompleted[c.id]);
+
+    const newCompletedCount = completedCount + 1;
+    if (concept) {
+      sendText(
+        `[CONCEPT_COMPLETED] The student marked "${concept.name}" as understood. ` +
+        `Progress: ${newCompletedCount} of ${concepts.length} concepts completed. ` +
+        (nextConcept
+          ? `Next concept: "${nextConcept.name}". Celebrate briefly and preview the next concept.`
+          : newCompletedCount < concepts.length
+            ? `Celebrate briefly and encourage them to explore the remaining concepts.`
+            : `This was the last concept!`),
+        { silent: true }
+      );
+    }
+
     if (nextConcept) {
       setSelectedConceptId(nextConcept.id);
     }
   };
-
-  const completedCount = Object.values(conceptsCompleted).filter(Boolean).length;
-  const allCompleted = completedCount === concepts.length;
 
   return (
     <div className={`w-full ${className || ''}`}>

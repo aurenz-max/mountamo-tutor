@@ -1,20 +1,78 @@
 import React, { useState, useEffect, useRef, MouseEvent } from 'react';
 import { ConceptCardData } from '../types';
 import { generateConceptImage } from '../service/geminiClient-api';
+import { useLuminaAI } from '../hooks/useLuminaAI';
 
 interface ConceptCardProps {
   data: ConceptCardData;
   index: number;
+  instanceId?: string;
+  totalCards?: number;
 }
 
-export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index }) => {
+export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceId, totalCards }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
-  
+
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // AI trigger guards (prevent double-firing)
+  const hasTriggeredFlipRef = useRef(false);
+  const hasTriggeredReturnRef = useRef(false);
+
+  const resolvedInstanceId = instanceId || `concept-card-${index}-${Date.now()}`;
+
+  // --- AI Tutoring Integration ---
+  const aiPrimitiveData = {
+    title: data.title,
+    definition: data.definition,
+    conceptElementLabels: data.conceptElements?.map(el => el.label).join(', ') || '',
+    curiosityNote: data.curiosityNote,
+    timelineContext: data.timelineContext,
+    cardIndex: index + 1,
+    totalCards: totalCards || 1,
+    isFlipped,
+  };
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'concept-card-grid',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+  });
+
+  // AI trigger: Card flipped to back (student starts exploring)
+  useEffect(() => {
+    if (isFlipped && !hasTriggeredFlipRef.current) {
+      hasTriggeredFlipRef.current = true;
+      hasTriggeredReturnRef.current = false; // Reset return guard for next flip
+      const elementsList = data.conceptElements?.map(el => el.label).join(', ') || 'the key details';
+      sendText(
+        `[CARD_FLIPPED] The student flipped concept card ${index + 1} of ${totalCards || '?'}: "${data.title}". ` +
+        `Definition: "${data.definition}". Components: ${elementsList}. ` +
+        `Briefly introduce this concept and highlight what to look for.`,
+        { silent: true }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFlipped]);
+
+  // AI trigger: Card flipped back to front (student finished reading)
+  useEffect(() => {
+    if (!isFlipped && hasTriggeredFlipRef.current && !hasTriggeredReturnRef.current) {
+      hasTriggeredReturnRef.current = true;
+      hasTriggeredFlipRef.current = false; // Reset flip guard for next flip
+      sendText(
+        `[CARD_RETURNED] The student flipped card "${data.title}" back to the front. ` +
+        `They've finished reading this concept. Briefly ask what they found interesting ` +
+        `and encourage them to explore another card if there are more.`,
+        { silent: true }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFlipped]);
 
   // Image Generation Logic
   useEffect(() => {
@@ -45,7 +103,7 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index }) => {
     const y = e.clientY - rect.top;
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    
+
     const rotateXValue = ((y - centerY) / centerY) * -10; // Max 10deg
     const rotateYValue = ((x - centerX) / centerX) * 10; // Max 10deg
 
@@ -59,27 +117,27 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index }) => {
   };
 
   return (
-    <div 
+    <div
       className="relative w-full max-w-sm h-[550px] perspective-1000 cursor-pointer group"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={() => setIsFlipped(!isFlipped)}
     >
-      <div 
+      <div
         ref={cardRef}
         className={`relative w-full h-full transition-all duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}
-        style={{ 
-          transform: isFlipped 
-            ? 'rotateY(180deg)' 
-            : `rotateX(${rotateX}deg) rotateY(${rotateY}deg)` 
+        style={{
+          transform: isFlipped
+            ? 'rotateY(180deg)'
+            : `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
         }}
       >
-        
+
         {/* FRONT OF CARD */}
         <div className="absolute inset-0 w-full h-full backface-hidden">
           <div className="h-full glass-panel rounded-3xl border border-white/10 p-8 flex flex-col justify-between overflow-hidden relative group-hover:border-white/30 transition-colors shadow-2xl">
             {/* Ambient Background Glow */}
-            <div 
+            <div
               className="absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] opacity-20 transition-opacity duration-500"
               style={{ backgroundColor: data.themeColor }}
             />
@@ -133,7 +191,7 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index }) => {
         {/* BACK OF CARD */}
         <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180">
           <div className="h-full bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-white/20 p-8 flex flex-col relative overflow-hidden shadow-2xl">
-            
+
             {/* Decorative Header Line */}
             <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: data.themeColor }} />
 

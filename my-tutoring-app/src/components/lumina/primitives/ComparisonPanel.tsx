@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ComparisonData } from '../types';
 import { generateConceptImage } from '../service/geminiClient-api';
 import {
@@ -8,6 +8,7 @@ import {
   type ComparisonPanelMetrics,
   type PrimitiveEvaluationResult,
 } from '../evaluation';
+import { useLuminaAI } from '../hooks/useLuminaAI';
 
 interface ComparisonPanelProps {
   data: ComparisonData;
@@ -40,6 +41,13 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
   const [gateAttemptStartTime, setGateAttemptStartTime] = useState<number | null>(null);
   const [gateAttemptCounts, setGateAttemptCounts] = useState<Record<number, number>>({});
 
+  // AI trigger guards (prevent double-firing)
+  const hasTriggeredItem1Ref = useRef(false);
+  const hasTriggeredItem2Ref = useRef(false);
+  const hasTriggeredGateOpenRef = useRef(false);
+  const hasTriggeredSynthesisRef = useRef(false);
+  const hasTriggeredFinalCardsRef = useRef(false);
+
   // Evaluation integration
   const {
     instanceId,
@@ -50,12 +58,14 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
     onEvaluationSubmit,
   } = data;
 
+  const resolvedInstanceId = instanceId || `comparison-panel-${Date.now()}`;
+
   const {
     submitResult,
     hasSubmitted: hasSubmittedEvaluation,
   } = usePrimitiveEvaluation<ComparisonPanelMetrics>({
     primitiveType: 'comparison-panel',
-    instanceId: instanceId || `comparison-panel-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
@@ -72,6 +82,74 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
   const bothItemsExplored = item1Clicked && item2Clicked;
   const canShowFirstGate = hasGates && bothItemsExplored && currentGateIndex === 0;
   const canShowSynthesis = !hasGates || (currentGateIndex > 0 || allGatesCompleted);
+
+  // --- AI Tutoring Integration ---
+  const aiPrimitiveData = {
+    title: data.title,
+    item1Name: data.item1.name,
+    item2Name: data.item2.name,
+    item1Explored: item1Clicked,
+    item2Explored: item2Clicked,
+    currentGateIndex,
+    totalGates: gates.length,
+    currentGateQuestion: currentGate?.question || '',
+    allGatesCompleted,
+  };
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'comparison-panel',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    exhibitId,
+  });
+
+  // AI trigger: Item explored
+  useEffect(() => {
+    if (item1Clicked && !hasTriggeredItem1Ref.current) {
+      hasTriggeredItem1Ref.current = true;
+      const isSecond = item2Clicked;
+      sendText(
+        `[ITEM_EXPLORED] The student just explored "${data.item1.name}" (Option A). ` +
+        `Key features: ${data.item1.points.slice(0, 2).join('; ')}. ` +
+        (isSecond
+          ? `Both items are now explored. Congratulate them and prepare them for the comprehension check.`
+          : `This is the first card explored. Walk them through the material and build curiosity about "${data.item2.name}".`),
+        { silent: true }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item1Clicked]);
+
+  useEffect(() => {
+    if (item2Clicked && !hasTriggeredItem2Ref.current) {
+      hasTriggeredItem2Ref.current = true;
+      const isSecond = item1Clicked;
+      sendText(
+        `[ITEM_EXPLORED] The student just explored "${data.item2.name}" (Option B). ` +
+        `Key features: ${data.item2.points.slice(0, 2).join('; ')}. ` +
+        (isSecond
+          ? `Both items are now explored. Congratulate them and prepare them for the comprehension check.`
+          : `This is the first card explored. Walk them through the material and build curiosity about "${data.item1.name}".`),
+        { silent: true }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item2Clicked]);
+
+  // AI trigger: Gate opened (both items explored, first gate visible)
+  useEffect(() => {
+    if (bothItemsExplored && hasGates && currentGate && !hasTriggeredGateOpenRef.current) {
+      hasTriggeredGateOpenRef.current = true;
+      sendText(
+        `[GATE_OPENED] A true/false comprehension check has appeared. ` +
+        `Question: "${currentGate.question}". ` +
+        `Read the question aloud and encourage the student to think carefully before answering. ` +
+        `Do NOT hint at the answer.`,
+        { silent: true }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bothItemsExplored]);
 
   useEffect(() => {
     let mounted = true;
@@ -141,21 +219,79 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
     });
     setGateSubmitted(true);
 
+    // AI trigger: Gate answer feedback
+    if (isCorrect) {
+      sendText(
+        `[GATE_CORRECT] The student answered "${gateAnswer ? 'True' : 'False'}" — correct! ` +
+        `Question was: "${currentGate.question}". Attempt #${attemptNumber}. ` +
+        `Briefly celebrate their understanding.`,
+        { silent: true }
+      );
+    } else {
+      sendText(
+        `[GATE_INCORRECT] The student answered "${gateAnswer ? 'True' : 'False'}" but that's incorrect. ` +
+        `Question was: "${currentGate.question}". Attempt #${attemptNumber}. ` +
+        `Encourage them to re-read the material and try again. Do NOT reveal the answer.`,
+        { silent: true }
+      );
+    }
+
     // If correct, advance after a brief moment to show feedback
     if (isCorrect) {
       setTimeout(() => {
-        setCurrentGateIndex(currentGateIndex + 1);
+        const nextIndex = currentGateIndex + 1;
+        setCurrentGateIndex(nextIndex);
         setGateAnswer(null);
         setGateSubmitted(false);
         setGateAttemptStartTime(Date.now());
 
         // Submit evaluation if all gates completed
-        if (currentGateIndex + 1 >= gates.length) {
+        if (nextIndex >= gates.length) {
           submitEvaluation([...gateResults, newResult]);
         }
       }, 2000);
     }
   };
+
+  // AI trigger: All gates completed → synthesis unlocked
+  useEffect(() => {
+    if (allGatesCompleted && hasGates && !hasTriggeredSynthesisRef.current) {
+      hasTriggeredSynthesisRef.current = true;
+      sendText(
+        `[SYNTHESIS_UNLOCKED] The student completed all ${gates.length} comprehension gates! ` +
+        `The synthesis section is now revealed. Main insight: "${data.synthesis.mainInsight}". ` +
+        `Walk them through the synthesis — mention the key differences and similarities. ` +
+        `Be celebratory and engaging.`,
+        { silent: true }
+      );
+
+      // AI trigger: Final cards (When to Use + Common Misconception) — delayed so synthesis speech finishes
+      if (data.synthesis.whenToUse || data.synthesis.commonMisconception) {
+        setTimeout(() => {
+          if (!hasTriggeredFinalCardsRef.current) {
+            hasTriggeredFinalCardsRef.current = true;
+            const parts: string[] = [];
+            if (data.synthesis.whenToUse) {
+              parts.push(
+                `"When to Use Each": ${data.item1.name} — ${data.synthesis.whenToUse.item1Context}; ` +
+                `${data.item2.name} — ${data.synthesis.whenToUse.item2Context}.`
+              );
+            }
+            if (data.synthesis.commonMisconception) {
+              parts.push(`"Common Misconception": ${data.synthesis.commonMisconception}.`);
+            }
+            sendText(
+              `[FINAL_CARDS] Now walk the student through the final sections. ` +
+              parts.join(' ') + ' ' +
+              `Help the student understand when each option is best and clear up any misconception.`,
+              { silent: true }
+            );
+          }
+        }, 8000);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allGatesCompleted]);
 
   const handleGateReset = () => {
     setGateAnswer(null);
@@ -517,7 +653,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
                 Key Insight
               </div>
               <p className="text-xl text-white leading-relaxed font-light italic">
-                "{data.synthesis.mainInsight}"
+                &ldquo;{data.synthesis.mainInsight}&rdquo;
               </p>
             </div>
 
@@ -536,7 +672,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
                 <ul className="space-y-2.5">
                   {data.synthesis.keyDifferences.map((diff, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-slate-200">
-                      <span className="text-red-400 mt-1 flex-shrink-0">▸</span>
+                      <span className="text-red-400 mt-1 flex-shrink-0">&#9656;</span>
                       <span className="leading-relaxed">{diff}</span>
                     </li>
                   ))}
@@ -556,7 +692,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
                 <ul className="space-y-2.5">
                   {data.synthesis.keySimilarities.map((sim, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-slate-200">
-                      <span className="text-green-400 mt-1 flex-shrink-0">▸</span>
+                      <span className="text-green-400 mt-1 flex-shrink-0">&#9656;</span>
                       <span className="leading-relaxed">{sim}</span>
                     </li>
                   ))}
@@ -618,7 +754,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
       {!hasGates && !selectedItem && (
         <div className="mt-6 text-center">
           <p className="text-xs text-slate-500 font-mono">
-            💡 Click on either card to highlight and focus
+            Click on either card to highlight and focus
           </p>
         </div>
       )}
@@ -633,7 +769,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
             <span className="font-bold text-sm">Comparison Complete!</span>
           </div>
           <p className="text-xs text-slate-400">
-            You've successfully explored and understood this comparison
+            You&apos;ve successfully explored and understood this comparison
           </p>
         </div>
       )}

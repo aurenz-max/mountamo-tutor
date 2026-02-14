@@ -22,7 +22,7 @@ const convertToIntroBriefing = (data: IntroData, topic: string = 'Learning Topic
       content: data.hook,
       visual: '📚'
     },
-    bigIdea: {
+    bigIdea: {             
       statement: 'Understanding this concept will help you grow as a learner.',
       whyItMatters: 'This topic connects to many areas of learning and helps build important skills.'
     },
