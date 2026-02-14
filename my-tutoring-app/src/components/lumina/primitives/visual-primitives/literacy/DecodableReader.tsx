@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { DecodableReaderMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -152,6 +153,13 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
+  // Stable instance ID for AI context
+  const resolvedInstanceId = useMemo(
+    () => instanceId || `decodable-reader-${Date.now()}`,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
   // Total words in passage
   const totalWords = useMemo(() => {
     return passage.sentences.reduce((sum, s) => sum + s.words.length, 0);
@@ -178,15 +186,43 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     return count;
   }, [passage, tappedWordIds]);
 
+  // AI tutoring context
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    gradeLevel,
+    currentPhase,
+    totalWords,
+    wordsTapped: tappedWordIds.size,
+    wordsReadIndependently: totalWords - tappedWordIds.size,
+    phonicsPatternsInPassage: phonicsPatternsInPassage.join(', '),
+    comprehensionQuestion: comprehensionQuestion.question,
+    comprehensionAttempts,
+    comprehensionCorrect,
+  }), [
+    title, gradeLevel, currentPhase, totalWords,
+    tappedWordIds.size, phonicsPatternsInPassage,
+    comprehensionQuestion.question, comprehensionAttempts,
+    comprehensionCorrect,
+  ]);
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'decodable-reader',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
   // Handle tapping a word
-  const handleTapWord = useCallback((wordId: string) => {
+  const handleTapWord = useCallback((wordId: string, wordText: string) => {
     setTappedWordIds(prev => new Set(Array.from(prev).concat(wordId)));
     setActiveWordId(wordId);
+    // Pronounce the word via AI
+    sendText(`[PRONOUNCE] Say the word "${wordText}" clearly. Just the word, nothing else.`, { silent: true });
     // Show "playing" state briefly
     setTimeout(() => {
       if (activeWordId === wordId) setActiveWordId(null);
     }, 800);
-  }, [activeWordId]);
+  }, [activeWordId, sendText]);
 
   // Toggle phoneme breakdown for a word
   const handleTogglePhonemes = useCallback((wordId: string) => {
@@ -197,7 +233,13 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
   const handleDoneReading = useCallback(() => {
     setReadingEndTime(Date.now());
     setCurrentPhase('comprehension');
-  }, []);
+    sendText(
+      `[READING_DONE] The student finished reading "${title}". `
+      + `They tapped ${tappedWordIds.size} of ${totalWords} words for help and read ${totalWords - tappedWordIds.size} independently. `
+      + `Now ask the comprehension question: "${comprehensionQuestion.question}"`,
+      { silent: true }
+    );
+  }, [sendText, title, tappedWordIds.size, totalWords, comprehensionQuestion.question]);
 
   // Check comprehension answer
   const handleCheckComprehension = useCallback(() => {
@@ -214,10 +256,23 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     setComprehensionCorrect(isCorrect);
 
     if (isCorrect) {
+      sendText(
+        `[COMPREHENSION_CORRECT] The student answered the comprehension question correctly`
+        + `${comprehensionAttempts > 0 ? ` after ${comprehensionAttempts + 1} attempts` : ' on the first try'}! `
+        + `Celebrate briefly and let them know we're moving to the review.`,
+        { silent: true }
+      );
       // Move to review after short delay
       setTimeout(() => setCurrentPhase('review'), 1200);
+    } else {
+      sendText(
+        `[COMPREHENSION_INCORRECT] The student answered "${answer}" but that's not correct. `
+        + `The question was: "${comprehensionQuestion.question}". `
+        + `This is attempt ${comprehensionAttempts + 1}. Give a brief hint without revealing the answer.`,
+        { silent: true }
+      );
     }
-  }, [comprehensionQuestion, selectedAnswer, shortAnswer]);
+  }, [comprehensionQuestion, selectedAnswer, shortAnswer, comprehensionAttempts, sendText]);
 
   // Skip to review (if they want to move on after wrong answer)
   const handleContinueToReview = useCallback(() => {
@@ -262,6 +317,14 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
         selectedAnswer: selectedAnswer || shortAnswer,
       }
     );
+
+    sendText(
+      `[SESSION_COMPLETE] The student finished reading "${title}"! `
+      + `They read ${totalWords - wordsTapped} of ${totalWords} words independently. `
+      + `Comprehension: ${comprehensionCorrect ? 'correct' : 'incorrect'}. `
+      + `Score: ${score}%. Celebrate their reading accomplishment!`,
+      { silent: true }
+    );
   }, [
     hasSubmittedEvaluation,
     readingEndTime,
@@ -276,6 +339,8 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     selectedAnswer,
     shortAnswer,
     submitEvaluation,
+    sendText,
+    title,
   ]);
 
   // Auto-submit when entering review phase
@@ -371,7 +436,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
         <button
           onClick={() => {
             if (isInteractive) {
-              handleTapWord(word.id);
+              handleTapWord(word.id, word.text);
               if (word.phonemes && word.phonemes.length > 0) {
                 handleTogglePhonemes(word.id);
               }

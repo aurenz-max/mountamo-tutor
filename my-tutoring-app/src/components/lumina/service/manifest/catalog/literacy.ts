@@ -70,6 +70,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       ],
       aiDirectives: [
         {
+          title: 'ACTIVITY INTRODUCTION',
+          instruction:
+            'When you receive [ACTIVITY_START], warmly introduce the phonics blending activity. '
+            + 'Mention that we are going to practice phonics — listening to sounds and blending them into words. '
+            + 'Then introduce the first word and encourage the student to tap each sound tile to hear it. '
+            + 'Keep it brief (2-3 sentences), warm, and enthusiastic. Use age-appropriate language for the grade level.',
+        },
+        {
+          title: 'PHASE TRANSITIONS',
+          instruction:
+            'When you receive [PHASE_TO_BUILD], briefly instruct the student to arrange the sound tiles in order. '
+            + 'Keep it to one sentence. Do not repeat the sounds — the student already heard them.',
+        },
+        {
           title: 'PRONUNCIATION COMMANDS',
           instruction:
             'When you receive a message starting with [PRONOUNCE], you MUST immediately and clearly say ONLY '
@@ -87,7 +101,55 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'decodable-reader',
     description: 'Controlled-vocabulary reading passages with per-word TTS support. Every word is tappable for pronunciation. Tracks which words students tap (decoding difficulty proxy). Includes embedded comprehension question. Words color-coded by phonics pattern. ESSENTIAL for K-2 reading fluency.',
-    constraints: 'Grades K-2. Requires controlled phonics patterns matching student decoding level.'
+    constraints: 'Grades K-2. Requires controlled phonics patterns matching student decoding level.',
+    tutoring: {
+      taskDescription:
+        'You ARE the voice of this decodable reading activity. '
+        + 'The student is reading a controlled-vocabulary passage titled "{{title}}" at Grade {{gradeLevel}}. '
+        + 'Phonics patterns in this passage: {{phonicsPatternsInPassage}}. '
+        + 'Phase: {{currentPhase}}. Words: {{totalWords}} total, {{wordsTapped}} tapped for help, '
+        + '{{wordsReadIndependently}} read independently. '
+        + 'Comprehension question: "{{comprehensionQuestion}}". '
+        + 'Comprehension attempts: {{comprehensionAttempts}}.',
+      contextKeys: [
+        'title', 'gradeLevel', 'currentPhase', 'totalWords',
+        'wordsTapped', 'wordsReadIndependently',
+        'phonicsPatternsInPassage', 'comprehensionQuestion',
+        'comprehensionAttempts', 'comprehensionCorrect',
+      ],
+      scaffoldingLevels: {
+        level1:
+          'READING phase: "Can you read this by yourself? Tap any word you need help with!" '
+          + 'COMPREHENSION phase: "Think about what you read. What does the question ask?" '
+          + 'REVIEW phase: "Look at the words you tapped—those are your practice words!"',
+        level2:
+          'READING phase: "Try sounding out each word. If it\'s tricky, tap it to hear it." '
+          + 'COMPREHENSION phase: "Go back to the passage and find the answer. Look for key words." '
+          + 'REVIEW phase: "You read {{wordsReadIndependently}} words all by yourself! Let\'s look at the ones you tapped."',
+        level3:
+          'READING phase: "Let\'s read together. I\'ll help with any word—just tap it." '
+          + 'COMPREHENSION phase: "The answer is in the passage. Look at the sentence that talks about [topic]. What does it say?" '
+          + 'REVIEW phase: "Great job! You read {{wordsReadIndependently}} of {{totalWords}} words independently. The words you tapped are good ones to practice."',
+      },
+      commonStruggles: [
+        { pattern: 'Tapping most words (wordsTapped > 50% of totalWords)', response: 'Encourage the student—"You\'re doing great asking for help! Let\'s try reading a few words without tapping."' },
+        { pattern: 'Rushing through without tapping any words', response: '"Take your time! Tap any word you want to hear. It\'s okay to listen first."' },
+        { pattern: 'Multiple wrong comprehension attempts', response: '"Let\'s go back and read the passage again. The answer is in there!"' },
+        { pattern: 'Skipping comprehension to review', response: '"That\'s okay! Let\'s look at what you read and practice those words."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRONUNCIATION COMMANDS',
+          instruction:
+            'When you receive a message starting with [PRONOUNCE], you MUST immediately and clearly say ONLY '
+            + 'the requested word. Do NOT add any commentary, questions, encouragement, or extra words. '
+            + 'Just say the word naturally and clearly. This is used for audio playback when students tap words.\n'
+            + 'Examples:\n'
+            + '- "[PRONOUNCE] Say the word cat clearly." → Just say "cat"\n'
+            + '- "[PRONOUNCE] Say the word the clearly." → Just say "the"',
+        },
+      ],
+    },
   },
 
   // ===== READING: LITERATURE (RL) =====
@@ -183,7 +245,72 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'read-aloud-studio',
     description: 'Fluency practice with three modes: Model (TTS with karaoke-style word highlighting), Practice (student records via microphone), Compare (side-by-side playback). Tracks WPM. Student self-assessment only, no AI speech grading. Perfect for grades 1-6 fluency.',
-    constraints: 'Best for grades 1-6. Requires microphone for practice mode. No AI grading of speech.'
+    constraints: 'Best for grades 1-6. Requires microphone for practice mode. No AI grading of speech.',
+    tutoring: {
+      taskDescription:
+        'You are coaching a fluency read-aloud session. '
+        + 'The student is reading a passage titled "{{title}}" at Grade {{gradeLevel}} (Lexile {{lexileLevel}}). '
+        + 'Target WPM: {{targetWPM}}. Phase: {{currentPhase}}. '
+        + 'Model listened: {{modelListened}}. Recording made: {{recordingMade}}. '
+        + 'Estimated WPM: {{estimatedWPM}}. Self-assessment: {{selfAssessment}}/5.',
+      contextKeys: [
+        'title', 'gradeLevel', 'lexileLevel', 'targetWPM',
+        'currentPhase', 'modelListened', 'recordingMade',
+        'estimatedWPM', 'selfAssessment', 'comparisonUsed',
+        'passageWordCount',
+      ],
+      scaffoldingLevels: {
+        level1:
+          'LISTEN phase: "Listen carefully to how the reading sounds. Notice the rhythm!" '
+          + 'PRACTICE phase: "Try reading along. Watch for the expression markers!" '
+          + 'RECORD phase: "Read the passage at a pace that feels natural to you." '
+          + 'REVIEW phase: "How do you think you did? What felt smooth?"',
+        level2:
+          'LISTEN phase: "Pay attention to where the reader pauses and which words are emphasized." '
+          + 'PRACTICE phase: "See the pause marks and bold words? Those tell you where to pause and emphasize." '
+          + 'RECORD phase: "Try to match the pace you heard in the model—aim for about {{targetWPM}} words per minute." '
+          + 'REVIEW phase: "Compare your WPM to the target. Was your pace comfortable? Did you pause at the right spots?"',
+        level3:
+          'LISTEN phase: "Listen one more time. Notice the reader pauses at the | marks and stresses the bold words. That\'s called expression." '
+          + 'PRACTICE phase: "Let\'s practice together. Pause where you see |, and read bold words a little louder and slower." '
+          + 'RECORD phase: "Take a breath, then read the whole passage. Don\'t worry about mistakes—just keep going at a steady pace." '
+          + 'REVIEW phase: "You read at {{estimatedWPM}} WPM (target: {{targetWPM}}). Rate how your reading sounded using the 1-5 scale."',
+      },
+      commonStruggles: [
+        { pattern: 'Reading too fast (estimatedWPM much higher than targetWPM)', response: 'Encourage slowing down: "Try reading a bit slower so every word is clear. Expression matters more than speed."' },
+        { pattern: 'Reading too slowly (estimatedWPM much lower than targetWPM)', response: 'Encourage smoother reading: "Try not to stop between words—let them flow together like you\'re talking."' },
+        { pattern: 'Skipping practice phase', response: '"Before you record, try reading along once with the expression markers. It helps you practice the pauses and emphasis."' },
+        { pattern: 'Not using comparison after recording', response: '"Try comparing your recording with the model. It\'s a great way to hear how you\'re improving!"' },
+        { pattern: 'Low self-assessment (1-2)', response: '"Reading takes practice! Each time you read, your fluency improves. Let\'s try again and see how it sounds."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ACTIVITY INTRODUCTION',
+          instruction:
+            'When you receive [ACTIVITY_START], warmly introduce the read-aloud session. '
+            + 'Mention the passage title and that we will listen to a model reading first, '
+            + 'then practice, then record our own reading. '
+            + 'Encourage the student to listen carefully. Keep it brief (2-3 sentences).',
+        },
+        {
+          title: 'MODEL READING',
+          instruction:
+            'When you receive [READ_PASSAGE], read the passage aloud with clear, expressive fluency. '
+            + 'Use natural pacing at the requested WPM. Pause where indicated by | marks. '
+            + 'Emphasize bold words slightly. Read the ENTIRE passage naturally—do NOT add commentary, '
+            + 'encouragement, or extra words before, during, or after the reading. '
+            + 'Just read the passage exactly as written, like a teacher modeling fluent reading.',
+        },
+        {
+          title: 'FLUENCY COACHING',
+          instruction:
+            'You are a fluency coach, NOT a speech grader. Never score or critique the student\'s pronunciation. '
+            + 'Focus on encouragement, expression tips, and pacing. '
+            + 'When discussing WPM, frame it positively—any reading is progress. '
+            + 'Emphasize that expression (pausing, emphasis, intonation) matters as much as speed.',
+        },
+      ],
+    },
   },
 
   // ===== LANGUAGE (L) =====

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { ReadAloudStudioMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -66,6 +67,8 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
 
+  const resolvedInstanceId = instanceId || `read-aloud-studio-${Date.now()}`;
+
   const [currentPhase, setCurrentPhase] = useState<StudioPhase>('listen');
   const [modelListened, setModelListened] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -83,28 +86,115 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     hasSubmitted: hasSubmittedEvaluation,
   } = usePrimitiveEvaluation<ReadAloudStudioMetrics>({
     primitiveType: 'read-aloud-studio',
-    instanceId: instanceId || `read-aloud-studio-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId, subskillId, objectiveId, exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
+
+  // Calculate WPM
+  const estimatedWPM = recordingDuration > 0 ? Math.round(passageWords.length / (recordingDuration / 60)) : 0;
+
+  // ---------------------------------------------------------------------------
+  // AI Tutoring Integration
+  // ---------------------------------------------------------------------------
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    gradeLevel,
+    lexileLevel,
+    targetWPM,
+    currentPhase,
+    modelListened,
+    recordingMade,
+    estimatedWPM,
+    selfAssessment: selfAssessment ?? 0,
+    comparisonUsed,
+    passageWordCount: passageWords.length,
+  }), [
+    title, gradeLevel, lexileLevel, targetWPM,
+    currentPhase, modelListened, recordingMade,
+    estimatedWPM, selfAssessment, comparisonUsed,
+    passageWords.length,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'read-aloud-studio',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
+  // ---------------------------------------------------------------------------
+  // Activity introduction — fire once when the AI tutor connects
+  // ---------------------------------------------------------------------------
+  const hasIntroducedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
+
+    sendText(
+      `[ACTIVITY_START] This is a read-aloud fluency session for Grade ${gradeLevel}. `
+      + `Passage: "${title}" (Lexile ${lexileLevel}, ${passageWords.length} words, target ${targetWPM} WPM). `
+      + `Introduce the session warmly: mention we'll listen to a model reading first, then practice, `
+      + `then record our own reading. Encourage the student to listen carefully. Keep it brief (2-3 sentences).`,
+      { silent: true }
+    );
+  }, [isConnected, gradeLevel, title, lexileLevel, passageWords.length, targetWPM, sendText]);
 
   // Phases
   const phases: StudioPhase[] = ['listen', 'practice', 'record', 'review'];
   const phaseLabels: Record<StudioPhase, string> = { listen: 'Listen', practice: 'Practice', record: 'Record', review: 'Review' };
 
-  const nextPhase = () => {
+  const nextPhase = useCallback(() => {
     const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) setCurrentPhase(phases[idx + 1]);
-  };
+    if (idx >= phases.length - 1) return;
+    const next = phases[idx + 1];
+    setCurrentPhase(next);
+
+    // Pedagogical speech triggers for phase transitions
+    if (next === 'practice') {
+      sendText(
+        `[PHASE_TO_PRACTICE] The student finished listening to the model and is now in the Practice phase. `
+        + `The passage has expression markers (pauses and emphasis). `
+        + `Briefly encourage them to practice reading along, paying attention to expression. One sentence.`,
+        { silent: true }
+      );
+    } else if (next === 'record') {
+      sendText(
+        `[PHASE_TO_RECORD] The student is now in the Record phase. `
+        + `They will record themselves reading the passage (target: ${targetWPM} WPM). `
+        + `Briefly encourage them to read at a comfortable pace. One sentence.`,
+        { silent: true }
+      );
+    } else if (next === 'review') {
+      sendText(
+        `[PHASE_TO_REVIEW] The student finished recording and is now reviewing their performance. `
+        + `They read at ${estimatedWPM} WPM (target: ${targetWPM} WPM). `
+        + `${comparisonUsed ? 'They compared their recording to the model. ' : ''}`
+        + `Comment briefly on their WPM relative to the target—be encouraging regardless. One sentence.`,
+        { silent: true }
+      );
+    }
+  }, [currentPhase, phases, sendText, targetWPM, estimatedWPM, comparisonUsed]);
+
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
     if (idx > 0) setCurrentPhase(phases[idx - 1]);
   };
 
-  // Simulate model reading with word highlighting
+  // Model reading — AI reads the passage aloud while we highlight words
   const playModel = useCallback(() => {
     if (isPlaying) return;
     setIsPlaying(true);
+
+    // Ask the AI tutor to read the passage aloud
+    sendText(
+      `[READ_PASSAGE] Read this passage aloud with clear expression at about ${Math.round(targetWPM * playbackSpeed)} WPM. `
+      + `Pause briefly at | marks, emphasize bold words. Here is the passage:\n\n${passage}`,
+      { silent: true }
+    );
+
+    // Karaoke-style word highlighting in sync
     const msPerWord = (60 * 1000) / (targetWPM * playbackSpeed);
     let idx = 0;
     const interval = setInterval(() => {
@@ -113,12 +203,19 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
         setIsPlaying(false);
         setHighlightIndex(-1);
         setModelListened(true);
+
+        // After model finishes, encourage next step
+        sendText(
+          `[MODEL_LISTENED] The student finished listening to the model reading of "${title}". `
+          + `Encourage them to move to the Practice phase to try reading along with expression markers. One sentence.`,
+          { silent: true }
+        );
         return;
       }
       setHighlightIndex(idx);
       idx++;
     }, msPerWord);
-  }, [isPlaying, targetWPM, playbackSpeed, passageWords.length]);
+  }, [isPlaying, targetWPM, playbackSpeed, passageWords.length, passage, title, sendText]);
 
   // Simulate recording
   const startRecording = useCallback(() => {
@@ -129,14 +226,50 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
   const stopRecording = useCallback(() => {
     if (!recordingStartTime) return;
     const duration = (Date.now() - recordingStartTime) / 1000;
+    const wpm = duration > 0 ? Math.round(passageWords.length / (duration / 60)) : 0;
     setIsRecording(false);
     setRecordingDuration(duration);
     setRecordingMade(true);
     setRecordingStartTime(null);
-  }, [recordingStartTime]);
 
-  // Calculate WPM
-  const estimatedWPM = recordingDuration > 0 ? Math.round(passageWords.length / (recordingDuration / 60)) : 0;
+    // Trigger AI speech after recording completes
+    sendText(
+      `[RECORDING_COMPLETE] The student finished recording. Duration: ${duration.toFixed(1)}s, `
+      + `estimated ${wpm} WPM (target: ${targetWPM} WPM). `
+      + `${Math.abs(wpm - targetWPM) < 20
+        ? 'They are close to the target! Celebrate briefly.'
+        : wpm > targetWPM
+          ? 'They read faster than the target. Gently suggest slowing down for expression.'
+          : 'They read slower than the target. Encourage them—fluency builds with practice.'} `
+      + `Also suggest they try the "Compare with Model" button. Keep it to 1-2 sentences.`,
+      { silent: true }
+    );
+  }, [recordingStartTime, passageWords.length, targetWPM, sendText]);
+
+  // Handle comparison
+  const handleComparison = useCallback(() => {
+    setComparisonUsed(true);
+    sendText(
+      `[COMPARISON_USED] The student is comparing their recording side-by-side with the model reading. `
+      + `Encourage them to listen for differences in pacing and expression. One sentence.`,
+      { silent: true }
+    );
+  }, [sendText]);
+
+  // Handle self-assessment
+  const handleSelfAssessment = useCallback((rating: number) => {
+    setSelfAssessment(rating);
+    sendText(
+      `[SELF_ASSESSMENT] The student rated their reading ${rating}/5. `
+      + `${rating >= 4
+        ? 'They feel confident! Affirm their self-awareness and encourage them to submit.'
+        : rating >= 3
+          ? 'They feel okay about it. Encourage them—practice makes progress. Suggest submitting.'
+          : 'They feel their reading needs work. Be extra encouraging—every reading improves fluency. Suggest submitting.'} `
+      + `One sentence.`,
+      { silent: true }
+    );
+  }, [sendText]);
 
   // Submit evaluation
   const submitFinalEvaluation = useCallback(() => {
@@ -160,7 +293,16 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     };
 
     submitEvaluation(score >= 50, score, metrics, { selfAssessment, estimatedWPM });
-  }, [hasSubmittedEvaluation, modelListened, recordingMade, recordingDuration, estimatedWPM, comparisonUsed, selfAssessment, targetWPM, lexileLevel, submitEvaluation]);
+
+    // Celebrate session completion
+    sendText(
+      `[SESSION_COMPLETE] The student finished the read-aloud session for "${title}"! `
+      + `Final stats: ${estimatedWPM} WPM (target: ${targetWPM}), self-assessment: ${selfAssessment ?? 0}/5. `
+      + `${comparisonUsed ? 'They used the comparison feature. ' : ''}`
+      + `Celebrate the full session warmly. 1-2 sentences.`,
+      { silent: true }
+    );
+  }, [hasSubmittedEvaluation, modelListened, recordingMade, recordingDuration, estimatedWPM, comparisonUsed, selfAssessment, targetWPM, lexileLevel, submitEvaluation, title, sendText]);
 
   // Render passage with karaoke highlighting
   const renderPassage = (showMarkers: boolean) => (
@@ -301,7 +443,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
               {recordingMade && (
                 <>
                   <span className="text-xs text-slate-400">{recordingDuration.toFixed(1)}s | {estimatedWPM} WPM</span>
-                  <Button variant="ghost" onClick={() => setComparisonUsed(true)}
+                  <Button variant="ghost" onClick={handleComparison}
                     className="bg-violet-500/20 border border-violet-500/40 hover:bg-violet-500/30 text-violet-300 text-xs">
                     Compare with Model
                   </Button>
@@ -346,7 +488,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
               <p className="text-xs text-slate-500">How did your reading sound? Rate yourself:</p>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map(rating => (
-                  <button key={rating} onClick={() => setSelfAssessment(rating)}
+                  <button key={rating} onClick={() => handleSelfAssessment(rating)}
                     className={`w-10 h-10 rounded-lg border text-sm font-bold transition-all ${
                       selfAssessment === rating
                         ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'

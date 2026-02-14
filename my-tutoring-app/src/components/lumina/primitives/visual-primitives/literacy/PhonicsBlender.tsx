@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -152,12 +152,34 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     completedWords, attemptsPerWord,
   ]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'phonics-blender',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel,
   });
+
+  // ---------------------------------------------------------------------------
+  // Activity introduction — fire once when the AI tutor connects
+  // ---------------------------------------------------------------------------
+  const hasIntroducedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || !currentWord) return;
+    hasIntroducedRef.current = true;
+
+    const patternLabel = PATTERN_LABELS[patternType] || patternType;
+    const phonemeList = currentWord.phonemes.map(p => p.sound).join(', ');
+
+    sendText(
+      `[ACTIVITY_START] This is a phonics blending activity for Grade ${gradeLevel} (${patternLabel}). `
+      + `There are ${words.length} words to blend. `
+      + `Introduce the activity warmly: mention we're practicing phonics and blending sounds into words. `
+      + `Then introduce the first word: "${currentWord.targetWord}" which has ${currentWord.phonemes.length} sounds (${phonemeList}). `
+      + `Encourage the student to tap each sound tile to hear it. Keep it brief and enthusiastic — 2-3 sentences max.`,
+      { silent: true }
+    );
+  }, [isConnected, currentWord, gradeLevel, patternType, words.length, sendText]);
 
   // Shuffled phonemes for the bank (build phase)
   const shuffledPhonemes = useMemo(() => {
@@ -345,7 +367,18 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     setCurrentPhase('build');
     setFeedback('');
     setFeedbackType('');
-  }, []);
+
+    // Tell the AI tutor we're moving to the build phase
+    if (currentWord) {
+      const phonemeList = currentWord.phonemes.map(p => p.sound).join(', ');
+      sendText(
+        `[PHASE_TO_BUILD] The student finished listening and is now in the Build phase for "${currentWord.targetWord}". `
+        + `The sounds are: ${phonemeList}. `
+        + `Briefly tell them to arrange the sound tiles in the right order to build the word. One sentence.`,
+        { silent: true }
+      );
+    }
+  }, [currentWord, sendText]);
 
   // Submit final evaluation
   const submitFinalEvaluation = useCallback(() => {
