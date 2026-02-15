@@ -28,6 +28,7 @@ import VehicleComparisonLab from '../primitives/visual-primitives/engineering/Ve
 import PropulsionLab from '../primitives/visual-primitives/engineering/PropulsionLab';
 import PropulsionTimeline from '../primitives/visual-primitives/engineering/PropulsionTimeline';
 import PaperAirplaneDesigner from '../primitives/visual-primitives/engineering/PaperAirplaneDesigner';
+import EngineExplorer from '../primitives/visual-primitives/engineering/EngineExplorer';
 
 import {
   EvaluationProvider,
@@ -49,7 +50,8 @@ type PrimitiveType =
   | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder'
   | 'excavator-arm-simulator' | 'dump-truck-loader' | 'construction-sequence-planner' | 'blueprint-canvas'
   | 'machine-profile' | 'flight-forces-explorer' | 'airfoil-lab' | 'vehicle-comparison-lab' | 'propulsion-lab' | 'propulsion-timeline'
-  | 'paper-airplane-designer';
+  | 'paper-airplane-designer'
+  | 'engine-explorer';
 
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
@@ -86,6 +88,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'propulsion-lab', label: 'Propulsion Lab', icon: '🚀', topic: 'Newton\'s Third Law and how vehicles generate thrust', strand: 'VF' },
   { value: 'propulsion-timeline', label: 'Propulsion Timeline', icon: '⏳', topic: 'History of transportation from walking to spacecraft', strand: 'VF' },
   { value: 'paper-airplane-designer', label: 'Paper Airplane Designer', icon: '✈️', topic: 'Designing and testing paper airplanes using the engineering design process', strand: 'VF' },
+  { value: 'engine-explorer', label: 'Engine Explorer', icon: '🔧', topic: 'Exploring engine types, components, and energy cycles', strand: 'VF' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -306,6 +309,18 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'engineering-design-process',
             subskillId: 'iterative-design',
             objectiveId: 'understand-paper-airplane-design',
+          }}
+        />
+      );
+    case 'engine-explorer':
+      return (
+        <EngineExplorer
+          data={{
+            ...(data as Parameters<typeof EngineExplorer>[0]['data']),
+            instanceId: `engine-explorer-${Date.now()}`,
+            skillId: 'engineering-engines',
+            subskillId: 'engine-components',
+            objectiveId: 'understand-engine-types',
           }}
         />
       );

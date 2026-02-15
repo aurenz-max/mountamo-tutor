@@ -247,4 +247,24 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       ],
     },
   },
+  {
+    id: 'engine-explorer',
+    description: 'Interactive engine cutaway showing how different engine types work — pistons, turbines, electric motors. Students watch animated cycles, explore components, compare engines, and connect them to vehicles. Perfect for teaching energy transformation and mechanical systems. ESSENTIAL for grades 1-5 engineering and physics.',
+    constraints: 'Requires engineType, components, cycle, energyFlow, and vehicleConnection data. Best for single engine type per instance — use multiple instances for comparison across types.',
+    tutoring: {
+      taskDescription: 'Student is exploring a {{engineName}} ({{engineType}}) engine in the context of a {{vehicleContext}}. Currently in {{currentPhase}} phase, viewing stage: {{currentStage}}. Throttle at {{throttlePosition}}%. Explored {{componentsExplored}} of {{totalComponents}} components.',
+      contextKeys: ['engineType', 'engineName', 'vehicleContext', 'currentPhase', 'currentStage', 'throttlePosition', 'componentsExplored', 'totalComponents', 'overview'],
+      scaffoldingLevels: {
+        level1: '"What do you think happens next in the cycle?" or "Can you find the part that makes the engine spin?"',
+        level2: '"Look at the {{currentStage}} stage — notice how the energy changes from {{energyState}}. What kind of energy is that?" or "This component is like {{analogy}} — can you see why?"',
+        level3: '"Let me walk you through it step by step: First, {{stage1}} brings in fuel. Then {{stage2}} squeezes it tight. Next, {{stage3}} ignites it — that is where the power comes from! Finally, {{stage4}} pushes out the used gas. Can you see each part doing its job?"',
+      },
+      commonStruggles: [
+        { pattern: 'Student skips through stages without reading narration', response: 'Pause the animation and ask about the current stage before moving on. Use the narration as a conversation starter.' },
+        { pattern: 'Student only explores 1-2 components then moves on', response: 'Highlight an unexplored component and connect it to one they already know. "You found the piston — can you find what pushes fuel into it?"' },
+        { pattern: 'Student does not open energy flow section', response: 'Ask where the fuel energy goes. Guide them to open the energy flow diagram to trace the transformation.' },
+        { pattern: 'Student struggles with engine-to-vehicle connection', response: 'Use size and speed analogies: "A jet engine pushes air backward really fast — that is like blowing up a balloon and letting it fly across the room!"' },
+      ],
+    },
+  },
 ];

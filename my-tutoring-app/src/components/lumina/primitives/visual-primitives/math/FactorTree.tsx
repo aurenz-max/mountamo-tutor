@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { usePrimitiveEvaluation, type FactorTreeMetrics } from '../../../evaluation';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 export interface TreeNode {
   value: number;
@@ -88,61 +89,18 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
   const [manualInputs, setManualInputs] = useState(0);
   const [resetCount, setResetCount] = useState(0);
 
-  // Evaluation hook - tracks timing and handles submission
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    resetAttempt: resetEvaluationAttempt,
-  } = usePrimitiveEvaluation<FactorTreeMetrics>({
-    primitiveType: 'factor-tree',
-    instanceId: instanceId || `factor-tree-${Date.now()}`,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void) | undefined,
-  });
+  // AI tutoring refs to prevent duplicate triggers
+  const activityStartedRef = useRef(false);
+  const treeCompleteTriggeredRef = useRef(false);
 
-  // Split a node into two factors
-  const splitNode = (nodeId: string, factor1: number, factor2: number) => {
-    const node = tree.get(nodeId);
-    if (!node || node.factors) return; // Already split
-
-    // Validate factors
-    if (factor1 * factor2 !== node.value) {
-      setError(`${factor1} × ${factor2} ≠ ${node.value}`);
-      setInvalidSplitAttempts(prev => prev + 1); // Track error
-      return;
-    }
-
-    if (factor1 === 1 || factor2 === 1) {
-      setError('Factor pairs cannot include 1');
-      setInvalidSplitAttempts(prev => prev + 1); // Track error
-      return;
-    }
-
-    setError(null);
-
-    // Update the node with factors
-    const newTree = new Map(tree);
-    newTree.set(nodeId, {
-      ...node,
-      factors: [factor1, factor2],
-    });
-
-    // Add children nodes
-    newTree.set(`${nodeId}-0`, { value: factor1, isPrime: isPrime(factor1) });
-    newTree.set(`${nodeId}-1`, { value: factor2, isPrime: isPrime(factor2) });
-
-    setTree(newTree);
-    setSelectedNode(null);
-    setFactorInput({ factor1: '', factor2: '' });
-  };
+  // Resolved instance ID for AI hook
+  const resolvedInstanceId = instanceId || `factor-tree-${rootValue}`;
 
   // Get all leaf nodes (nodes without children)
-  const getLeaves = (): number[] => {
+  const getLeaves = (fromTree?: Map<string, TreeNode>): number[] => {
+    const t = fromTree || tree;
     const leaves: number[] = [];
-    tree.forEach((node, id) => {
+    t.forEach((node) => {
       if (!node.factors) {
         leaves.push(node.value);
       }
@@ -151,13 +109,13 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
   };
 
   // Check if all leaves are prime
-  const allLeavesPrime = (): boolean => {
-    return getLeaves().every((value) => isPrime(value));
+  const allLeavesPrime = (fromTree?: Map<string, TreeNode>): boolean => {
+    return getLeaves(fromTree).every((value) => isPrime(value));
   };
 
   // Get prime factorization in exponential form
-  const getPrimeFactorization = (): string => {
-    const leaves = getLeaves();
+  const getPrimeFactorization = (fromTree?: Map<string, TreeNode>): string => {
+    const leaves = getLeaves(fromTree);
     const counts = new Map<number, number>();
 
     leaves.forEach((prime) => {
@@ -175,7 +133,164 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
         }
       });
 
-    return factors.join(' × ');
+    return factors.join(' \u00d7 ');
+  };
+
+  // AI context data — sent to the tutor as background state
+  const aiPrimitiveData = useMemo(() => ({
+    rootValue,
+    currentFactorization: getLeaves().join(' \u00d7 '),
+    leavesCount: getLeaves().length,
+    allPrime: allLeavesPrime(),
+    guidedMode,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [rootValue, tree, guidedMode]);
+
+  // AI tutoring hook
+  const { sendText } = useLuminaAI({
+    primitiveType: 'factor-tree',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    exhibitId,
+  });
+
+  // Activity start — introduce the factorization task
+  useEffect(() => {
+    if (activityStartedRef.current) return;
+    activityStartedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] The student is beginning a factor tree activity. ` +
+      `The number to factor is ${rootValue}. ` +
+      `Guided mode: ${guidedMode ? 'on (suggested factor pairs shown)' : 'off'}. ` +
+      `Briefly introduce the task: find the prime factorization of ${rootValue} by splitting it into factor pairs.`,
+      { silent: true }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Tree complete trigger
+  useEffect(() => {
+    if (allLeavesPrime() && !treeCompleteTriggeredRef.current && getLeaves().length > 1) {
+      treeCompleteTriggeredRef.current = true;
+      sendText(
+        `[TREE_COMPLETE] The student has completed the factor tree! ` +
+        `${rootValue} = ${getPrimeFactorization()}. ` +
+        `Splits used: ${tree.size - getLeaves().length}. Invalid attempts: ${invalidSplitAttempts}. Hints used: ${hintsUsed}. ` +
+        `Celebrate their success and read back the prime factorization.`,
+        { silent: true }
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tree]);
+
+  // Evaluation hook - tracks timing and handles submission
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<FactorTreeMetrics>({
+    primitiveType: 'factor-tree',
+    instanceId: instanceId || `factor-tree-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  // Split a node into two factors — returns true on success
+  const splitNode = (nodeId: string, factor1: number, factor2: number): boolean => {
+    const node = tree.get(nodeId);
+    if (!node || node.factors) return false; // Already split
+
+    // Validate factors
+    if (factor1 * factor2 !== node.value) {
+      setError(`${factor1} \u00d7 ${factor2} \u2260 ${node.value}`);
+      setInvalidSplitAttempts(prev => prev + 1);
+      sendText(
+        `[SPLIT_INVALID] The student tried to split ${node.value} into ${factor1} \u00d7 ${factor2}, ` +
+        `but ${factor1} \u00d7 ${factor2} = ${factor1 * factor2}, not ${node.value}. ` +
+        `Attempt ${invalidSplitAttempts + 1}. ` +
+        `Give a brief hint: remind them that the two factors must multiply to equal ${node.value}.`,
+        { silent: true }
+      );
+      return false;
+    }
+
+    if (factor1 === 1 || factor2 === 1) {
+      setError('Factor pairs cannot include 1');
+      setInvalidSplitAttempts(prev => prev + 1);
+      sendText(
+        `[SPLIT_INVALID] The student tried to split ${node.value} into ${factor1} \u00d7 ${factor2}, ` +
+        `but factor pairs cannot include 1. Attempt ${invalidSplitAttempts + 1}. ` +
+        `Briefly explain that we need two factors both greater than 1.`,
+        { silent: true }
+      );
+      return false;
+    }
+
+    setError(null);
+
+    // Update the node with factors
+    const newTree = new Map(tree);
+    newTree.set(nodeId, {
+      ...node,
+      factors: [factor1, factor2],
+    });
+
+    // Add children nodes
+    const child1Prime = isPrime(factor1);
+    const child2Prime = isPrime(factor2);
+    newTree.set(`${nodeId}-0`, { value: factor1, isPrime: child1Prime });
+    newTree.set(`${nodeId}-1`, { value: factor2, isPrime: child2Prime });
+
+    setTree(newTree);
+    setSelectedNode(null);
+    setFactorInput({ factor1: '', factor2: '' });
+
+    // Determine what the AI should say about the result
+    const bothPrime = child1Prime && child2Prime;
+    const onePrime = child1Prime || child2Prime;
+    const treeNowComplete = allLeavesPrime(newTree);
+
+    // Don't send SPLIT_CORRECT if tree is complete — the effect handles that
+    if (!treeNowComplete) {
+      const primeNote = bothPrime
+        ? `Both ${factor1} and ${factor2} are prime — those branches are done!`
+        : onePrime
+        ? `${child1Prime ? factor1 : factor2} is prime (done!), but ${child1Prime ? factor2 : factor1} is composite and needs further splitting.`
+        : `Both ${factor1} and ${factor2} are composite — both need further splitting.`;
+
+      sendText(
+        `[SPLIT_CORRECT] The student split ${node.value} into ${factor1} \u00d7 ${factor2}. ` +
+        `${primeNote} ` +
+        `Current leaves: ${getLeaves(newTree).join(', ')}. ` +
+        `Briefly acknowledge the correct split and guide what to do next.`,
+        { silent: true }
+      );
+    }
+
+    return true;
+  };
+
+  // Handle node selection with AI notification
+  const handleNodeSelect = (nodeId: string, currentlySelected: boolean) => {
+    if (currentlySelected) {
+      setSelectedNode(null);
+      return;
+    }
+    const node = tree.get(nodeId);
+    if (!node) return;
+    setSelectedNode(nodeId);
+
+    const pairs = getFactorPairs(node.value);
+    sendText(
+      `[NODE_SELECTED] The student selected the number ${node.value} to split. ` +
+      `Valid factor pairs: ${pairs.map(([a, b]) => `${a}\u00d7${b}`).join(', ')}. ` +
+      `Briefly encourage them to find a factor pair. ` +
+      `${guidedMode ? 'Suggested pairs are shown.' : 'No hints are shown — the student must enter factors manually.'}`,
+      { silent: true }
+    );
   };
 
   // Reset the tree
@@ -184,8 +299,16 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     setSelectedNode(null);
     setFactorInput({ factor1: '', factor2: '' });
     setError(null);
-    setResetCount(prev => prev + 1); // Track reset
-    resetEvaluationAttempt(); // Reset evaluation attempt
+    setResetCount(prev => prev + 1);
+    resetEvaluationAttempt();
+    treeCompleteTriggeredRef.current = false;
+
+    sendText(
+      `[TREE_RESET] The student reset the factor tree and is starting over with ${rootValue}. ` +
+      `Reset count: ${resetCount + 1}. ` +
+      `Briefly encourage them to try again.`,
+      { silent: true }
+    );
   };
 
   // Calculate optimal splits (minimum depth of factorization)
@@ -280,7 +403,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
       <div key={nodeId} className="flex flex-col items-center">
         {/* Node Circle */}
         <button
-          onClick={() => canSplit && setSelectedNode(isSelected ? null : nodeId)}
+          onClick={() => canSplit && handleNodeSelect(nodeId, isSelected)}
           disabled={!canSplit}
           className={`
             w-16 h-16 rounded-full border-2 flex items-center justify-center font-bold text-lg
@@ -424,7 +547,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                     placeholder="Factor 1"
                     className="w-24 px-4 py-2 bg-slate-800/50 backdrop-blur-sm text-white rounded-lg border border-purple-400/40 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 focus:outline-none text-center transition-all"
                   />
-                  <span className="text-purple-300 text-xl font-bold">×</span>
+                  <span className="text-purple-300 text-xl font-bold">&times;</span>
                   <input
                     type="number"
                     value={factorInput.factor2}
@@ -437,7 +560,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                       const f1 = parseInt(factorInput.factor1);
                       const f2 = parseInt(factorInput.factor2);
                       if (!isNaN(f1) && !isNaN(f2)) {
-                        setManualInputs(prev => prev + 1); // Track manual input
+                        setManualInputs(prev => prev + 1);
                         splitNode(selectedNode, f1, f2);
                       }
                     }}
@@ -461,12 +584,21 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                         <button
                           key={idx}
                           onClick={() => {
-                            setHintsUsed(prev => prev + 1); // Track hint usage
-                            splitNode(selectedNode, f1, f2);
+                            setHintsUsed(prev => prev + 1);
+                            const nodeValue = tree.get(selectedNode)?.value;
+                            const success = splitNode(selectedNode, f1, f2);
+                            if (success) {
+                              sendText(
+                                `[HINT_USED] The student used a suggested factor pair to split ${nodeValue}: ${f1} \u00d7 ${f2}. ` +
+                                `Hints used so far: ${hintsUsed + 1}. ` +
+                                `Briefly acknowledge and encourage them to try finding factors on their own next time.`,
+                                { silent: true }
+                              );
+                            }
                           }}
                           className="px-4 py-2 bg-slate-700/50 backdrop-blur-sm hover:bg-amber-500/30 text-white rounded-lg text-sm transition-all border border-slate-600/50 hover:border-amber-400/60 hover:shadow-[0_0_12px_rgba(251,191,36,0.3)] hover:scale-105"
                         >
-                          {f1} × {f2}
+                          {f1} &times; {f2}
                         </button>
                       ))}
                     </div>
@@ -483,7 +615,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
               <div className="relative z-10">
                 <p className="text-amber-400 text-sm mb-2 font-medium uppercase tracking-wide">Current factorization:</p>
                 <p className="text-white font-mono text-lg">
-                  {rootValue} = {getLeaves().join(' × ')}
+                  {rootValue} = {getLeaves().join(' \u00d7 ')}
                 </p>
               </div>
             </div>
@@ -522,21 +654,21 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                 <h4 className="text-sm font-mono uppercase tracking-wider text-amber-400 mb-4">How to Use</h4>
                 <ul className="text-sm text-slate-200 space-y-2">
                   <li className="flex items-start gap-2 hover:text-white transition-colors">
-                    <span className="text-amber-400 mt-1">▸</span>
+                    <span className="text-amber-400 mt-1">&#9656;</span>
                     <span>Click on a composite number to select it</span>
                   </li>
                   <li className="flex items-start gap-2 hover:text-white transition-colors">
-                    <span className="text-amber-400 mt-1">▸</span>
+                    <span className="text-amber-400 mt-1">&#9656;</span>
                     <span>Enter two factors that multiply to the selected number</span>
                   </li>
                   {guidedMode && (
                     <li className="flex items-start gap-2 hover:text-white transition-colors">
-                      <span className="text-amber-400 mt-1">▸</span>
+                      <span className="text-amber-400 mt-1">&#9656;</span>
                       <span>Or choose from suggested factor pairs</span>
                     </li>
                   )}
                   <li className="flex items-start gap-2 hover:text-white transition-colors">
-                    <span className="text-amber-400 mt-1">▸</span>
+                    <span className="text-amber-400 mt-1">&#9656;</span>
                     <span>Continue until all leaves are prime numbers</span>
                   </li>
                 </ul>

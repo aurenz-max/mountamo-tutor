@@ -1165,6 +1165,7 @@ export type ComponentId =
   | 'tower-stacker'      // Interactive vertical building challenge for stability and center of gravity
   | 'shape-strength-tester' // Interactive shape testing rig for teaching triangulation and structural rigidity
   | 'foundation-builder' // Interactive soil/foundation simulator for teaching pressure, soil capacity, and foundation design
+  | 'engine-explorer' // Interactive engine explorer
   | 'excavator-arm-simulator' // Multi-jointed excavator arm with boom, stick, and bucket for teaching hydraulics and kinematics
   | 'dump-truck-loader' // Interactive dump truck loading and hauling simulation for teaching capacity and material handling
   | 'construction-sequence-planner' // Interactive timeline/flowchart tool for ordering construction tasks and understanding dependencies
@@ -1394,3 +1395,4 @@ export type { ReactionLabData } from './primitives/visual-primitives/chemistry/R
 export type { StatesOfMatterData } from './primitives/visual-primitives/chemistry/StatesOfMatter';
 export type { AtomBuilderData, AtomBuilderChallenge, AtomBuilderShowOptions, AtomBuilderConstraints } from './primitives/visual-primitives/chemistry/AtomBuilder';
 export type { MoleculeConstructorData } from './primitives/visual-primitives/chemistry/MoleculeConstructor';
+export type { EngineExplorerData } from './primitives/visual-primitives/engineering/EngineExplorer';

@@ -2558,6 +2558,19 @@ export interface PaperAirplaneDesignerMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface EngineExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'engine-explorer';
+  componentsIdentified: number;
+  componentsTotal: number;
+  cycleStagesUnderstood: number;
+  energyFlowTraced: boolean;
+  comparisonsExplored: number;
+  vehicleMatchesCorrect: number;
+  vehicleMatchesTotal: number;
+  engineTypesExplored: number;
+  attemptsCount: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -2578,6 +2591,7 @@ export type PrimitiveMetrics =
   | ConstructionSequencePlannerMetrics
   | BlueprintCanvasMetrics
   | PaperAirplaneDesignerMetrics
+  | EngineExplorerMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics

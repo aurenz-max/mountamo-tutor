@@ -59,6 +59,7 @@ export type {
   PropulsionLabMetrics,
   PropulsionTimelineMetrics,
   PaperAirplaneDesignerMetrics,
+  EngineExplorerMetrics,
   // Assessment metrics
   MultipleChoiceMetrics,
   FillInBlanksMetrics,
