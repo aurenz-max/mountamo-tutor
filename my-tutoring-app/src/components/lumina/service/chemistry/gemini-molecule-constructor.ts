@@ -163,8 +163,31 @@ const moleculeConstructorSchema: Schema = {
           targetFormula: {
             type: Type.STRING,
             description:
-              "Expected formula for validation, or null if not applicable",
-            nullable: true,
+              "Molecular formula the student must build (e.g. 'CH4'). Use empty string '' for free_build.",
+          },
+          targetName: {
+            type: Type.STRING,
+            description:
+              "Common name of the target molecule (e.g. 'Methane'). Use empty string '' for free_build.",
+          },
+          targetAtoms: {
+            type: Type.ARRAY,
+            description:
+              "Explicit atom counts for this challenge. E.g. [{element:'C',count:1},{element:'H',count:4}] for CH4. Use empty array [] for free_build.",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                element: {
+                  type: Type.STRING,
+                  description: "Element symbol (e.g. 'H', 'O', 'C')",
+                },
+                count: {
+                  type: Type.NUMBER,
+                  description: "Number of this element needed",
+                },
+              },
+              required: ["element", "count"],
+            },
           },
           hint: {
             type: Type.STRING,
@@ -181,6 +204,8 @@ const moleculeConstructorSchema: Schema = {
           "type",
           "instruction",
           "targetFormula",
+          "targetName",
+          "targetAtoms",
           "hint",
           "narration",
         ],
@@ -303,6 +328,48 @@ const resolveGradeBand = (gradeLevel: string): "3-5" | "6-8" => {
 };
 
 /**
+ * Known molecule formula ↔ name mappings for cross-referencing.
+ */
+const FORMULA_TO_NAME: Record<string, string> = {
+  H2: "Hydrogen Gas",
+  H2O: "Water",
+  CH4: "Methane",
+  CO2: "Carbon Dioxide",
+  O2: "Oxygen",
+  N2: "Nitrogen",
+  NH3: "Ammonia",
+  C6H12O6: "Glucose",
+  NaCl: "Sodium Chloride",
+  C2H5OH: "Ethanol",
+  HCl: "Hydrochloric Acid",
+  H2SO4: "Sulfuric Acid",
+  NO2: "Nitrogen Dioxide",
+  SO2: "Sulfur Dioxide",
+  C2H6: "Ethane",
+  C3H8: "Propane",
+  H2O2: "Hydrogen Peroxide",
+};
+
+const NAME_TO_FORMULA: Record<string, string> = Object.fromEntries(
+  Object.entries(FORMULA_TO_NAME).map(([f, n]) => [n.toLowerCase(), f])
+);
+
+/** Parse a molecular formula (e.g. "CH4") into atom counts. */
+function parseFormulaToAtoms(
+  formula: string
+): { element: string; count: number }[] {
+  const counts: Record<string, number> = {};
+  const regex = /([A-Z][a-z]?)(\d*)/g;
+  let match;
+  while ((match = regex.exec(formula)) !== null) {
+    if (!match[1]) continue;
+    counts[match[1]] =
+      (counts[match[1]] || 0) + (match[2] ? parseInt(match[2]) : 1);
+  }
+  return Object.entries(counts).map(([element, count]) => ({ element, count }));
+}
+
+/**
  * Generate Molecule Constructor data using Gemini
  *
  * Creates an interactive molecule-building activity where students snap atoms
@@ -364,21 +431,26 @@ GENERAL REQUIREMENTS:
 1. Choose a relatable target molecule that connects to the topic. The targetMolecule should have accurate atoms and bonds arrays.
 2. Provide 3-6 challenges sequenced by difficulty. Start with easier tasks (build_target with simple molecules) and progress to harder ones (formula_write, predict_bonds, shape_predict).
 3. Every challenge must have a unique id (e.g. "ch1", "ch2", "ch3").
-4. For build_target challenges: the atoms array in targetMolecule must exactly list all elements and their counts.
-5. For formula_write challenges: targetFormula must contain the expected answer.
-6. For identify challenges: students see a built molecule and name it.
-7. For predict_bonds challenges: students predict how many bonds an atom will form based on valence.
-8. For shape_predict challenges: students predict molecular geometry.
-9. For free_build challenges: targetFormula can be null — students explore freely.
-10. Narrations should be wonder-driven and educational:
+4. CRITICAL — every challenge MUST be self-contained with its own target data:
+   - targetFormula: the molecular formula (e.g. "CH4"). Use "" for free_build.
+   - targetName: the common name (e.g. "Methane"). Use "" for free_build.
+   - targetAtoms: array of {element, count} (e.g. [{element:"C",count:1},{element:"H",count:4}] for CH4). Use [] for free_build.
+   ALL THREE must be consistent with each other. Different challenges target DIFFERENT molecules — each challenge has its OWN targetFormula, targetName, and targetAtoms.
+5. The top-level targetMolecule describes the PRIMARY molecule of the whole activity (for context and real-world info). Individual challenges use their own target fields for validation.
+6. For formula_write challenges: targetFormula must contain the expected answer.
+7. For identify challenges: students see a built molecule and name it.
+8. For predict_bonds challenges: students predict how many bonds an atom will form based on valence.
+9. For shape_predict challenges: students predict molecular geometry.
+10. For free_build challenges: targetFormula="", targetName="", targetAtoms=[].
+11. Narrations should be wonder-driven and educational:
    - "Amazing! You built water — H2O! Every raindrop, every ocean wave is made of this molecule!"
    - "Nitrogen forms a TRIPLE bond in N2 — that's why nitrogen gas is so stable in our atmosphere!"
-11. The moleculeGallery should contain 4-8 molecules related to the topic, spread across categories (essential, food, atmosphere, energy, household). All should start unlocked: false.
-12. Set showOptions based on grade band:
+12. The moleculeGallery should contain 4-8 molecules related to the topic, spread across categories (essential, food, atmosphere, energy, household). All should start unlocked: false.
+13. Set showOptions based on grade band:
    - 3-5: showFormula: true, showName: true, showRealWorldImage: true, showValenceSatisfaction: true, show3DToggle: false, showElectronDots: false, showBondType: false
    - 6-8: showFormula: true, showName: true, showRealWorldImage: true, showValenceSatisfaction: true, show3DToggle: false, showElectronDots: true, showBondType: true
-13. The bonds array in targetMolecule uses 0-based atom indices corresponding to the order atoms would be placed. Use accurate bond types (single, double, triple).
-14. imagePrompt should describe a vivid real-world scene featuring the target molecule.`;
+14. The bonds array in targetMolecule uses 0-based atom indices corresponding to the order atoms would be placed. Use accurate bond types (single, double, triple).
+15. imagePrompt should describe a vivid real-world scene featuring the target molecule.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -459,17 +531,48 @@ GENERAL REQUIREMENTS:
       showBondType: result.showOptions?.showBondType ?? gradeBand === "6-8",
     };
 
-    // Ensure every challenge has required fields
+    // Ensure every challenge has required fields and consistent target data
     if (result.challenges) {
-      result.challenges = result.challenges.map((ch, idx) => ({
-        ...ch,
-        id: ch.id || `ch${idx + 1}`,
-        type: ch.type || "build_target",
-        instruction: ch.instruction || "Build the molecule by snapping atoms together!",
-        targetFormula: ch.targetFormula ?? null,
-        hint: ch.hint || "Look at the formula and count the atoms!",
-        narration: ch.narration || ch.instruction || "Great work building that molecule!",
-      }));
+      result.challenges = result.challenges.map((ch, idx) => {
+        // Normalize empty strings from schema to null
+        const targetFormula = ch.targetFormula || null;
+        const targetName = ch.targetName || null;
+
+        // Ensure targetAtoms: prefer provided, else parse from formula
+        let targetAtoms = ch.targetAtoms ?? [];
+        if (targetAtoms.length === 0 && targetFormula) {
+          targetAtoms = parseFormulaToAtoms(targetFormula);
+        }
+
+        // Cross-reference formula ↔ name via known molecules
+        const resolvedName =
+          targetName ||
+          (targetFormula ? (FORMULA_TO_NAME[targetFormula] ?? null) : null);
+        const resolvedFormula =
+          targetFormula ||
+          (targetName
+            ? (NAME_TO_FORMULA[targetName.toLowerCase()] ?? null)
+            : null);
+
+        // If we resolved a formula but still lack atoms, parse it
+        if (targetAtoms.length === 0 && resolvedFormula) {
+          targetAtoms = parseFormulaToAtoms(resolvedFormula);
+        }
+
+        return {
+          ...ch,
+          id: ch.id || `ch${idx + 1}`,
+          type: ch.type || "build_target",
+          instruction:
+            ch.instruction || "Build the molecule by snapping atoms together!",
+          targetFormula: resolvedFormula,
+          targetName: resolvedName,
+          targetAtoms,
+          hint: ch.hint || "Look at the formula and count the atoms!",
+          narration:
+            ch.narration || ch.instruction || "Great work building that molecule!",
+        };
+      });
     }
 
     // Ensure at least one challenge exists
@@ -480,22 +583,28 @@ GENERAL REQUIREMENTS:
           type: "build_target",
           instruction: "Build a water molecule! Connect 2 hydrogen atoms to 1 oxygen atom.",
           targetFormula: "H2O",
+          targetName: "Water",
+          targetAtoms: [{ element: "H", count: 2 }, { element: "O", count: 1 }],
           hint: "Oxygen needs 2 bonds, and each hydrogen needs 1 bond.",
           narration: "You built water — H2O! Every drop of water on Earth is made of these tiny molecules!",
         },
         {
           id: "ch2",
           type: "build_target",
-          instruction: "Now build carbon dioxide! Connect 2 oxygen atoms to 1 carbon atom.",
-          targetFormula: "CO2",
-          hint: "Carbon needs 4 bonds, and each oxygen needs 2 bonds. Use double bonds!",
-          narration: "CO2 — carbon dioxide! Plants breathe this in and turn it into oxygen for us!",
+          instruction: "Now build methane! Snap 4 hydrogen atoms to 1 carbon atom.",
+          targetFormula: "CH4",
+          targetName: "Methane",
+          targetAtoms: [{ element: "C", count: 1 }, { element: "H", count: 4 }],
+          hint: "Carbon needs 4 bonds, and each hydrogen needs 1 bond. One H on each side!",
+          narration: "CH4 — methane! This is the gas that heats our homes and cooks our food!",
         },
         {
           id: "ch3",
           type: "free_build",
           instruction: "Free build! Create any molecule you like using the available atoms.",
           targetFormula: null,
+          targetName: null,
+          targetAtoms: [],
           hint: "Try connecting different atoms and see what molecules you can make!",
           narration: "Amazing creativity! You're thinking like a real chemist!",
         },

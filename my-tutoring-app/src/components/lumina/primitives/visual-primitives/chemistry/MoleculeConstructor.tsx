@@ -57,6 +57,8 @@ export interface MoleculeConstructorChallenge {
   type: 'free_build' | 'build_target' | 'identify' | 'formula_write' | 'predict_bonds' | 'shape_predict';
   instruction: string;
   targetFormula: string | null;
+  targetName: string | null;
+  targetAtoms: { element: string; count: number }[];
   hint: string;
   narration: string;
 }
@@ -176,6 +178,19 @@ function allValenceSatisfied(atoms: PlacedAtom[], allBonds: Bond[]): boolean {
   return atoms.length > 0 && atoms.every(a => getAvailableBonds(a.id, a.element, allBonds) === 0);
 }
 
+/** Parse a molecular formula like "CH4" or "H2O" into element counts */
+function parseFormula(formula: string): { element: string; count: number }[] {
+  const normalized = normalizeFormula(formula);
+  const counts: Record<string, number> = {};
+  const regex = /([A-Z][a-z]?)(\d*)/g;
+  let match;
+  while ((match = regex.exec(normalized)) !== null) {
+    if (!match[1]) continue;
+    counts[match[1]] = (counts[match[1]] || 0) + (match[2] ? parseInt(match[2]) : 1);
+  }
+  return Object.entries(counts).map(([element, count]) => ({ element, count }));
+}
+
 const CATEGORY_COLORS: Record<string, string> = {
   essential: '#06b6d4',
   food: '#22c55e',
@@ -252,8 +267,8 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     bondsFormed: bonds.length,
     formula,
     allValenceSatisfied: allSatisfied,
-    targetFormula: targetMolecule.formula || '',
-    targetName: targetMolecule.name || '',
+    targetFormula: (currentChallenge?.targetFormula ?? targetMolecule.formula) || '',
+    targetName: (currentChallenge?.targetName ?? targetMolecule.name) || '',
     currentChallengeIndex: challengeIndex + 1,
     totalChallenges: challenges.length,
     challengeType: currentChallenge?.type || '',
@@ -426,7 +441,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       attemptsCount, formula, submitResult, sendText]);
 
   const handleCorrect = useCallback(() => {
-    const moleculeName = targetMolecule.name || formula;
+    const moleculeName = (currentChallenge?.targetName ?? targetMolecule.name) || formula;
     setFeedback(`Correct! ${moleculeName ? `You built ${moleculeName}!` : 'Great work!'}`);
     setFeedbackType('success');
     setMoleculesBuiltCorrectly(prev => prev + 1);
@@ -435,8 +450,9 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     if (currentChallenge) {
       setCompletedChallenges(prev => { const next = new Set(prev); next.add(currentChallenge.id); return next; });
     }
-    if (targetMolecule.formula) {
-      setUnlockedMolecules(prev => { const next = new Set(prev); next.add(targetMolecule.formula!); return next; });
+    const unlockFormula = currentChallenge?.targetFormula ?? targetMolecule.formula;
+    if (unlockFormula) {
+      setUnlockedMolecules(prev => { const next = new Set(prev); next.add(unlockFormula); return next; });
     }
 
     sendText(
@@ -484,11 +500,18 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       const counts: Record<string, number> = {};
       placedAtoms.forEach(a => { counts[a.element] = (counts[a.element] || 0) + 1; });
 
+      // Use challenge-level targetAtoms first, then parse formula, then top-level fallback
+      const targetAtoms = currentChallenge.targetAtoms?.length > 0
+        ? currentChallenge.targetAtoms
+        : currentChallenge.targetFormula
+          ? parseFormula(currentChallenge.targetFormula)
+          : targetMolecule.atoms;
+
       let atomsCorrect = true;
-      for (const { element, count } of targetMolecule.atoms) {
+      for (const { element, count } of targetAtoms) {
         if ((counts[element] || 0) !== count) { atomsCorrect = false; break; }
       }
-      const totalTarget = targetMolecule.atoms.reduce((sum, a) => sum + a.count, 0);
+      const totalTarget = targetAtoms.reduce((sum, a) => sum + a.count, 0);
       if (placedAtoms.length !== totalTarget) atomsCorrect = false;
 
       if (atomsCorrect && allSatisfied) {
@@ -510,7 +533,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       }
     } else if (currentChallenge.type === 'identify') {
       setIdentificationsTotal(prev => prev + 1);
-      const target = (targetMolecule.name || '').toLowerCase().trim();
+      const target = (currentChallenge.targetName ?? targetMolecule.name ?? '').toLowerCase().trim();
       if (identifyInput.toLowerCase().trim() === target) {
         setIdentifiedCorrectly(prev => prev + 1);
         handleCorrect();
@@ -766,13 +789,17 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
               </div>
             )}
 
-            {/* Target molecule info */}
-            {showOptions.showName && targetMolecule.name && (
+            {/* Target molecule info — uses current challenge's target when available */}
+            {showOptions.showName && (currentChallenge?.targetName || currentChallenge?.targetFormula || targetMolecule.name) && (
               <div className="bg-black/20 rounded-xl border border-white/5 p-3">
                 <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">Target Molecule</p>
-                <p className="text-lg text-slate-200 font-semibold">{targetMolecule.name}</p>
-                {targetMolecule.formula && (
-                  <p className="text-sm text-cyan-300 font-mono">{targetMolecule.formula}</p>
+                <p className="text-lg text-slate-200 font-semibold">
+                  {currentChallenge?.targetName || targetMolecule.name}
+                </p>
+                {(currentChallenge?.targetFormula || targetMolecule.formula) && (
+                  <p className="text-sm text-cyan-300 font-mono">
+                    {currentChallenge?.targetFormula || targetMolecule.formula}
+                  </p>
                 )}
                 {targetMolecule.realWorldUse && (
                   <p className="text-xs text-slate-400 mt-1">{targetMolecule.realWorldUse}</p>
