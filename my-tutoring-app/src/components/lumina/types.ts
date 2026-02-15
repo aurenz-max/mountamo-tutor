@@ -1125,7 +1125,12 @@ export type ComponentId =
   | 'reaction-lab'       // Interactive chemical reaction laboratory
   | 'states-of-matter'   // Interactive states of matter visualization
   | 'atom-builder'       // Interactive atom construction with Bohr model, shells, ions, isotopes
+  | 'energy-of-reactions'  // Interactive energy of reactions explorer
+  | 'equation-balancer'    // Interactive chemical equation balancing
+  | 'mixing-and-dissolving' // Interactive mixing and dissolving explorer
   | 'molecule-constructor' // Interactive molecule building with atom snapping and bonding
+  | 'ph-explorer'           // Interactive pH scale explorer
+  | 'safety-lab'            // Interactive safety lab
 
   // Biology Primitives
   | 'species-profile'    // Comprehensive species information with taxonomy, habitat, and characteristics (perfect for dinosaurs!)
@@ -1394,5 +1399,10 @@ export type { MatterExplorerData } from './primitives/visual-primitives/chemistr
 export type { ReactionLabData } from './primitives/visual-primitives/chemistry/ReactionLab';
 export type { StatesOfMatterData } from './primitives/visual-primitives/chemistry/StatesOfMatter';
 export type { AtomBuilderData, AtomBuilderChallenge, AtomBuilderShowOptions, AtomBuilderConstraints } from './primitives/visual-primitives/chemistry/AtomBuilder';
+export type { MixingAndDissolvingData } from './primitives/visual-primitives/chemistry/MixingAndDissolving';
 export type { MoleculeConstructorData } from './primitives/visual-primitives/chemistry/MoleculeConstructor';
+export type { EnergyOfReactionsData } from './primitives/visual-primitives/chemistry/EnergyOfReactions';
+export type { EquationBalancerData } from './primitives/visual-primitives/chemistry/EquationBalancer';
 export type { EngineExplorerData } from './primitives/visual-primitives/engineering/EngineExplorer';
+export type { PhExplorerData } from './primitives/visual-primitives/chemistry/PhExplorer';
+export type { SafetyLabData } from './primitives/visual-primitives/chemistry/SafetyLab';

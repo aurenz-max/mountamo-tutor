@@ -54,6 +54,11 @@ import { generateReactionLab } from '../../chemistry/gemini-reaction-lab';
 import { generateStatesOfMatter } from '../../chemistry/gemini-states-of-matter';
 import { generateAtomBuilder } from '../../chemistry/gemini-atom-builder';
 import { generateMoleculeConstructor } from '../../chemistry/gemini-molecule-constructor';
+import { generateEquationBalancer } from '../../chemistry/gemini-equation-balancer';
+import { generateEnergyOfReactions } from '../../chemistry/gemini-energy-of-reactions';
+import { generateMixingAndDissolving } from '../../chemistry/gemini-mixing-and-dissolving';
+import { generatePhExplorer } from '../../chemistry/gemini-ph-explorer';
+import { generateSafetyLab } from '../../chemistry/gemini-safety-lab';
 
 // ============================================================================
 // Specialized Visual/Interactive Component Imports (from dedicated service files)
@@ -414,6 +419,41 @@ registerGenerator('molecule-constructor', async (item, topic, gradeContext) => {
   };
 });
 
+// Equation Balancer (interactive chemical equation balancing)
+registerGenerator('equation-balancer', async (item, topic, gradeContext) => ({
+  type: 'equation-balancer',
+  instanceId: item.instanceId,
+  data: await generateEquationBalancer(topic, gradeContext, item.config),
+}));
+
+// Energy of Reactions (exothermic/endothermic enthalpy diagrams)
+registerGenerator('energy-of-reactions', async (item, topic, gradeContext) => ({
+  type: 'energy-of-reactions',
+  instanceId: item.instanceId,
+  data: await generateEnergyOfReactions(topic, gradeContext, item.config),
+}));
+
+// Mixing and Dissolving (interactive solutions/mixtures explorer)
+registerGenerator('mixing-and-dissolving', async (item, topic, gradeContext) => ({
+  type: 'mixing-and-dissolving',
+  instanceId: item.instanceId,
+  data: await generateMixingAndDissolving(topic, gradeContext, item.config),
+}));
+
+// pH Explorer (interactive acid-base rainbow)
+registerGenerator('ph-explorer', async (item, topic, gradeContext) => ({
+  type: 'ph-explorer',
+  instanceId: item.instanceId,
+  data: await generatePhExplorer(topic, gradeContext, item.config),
+}));
+
+// Safety Lab (lab safety training & virtual PPE)
+registerGenerator('safety-lab', async (item, topic, gradeContext) => ({
+  type: 'safety-lab',
+  instanceId: item.instanceId,
+  data: await generateSafetyLab(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
 // Specialized Visual/Interactive Components Registration
 // ============================================================================
@@ -450,7 +490,11 @@ registerGenerator('custom-visual', async (item, topic, gradeContext) => {
   return {
     type: 'custom-visual',
     instanceId: item.instanceId,
-    data
+    data: {
+      type: 'custom-web' as const,
+      id: item.instanceId,
+      ...data,
+    }
   };
 });
 

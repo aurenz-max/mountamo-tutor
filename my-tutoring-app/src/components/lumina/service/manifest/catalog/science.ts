@@ -60,6 +60,46 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
     },
   },
   {
+    id: 'equation-balancer',
+    description: 'Interactive chemical equation balancer with adjustable coefficients, live atom counter, molecule visualization, and balance scale. Students adjust coefficients to balance equations while tracking atom counts on each side. Perfect for teaching conservation of mass and systematic problem-solving. ESSENTIAL for grade 6-8 chemistry.',
+    constraints: 'Requires equation data with reactants/products and atom counts. Max 10 compounds. Best for grade 6-8.',
+    tutoring: {
+      taskDescription: 'The student is balancing the chemical equation: {{equationString}}. They adjust coefficients (big numbers in front of formulas) to make atom counts match on both sides. Currently balanced elements: {{balancedElements}}, unbalanced elements: {{unbalancedElements}}.',
+      contextKeys: ['currentCoefficients', 'atomCounts', 'elements', 'balancedElements', 'unbalancedElements', 'isBalanced', 'equationString', 'guidedMode', 'guidedElement', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"Look at the atom counter — which element has different numbers on each side? Start there."',
+        level2: '"Focus on {{guidedElement}} first. There are {{atomCounts.reactants[guidedElement]}} on the left and {{atomCounts.products[guidedElement]}} on the right. What coefficient would make them equal?"',
+        level3: '"Let\'s balance {{guidedElement}} step by step. Right now you have {{atomCounts.reactants[guidedElement]}} {{guidedElement}} atoms in the reactants. Each molecule of the product has a certain number — try coefficient 2 and watch the atom counter change."',
+      },
+      commonStruggles: [
+        { pattern: 'Student changes subscripts instead of coefficients', response: 'Remind them: coefficients (big numbers in front) tell HOW MANY molecules. Subscripts (small numbers) tell what the molecule IS. We never change subscripts — that would make a different molecule!' },
+        { pattern: 'Student balances one element but unbalances another', response: 'Acknowledge the progress: "Great, you balanced the hydrogen! But notice the oxygen changed too. That happens — it\'s like a seesaw. Try adjusting the coefficient on the compound that has BOTH elements."' },
+        { pattern: 'Student uses very large coefficients', response: 'Guide toward simplicity: "Your equation is balanced, but can we use smaller numbers? Try dividing all coefficients by the same number — the smallest balanced set is the conventional answer."' },
+        { pattern: 'Student seems stuck after 5+ attempts', response: 'Offer guided mode: "Let\'s try a strategy! Start with the element that appears in the fewest places — it\'s easier to control. Which element only shows up in one compound on each side?"' },
+      ],
+    },
+  },
+  {
+    id: 'energy-of-reactions',
+    description: 'Interactive energy-of-reactions visualization with enthalpy diagrams, temperature gauges, bond energy breakdowns, and catalyst comparisons. Students explore why reactions release or absorb heat through animated energy diagrams and real-world connections. Perfect for teaching exothermic/endothermic classification, activation energy, and bond energies. ESSENTIAL for grade 5-8 chemistry.',
+    constraints: 'Requires reaction data with energy values. Bond energy view only for grade 7-8. Best for grade 5-8.',
+    tutoring: {
+      taskDescription: 'The student is exploring the energy changes in {{reactionName}} ({{equation}}). This is a {{reactionType}} reaction with \u0394H = {{deltaH}} kJ. They are working on a {{challengeType}} challenge: "{{instruction}}".',
+      contextKeys: ['reactionName', 'reactionType', 'equation', 'deltaH', 'activationEnergy', 'realWorldExample', 'reactionActive', 'showCatalyst', 'bondEnergiesEnabled', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer'],
+      scaffoldingLevels: {
+        level1: '"Look at the energy diagram \u2014 are the products higher or lower than the reactants? What does that tell you about energy?"',
+        level2: '"This is a {{reactionType}} reaction. The \u0394H is {{deltaH}} kJ. On the diagram, notice the products are {{reactionType === \'exothermic\' ? \'lower\' : \'higher\'}} \u2014 energy came {{reactionType === \'exothermic\' ? \'out\' : \'in\'}}. Think of {{realWorldExample}}."',
+        level3: '"Let\'s trace the energy path step by step. Start at the reactant level. The ball has to climb the activation energy hill ({{activationEnergy}} kJ) to get going. Then it {{reactionType === \'exothermic\' ? \'rolls down below where it started \u2014 releasing\' : \'lands higher than where it started \u2014 absorbing\'}} {{Math.abs(deltaH)}} kJ of energy."',
+      },
+      commonStruggles: [
+        { pattern: 'Student confuses exothermic with endothermic', response: 'Connect to experience: "EXO means OUT \u2014 energy exits the reaction, making it feel HOT. ENDO means IN \u2014 energy enters the reaction, making it feel COLD. A campfire is exo (hot!), a cold pack is endo (cold!)."' },
+        { pattern: 'Student does not understand the energy diagram direction', response: 'Use the hill metaphor: "Think of it like a ball rolling. If it ends up LOWER, it released energy on the way down (exothermic). If it ends up HIGHER, something had to push it up there (endothermic)."' },
+        { pattern: 'Student confuses activation energy with deltaH', response: 'Clarify: "Activation energy is the push to START the reaction \u2014 like lighting a match. DeltaH is the OVERALL energy change \u2014 did the reaction give off or absorb heat in total? They are different things!"' },
+        { pattern: 'Student struggles with bond energy calculations', response: 'Break it into steps: "First, add up ALL the energy to break bonds (that costs energy). Then add up ALL the energy from forming bonds (that releases energy). Subtract: if breaking costs more, it is endothermic. If forming releases more, it is exothermic."' },
+      ],
+    },
+  },
+  {
     id: 'states-of-matter',
     description: 'Interactive particle simulation where students control temperature and watch particles speed up, slow down, break free, or lock into place. Split view shows macroscopic substance (beaker) alongside particle model synchronized in real-time. Temperature slider with color-coded state ranges and phase markers. Supports multiple substances (water, wax, iron, chocolate, butter). K-2 focuses on ice/water/steam with simple observations. 3-5 adds heating curves, particle speed indicators, and substance comparison. Perfect for teaching the particle model of matter, phase transitions, and energy transfer. ESSENTIAL for K-5 science.',
     constraints: 'Best for K-5. Use for science lessons on states of matter, particle model, phase changes, melting/boiling/freezing/condensation, temperature and energy, and kinetic theory. Grade-appropriate complexity adjusts automatically.',
@@ -76,6 +116,26 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student does not understand why solids keep their shape', response: 'Explain: "See how the particles in a solid are packed tightly together and just vibrate? They\'re holding on to each other! That\'s why a solid keeps its shape — the particles can\'t move past each other."' },
         { pattern: 'Student expects instant change at melting/boiling point', response: 'Clarify: "Phase changes happen right at the melting or boiling point. Keep the slider right at that temperature and watch — the particles are using all the energy to break free, not to get hotter!"' },
         { pattern: 'Student struggles with heating curve plateaus', response: 'Guide: "The flat parts on the graph are the exciting moments — that\'s where the substance is changing state! All the energy goes into breaking particles apart, not making them hotter."' },
+      ],
+    },
+  },
+  {
+    id: 'mixing-and-dissolving',
+    description: 'Interactive solutions and mixtures explorer with beaker workspace, substance shelf, particle view, temperature control, saturation indicator, concentration meter, and separation tools. Students add substances to water and discover what dissolves and what does not, then use separation techniques to recover solutes. Perfect for teaching dissolving, solutions vs mixtures, and saturation. ESSENTIAL for grade 3-7 chemistry.',
+    constraints: 'Requires substance data with solubility values. Best for grade 3-7. Solubility curve only for grade 6-7.',
+    tutoring: {
+      taskDescription: 'The student is exploring mixing and dissolving in {{solventName}} at {{temperature}}\u00B0C. They have added: {{addedSubstanceNames}}. Current challenge: {{challengeType}} \u2014 "{{instruction}}".',
+      contextKeys: ['solventName', 'temperature', 'addedSubstanceNames', 'addedSubstanceTypes', 'isSaturated', 'isStirring', 'particleViewActive', 'selectedSeparation', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer'],
+      scaffoldingLevels: {
+        level1: '"Look closely at what happened when you added that substance. Can you still see it? What does that tell you?"',
+        level2: '"Try toggling the particle view \u2014 you can see what\u2019s happening at the molecule level. The blue dots are water molecules. What are they doing to the solute particles?"',
+        level3: '"When something dissolves, the water molecules surround each solute particle and pull it apart. That\u2019s why it looks like it disappeared \u2014 but it\u2019s still there! You could prove it by evaporating the water."',
+      },
+      commonStruggles: [
+        { pattern: 'Student thinks dissolved substance has disappeared or been destroyed', response: 'Connect to conservation: "It looks gone, but it\u2019s still there! The particles just spread out so small you can\u2019t see them. Try the particle view \u2014 or better yet, how could you PROVE the sugar is still in the water?"' },
+        { pattern: 'Student confuses solutions with mixtures', response: 'Clarify the difference: "In a solution, everything looks the same \u2014 you can\u2019t see the parts. In a mixture like sand and water, you CAN still see the different parts. Can you sort these into solutions and mixtures?"' },
+        { pattern: 'Student does not understand saturation', response: 'Make it concrete: "Imagine your backpack is FULL \u2014 you can\u2019t fit any more books. The water is like that \u2014 it can only hold so much dissolved stuff. The extra just sits at the bottom!"' },
+        { pattern: 'Student picks wrong separation method', response: 'Guide method selection: "Think about what kind of mixture you have. Is the substance dissolved (invisible) or undissolved (you can see it)? Filtration catches big pieces, evaporation recovers dissolved things."' },
       ],
     },
   },
@@ -118,6 +178,46 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student has correct atoms but wrong number of bonds', response: 'Guide: "You have the right atoms! Now make sure every green dot is connected. If an atom still has green dots, it needs more bonds. Click two atoms with available dots to connect them."' },
         { pattern: 'Student confuses molecular formula with atom count', response: 'Clarify: "In a formula like H\u2082O, the small 2 after H means there are 2 hydrogen atoms. No number after O means there is 1 oxygen atom. So H\u2082O has 3 atoms total: 2 hydrogens and 1 oxygen."' },
         { pattern: 'Student does not understand double or triple bonds', response: 'Explain: "Some atoms need to share more than one bond! Click two already-bonded atoms again to upgrade to a double bond. Double bonds share 2 connections, triple bonds share 3. Oxygen in O\u2082 uses a double bond because each oxygen needs 2 connections."' },
+      ],
+    },
+  },
+  {
+    id: 'ph-explorer',
+    description: 'Interactive pH scale exploration with rainbow gradient (0-14), substance testing with multiple indicators (litmus, cabbage juice, universal, phenolphthalein), acid/base/neutral sorting, neutralization station with real-time pH meter, and particle view showing H+/OH- concentration. Features cabbage juice rainbow mode where students create a color spectrum by testing many substances. Perfect for teaching the pH scale, acids and bases, indicators, and neutralization. ESSENTIAL for grade 4-8 chemistry.',
+    constraints: 'Best for grades 4-8. Use for chemistry lessons on pH, acids and bases, indicators, neutralization, acid-base reactions, and the pH scale. Grade-appropriate complexity adjusts automatically.',
+    tutoring: {
+      taskDescription: 'Student is exploring pH and acids/bases with {{totalSubstances}} substances available. They have tested {{testedCount}} substances so far. Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Selected indicator: {{selectedIndicator}}. Rainbow substances tested: {{rainbowCount}}. Attempt {{attemptNumber}}.',
+      contextKeys: ['gradeBand', 'totalSubstances', 'testedCount', 'selectedSubstance', 'selectedIndicator', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer', 'neutralizationPH', 'rainbowCount'],
+      scaffoldingLevels: {
+        level1: '"What color did the indicator turn? What do you think that tells us about this substance?"',
+        level2: '"Remember: acids turn litmus red and have pH below 7. Bases turn litmus blue and have pH above 7. Look at the color you got with {{selectedIndicator}} — is {{selectedSubstance}} an acid, a base, or neutral?"',
+        level3: '"Let\'s figure this out step by step. You tested {{selectedSubstance}} with {{selectedIndicator}}. The color tells us the pH. On our scale, red colors mean low pH (acidic), green means neutral (pH 7), and blue/purple means high pH (basic). Where does this color fall?"',
+      },
+      commonStruggles: [
+        { pattern: 'Student confuses acids and bases', response: 'Connect to everyday experience: "Think about taste — acids taste SOUR like lemon juice. Bases feel SLIPPERY like soap. Sour = acid, slippery = base!"' },
+        { pattern: 'Student does not understand the pH scale direction', response: 'Use the number line: "pH works like a number line from 0 to 14. The middle is 7 — that\'s neutral, like pure water. Numbers below 7 are acids (the lower, the stronger). Numbers above 7 are bases."' },
+        { pattern: 'Student struggles with neutralization concept', response: 'Make it concrete: "When you mix an acid and a base, they cancel each other out — like mixing hot and cold water to get warm. The pH moves toward 7. That\'s neutralization!"' },
+        { pattern: 'Student cannot interpret indicator colors', response: 'Guide with the color chart: "Each indicator has its own color code. Litmus is simple: red = acid, blue = base. Cabbage juice is a rainbow: red and pink = acid, purple = neutral, blue and green = base, yellow = very strong base!"' },
+      ],
+    },
+  },
+  {
+    id: 'safety-lab',
+    description: 'Gamified lab safety training with interactive lab scene for hazard identification, PPE selection station with draggable equipment (goggles, gloves, apron, lab coat, face shield), GHS hazard symbol matching, emergency response sequencing, and safe lab design mode. K-2 covers basic safety rules, 3-5 adds hazard symbols and equipment handling, 6-8 includes full GHS symbols, risk assessment, and SDS basics. Every chemistry primitive references this one. ESSENTIAL for K-8 science safety.',
+    constraints: 'Best for K-8. Use for lab safety training, science safety rules, PPE selection, hazard identification, emergency procedures, and GHS hazard symbols. Should precede any hands-on chemistry activity.',
+    tutoring: {
+      taskDescription: 'Student is doing lab safety training for "{{scenarioName}}" (preparing for {{experiment}}). They have identified {{hazardsIdentified}}/{{hazardsTotal}} hazards and selected PPE: {{selectedPPE}}. Required PPE: {{requiredPPE}}. Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Attempt {{attemptNumber}}.',
+      contextKeys: ['gradeBand', 'scenarioName', 'experiment', 'hazardsTotal', 'hazardsIdentified', 'requiredPPE', 'selectedPPE', 'ppeSubmitted', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer', 'emergencyScenario', 'ghsSymbolCount'],
+      scaffoldingLevels: {
+        level1: '"Look around the lab carefully. Is there anything that could be dangerous? What might go wrong?"',
+        level2: '"We\'re preparing for {{experiment}}. Think about what could hurt you — chemicals on skin, splashes in eyes, spills on the floor. Which safety equipment protects against each danger?"',
+        level3: '"Let\'s go through the checklist together. For {{experiment}}, we need to protect: our EYES (what covers those?), our HANDS (what covers those?), and our BODY (what covers that?). Now look at the PPE station and pick the right items."',
+      },
+      commonStruggles: [
+        { pattern: 'Student forgets goggles', response: 'Emphasize the most critical PPE: "The NUMBER ONE rule in any lab: ALWAYS wear safety goggles! Your eyes cannot heal like your skin can. Goggles are non-negotiable for every experiment."' },
+        { pattern: 'Student selects unnecessary PPE', response: 'Guide appropriate selection: "It\'s great that you want to be safe! But wearing too much PPE can actually be a problem — it can make you clumsy and cause accidents. Think about what hazards THIS specific experiment has."' },
+        { pattern: 'Student misses a hazard in the lab scene', response: 'Direct attention: "Look more carefully at the lab. Check near the burner — is everything clear? Look at the floor — any spills? Check the bottles — are they all labeled? Every detail matters in lab safety!"' },
+        { pattern: 'Student gets emergency sequence wrong', response: 'Walk through the logic: "In an emergency, think: What is the FIRST thing you need to do to stop the harm? Then what comes next? The order matters because each step builds on the last one."' },
       ],
     },
   },

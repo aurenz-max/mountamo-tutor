@@ -1864,6 +1864,79 @@ export interface MoleculeConstructorMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface EquationBalancerMetrics extends BasePrimitiveMetrics {
+  type: 'equation-balancer';
+  equationsBalanced: number;
+  equationsTotal: number;
+  atomCountingCorrect: number;
+  countingTotal: number;
+  averageAttemptsPerEquation: number;
+  usedGuidedMode: boolean;
+  strategyUsed: string;
+  coefficientVsSubscriptConfusion: boolean;
+  conservationArticulated: boolean;
+  attemptsCount: number;
+}
+
+export interface EnergyOfReactionsMetrics extends BasePrimitiveMetrics {
+  type: 'energy-of-reactions';
+  classificationCorrect: number;
+  classificationTotal: number;
+  diagramReadCorrect: number;
+  diagramTotal: number;
+  activationEnergyUnderstood: boolean;
+  catalystEffectExplained: boolean;
+  bondEnergyCalculationCorrect: number;
+  calculationTotal: number;
+  realWorldConnectionMade: boolean;
+  attemptsCount: number;
+}
+
+export interface MixingAndDissolvingMetrics extends BasePrimitiveMetrics {
+  type: 'mixing-and-dissolving';
+  dissolveSortCorrect: number;
+  sortTotal: number;
+  particleExplanationGiven: boolean;
+  factorsTestedCorrectly: number;
+  factorsTotal: number;
+  saturationIdentified: boolean;
+  separationMethodCorrect: number;
+  separationTotal: number;
+  substanceRecovered: boolean;
+  concentrationEstimateAccuracy: number;
+  attemptsCount: number;
+}
+
+export interface PhExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'ph-explorer';
+  sortingCorrect: number;
+  sortingTotal: number;
+  pHEstimateAccuracy: number;
+  indicatorColorInterpreted: number;
+  interpretationsTotal: number;
+  neutralizationCompleted: boolean;
+  neutralizationPointFound: boolean;
+  rainbowCreated: boolean;
+  substancesExplored: number;
+  attemptsCount: number;
+}
+
+export interface SafetyLabMetrics extends BasePrimitiveMetrics {
+  type: 'safety-lab';
+  ppeSelectedCorrectly: number;
+  ppeTotal: number;
+  hazardsIdentified: number;
+  hazardsTotal: number;
+  symbolsMatchedCorrectly: number;
+  symbolsTotal: number;
+  emergencySequenceCorrect: boolean;
+  labDesignSafe: boolean;
+  safetyQuizScore: number;
+  quizTotal: number;
+  responseTime: number;
+  attemptsCount: number;
+}
+
 // -----------------------------------------------------------------------------
 // Literacy Primitives (Wave 3)
 // -----------------------------------------------------------------------------
@@ -2664,6 +2737,11 @@ export type PrimitiveMetrics =
   | StatesOfMatterMetrics
   | AtomBuilderMetrics
   | MoleculeConstructorMetrics
+  | EquationBalancerMetrics
+  | EnergyOfReactionsMetrics
+  | MixingAndDissolvingMetrics
+  | PhExplorerMetrics
+  | SafetyLabMetrics
   // Literacy (Wave 1)
   | ParagraphArchitectMetrics
   | SentenceBuilderMetrics

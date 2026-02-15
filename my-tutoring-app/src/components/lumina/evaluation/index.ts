@@ -122,6 +122,11 @@ export type {
   StatesOfMatterMetrics,
   AtomBuilderMetrics,
   MoleculeConstructorMetrics,
+  EquationBalancerMetrics,
+  EnergyOfReactionsMetrics,
+  MixingAndDissolvingMetrics,
+  PhExplorerMetrics,
+  SafetyLabMetrics,
   // Literacy metrics (Wave 1)
   ParagraphArchitectMetrics,
   SentenceBuilderMetrics,

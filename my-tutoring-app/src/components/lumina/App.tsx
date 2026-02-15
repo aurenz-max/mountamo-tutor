@@ -33,6 +33,7 @@ import AstronomyPrimitivesTester from './components/AstronomyPrimitivesTester';
 import { PhysicsPrimitivesTester } from './components/PhysicsPrimitivesTester';
 import { FeatureExhibitTester } from './components/FeatureExhibitTester';
 import BiologyPrimitivesTester from './components/BiologyPrimitivesTester';
+import ChemistryPrimitivesTester from './components/ChemistryPrimitivesTester';
 import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
 import { PracticeMode } from './components/PracticeModeEnhanced';
@@ -207,6 +208,9 @@ export default function App() {
 
   // Biology Primitives Testing State
   const [showBiologyPrimitivesTester, setShowBiologyPrimitivesTester] = useState(false);
+
+  // Chemistry Primitives Testing State
+  const [showChemistryPrimitivesTester, setShowChemistryPrimitivesTester] = useState(false);
 
   // Language Arts Primitives Testing State
   const [showLanguageArtsTester, setShowLanguageArtsTester] = useState(false);
@@ -618,6 +622,11 @@ export default function App() {
                    ← Exit Tester
                 </button>
             )}
+            {showChemistryPrimitivesTester && (
+                <button onClick={() => setShowChemistryPrimitivesTester(false)} className="hover:text-white transition-colors">
+                   ← Exit Tester
+                </button>
+            )}
             {showLuminaTutorTester && (
                 <button onClick={() => setShowLuminaTutorTester(false)} className="hover:text-white transition-colors">
                    ← Exit Tester
@@ -644,7 +653,7 @@ export default function App() {
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showAstronomyPrimitivesTester && !showPhysicsPrimitivesTester && !showFeatureExhibitTester && !showBiologyPrimitivesTester && !showLanguageArtsTester && !showLuminaTutorTester && !showPracticeMode && !showScratchPad && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showAstronomyPrimitivesTester && !showPhysicsPrimitivesTester && !showFeatureExhibitTester && !showBiologyPrimitivesTester && !showChemistryPrimitivesTester && !showLanguageArtsTester && !showLuminaTutorTester && !showPracticeMode && !showScratchPad && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -982,6 +991,30 @@ export default function App() {
                         </div>
                       </SpotlightCard>
 
+                      {/* Chemistry Primitives Tester */}
+                      <SpotlightCard
+                        color="16, 185, 129"
+                        onClick={() => setShowChemistryPrimitivesTester(true)}
+                        className="bg-gradient-to-br from-emerald-900/20 to-teal-900/20"
+                      >
+                        <div className="p-6 flex items-start gap-4">
+                          <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <span className="text-2xl">🧪</span>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-emerald-200 transition-colors">
+                              Chemistry Primitives Tester
+                            </h3>
+                            <p className="text-slate-400 text-xs leading-relaxed">
+                              Test reaction labs, equation balancers, pH explorers, and other chemistry components
+                            </p>
+                          </div>
+                          <svg className="w-5 h-5 text-slate-600 group-hover:text-emerald-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                          </svg>
+                        </div>
+                      </SpotlightCard>
+
                       {/* Language Arts Primitives Tester */}
                       <SpotlightCard
                         color="244, 114, 182"
@@ -1107,6 +1140,13 @@ export default function App() {
         {gameState === GameState.IDLE && showBiologyPrimitivesTester && (
           <div className="flex-1 animate-fade-in">
             <BiologyPrimitivesTester onBack={() => setShowBiologyPrimitivesTester(false)} />
+          </div>
+        )}
+
+        {/* CHEMISTRY PRIMITIVES TESTER STATE */}
+        {gameState === GameState.IDLE && showChemistryPrimitivesTester && (
+          <div className="flex-1 animate-fade-in">
+            <ChemistryPrimitivesTester onBack={() => setShowChemistryPrimitivesTester(false)} />
           </div>
         )}
 

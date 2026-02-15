@@ -5,6 +5,7 @@ import {
   SubstanceConfig,
   ParticleConfig,
   StatesOfMatterChallenge,
+  ChallengeOption,
 } from "../../primitives/visual-primitives/chemistry/StatesOfMatter";
 
 // Re-export types for convenience (no redefinition — sourced from the component)
@@ -13,6 +14,7 @@ export type {
   SubstanceConfig,
   ParticleConfig,
   StatesOfMatterChallenge,
+  ChallengeOption,
 };
 
 /**
@@ -125,7 +127,10 @@ const statesOfMatterSchema: Schema = {
     challenges: {
       type: Type.ARRAY,
       description:
-        "3-5 sequenced challenges: identify → predict → explain → compare",
+        "3-5 sequenced challenges: identify → predict → explain → compare. " +
+        "Use multiple-choice options for explain_particles, predict_change, and heating_curve challenges. " +
+        "Use isTrueFalse for reversibility challenges. " +
+        "Only use open-ended textarea (no options, no isTrueFalse) for compare_substances.",
       items: {
         type: Type.OBJECT,
         properties: {
@@ -167,6 +172,45 @@ const statesOfMatterSchema: Schema = {
             type: Type.STRING,
             description:
               "Wonder-driven narration text to spark curiosity and celebrate success",
+          },
+          options: {
+            type: Type.ARRAY,
+            description:
+              "Multiple-choice options (3-4 choices). Required for explain_particles, predict_change, and heating_curve challenges. " +
+              "Omit for identify_state (has built-in solid/liquid/gas buttons), reversibility (use isTrueFalse), and compare_substances (open-ended).",
+            nullable: true,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: {
+                  type: Type.STRING,
+                  description: "Option identifier (A, B, C, D)",
+                },
+                text: {
+                  type: Type.STRING,
+                  description: "The option text the student sees",
+                },
+              },
+              required: ["id", "text"],
+            },
+          },
+          correctOptionId: {
+            type: Type.STRING,
+            description:
+              "The id of the correct option (e.g. 'B'). Required when options are provided.",
+            nullable: true,
+          },
+          isTrueFalse: {
+            type: Type.BOOLEAN,
+            description:
+              "Set to true for reversibility challenges to render True/False buttons instead of textarea.",
+            nullable: true,
+          },
+          correctBoolean: {
+            type: Type.BOOLEAN,
+            description:
+              "The correct True/False answer. Required when isTrueFalse is true.",
+            nullable: true,
           },
         },
         required: [
@@ -343,7 +387,22 @@ GENERAL REQUIREMENTS:
    - showParticleSpeed: false for K-2, true for 3-5
 10. The substances array must only include keys from: water, wax, iron, chocolate, nitrogen, butter.
 11. For K-2: formula should be null. Only use ['water'] for substances.
-    For 3-5: formula is optional. Use 3-4 substances from the available set.`;
+    For 3-5: formula is optional. Use 3-4 substances from the available set.
+
+CHALLENGE SCAFFOLDING (IMPORTANT):
+Use the right answer format for each challenge type:
+- identify_state: No options needed (the UI has built-in solid/liquid/gas buttons). Set targetAnswer to the correct state.
+- explain_particles: Provide "options" with 3-4 multiple-choice descriptions of particle behavior.
+  Example options: [{id:"A", text:"Vibrating in place, tightly packed"}, {id:"B", text:"Sliding past each other freely"}, {id:"C", text:"Flying apart in all directions"}, {id:"D", text:"Not moving at all"}].
+  Set correctOptionId to the correct option id. Still set targetAnswer for fallback.
+- predict_change: Provide "options" with 3-4 choices about what will happen.
+  Example: [{id:"A", text:"It will melt into a liquid"}, {id:"B", text:"It will freeze into a solid"}, {id:"C", text:"Nothing will happen"}].
+  Set correctOptionId to the correct option id.
+- heating_curve: Provide "options" with 3-4 choices about what happens on the heating curve.
+  Set correctOptionId to the correct option id.
+- reversibility: Set "isTrueFalse" to true and "correctBoolean" to the correct answer (true/false).
+  Frame the instruction as a true/false statement (e.g. "Melting ice into water can be reversed by cooling it back down.").
+- compare_substances: No options — this stays as open-ended textarea for creative answers.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -440,20 +499,44 @@ GENERAL REQUIREMENTS:
 
     // Ensure every challenge has required fields
     if (result.challenges) {
-      result.challenges = result.challenges.map((ch, idx) => ({
-        ...ch,
-        id: ch.id || `challenge-${idx}`,
-        type: ch.type || "identify_state",
-        instruction:
-          ch.instruction || "What state of matter is this substance in?",
-        targetAnswer: ch.targetAnswer || "",
-        targetTemp: ch.targetTemp ?? null,
-        hint: ch.hint || "Look at the particles — are they moving fast or slow?",
-        narration:
-          ch.narration ||
-          ch.instruction ||
-          "Great observation!",
-      }));
+      result.challenges = result.challenges.map((ch, idx) => {
+        const challenge = {
+          ...ch,
+          id: ch.id || `challenge-${idx}`,
+          type: ch.type || "identify_state",
+          instruction:
+            ch.instruction || "What state of matter is this substance in?",
+          targetAnswer: ch.targetAnswer || "",
+          targetTemp: ch.targetTemp ?? null,
+          hint: ch.hint || "Look at the particles — are they moving fast or slow?",
+          narration:
+            ch.narration ||
+            ch.instruction ||
+            "Great observation!",
+        };
+
+        // Ensure correctOptionId is set when options are present
+        if (challenge.options && challenge.options.length > 0 && !challenge.correctOptionId) {
+          const target = challenge.targetAnswer.toLowerCase();
+          const match = challenge.options.find(
+            (o) => o.text.toLowerCase().includes(target) || target.includes(o.text.toLowerCase())
+          );
+          if (match) {
+            challenge.correctOptionId = match.id;
+          } else {
+            // Default to first option — generator gave us no usable signal
+            challenge.correctOptionId = challenge.options[0].id;
+          }
+        }
+
+        // Ensure correctBoolean is set when isTrueFalse is present
+        if (challenge.isTrueFalse && challenge.correctBoolean === undefined) {
+          const target = challenge.targetAnswer.toLowerCase();
+          challenge.correctBoolean = target === "true" || target === "yes";
+        }
+
+        return challenge;
+      });
     }
 
     // Ensure substances list defaults

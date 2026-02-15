@@ -52,7 +52,12 @@ import MatterExplorer from '../primitives/visual-primitives/chemistry/MatterExpl
 import ReactionLab from '../primitives/visual-primitives/chemistry/ReactionLab';
 import StatesOfMatter from '../primitives/visual-primitives/chemistry/StatesOfMatter';
 import AtomBuilder from '../primitives/visual-primitives/chemistry/AtomBuilder';
+import MixingAndDissolving from '../primitives/visual-primitives/chemistry/MixingAndDissolving';
 import MoleculeConstructor from '../primitives/visual-primitives/chemistry/MoleculeConstructor';
+import EnergyOfReactions from '../primitives/visual-primitives/chemistry/EnergyOfReactions';
+import EquationBalancer from '../primitives/visual-primitives/chemistry/EquationBalancer';
+import PhExplorer from '../primitives/visual-primitives/chemistry/PhExplorer';
+import SafetyLab from '../primitives/visual-primitives/chemistry/SafetyLab';
 import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
 import OrganismCard from '../primitives/visual-primitives/biology/OrganismCard';
 import ClassificationSorter from '../primitives/visual-primitives/biology/ClassificationSorter';
@@ -678,9 +683,59 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  'mixing-and-dissolving': {
+    component: MixingAndDissolving,
+    sectionTitle: 'Mixing and Dissolving',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   'molecule-constructor': {
     component: MoleculeConstructor,
     sectionTitle: 'Molecule Constructor',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'energy-of-reactions': {
+    component: EnergyOfReactions,
+    sectionTitle: 'Energy of Reactions',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'equation-balancer': {
+    component: EquationBalancer,
+    sectionTitle: 'Equation Balancer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'ph-explorer': {
+    component: PhExplorer,
+    sectionTitle: 'pH Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'safety-lab': {
+    component: SafetyLab,
+    sectionTitle: 'Safety Lab',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

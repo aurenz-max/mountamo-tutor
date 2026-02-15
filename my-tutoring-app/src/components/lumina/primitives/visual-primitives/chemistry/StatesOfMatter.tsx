@@ -35,6 +35,11 @@ export interface ParticleConfig {
   showBonds: boolean;
 }
 
+export interface ChallengeOption {
+  id: string;
+  text: string;
+}
+
 export interface StatesOfMatterChallenge {
   id: string;
   type: 'identify_state' | 'predict_change' | 'explain_particles' | 'heating_curve' | 'compare_substances' | 'reversibility';
@@ -43,6 +48,12 @@ export interface StatesOfMatterChallenge {
   targetTemp: number | null;
   hint: string;
   narration: string;
+  // Multiple choice scaffolding (optional — when present, renders MC buttons instead of textarea)
+  options?: ChallengeOption[];
+  correctOptionId?: string;
+  // True/False scaffolding (optional — when present, renders T/F buttons instead of textarea)
+  isTrueFalse?: boolean;
+  correctBoolean?: boolean;
 }
 
 export interface StatesOfMatterData {
@@ -645,50 +656,76 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
     const target = currentChallenge.targetAnswer.toLowerCase();
     let isCorrect = false;
 
-    switch (currentChallenge.type) {
-      case 'identify_state': {
-        isCorrect = answer.includes(target);
+    // ── True/False check ──
+    if (currentChallenge.isTrueFalse && currentChallenge.correctBoolean !== undefined) {
+      const studentBool = answer === 'true';
+      isCorrect = studentBool === currentChallenge.correctBoolean;
+
+      // Still update type-specific metrics
+      if (currentChallenge.type === 'reversibility' && isCorrect) setReversibilityUnderstood(true);
+
+    // ── Multiple choice check ──
+    } else if (currentChallenge.options && currentChallenge.correctOptionId) {
+      isCorrect = answer === currentChallenge.correctOptionId.toLowerCase();
+
+      // Update type-specific metrics
+      if (currentChallenge.type === 'explain_particles' && isCorrect) setParticleModelExplained(true);
+      if (currentChallenge.type === 'heating_curve' && isCorrect) setHeatingCurveRead(true);
+      if (currentChallenge.type === 'predict_change' && currentChallenge.targetTemp !== null) {
+        const precision = Math.abs(temperature - currentChallenge.targetTemp);
+        setTempPrecisionSum(prev => prev + precision);
+        setTempPrecisionCount(prev => prev + 1);
+      }
+      if (currentChallenge.type === 'identify_state') {
         setStateIdTotal(prev => prev + 1);
         if (isCorrect) setStateIdCorrect(prev => prev + 1);
-        break;
       }
-      case 'predict_change': {
-        isCorrect = answer.includes(target);
-        // Check temperature precision
-        if (currentChallenge.targetTemp !== null) {
-          const precision = Math.abs(temperature - currentChallenge.targetTemp);
-          setTempPrecisionSum(prev => prev + precision);
-          setTempPrecisionCount(prev => prev + 1);
+
+    // ── Legacy text-based check (fallback for open-ended / compare) ──
+    } else {
+      switch (currentChallenge.type) {
+        case 'identify_state': {
+          isCorrect = answer.includes(target);
+          setStateIdTotal(prev => prev + 1);
+          if (isCorrect) setStateIdCorrect(prev => prev + 1);
+          break;
         }
-        break;
-      }
-      case 'explain_particles': {
-        // Accept if they mention particles/atoms and relevant behavior
-        isCorrect = answer.length >= 15 && (
-          answer.includes('particle') || answer.includes('atom') || answer.includes('molecule') ||
-          answer.includes('vibrat') || answer.includes('move') || answer.includes('slide') ||
-          answer.includes('fly') || answer.includes('energy') || answer.includes('fast') ||
-          answer.includes('slow') || answer.includes('close') || answer.includes('apart')
-        );
-        if (isCorrect) setParticleModelExplained(true);
-        break;
-      }
-      case 'heating_curve': {
-        isCorrect = answer.includes(target) || answer.includes('plateau') || answer.includes('flat');
-        if (isCorrect) setHeatingCurveRead(true);
-        break;
-      }
-      case 'reversibility': {
-        isCorrect = answer.includes(target) || answer.includes('yes') || answer.includes('revers');
-        if (isCorrect) setReversibilityUnderstood(true);
-        break;
-      }
-      case 'compare_substances': {
-        isCorrect = answer.includes(target) || answer.length >= 15;
-        break;
-      }
-      default: {
-        isCorrect = answer.includes(target);
+        case 'predict_change': {
+          isCorrect = answer.includes(target);
+          if (currentChallenge.targetTemp !== null) {
+            const precision = Math.abs(temperature - currentChallenge.targetTemp);
+            setTempPrecisionSum(prev => prev + precision);
+            setTempPrecisionCount(prev => prev + 1);
+          }
+          break;
+        }
+        case 'explain_particles': {
+          isCorrect = answer.length >= 15 && (
+            answer.includes('particle') || answer.includes('atom') || answer.includes('molecule') ||
+            answer.includes('vibrat') || answer.includes('move') || answer.includes('slide') ||
+            answer.includes('fly') || answer.includes('energy') || answer.includes('fast') ||
+            answer.includes('slow') || answer.includes('close') || answer.includes('apart')
+          );
+          if (isCorrect) setParticleModelExplained(true);
+          break;
+        }
+        case 'heating_curve': {
+          isCorrect = answer.includes(target) || answer.includes('plateau') || answer.includes('flat');
+          if (isCorrect) setHeatingCurveRead(true);
+          break;
+        }
+        case 'reversibility': {
+          isCorrect = answer.includes(target) || answer.includes('yes') || answer.includes('revers');
+          if (isCorrect) setReversibilityUnderstood(true);
+          break;
+        }
+        case 'compare_substances': {
+          isCorrect = answer.includes(target) || answer.length >= 15;
+          break;
+        }
+        default: {
+          isCorrect = answer.includes(target);
+        }
       }
     }
 
@@ -993,6 +1030,7 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
 
             {!isCurrentChallengeComplete && (
               <>
+                {/* Identify state: dedicated solid/liquid/gas buttons */}
                 {currentChallenge.type === 'identify_state' ? (
                   <div className="flex gap-2">
                     {(['solid', 'liquid', 'gas'] as MatterState[]).map(state => (
@@ -1010,7 +1048,62 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
                       </Button>
                     ))}
                   </div>
+                ) : currentChallenge.isTrueFalse ? (
+                  /* True/False buttons */
+                  <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+                    {([
+                      { value: 'true', label: 'True', icon: '✓' },
+                      { value: 'false', label: 'False', icon: '✗' },
+                    ] as const).map(({ value, label, icon }) => (
+                      <button
+                        key={value}
+                        onClick={() => setChallengeAnswer(value)}
+                        className={`relative p-5 rounded-xl border transition-all duration-300 ${
+                          challengeAnswer === value
+                            ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <span className={`text-2xl ${challengeAnswer === value ? 'text-white' : 'text-slate-400'}`}>
+                            {icon}
+                          </span>
+                          <span className="text-sm font-bold text-slate-200">{label}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : currentChallenge.options && currentChallenge.options.length > 0 ? (
+                  /* Multiple choice options */
+                  <div className="grid grid-cols-1 gap-2">
+                    {currentChallenge.options.map((option) => (
+                      <Button
+                        key={option.id}
+                        variant="ghost"
+                        className={`h-auto text-left p-3 border transition-all duration-300 ${
+                          challengeAnswer === option.id
+                            ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_12px_rgba(59,130,246,0.2)]'
+                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                        }`}
+                        onClick={() => setChallengeAnswer(option.id)}
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <Badge
+                            className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border flex-shrink-0 ${
+                              challengeAnswer === option.id
+                                ? 'bg-white text-slate-900 border-white'
+                                : 'bg-black/30 text-slate-400 border-white/10'
+                            }`}
+                          >
+                            {option.id}
+                          </Badge>
+                          <span className="text-sm text-slate-200">{option.text}</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
                 ) : (
+                  /* Fallback: open-ended textarea */
                   <textarea
                     value={challengeAnswer}
                     onChange={e => setChallengeAnswer(e.target.value)}

@@ -161,6 +161,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
   const {
     showPropertyPanel = true,
     showTemperatureSlider = false,
+    showVennDiagram = false,
   } = showOptions;
 
   // -------------------------------------------------------------------------
@@ -183,6 +184,10 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
 
   // Mystery mode
   const [mysteryGuess, setMysteryGuess] = useState('');
+
+  // Compare mode
+  const [compareSame, setCompareSame] = useState('');
+  const [compareDifferent, setCompareDifferent] = useState('');
 
   // Tracking
   const [sortingCorrect, setSortingCorrect] = useState(0);
@@ -477,12 +482,37 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     }
   }, [currentChallenge, mysteryGuess, currentAttempts, sendText]);
 
+  const handleCheckCompareChallenge = useCallback(() => {
+    if (!currentChallenge || currentChallenge.type !== 'compare') return;
+
+    if (!compareSame.trim() || !compareDifferent.trim()) {
+      setFeedback('Write one thing that is the SAME and one thing that is DIFFERENT!');
+      setFeedbackType('error');
+      return;
+    }
+
+    setCurrentAttempts(a => a + 1);
+    setFeedback('Great comparing! You found a similarity and a difference!');
+    setFeedbackType('success');
+    setChallengeResults(prev => [...prev, {
+      challengeId: currentChallenge.id,
+      correct: true,
+      attempts: currentAttempts + 1,
+    }]);
+    sendText(
+      `[COMPARE_COMPLETE] Student compared objects. Same: "${compareSame}". Different: "${compareDifferent}". `
+      + `Celebrate: "Great thinking! You noticed what's alike and what's different!"`,
+      { silent: true }
+    );
+  }, [currentChallenge, compareSame, compareDifferent, currentAttempts, sendText]);
+
   const handleCheckAnswer = useCallback(() => {
     if (!currentChallenge) return;
     switch (currentChallenge.type) {
       case 'sort': handleCheckSortChallenge(); break;
       case 'predict': handleCheckPredictChallenge(); break;
       case 'mystery': handleCheckMysteryChallenge(); break;
+      case 'compare': handleCheckCompareChallenge(); break;
       case 'describe':
         // Describe challenges complete when properties have been viewed
         if (viewedProperties.size > 0) {
@@ -502,7 +532,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
       default: break;
     }
   }, [currentChallenge, handleCheckSortChallenge, handleCheckPredictChallenge,
-    handleCheckMysteryChallenge, viewedProperties.size, sendText]);
+    handleCheckMysteryChallenge, handleCheckCompareChallenge, viewedProperties.size, sendText]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -554,6 +584,8 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     setFeedback('');
     setFeedbackType('');
     setMysteryGuess('');
+    setCompareSame('');
+    setCompareDifferent('');
     if (challenges[nextIndex]?.type === 'sort') {
       setSortedObjects({});
     }
@@ -656,14 +688,14 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
               return (
                 <div
                   key={obj.id}
-                  draggable={!placed && !hasSubmittedEvaluation}
+                  draggable={!hasSubmittedEvaluation}
                   onDragStart={() => handleDragStart(obj.id)}
                   onClick={() => handleSelectObject(obj.id)}
                   className={`
                     relative rounded-lg border p-3 text-center cursor-pointer
                     transition-all duration-300 select-none
                     ${placed
-                      ? `${STATE_CONFIG[placed].bgClass} opacity-50`
+                      ? `${STATE_CONFIG[placed].bgClass} opacity-70 hover:opacity-100`
                       : isSelected
                         ? `${stateConf.activeClass} ${stateConf.glowClass} scale-105`
                         : `bg-white/5 border-white/10 hover:bg-white/10 hover:scale-105`
@@ -719,11 +751,24 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
                       {objectsInBin.map(obj => (
                         <span
                           key={obj.id}
-                          className={`text-xs px-1.5 py-0.5 rounded ${
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!hasSubmittedEvaluation) {
+                              setSortedObjects(prev => {
+                                const next = { ...prev };
+                                delete next[obj.id];
+                                return next;
+                              });
+                              setFeedback('');
+                              setFeedbackType('');
+                            }
+                          }}
+                          className={`text-xs px-1.5 py-0.5 rounded cursor-pointer hover:opacity-70 transition-opacity ${
                             obj.state === state
                               ? 'bg-emerald-500/20 text-emerald-300'
                               : 'bg-red-500/20 text-red-300'
                           }`}
+                          title="Click to remove"
                         >
                           {getObjectEmoji(obj.name)} {obj.name}
                         </span>
@@ -753,6 +798,43 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
                 onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
               />
             </div>
+          </div>
+        )}
+
+        {/* Compare Challenge */}
+        {currentChallenge?.type === 'compare' && !isCurrentChallengeComplete && (
+          <div className="bg-slate-800/30 rounded-xl p-4 border border-purple-500/20">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Same */}
+              <div>
+                <label className="flex items-center gap-1.5 text-emerald-300 text-xs font-medium mb-2">
+                  <span className="text-base">🤝</span> One thing the SAME
+                </label>
+                <input
+                  type="text"
+                  value={compareSame}
+                  onChange={e => setCompareSame(e.target.value)}
+                  placeholder="e.g. Both are heavy"
+                  className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-emerald-400/50 placeholder:text-slate-600"
+                />
+              </div>
+              {/* Different */}
+              <div>
+                <label className="flex items-center gap-1.5 text-amber-300 text-xs font-medium mb-2">
+                  <span className="text-base">↔️</span> One thing DIFFERENT
+                </label>
+                <input
+                  type="text"
+                  value={compareDifferent}
+                  onChange={e => setCompareDifferent(e.target.value)}
+                  placeholder="e.g. One flows, one doesn't"
+                  className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-amber-400/50 placeholder:text-slate-600"
+                />
+              </div>
+            </div>
+            <p className="text-slate-500 text-[10px] mt-2 text-center">
+              Click on the objects above to see their properties, then write your answers!
+            </p>
           </div>
         )}
 
