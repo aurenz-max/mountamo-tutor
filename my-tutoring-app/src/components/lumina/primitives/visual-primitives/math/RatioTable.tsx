@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   usePrimitiveEvaluation,
   type RatioTableMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 export interface RatioTableData {
   title: string;
@@ -116,6 +117,55 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     return rate.toFixed(2);
   };
 
+  // AI Tutoring hook
+  const resolvedInstanceId = instanceId || `ratio-table-${Date.now()}`;
+  const hasIntroducedRef = useRef(false);
+
+  const aiPrimitiveData = useMemo(() => ({
+    rowLabels,
+    baseRatio,
+    taskType,
+    multiplier,
+    studentAnswer,
+    targetMultiplier,
+    targetValue,
+    unitRate: getUnitRate(),
+    hintsUsed,
+    sliderAdjustments,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [rowLabels, baseRatio, taskType, multiplier, studentAnswer, targetMultiplier, targetValue, hintsUsed, sliderAdjustments]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'ratio-table',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+  });
+
+  // Introduce the activity when AI connects
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
+
+    if (taskType === 'missing-value') {
+      sendText(
+        `[ACTIVITY_START] Student is solving a missing-value ratio problem. `
+        + `Base ratio: ${baseRatio[0]} ${rowLabels[0]} to ${baseRatio[1]} ${rowLabels[1]}. `
+        + `They need to find the missing scaled value (×${targetMultiplier}). `
+        + `${questionPrompt ? `Question: "${questionPrompt}". ` : ''}`
+        + `Introduce the problem warmly and ask them to look at the reference ratio first.`,
+        { silent: true }
+      );
+    } else {
+      sendText(
+        `[ACTIVITY_START] Student is exploring equivalent ratios. `
+        + `Base ratio: ${baseRatio[0]} ${rowLabels[0]} to ${baseRatio[1]} ${rowLabels[1]}. `
+        + `They can adjust a multiplier slider to see how both values scale proportionally. `
+        + `Introduce the ratio table and encourage them to try different multipliers.`,
+        { silent: true }
+      );
+    }
+  }, [isConnected, baseRatio, rowLabels, taskType, targetMultiplier, questionPrompt, sendText]);
+
   // Handle multiplier input change
   const handleMultiplierChange = (value: string) => {
     if (hasSubmittedEvaluation) return;
@@ -154,6 +204,13 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         setFeedbackType('hint');
       }
     }
+
+    sendText(
+      `[HINT_REQUESTED] Student requested hint ${hintsUsed + 1}/3. `
+      + `Base ratio: ${baseRatio[0]}:${baseRatio[1]}. Unit rate: ${getUnitRate()}. `
+      + `Acknowledge they asked for help and provide scaffolding at the appropriate level.`,
+      { silent: true }
+    );
   };
 
   // Submit handler for evaluation
@@ -175,18 +232,40 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         score = 100;
         setFeedback(`Perfect! The answer is ${parsedAnswer.toFixed(2)}. You've correctly solved the proportional relationship.`);
         setFeedbackType('success');
+        sendText(
+          `[ANSWER_CORRECT] Student answered ${parsedAnswer.toFixed(2)} which is correct! `
+          + `They used ${hintsUsed} hints and ${sliderAdjustments} slider adjustments. `
+          + `Celebrate briefly and reinforce the proportional reasoning they used.`,
+          { silent: true }
+        );
       } else if (percentError < 5) {
         score = 75;
         setFeedback(`Very close! Your answer ${parsedAnswer.toFixed(2)} is nearly correct. The exact answer is ${targetValue.toFixed(2)}.`);
         setFeedbackType('hint');
+        sendText(
+          `[ANSWER_CLOSE] Student answered ${parsedAnswer.toFixed(2)} but the exact answer is ${targetValue.toFixed(2)} (${percentError.toFixed(1)}% off). `
+          + `Encourage them — they are very close. Suggest checking their arithmetic or rounding.`,
+          { silent: true }
+        );
       } else if (percentError < 20) {
         score = 50;
         setFeedback(`Not quite. Your answer ${parsedAnswer.toFixed(2)} is off. Try using the unit rate: ${getUnitRate()} ${rowLabels[1]} per ${rowLabels[0]}.`);
         setFeedbackType('error');
+        sendText(
+          `[ANSWER_INCORRECT] Student answered ${parsedAnswer.toFixed(2)} but the correct answer is ${targetValue.toFixed(2)} (${percentError.toFixed(1)}% off). `
+          + `Guide them toward using the unit rate (${getUnitRate()}) without revealing the answer.`,
+          { silent: true }
+        );
       } else {
         score = 0;
         setFeedback(`That's not correct. Remember: the ratio stays constant. Try calculating the unit rate first.`);
         setFeedbackType('error');
+        sendText(
+          `[ANSWER_FAR_OFF] Student answered ${parsedAnswer.toFixed(2)} but the correct answer is ${targetValue.toFixed(2)} (${percentError.toFixed(1)}% off). `
+          + `They may not understand the proportional relationship yet. `
+          + `Start with scaffolding level 1: ask them to look at the base ratio and find the unit rate.`,
+          { silent: true }
+        );
       }
 
       // Determine strategy based on behavior
@@ -248,6 +327,12 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     setFeedbackType(null);
     setHintsUsed(0);
     resetEvaluationAttempt();
+
+    sendText(
+      `[RETRY] Student is trying the problem again. `
+      + `Encourage them warmly and suggest a fresh approach — maybe start by finding the unit rate.`,
+      { silent: true }
+    );
   };
 
   return (

@@ -1,11 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 export interface BarModelData {
   title: string;
   description: string;
   values: { label: string; value: number; color?: string }[];
+
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
 }
 
 interface BarModelProps {
@@ -15,6 +23,39 @@ interface BarModelProps {
 
 const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   const maxVal = Math.max(...data.values.map(i => i.value));
+  const resolvedInstanceId = data.instanceId ?? 'bar-model-default';
+
+  // ---- AI Tutoring Context ----
+  const aiPrimitiveData = useMemo(() => ({
+    values: data.values.map(v => `${v.label}: ${v.value}`).join(', '),
+    value1: data.values[0]?.value,
+    value2: data.values[1]?.value,
+    barCount: data.values.length,
+    title: data.title,
+  }), [data.values, data.title]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'bar-model',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: 'K-5',
+  });
+
+  // ---- Pedagogical Moment: Activity Start ----
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || data.values.length === 0) return;
+    hasIntroducedRef.current = true;
+
+    const labels = data.values.map(v => `${v.label} (${v.value})`).join(', ');
+    sendText(
+      `[ACTIVITY_START] A bar model is showing: ${data.title}. `
+      + `Bars: ${labels}. `
+      + `Introduce the comparison warmly. Ask the student which bar is tallest `
+      + `and what that tells us. Use comparison language coaching.`,
+      { silent: true }
+    );
+  }, [isConnected, data.values, data.title, sendText]);
 
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>

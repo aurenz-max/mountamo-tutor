@@ -48,6 +48,11 @@ import InteractivePassage from '../primitives/InteractivePassage';
 import WordBuilder from '../primitives/WordBuilder';
 import MoleculeViewer from '../primitives/MoleculeViewer';
 import PeriodicTable from '../primitives/PeriodicTable';
+import MatterExplorer from '../primitives/visual-primitives/chemistry/MatterExplorer';
+import ReactionLab from '../primitives/visual-primitives/chemistry/ReactionLab';
+import StatesOfMatter from '../primitives/visual-primitives/chemistry/StatesOfMatter';
+import AtomBuilder from '../primitives/visual-primitives/chemistry/AtomBuilder';
+import MoleculeConstructor from '../primitives/visual-primitives/chemistry/MoleculeConstructor';
 import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
 import OrganismCard from '../primitives/visual-primitives/biology/OrganismCard';
 import ClassificationSorter from '../primitives/visual-primitives/biology/ClassificationSorter';
@@ -630,6 +635,56 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: false,
     containerClassName: 'max-w-7xl mx-auto mb-20',
+  },
+
+  'matter-explorer': {
+    component: MatterExplorer,
+    sectionTitle: 'Matter Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'reaction-lab': {
+    component: ReactionLab,
+    sectionTitle: 'Reaction Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'states-of-matter': {
+    component: StatesOfMatter,
+    sectionTitle: 'States of Matter',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'atom-builder': {
+    component: AtomBuilder,
+    sectionTitle: 'Atom Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'molecule-constructor': {
+    component: MoleculeConstructor,
+    sectionTitle: 'Molecule Constructor',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'organism-card': {

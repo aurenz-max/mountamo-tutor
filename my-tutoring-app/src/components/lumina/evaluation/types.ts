@@ -1782,6 +1782,89 @@ export interface EnergyCycleEngineMetrics extends BasePrimitiveMetrics {
 }
 
 // -----------------------------------------------------------------------------
+// Chemistry Primitives
+// -----------------------------------------------------------------------------
+
+export interface MatterExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'matter-explorer';
+  sortingCorrect: number;
+  sortingTotal: number;
+  propertiesIdentified: number;
+  propertiesTotal: number;
+  stateChangePredicted: boolean;
+  mysteryMaterialsSolved: number;
+  mysteryTotal: number;
+  trickyMaterialsExplored: number;
+  temperatureSliderUsed: boolean;
+  particleViewEngaged: boolean;
+  attemptsCount: number;
+}
+
+export interface ReactionLabMetrics extends BasePrimitiveMetrics {
+  type: 'reaction-lab';
+  predictionMade: boolean;
+  predictionAccuracy: number;
+  observationsRecorded: number;
+  observationPromptsTotal: number;
+  chemicalVsPhysicalCorrect: number;
+  classificationTotal: number;
+  signsOfChangeIdentified: number;
+  signsTotal: number;
+  particleViewEngaged: boolean;
+  equationBalanced: boolean;
+  conservationUnderstood: boolean;
+  experimentsCompleted: number;
+  experimentsTotal: number;
+  safetyAwarenessShown: boolean;
+  attemptsCount: number;
+}
+
+export interface StatesOfMatterMetrics extends BasePrimitiveMetrics {
+  type: 'states-of-matter';
+  stateIdentificationCorrect: number;
+  stateTotal: number;
+  phaseChangeIdentified: boolean;
+  particleModelExplained: boolean;
+  heatingCurveRead: boolean;
+  reversibilityUnderstood: boolean;
+  substancesExplored: number;
+  temperatureControlPrecision: number;
+  attemptsCount: number;
+}
+
+export interface AtomBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'atom-builder';
+  elementsBuiltCorrectly: number;
+  elementsTotal: number;
+  shellsFilledCorrectly: boolean;
+  elementIdentifiedFromAtom: number;
+  identificationTotal: number;
+  ionsCreatedCorrectly: number;
+  ionsTotal: number;
+  isotopesCreatedCorrectly: number;
+  isotopesTotal: number;
+  periodicTableConnectionMade: boolean;
+  valenceElectronsIdentified: boolean;
+  attemptsCount: number;
+}
+
+export interface MoleculeConstructorMetrics extends BasePrimitiveMetrics {
+  type: 'molecule-constructor';
+  moleculesBuiltCorrectly: number;
+  moleculesTotal: number;
+  bondsFormedCorrectly: number;
+  bondsTotal: number;
+  formulasWrittenCorrectly: number;
+  formulasTotal: number;
+  moleculesIdentifiedCorrectly: number;
+  identificationsTotal: number;
+  valenceRulesFollowed: boolean;
+  galleryMoleculesUnlocked: number;
+  bondTypesExplored: string[];  // e.g., ['single', 'double', 'triple']
+  attemptsCount: number;
+}
+
+// -----------------------------------------------------------------------------
 // Literacy Primitives (Wave 3)
 // -----------------------------------------------------------------------------
 
@@ -2561,6 +2644,12 @@ export type PrimitiveMetrics =
   | TelescopeSimulatorMetrics
   // Physics
   | MotionDiagramMetrics
+  // Chemistry
+  | MatterExplorerMetrics
+  | ReactionLabMetrics
+  | StatesOfMatterMetrics
+  | AtomBuilderMetrics
+  | MoleculeConstructorMetrics
   // Literacy (Wave 1)
   | ParagraphArchitectMetrics
   | SentenceBuilderMetrics

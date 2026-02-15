@@ -1121,6 +1121,11 @@ export type ComponentId =
   // Science Visualization
   | 'molecule-viewer'    // 3D molecular structure viewer
   | 'periodic-table'     // Interactive periodic table of elements
+  | 'matter-explorer'    // Interactive states of matter and phase change explorer
+  | 'reaction-lab'       // Interactive chemical reaction laboratory
+  | 'states-of-matter'   // Interactive states of matter visualization
+  | 'atom-builder'       // Interactive atom construction with Bohr model, shells, ions, isotopes
+  | 'molecule-constructor' // Interactive molecule building with atom snapping and bonding
 
   // Biology Primitives
   | 'species-profile'    // Comprehensive species information with taxonomy, habitat, and characteristics (perfect for dinosaurs!)
@@ -1382,3 +1387,10 @@ export type { NumberLineData, NumberLineOperation, NumberLineChallenge } from '.
 export type { BaseTenBlocksData, BaseTenBlocksChallenge } from './primitives/visual-primitives/math/BaseTenBlocks';
 export type { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from './primitives/visual-primitives/math/BalanceScale';
 export type { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from './primitives/visual-primitives/math/FunctionMachine';
+
+// Chemistry
+export type { MatterExplorerData } from './primitives/visual-primitives/chemistry/MatterExplorer';
+export type { ReactionLabData } from './primitives/visual-primitives/chemistry/ReactionLab';
+export type { StatesOfMatterData } from './primitives/visual-primitives/chemistry/StatesOfMatter';
+export type { AtomBuilderData, AtomBuilderChallenge, AtomBuilderShowOptions, AtomBuilderConstraints } from './primitives/visual-primitives/chemistry/AtomBuilder';
+export type { MoleculeConstructorData } from './primitives/visual-primitives/chemistry/MoleculeConstructor';

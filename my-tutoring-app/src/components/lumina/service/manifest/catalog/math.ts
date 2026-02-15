@@ -24,6 +24,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Ignoring scale', response: 'Look at the numbers on each bar, not just the height' },
         { pattern: 'Confusing more/less', response: '"Taller bar = bigger number. Which bar is taller?"' },
       ],
+      aiDirectives: [
+        {
+          title: 'COMPARISON LANGUAGE COACHING',
+          instruction:
+            'Model precise comparison language: "more than," "less than," "the difference is." '
+            + 'For K-2 students, use concrete language: "This bar is taller, so there are MORE." '
+            + 'For grades 3-5, guide toward subtraction: "How many more? Subtract to find out." '
+            + 'Never just say "bigger" — always tie bar height to the actual quantity it represents.',
+        },
+      ],
     },
   },
   {
@@ -44,6 +54,25 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Ordering fractions incorrectly', response: '"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first — is it more or less than half?"' },
         { pattern: 'Not using zoom for precision', response: '"Try the zoom buttons to see smaller divisions between the numbers. This helps place fractions and decimals more precisely."' },
       ],
+      aiDirectives: [
+        {
+          title: 'INTERACTION MODE COACHING',
+          instruction:
+            'Adapt your coaching to the interaction mode. '
+            + 'In PLOT mode: guide placement — "Find the spot between the tick marks." '
+            + 'In JUMP mode: narrate movement — "You jumped 3 to the right, that is adding 3!" '
+            + 'In ORDER mode: guide comparison — "Which number is further left? That one is smaller." '
+            + 'Always reference the number line visually — point to specific tick marks and positions.',
+        },
+        {
+          title: 'GRADE-BAND ADAPTATION',
+          instruction:
+            'For K-2: use counting language — "Let\'s count the hops: 1, 2, 3..." Keep to whole numbers 0-20. '
+            + 'For grades 3-5: introduce fraction/decimal language — "Is 3/4 closer to 1/2 or to 1?" '
+            + 'Use benchmark fractions (1/4, 1/2, 3/4) as reference points. '
+            + 'For negative numbers: "Numbers left of zero are negative — they are less than zero."',
+        },
+      ],
     },
   },
   {
@@ -62,6 +91,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Adding too many blocks in wrong column', response: '"Check which column you are adding to. Hundreds are the biggest, ones are the smallest."' },
         { pattern: 'Not regrouping when column has 10+', response: '"You have 10 or more in one column! You can trade 10 of those for 1 in the next column."' },
         { pattern: 'Confusing decimal places', response: '"Tenths are 0.1 — ten of them make 1 whole. Hundredths are 0.01 — ten of them make one tenth."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'REGROUPING DISCOVERY',
+          instruction:
+            'The key "aha" moment is when a student realizes that 10 of one unit equals 1 of the next. '
+            + 'When a column reaches 10+, guide the discovery: "Can 12 ones fit in the ones column? '
+            + 'What if we traded 10 ones for 1 ten?" Celebrate each successful trade. '
+            + 'Connect blocks to written numbers: "See how the blocks match the digits in the number?"',
+        },
+        {
+          title: 'CHALLENGE TYPE COACHING',
+          instruction:
+            'For BUILD_NUMBER: guide adding blocks to match the target — "What digit is in the tens place? Add that many ten sticks." '
+            + 'For READ_BLOCKS: guide reading the blocks as a number — "Count each column and combine." '
+            + 'For REGROUP: focus entirely on the trading mechanic — "Trade 10 ones for 1 ten!" '
+            + 'For ADD/SUBTRACT_WITH_BLOCKS: narrate the operation step by step, starting with the ones column.',
+        },
       ],
     },
   },
@@ -82,6 +129,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Not recognizing equivalent fractions', response: '"Do both circles have the same amount shaded? Then they are equivalent even with different numbers"' },
         { pattern: 'Confusing numerator and denominator', response: '"Denominator = total slices, numerator = slices you ate"' },
       ],
+      aiDirectives: [
+        {
+          title: 'VISUAL FRACTION COACHING',
+          instruction:
+            'Always tie the fraction to the visual: "See the colored pieces? Count them — that is your numerator." '
+            + 'Use food analogies for younger students: "Imagine this is a pizza cut into {{totalSections}} slices. '
+            + 'You ate {{shadedSections}} slices. What fraction did you eat?" '
+            + 'For equivalence: guide the student to compare how much of each circle is shaded, '
+            + 'not just the numbers — "Both circles have the same amount colored, even though the numbers look different!"',
+        },
+      ],
     },
   },
   {
@@ -101,6 +159,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Unequal parts', response: '"Are all the pieces the same size?"' },
         { pattern: 'Equivalence confusion', response: 'Show different ways to divide the same whole' },
       ],
+      aiDirectives: [
+        {
+          title: 'BAR MODEL FRACTION COACHING',
+          instruction:
+            'Use "out of" language consistently: "3 out of 4 pieces are shaded — that is 3/4." '
+            + 'For comparison tasks with multiple bars: "Look at both bars. Which one has MORE shaded? '
+            + 'That fraction is larger." '
+            + 'For equivalence: "Click to shade {{numerator}} out of {{denominator}} pieces. '
+            + 'Now look at the other bar — same amount shaded, different number of pieces!" '
+            + 'Emphasize that the whole must be the same size for comparison to be fair.',
+        },
+      ],
     },
   },
   {
@@ -118,6 +188,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       commonStruggles: [
         { pattern: 'Confusing place values', response: '"Each place is 10 times the one to its right"' },
         { pattern: 'Decimal place confusion', response: '"After the decimal point, places get 10 times smaller: tenths, hundredths, thousandths"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PLACE VALUE DISCOVERY',
+          instruction:
+            'Guide students to discover the ×10 pattern: "What happens when a digit moves one place to the left? '
+            + 'Its value becomes 10 times bigger!" '
+            + 'For expanded form, build piece by piece: "The 5 is in the hundreds place, so it is worth 500. '
+            + 'The 3 is in the tens place, so it is worth 30. Add them up!" '
+            + 'For decimals, connect to fractions: "The tenths place means 1/10. So 0.7 is seven tenths."',
+        },
       ],
     },
   },
@@ -138,6 +219,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Forgetting to add partial products', response: '"You found all the pieces! Now add them all together for the total product."' },
         { pattern: 'Place value errors in decomposition', response: '"23 breaks into 20 + 3, not 2 + 3. Keep the place values."' },
       ],
+      aiDirectives: [
+        {
+          title: 'NUMERIC VS ALGEBRAIC MODE',
+          instruction:
+            'For NUMERIC mode (grades 3-5): focus on place value decomposition — "23 breaks into 20 + 3. '
+            + 'That is why we have two columns!" Guide partial product calculation one cell at a time. '
+            + 'For ALGEBRAIC mode (grades 7+): use proper algebraic language — "Multiply each term in the first '
+            + 'binomial by each term in the second." Reference FOIL for binomials. '
+            + 'In both modes, emphasize the distributive property: "We are breaking a hard multiplication into easier pieces."',
+        },
+      ],
     },
   },
   {
@@ -157,6 +249,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Counting one-by-one instead of skip counting', response: '"Try counting by rows: each row has {{targetColumns}} items"' },
         { pattern: 'Swapping dimensions', response: '"3 rows of 5 and 5 rows of 3 give the same total — that is the commutative property!"' },
       ],
+      aiDirectives: [
+        {
+          title: 'ARRAY-TO-MULTIPLICATION BRIDGING',
+          instruction:
+            'Help students see the array as multiplication, not just counting. '
+            + 'Guide the connection: "You have {{targetRows}} rows. Each row has {{targetColumns}}. '
+            + 'That is {{targetRows}} groups of {{targetColumns}}, which is {{targetRows}} × {{targetColumns}}!" '
+            + 'Encourage skip counting over one-by-one counting: "Count by rows: each row adds {{targetColumns}} more." '
+            + 'When the student discovers the commutative property, celebrate: "You flipped it and got the same answer! That always works with multiplication."',
+        },
+      ],
     },
   },
   {
@@ -175,6 +278,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Adding instead of multiplying', response: '"Ratios use multiplication, not addition. If 1 costs $3, then 4 costs 4 × $3, not 1 + $3."' },
         { pattern: 'Cannot find unit rate', response: '"Look at the given point. Divide the bottom value by the top value to find the rate for 1 unit."' },
         { pattern: 'Scaling errors', response: '"Check: does your answer make sense? More {{topLabel}} should mean more {{bottomLabel}}."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PROPORTIONAL REASONING COACHING',
+          instruction:
+            'The critical concept is the UNIT RATE. Always guide students toward finding it first: '
+            + '"If 3 apples cost $6, what does 1 apple cost? Divide!" '
+            + 'Once the unit rate is found, coach multiplication: "Now you know 1 costs $2. So 5 costs 5 × $2." '
+            + 'Watch for additive thinking (a common misconception): if a student adds instead of multiplies, '
+            + 'use a counterexample — "If 1 apple costs $2 and you add $2, you get $4. But 3 apples should cost $6, not $4."',
+        },
+        {
+          title: 'REAL-WORLD CONNECTION',
+          instruction:
+            'Always connect the abstract ratio to the real-world context: use the labels ({{topLabel}} and {{bottomLabel}}). '
+            + '"You are finding how many {{bottomLabel}} for each {{topLabel}}." '
+            + 'This helps students see proportional reasoning as practical, not just arithmetic.',
+        },
       ],
     },
   },
@@ -223,6 +344,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Not recognizing primes', response: '"A prime number has exactly 2 factors: 1 and itself. 2, 3, 5, 7, 11, 13 are primes."' },
         { pattern: 'Stopping before all leaves are prime', response: '"Keep splitting until every leaf is a prime number (green). Are there any yellow nodes left?"' },
       ],
+      aiDirectives: [
+        {
+          title: 'GUIDED FACTORING APPROACH',
+          instruction:
+            'Guide students through divisibility rules as a strategy: '
+            + '"Is the number even? Then divide by 2 first! Does it end in 0 or 5? Try dividing by 5." '
+            + 'Celebrate when a prime is found: "That one is prime — it is a leaf! No more splitting needed." '
+            + 'When the tree is complete, guide the student to read the leaves: '
+            + '"Read all the green leaves — those are the prime factors. Write them as a multiplication." '
+            + 'Point out that different factor pairs lead to the same prime factorization.',
+        },
+      ],
     },
   },
   {
@@ -241,6 +374,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Only scaling one value', response: '"To keep the ratio equivalent, multiply BOTH values by the same number."' },
         { pattern: 'Adding instead of multiplying', response: '"Ratios scale by multiplication. 2:3 doubled is 4:6, not 4:5."' },
         { pattern: 'Cannot find unit rate', response: '"Divide both values by the first value to find the ratio to 1."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'MULTIPLICATIVE THINKING COACHING',
+          instruction:
+            'The core concept is that BOTH values must be multiplied by the SAME number. '
+            + 'Watch for additive errors: if a student adds instead of multiplies, correct with a concrete example — '
+            + '"If 2 apples cost 6 dollars, then 4 apples cost 12 dollars. We multiplied both by 2, not added 2." '
+            + 'Use the table structure: "Look across the row — what did you multiply by to get from the base ratio to this row?" '
+            + 'For unit rate discovery: "Find the row where the first value is 1. That tells you the rate for one unit."',
+        },
       ],
     },
   },
@@ -289,6 +433,23 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Not knowing which operation to use', response: '"Look at what is next to x. If there is a + number, subtract it. If there is a × number, divide by it."' },
         { pattern: 'Incorrect verification', response: '"Plug your answer back in: replace x with your answer. Does the left side equal the right side?"' },
         { pattern: 'Stuck in explore phase', response: '"Click Start Solving when you are ready. Then click on blocks or use the operations panel."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PHASE-AWARE GUIDANCE',
+          instruction:
+            'In EXPLORE phase: let the student click and play freely. Ask: "What happens when you add to one side? Does the scale stay balanced?" '
+            + 'In SOLVE phase: guide one step at a time. Never solve multiple steps at once. '
+            + 'Ask: "What should we remove first?" After each step, pause and let the student observe the scale. '
+            + 'In VERIFY phase: guide substitution — "Replace x with your answer. Does 3 + {{variableValue}} really equal {{rightSide}}?"',
+        },
+        {
+          title: 'GRADE-BAND ADAPTATION',
+          instruction:
+            'For K-2: use concrete "mystery number" language — "What number is hiding under the box?" Avoid "x" and "equation." '
+            + 'For grades 3-4: introduce "equation" and "x" but tie to the concrete scale — "x is the mystery number on the scale." '
+            + 'For grade 5: use algebraic language — "Isolate the variable by performing inverse operations on both sides."',
+        },
       ],
     },
   },
@@ -348,6 +509,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Negative coordinate confusion', response: '"Negative x means go LEFT. Negative y means go DOWN."' },
         { pattern: 'Cannot identify intercepts', response: '"The y-intercept is where the line crosses the vertical axis (x=0). The x-intercept is where it crosses the horizontal axis (y=0)."' },
       ],
+      aiDirectives: [
+        {
+          title: 'GRADE-BAND ADAPTATION',
+          instruction:
+            'For grades 5-6: focus on Quadrant I with positive coordinates. Use "go right, then up" language. '
+            + 'For grades 7-8: introduce all four quadrants. Teach the sign rules: '
+            + '"Quadrant I: both positive. Quadrant II: x negative, y positive." etc. '
+            + 'For Algebra 1+: focus on equation graphing. Guide table-of-values strategy: '
+            + '"Pick 3-4 x values, calculate y for each, plot the points, connect them."',
+        },
+        {
+          title: 'PLOTTING VS EQUATION MODE',
+          instruction:
+            'In POINTS mode: coach precise point placement — "Start at zero and count the grid lines." '
+            + 'In EQUATION mode: guide reading the graph — "Where does the line cross the y-axis? That is the y-intercept (b in y=mx+b)." '
+            + 'Always encourage tracing: "Hover over the line to read coordinates at any point."',
+        },
+      ],
     },
   },
   {
@@ -366,6 +545,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Confusing rise and run', response: '"Rise is vertical (up/down). Run is horizontal (left/right). Rise over run."' },
         { pattern: 'Negative slope confusion', response: '"If the line goes downhill (left to right), the slope is negative."' },
         { pattern: 'Thinking slope changes with triangle size', response: '"Drag the triangle to a different spot. The slope stays the same! The ratio rise/run is constant."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'SLOPE CONSTANCY DISCOVERY',
+          instruction:
+            'The most important insight is that slope is CONSTANT along a line. '
+            + 'When the student resizes the triangle: "The triangle is bigger now, but rise/run is STILL {{slope}}. '
+            + 'Slope does not change — that is what makes it a straight line!" '
+            + 'When the student drags the triangle: "Same slope at every point. That is the defining property of a line." '
+            + 'Connect to rate of change: "Slope = how much y changes for every 1 unit of x. '
+            + 'A slope of 2 means y goes up 2 for every 1 step to the right."',
+        },
       ],
     },
   },
@@ -386,6 +577,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Confusing no solution and infinite solutions', response: '"Parallel lines (same slope, different y-intercept) = no solution. Same line = infinite solutions."' },
         { pattern: 'Algebraic method errors', response: '"Check each step. Did you distribute correctly? Did you combine like terms?"' },
       ],
+      aiDirectives: [
+        {
+          title: 'METHOD-AWARE COACHING',
+          instruction:
+            'For GRAPHING method: guide visual inspection — "Look where the two lines cross. That point satisfies both equations." '
+            + 'For SUBSTITUTION method: guide isolating y — "One equation already says y = ... Plug that into the other equation." '
+            + 'For ELIMINATION method: guide coefficient alignment — "Can you multiply one equation so the x-coefficients match? Then subtract!" '
+            + 'Always end with verification: "Plug your answer into BOTH equations. It must work in both."',
+        },
+        {
+          title: 'SYSTEM CLASSIFICATION',
+          instruction:
+            'When lines are parallel: "Same slope but different y-intercepts means the lines never meet. There is NO solution." '
+            + 'When lines overlap: "Same slope AND same y-intercept means they are the same line! There are INFINITE solutions." '
+            + 'When lines intersect: "Different slopes mean exactly ONE crossing point — that is the unique solution." '
+            + 'Help students see how the visual connects to the algebra.',
+        },
+      ],
     },
   },
   {
@@ -404,6 +613,26 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Wrong determinant formula', response: '"For a 2×2 matrix [[a,b],[c,d]], the determinant = ad - bc. Cross-multiply diagonals."' },
         { pattern: 'Matrix multiplication order', response: '"Row from the first matrix × column from the second matrix. Multiply corresponding entries and add."' },
         { pattern: 'Row operation errors', response: '"Write out the operation before applying it: R₂ → R₂ - 2R₁ means replace each entry in row 2."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'OPERATION-AWARE COACHING',
+          instruction:
+            'For DETERMINANT: walk through the cross-multiplication pattern — "Multiply a×d, then subtract b×c." '
+            + 'For MULTIPLICATION: guide row-by-column — "Take row 1 of matrix A and column 1 of matrix B. '
+            + 'Multiply matching entries and add: (a₁₁×b₁₁) + (a₁₂×b₂₁)." '
+            + 'For ROW OPERATIONS: narrate each step — "We are doing R₂ - 2R₁. Take each entry in row 1, '
+            + 'multiply by 2, then subtract from row 2." '
+            + 'For INVERSE: emphasize the identity check — "Multiply A × A⁻¹. You should get the identity matrix!"',
+        },
+        {
+          title: 'STEP-BY-STEP PACING',
+          instruction:
+            'Matrix operations have many steps. Guide ONE cell or ONE row at a time. '
+            + 'After each step, pause: "Good — now let\'s do the next entry." '
+            + 'Never rush through multiple calculations at once. '
+            + 'Use the highlighted cells as visual anchors: "See the yellow cells? Those are the values you are combining right now."',
+        },
       ],
     },
   },
@@ -424,6 +653,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Ignoring frequency', response: '"If a value has 3 dots, it appears 3 times in the dataset. Count each dot."' },
         { pattern: 'Comparing datasets incorrectly', response: '"Compare the shapes and centers, not just individual values."' },
       ],
+      aiDirectives: [
+        {
+          title: 'STATISTICAL THINKING COACHING',
+          instruction:
+            'Guide students to "read" the dot plot before calculating: '
+            + '"What do you notice about the shape? Is the data bunched up or spread out?" '
+            + 'For mode: "The tallest stack wins — that value appears most often." '
+            + 'For median: "Line up all the values. Cross off one from each end until you reach the middle." '
+            + 'For mean: "Add every value (remember each dot counts!), then divide by the total number of dots." '
+            + 'For comparison (parallel plots): "Which dataset is more spread out? Which has a higher center?"',
+        },
+      ],
     },
   },
   {
@@ -443,6 +684,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Ignoring bin width effects', response: '"Try changing the bin width. Notice how the shape changes? Wider bins smooth out the data."' },
         { pattern: 'Misidentifying skewness', response: '"The tail tells the skew direction. Long tail on the right = right-skewed."' },
       ],
+      aiDirectives: [
+        {
+          title: 'DISTRIBUTION SHAPE COACHING',
+          instruction:
+            'Start with the big picture before any calculations: "First, describe what you SEE. Is the data piled up in the middle? '
+            + 'Does it have one peak or two? Is one side stretched out?" '
+            + 'Teach the vocabulary through observation: "One peak in the middle = unimodal. Two peaks = bimodal. '
+            + 'Symmetric = mirror image. A long tail = skewed toward that tail." '
+            + 'For bin width exploration: "Watch what happens when you widen the bins — the bars get taller but you lose detail. '
+            + 'Narrow bins show more detail but can look noisy." '
+            + 'Connect shape to statistics: "A right-skewed distribution pulls the mean to the RIGHT of the median."',
+        },
+      ],
     },
   },
   {
@@ -461,6 +715,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Confusing joint and marginal', response: '"Joint = inside the table (both categories). Marginal = totals on the edges (one category)."' },
         { pattern: 'Conditional probability errors', response: '"Given B means you only look at column B. Divide the cell by the column total, not the grand total."' },
         { pattern: 'Independence misconception', response: '"Independent means P(A and B) = P(A) × P(B). Multiply the marginal probabilities and compare to the joint."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PROBABILITY REASONING COACHING',
+          instruction:
+            'Build from concrete to abstract: start with frequencies ("How many students like BOTH pizza AND sports?"), '
+            + 'then move to probabilities ("What fraction of ALL students is that?"). '
+            + 'For conditional probability, physically narrow the focus: "Given that we only look at students who play sports '
+            + '(this column), what fraction likes pizza?" '
+            + 'For the Venn diagram view, connect regions to table cells: "The overlap region matches this cell in the table." '
+            + 'For independence: use the "expected vs observed" frame — "If these were independent, we would EXPECT this value. '
+            + 'The actual value is different, so they are NOT independent."',
+        },
       ],
     },
   },
@@ -698,6 +965,26 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student builds wrong number of sides', response: '"Count your corners — each corner is where two sides meet. You need exactly {{targetShape.properties.sides}} corners for this shape."' },
         { pattern: 'Student confuses shape names in classification', response: '"Let\'s look at the properties: count the sides first, then check for right angles and parallel sides. That will tell us the shape\'s name."' },
         { pattern: 'Student cannot find lines of symmetry', response: '"Imagine folding the shape in half. Where could you fold it so both halves match perfectly? Try drawing a line through the middle."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'MODE-AWARE GEOMETRY COACHING',
+          instruction:
+            'In BUILD mode: guide construction step-by-step — "Place your first point, then your second. How many more do you need?" '
+            + 'In DISCOVER mode: let the student explore properties first — "Measure this side, then that side. What do you notice?" '
+            + 'In CLASSIFY mode: guide by properties, not just name — "Does it have 4 sides? Are they all equal? Are all angles right angles? Then it is a square!" '
+            + 'In COMPOSE mode: "Can you put these two triangles together to make a rectangle?" '
+            + 'In DECOMPOSE mode: "Can you cut this hexagon into triangles?" '
+            + 'In SYMMETRY mode: "Try folding along this line — do both halves match perfectly?"',
+        },
+        {
+          title: 'GRADE-BAND ADAPTATION',
+          instruction:
+            'For K-1: use informal language — "pointy corners," "straight sides," "same size." Focus on counting sides and sorting. '
+            + 'For grades 2-3: introduce formal names — "vertex," "edge," "right angle." Use the "corner of a book" test for right angles. '
+            + 'For grades 4-5: use full classification vocabulary — "parallel sides," "congruent," "perpendicular." '
+            + 'Guide hierarchical thinking: "A square IS a rectangle — it just has all sides equal too!"',
+        },
       ],
     },
   },

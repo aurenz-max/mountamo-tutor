@@ -115,6 +115,12 @@ export type {
   EvolutionTimelineMetrics,
   // Physics metrics
   MotionDiagramMetrics,
+  // Chemistry metrics
+  MatterExplorerMetrics,
+  ReactionLabMetrics,
+  StatesOfMatterMetrics,
+  AtomBuilderMetrics,
+  MoleculeConstructorMetrics,
   // Literacy metrics (Wave 1)
   ParagraphArchitectMetrics,
   SentenceBuilderMetrics,
