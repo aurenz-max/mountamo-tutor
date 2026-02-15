@@ -142,7 +142,7 @@ export interface SentenceSchemaData {
 }
 
 // Module C: Math Tool Visuals
-export type MathVisualType = 'bar-model' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'geometric-shape';
+export type MathVisualType = 'bar-model' | 'number-line' | 'base-ten-blocks' | 'fraction-circles';
 
 export interface MathVisualData {
   type: 'math-visual';
@@ -1054,7 +1054,6 @@ export type ComponentId =
   | 'base-ten-blocks'    // Place value visualization (hundreds, tens, ones)
   | 'fraction-circles'   // Fractional parts shown as pie charts
   | 'fraction-bar'       // Rectangular bar divided into parts to represent fractions
-  | 'geometric-shape'    // Shape properties and attributes
   | 'place-value-chart'  // Place value chart for reading and writing numbers
   | 'area-model'         // Area model for multiplication and distributive property
   | 'array-grid'         // Array/grid for multiplication and combinatorics
@@ -1076,9 +1075,15 @@ export type ComponentId =
   // Math Phase 2 Primitives (K-5 Foundations)
   | 'ten-frame'          // 2x5 grid manipulative for subitizing, composing/decomposing numbers, and making ten (K-2)
   | 'counting-board'     // Flexible counting workspace with draggable objects, subitizing, and counting strategies (K-1)
+  | 'pattern-builder'   // Pattern recognition, extension, creation for algebraic thinking (K-3)
+  | 'skip-counting-runner' // Rhythmic skip counting with number line jumps, arrays, and multiplication connection (1-3)
+  | 'regrouping-workbench' // Addition/subtraction with carrying/borrowing using base-ten blocks and written algorithm (1-4)
+  | 'multiplication-explorer' // Multi-representation multiplication workspace: equal groups, arrays, repeated addition, number line, area model (2-4)
+  | 'measurement-tools'       // Virtual measurement instruments: ruler, scale, measuring cup, thermometer for length, weight, capacity, temperature (1-5)
+  | 'shape-builder'           // Interactive shape construction and property exploration
 
   // Deprecated (kept for backward compatibility)
-  | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, geometric-shape
+  | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, shape-builder
 
   // Interactive Learning Tools
   | 'scale-spectrum'     // Spectrum/continuum for nuanced judgments
@@ -1160,6 +1165,7 @@ export type ComponentId =
   | 'construction-sequence-planner' // Interactive timeline/flowchart tool for ordering construction tasks and understanding dependencies
   | 'blueprint-canvas' // Grid-based drawing surface for creating technical drawings and floor plans
   | 'machine-profile' // Rich display profile for any vehicle or machine (airplane, car, train, ship, etc.)
+  | 'paper-airplane-designer' // Interactive paper airplane designer
   | 'flight-forces-explorer' // Interactive four forces of flight (lift, weight, thrust, drag) exploration
   | 'airfoil-lab' // Wing shape and lift exploration in simulated wind tunnel
   | 'vehicle-comparison-lab' // Side-by-side vehicle data analysis across speed, weight, capacity, range
@@ -1360,8 +1366,19 @@ export type { FlightForcesExplorerData, AircraftProfile, ForceInfo, FlightState,
 export type { AirfoilLabData, AirfoilShape, AerodynamicResults, PresetComparison, AirfoilChallenge } from './primitives/visual-primitives/engineering/AirfoilLab';
 export type { VehicleComparisonLabData, ComparisonVehicle, ComparisonChallenge, SurprisingFact, VehicleMetric } from './primitives/visual-primitives/engineering/VehicleComparisonLab';
 export type { PropulsionLabData, PropulsionType, NewtonThirdLaw, WhatIfExperiment, PropulsionComparison } from './primitives/visual-primitives/engineering/PropulsionLab';
+export type { PaperAirplaneDesignerData } from './primitives/visual-primitives/engineering/PaperAirplaneDesigner';
 export type { PropulsionTimelineData, TimelineMilestone, TimelineEra as PropulsionTimelineEra, SpeedRecord, SequencingChallenge, InnovationChain } from './primitives/visual-primitives/engineering/PropulsionTimeline';
 
 // Math Phase 2
 export type { TenFrameData } from './primitives/visual-primitives/math/TenFrame';
 export type { CountingBoardData } from './primitives/visual-primitives/math/CountingBoard';
+export type { PatternBuilderData } from './primitives/visual-primitives/math/PatternBuilder';
+export type { SkipCountingRunnerData } from './primitives/visual-primitives/math/SkipCountingRunner';
+export type { RegroupingWorkbenchData } from './primitives/visual-primitives/math/RegroupingWorkbench';
+export type { MultiplicationExplorerData } from './primitives/visual-primitives/math/MultiplicationExplorer';
+export type { MeasurementToolsData } from './primitives/visual-primitives/math/MeasurementTools';
+export type { ShapeBuilderData } from './primitives/visual-primitives/math/ShapeBuilder';
+export type { NumberLineData, NumberLineOperation, NumberLineChallenge } from './primitives/visual-primitives/math/NumberLine';
+export type { BaseTenBlocksData, BaseTenBlocksChallenge } from './primitives/visual-primitives/math/BaseTenBlocks';
+export type { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from './primitives/visual-primitives/math/BalanceScale';
+export type { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from './primitives/visual-primitives/math/FunctionMachine';

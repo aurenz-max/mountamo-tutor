@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { TenFrameMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import CalculatorInput from '../../input-primitives/CalculatorInput';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -771,36 +772,30 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
         {/* Subitize Input */}
         {currentPhase === 'subitize' && !showCounters && !isFlashing && !isCurrentChallengeComplete && (
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-slate-300 text-sm">How many counters did you see?</span>
-            <input
-              type="number"
-              min={0}
-              max={totalCells}
-              value={subitizeInput}
-              onChange={e => setSubitizeInput(e.target.value)}
-              className="w-16 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-orange-400/50"
-              autoFocus
-              onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
-            />
-          </div>
+          <CalculatorInput
+            label="How many counters did you see?"
+            value={subitizeInput}
+            onChange={setSubitizeInput}
+            onSubmit={handleCheckAnswer}
+            showSubmitButton={true}
+            allowNegative={false}
+            allowDecimal={false}
+            maxLength={2}
+          />
         )}
 
         {/* Make-ten Input */}
         {currentPhase === 'makeTen' && !isCurrentChallengeComplete && (
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-slate-300 text-sm">{counterCount} + ___ = 10</span>
-            <input
-              type="number"
-              min={0}
-              max={10}
-              value={makeTenInput}
-              onChange={e => setMakeTenInput(e.target.value)}
-              className="w-16 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-orange-400/50"
-              autoFocus
-              onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
-            />
-          </div>
+          <CalculatorInput
+            label={`${counterCount} + ___ = 10`}
+            value={makeTenInput}
+            onChange={setMakeTenInput}
+            onSubmit={handleCheckAnswer}
+            showSubmitButton={true}
+            allowNegative={false}
+            allowDecimal={false}
+            maxLength={2}
+          />
         )}
 
         {/* Flash button for subitize */}

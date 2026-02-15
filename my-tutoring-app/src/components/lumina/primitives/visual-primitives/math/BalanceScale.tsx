@@ -1,23 +1,79 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  usePrimitiveEvaluation,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
+import type { BalanceScaleMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+
+// ============================================================================
+// Data Types (Single Source of Truth)
+// ============================================================================
 
 export interface BalanceScaleObject {
   value: number;
   label?: string;
-  isVariable?: boolean; // True for "x", false for constants
+  isVariable?: boolean;
+}
+
+export interface BalanceScaleChallenge {
+  type: 'equality' | 'one_step' | 'two_step';
+  instruction: string;
+  leftSide: BalanceScaleObject[];
+  rightSide: BalanceScaleObject[];
+  variableValue: number;
+  hint: string;
 }
 
 export interface BalanceScaleData {
   title: string;
   description: string;
-  leftSide: BalanceScaleObject[]; // Objects on left pan
-  rightSide: BalanceScaleObject[]; // Objects on right pan
-  variableValue: number; // Hidden value of x (for solution)
-  showTilt?: boolean; // Animate imbalance
-  allowOperations?: ('add' | 'subtract' | 'multiply' | 'divide')[]; // Permitted solving moves
-  stepHistory?: string[]; // Track solution steps
+  leftSide: BalanceScaleObject[];
+  rightSide: BalanceScaleObject[];
+  variableValue: number;
+  showTilt?: boolean;
+  allowOperations?: ('add' | 'subtract' | 'multiply' | 'divide')[];
+  stepHistory?: string[];
+  gradeBand?: 'K-2' | '3-4' | '5';
+  challenges?: BalanceScaleChallenge[];
+
+  // Evaluation props
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<BalanceScaleMetrics>) => void;
 }
+
+// ============================================================================
+// Types
+// ============================================================================
+
+type Phase = 'explore' | 'identify' | 'solve' | 'verify';
+
+const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
+  explore: { label: 'Explore', description: 'Look at both sides of the scale' },
+  identify: { label: 'Identify', description: 'What equation does this show?' },
+  solve: { label: 'Solve', description: 'Isolate the variable' },
+  verify: { label: 'Verify', description: 'Check your answer' },
+};
+
+interface StepEntry {
+  description: string;
+  justification: string;
+  leftSnapshot: BalanceScaleObject[];
+  rightSnapshot: BalanceScaleObject[];
+}
+
+// ============================================================================
+// Component
+// ============================================================================
 
 interface BalanceScaleProps {
   data: BalanceScaleData;
@@ -28,586 +84,693 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   const {
     title,
     description,
-    leftSide = [],
-    rightSide = [],
+    leftSide: initialLeft = [],
+    rightSide: initialRight = [],
     variableValue,
     showTilt = true,
     allowOperations = ['add', 'subtract'],
+    gradeBand = '3-4',
+    challenges = [],
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
-  const [currentLeftSide, setCurrentLeftSide] = useState<BalanceScaleObject[]>(leftSide);
-  const [currentRightSide, setCurrentRightSide] = useState<BalanceScaleObject[]>(rightSide);
-  const [userSteps, setUserSteps] = useState<string[]>([]);
+  // -------------------------------------------------------------------------
+  // State
+  // -------------------------------------------------------------------------
+  const [currentLeft, setCurrentLeft] = useState<BalanceScaleObject[]>(initialLeft);
+  const [currentRight, setCurrentRight] = useState<BalanceScaleObject[]>(initialRight);
+  const [phase, setPhase] = useState<Phase>('explore');
+  const [userSteps, setUserSteps] = useState<StepEntry[]>([]);
   const [showSolution, setShowSolution] = useState(false);
-  const [hoveredSide, setHoveredSide] = useState<'left' | 'right' | null>(null);
-  const [selectedOperation, setSelectedOperation] = useState<'add' | 'subtract' | 'multiply' | 'divide' | null>(null);
-  const [operationValue, setOperationValue] = useState<string>('');
-  const [hint, setHint] = useState<string | null>(null);
+  const [selectedOp, setSelectedOp] = useState<'add' | 'subtract' | 'multiply' | 'divide' | null>(null);
+  const [opValue, setOpValue] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
+  const [verifyInput, setVerifyInput] = useState('');
+
+  // Challenge state
+  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  const [challengeResults, setChallengeResults] = useState<Array<{ correct: boolean; steps: number; attempts: number }>>([]);
+  const [currentAttempts, setCurrentAttempts] = useState(0);
+
+  // Drag state
   const [draggedBlock, setDraggedBlock] = useState<BalanceScaleObject | null>(null);
   const [dropTarget, setDropTarget] = useState<'left' | 'right' | null>(null);
 
-  // Calculate total values for each side
-  const calculateSideValue = (side: BalanceScaleObject[]): number => {
-    return side.reduce((sum, obj) => {
-      const value = obj.isVariable ? variableValue : obj.value;
-      return sum + value;
-    }, 0);
-  };
+  // Refs
+  const stableInstanceIdRef = useRef(instanceId || `balance-scale-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  const leftValue = calculateSideValue(currentLeftSide);
-  const rightValue = calculateSideValue(currentRightSide);
+  // Computed
+  const currentChallenge = challenges[currentChallengeIndex] || null;
+  const activeVariableValue = currentChallenge?.variableValue ?? variableValue;
+
+  const calcSideValue = useCallback((side: BalanceScaleObject[]): number => {
+    return side.reduce((sum, obj) => sum + (obj.isVariable ? activeVariableValue : obj.value), 0);
+  }, [activeVariableValue]);
+
+  const leftValue = useMemo(() => calcSideValue(currentLeft), [calcSideValue, currentLeft]);
+  const rightValue = useMemo(() => calcSideValue(currentRight), [calcSideValue, currentRight]);
   const isBalanced = Math.abs(leftValue - rightValue) < 0.01;
 
-  // Calculate tilt angle based on difference
-  const calculateTiltAngle = (): number => {
+  const tiltAngle = useMemo(() => {
     if (!showTilt || isBalanced) return 0;
-    const diff = leftValue - rightValue;
-    // Max 15 degrees tilt
-    return Math.max(-15, Math.min(15, diff * 0.5));
-  };
+    return Math.max(-15, Math.min(15, (leftValue - rightValue) * 0.5));
+  }, [showTilt, isBalanced, leftValue, rightValue]);
 
-  const tiltAngle = calculateTiltAngle();
+  const formatObj = (obj: BalanceScaleObject) => obj.isVariable ? (obj.label || 'x') : (obj.label || String(obj.value));
+  const formatEquation = (left: BalanceScaleObject[], right: BalanceScaleObject[]) =>
+    `${left.map(formatObj).join(' + ') || '0'} = ${right.map(formatObj).join(' + ') || '0'}`;
 
-  // Format object display
-  const formatObject = (obj: BalanceScaleObject): string => {
-    if (obj.isVariable) {
-      return obj.label || 'x';
+  const isSolved = useMemo(() => {
+    const leftOnlyVar = currentLeft.length === 1 && currentLeft[0].isVariable && currentRight.every(o => !o.isVariable) && currentRight.length >= 1;
+    const rightOnlyVar = currentRight.length === 1 && currentRight[0].isVariable && currentLeft.every(o => !o.isVariable) && currentLeft.length >= 1;
+    return leftOnlyVar || rightOnlyVar;
+  }, [currentLeft, currentRight]);
+
+  // -------------------------------------------------------------------------
+  // Evaluation Hook
+  // -------------------------------------------------------------------------
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+  } = usePrimitiveEvaluation<BalanceScaleMetrics>({
+    primitiveType: 'balance-scale',
+    instanceId: resolvedInstanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  // -------------------------------------------------------------------------
+  // AI Tutoring
+  // -------------------------------------------------------------------------
+  const aiPrimitiveData = useMemo(() => ({
+    targetEquation: formatEquation(initialLeft, initialRight),
+    currentEquation: formatEquation(currentLeft, currentRight),
+    variableValue: activeVariableValue,
+    gradeBand,
+    phase,
+    stepCount: userSteps.length,
+    isSolved,
+    isBalanced,
+    attemptNumber: currentAttempts + 1,
+    leftSide: currentLeft.map(formatObj),
+    rightSide: currentRight.map(formatObj),
+  }), [initialLeft, initialRight, currentLeft, currentRight, activeVariableValue, gradeBand, phase, userSteps.length, isSolved, isBalanced, currentAttempts]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'balance-scale',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand === 'K-2' ? 'Grade 1' : gradeBand === '3-4' ? 'Grade 3' : 'Grade 5',
+  });
+
+  // Introduction
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
+    const eq = formatEquation(initialLeft, initialRight);
+    sendText(
+      `[ACTIVITY_START] Balance scale equation: ${eq}. Grade band: ${gradeBand}. `
+      + `${gradeBand === 'K-2' ? 'Use concrete language — "mystery number" not "variable".' : ''} `
+      + `Introduce: "Look at this balance scale! Can you find the mystery number?"`,
+      { silent: true }
+    );
+  }, [isConnected, initialLeft, initialRight, gradeBand, sendText]);
+
+  // Phase transitions
+  useEffect(() => {
+    if (isSolved && phase === 'solve') {
+      setPhase('verify');
+      sendText(
+        `[PHASE_TRANSITION] Student isolated the variable! Moving to Verify phase. `
+        + `Ask: "You found that the mystery number might be ${activeVariableValue}. Can you check?"`,
+        { silent: true }
+      );
     }
-    return obj.label || String(obj.value);
-  };
+  }, [isSolved, phase, activeVariableValue, sendText]);
 
-  // Get object color
-  const getObjectColor = (obj: BalanceScaleObject): string => {
-    if (obj.isVariable) {
-      return 'bg-gradient-to-br from-purple-500 to-pink-500 border-purple-400';
-    }
-    return 'bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-400';
-  };
+  // -------------------------------------------------------------------------
+  // Interaction Handlers
+  // -------------------------------------------------------------------------
+  const addStep = useCallback((desc: string, justification: string) => {
+    setUserSteps(prev => [...prev, {
+      description: desc,
+      justification,
+      leftSnapshot: [...currentLeft],
+      rightSnapshot: [...currentRight],
+    }]);
+  }, [currentLeft, currentRight]);
 
-  // Check if equation is solved (variable isolated)
-  const isSolved = (): boolean => {
-    const leftHasOnlyVariable = currentLeftSide.length === 1 && currentLeftSide[0].isVariable;
-    const rightHasOnlyConstants = currentRightSide.every(obj => !obj.isVariable) && currentRightSide.length >= 1;
-    const rightHasOnlyVariable = currentRightSide.length === 1 && currentRightSide[0].isVariable;
-    const leftHasOnlyConstants = currentLeftSide.every(obj => !obj.isVariable) && currentLeftSide.length >= 1;
+  const removeObject = useCallback((side: 'left' | 'right', index: number) => {
+    if (hasSubmittedEvaluation) return;
+    if (phase === 'explore') setPhase('solve');
 
-    return (leftHasOnlyVariable && rightHasOnlyConstants) || (rightHasOnlyVariable && leftHasOnlyConstants);
-  };
-
-  const solved = isSolved();
-
-  // Remove object from a side (applies to both sides to maintain balance)
-  const removeObject = (side: 'left' | 'right', index: number) => {
-    const obj = side === 'left' ? currentLeftSide[index] : currentRightSide[index];
-
+    const obj = side === 'left' ? currentLeft[index] : currentRight[index];
     if (!obj) return;
 
-    // Find matching object on the other side
-    const otherSide = side === 'left' ? currentRightSide : currentLeftSide;
-    const otherIndex = otherSide.findIndex(o =>
-      o.isVariable === obj.isVariable && o.value === obj.value
-    );
+    const otherSide = side === 'left' ? currentRight : currentLeft;
+    const otherIdx = otherSide.findIndex(o => o.isVariable === obj.isVariable && o.value === obj.value);
 
-    if (otherIndex === -1) {
-      setHint(`To keep the scale balanced, you need to remove the same value from both sides!`);
-      setTimeout(() => setHint(null), 3000);
+    if (otherIdx === -1) {
+      setFeedback('To keep balanced, remove the same value from both sides!');
+      setFeedbackType('error');
+      sendText(
+        `[BALANCE_ERROR] Student tried to remove ${formatObj(obj)} from only one side. `
+        + `Remind: "What you do to one side, you must do to the other!"`,
+        { silent: true }
+      );
       return;
     }
 
-    // Remove from both sides
     const newLeft = side === 'left'
-      ? currentLeftSide.filter((_, i) => i !== index)
-      : currentLeftSide.filter((_, i) => i !== otherIndex);
-
+      ? currentLeft.filter((_, i) => i !== index)
+      : currentLeft.filter((_, i) => i !== otherIdx);
     const newRight = side === 'right'
-      ? currentRightSide.filter((_, i) => i !== index)
-      : currentRightSide.filter((_, i) => i !== otherIndex);
+      ? currentRight.filter((_, i) => i !== index)
+      : currentRight.filter((_, i) => i !== otherIdx);
 
-    setCurrentLeftSide(newLeft);
-    setCurrentRightSide(newRight);
+    setCurrentLeft(newLeft);
+    setCurrentRight(newRight);
 
-    // Log the step
-    const stepDescription = `Removed ${formatObject(obj)} from both sides`;
-    setUserSteps([...userSteps, stepDescription]);
-    setHint(`Great! ${stepDescription}`);
-    setTimeout(() => setHint(null), 2000);
-  };
+    const desc = `Removed ${formatObj(obj)} from both sides`;
+    addStep(desc, `Subtract ${formatObj(obj)} to simplify`);
+    setFeedback(desc);
+    setFeedbackType('success');
 
-  // Apply operation to both sides
-  const applyOperation = () => {
-    if (!selectedOperation || !operationValue) return;
+    sendText(
+      `[STEP_TAKEN] ${desc}. Equation is now: ${formatEquation(newLeft, newRight)}. `
+      + `${newLeft.length <= 2 && newRight.length <= 2 ? 'Getting close! Encourage.' : 'Good step.'}`,
+      { silent: true }
+    );
+  }, [hasSubmittedEvaluation, phase, currentLeft, currentRight, addStep, sendText]);
 
-    const value = parseFloat(operationValue);
+  const applyOperation = useCallback(() => {
+    if (!selectedOp || !opValue || hasSubmittedEvaluation) return;
+    if (phase === 'explore') setPhase('solve');
+
+    const value = parseFloat(opValue);
     if (isNaN(value) || value <= 0) {
-      setHint('Please enter a valid positive number');
-      setTimeout(() => setHint(null), 2000);
+      setFeedback('Enter a valid positive number');
+      setFeedbackType('error');
       return;
     }
 
-    let newLeft = [...currentLeftSide];
-    let newRight = [...currentRightSide];
-    let stepDescription = '';
+    let newLeft = [...currentLeft];
+    let newRight = [...currentRight];
+    let desc = '';
 
-    if (selectedOperation === 'add') {
-      // Add value to both sides
+    if (selectedOp === 'add') {
       newLeft.push({ value, label: String(value) });
       newRight.push({ value, label: String(value) });
-      stepDescription = `Added ${value} to both sides`;
-    } else if (selectedOperation === 'subtract') {
-      // Subtract value from both sides
-      const subtractObj = { value, label: String(value) };
-
-      // Check if we can subtract (must have the value on both sides)
-      const canSubtract = newLeft.some(o => !o.isVariable && o.value === value) &&
-                          newRight.some(o => !o.isVariable && o.value === value);
-
-      if (!canSubtract) {
-        setHint(`You need ${value} on both sides to subtract it!`);
-        setTimeout(() => setHint(null), 2000);
-        return;
-      }
-
-      // Remove first occurrence from each side
+      desc = `Added ${value} to both sides`;
+    } else if (selectedOp === 'subtract') {
       const leftIdx = newLeft.findIndex(o => !o.isVariable && o.value === value);
       const rightIdx = newRight.findIndex(o => !o.isVariable && o.value === value);
-
-      if (leftIdx !== -1) newLeft.splice(leftIdx, 1);
-      if (rightIdx !== -1) newRight.splice(rightIdx, 1);
-
-      stepDescription = `Subtracted ${value} from both sides`;
-    }
-
-    setCurrentLeftSide(newLeft);
-    setCurrentRightSide(newRight);
-    setUserSteps([...userSteps, stepDescription]);
-    setOperationValue('');
-    setSelectedOperation(null);
-    setHint(`${stepDescription}!`);
-    setTimeout(() => setHint(null), 2000);
-  };
-
-  // Reset to initial state
-  const handleReset = () => {
-    setCurrentLeftSide(leftSide);
-    setCurrentRightSide(rightSide);
-    setUserSteps([]);
-    setShowSolution(false);
-    setHint(null);
-    setSelectedOperation(null);
-    setOperationValue('');
-  };
-
-  // Provide a hint for next step
-  const provideHint = () => {
-    // Find constants on the same side as variable
-    const leftHasVar = currentLeftSide.some(o => o.isVariable);
-    const rightHasVar = currentRightSide.some(o => o.isVariable);
-
-    if (leftHasVar && !rightHasVar) {
-      const constants = currentLeftSide.filter(o => !o.isVariable);
-      if (constants.length > 0) {
-        setHint(`Try removing ${formatObject(constants[0])} from both sides to isolate the variable`);
-      } else {
-        setHint(`You've isolated the variable! Click 'Show Solution' to check your answer`);
+      if (leftIdx === -1 || rightIdx === -1) {
+        setFeedback(`Need ${value} on both sides to subtract!`);
+        setFeedbackType('error');
+        return;
       }
-    } else if (rightHasVar && !leftHasVar) {
-      const constants = currentRightSide.filter(o => !o.isVariable);
-      if (constants.length > 0) {
-        setHint(`Try removing ${formatObject(constants[0])} from both sides to isolate the variable`);
-      } else {
-        setHint(`You've isolated the variable! Click 'Show Solution' to check your answer`);
-      }
-    } else {
-      setHint('Remove constants from the side with the variable, one step at a time');
-    }
-  };
-
-  // Drag and drop handlers
-  const handleDragStart = (block: BalanceScaleObject) => {
-    setDraggedBlock(block);
-  };
-
-  const handleDragOver = (e: React.DragEvent, side: 'left' | 'right') => {
-    e.preventDefault();
-    setDropTarget(side);
-  };
-
-  const handleDragLeave = () => {
-    setDropTarget(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, side: 'left' | 'right') => {
-    e.preventDefault();
-    if (!draggedBlock) return;
-
-    // Add the block to the specified side
-    const newBlock = { ...draggedBlock };
-
-    if (side === 'left') {
-      setCurrentLeftSide([...currentLeftSide, newBlock]);
-    } else {
-      setCurrentRightSide([...currentRightSide, newBlock]);
+      newLeft.splice(leftIdx, 1);
+      newRight.splice(rightIdx, 1);
+      desc = `Subtracted ${value} from both sides`;
+    } else if (selectedOp === 'multiply') {
+      newLeft = newLeft.map(o => ({ ...o, value: o.value * value, label: o.isVariable ? `${value}${o.label || 'x'}` : String(o.value * value) }));
+      newRight = newRight.map(o => ({ ...o, value: o.value * value, label: o.isVariable ? `${value}${o.label || 'x'}` : String(o.value * value) }));
+      desc = `Multiplied both sides by ${value}`;
+    } else if (selectedOp === 'divide') {
+      newLeft = newLeft.map(o => ({ ...o, value: o.value / value, label: o.isVariable ? `${o.label || 'x'}/${value}` : String(o.value / value) }));
+      newRight = newRight.map(o => ({ ...o, value: o.value / value, label: o.isVariable ? `${o.label || 'x'}/${value}` : String(o.value / value) }));
+      desc = `Divided both sides by ${value}`;
     }
 
-    const stepDescription = `Added ${formatObject(newBlock)} to ${side} side`;
-    setUserSteps([...userSteps, stepDescription]);
-    setHint(`${stepDescription}!`);
-    setTimeout(() => setHint(null), 2000);
+    setCurrentLeft(newLeft);
+    setCurrentRight(newRight);
+    addStep(desc, `${selectedOp} ${value} to isolate variable`);
+    setOpValue('');
+    setSelectedOp(null);
+    setFeedback(desc);
+    setFeedbackType('success');
 
+    sendText(
+      `[STEP_TAKEN] ${desc}. Equation is now: ${formatEquation(newLeft, newRight)}.`,
+      { silent: true }
+    );
+  }, [selectedOp, opValue, hasSubmittedEvaluation, phase, currentLeft, currentRight, addStep, sendText]);
+
+  // Drag handlers
+  const handleDragStart = (block: BalanceScaleObject) => setDraggedBlock(block);
+  const handleDragOver = (e: React.DragEvent, side: 'left' | 'right') => { e.preventDefault(); setDropTarget(side); };
+  const handleDragLeave = () => setDropTarget(null);
+  const handleDrop = useCallback((e: React.DragEvent, side: 'left' | 'right') => {
+    e.preventDefault();
+    if (!draggedBlock || hasSubmittedEvaluation) return;
+    const block = { ...draggedBlock };
+    if (side === 'left') setCurrentLeft(prev => [...prev, block]);
+    else setCurrentRight(prev => [...prev, block]);
+    addStep(`Added ${formatObj(block)} to ${side} side`, 'Add block');
     setDraggedBlock(null);
     setDropTarget(null);
-  };
+  }, [draggedBlock, hasSubmittedEvaluation, addStep]);
 
-  // Available blocks to drag
+  // Verify
+  const handleVerify = useCallback(() => {
+    const answer = parseFloat(verifyInput);
+    const correct = Math.abs(answer - activeVariableValue) < 0.01;
+    setCurrentAttempts(a => a + 1);
+
+    if (correct) {
+      setFeedback(`Correct! x = ${activeVariableValue}`);
+      setFeedbackType('success');
+      sendText(`[ANSWER_CORRECT] Student verified x = ${activeVariableValue}. Celebrate!`, { silent: true });
+
+      if (challenges.length > 0) {
+        setChallengeResults(prev => [...prev, { correct: true, steps: userSteps.length, attempts: currentAttempts + 1 }]);
+      } else if (!hasSubmittedEvaluation) {
+        const eq = formatEquation(initialLeft, initialRight);
+        const metrics: BalanceScaleMetrics = {
+          type: 'balance-scale',
+          targetEquation: eq,
+          solutionFound: true,
+          solutionValue: activeVariableValue,
+          operationsPerformed: userSteps.map(s => ({
+            operation: 'subtract' as const,
+            value: 0,
+            side: 'both' as const,
+          })),
+          stepsToSolve: userSteps.length,
+          optimalSteps: (data.stepHistory?.length ?? 3) - 1,
+          efficiency: Math.min(1, ((data.stepHistory?.length ?? 3) - 1) / Math.max(userSteps.length, 1)),
+          phaseProgression: ['explore', 'solve', 'verify'],
+          balanceMaintained: true,
+          attemptsCount: currentAttempts + 1,
+        };
+        submitEvaluation(true, 100, metrics, { steps: userSteps });
+      }
+    } else {
+      setFeedback(`${answer} is not correct. Check your work!`);
+      setFeedbackType('error');
+      sendText(
+        `[ANSWER_INCORRECT] Student guessed x = ${answer} but it's ${activeVariableValue}. `
+        + `Hint: "Substitute your answer back into the original equation. Does it balance?"`,
+        { silent: true }
+      );
+    }
+  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, hasSubmittedEvaluation, initialLeft, initialRight, userSteps, data.stepHistory, submitEvaluation, sendText]);
+
+  // Challenge advance
+  const advanceChallenge = useCallback(() => {
+    const nextIdx = currentChallengeIndex + 1;
+    if (nextIdx >= challenges.length) {
+      sendText(`[ALL_COMPLETE] All ${challenges.length} equations solved! Celebrate.`, { silent: true });
+      if (!hasSubmittedEvaluation) {
+        const correctCount = challengeResults.filter(r => r.correct).length;
+        const avgSteps = challengeResults.reduce((s, r) => s + r.steps, 0) / Math.max(challengeResults.length, 1);
+        const metrics: BalanceScaleMetrics = {
+          type: 'balance-scale',
+          targetEquation: formatEquation(initialLeft, initialRight),
+          solutionFound: true,
+          solutionValue: activeVariableValue,
+          operationsPerformed: [],
+          stepsToSolve: Math.round(avgSteps),
+          optimalSteps: 2,
+          efficiency: Math.min(1, 2 / Math.max(avgSteps, 1)),
+          phaseProgression: ['explore', 'solve', 'verify'],
+          balanceMaintained: true,
+          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+        };
+        submitEvaluation(correctCount === challenges.length, Math.round((correctCount / challenges.length) * 100), metrics, { challengeResults });
+      }
+      return;
+    }
+    const next = challenges[nextIdx];
+    setCurrentChallengeIndex(nextIdx);
+    setCurrentLeft(next.leftSide);
+    setCurrentRight(next.rightSide);
+    setPhase('explore');
+    setUserSteps([]);
+    setCurrentAttempts(0);
+    setFeedback('');
+    setFeedbackType('');
+    setVerifyInput('');
+    setShowSolution(false);
+    sendText(`[NEXT_ITEM] Challenge ${nextIdx + 1}: "${next.instruction}". Introduce the equation.`, { silent: true });
+  }, [currentChallengeIndex, challenges, challengeResults, hasSubmittedEvaluation, initialLeft, initialRight, activeVariableValue, submitEvaluation, sendText]);
+
+  const handleReset = useCallback(() => {
+    const left = currentChallenge?.leftSide ?? initialLeft;
+    const right = currentChallenge?.rightSide ?? initialRight;
+    setCurrentLeft(left);
+    setCurrentRight(right);
+    setPhase('explore');
+    setUserSteps([]);
+    setFeedback('');
+    setFeedbackType('');
+    setVerifyInput('');
+    setShowSolution(false);
+    setSelectedOp(null);
+    setOpValue('');
+  }, [currentChallenge, initialLeft, initialRight]);
+
+  const isCurrentComplete = challenges.length > 0 && challengeResults.length > currentChallengeIndex && challengeResults[currentChallengeIndex]?.correct;
+  const allComplete = challenges.length > 0 && challengeResults.filter(r => r.correct).length >= challenges.length;
+
+  // Block palette
   const availableBlocks: BalanceScaleObject[] = [
     { value: 1, label: '1' },
     { value: 5, label: '5' },
     { value: 10, label: '10' },
   ];
 
-  // Render objects on a pan
-  const renderObjects = (objects: BalanceScaleObject[], side: 'left' | 'right') => {
-    if (objects.length === 0) {
-      return <span className="text-slate-400 text-sm italic">Empty</span>;
-    }
+  const getObjStyle = (obj: BalanceScaleObject) =>
+    obj.isVariable
+      ? 'bg-gradient-to-br from-purple-500/80 to-pink-500/80 border-purple-400/50'
+      : 'bg-gradient-to-br from-blue-500/80 to-cyan-500/80 border-blue-400/50';
 
-    return objects.map((obj, index) => (
-      <button
-        key={`${side}-${index}`}
-        onClick={() => removeObject(side, index)}
-        className={`
-          ${getObjectColor(obj)}
-          border-2 rounded-lg px-4 py-3
-          shadow-lg
-          transition-all duration-300
-          hover:scale-110 hover:shadow-xl hover:ring-2 hover:ring-yellow-400
-          flex items-center justify-center
-          min-w-[60px]
-          cursor-pointer
-          active:scale-95
-        `}
-        title={`Click to remove ${formatObject(obj)} from both sides`}
-      >
-        <span className="text-white font-bold text-lg font-mono">
-          {formatObject(obj)}
-        </span>
-      </button>
-    ));
-  };
-
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
   return (
-    <div className={`w-full max-w-7xl mx-auto my-16 animate-fade-in ${className || ''} flex gap-6`}>
-      {/* Draggable Block Palette */}
-      <div className="w-48 shrink-0">
-        <div className="glass-panel p-4 rounded-2xl border border-blue-500/20 sticky top-4">
-          <h3 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            Add Blocks
-          </h3>
-          <div className="space-y-3">
-            {availableBlocks.map((block, index) => (
-              <div
-                key={index}
-                draggable
-                onDragStart={() => handleDragStart(block)}
-                className={`
-                  ${getObjectColor(block)}
-                  border-2 rounded-lg px-4 py-3
-                  shadow-lg
-                  transition-all duration-300
-                  hover:scale-105 hover:shadow-xl hover:ring-2 hover:ring-blue-400
-                  flex items-center justify-center
-                  cursor-grab active:cursor-grabbing
-                  active:scale-95
-                `}
-                title={`Drag ${formatObject(block)} to either pan`}
-              >
-                <span className="text-white font-bold text-lg font-mono">
-                  {formatObject(block)}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 pt-4 border-t border-slate-700">
-            <p className="text-xs text-slate-400 italic">
-              Drag blocks onto the scale to balance the equation
-            </p>
+    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-slate-800/50 border-slate-700/50 text-green-300 text-xs">{gradeBand}</Badge>
+            {challenges.length > 0 && (
+              <span className="text-slate-500 text-xs">
+                {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
+              </span>
+            )}
           </div>
         </div>
-      </div>
+        <p className="text-slate-400 text-sm mt-1">
+          {currentChallenge?.instruction ?? description}
+        </p>
+      </CardHeader>
 
-      {/* Main Content */}
-      <div className="flex-1">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8 justify-center">
-          <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center border border-green-500/30 text-green-400 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
-            </svg>
+      <CardContent className="space-y-4">
+        {/* Phase Progress */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {Object.entries(PHASE_CONFIG).map(([p, config]) => (
+            <Badge key={p} className={`text-xs ${
+              phase === p
+                ? 'bg-green-500/20 border-green-400/50 text-green-300'
+                : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
+            }`}>
+              {config.label}
+            </Badge>
+          ))}
+        </div>
+
+        {/* Balance Status */}
+        <div className="flex justify-center">
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono ${
+            isBalanced
+              ? 'bg-green-500/15 border border-green-500/40 text-green-300'
+              : 'bg-yellow-500/15 border border-yellow-500/40 text-yellow-300'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${isBalanced ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse`} />
+            {isBalanced ? 'BALANCED' : 'UNBALANCED'}
+            {isSolved && <span className="text-purple-300 ml-2">SOLVED</span>}
           </div>
-          <div className="text-left">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Balance Scale</h2>
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-              <p className="text-xs text-green-400 font-mono uppercase tracking-wider">
-                Interactive Equation Solving
-              </p>
+        </div>
+
+        {/* Scale Visual */}
+        <div className="relative flex justify-center" style={{ minHeight: 220 }}>
+          {/* Beam */}
+          <div
+            className="absolute w-full max-w-lg h-2 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-600 rounded-full shadow-lg transition-transform duration-700"
+            style={{ top: 50, transform: `rotate(${tiltAngle}deg)`, transformOrigin: 'center' }}
+          />
+          {/* Pivot */}
+          <div className="absolute" style={{ top: 46 }}>
+            <div className="w-6 h-6 bg-slate-700 rounded-full border-3 border-slate-500 shadow-xl z-10" />
+          </div>
+          {/* Fulcrum */}
+          <div className="absolute" style={{ top: 60 }}>
+            <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-slate-700" />
+          </div>
+
+          {/* Left Pan */}
+          <div
+            className="absolute left-4 sm:left-8"
+            style={{ top: 50 + tiltAngle * 1.5 }}
+            onDragOver={e => handleDragOver(e, 'left')}
+            onDragLeave={handleDragLeave}
+            onDrop={e => handleDrop(e, 'left')}
+          >
+            <div className="w-36 h-3 bg-gradient-to-b from-slate-500 to-slate-600 rounded-t" />
+            <div className={`w-36 min-h-[80px] bg-slate-700/30 rounded-b-xl border ${
+              dropTarget === 'left' ? 'border-green-400/60' : 'border-slate-600/40'
+            } backdrop-blur-sm p-2 flex flex-wrap gap-1.5 items-center justify-center`}>
+              {currentLeft.length === 0 && <span className="text-slate-600 text-xs italic">Empty</span>}
+              {currentLeft.map((obj, i) => (
+                <button
+                  key={`l-${i}`}
+                  onClick={() => removeObject('left', i)}
+                  className={`${getObjStyle(obj)} border rounded-md px-2.5 py-1.5 text-white font-bold text-sm font-mono transition-all hover:scale-110 hover:ring-1 hover:ring-yellow-400 cursor-pointer min-w-[36px] text-center`}
+                  title={`Click to remove ${formatObj(obj)} from both sides`}
+                >
+                  {formatObj(obj)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Pan */}
+          <div
+            className="absolute right-4 sm:right-8"
+            style={{ top: 50 - tiltAngle * 1.5 }}
+            onDragOver={e => handleDragOver(e, 'right')}
+            onDragLeave={handleDragLeave}
+            onDrop={e => handleDrop(e, 'right')}
+          >
+            <div className="w-36 h-3 bg-gradient-to-b from-slate-500 to-slate-600 rounded-t" />
+            <div className={`w-36 min-h-[80px] bg-slate-700/30 rounded-b-xl border ${
+              dropTarget === 'right' ? 'border-green-400/60' : 'border-slate-600/40'
+            } backdrop-blur-sm p-2 flex flex-wrap gap-1.5 items-center justify-center`}>
+              {currentRight.length === 0 && <span className="text-slate-600 text-xs italic">Empty</span>}
+              {currentRight.map((obj, i) => (
+                <button
+                  key={`r-${i}`}
+                  onClick={() => removeObject('right', i)}
+                  className={`${getObjStyle(obj)} border rounded-md px-2.5 py-1.5 text-white font-bold text-sm font-mono transition-all hover:scale-110 hover:ring-1 hover:ring-yellow-400 cursor-pointer min-w-[36px] text-center`}
+                  title={`Click to remove ${formatObj(obj)} from both sides`}
+                >
+                  {formatObj(obj)}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-green-500/20 relative overflow-hidden">
-        {/* Background Texture */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(#22c55e 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-        ></div>
-
-        <div className="relative z-10 w-full">
-          <div className="mb-8 text-center max-w-3xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-            <p className="text-slate-300 font-light">{description}</p>
+        {/* Equation Display */}
+        <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1">Equation</p>
+          <div className="flex items-center justify-center gap-3 text-lg font-mono font-bold">
+            <span className="text-blue-300">{currentLeft.map(formatObj).join(' + ') || '0'}</span>
+            <span className="text-slate-500">=</span>
+            <span className="text-cyan-300">{currentRight.map(formatObj).join(' + ') || '0'}</span>
           </div>
+          <div className="flex justify-center gap-6 mt-2 text-xs text-slate-500">
+            <span>Left: <span className="text-blue-300 font-mono">{leftValue}</span></span>
+            <span>Right: <span className="text-cyan-300 font-mono">{rightValue}</span></span>
+          </div>
+        </div>
 
-          {/* Balance Status & Hint */}
-          <div className="mb-6 text-center space-y-3">
-            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${
-              isBalanced
-                ? 'bg-green-500/20 border border-green-500/50'
-                : 'bg-yellow-500/20 border border-yellow-500/50'
-            }`}>
-              <span className={`w-3 h-3 rounded-full ${isBalanced ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse`}></span>
-              <span className={`font-mono text-sm font-bold ${isBalanced ? 'text-green-300' : 'text-yellow-300'}`}>
-                {isBalanced ? 'BALANCED ✓' : 'UNBALANCED'}
-              </span>
-              {solved && (
+        {/* Block Palette */}
+        <div className="flex items-center gap-2 justify-center">
+          <span className="text-slate-500 text-xs">Drag blocks:</span>
+          {availableBlocks.map((block, i) => (
+            <div
+              key={i}
+              draggable
+              onDragStart={() => handleDragStart(block)}
+              className="bg-gradient-to-br from-blue-500/80 to-cyan-500/80 border border-blue-400/50 rounded-md px-3 py-1.5 text-white font-bold text-sm font-mono cursor-grab active:cursor-grabbing hover:scale-105 transition-all"
+            >
+              {block.label}
+            </div>
+          ))}
+        </div>
+
+        {/* Operations Panel */}
+        {phase === 'solve' && (
+          <div className="bg-slate-800/20 rounded-lg p-3 border border-white/5 space-y-2">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Operations (apply to both sides)</p>
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              {allowOperations.map(op => (
+                <Button
+                  key={op}
+                  variant="ghost"
+                  size="sm"
+                  className={`text-xs ${selectedOp === op ? 'bg-green-500/20 border-green-400/50 text-green-300' : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'}`}
+                  onClick={() => setSelectedOp(selectedOp === op ? null : op)}
+                  disabled={hasSubmittedEvaluation}
+                >
+                  {op}
+                </Button>
+              ))}
+              {selectedOp && (
                 <>
-                  <span className="text-slate-500">|</span>
-                  <span className="text-purple-300 font-mono text-sm font-bold">SOLVED! 🎉</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={opValue}
+                    onChange={e => setOpValue(e.target.value)}
+                    className="w-14 px-2 py-1 bg-slate-800/50 border border-white/20 rounded text-slate-100 text-center text-sm focus:outline-none focus:border-green-400/50"
+                    placeholder="#"
+                    onKeyDown={e => e.key === 'Enter' && applyOperation()}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="bg-green-500/10 border border-green-400/30 text-green-300 text-xs"
+                    onClick={applyOperation}
+                  >
+                    Apply
+                  </Button>
                 </>
               )}
             </div>
-
-            {hint && (
-              <div className="inline-block px-6 py-3 bg-blue-500/20 border border-blue-500/50 rounded-full">
-                <span className="text-blue-300 text-sm">💡 {hint}</span>
-              </div>
-            )}
           </div>
+        )}
 
-          {/* Balance Scale Visual */}
-          <div className="relative flex flex-col items-center mb-8">
-            {/* Fulcrum (Triangle) */}
-            <div className="relative w-full max-w-3xl flex justify-center mb-4">
-              {/* Beam */}
-              <div
-                className="absolute w-full h-3 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-600 rounded-full shadow-lg transition-transform duration-700 ease-in-out"
-                style={{
-                  top: '60px',
-                  transform: `rotate(${tiltAngle}deg)`,
-                  transformOrigin: 'center'
-                }}
-              ></div>
-
-              {/* Center Pivot */}
-              <div className="absolute" style={{ top: '60px' }}>
-                <div className="w-8 h-8 bg-slate-700 rounded-full border-4 border-slate-500 shadow-xl z-20"></div>
-              </div>
-
-              {/* Fulcrum Base */}
-              <div className="absolute" style={{ top: '80px' }}>
-                <div className="w-0 h-0 border-l-[30px] border-l-transparent border-r-[30px] border-r-transparent border-b-[50px] border-b-slate-700"></div>
-              </div>
-
-              {/* Left Pan */}
-              <div
-                className={`absolute left-0 transition-all duration-700 ${hoveredSide === 'left' ? 'scale-105' : ''}`}
-                style={{
-                  top: `${60 + tiltAngle * 2}px`,
-                  left: '5%',
-                }}
-                onMouseEnter={() => setHoveredSide('left')}
-                onMouseLeave={() => setHoveredSide(null)}
+        {/* Verify Phase */}
+        {phase === 'verify' && !isCurrentComplete && !allComplete && (
+          <div className="bg-slate-800/20 rounded-lg p-3 border border-white/5 space-y-2">
+            <p className="text-slate-300 text-sm">What is the value of x?</p>
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-purple-300 font-mono font-bold">x =</span>
+              <input
+                type="number"
+                value={verifyInput}
+                onChange={e => setVerifyInput(e.target.value)}
+                className="w-20 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-green-400/50"
+                onKeyDown={e => e.key === 'Enter' && handleVerify()}
+              />
+              <Button
+                variant="ghost"
+                className="bg-green-500/10 border border-green-400/30 text-green-300"
+                onClick={handleVerify}
               >
-                {/* Suspension Strings */}
-                <div className="absolute left-1/2 -translate-x-1/2 w-1 h-12 bg-slate-600 -top-12"></div>
-
-                {/* Pan */}
-                <div className="w-48 h-4 bg-gradient-to-b from-slate-500 to-slate-600 rounded-t-lg shadow-lg"></div>
-                <div
-                  className={`w-48 min-h-[128px] bg-gradient-to-br from-slate-600/40 to-slate-700/60 rounded-b-2xl border-2 ${
-                    dropTarget === 'left' ? 'border-green-400 shadow-lg shadow-green-400/50' : 'border-slate-500/50'
-                  } backdrop-blur-sm p-3 flex flex-wrap gap-2 items-center justify-center`}
-                  onDragOver={(e) => handleDragOver(e, 'left')}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, 'left')}
-                >
-                  {renderObjects(currentLeftSide, 'left')}
-                </div>
-              </div>
-
-              {/* Right Pan */}
-              <div
-                className={`absolute right-0 transition-all duration-700 ${hoveredSide === 'right' ? 'scale-105' : ''}`}
-                style={{
-                  top: `${60 - tiltAngle * 2}px`,
-                  right: '5%',
-                }}
-                onMouseEnter={() => setHoveredSide('right')}
-                onMouseLeave={() => setHoveredSide(null)}
-              >
-                {/* Suspension Strings */}
-                <div className="absolute left-1/2 -translate-x-1/2 w-1 h-12 bg-slate-600 -top-12"></div>
-
-                {/* Pan */}
-                <div className="w-48 h-4 bg-gradient-to-b from-slate-500 to-slate-600 rounded-t-lg shadow-lg"></div>
-                <div
-                  className={`w-48 min-h-[128px] bg-gradient-to-br from-slate-600/40 to-slate-700/60 rounded-b-2xl border-2 ${
-                    dropTarget === 'right' ? 'border-green-400 shadow-lg shadow-green-400/50' : 'border-slate-500/50'
-                  } backdrop-blur-sm p-3 flex flex-wrap gap-2 items-center justify-center`}
-                  onDragOver={(e) => handleDragOver(e, 'right')}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, 'right')}
-                >
-                  {renderObjects(currentRightSide, 'right')}
-                </div>
-              </div>
-            </div>
-
-            {/* Spacing for the scale visual */}
-            <div className="h-64"></div>
-
-            {/* Equation Display */}
-            <div className="mt-8 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">
-                Current Equation
-              </h4>
-              <div className="flex items-center justify-center gap-4 text-2xl font-mono font-bold">
-                <div className="text-blue-300">
-                  {currentLeftSide.length > 0
-                    ? currentLeftSide.map(obj => formatObject(obj)).join(' + ')
-                    : '0'
-                  }
-                </div>
-                <span className="text-slate-500">=</span>
-                <div className="text-cyan-300">
-                  {currentRightSide.length > 0
-                    ? currentRightSide.map(obj => formatObject(obj)).join(' + ')
-                    : '0'
-                  }
-                </div>
-              </div>
-
-              {/* Value Display */}
-              <div className="mt-4 pt-4 border-t border-slate-600 flex items-center justify-center gap-8 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">Left:</span>
-                  <span className="text-blue-300 font-mono font-bold">{leftValue.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">Right:</span>
-                  <span className="text-cyan-300 font-mono font-bold">{rightValue.toFixed(2)}</span>
-                </div>
-              </div>
+                Check
+              </Button>
             </div>
           </div>
+        )}
 
-          {/* Solution Controls */}
-          {solved && (
-            <div className="mb-6 p-6 bg-green-500/10 border border-green-500/30 rounded-xl">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-mono uppercase tracking-wider text-green-400">
-                  🎉 Solution Found!
-                </h4>
-                <button
-                  onClick={() => setShowSolution(!showSolution)}
-                  className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded-lg text-green-300 text-sm font-mono transition-all"
-                >
-                  {showSolution ? 'Hide' : 'Show'} Variable Value
-                </button>
-              </div>
-              {showSolution && (
-                <div className="mt-4 p-4 bg-slate-800/50 rounded-lg">
-                  <div className="flex items-center justify-center gap-3 text-2xl font-mono font-bold">
-                    <span className="text-purple-300">x</span>
-                    <span className="text-slate-500">=</span>
-                    <span className="text-pink-300">{variableValue}</span>
+        {/* Feedback */}
+        {feedback && (
+          <div className={`text-center text-sm font-medium ${
+            feedbackType === 'success' ? 'text-emerald-400' :
+            feedbackType === 'error' ? 'text-red-400' :
+            'text-slate-300'
+          }`}>
+            {feedback}
+          </div>
+        )}
+
+        {/* Solution reveal */}
+        {isSolved && (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-purple-500/10 border border-purple-400/30 text-purple-300 text-xs"
+              onClick={() => setShowSolution(!showSolution)}
+            >
+              {showSolution ? 'Hide' : 'Show'} Answer
+            </Button>
+          </div>
+        )}
+        {showSolution && (
+          <div className="text-center">
+            <span className="text-purple-300 font-mono font-bold text-xl">x = {activeVariableValue}</span>
+          </div>
+        )}
+
+        {/* Steps History */}
+        {userSteps.length > 0 && (
+          <div className="bg-slate-800/20 rounded-lg p-3 border border-white/5 max-h-32 overflow-y-auto">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">
+              Steps ({userSteps.length})
+            </p>
+            <div className="space-y-1">
+              {userSteps.map((step, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs text-slate-400">
+                  <span className="w-4 h-4 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-300 font-mono text-[9px] shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <span className="text-slate-300">{step.description}</span>
+                    <span className="text-slate-600 ml-1">({step.justification})</span>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* User Steps History */}
-          {userSteps.length > 0 && (
-            <div className="mb-6 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">
-                Your Steps ({userSteps.length})
-              </h4>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {userSteps.map((step, index) => (
-                  <div key={index} className="flex items-start gap-3 text-sm text-slate-300">
-                    <span className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center text-blue-300 font-mono font-bold text-xs shrink-0">
-                      {index + 1}
-                    </span>
-                    <span>{step}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Control Panel */}
-          <div className="p-6 bg-slate-800/30 rounded-xl border border-slate-700 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400">
-                Controls
-              </h4>
-              <div className="flex gap-2">
-                <button
-                  onClick={provideHint}
-                  className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 rounded-lg text-blue-300 text-sm font-mono transition-all"
-                >
-                  💡 Hint
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-slate-300 text-sm font-mono transition-all"
-                >
-                  🔄 Reset
-                </button>
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="pt-4 border-t border-slate-600">
-              <h5 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">How to Play</h5>
-              <ul className="text-sm text-slate-300 space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-green-400 mt-1">▸</span>
-                  <span><strong>Click on blocks</strong> to remove them from both sides (maintains balance)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-400 mt-1">▸</span>
-                  <span>Purple/pink blocks are variables (x), blue blocks are constants</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-400 mt-1">▸</span>
-                  <span><strong>Goal:</strong> Isolate the variable on one side to solve the equation</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-400 mt-1">▸</span>
-                  <span>The scale tilts when unbalanced - keep it level!</span>
-                </li>
-              </ul>
+              ))}
             </div>
           </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex justify-center gap-2">
+          {isCurrentComplete && !allComplete && (
+            <Button
+              variant="ghost"
+              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              onClick={advanceChallenge}
+            >
+              Next Challenge
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
+            onClick={handleReset}
+            disabled={hasSubmittedEvaluation}
+          >
+            Reset
+          </Button>
+          {phase === 'explore' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-blue-500/10 border border-blue-400/30 text-blue-300"
+              onClick={() => { setPhase('solve'); sendText('[PHASE_TRANSITION] Student ready to solve. Guide first step.', { silent: true }); }}
+            >
+              Start Solving
+            </Button>
+          )}
         </div>
-      </div>
-      </div>
-    </div>
+
+        {allComplete && (
+          <div className="text-center">
+            <p className="text-emerald-400 text-sm font-medium mb-1">All equations solved!</p>
+            <p className="text-slate-400 text-xs">
+              {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
+            </p>
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="text-center">
+          <p className="text-slate-600 text-[10px]">
+            Click blocks to remove from both sides. Drag blocks from palette. Use operations panel to apply to both sides.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

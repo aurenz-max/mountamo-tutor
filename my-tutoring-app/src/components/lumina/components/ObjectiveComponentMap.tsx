@@ -77,7 +77,7 @@ export const ObjectiveComponentMap: React.FC<ObjectiveComponentMapProps> = ({
       'bar-model': '📊',
       'base-ten-blocks': '🧮',
       'fraction-circles': '🥧',
-      'geometric-shape': '📐',
+      'shape-builder': '📐',
       'custom-visual': '🎨',
       'graph-board': '📈',
       'comparison-panel': '⚖️',

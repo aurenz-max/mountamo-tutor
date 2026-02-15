@@ -28,37 +28,40 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-line',
-    description: 'Interactive number line with highlighted points. Perfect for teaching addition, subtraction, counting, number sequencing, and basic operations. ESSENTIAL for toddlers/kindergarten/elementary math.',
-    constraints: 'Requires numeric range and values to highlight',
+    description: 'Interactive number line with drag-to-plot, animated jump arcs, ordering, and zoom. Supports integers, fractions, decimals, and mixed numbers. K-2 mode (0-20, counting) and 3-5 mode (negatives, fractions, operations). Perfect for teaching number placement, addition/subtraction as movement, fraction comparison, and ordering. ESSENTIAL for K-5 math.',
+    constraints: 'Requires numeric range. Jump mode requires operations array. Challenges drive interactivity.',
     tutoring: {
-      taskDescription: 'Explore numbers on a number line from {{rangeMin}} to {{rangeMax}}.',
-      contextKeys: ['rangeMin', 'rangeMax', 'highlights'],
+      taskDescription: 'Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.',
+      contextKeys: ['rangeMin', 'rangeMax', 'numberType', 'interactionMode', 'gradeBand', 'instruction', 'challengeType', 'targetValues', 'placedPoints', 'attemptNumber', 'currentPhase'],
       scaffoldingLevels: {
-        level1: '"Can you find where the highlighted number is on the line?"',
-        level2: '"Start at {{startValue}} and count {{direction}} to reach the target."',
-        level3: '"Each mark on the line is one number. Count the jumps from {{startValue}} to {{endValue}}."',
+        level1: '"Look carefully at the number line. Where do you think that value belongs?"',
+        level2: '"Count the tick marks from {{rangeMin}}. Each mark is one step. How many steps to reach your target?"',
+        level3: '"Let me help: start at {{rangeMin}} and count each tick mark. Point to each one as you count: {{rangeMin}}, then the next mark is {{rangeMin}} + 1..."',
       },
       commonStruggles: [
-        { pattern: 'Counting tick marks instead of jumps', response: '"Count the spaces between the marks, not the marks themselves"' },
-        { pattern: 'Direction confusion', response: '"Numbers get bigger going right, smaller going left"' },
+        { pattern: 'Placing point far from target value', response: '"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them."' },
+        { pattern: 'Confusing addition direction with subtraction', response: '"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller)."' },
+        { pattern: 'Ordering fractions incorrectly', response: '"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first — is it more or less than half?"' },
+        { pattern: 'Not using zoom for precision', response: '"Try the zoom buttons to see smaller divisions between the numbers. This helps place fractions and decimals more precisely."' },
       ],
     },
   },
   {
     id: 'base-ten-blocks',
-    description: 'Place value visualization using hundreds, tens, and ones blocks. Perfect for teaching place value, decomposing numbers, and understanding multi-digit numbers. ESSENTIAL for elementary math.',
-    constraints: 'Requires a whole number to decompose (best for numbers 1-999)',
+    description: 'Interactive base-ten manipulative with place value columns, supply tray, and regrouping. Students drag blocks to build numbers, decompose values, regroup (trade 10 ones for 1 ten), and perform addition/subtraction with blocks. Supports decimal mode (tenths/hundredths) and thousands. Challenge modes: build_number, read_blocks, regroup, add_with_blocks, subtract_with_blocks. ESSENTIAL for K-5 place value.',
+    constraints: 'Requires a number to work with. Challenges array drives interactivity. Grade band determines complexity.',
     tutoring: {
-      taskDescription: 'Understand place value by decomposing {{numberValue}} into hundreds, tens, and ones blocks.',
-      contextKeys: ['numberValue'],
+      taskDescription: 'Explore place value using base-ten blocks. Mode: {{interactionMode}}. Target: {{targetNumber}}. Current total: {{currentTotal}}.',
+      contextKeys: ['numberValue', 'interactionMode', 'decimalMode', 'gradeBand', 'currentTotal', 'columns', 'targetNumber', 'challengeType', 'instruction', 'attemptNumber', 'regroupsUsed'],
       scaffoldingLevels: {
-        level1: '"How many big squares (hundreds) do you see?"',
-        level2: '"Count the hundreds blocks, then the tens sticks, then the ones cubes."',
-        level3: '"Each big square = 100, each stick = 10, each small cube = 1. Add them all up."',
+        level1: '"Look at the columns. How many hundreds, tens, and ones do you see?"',
+        level2: '"You have {{columns.hundreds}} hundreds, {{columns.tens}} tens, and {{columns.ones}} ones. What number is that?"',
+        level3: '"Each hundred block = 100, each ten stick = 10, each one cube = 1. So {{columns.hundreds}} × 100 + {{columns.tens}} × 10 + {{columns.ones}} × 1 = {{currentTotal}}."',
       },
       commonStruggles: [
-        { pattern: 'Mixing up block sizes', response: '"The biggest block is hundreds, the stick is tens, the tiny cube is ones"' },
-        { pattern: 'Forgetting to add all groups', response: '"Make sure you count all three types: hundreds + tens + ones"' },
+        { pattern: 'Adding too many blocks in wrong column', response: '"Check which column you are adding to. Hundreds are the biggest, ones are the smallest."' },
+        { pattern: 'Not regrouping when column has 10+', response: '"You have 10 or more in one column! You can trade 10 of those for 1 in the next column."' },
+        { pattern: 'Confusing decimal places', response: '"Tenths are 0.1 — ten of them make 1 whole. Hundredths are 0.01 — ten of them make one tenth."' },
       ],
     },
   },
@@ -271,29 +274,31 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'balance-scale',
-    description: 'Interactive balance scale showing equality and equation solving. Perfect for teaching algebraic thinking, equation solving, equality concepts, conservation of equality, inverse operations, and maintaining balance. Visual representation of "what you do to one side, do to the other." ESSENTIAL for pre-algebra and algebra (grades 5-8).',
-    constraints: 'Requires an equation or equality relationship. Best for linear equations and simple algebraic expressions. Shows balanced or unbalanced states.',
+    description: 'Interactive balance scale with phase-based equation solving (Explore → Solve → Verify). Students click blocks to remove from both sides, drag blocks from palette, or use operations panel. Rich step tracking with justifications. Grade-banded: K-2 (concrete, mystery number), 3-4 (one-step x equations), 5 (two-step, variables on both sides). ESSENTIAL for pre-algebra and algebra.',
+    constraints: 'Requires equation with leftSide, rightSide, and variableValue. Grade band controls complexity. Challenges array for multi-problem sets.',
     tutoring: {
-      taskDescription: 'Balance equations using the scale model. Target equation: {{targetEquation}}.',
-      contextKeys: ['targetEquation'],
+      taskDescription: 'Solve the equation {{targetEquation}} using the balance scale. Phase: {{phase}}. Steps taken: {{stepCount}}.',
+      contextKeys: ['targetEquation', 'currentEquation', 'variableValue', 'gradeBand', 'phase', 'stepCount', 'isSolved', 'isBalanced', 'attemptNumber', 'leftSide', 'rightSide'],
       scaffoldingLevels: {
-        level1: '"What do you notice about the two sides?"',
-        level2: '"If we add/remove this from one side, what happens to the other?"',
-        level3: '"We need the same weight on both sides. Let\'s solve step-by-step."',
+        level1: '"What do you notice about the two sides of the scale?"',
+        level2: '"Look for a number that appears on the same side as x. Can you remove it from both sides?"',
+        level3: '"The equation is {{currentEquation}}. To isolate x, subtract the constant from both sides. That gives you x = {{variableValue}}."',
       },
       commonStruggles: [
-        { pattern: 'One-sided changes', response: 'Remember: what you do to one side, do to the other' },
-        { pattern: 'Goal confusion', response: "We're trying to get X by itself" },
+        { pattern: 'Removing from only one side', response: '"Whatever you do to one side, you MUST do to the other side too! That keeps the scale balanced."' },
+        { pattern: 'Not knowing which operation to use', response: '"Look at what is next to x. If there is a + number, subtract it. If there is a × number, divide by it."' },
+        { pattern: 'Incorrect verification', response: '"Plug your answer back in: replace x with your answer. Does the left side equal the right side?"' },
+        { pattern: 'Stuck in explore phase', response: '"Click Start Solving when you are ready. Then click on blocks or use the operations panel."' },
       ],
     },
   },
   {
     id: 'function-machine',
-    description: 'Visual "machine" with input hopper, rule display, and output chute. Numbers enter, get transformed by the rule, and exit. Perfect for teaching input/output patterns, function concepts, function notation f(x), linear functions, composition of functions, and inverse functions. Students can drop values in, watch transformations, and guess the rule from input-output pairs. ESSENTIAL for grades 3-4 patterns, grades 5-8 function introduction, and Algebra 1-2 function concepts.',
-    constraints: 'Requires a transformation rule using variable x (e.g., "x+3", "2*x", "x^2"). Best for discovery mode (hide rule) or learning mode (show rule). Supports one-step, two-step, and expression rules.',
+    description: 'Visual "machine" with input hopper, rule display, and output chute with 4-phase interaction (Observe → Predict → Discover → Create). Numbers enter, get transformed by the rule, and exit. Supports machine chaining for function composition. Grade-banded: 3-4 (one-step rules like x+3, x*2), 5 (two-step rules like 2*x+1), advanced (expressions like x^2). Perfect for teaching input/output patterns, function concepts, function notation f(x), linear functions, composition of functions, and inverse functions. ESSENTIAL for grades 3-4 patterns, grades 5-8 function introduction, and Algebra 1-2 function concepts.',
+    constraints: 'Requires a transformation rule using variable x (e.g., "x+3", "2*x", "x^2"). Phases: observe (watch pairs), predict (guess output before seeing), discover (guess the rule), create (build own machine). Supports chainedMachines for composition. gradeBand controls rule complexity.',
     tutoring: {
-      taskDescription: 'Discover or apply the function rule. Rule: {{rule}} ({{ruleVisibility}}). Processed pairs: {{pairsCount}}.',
-      contextKeys: ['rule', 'showRule', 'processedPairs', 'guessedRule'],
+      taskDescription: 'Discover or apply the function rule. Rule: {{rule}} ({{showRule}}). Phase: {{phase}}. Processed pairs: {{pairsCount}}. Predictions: {{predictionsCorrect}}/{{predictionsTotal}}. Grade band: {{gradeBand}}.',
+      contextKeys: ['rule', 'showRule', 'processedPairs', 'guessedRule', 'gradeBand', 'ruleComplexity', 'phase', 'pairsCount', 'predictionsCorrect', 'predictionsTotal', 'guessAttempts', 'ruleDiscovered', 'chainedMachineCount', 'isChaining'],
       scaffoldingLevels: {
         level1: '"Look at the input and output. What changed? What stayed the same?"',
         level2: '"Compare the pairs: input {{input1}} → output {{output1}}, input {{input2}} → output {{output2}}. What pattern do you see?"',
@@ -303,6 +308,26 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Guessing additively for multiplicative rules', response: '"The change is not the same each time. Try multiplying instead of adding."' },
         { pattern: 'Only looking at one pair', response: '"Look at multiple input-output pairs. The rule works for ALL of them."' },
         { pattern: 'Confusing two-step rules', response: '"Some rules have two steps. Try: first multiply, then add (or subtract)."' },
+        { pattern: 'Prediction consistently wrong', response: '"Look at the pairs you already have. Before you predict, check: does your idea work for ALL previous pairs?"' },
+        { pattern: 'Stuck in observe phase too long', response: '"You have enough pairs! Try moving to the Predict phase to test your understanding, or jump to Discover to guess the rule."' },
+        { pattern: 'Cannot compose chained machines', response: '"For chained machines, the output of Machine 1 becomes the INPUT of Machine 2. Follow the number through each machine step by step."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PHASE-AWARE GUIDANCE',
+          instruction:
+            'In Observe phase: let the student explore freely, narrate what is happening. '
+            + 'In Predict phase: ask "What do you think will come out?" BEFORE revealing the output. Celebrate correct predictions. '
+            + 'In Discover phase: guide toward the rule using scaffolding. Never reveal the rule directly. '
+            + 'In Create phase: encourage creativity and ask about the patterns they created.',
+        },
+        {
+          title: 'GRADE-BAND ADAPTATION',
+          instruction:
+            'For grades 3-4: use simple language, focus on one-step patterns like "add 3" or "double". '
+            + 'For grade 5: introduce two-step thinking: "first multiply, then add". '
+            + 'For advanced: use algebraic notation f(x), discuss domain and range concepts.',
+        },
       ],
     },
   },
@@ -498,20 +523,181 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
   },
   {
-    id: 'geometric-shape',
-    description: 'Interactive geometric shape with labeled properties. Perfect for teaching shape properties, perimeter, area, angles, vertices, and spatial reasoning. ESSENTIAL for elementary geometry.',
-    constraints: 'Requires a shape name and measurable properties',
+    id: 'pattern-builder',
+    description: 'Interactive pattern recognition, extension, and creation for K-3 algebraic thinking. Students build, extend, identify cores, translate, and create repeating patterns (AB, AAB, ABC), growing patterns (1,3,5,7), and number patterns. Supports color tokens, shape tokens, and numbers. Progressive phases: Copy → Identify → Create → Translate. Connects pattern skills to skip counting, multiplication foundations, and early algebra. ESSENTIAL for grades K-3 algebraic thinking, pattern recognition, and early algebra foundations.',
+    constraints: 'Best for grades K-3. K-1: repeating patterns with colors/shapes only (AB, AAB, ABB). Grades 2-3: growing and number patterns, translation and creation challenges.',
     tutoring: {
-      taskDescription: 'Explore the properties of a {{shapeName}}.',
-      contextKeys: ['shapeName', 'attributes'],
+      taskDescription: 'Student is working with patterns. Pattern type: {{patternType}}. Challenge: {{instruction}}. Given sequence: {{givenSequence}}. Core unit: {{coreUnit}}. Rule: {{rule}}. Student extension: {{studentExtension}}. Attempt: {{attemptNumber}}.',
+      contextKeys: ['patternType', 'instruction', 'givenSequence', 'hiddenSequence', 'coreUnit', 'rule', 'challengeType', 'attemptNumber', 'currentPhase', 'studentExtension', 'studentCreation'],
       scaffoldingLevels: {
-        level1: '"How many sides does this shape have? How many corners (vertices)?"',
-        level2: '"Look at the labeled measurements. Can you find the perimeter by adding all the sides?"',
-        level3: '"Perimeter = sum of all sides. Area depends on the shape: for rectangles, area = length × width."',
+        level1: '"Look at the pattern: {{givenSequence}}. Can you see what repeats? What comes next?"',
+        level2: '"Let me help. The repeating part is: {{coreUnit}}. Now that you know the core, what should come next?"',
+        level3: '"The pattern rule is: {{rule}}. Each time, the core {{coreUnit}} repeats. So the next tokens are the beginning of the core again!"',
       },
       commonStruggles: [
-        { pattern: 'Confusing perimeter and area', response: '"Perimeter is the distance around (add the sides). Area is the space inside (multiply length × width for rectangles)."' },
-        { pattern: 'Irregular shape difficulty', response: '"Break it into simpler shapes you already know how to measure."' },
+        { pattern: 'Cannot identify repeating core', response: '"Let\'s look together. Start from the beginning: {{givenSequence}}. Where does the pattern start over? That\'s your core!"' },
+        { pattern: 'Growing pattern confusion', response: '"Look at the numbers: {{givenSequence}}. What do you add to each number to get the next one? That\'s the rule!"' },
+        { pattern: 'Translation difficulty', response: '"The pattern structure is the same! If red→circle and blue→square, then red-blue-red-blue becomes circle-square-circle-square."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PATTERN COACHING APPROACH',
+          instruction:
+            'Use warm, encouraging language. For K-1, focus on visual pattern recognition: "I see red, blue, red, blue... what do you think comes next?" '
+            + 'For grades 2-3, connect to math: "Your pattern goes 2, 4, 6, 8... that\'s counting by 2s!" '
+            + 'Celebrate pattern creation: "You made your own pattern! Can you describe its rule?" '
+            + 'Guide core identification: "Can you find the part that keeps repeating?" '
+            + 'For translations, emphasize structural similarity: "Same pattern, different look!"',
+        },
+      ],
+    },
+  },
+  {
+    id: 'skip-counting-runner',
+    description: 'Rhythmic skip counting with animated number line jumps for grades 1-3. A character (frog, kangaroo, rabbit, rocket) jumps along a number line in equal leaps, landing on multiples. Students count along, predict landing spots, identify skip values, fill missing numbers, and connect to multiplication facts. Parallel array visualization links skip counting to multiplication. Supports forward and backward counting. ESSENTIAL for grades 1-3 skip counting, multiplication foundations, and number pattern recognition.',
+    constraints: 'Best for grades 1-3. Grades 1-2: skip by 2s, 5s, 10s, forward only, count_along and predict challenges. Grades 2-3: skip by 3s, 4s, backward counting, multiplication connections.',
+    tutoring: {
+      taskDescription: 'Student is skip counting by {{skipValue}}s. Direction: {{direction}}. Current position: {{currentPosition}}. Jump count: {{jumpCount}}. Challenge: {{instruction}}. Challenge type: {{challengeType}}. Attempt: {{attemptNumber}}. Current streak: {{currentStreak}}.',
+      contextKeys: ['skipValue', 'direction', 'currentPosition', 'jumpCount', 'instruction', 'challengeType', 'attemptNumber', 'currentPhase', 'currentStreak', 'landingSpots', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Let\'s count together by {{skipValue}}s: {{landingSpots}}... what comes next?"',
+        level2: '"You\'re at {{currentPosition}}. Add {{skipValue}} more. What is {{currentPosition}} + {{skipValue}}?"',
+        level3: '"You made {{jumpCount}} jumps of {{skipValue}}. That\'s {{jumpCount}} × {{skipValue}} = {{currentPosition}}! Skip counting IS multiplication!"',
+      },
+      commonStruggles: [
+        { pattern: 'Losing count rhythm', response: '"Let\'s slow down. Start from the beginning: {{landingSpots}}. Say each number as the character lands!"' },
+        { pattern: 'Prediction errors', response: '"Think about adding {{skipValue}} to {{currentPosition}}. Use your fingers if you need to!"' },
+        { pattern: 'Not seeing multiplication connection', response: '"Count the jumps: {{jumpCount}}. Each jump is {{skipValue}}. So {{jumpCount}} groups of {{skipValue}} = {{currentPosition}}. That\'s multiplication!"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'RHYTHMIC COUNTING APPROACH',
+          instruction:
+            'Count along rhythmically with the student: "5... 10... 15... 20!" '
+            + 'Use a playful, rhythmic cadence. Celebrate streaks: "3 in a row! You\'re on fire!" '
+            + 'Connect to multiplication naturally: "4 jumps of 5 is 4 times 5. That\'s 20!" '
+            + 'For digit patterns: "Look at the ones digits when counting by 5s: 5, 0, 5, 0... see the pattern?" '
+            + 'For backward counting: "Now let\'s go backwards! Countdown: 20... 15... 10..."',
+        },
+      ],
+    },
+  },
+  {
+    id: 'regrouping-workbench',
+    description: 'Interactive addition and subtraction with regrouping (carrying and borrowing) for grades 1-4. Split view: base-ten blocks workspace (ones cubes, tens rods, hundreds flats) alongside the written algorithm. Students tap to trade 10 ones for 1 ten (carry) or break 1 ten into 10 ones (borrow). The blocks and algorithm update in parallel. Progressive phases from exploration to solving. Supports word problem contexts. ESSENTIAL for grades 1-4 multi-digit addition, subtraction, regrouping, and standard algorithm understanding.',
+    constraints: 'Best for grades 1-4. Grades 1-2: two-digit problems with one regroup, addition focus. Grades 3-4: three-digit problems with multiple regroups, addition and subtraction.',
+    tutoring: {
+      taskDescription: 'Student is solving {{instruction}} using base-ten blocks and the written algorithm. Operation: {{operation}}. Current blocks: {{blocks}}. Carries: {{carries}}. Phase: {{currentPhase}}. Requires regrouping: {{requiresRegrouping}}. Attempt: {{attemptNumber}}.',
+      contextKeys: ['operation', 'instruction', 'blocks', 'carries', 'currentPhase', 'requiresRegrouping', 'attemptNumber', 'correctAnswer', 'wordProblem', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Start with the ones column. What do you get when you add those digits?"',
+        level2: '"You have {{blocks}} in the ones place. That is more than 9! What can you trade 10 ones for?"',
+        level3: '"10 ones = 1 ten. Trade them! See how the 1 appears above the tens column in the algorithm? That is carrying!"',
+      },
+      commonStruggles: [
+        { pattern: 'Forgetting to carry/borrow', response: '"Check the ones column again. You got a number bigger than 9. You need to carry that extra ten!"' },
+        { pattern: 'Subtracting smaller from larger in wrong direction', response: '"In subtraction, you subtract the bottom from the top. If the top digit is smaller, you need to borrow first!"' },
+        { pattern: 'Not connecting blocks to algorithm', response: '"See how the blocks match the numbers? When you trade 10 ones for a ten, that is the same as carrying a 1 to the tens column!"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'REGROUPING COACHING APPROACH',
+          instruction:
+            'Guide the critical "aha" moment when the student discovers why regrouping is needed. '
+            + 'For addition: "7 + 5 = 12. Can 12 fit in the ones place? No! Time to trade 10 ones for 1 ten." '
+            + 'For subtraction: "Can you take 7 from 2? No! You need to borrow a ten to help." '
+            + 'Always connect blocks to algorithm: "See how the carry/borrow in the written problem matches what you did with the blocks?" '
+            + 'Celebrate each successful regroup: "Great trade! 10 ones became 1 ten!"',
+        },
+      ],
+    },
+  },
+  {
+    id: 'multiplication-explorer',
+    description: 'Multi-representation multiplication workspace connecting equal groups, arrays, repeated addition, number line jumps, and area model — all synchronized to the same fact. Students progress through 4 phases: build groups → build arrays → connect all 5 representations → use strategies (distributive property, fact families). Includes commutative property toggle, missing-factor challenges, and fluency quiz mode. ESSENTIAL for grades 2-4 multiplication introduction, fact fluency, and multiplicative thinking.',
+    constraints: 'Best for single-digit × single-digit facts (grades 2-3) or multi-digit × single-digit (grade 4). Factors should be reasonable for visual display (≤12 for arrays, ≤50 product for number line). Supports build, connect, commutative, distributive, missing_factor, and fluency challenge types.',
+    tutoring: {
+      taskDescription: 'Student is exploring multiplication through multiple representations. Fact: {{fact}}. Phase: {{currentPhase}}. Challenge: {{instruction}}. Challenge type: {{challengeType}}. Attempt: {{attemptsCount}}. Score: {{factsCorrect}}/{{factsTotal}}.',
+      contextKeys: ['fact', 'currentPhase', 'challengeIndex', 'challengeType', 'instruction', 'flipped', 'attemptsCount', 'factsCorrect', 'factsTotal', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Look at the groups. How many groups are there? How many in each group?"',
+        level2: '"You have {{fact}}. Can you see it as an array too? Same number of rows as groups, same number of columns as items per group."',
+        level3: '"All 5 pictures show the same fact! {{fact}}. Groups, array, addition, number line, and area — they all equal the same product."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing groups and items per group', response: '"The first number tells you HOW MANY groups. The second tells you HOW MANY IN EACH group."' },
+        { pattern: 'Not connecting representations', response: '"3 groups of 4 and a 3×4 array are the same thing! Count them — same total both ways."' },
+        { pattern: 'Difficulty with commutative property', response: '"Flip the array sideways. 3 rows of 4 becomes 4 rows of 3. Count them — still 12!"' },
+        { pattern: 'Struggling with distributive property', response: '"Don\'t know 7×8? Break it up: 5×8=40 and 2×8=16. Add them: 40+16=56! Easier, right?"' },
+        { pattern: 'Missing factor confusion', response: '"If you know 4 × ? = 20, think: how many groups of 4 make 20? Count by 4s: 4, 8, 12, 16, 20 — that\'s 5 groups!"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'REPRESENTATION BRIDGING',
+          instruction:
+            'When the student explores different tabs, help them see the CONNECTION between representations. '
+            + '"You showed 3 groups of 4. Now look at the array — 3 rows with 4 in each row. Same thing!" '
+            + 'In the Connect phase, point out how all 5 panels show the same total. '
+            + 'In the Strategy phase, celebrate the distributive property as a "trick": "You broke a hard fact into easy ones!"',
+        },
+      ],
+    },
+  },
+  {
+    id: 'measurement-tools',
+    description: 'Virtual measurement instruments (ruler, tape measure, scale, balance, measuring cup, thermometer) for teaching length, weight, capacity, and temperature measurement. Students choose tools, estimate first, then measure real-world objects. Supports non-standard units (paper clips, hand spans) for grade 1, standard units for grades 2-5, and unit conversion for grades 3-5. Progressive phases: Explore → Estimate → Precision → Convert. ESSENTIAL for grades 1-5 measurement and data standards.',
+    constraints: 'Requires a tool type matching the measurement type (ruler→length, scale→weight, etc.). Best for grades 1-5. Grades 1-2 use whole-number precision and simple objects. Grades 3-5 add half/quarter precision and conversion challenges.',
+    tutoring: {
+      taskDescription: 'Measure the {{objectName}} using a {{toolType}}. Measurement type: {{measurementType}}. Unit: {{unit}}. Phase: {{currentPhase}}. Actual value: {{actualValue}} {{unit}}.',
+      contextKeys: ['toolType', 'measurementType', 'objectName', 'actualValue', 'unit', 'currentPhase', 'measurementValue', 'estimateValue', 'challengeType', 'attemptNumber', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"What tool would you use to measure this? Look at the {{toolType}} — what do the markings mean?"',
+        level2: '"Look carefully at where the measurement lines up. Read at the nearest {{precision}} mark. Is your answer close to the markings?"',
+        level3: '"The {{objectName}} measures {{actualValue}} {{unit}}. To convert: there are {{conversionFactor}} {{secondaryUnit}} in 1 {{primaryUnit}}. So multiply or divide to convert."',
+      },
+      commonStruggles: [
+        { pattern: 'Choosing wrong tool', response: '"Would you use a ruler or a scale to find how heavy something is? Think about what you are measuring: length, weight, or how much liquid."' },
+        { pattern: 'Not starting from zero on ruler', response: '"Make sure the object starts at the 0 mark on the ruler. Line it up carefully!"' },
+        { pattern: 'Reading between marks incorrectly', response: '"Look at where the measurement falls between two marks. Is it closer to the lower mark or the higher one?"' },
+        { pattern: 'Confusing units within a system', response: '"Remember: 100 centimeters = 1 meter. Centi means one hundred! So 150 cm = 1.5 meters."' },
+        { pattern: 'Estimation far from actual', response: '"Compare to something you know. A pencil is about 19 cm. Is this object longer or shorter than a pencil?"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PHASE-AWARE MEASUREMENT COACHING',
+          instruction:
+            'In Explore phase, let students freely use the tool — celebrate curiosity. '
+            + 'In Estimate phase, ask them to compare to known objects before measuring. '
+            + 'In Precision phase, teach reading between marks: "Is it exactly on a line or between two lines?" '
+            + 'In Convert phase, reference the conversion chart and guide step-by-step multiplication/division.',
+        },
+        {
+          title: 'ESTIMATION CELEBRATION',
+          instruction:
+            'When a student estimates within 15% of the actual value, celebrate: "Amazing estimate! You were so close!" '
+            + 'When further off, encourage: "Good try! After measuring, you\'ll get even better at estimating next time." '
+            + 'Build estimation confidence — it is a critical real-world skill.',
+        },
+      ],
+    },
+  },
+  {
+    id: 'shape-builder',
+    description: 'Interactive geometry workspace for constructing shapes on dot/coordinate grids, measuring properties with ruler/protractor tools, classifying shapes into categories, composing/decomposing shapes, and finding lines of symmetry. Supports build, discover, classify, compose, decompose, and symmetry modes. Perfect for teaching shape construction, property discovery, classification hierarchies, and spatial reasoning. ESSENTIAL for K-5 geometry.',
+    constraints: 'Requires challenges array with progressive difficulty. Grid-based workspace (dot or coordinate). Supports modes: build, discover, classify, compose, decompose, symmetry.',
+    tutoring: {
+      taskDescription: 'Complete geometry challenges in {{mode}} mode on a {{grid.type}} grid. Current challenge: "{{challenges[0].instruction}}".',
+      contextKeys: ['mode', 'gradeBand', 'targetShape', 'challenges', 'tools', 'classificationCategories'],
+      scaffoldingLevels: {
+        level1: '"Look at the shape carefully. How many sides does it have? How many corners?"',
+        level2: '"Count the sides one by one. Now check — are any sides the same length? Do any angles look like the corner of a book (right angles)?"',
+        level3: '"This shape has {{targetShape.properties.sides}} sides. To build it, place {{targetShape.properties.sides}} points on the grid, then click the first point again to close it. For a rectangle, make sure you have 4 right angles."',
+      },
+      commonStruggles: [
+        { pattern: 'Student cannot close the shape (keeps adding vertices)', response: '"To finish your shape, click on the very first point you placed — the yellow one! That will connect your last side."' },
+        { pattern: 'Student builds wrong number of sides', response: '"Count your corners — each corner is where two sides meet. You need exactly {{targetShape.properties.sides}} corners for this shape."' },
+        { pattern: 'Student confuses shape names in classification', response: '"Let\'s look at the properties: count the sides first, then check for right angles and parallel sides. That will tell us the shape\'s name."' },
+        { pattern: 'Student cannot find lines of symmetry', response: '"Imagine folding the shape in half. Where could you fold it so both halves match perfectly? Try drawing a line through the middle."' },
       ],
     },
   },

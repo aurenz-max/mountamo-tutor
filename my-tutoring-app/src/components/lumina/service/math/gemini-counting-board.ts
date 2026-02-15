@@ -197,6 +197,8 @@ REQUIREMENTS:
    - showLastNumber: true (emphasizes cardinality)
 10. Choose kid-friendly objects that match the topic context
 
+CRITICAL: For count_all, group_count, and count_on challenges, targetAnswer MUST equal objects.count because ALL objects are displayed on screen and the student counts every one. Only subitize challenges may have a different targetAnswer.
+
 Return the complete counting board configuration.
 `;
 
@@ -237,6 +239,14 @@ Return the complete counting board configuration.
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
+
+  // CRITICAL: Force targetAnswer to match objects.count for whole-board challenges.
+  // The LLM frequently generates mismatched values (e.g. targetAnswer=12 when count=25).
+  for (const challenge of data.challenges) {
+    if (['count_all', 'group_count', 'count_on'].includes(challenge.type)) {
+      challenge.targetAnswer = data.objects.count;
+    }
+  }
 
   // Ensure at least one challenge
   if (data.challenges.length === 0) {

@@ -9,7 +9,7 @@ import { MathVisualData } from '../types';
  * - 'number-line' for linear number line with highlights
  * - 'base-ten-blocks' for place value visualization
  * - 'fraction-circles' for fractional parts visualization
- * - 'geometric-shape' for shape properties and attributes
+ * - 'shape-builder' for shape construction and properties
  *
  * This component is kept for backward compatibility only.
  */
@@ -176,57 +176,6 @@ export const MathVisuals: React.FC<MathVisualsProps> = ({ data }) => {
       );
   };
 
-  const renderGeometricShape = () => {
-      const shapeName = data.data.shapeName?.toLowerCase() || 'shape';
-      const attrs = data.data.attributes || [];
-      
-      // Basic shape mapping to CSS Clip paths or SVGs
-      let shapePath = "";
-      let viewBox = "0 0 100 100";
-      
-      if (shapeName.includes('triangle')) shapePath = "50,10 90,90 10,90";
-      else if (shapeName.includes('square')) shapePath = "10,10 90,10 90,90 10,90";
-      else if (shapeName.includes('rectangle')) { shapePath = "5,25 95,25 95,75 5,75"; }
-      else if (shapeName.includes('pentagon')) shapePath = "50,5 95,35 80,90 20,90 5,35";
-      else if (shapeName.includes('hexagon')) shapePath = "25,5 75,5 95,50 75,95 25,95 5,50";
-      else if (shapeName.includes('circle')) {
-           // handled separately
-      } else {
-           // Fallback polygon (octagon-ish)
-           shapePath = "30,5 70,5 95,30 95,70 70,95 30,95 5,70 5,30";
-      }
-
-      return (
-          <div className="flex flex-col md:flex-row items-center gap-12">
-              <div className="w-64 h-64 relative drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                  <svg viewBox={viewBox} className="w-full h-full stroke-blue-400 stroke-2 fill-blue-500/20 overflow-visible">
-                      {shapeName.includes('circle') ? (
-                          <circle cx="50" cy="50" r="45" />
-                      ) : (
-                          <polygon points={shapePath} />
-                      )}
-                      {/* Vertex dots */}
-                      {!shapeName.includes('circle') && shapePath.split(' ').map((point, i) => {
-                          const [x, y] = point.split(',');
-                          return <circle key={i} cx={x} cy={y} r="2" className="fill-white" />
-                      })}
-                  </svg>
-              </div>
-              <div className="bg-slate-800/50 p-6 rounded-xl border border-white/5 w-full max-w-sm">
-                  <h4 className="text-blue-300 font-bold uppercase tracking-widest mb-4 border-b border-white/5 pb-2">{shapeName}</h4>
-                  <div className="space-y-3">
-                      {attrs.map((attr, i) => (
-                          <div key={i} className="flex justify-between items-center text-sm">
-                              <span className="text-slate-400">{attr.label}</span>
-                              <span className="text-white font-mono bg-white/5 px-2 py-0.5 rounded">{attr.value}</span>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          </div>
-      );
-  };
-
   return (
     <div className="w-full max-w-5xl mx-auto my-16 animate-fade-in">
         {/* Header */}
@@ -261,7 +210,6 @@ export const MathVisuals: React.FC<MathVisualsProps> = ({ data }) => {
                     {data.visualType === 'number-line' && renderNumberLine()}
                     {data.visualType === 'base-ten-blocks' && renderBaseTen()}
                     {data.visualType === 'fraction-circles' && renderFractionCircles()}
-                    {data.visualType === 'geometric-shape' && renderGeometricShape()}
                 </div>
             </div>
         </div>

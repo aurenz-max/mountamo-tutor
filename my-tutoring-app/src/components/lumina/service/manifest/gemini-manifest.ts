@@ -310,7 +310,7 @@ STRUCTURE:
 - Elementary Math (Place Value) → 'base-ten-blocks', 'place-value-chart'
 - Elementary Math (Fractions) → 'fraction-circles', 'fraction-bar'
 - Elementary Math (Multiplication) → 'array-grid', 'area-model', 'bar-model'
-- Elementary Math (Geometry) → 'geometric-shape'
+- Elementary Math (Geometry) → 'shape-builder'
 - Elementary Math (Patterns, Input-Output) → 'function-machine'
 - Elementary Math (Data, Counting Frequency) → 'dot-plot'
 - Elementary/Middle School Math (Prime Factorization, GCF, LCM) → 'factor-tree'

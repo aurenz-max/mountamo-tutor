@@ -1,18 +1,113 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  usePrimitiveEvaluation,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
+import type { FunctionMachineMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
+
+// ============================================================================
+// Data Types (Single Source of Truth)
+// ============================================================================
+
+export interface MachineConfig {
+  id: string;
+  rule: string;
+  label?: string;
+  showRule?: boolean;
+}
+
+export interface FunctionMachineChallenge {
+  type: 'discover' | 'predict' | 'create' | 'chain';
+  instruction: string;
+  rule: string;
+  showRule?: boolean;
+  inputQueue?: number[];
+  chainedRules?: string[];
+  hint?: string;
+}
 
 export interface FunctionMachineData {
   title: string;
   description: string;
-  rule?: string; // The transformation rule (e.g., "x + 3", "2x", "x^2")
-  showRule?: boolean; // Display or hide the rule
-  inputQueue?: number[]; // Values to process
+  rule?: string;
+  showRule?: boolean;
+  inputQueue?: number[];
   outputDisplay?: 'immediate' | 'animated' | 'hidden';
-  chainable?: boolean; // Allow connecting machines
+  chainable?: boolean;
   ruleComplexity?: 'oneStep' | 'twoStep' | 'expression';
+  gradeBand?: '3-4' | '5' | 'advanced';
+  chainedMachines?: MachineConfig[];
+  challenges?: FunctionMachineChallenge[];
+
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<FunctionMachineMetrics>) => void;
 }
+
+// ============================================================================
+// Phase System
+// ============================================================================
+
+type Phase = 'observe' | 'predict' | 'discover' | 'create';
+
+const PHASE_CONFIG: Record<Phase, { label: string; description: string; icon: string }> = {
+  observe: { label: 'Observe', description: 'Watch inputs transform into outputs', icon: '👁️' },
+  predict: { label: 'Predict', description: 'Guess the output before you see it', icon: '🔮' },
+  discover: { label: 'Discover', description: 'Figure out the hidden rule', icon: '💡' },
+  create: { label: 'Create', description: 'Build your own function machine', icon: '🛠️' },
+};
+
+const PHASES: Phase[] = ['observe', 'predict', 'discover', 'create'];
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/** Safely evaluate a rule string at a given x value */
+const evaluateRule = (rule: string, x: number): number | null => {
+  if (!rule || !rule.trim()) return null;
+  try {
+    const expression = rule.replace(/x/g, String(x));
+    if (!/^[\d+\-*/().^\s]+$/.test(expression)) return null;
+    const safeExpression = expression.replace(/\^/g, '**');
+    const result = new Function('return ' + safeExpression)();
+    if (typeof result !== 'number' || !isFinite(result)) return null;
+    return Math.round(result * 100) / 100;
+  } catch {
+    return null;
+  }
+};
+
+/** Normalize rule strings for comparison */
+const normalizeRule = (r: string): string => {
+  if (!r) return '';
+  return r.replace(/\s/g, '').toLowerCase().replace(/\*/g, '');
+};
+
+/** Grade-level label helper */
+const gradeLabel = (band?: string): string => {
+  switch (band) {
+    case '3-4': return 'Grade 3';
+    case '5': return 'Grade 5';
+    case 'advanced': return 'Grade 7';
+    default: return 'Grade 5';
+  }
+};
+
+// ============================================================================
+// Component
+// ============================================================================
 
 interface FunctionMachineProps {
   data: FunctionMachineData;
@@ -21,583 +116,882 @@ interface FunctionMachineProps {
 
 const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) => {
   const {
+    title,
+    description,
     rule = '',
     showRule = false,
     inputQueue = [1, 2, 3, 4, 5],
     outputDisplay = 'animated',
     chainable = false,
+    ruleComplexity = 'oneStep',
+    gradeBand = '3-4',
+    chainedMachines = [],
+    challenges = [],
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
-  // Log component initialization
-  useEffect(() => {
-    console.log('[FunctionMachine] Initialized with data:', {
-      rule,
-      showRule,
-      inputQueue,
-      outputDisplay,
-      hasValidRule: Boolean(rule && rule.trim())
-    });
-  }, []);
+  // -------------------------------------------------------------------------
+  // Refs
+  // -------------------------------------------------------------------------
+  const stableInstanceIdRef = useRef(instanceId || `function-machine-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // State management
+  // -------------------------------------------------------------------------
+  // State
+  // -------------------------------------------------------------------------
+  const [phase, setPhase] = useState<Phase>('observe');
   const [currentInput, setCurrentInput] = useState<number | null>(null);
   const [currentOutput, setCurrentOutput] = useState<number | null>(null);
   const [processedPairs, setProcessedPairs] = useState<Array<{ input: number; output: number }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [guessedRule, setGuessedRule] = useState('');
-  const [showGuessInput, setShowGuessInput] = useState(false);
-  const [guessResult, setGuessResult] = useState<'correct' | 'incorrect' | null>(null);
-  const [customInput, setCustomInput] = useState('');
   const [availableInputs, setAvailableInputs] = useState<number[]>(inputQueue);
+  const [customInput, setCustomInput] = useState('');
 
-  // Parse and evaluate the rule
-  const evaluateRule = (x: number): number => {
-    console.log(`[FunctionMachine] Evaluating rule for input: ${x}`);
+  // Prediction state
+  const [prediction, setPrediction] = useState('');
+  const [predictionResult, setPredictionResult] = useState<'correct' | 'incorrect' | null>(null);
+  const [predictionsCorrect, setPredictionsCorrect] = useState(0);
+  const [predictionsTotal, setPredictionsTotal] = useState(0);
 
-    // Validate rule exists
-    if (!rule || !rule.trim()) {
-      console.error('[FunctionMachine] No rule provided - cannot evaluate');
-      return NaN;
-    }
+  // Discovery state
+  const [guessedRule, setGuessedRule] = useState('');
+  const [guessResult, setGuessResult] = useState<'correct' | 'incorrect' | null>(null);
+  const [guessAttempts, setGuessAttempts] = useState(0);
 
-    try {
-      // Replace 'x' with the actual value and evaluate safely
-      const expression = rule.replace(/x/g, String(x));
-      console.log(`[FunctionMachine] Expression after substitution: ${expression}`);
+  // Create state
+  const [createdRule, setCreatedRule] = useState('');
+  const [createTestInput, setCreateTestInput] = useState('');
+  const [createPairs, setCreatePairs] = useState<Array<{ input: number; output: number }>>([]);
 
-      // Basic safety check - only allow numbers, operators, and basic functions
-      if (!/^[\d+\-*/().^\s]+$/.test(expression)) {
-        console.error('[FunctionMachine] Invalid rule expression - contains unsafe characters:', expression);
-        return NaN;
-      }
+  // Chaining state
+  const [activeChainMachines, setActiveChainMachines] = useState<MachineConfig[]>(
+    chainedMachines.length > 0 ? chainedMachines : rule ? [{ id: 'machine-1', rule, label: 'Machine 1', showRule }] : []
+  );
+  const [chainResults, setChainResults] = useState<Array<{ machineId: string; input: number; output: number }>>([]);
+  const [showChainView, setShowChainView] = useState(chainable && chainedMachines.length > 1);
 
-      // Use Function constructor for safe evaluation (limited scope)
-      // Handle exponentiation
-      const safeExpression = expression.replace(/\^/g, '**');
-      const result = new Function('return ' + safeExpression)();
-      const roundedResult = Math.round(result * 100) / 100; // Round to 2 decimals
+  // Challenge state
+  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  const [challengeResults, setChallengeResults] = useState<Array<{ correct: boolean; attempts: number }>>([]);
 
-      console.log(`[FunctionMachine] Result: ${x} -> ${roundedResult}`);
-      return roundedResult;
-    } catch (error) {
-      console.error('[FunctionMachine] Error evaluating rule:', error);
-      return NaN;
-    }
-  };
+  // -------------------------------------------------------------------------
+  // Evaluation Hook
+  // -------------------------------------------------------------------------
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+  } = usePrimitiveEvaluation<FunctionMachineMetrics>({
+    primitiveType: 'function-machine',
+    instanceId: resolvedInstanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
-  // Process an input value through the machine
-  const processValue = async (input: number) => {
-    if (isProcessing) {
-      console.log('[FunctionMachine] Already processing, ignoring request');
-      return;
-    }
+  // -------------------------------------------------------------------------
+  // AI Tutoring
+  // -------------------------------------------------------------------------
+  const aiPrimitiveData = useMemo(() => ({
+    rule,
+    showRule,
+    processedPairs,
+    guessedRule,
+    gradeBand,
+    ruleComplexity,
+    phase,
+    pairsCount: processedPairs.length,
+    predictionsCorrect,
+    predictionsTotal,
+    guessAttempts,
+    ruleDiscovered: guessResult === 'correct',
+    chainedMachineCount: activeChainMachines.length,
+    isChaining: showChainView,
+  }), [rule, showRule, processedPairs, guessedRule, gradeBand, ruleComplexity, phase,
+       predictionsCorrect, predictionsTotal, guessAttempts, guessResult, activeChainMachines.length, showChainView]);
 
-    console.log(`[FunctionMachine] Processing value: ${input}`);
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'function-machine',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: gradeLabel(gradeBand),
+  });
+
+  // Introduction
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Function machine activity: "${title}". Rule: ${showRule ? rule : 'hidden'}. `
+      + `Grade band: ${gradeBand}. Complexity: ${ruleComplexity}. `
+      + `${showRule ? 'Learning mode — rule is visible.' : 'Discovery mode — student must figure out the rule.'} `
+      + `Introduce the activity warmly and explain the first step.`,
+      { silent: true }
+    );
+  }, [isConnected]);
+
+  // -------------------------------------------------------------------------
+  // Process value through the machine
+  // -------------------------------------------------------------------------
+  const processValue = useCallback(async (input: number) => {
+    if (isProcessing) return;
     setIsProcessing(true);
     setCurrentInput(input);
     setCurrentOutput(null);
-
-    // Remove from available inputs
     setAvailableInputs(prev => prev.filter(v => v !== input));
 
-    // Animate the processing
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 700));
 
-    const output = evaluateRule(input);
+    const output = evaluateRule(rule, input);
+    if (output === null) {
+      setIsProcessing(false);
+      setCurrentInput(null);
+      return;
+    }
+
     setCurrentOutput(output);
-    console.log(`[FunctionMachine] Output calculated: ${output}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Wait for output display
-    await new Promise(resolve => setTimeout(resolve, 600));
+    const newPair = { input, output };
+    setProcessedPairs(prev => [...prev, newPair]);
 
-    // Add to processed pairs
-    setProcessedPairs(prev => [...prev, { input, output }]);
+    // In predict phase, check prediction
+    if (phase === 'predict' && prediction.trim()) {
+      const predicted = parseFloat(prediction);
+      const isCorrect = !isNaN(predicted) && Math.abs(predicted - output) < 0.01;
+      setPredictionResult(isCorrect ? 'correct' : 'incorrect');
+      setPredictionsTotal(t => t + 1);
+      if (isCorrect) {
+        setPredictionsCorrect(c => c + 1);
+        sendText(`[PREDICTION_CORRECT] Student predicted output ${predicted} for input ${input}. Correct! Celebrate briefly.`, { silent: true });
+      } else {
+        sendText(`[PREDICTION_INCORRECT] Student predicted ${predicted} for input ${input}, but output is ${output}. Encourage and give a hint about the pattern.`, { silent: true });
+      }
+      setPrediction('');
+    }
 
-    // Clear current values
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 300));
     setCurrentInput(null);
     setCurrentOutput(null);
     setIsProcessing(false);
-    console.log('[FunctionMachine] Processing complete');
-  };
 
-  // Check if guessed rule is correct
-  const checkGuess = () => {
-    console.log('[FunctionMachine] Checking guess:', { guessedRule, actualRule: rule });
-
-    // Validate inputs
-    if (!rule || !rule.trim()) {
-      console.error('[FunctionMachine] Cannot check guess - no rule defined');
-      return;
+    // Phase progression hint
+    if (phase === 'observe' && processedPairs.length + 1 >= 3) {
+      sendText(`[PHASE_HINT] Student has observed ${processedPairs.length + 1} pairs. Suggest moving to Predict or Discover phase.`, { silent: true });
     }
+  }, [isProcessing, rule, phase, prediction, processedPairs.length, sendText]);
 
-    if (!guessedRule || !guessedRule.trim()) {
-      console.log('[FunctionMachine] Empty guess, ignoring');
-      return;
-    }
+  // -------------------------------------------------------------------------
+  // Check rule guess
+  // -------------------------------------------------------------------------
+  const checkGuess = useCallback(() => {
+    if (!guessedRule.trim() || !rule) return;
+    setGuessAttempts(a => a + 1);
 
-    // Normalize both rules for comparison
-    const normalizeRule = (r: string) => {
-      if (!r) return '';
-      return r.replace(/\s/g, '').toLowerCase();
-    };
-
+    // Check by normalizing AND by functional equivalence
     const normalizedGuess = normalizeRule(guessedRule);
-    const normalizedRule = normalizeRule(rule);
-    const isCorrect = normalizedGuess === normalizedRule;
+    const normalizedActual = normalizeRule(rule);
+    let isCorrect = normalizedGuess === normalizedActual;
 
-    console.log('[FunctionMachine] Comparison:', {
-      normalizedGuess,
-      normalizedRule,
-      isCorrect
-    });
+    // Functional equivalence: test with multiple inputs
+    if (!isCorrect) {
+      const testInputs = [0, 1, 2, 3, 5, 10, -1];
+      isCorrect = testInputs.every(x => {
+        const expected = evaluateRule(rule, x);
+        const guessed = evaluateRule(guessedRule, x);
+        return expected !== null && guessed !== null && Math.abs(expected - guessed) < 0.01;
+      });
+    }
 
     setGuessResult(isCorrect ? 'correct' : 'incorrect');
 
     if (isCorrect) {
-      // Keep success message visible and don't auto-hide
-      // User can reset to try again
-    }
-  };
+      sendText(
+        `[RULE_DISCOVERED] Student discovered the rule after ${guessAttempts + 1} attempts! `
+        + `They guessed "${guessedRule}", rule was "${rule}". Celebrate enthusiastically!`,
+        { silent: true }
+      );
 
+      // Submit evaluation
+      if (!hasSubmittedEvaluation) {
+        submitEvaluation(
+          true,
+          Math.max(50, 100 - (guessAttempts * 10)),
+          {
+            type: 'function-machine',
+            functionRule: rule,
+            ruleDiscovered: true,
+            inputsExplored: processedPairs.map(p => p.input),
+            outputsObserved: processedPairs.map(p => p.output),
+            attemptsToDiscover: guessAttempts + 1,
+            hintsUsed: 0,
+            predictionsCorrect,
+            predictionsTotal,
+            phase,
+            chainDepth: activeChainMachines.length > 1 ? activeChainMachines.length : undefined,
+          },
+        );
+      }
+    } else {
+      sendText(
+        `[GUESS_INCORRECT] Student guessed "${guessedRule}" but rule is "${rule}". `
+        + `Attempt ${guessAttempts + 1}. Pairs seen: ${processedPairs.map(p => `${p.input}→${p.output}`).join(', ')}. `
+        + `Give a targeted hint based on the pattern.`,
+        { silent: true }
+      );
+    }
+  }, [guessedRule, rule, guessAttempts, processedPairs, predictionsCorrect, predictionsTotal,
+      phase, activeChainMachines.length, sendText, submitEvaluation, hasSubmittedEvaluation]);
+
+  // -------------------------------------------------------------------------
+  // Chain processing
+  // -------------------------------------------------------------------------
+  const processChain = useCallback(async (input: number) => {
+    if (isProcessing || activeChainMachines.length < 2) return;
+    setIsProcessing(true);
+    setChainResults([]);
+
+    let currentVal = input;
+    const results: Array<{ machineId: string; input: number; output: number }> = [];
+
+    for (const machine of activeChainMachines) {
+      const output = evaluateRule(machine.rule, currentVal);
+      if (output === null) break;
+      results.push({ machineId: machine.id, input: currentVal, output });
+      currentVal = output;
+      setChainResults([...results]);
+      await new Promise(resolve => setTimeout(resolve, 600));
+    }
+
+    setChainResults(results);
+    setIsProcessing(false);
+
+    if (results.length === activeChainMachines.length) {
+      const finalOutput = results[results.length - 1].output;
+      sendText(
+        `[CHAIN_COMPLETE] Input ${input} went through ${results.length} machines: `
+        + results.map(r => `${r.input}→${r.output}`).join(', ')
+        + `. Final output: ${finalOutput}. Ask what the combined rule might be.`,
+        { silent: true }
+      );
+    }
+  }, [isProcessing, activeChainMachines, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Create phase: test student-created rule
+  // -------------------------------------------------------------------------
+  const testCreatedRule = useCallback(() => {
+    const input = parseFloat(createTestInput);
+    if (isNaN(input) || !createdRule.trim()) return;
+
+    const output = evaluateRule(createdRule, input);
+    if (output !== null) {
+      setCreatePairs(prev => [...prev, { input, output }]);
+      setCreateTestInput('');
+      sendText(
+        `[CREATE_TEST] Student created rule "${createdRule}" and tested input ${input} → output ${output}. `
+        + `Encourage and ask about the pattern they created.`,
+        { silent: true }
+      );
+    }
+  }, [createTestInput, createdRule, sendText]);
+
+  // -------------------------------------------------------------------------
   // Add custom input
-  const addCustomInput = () => {
+  // -------------------------------------------------------------------------
+  const addCustomInput = useCallback(() => {
     const value = parseFloat(customInput);
     if (!isNaN(value) && !availableInputs.includes(value)) {
       setAvailableInputs(prev => [...prev, value]);
       setCustomInput('');
     }
-  };
+  }, [customInput, availableInputs]);
 
-  // Reset the machine
-  const reset = () => {
+  // -------------------------------------------------------------------------
+  // Reset
+  // -------------------------------------------------------------------------
+  const reset = useCallback(() => {
     setProcessedPairs([]);
     setCurrentInput(null);
     setCurrentOutput(null);
     setGuessedRule('');
     setGuessResult(null);
+    setGuessAttempts(0);
     setAvailableInputs(inputQueue);
-    setShowGuessInput(false);
-  };
+    setPrediction('');
+    setPredictionResult(null);
+    setPredictionsCorrect(0);
+    setPredictionsTotal(0);
+    setCreatePairs([]);
+    setCreatedRule('');
+    setChainResults([]);
+    setPhase('observe');
+  }, [inputQueue]);
 
-  // Show error state if no rule
+  // -------------------------------------------------------------------------
+  // Phase advancement
+  // -------------------------------------------------------------------------
+  const advancePhase = useCallback(() => {
+    const currentIdx = PHASES.indexOf(phase);
+    if (currentIdx < PHASES.length - 1) {
+      const nextPhase = PHASES[currentIdx + 1];
+      setPhase(nextPhase);
+      sendText(
+        `[PHASE_CHANGE] Moving to "${nextPhase}" phase. `
+        + `${PHASE_CONFIG[nextPhase].description}. `
+        + `Guide the student on what to do next.`,
+        { silent: true }
+      );
+    }
+  }, [phase, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Error: no rule configured
+  // -------------------------------------------------------------------------
   if (!rule || !rule.trim()) {
     return (
-      <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-        <div className="glass-panel p-8 rounded-3xl border border-red-500/20 bg-red-500/10">
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-red-300 mb-2">Configuration Error</h3>
-            <p className="text-red-200/80">No function rule provided. Please provide a valid rule (e.g., "x + 3", "2x", "x^2")</p>
-          </div>
-        </div>
-      </div>
+      <Card className={`backdrop-blur-xl bg-slate-900/40 border-red-500/20 ${className || ''}`}>
+        <CardHeader>
+          <CardTitle className="text-red-300">Configuration Error</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-200/80">No function rule provided. Please provide a valid rule (e.g., &quot;x + 3&quot;, &quot;2*x&quot;, &quot;x^2&quot;).</p>
+        </CardContent>
+      </Card>
     );
   }
 
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
   return (
-    <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-blue-500/20 relative overflow-hidden">
-        {/* Background Texture */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-        ></div>
-
-        <div className="relative z-10 w-full">
-          {/* Improved Header - Integrated into the panel */}
-          <div className="mb-8">
-            {/* Challenge Badge */}
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/20 border border-blue-400/40">
-                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
-                <span className="text-xs text-blue-300 font-mono uppercase tracking-wider">Math Challenge</span>
+    <div className={`w-full max-w-6xl mx-auto my-8 space-y-6 ${className || ''}`}>
+      {/* Header Card */}
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center border border-blue-400/40">
+                <svg className="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <div>
+                <CardTitle className="text-slate-100">{title}</CardTitle>
+                <p className="text-sm text-slate-400 mt-1">{description}</p>
               </div>
             </div>
-
-            {/* Title with Icon */}
-            <div className="text-center mb-4">
-              <div className="inline-flex items-center justify-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center border border-blue-400/40 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-                  <svg className="w-7 h-7 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                  </svg>
-                </div>
-                <h2 className="text-3xl font-bold text-white tracking-tight">
-                  {data.title}
-                </h2>
-              </div>
-
-              {/* Interactive instruction callout */}
-              <div className="max-w-2xl mx-auto">
-                <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/30">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5">
-                      <svg className="w-5 h-5 text-blue-300" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path>
-                      </svg>
-                    </div>
-                    <p className="text-slate-200 text-sm leading-relaxed text-left">
-                      {data.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="border-blue-400/40 text-blue-300 text-xs">
+                {gradeBand === '3-4' ? 'Grades 3-4' : gradeBand === '5' ? 'Grade 5' : 'Advanced'}
+              </Badge>
+              <Badge variant="outline" className="border-purple-400/40 text-purple-300 text-xs">
+                {ruleComplexity === 'oneStep' ? 'One-Step' : ruleComplexity === 'twoStep' ? 'Two-Step' : 'Expression'}
+              </Badge>
             </div>
           </div>
+        </CardHeader>
+      </Card>
 
-          {/* Success Celebration */}
-          {guessResult === 'correct' && (
-            <div className="mb-8 relative">
-              {/* Confetti Background Effect */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {[...Array(20)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute animate-bounce"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `-${Math.random() * 20}px`,
-                      animationDelay: `${Math.random() * 0.5}s`,
-                      animationDuration: `${1 + Math.random()}s`
+      {/* Phase Navigation */}
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+        <CardContent className="py-4">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {PHASES.map((p, idx) => {
+              const config = PHASE_CONFIG[p];
+              const isActive = p === phase;
+              const isPast = PHASES.indexOf(p) < PHASES.indexOf(phase);
+              const isNext = PHASES.indexOf(p) === PHASES.indexOf(phase) + 1;
+
+              return (
+                <React.Fragment key={p}>
+                  {idx > 0 && (
+                    <div className={`w-8 h-px ${isPast ? 'bg-green-400/60' : 'bg-slate-600/40'}`} />
+                  )}
+                  <button
+                    onClick={() => {
+                      setPhase(p);
+                      sendText(`[PHASE_CHANGE] Student switched to "${p}" phase. ${config.description}. Guide them.`, { silent: true });
                     }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                      isActive
+                        ? 'bg-blue-500/20 border border-blue-400/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
+                        : isPast
+                        ? 'bg-green-500/10 border border-green-400/30 text-green-300'
+                        : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+                    }`}
                   >
-                    <div
-                      className="w-3 h-3 rounded-full opacity-80"
-                      style={{
-                        backgroundColor: ['#34d399', '#fbbf24', '#60a5fa', '#a78bfa', '#f87171'][i % 5]
-                      }}
-                    ></div>
-                  </div>
-                ))}
-              </div>
+                    <span>{config.icon}</span>
+                    <span>{config.label}</span>
+                  </button>
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
-              {/* Main Success Card */}
-              <div className="relative p-8 bg-gradient-to-br from-green-500/30 via-emerald-500/20 to-teal-500/30 backdrop-blur-sm border-2 border-green-400/80 rounded-3xl text-center animate-fade-in shadow-[0_0_50px_rgba(34,197,94,0.5)] overflow-hidden">
-                {/* Animated Background Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 via-transparent to-emerald-400/10 animate-pulse pointer-events-none"></div>
-
-                <div className="relative z-10">
-                  {/* Trophy Icon */}
-                  <div className="mb-4 flex justify-center">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-yellow-400/50 rounded-full blur-xl animate-pulse"></div>
-                      <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center border-4 border-yellow-300/50 shadow-[0_0_40px_rgba(250,204,21,0.6)] animate-bounce">
-                        <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Success Message */}
-                  <h3 className="text-3xl font-bold text-green-100 mb-2 animate-pulse">
-                    🎉 Amazing Work! 🎉
-                  </h3>
-                  <p className="text-xl text-green-200 mb-4">
-                    You discovered the secret rule!
-                  </p>
-
-                  {/* Revealed Rule */}
-                  <div className="inline-block px-8 py-4 bg-slate-900/60 backdrop-blur-sm border-2 border-green-400/50 rounded-2xl shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                    <div className="text-sm text-green-300 mb-1 font-mono uppercase tracking-wider">The Rule Was:</div>
-                    <div className="text-3xl font-bold text-white font-mono">
-                      f(x) = {rule}
-                    </div>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="mt-6 flex justify-center gap-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-200">{processedPairs.length}</div>
-                      <div className="text-xs text-green-300/80 uppercase tracking-wide">Tests Run</div>
-                    </div>
-                    <div className="w-px bg-green-400/30"></div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-200">✓</div>
-                      <div className="text-xs text-green-300/80 uppercase tracking-wide">Solved</div>
-                    </div>
-                  </div>
-
-                  {/* Continue Button */}
-                  <div className="mt-6">
-                    <button
-                      onClick={reset}
-                      className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 border-2 border-green-300/50 text-white font-bold rounded-xl transition-all hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] hover:scale-105 active:scale-95"
-                    >
-                      Try Another Challenge
-                    </button>
-                  </div>
-                </div>
-              </div>
+      {/* Success Celebration */}
+      {guessResult === 'correct' && (
+        <Card className="backdrop-blur-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-green-400/50">
+          <CardContent className="py-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center border-2 border-yellow-300/50 shadow-[0_0_30px_rgba(250,204,21,0.4)]">
+              <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+              </svg>
             </div>
-          )}
+            <h3 className="text-2xl font-bold text-green-100 mb-2">Rule Discovered!</h3>
+            <div className="inline-block px-6 py-3 bg-slate-900/50 border border-green-400/40 rounded-xl mb-4">
+              <span className="text-sm text-green-300 font-mono">f(x) = </span>
+              <span className="text-xl font-bold text-white font-mono">{rule}</span>
+            </div>
+            <div className="flex justify-center gap-6 mt-4 text-sm">
+              <div className="text-center">
+                <div className="text-lg font-bold text-green-200">{processedPairs.length}</div>
+                <div className="text-green-300/70">Pairs Tested</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-green-200">{guessAttempts}</div>
+                <div className="text-green-300/70">Attempts</div>
+              </div>
+              {predictionsTotal > 0 && (
+                <div className="text-center">
+                  <div className="text-lg font-bold text-green-200">{predictionsCorrect}/{predictionsTotal}</div>
+                  <div className="text-green-300/70">Predictions</div>
+                </div>
+              )}
+            </div>
+            <Button variant="ghost" onClick={reset} className="mt-6 bg-white/5 border border-white/20 hover:bg-white/10">
+              Try Another Challenge
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* The Machine Visualization */}
-          <div className="mb-8 p-8 bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-blue-500/20 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent pointer-events-none rounded-2xl"></div>
+      {/* Machine Visualization (single or chain) */}
+      {showChainView && activeChainMachines.length > 1 ? (
+        /* ============= Chained Machines View ============= */
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-slate-100 text-lg flex items-center gap-2">
+              <span>Chained Machines</span>
+              <Badge variant="outline" className="border-purple-400/40 text-purple-300">
+                {activeChainMachines.length} machines
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4 overflow-x-auto py-4">
+              {activeChainMachines.map((machine, idx) => (
+                <React.Fragment key={machine.id}>
+                  {idx > 0 && (
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <svg className="w-10 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 40 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12H36M28 6L36 12L28 18" />
+                      </svg>
+                      {chainResults[idx - 1] && (
+                        <span className="text-xs text-purple-300 font-mono">{chainResults[idx - 1].output}</span>
+                      )}
+                    </div>
+                  )}
+                  <div className={`flex-shrink-0 w-36 h-36 rounded-xl border-2 flex flex-col items-center justify-center relative transition-all ${
+                    chainResults.some(r => r.machineId === machine.id)
+                      ? 'bg-green-500/10 border-green-400/40'
+                      : 'bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-blue-400/40'
+                  }`}>
+                    <div className="text-xs text-slate-400 font-mono mb-1">{machine.label || `Machine ${idx + 1}`}</div>
+                    {machine.showRule ? (
+                      <div className="text-lg font-bold text-white font-mono">f(x) = {machine.rule}</div>
+                    ) : (
+                      <div className="flex gap-1">
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.1s' }} />
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.2s' }} />
+                      </div>
+                    )}
+                    {chainResults.find(r => r.machineId === machine.id) && (
+                      <div className="mt-2 text-xs text-green-300 font-mono">
+                        {chainResults.find(r => r.machineId === machine.id)!.input} → {chainResults.find(r => r.machineId === machine.id)!.output}
+                      </div>
+                    )}
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
 
-            <div className="relative z-10 flex items-center justify-center gap-8">
+            {/* Chain input controls */}
+            <div className="mt-4 flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-slate-400">Feed a value:</span>
+              {[1, 2, 3, 4, 5].map(v => (
+                <Button
+                  key={v}
+                  variant="ghost"
+                  size="sm"
+                  disabled={isProcessing}
+                  onClick={() => processChain(v)}
+                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-white font-mono"
+                >
+                  {v}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        /* ============= Single Machine View ============= */
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+          <CardContent className="py-8">
+            <div className="flex items-center justify-center gap-6 md:gap-8">
               {/* Input Hopper */}
               <div className="flex flex-col items-center">
-                <div className="text-blue-400 text-sm font-mono mb-2 uppercase tracking-wide">Input</div>
-                <div className="w-24 h-32 border-2 border-blue-400/50 rounded-t-lg bg-blue-500/10 backdrop-blur-sm relative overflow-hidden flex items-end justify-center pb-4">
+                <span className="text-xs text-blue-400 font-mono uppercase tracking-wider mb-2">Input</span>
+                <div className="w-20 h-28 border-2 border-blue-400/40 rounded-t-lg bg-blue-500/10 relative flex items-center justify-center">
                   {currentInput !== null && (
-                    <div className="absolute top-2 animate-bounce">
-                      <div className="w-12 h-12 rounded-full bg-blue-500/40 border-2 border-blue-400/70 flex items-center justify-center text-white font-bold shadow-[0_0_20px_rgba(59,130,246,0.4)]">
-                        {currentInput}
-                      </div>
+                    <div className="w-11 h-11 rounded-full bg-blue-500/30 border-2 border-blue-400/60 flex items-center justify-center text-white font-bold animate-bounce text-sm">
+                      {currentInput}
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Arrow */}
-              <div className="flex flex-col items-center">
-                <svg className="w-16 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 64 32">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16 L56 16 M48 8 L56 16 L48 24"></path>
-                </svg>
-              </div>
+              <svg className="w-10 h-6 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 40 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12H36M28 6L36 12L28 18" />
+              </svg>
 
               {/* Machine Body */}
-              <div className="flex flex-col items-center">
-                <div className="relative">
-                  {/* Gear decoration */}
-                  <div className={`absolute -top-8 -right-8 w-12 h-12 ${isProcessing ? 'animate-spin' : ''}`}>
-                    <svg className="w-full h-full text-blue-400/30" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l1.09 2.83L16 6l-2.83 1.09L12 10l-1.09-2.83L8 6l2.83-1.09L12 2zm-8 8l.545 1.414L6 12l-1.414.545L4 14l-.545-1.414L2 12l1.414-.545L4 10zm8 4l1.09 2.83L16 18l-2.83 1.09L12 22l-1.09-2.83L8 18l2.83-1.09L12 14z"></path>
-                    </svg>
-                  </div>
-
-                  <div className="w-48 h-48 rounded-2xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-2 border-blue-400/50 backdrop-blur-sm flex flex-col items-center justify-center relative overflow-hidden shadow-[0_0_30px_rgba(59,130,246,0.3)]">
-                    {/* Glass effect */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
-
-                    <div className="relative z-10 text-center">
-                      <div className="text-blue-300 text-xs font-mono mb-2 uppercase">Function Rule</div>
-                      {showRule ? (
-                        <div className="text-2xl font-bold text-white mb-2 font-mono bg-slate-900/30 px-4 py-2 rounded-lg border border-blue-400/20">
-                          f(x) = {rule}
-                        </div>
-                      ) : (
-                        <div className="text-2xl font-bold text-blue-200 mb-2">
-                          <div className="flex gap-1 justify-center">
-                            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse delay-100"></span>
-                            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse delay-200"></span>
-                          </div>
-                        </div>
-                      )}
-                      {isProcessing && (
-                        <div className="text-blue-300 text-xs animate-pulse">Processing...</div>
-                      )}
-                    </div>
-
-                    {/* Processing animation overlay */}
+              <div className="relative">
+                <div className={`w-40 h-40 md:w-48 md:h-48 rounded-2xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-2 border-blue-400/40 flex flex-col items-center justify-center relative overflow-hidden shadow-[0_0_20px_rgba(59,130,246,0.2)] ${isProcessing ? 'border-blue-400/70' : ''}`}>
+                  {isProcessing && <div className="absolute inset-0 bg-blue-500/10 animate-pulse" />}
+                  <div className="relative z-10 text-center px-3">
+                    <div className="text-xs text-blue-300 font-mono mb-2 uppercase">Function Rule</div>
+                    {showRule || guessResult === 'correct' ? (
+                      <div className="text-xl font-bold text-white font-mono bg-slate-900/30 px-3 py-1.5 rounded-lg border border-blue-400/20">
+                        f(x) = {rule}
+                      </div>
+                    ) : (
+                      <div className="flex gap-1 justify-center">
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.1s' }} />
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.2s' }} />
+                      </div>
+                    )}
                     {isProcessing && (
-                      <div className="absolute inset-0 bg-blue-500/10 animate-pulse"></div>
+                      <div className="text-blue-300 text-xs animate-pulse mt-2">Processing...</div>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Arrow */}
-              <div className="flex flex-col items-center">
-                <svg className="w-16 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 64 32">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16 L56 16 M48 8 L56 16 L48 24"></path>
-                </svg>
-              </div>
+              <svg className="w-10 h-6 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 40 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12H36M28 6L36 12L28 18" />
+              </svg>
 
               {/* Output Chute */}
               <div className="flex flex-col items-center">
-                <div className="text-purple-400 text-sm font-mono mb-2 uppercase tracking-wide">Output</div>
-                <div className="w-24 h-32 border-2 border-purple-400/50 rounded-b-lg bg-purple-500/10 backdrop-blur-sm relative overflow-hidden flex items-start justify-center pt-4">
+                <span className="text-xs text-purple-400 font-mono uppercase tracking-wider mb-2">Output</span>
+                <div className="w-20 h-28 border-2 border-purple-400/40 rounded-b-lg bg-purple-500/10 relative flex items-center justify-center">
                   {currentOutput !== null && outputDisplay !== 'hidden' && (
-                    <div className={`absolute top-2 ${outputDisplay === 'animated' ? 'animate-bounce' : ''}`}>
-                      <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center font-bold shadow-[0_0_20px_rgba(168,85,247,0.4)] ${
-                        isNaN(currentOutput)
-                          ? 'bg-red-500/40 border-red-400/70 text-white text-xs'
-                          : 'bg-purple-500/40 border-purple-400/70 text-white'
-                      }`}>
-                        {isNaN(currentOutput) ? '!' : currentOutput}
-                      </div>
+                    <div className={`w-11 h-11 rounded-full bg-purple-500/30 border-2 border-purple-400/60 flex items-center justify-center text-white font-bold text-sm ${outputDisplay === 'animated' ? 'animate-bounce' : ''}`}>
+                      {currentOutput}
                     </div>
                   )}
                 </div>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* How to Use - appears only when no pairs processed yet */}
-          {processedPairs.length === 0 && (
-            <div className="mb-6 p-5 bg-gradient-to-br from-amber-500/10 to-orange-500/10 backdrop-blur-sm rounded-xl border border-amber-400/30 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
-              <div className="relative z-10 flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/40">
-                    <svg className="w-5 h-5 text-amber-300" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
-                    </svg>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-amber-200 font-bold mb-2">How it works</h4>
-                  <ol className="text-sm text-amber-100/90 space-y-1.5 list-decimal list-inside">
-                    <li>Click an input number below to feed it into the machine</li>
-                    <li>Watch the machine process it and produce an output</li>
-                    <li>Study the input → output patterns to discover the hidden rule!</li>
-                  </ol>
-                </div>
-              </div>
+      {/* Prediction Panel (predict phase) */}
+      {phase === 'predict' && guessResult !== 'correct' && (
+        <Card className="backdrop-blur-xl bg-amber-500/10 border-amber-400/30">
+          <CardContent className="py-5">
+            <h4 className="text-amber-200 font-semibold mb-3">Predict the Output</h4>
+            <p className="text-sm text-amber-100/80 mb-4">
+              Choose an input below, but first type your prediction for what the output will be!
+            </p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-amber-300 text-sm">My prediction:</span>
+              <input
+                type="text"
+                value={prediction}
+                onChange={(e) => { setPrediction(e.target.value); setPredictionResult(null); }}
+                placeholder="?"
+                className="w-24 px-3 py-2 bg-slate-800/50 text-white rounded-lg border border-amber-400/40 focus:border-amber-400 focus:outline-none text-center font-mono"
+              />
+              {predictionResult === 'correct' && (
+                <Badge className="bg-green-500/20 text-green-300 border-green-400/40">Correct!</Badge>
+              )}
+              {predictionResult === 'incorrect' && (
+                <Badge className="bg-red-500/20 text-red-300 border-red-400/40">Not quite</Badge>
+              )}
+              {predictionsTotal > 0 && (
+                <span className="text-xs text-amber-300/70 ml-auto">{predictionsCorrect}/{predictionsTotal} correct</span>
+              )}
             </div>
-          )}
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Input Queue */}
-          <div className="mb-6 p-6 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-600/50 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
-            <div className="relative z-10">
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <h4 className="text-sm font-mono uppercase tracking-wider text-blue-400">Available Inputs</h4>
-                  {availableInputs.length > 0 && (
-                    <span className="px-2 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-xs text-blue-300 font-mono">
-                      {availableInputs.length} remaining
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {availableInputs.length > 0 ? (
-                    availableInputs.map((value, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => processValue(value)}
-                        disabled={isProcessing}
-                        className="px-6 py-3 bg-blue-500/20 hover:bg-blue-500/40 border-2 border-blue-400/50 hover:border-blue-400/80 text-white rounded-xl font-bold transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {value}
-                      </button>
-                    ))
-                  ) : (
-                    <p className="text-slate-400 text-sm">No inputs available. Add a custom value!</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Calculator Input for Custom Values */}
-              <div className="max-w-sm mx-auto">
-                <CalculatorInput
-                  label="Add Custom Value"
-                  value={customInput}
-                  onChange={setCustomInput}
-                  onSubmit={addCustomInput}
-                  placeholder="0"
-                  showSubmitButton={true}
-                  allowNegative={true}
-                  allowDecimal={true}
-                  maxLength={10}
-                  disabled={isProcessing}
-                />
-              </div>
+      {/* Input Queue */}
+      {(phase === 'observe' || phase === 'predict') && guessResult !== 'correct' && (
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+          <CardContent className="py-5">
+            <div className="flex items-center gap-3 mb-4">
+              <h4 className="text-sm font-mono uppercase tracking-wider text-blue-400">Available Inputs</h4>
+              {availableInputs.length > 0 && (
+                <Badge variant="outline" className="border-blue-400/30 text-blue-300 text-xs">
+                  {availableInputs.length} remaining
+                </Badge>
+              )}
             </div>
-          </div>
-
-          {/* Processed Pairs */}
-          {processedPairs.length > 0 && (
-            <div className="mb-6 p-6 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-600/50 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-mono uppercase tracking-wider text-purple-400">Input → Output Pairs</h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-purple-300/70">{processedPairs.length} tested</span>
-                    {!showRule && processedPairs.length >= 2 && (
-                      <span className="px-2 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-xs text-amber-300 font-mono animate-pulse">
-                        Ready to guess!
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {processedPairs.map((pair, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-4 rounded-lg border text-center transition-all ${
-                        isNaN(pair.output)
-                          ? 'bg-red-900/20 border-red-400/30'
-                          : 'bg-slate-900/40 border-slate-600/30'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="text-blue-300 font-bold text-lg">{pair.input}</span>
-                        <span className="text-slate-500">→</span>
-                        <span className={`font-bold text-lg ${isNaN(pair.output) ? 'text-red-300' : 'text-purple-300'}`}>
-                          {isNaN(pair.output) ? 'Error' : pair.output}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Guess the Rule */}
-          {!showRule && processedPairs.length >= 2 && guessResult !== 'correct' && (
-            <div className="mb-6 p-6 bg-amber-500/20 backdrop-blur-sm border-2 border-amber-400/60 rounded-2xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
-              <div className="relative z-10">
-                <h4 className="text-amber-200 font-bold mb-4 text-center text-lg">Can you guess the rule?</h4>
-                <div className="flex items-center gap-4 justify-center">
-                  <span className="text-amber-300">f(x) =</span>
-                  <input
-                    type="text"
-                    value={guessedRule}
-                    onChange={(e) => setGuessedRule(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && checkGuess()}
-                    placeholder="Enter your guess"
-                    className="flex-1 max-w-xs px-4 py-2 bg-slate-800/50 text-white rounded-lg border border-amber-400/40 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 focus:outline-none"
-                  />
-                  <button
-                    onClick={checkGuess}
-                    className="px-6 py-2 bg-amber-500/40 hover:bg-amber-500/60 border border-amber-400/50 text-white rounded-lg font-semibold transition-all hover:shadow-[0_0_15px_rgba(251,191,36,0.4)] hover:scale-105"
+            <div className="flex flex-wrap gap-3 mb-4">
+              {availableInputs.length > 0 ? (
+                availableInputs.map((value, idx) => (
+                  <Button
+                    key={idx}
+                    variant="ghost"
+                    disabled={isProcessing || (phase === 'predict' && !prediction.trim())}
+                    onClick={() => processValue(value)}
+                    className="bg-blue-500/15 border border-blue-400/40 hover:bg-blue-500/30 text-white font-bold"
                   >
-                    Check
-                  </button>
-                </div>
-                {guessResult === 'incorrect' && (
-                  <div className="mt-4 p-3 bg-red-500/20 border border-red-400/60 rounded-lg text-center">
-                    <span className="text-red-200 text-sm font-medium">Not quite! Try processing more values to find the pattern.</span>
-                  </div>
+                    {value}
+                  </Button>
+                ))
+              ) : (
+                <p className="text-slate-400 text-sm">All inputs used. Add a custom value or advance to the next phase.</p>
+              )}
+            </div>
+            <div className="max-w-xs">
+              <CalculatorInput
+                label="Custom Value"
+                value={customInput}
+                onChange={setCustomInput}
+                onSubmit={addCustomInput}
+                placeholder="0"
+                showSubmitButton={true}
+                allowNegative={true}
+                allowDecimal={true}
+                maxLength={10}
+                disabled={isProcessing}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Processed Pairs */}
+      {processedPairs.length > 0 && (
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+          <CardContent className="py-5">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-sm font-mono uppercase tracking-wider text-purple-400">Input → Output Pairs</h4>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-purple-300/70">{processedPairs.length} tested</span>
+                {!showRule && processedPairs.length >= 2 && guessResult !== 'correct' && (
+                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-400/40 animate-pulse text-xs">
+                    Ready to guess!
+                  </Badge>
                 )}
               </div>
             </div>
-          )}
-
-          {/* Controls */}
-          {guessResult !== 'correct' && (
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={reset}
-                className="px-6 py-3 bg-red-500/30 hover:bg-red-500/50 border border-red-400/50 text-white rounded-lg font-semibold transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:scale-105"
-              >
-                Reset Machine
-              </button>
-              {!showRule && (
-                <button
-                  onClick={() => setShowGuessInput(!showGuessInput)}
-                  className="px-6 py-3 bg-blue-500/30 hover:bg-blue-500/50 border border-blue-400/50 text-white rounded-lg font-semibold transition-all hover:shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:scale-105"
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {processedPairs.map((pair, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-lg bg-slate-800/40 border border-slate-600/30 text-center"
                 >
-                  {showGuessInput ? 'Hide' : 'Show'} Guess Panel
-                </button>
-              )}
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-blue-300 font-bold">{pair.input}</span>
+                    <span className="text-slate-500">→</span>
+                    <span className="text-purple-300 font-bold">{pair.output}</span>
+                  </div>
+                </div>
+              ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Discover Phase: Guess the Rule */}
+      {(phase === 'discover' || (processedPairs.length >= 2 && phase !== 'create')) && !showRule && guessResult !== 'correct' && (
+        <Card className="backdrop-blur-xl bg-amber-500/10 border-amber-400/30">
+          <CardContent className="py-5">
+            <h4 className="text-amber-200 font-semibold mb-3 text-center">Can you guess the rule?</h4>
+            <div className="flex items-center gap-3 justify-center flex-wrap">
+              <span className="text-amber-300 font-mono">f(x) =</span>
+              <input
+                type="text"
+                value={guessedRule}
+                onChange={(e) => { setGuessedRule(e.target.value); setGuessResult(null); }}
+                onKeyDown={(e) => e.key === 'Enter' && checkGuess()}
+                placeholder="e.g., x + 3"
+                className="flex-1 max-w-xs px-4 py-2 bg-slate-800/50 text-white rounded-lg border border-amber-400/40 focus:border-amber-400 focus:outline-none font-mono"
+              />
+              <Button
+                variant="ghost"
+                onClick={checkGuess}
+                className="bg-amber-500/20 border border-amber-400/40 hover:bg-amber-500/30 text-amber-200"
+              >
+                Check
+              </Button>
+            </div>
+            {guessResult === 'incorrect' && (
+              <>
+                <div className="mt-3 p-3 bg-red-500/15 border border-red-400/30 rounded-lg text-center">
+                  <span className="text-red-200 text-sm">Not quite! Study the pairs more carefully. {guessAttempts >= 3 ? 'Try looking at the difference between inputs and outputs.' : ''}</span>
+                </div>
+                <div className="mt-2 text-center text-xs text-slate-500">{guessAttempts} attempt{guessAttempts !== 1 ? 's' : ''} so far</div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Create Phase */}
+      {phase === 'create' && (
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+          <CardContent className="py-5">
+            <h4 className="text-slate-100 font-semibold mb-3">Create Your Own Function Machine</h4>
+            <p className="text-sm text-slate-400 mb-4">
+              Write a rule and test it with different inputs. See what patterns emerge!
+            </p>
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <span className="text-blue-300 font-mono">f(x) =</span>
+              <input
+                type="text"
+                value={createdRule}
+                onChange={(e) => setCreatedRule(e.target.value)}
+                placeholder="e.g., 2*x + 1"
+                className="flex-1 max-w-xs px-4 py-2 bg-slate-800/50 text-white rounded-lg border border-blue-400/40 focus:border-blue-400 focus:outline-none font-mono"
+              />
+            </div>
+            {createdRule.trim() && (
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
+                <span className="text-sm text-slate-400">Test input:</span>
+                <input
+                  type="text"
+                  value={createTestInput}
+                  onChange={(e) => setCreateTestInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && testCreatedRule()}
+                  placeholder="x"
+                  className="w-20 px-3 py-2 bg-slate-800/50 text-white rounded-lg border border-slate-600/40 focus:border-blue-400 focus:outline-none text-center font-mono"
+                />
+                <Button
+                  variant="ghost"
+                  onClick={testCreatedRule}
+                  className="bg-white/5 border border-white/20 hover:bg-white/10"
+                >
+                  Run
+                </Button>
+              </div>
+            )}
+            {createPairs.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
+                {createPairs.map((pair, idx) => (
+                  <div key={idx} className="p-2 rounded-lg bg-slate-800/40 border border-slate-600/30 text-center text-sm">
+                    <span className="text-blue-300 font-mono">{pair.input}</span>
+                    <span className="text-slate-500 mx-1">→</span>
+                    <span className="text-purple-300 font-mono">{pair.output}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Chain toggle & controls */}
+      {chainable && (
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h4 className="text-sm text-slate-300">Machine Chaining</h4>
+                <Badge variant="outline" className="border-purple-400/30 text-purple-300 text-xs">
+                  Composition
+                </Badge>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (!showChainView && activeChainMachines.length < 2) {
+                    setActiveChainMachines(prev => [
+                      ...prev,
+                      { id: `machine-${prev.length + 1}`, rule: 'x + 1', label: `Machine ${prev.length + 1}`, showRule: true }
+                    ]);
+                  }
+                  setShowChainView(!showChainView);
+                }}
+                className="bg-white/5 border border-white/20 hover:bg-white/10 text-sm"
+              >
+                {showChainView ? 'Single View' : 'Chain View'}
+              </Button>
+            </div>
+            {showChainView && (
+              <div className="mt-3 text-xs text-slate-400">
+                Output of each machine becomes the input for the next. This is function composition: g(f(x)).
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* How to Use (first time) */}
+      {processedPairs.length === 0 && phase === 'observe' && guessResult !== 'correct' && (
+        <Card className="backdrop-blur-xl bg-amber-500/5 border-amber-400/20">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/30 flex-shrink-0 mt-0.5">
+                <svg className="w-4 h-4 text-amber-300" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                </svg>
+              </div>
+              <div>
+                <h4 className="text-amber-200 font-medium text-sm mb-1">How it works</h4>
+                <ol className="text-xs text-amber-100/80 space-y-1 list-decimal list-inside">
+                  <li>Click an input number to feed it into the machine</li>
+                  <li>Watch the machine process it and produce an output</li>
+                  <li>Study the input → output patterns to discover the hidden rule</li>
+                  <li>Use the phase tabs above to guide your exploration</li>
+                </ol>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Controls Bar */}
+      {guessResult !== 'correct' && (
+        <div className="flex gap-3 justify-center flex-wrap">
+          <Button
+            variant="ghost"
+            onClick={reset}
+            className="bg-red-500/15 border border-red-400/30 hover:bg-red-500/25 text-red-200"
+          >
+            Reset
+          </Button>
+          {PHASES.indexOf(phase) < PHASES.length - 1 && (
+            <Button
+              variant="ghost"
+              onClick={advancePhase}
+              className="bg-blue-500/15 border border-blue-400/30 hover:bg-blue-500/25 text-blue-200"
+            >
+              Next Phase: {PHASE_CONFIG[PHASES[PHASES.indexOf(phase) + 1]].label}
+            </Button>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

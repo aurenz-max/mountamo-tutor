@@ -13,7 +13,7 @@ export type MathVisualType =
   | 'number-line'
   | 'fraction-circles'
   | 'base-ten-blocks'
-  | 'geometric-shape';
+;
 
 export interface MathVisualData {
   title: string;
@@ -112,23 +112,6 @@ export const generateMathVisual = async (
     case 'base-ten-blocks':
       dataSchema.properties = {
         numberValue: { type: Type.NUMBER, description: "The number to represent with blocks" }
-      };
-      break;
-
-    case 'geometric-shape':
-      dataSchema.properties = {
-        shapeName: { type: Type.STRING, description: "Name of the geometric shape" },
-        attributes: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              label: { type: Type.STRING, description: "Attribute name (e.g., 'Sides', 'Angles')" },
-              value: { type: Type.STRING, description: "Attribute value" }
-            },
-            required: ["label", "value"]
-          }
-        }
       };
       break;
 

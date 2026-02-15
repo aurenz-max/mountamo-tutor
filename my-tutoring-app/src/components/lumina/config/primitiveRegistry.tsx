@@ -14,7 +14,6 @@ import NumberLine from '../primitives/visual-primitives/math/NumberLine';
 import BaseTenBlocks from '../primitives/visual-primitives/math/BaseTenBlocks';
 import FractionCircles from '../primitives/visual-primitives/math/FractionCircles';
 import FractionBar from '../primitives/visual-primitives/math/FractionBar';
-import GeometricShape from '../primitives/visual-primitives/math/GeometricShape';
 import PlaceValueChart from '../primitives/visual-primitives/math/PlaceValueChart';
 import AreaModel from '../primitives/visual-primitives/math/AreaModel';
 import ArrayGrid from '../primitives/visual-primitives/math/ArrayGrid';
@@ -34,6 +33,12 @@ import Histogram from '../primitives/visual-primitives/math/Histogram';
 import TwoWayTable from '../primitives/visual-primitives/math/TwoWayTable';
 import TenFrame from '../primitives/visual-primitives/math/TenFrame';
 import CountingBoard from '../primitives/visual-primitives/math/CountingBoard';
+import PatternBuilder from '../primitives/visual-primitives/math/PatternBuilder';
+import SkipCountingRunner from '../primitives/visual-primitives/math/SkipCountingRunner';
+import RegroupingWorkbench from '../primitives/visual-primitives/math/RegroupingWorkbench';
+import MultiplicationExplorer from '../primitives/visual-primitives/math/MultiplicationExplorer';
+import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTools';
+import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -78,6 +83,7 @@ import DumpTruckLoader from '../primitives/visual-primitives/engineering/DumpTru
 import ConstructionSequencePlanner from '../primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 import BlueprintCanvas from '../primitives/visual-primitives/engineering/BlueprintCanvas';
 import MachineProfile from '../primitives/visual-primitives/engineering/MachineProfile';
+import PaperAirplaneDesigner from '../primitives/visual-primitives/engineering/PaperAirplaneDesigner';
 import FlightForcesExplorer from '../primitives/visual-primitives/engineering/FlightForcesExplorer';
 import AirfoilLab from '../primitives/visual-primitives/engineering/AirfoilLab';
 import VehicleComparisonLab from '../primitives/visual-primitives/engineering/VehicleComparisonLab';
@@ -282,6 +288,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'base-ten-blocks': {
@@ -291,6 +298,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'fraction-circles': {
@@ -311,15 +319,6 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
     supportsEvaluation: true,
-  },
-
-  'geometric-shape': {
-    component: GeometricShape,
-    sectionTitle: 'Geometric Shape',
-    showDivider: true,
-    dividerStyle: 'left',
-    allowMultiple: true,
-    containerClassName: 'max-w-5xl mx-auto mb-20',
   },
 
   'place-value-chart': {
@@ -504,6 +503,66 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'pattern-builder': {
+    component: PatternBuilder,
+    sectionTitle: 'Pattern Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'skip-counting-runner': {
+    component: SkipCountingRunner,
+    sectionTitle: 'Skip Counting Runner',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'regrouping-workbench': {
+    component: RegroupingWorkbench,
+    sectionTitle: 'Regrouping Workbench',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'multiplication-explorer': {
+    component: MultiplicationExplorer,
+    sectionTitle: 'Multiplication Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'measurement-tools': {
+    component: MeasurementTools,
+    sectionTitle: 'Measurement Tools',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'shape-builder': {
+    component: ShapeBuilder,
+    sectionTitle: 'Shape Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 
@@ -910,6 +969,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: false,
+  },
+
+  'paper-airplane-designer': {
+    component: PaperAirplaneDesigner,
+    sectionTitle: 'Paper Airplane Designer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'flight-forces-explorer': {

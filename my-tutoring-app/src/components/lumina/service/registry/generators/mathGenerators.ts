@@ -29,13 +29,18 @@ import { generateHistogram } from '../../math/gemini-histogram';
 import { generateTwoWayTable } from '../../math/gemini-two-way-table';
 import { generateTenFrame } from '../../math/gemini-ten-frame';
 import { generateCountingBoard } from '../../math/gemini-counting-board';
+import { generatePatternBuilder } from '../../math/gemini-pattern-builder';
+import { generateSkipCountingRunner } from '../../math/gemini-skip-counting-runner';
+import { generateRegroupingWorkbench } from '../../math/gemini-regrouping-workbench';
+import { generateMultiplicationExplorer } from '../../math/gemini-multiplication-explorer';
+import { generateMeasurementTools } from '../../math/gemini-measurement-tools';
+import { generateShapeBuilder } from '../../math/gemini-shape-builder';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
 import { generateNumberLine } from '../../math/gemini-number-line';
 import { generateBaseTenBlocks } from '../../math/gemini-base-ten-blocks';
 import { generateFractionCircles } from '../../math/gemini-fraction-circles';
-import { generateGeometricShape } from '../../math/gemini-geometric-shape';
 import { generatePercentBar } from '../../math/gemini-percent-bar';
 
 // ============================================================================
@@ -179,6 +184,48 @@ registerGenerator('counting-board', async (item, topic, gradeContext) => ({
   data: await generateCountingBoard(topic, gradeContext, item.config),
 }));
 
+// Pattern Builder (K-3 algebraic thinking)
+registerGenerator('pattern-builder', async (item, topic, gradeContext) => ({
+  type: 'pattern-builder',
+  instanceId: item.instanceId,
+  data: await generatePatternBuilder(topic, gradeContext, item.config),
+}));
+
+// Skip Counting Runner (1-3 multiplication foundations)
+registerGenerator('skip-counting-runner', async (item, topic, gradeContext) => ({
+  type: 'skip-counting-runner',
+  instanceId: item.instanceId,
+  data: await generateSkipCountingRunner(topic, gradeContext, item.config),
+}));
+
+// Regrouping Workbench (1-4 addition/subtraction with carry/borrow)
+registerGenerator('regrouping-workbench', async (item, topic, gradeContext) => ({
+  type: 'regrouping-workbench',
+  instanceId: item.instanceId,
+  data: await generateRegroupingWorkbench(topic, gradeContext, item.config),
+}));
+
+// Multiplication Explorer (2-4 multi-representation multiplication)
+registerGenerator('multiplication-explorer', async (item, topic, gradeContext) => ({
+  type: 'multiplication-explorer',
+  instanceId: item.instanceId,
+  data: await generateMultiplicationExplorer(topic, gradeContext, item.config),
+}));
+
+// Measurement Tools (1-5 measurement with real-world tools)
+registerGenerator('measurement-tools', async (item, topic, gradeContext) => ({
+  type: 'measurement-tools',
+  instanceId: item.instanceId,
+  data: await generateMeasurementTools(topic, gradeContext, item.config),
+}));
+
+// Shape Builder (K-5 geometric construction & properties)
+registerGenerator('shape-builder', async (item, topic, gradeContext) => ({
+  type: 'shape-builder',
+  instanceId: item.instanceId,
+  data: await generateShapeBuilder(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
 // Legacy Math Primitives (now have dedicated service files)
 // ============================================================================
@@ -219,15 +266,6 @@ registerGenerator('fraction-circles', async (item, topic, gradeContext) => ({
   }),
 }));
 
-// Geometric Shape (shape properties)
-registerGenerator('geometric-shape', async (item, topic, gradeContext) => ({
-  type: 'geometric-shape',
-  instanceId: item.instanceId,
-  data: await generateGeometricShape(topic, gradeContext, {
-    intent: item.intent || item.title
-  }),
-}));
-
 // Percent Bar (percentage visualization)
 registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
   type: 'percent-bar',
@@ -236,6 +274,6 @@ registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
 }));
 
 // ============================================================================
-// Migration status: 23/23 math primitives registered
+// Migration status: 24/24 math primitives registered
 // All math generators now use dedicated service files in math/ folder
 // ============================================================================

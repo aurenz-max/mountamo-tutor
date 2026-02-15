@@ -1,21 +1,6 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { ai } from "../geminiClient";
-
-/**
- * Function Machine Data Interface
- *
- * This matches the FunctionMachineData interface in the component
- */
-export interface FunctionMachineData {
-  title: string;
-  description: string;
-  rule: string;
-  showRule?: boolean;
-  inputQueue?: number[];
-  outputDisplay?: 'immediate' | 'animated' | 'hidden';
-  chainable?: boolean;
-  ruleComplexity?: 'oneStep' | 'twoStep' | 'expression';
-}
+import { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from '../../primitives/visual-primitives/math/FunctionMachine';
 
 /**
  * Schema definition for Function Machine Data
@@ -60,6 +45,24 @@ const functionMachineSchema: Schema = {
     ruleComplexity: {
       type: Type.STRING,
       description: "Complexity level: 'oneStep' (x+3), 'twoStep' (2x+1), 'expression' (x^2-3). Default: 'oneStep'"
+    },
+    gradeBand: {
+      type: Type.STRING,
+      description: "Grade band: '3-4' for one-step rules, '5' for two-step rules, 'advanced' for expressions. Default: '3-4'"
+    },
+    chainedMachines: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          rule: { type: Type.STRING },
+          label: { type: Type.STRING },
+          showRule: { type: Type.BOOLEAN }
+        },
+        required: ['id', 'rule']
+      },
+      description: "Array of chained machines for function composition. Each machine has its own rule. Output of one becomes input of next."
     }
   },
   required: ["title", "description", "rule"]
@@ -89,6 +92,8 @@ export const generateFunctionMachine = async (
     outputDisplay?: 'immediate' | 'animated' | 'hidden';
     chainable?: boolean;
     ruleComplexity?: 'oneStep' | 'twoStep' | 'expression';
+    gradeBand?: '3-4' | '5' | 'advanced';
+    chainedMachines?: MachineConfig[];
   }
 ): Promise<FunctionMachineData> => {
   const prompt = `
@@ -159,6 +164,8 @@ ${config.inputQueue !== undefined ? `- Input queue: ${JSON.stringify(config.inpu
 ${config.outputDisplay !== undefined ? `- Output display: ${config.outputDisplay}` : ''}
 ${config.chainable !== undefined ? `- Chainable: ${config.chainable}` : ''}
 ${config.ruleComplexity !== undefined ? `- Rule complexity: ${config.ruleComplexity}` : ''}
+${config.gradeBand !== undefined ? `- Grade band: ${config.gradeBand}` : ''}
+${config.chainedMachines !== undefined ? `- Chained machines: ${JSON.stringify(config.chainedMachines)}` : ''}
 ` : ''}
 
 REQUIREMENTS:
@@ -170,6 +177,8 @@ REQUIREMENTS:
 6. Set outputDisplay to 'animated' for engaging visualization
 7. Only enable chainable mode if topic involves function composition
 8. Match ruleComplexity to the actual rule complexity
+9. Set gradeBand based on grade level: '3-4' for elementary, '5' for grade 5, 'advanced' for middle/high school
+10. Only include chainedMachines if the topic involves function composition
 
 IMPORTANT:
 - For pattern recognition: Hide the rule and use inputs that show clear progression
@@ -204,12 +213,15 @@ Return the complete function machine configuration.
     if (config.outputDisplay !== undefined) data.outputDisplay = config.outputDisplay;
     if (config.chainable !== undefined) data.chainable = config.chainable;
     if (config.ruleComplexity !== undefined) data.ruleComplexity = config.ruleComplexity;
+    if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
+    if (config.chainedMachines !== undefined) data.chainedMachines = config.chainedMachines;
   }
 
   // Set defaults
   if (data.showRule === undefined) data.showRule = false; // Discovery mode by default
   if (data.outputDisplay === undefined) data.outputDisplay = 'animated';
   if (data.chainable === undefined) data.chainable = false;
+  if (data.gradeBand === undefined) data.gradeBand = '3-4';
   if (data.inputQueue === undefined || data.inputQueue.length === 0) {
     data.inputQueue = [1, 2, 3, 4, 5]; // Default sensible inputs
   }

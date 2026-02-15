@@ -227,4 +227,24 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       ],
     },
   },
+  {
+    id: 'paper-airplane-designer',
+    description: 'Interactive paper airplane design lab where students choose templates (dart, glider, stunt, wide body), customize wing geometry and fold parameters, then launch in simulated flight tests. Performance metrics (distance, hang time, stability, accuracy) drive iterative improvement. Tracks design iterations and variable isolation. Perfect for teaching the engineering design process and scientific method. ESSENTIAL for K-5 engineering and design thinking.',
+    constraints: 'Requires understanding of the 4-phase workflow: build → launch → analyze → iterate. Flight simulation is approximate — focus is on the design process, not physics accuracy.',
+    tutoring: {
+      taskDescription: 'Student is designing and testing paper airplanes using the {{template}} template (version {{designVersion}}). Current design: nose angle {{designParameters.noseAngle.value}}°, wing span {{designParameters.wingSpan.value}}cm, wing angle {{designParameters.wingAngle.value}}°. They have completed {{flightLog.length}} flights so far.',
+      contextKeys: ['template', 'designParameters', 'launchSettings', 'flightLog', 'designVersion', 'currentResults', 'challenges', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"What do you think will happen if you make the wings a bit wider? Try it and see!"',
+        level2: '"Last time you changed the nose angle and the wing span together. Pick just ONE to change — that way you\'ll know exactly what made the difference."',
+        level3: '"Let\'s try this step by step: 1) Look at your flight log — which design flew farthest? 2) What was different about that design? 3) Now change just that one thing and test again."',
+      },
+      commonStruggles: [
+        { pattern: 'Student changes multiple variables between tests', response: 'Point out which variables changed and suggest isolating one. Ask: Which change do you think mattered most?' },
+        { pattern: 'Student keeps using same template without modifying parameters', response: 'Encourage experimentation: What happens if you move just the wing span slider? Make a prediction first!' },
+        { pattern: 'Student does not review flight log before iterating', response: 'Prompt them to open the flight log: Your best flight was design #X — what was special about it?' },
+        { pattern: 'Student frustrated by decreasing performance', response: 'Normalize setbacks: Engineers learn from every test! Look at what changed — that tells you what NOT to do next time.' },
+      ],
+    },
+  },
 ];

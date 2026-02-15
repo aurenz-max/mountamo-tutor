@@ -1,28 +1,6 @@
-import { Type, Schema, ThinkingLevel } from "@google/genai";
+import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-
-/**
- * Balance Scale Object - represents items on the scale pans
- */
-export interface BalanceScaleObject {
-  value: number;
-  label?: string;
-  isVariable?: boolean; // True for "x", false for constants
-}
-
-/**
- * Balance Scale Data - complete configuration for balance scale visualization
- */
-export interface BalanceScaleData {
-  title: string;
-  description: string;
-  leftSide: BalanceScaleObject[]; // Objects on left pan
-  rightSide: BalanceScaleObject[]; // Objects on right pan
-  variableValue: number; // Hidden value of x (for solution)
-  showTilt?: boolean; // Animate imbalance
-  allowOperations?: ('add' | 'subtract' | 'multiply' | 'divide')[]; // Permitted solving moves
-  stepHistory?: string[]; // Track solution steps
-}
+import { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from '../../primitives/visual-primitives/math/BalanceScale';
 
 /**
  * Schema definition for Balance Scale Object
@@ -45,6 +23,43 @@ const balanceScaleObjectSchema: Schema = {
     }
   },
   required: ["value"]
+};
+
+/**
+ * Schema definition for Balance Scale Challenge
+ */
+const balanceScaleChallengeSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    type: {
+      type: Type.STRING,
+      enum: ["equality", "one_step", "two_step"],
+      description: "Difficulty tier of the challenge"
+    },
+    instruction: {
+      type: Type.STRING,
+      description: "Clear instruction telling the student what to solve"
+    },
+    leftSide: {
+      type: Type.ARRAY,
+      items: balanceScaleObjectSchema,
+      description: "Objects on the left pan for this challenge"
+    },
+    rightSide: {
+      type: Type.ARRAY,
+      items: balanceScaleObjectSchema,
+      description: "Objects on the right pan for this challenge"
+    },
+    variableValue: {
+      type: Type.NUMBER,
+      description: "The solution value for x in this challenge"
+    },
+    hint: {
+      type: Type.STRING,
+      description: "A helpful hint shown after multiple failed attempts"
+    }
+  },
+  required: ["type", "instruction", "leftSide", "rightSide", "variableValue", "hint"]
 };
 
 /**
@@ -96,6 +111,16 @@ const balanceScaleSchema: Schema = {
         type: Type.STRING
       },
       description: "Array of solution step descriptions to guide students through the solving process. Each step explains one operation."
+    },
+    gradeBand: {
+      type: Type.STRING,
+      enum: ["K-2", "3-4", "5"],
+      description: "Target grade band for difficulty calibration. Default: '3-4'"
+    },
+    challenges: {
+      type: Type.ARRAY,
+      items: balanceScaleChallengeSchema,
+      description: "Array of sequential equation challenges for the student to complete"
     }
   },
   required: ["title", "description", "leftSide", "rightSide", "variableValue"]
@@ -110,6 +135,7 @@ const balanceScaleSchema: Schema = {
  * - Step-by-step solution guidance
  * - Configuration for allowed operations
  * - Educational context and descriptions
+ * - Optional sequential challenges with progressive difficulty
  *
  * @param topic - The math topic or concept to teach
  * @param gradeLevel - Grade level for age-appropriate content
@@ -170,6 +196,7 @@ Grades 1-2: Equality Concepts & Missing Addends
 - rightSide: [{value: 7}]
 - variableValue: 4
 - allowOperations: ['add', 'subtract']
+- gradeBand: 'K-2'
 - Focus on "what number makes this true?"
 
 Grades 3-5: One-Step Equations
@@ -182,37 +209,21 @@ Grades 3-5: One-Step Equations
   - rightSide: [{value: 12}]
   - variableValue: 7
 - allowOperations: ['add', 'subtract']
+- gradeBand: '3-4'
 - Include step history: ["Start with x + 5 = 12", "Subtract 5 from both sides", "x = 7"]
 
-Grades 6-7: Two-Step Equations & Coefficients
+Grades 5+: Two-Step Equations & Coefficients
 - Two-step equations: 2x + 3 = 11, 3x - 4 = 14
 - Introduce coefficients (multiple x blocks)
-- Use integers (including negatives for grade 7)
+- Use integers (including negatives for advanced)
 - Two operations needed
 - Example: 2x + 3 = 11
   - leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}, {value: 3}]
   - rightSide: [{value: 11}]
   - variableValue: 4
 - allowOperations: ['add', 'subtract', 'multiply', 'divide']
+- gradeBand: '5'
 - Detailed step history showing each operation
-
-Grades 7-8: Variables on Both Sides
-- Equations like: 2x + 3 = x + 7
-- Variables appear on both pans
-- May need to combine like terms
-- Example: 2x + 3 = x + 7
-  - leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}, {value: 3}]
-  - rightSide: [{value: 1, label: 'x', isVariable: true}, {value: 7}]
-  - variableValue: 4
-- allowOperations: ['add', 'subtract', 'multiply', 'divide']
-- Step history: ["Start with 2x + 3 = x + 7", "Subtract x from both sides: x + 3 = 7", "Subtract 3 from both sides: x = 4"]
-
-High School: Multi-Step & Distributive Property
-- Complex equations: 3(x + 2) = 2x + 11
-- May involve fractions or decimals
-- Requires distribution and combining terms
-- Multiple variables or parameters possible
-- All operations allowed
 
 EQUATION STRUCTURE:
 
@@ -234,6 +245,7 @@ IMPORTANT RULES:
 5. Always include step history for educational value
 6. Title should describe the equation being solved
 7. Description should explain the strategy and learning goal
+8. Set gradeBand based on the grade level context
 
 STEP HISTORY GUIDELINES:
 - Start with the original equation
@@ -260,7 +272,9 @@ Elementary (x + 3 = 7):
     "Start with x + 3 = 7",
     "Subtract 3 from both sides to isolate x",
     "x = 4"
-  ]
+  ],
+  gradeBand: "3-4",
+  challenges: []
 }
 
 Middle School (2x + 5 = 13):
@@ -280,32 +294,9 @@ Middle School (2x + 5 = 13):
     "Start with 2x + 5 = 13",
     "Subtract 5 from both sides: 2x = 8",
     "Divide both sides by 2: x = 4"
-  ]
-}
-
-Advanced (Variables on Both Sides: 3x + 2 = x + 10):
-{
-  title: "Variables on Both Sides: 3x + 2 = x + 10",
-  description: "Move all x terms to one side and all constants to the other to solve for x.",
-  leftSide: [
-    {value: 1, label: "x", isVariable: true},
-    {value: 1, label: "x", isVariable: true},
-    {value: 1, label: "x", isVariable: true},
-    {value: 2, label: "2"}
   ],
-  rightSide: [
-    {value: 1, label: "x", isVariable: true},
-    {value: 10, label: "10"}
-  ],
-  variableValue: 4,
-  showTilt: true,
-  allowOperations: ["add", "subtract", "divide"],
-  stepHistory: [
-    "Start with 3x + 2 = x + 10",
-    "Subtract x from both sides: 2x + 2 = 10",
-    "Subtract 2 from both sides: 2x = 8",
-    "Divide both sides by 2: x = 4"
-  ]
+  gradeBand: "5",
+  challenges: []
 }
 
 ${config ? `
@@ -327,6 +318,7 @@ REQUIREMENTS:
 6. Set appropriate allowOperations based on complexity
 7. Use showTilt: true for engaging visual feedback
 8. Keep the number of objects manageable (3-6 per side)
+9. Set gradeBand appropriately based on grade level
 
 VALIDATION:
 - Verify that substituting variableValue for x makes the equation true
@@ -414,6 +406,8 @@ Return the complete balance scale configuration.
   if (!data.stepHistory || data.stepHistory.length === 0) {
     data.stepHistory = ['Solve the equation by performing the same operation on both sides'];
   }
+  data.gradeBand = data.gradeBand || '3-4';
+  data.challenges = data.challenges || [];
 
   return data;
 };

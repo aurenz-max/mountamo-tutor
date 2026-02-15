@@ -27,6 +27,7 @@ import AirfoilLab from '../primitives/visual-primitives/engineering/AirfoilLab';
 import VehicleComparisonLab from '../primitives/visual-primitives/engineering/VehicleComparisonLab';
 import PropulsionLab from '../primitives/visual-primitives/engineering/PropulsionLab';
 import PropulsionTimeline from '../primitives/visual-primitives/engineering/PropulsionTimeline';
+import PaperAirplaneDesigner from '../primitives/visual-primitives/engineering/PaperAirplaneDesigner';
 
 import {
   EvaluationProvider,
@@ -47,7 +48,8 @@ type PrimitiveType =
   | 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder'
   | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder'
   | 'excavator-arm-simulator' | 'dump-truck-loader' | 'construction-sequence-planner' | 'blueprint-canvas'
-  | 'machine-profile' | 'flight-forces-explorer' | 'airfoil-lab' | 'vehicle-comparison-lab' | 'propulsion-lab' | 'propulsion-timeline';
+  | 'machine-profile' | 'flight-forces-explorer' | 'airfoil-lab' | 'vehicle-comparison-lab' | 'propulsion-lab' | 'propulsion-timeline'
+  | 'paper-airplane-designer';
 
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
@@ -83,6 +85,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'vehicle-comparison-lab', label: 'Vehicle Comparison', icon: '📊', topic: 'Comparing vehicles across speed, weight, and capacity', strand: 'VF' },
   { value: 'propulsion-lab', label: 'Propulsion Lab', icon: '🚀', topic: 'Newton\'s Third Law and how vehicles generate thrust', strand: 'VF' },
   { value: 'propulsion-timeline', label: 'Propulsion Timeline', icon: '⏳', topic: 'History of transportation from walking to spacecraft', strand: 'VF' },
+  { value: 'paper-airplane-designer', label: 'Paper Airplane Designer', icon: '✈️', topic: 'Designing and testing paper airplanes using the engineering design process', strand: 'VF' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -291,6 +294,18 @@ const PrimitiveRenderer: React.FC<{
             subskillId: 'transportation-evolution',
             objectiveId: 'understand-transportation-history',
             onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'paper-airplane-designer':
+      return (
+        <PaperAirplaneDesigner
+          data={{
+            ...(data as Parameters<typeof PaperAirplaneDesigner>[0]['data']),
+            instanceId: `paper-airplane-designer-${Date.now()}`,
+            skillId: 'engineering-design-process',
+            subskillId: 'iterative-design',
+            objectiveId: 'understand-paper-airplane-design',
           }}
         />
       );

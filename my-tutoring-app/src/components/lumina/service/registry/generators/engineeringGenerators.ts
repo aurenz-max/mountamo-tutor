@@ -29,6 +29,7 @@ import { generateAirfoilLab } from '../../engineering/gemini-airfoil-lab';
 import { generateVehicleComparisonLab } from '../../engineering/gemini-vehicle-comparison-lab';
 import { generatePropulsionLab } from '../../engineering/gemini-propulsion-lab';
 import { generatePropulsionTimeline } from '../../engineering/gemini-propulsion-timeline';
+import { generatePaperAirplaneDesigner } from '../../engineering/gemini-paper-airplane-designer';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -167,6 +168,13 @@ registerGenerator('propulsion-timeline', async (item, topic, gradeContext) => ({
   data: await generatePropulsionTimeline(topic, gradeContext, item.config),
 }));
 
+// Paper Airplane Designer (engineering design process: design-build-test-iterate)
+registerGenerator('paper-airplane-designer', async (item, topic, gradeContext) => ({
+  type: 'paper-airplane-designer',
+  instanceId: item.instanceId,
+  data: await generatePaperAirplaneDesigner(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 19/19 engineering primitives registered
+// Migration status: 20/20 engineering primitives registered
 // ============================================================================

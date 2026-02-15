@@ -58,6 +58,7 @@ export type {
   VehicleComparisonLabMetrics,
   PropulsionLabMetrics,
   PropulsionTimelineMetrics,
+  PaperAirplaneDesignerMetrics,
   // Assessment metrics
   MultipleChoiceMetrics,
   FillInBlanksMetrics,
@@ -70,6 +71,7 @@ export type {
   FeatureExhibitMetrics,
   // Math metrics
   BalanceScaleMetrics,
+  BaseTenBlocksMetrics,
   FractionCirclesMetrics,
   FractionBarMetrics,
   AreaModelMetrics,
@@ -92,6 +94,9 @@ export type {
   // Math Phase 2 metrics
   TenFrameMetrics,
   CountingBoardMetrics,
+  MultiplicationExplorerMetrics,
+  MeasurementToolsMetrics,
+  ShapeBuilderMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,

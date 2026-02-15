@@ -21,17 +21,28 @@ import Histogram from '../primitives/visual-primitives/math/Histogram';
 import TwoWayTable from '../primitives/visual-primitives/math/TwoWayTable';
 import TenFrame from '../primitives/visual-primitives/math/TenFrame';
 import CountingBoard from '../primitives/visual-primitives/math/CountingBoard';
+import PatternBuilder from '../primitives/visual-primitives/math/PatternBuilder';
+import SkipCountingRunner from '../primitives/visual-primitives/math/SkipCountingRunner';
+import RegroupingWorkbench from '../primitives/visual-primitives/math/RegroupingWorkbench';
+import MultiplicationExplorer from '../primitives/visual-primitives/math/MultiplicationExplorer';
+import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTools';
+import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
+import NumberLine from '../primitives/visual-primitives/math/NumberLine';
+import BaseTenBlocks from '../primitives/visual-primitives/math/BaseTenBlocks';
+import type { ShapeBuilderData } from '../types';
 import {
   EvaluationProvider,
   useEvaluationContext,
   type PrimitiveEvaluationResult,
 } from '../evaluation';
+import { ExhibitProvider } from '../contexts/ExhibitContext';
+import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -55,6 +66,14 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'two-way-table', label: 'Two-Way Table', icon: '⊞', topic: 'Categorical data and conditional probability' },
   { value: 'ten-frame', label: 'Ten Frame', icon: '🔟', topic: 'Building numbers, subitizing, and making ten' },
   { value: 'counting-board', label: 'Counting Board', icon: '🧸', topic: 'Counting objects, subitizing, and one-to-one correspondence' },
+  { value: 'pattern-builder', label: 'Pattern Builder', icon: '🔁', topic: 'Pattern recognition, extension, and algebraic thinking' },
+  { value: 'skip-counting-runner', label: 'Skip Counting Runner', icon: '🐸', topic: 'Skip counting, multiplication foundations, and number patterns' },
+  { value: 'regrouping-workbench', label: 'Regrouping Workbench', icon: '🧮', topic: 'Addition and subtraction with carrying and borrowing' },
+  { value: 'multiplication-explorer', label: 'Multiplication Explorer', icon: '✖️', topic: 'Multiplication through multiple representations' },
+  { value: 'measurement-tools', label: 'Measurement Tools', icon: '📏', topic: 'Length, weight, capacity, and temperature measurement' },
+  { value: 'shape-builder', label: 'Shape Builder', icon: '📐', topic: 'Identifying quadrilaterals' },
+  { value: 'number-line' as PrimitiveType, label: 'Number Line', icon: '📏', topic: 'Addition and subtraction on a number line' },
+  { value: 'base-ten-blocks', label: 'Base Ten Blocks', icon: '🧱', topic: 'Place value and regrouping' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -193,6 +212,87 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'pattern-builder':
+      return (
+        <PatternBuilder
+          data={{
+            ...(data as Parameters<typeof PatternBuilder>[0]['data']),
+            instanceId: `pattern-builder-${Date.now()}`,
+            skillId: 'math-algebraic-thinking',
+            subskillId: 'pattern-recognition',
+            objectiveId: 'recognize-extend-create-patterns',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'skip-counting-runner':
+      return (
+        <SkipCountingRunner
+          data={{
+            ...(data as Parameters<typeof SkipCountingRunner>[0]['data']),
+            instanceId: `skip-counting-runner-${Date.now()}`,
+            skillId: 'math-multiplication',
+            subskillId: 'skip-counting',
+            objectiveId: 'count-by-multiples',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'regrouping-workbench':
+      return (
+        <RegroupingWorkbench
+          data={{
+            ...(data as Parameters<typeof RegroupingWorkbench>[0]['data']),
+            instanceId: `regrouping-workbench-${Date.now()}`,
+            skillId: 'math-operations',
+            subskillId: 'regrouping',
+            objectiveId: 'add-subtract-with-regrouping',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'multiplication-explorer':
+      return (
+        <MultiplicationExplorer
+          data={{
+            ...(data as Parameters<typeof MultiplicationExplorer>[0]['data']),
+            instanceId: `multiplication-explorer-${Date.now()}`,
+            skillId: 'math-multiplication',
+            subskillId: 'multiplicative-thinking',
+            objectiveId: 'explore-multiplication-representations',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'measurement-tools':
+      return (
+        <MeasurementTools
+          data={{
+            ...(data as Parameters<typeof MeasurementTools>[0]['data']),
+            instanceId: `measurement-tools-${Date.now()}`,
+            skillId: 'math-measurement',
+            subskillId: 'measurement-tools',
+            objectiveId: 'measure-estimate-convert',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'number-line':
+      return (
+        <NumberLine
+          data={{
+            ...(data as Parameters<typeof NumberLine>[0]['data']),
+            instanceId: `number-line-${Date.now()}`,
+            skillId: 'math-number-line',
+            subskillId: 'number-line-operations',
+            objectiveId: 'plot-and-navigate-number-line',
+          }}
+        />
+      );
+    case 'base-ten-blocks':
+      return <BaseTenBlocks data={data as Parameters<typeof BaseTenBlocks>[0]['data']} />;
+    case 'shape-builder':
+      return <ShapeBuilder data={data as ShapeBuilderData} />;
     default:
       return <div className="text-slate-400">Unknown primitive: {componentId}</div>;
   }
@@ -509,7 +609,7 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
   );
 };
 
-// Main export - wraps with EvaluationProvider for tracking
+// Main export - wraps with EvaluationProvider, ExhibitProvider, and LuminaAIProvider
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = (props) => {
   return (
     <EvaluationProvider
@@ -521,7 +621,11 @@ export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = (props)
         console.log('Competency updates received:', updates);
       }}
     >
-      <MathPrimitivesTesterInner {...props} />
+      <ExhibitProvider objectives={[]} manifestItems={[]}>
+        <LuminaAIProvider>
+          <MathPrimitivesTesterInner {...props} />
+        </LuminaAIProvider>
+      </ExhibitProvider>
     </EvaluationProvider>
   );
 };

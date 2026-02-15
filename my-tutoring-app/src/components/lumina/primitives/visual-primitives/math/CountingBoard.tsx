@@ -237,8 +237,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const objectCount = objects.count;
   const emoji = OBJECT_EMOJI[objects.type] || OBJECT_EMOJI.custom;
 
-  const [positions] = useState<Array<{ x: number; y: number }>>(() =>
-    generatePositions(objectCount, objects.arrangement, objects.groupSize)
+  const positions = useMemo(() =>
+    generatePositions(objectCount, objects.arrangement, objects.groupSize),
+    [objectCount, objects.arrangement, objects.groupSize]
   );
 
   const [countedObjects, setCountedObjects] = useState<Set<number>>(new Set());
@@ -284,7 +285,16 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const stableInstanceIdRef = useRef(instanceId || `counting-board-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  const currentChallenge = challenges[currentChallengeIndex] || null;
+  // Defensive: ensure targetAnswer matches objectCount for whole-board challenges.
+  // The AI generator can produce mismatched values (e.g. targetAnswer=12 when count=25).
+  const currentChallenge = useMemo(() => {
+    const raw = challenges[currentChallengeIndex] || null;
+    if (!raw) return null;
+    if (['count_all', 'group_count', 'count_on'].includes(raw.type)) {
+      return { ...raw, targetAnswer: objectCount };
+    }
+    return raw;
+  }, [challenges, currentChallengeIndex, objectCount]);
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -730,26 +740,37 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
             {/* Group circles */}
             {showGroupCircles && objects.arrangement === 'groups' && objects.groupSize && (
               (() => {
-                const numGroups = Math.ceil(objectCount / objects.groupSize);
+                const gs = objects.groupSize;
+                const numGroups = Math.ceil(objectCount / gs);
                 const groupSpacing = Math.min(
                   (WORKSPACE_WIDTH - 2 * OBJECT_PADDING) / Math.max(numGroups, 1),
                   160
                 );
                 const startX = (WORKSPACE_WIDTH - groupSpacing * (numGroups - 1)) / 2;
 
-                return Array.from({ length: numGroups }, (_, g) => (
-                  <ellipse
-                    key={`group-${g}`}
-                    cx={startX + g * groupSpacing}
-                    cy={WORKSPACE_HEIGHT / 2}
-                    rx={OBJECT_SIZE * 1.2}
-                    ry={OBJECT_SIZE * 1.0}
-                    fill="rgba(234,179,8,0.05)"
-                    stroke="rgba(234,179,8,0.2)"
-                    strokeWidth={1.5}
-                    strokeDasharray="6 3"
-                  />
-                ));
+                return Array.from({ length: numGroups }, (_, g) => {
+                  const itemsInGroup = Math.min(gs, objectCount - g * gs);
+                  const rows = Math.ceil(itemsInGroup / 3);
+                  // Match the vertical offset used in generateGroupPositions
+                  const groupCenterY = WORKSPACE_HEIGHT / 2 - 20 + ((rows - 1) * (OBJECT_SIZE * 0.6)) / 2;
+                  const cols = Math.min(3, itemsInGroup);
+                  const rx = Math.max(((cols - 1) * (OBJECT_SIZE * 0.6)) / 2 + OBJECT_SIZE / 2 + 6, OBJECT_SIZE);
+                  const ry = Math.max(((rows - 1) * (OBJECT_SIZE * 0.6)) / 2 + OBJECT_SIZE / 2 + 6, OBJECT_SIZE);
+
+                  return (
+                    <ellipse
+                      key={`group-${g}`}
+                      cx={startX + g * groupSpacing}
+                      cy={groupCenterY}
+                      rx={rx}
+                      ry={ry}
+                      fill="rgba(234,179,8,0.05)"
+                      stroke="rgba(234,179,8,0.2)"
+                      strokeWidth={1.5}
+                      strokeDasharray="6 3"
+                    />
+                  );
+                });
               })()
             )}
 

@@ -608,6 +608,23 @@ export interface BalanceScaleMetrics extends BasePrimitiveMetrics {
   stepsToSolve: number;
   optimalSteps: number;
   efficiency: number;           // optimalSteps / stepsToSolve
+
+  phaseProgression: string[];       // Phases completed: ['explore', 'solve', 'verify']
+  balanceMaintained: boolean;       // Whether student always kept scale balanced
+  attemptsCount: number;
+}
+
+export interface BaseTenBlocksMetrics extends BasePrimitiveMetrics {
+  type: 'base-ten-blocks';
+
+  representationAccuracy: number;    // 0-100, how accurately student built the target
+  regroupingCorrect: boolean;        // Whether student successfully regrouped
+  regroupCount: number;              // Total regroups performed
+  placeValuesUsed: string[];         // Which place value columns were used
+  decimalModeUsed: boolean;          // Whether decimal places were involved
+  challengesCompleted: number;
+  totalChallenges: number;
+  attemptsCount: number;
 }
 
 export interface FractionCirclesMetrics extends BasePrimitiveMetrics {
@@ -634,6 +651,14 @@ export interface NumberLineMetrics extends BasePrimitiveMetrics {
   scaleMin: number;
   scaleMax: number;
   scaleType: 'integer' | 'decimal' | 'fraction';
+
+  // Multi-challenge aggregate metrics
+  challengesCompleted?: number;
+  totalChallenges?: number;
+  averageAccuracy?: number;
+  totalAttempts?: number;
+  interactionMode?: 'plot' | 'jump' | 'compare' | 'order';
+  gradeBand?: 'K-2' | '3-5';
 }
 
 export interface DoubleNumberLineMetrics extends BasePrimitiveMetrics {
@@ -806,6 +831,16 @@ export interface FunctionMachineMetrics extends BasePrimitiveMetrics {
 
   attemptsToDiscover: number;
   hintsUsed: number;
+
+  // New: prediction tracking
+  predictionsCorrect?: number;
+  predictionsTotal?: number;
+
+  // New: phase tracking
+  phase?: 'observe' | 'predict' | 'discover' | 'create';
+
+  // New: chaining
+  chainDepth?: number;
 }
 
 export interface PlaceValueChartMetrics extends BasePrimitiveMetrics {
@@ -2173,6 +2208,159 @@ export interface CountingBoardMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface MeasurementToolsMetrics extends BasePrimitiveMetrics {
+  type: 'measurement-tools';
+
+  // Measurement accuracy
+  measurementsCorrect: number;
+  measurementsTotal: number;
+
+  // Estimation accuracy (average % accuracy, 100 = perfect)
+  estimationAccuracy: number;
+
+  // Tool selection
+  toolSelectionCorrect: number;
+  toolSelectionTotal: number;
+
+  // Unit selection
+  unitSelectionCorrect: number;
+  unitSelectionTotal: number;
+
+  // Conversion
+  conversionCorrect: number;
+  conversionTotal: number;
+
+  // Precision achieved
+  precisionAchieved: 'whole' | 'half' | 'quarter' | 'tenth';
+
+  // Types explored
+  measurementTypesExplored: string[];
+
+  // Attempts
+  attemptsCount: number;
+}
+
+export interface ShapeBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'shape-builder';
+  shapesBuiltCorrectly: number;
+  shapesTotal: number;
+  propertiesIdentified: number;
+  propertiesTotal: number;
+  classificationCorrect: number;
+  classificationTotal: number;
+  compositionsCompleted: number;
+  compositionsTotal: number;
+  symmetryLinesFound: number;
+  symmetryLinesTotal: number;
+  hierarchyUnderstood: boolean;
+  toolsUsed: string[];
+  attemptsCount: number;
+}
+
+export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {
+  type: 'regrouping-workbench';
+
+  // Problem completion
+  problemsCompleted: number;
+  problemsTotal: number;
+
+  // Regrouping accuracy
+  regroupingCorrect: number;       // Each correct carry/borrow step
+  regroupingTotal: number;         // Total expected regroup steps
+
+  // Conceptual understanding
+  algorithmConnectionMade: boolean; // Linked block action to written algorithm step
+  incorrectRegroupAttempts: number; // Count of wrong trades
+
+  // Mode
+  stepByStepUsed: boolean;
+  wordProblemContextEngaged: boolean;
+
+  // Timing
+  averageTimePerProblem: number;    // ms
+
+  // Attempts
+  attemptsCount: number;
+}
+
+export interface MultiplicationExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'multiplication-explorer';
+
+  // Fact accuracy
+  factsCorrect: number;
+  factsTotal: number;
+
+  // Representation engagement
+  representationsUsed: string[];  // Which of the 5 representations were explored
+
+  // Conceptual exploration
+  commutativePropertyExplored: boolean;
+  distributiveStrategyUsed: boolean;
+  factFamilyCompleted: boolean;   // Connected multiplication and division
+
+  // Fluency
+  fluencySpeed: number;           // Average seconds per fact in quiz mode (0 if no fluency challenges)
+
+  // Missing factor
+  missingFactorCorrect: number;
+  missingFactorTotal: number;
+
+  // Attempts
+  attemptsCount: number;
+}
+
+export interface SkipCountingRunnerMetrics extends BasePrimitiveMetrics {
+  type: 'skip-counting-runner';
+
+  // Landing accuracy (jump mode)
+  landingsCorrect: number;
+  landingsTotal: number;
+
+  // Prediction accuracy
+  predictionsCorrect: number;
+  predictionsTotal: number;
+
+  // Exploration breadth
+  skipValuesExplored: number[];   // Which skip values were practiced (e.g., [2, 5, 10])
+
+  // Advanced skills
+  backwardCountingAttempted: boolean;
+  multiplicationConnectionMade: boolean;  // Stated the multiplication fact
+  patternIdentified: boolean;             // Noticed digit pattern
+
+  // Streak
+  longestCorrectStreak: number;
+
+  // Attempts
+  attemptsCount: number;
+}
+
+export interface PatternBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'pattern-builder';
+
+  // Extension performance
+  extensionsCorrect: number;         // Number of extension challenges answered correctly
+  extensionsTotal: number;           // Total extension challenges attempted
+
+  // Core identification
+  coreIdentifiedCorrectly: boolean;  // Did they find the repeating unit
+
+  // Rule articulation
+  ruleArticulated: boolean;          // Could they describe the pattern rule in words
+
+  // Creation
+  patternCreated: boolean;           // Did they build an original valid pattern
+
+  // Translation
+  translationCorrect: boolean;       // Same structure in different representation
+
+  // Exploration breadth
+  patternTypesExplored: number;      // Count: repeating, growing, number
+
+  // Attempts
+  attemptsCount: number;
+}
+
 export interface AirfoilLabMetrics extends BasePrimitiveMetrics {
   type: 'airfoil-lab';
 
@@ -2272,6 +2460,21 @@ export interface PropulsionTimelineMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface PaperAirplaneDesignerMetrics extends BasePrimitiveMetrics {
+  type: 'paper-airplane-designer';
+  designIterations: number;
+  improvementAcrossIterations: boolean;
+  variableIsolation: boolean;
+  challengesCompleted: number;
+  challengesTotal: number;
+  bestDistance: number;
+  bestHangTime: number;
+  bestAccuracy: number;
+  templateVariety: number;
+  flightLogUsed: boolean;
+  attemptsCount: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -2291,6 +2494,7 @@ export type PrimitiveMetrics =
   | DumpTruckLoaderMetrics
   | ConstructionSequencePlannerMetrics
   | BlueprintCanvasMetrics
+  | PaperAirplaneDesignerMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics
@@ -2304,6 +2508,7 @@ export type PrimitiveMetrics =
 
   // Math
   | BalanceScaleMetrics
+  | BaseTenBlocksMetrics
   | FractionCirclesMetrics
   | FractionBarMetrics
   | AreaModelMetrics
@@ -2320,6 +2525,12 @@ export type PrimitiveMetrics =
   // Math Phase 2
   | TenFrameMetrics
   | CountingBoardMetrics
+  | PatternBuilderMetrics
+  | SkipCountingRunnerMetrics
+  | RegroupingWorkbenchMetrics
+  | MultiplicationExplorerMetrics
+  | MeasurementToolsMetrics
+  | ShapeBuilderMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation
