@@ -47,6 +47,10 @@ export interface EquationChallenge {
   timeLimit: number | null;
   hint: string;
   narration: string;
+  /** Per-challenge structured equation (overrides top-level equation when present) */
+  equationData?: EquationData;
+  /** Per-challenge solution (overrides top-level solution when present) */
+  solutionData?: EquationSolution;
 }
 
 export interface EquationBalancerShowOptions {
@@ -384,7 +388,14 @@ const EquationBalancer: React.FC<EquationBalancerProps> = ({ data, className }) 
     maxCoefficient = gradeBand === '6-7' ? 6 : 10,
   } = showOptionsProp;
 
-  const { reactants = [], products = [], arrow = '\u2192' } = equation;
+  // Active equation: use per-challenge equationData when available, otherwise top-level
+  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  const currentChallenge = challenges[currentChallengeIndex] || null;
+
+  const activeEquation = currentChallenge?.equationData ?? equation;
+  const activeSolution = currentChallenge?.solutionData ?? solution;
+
+  const { reactants = [], products = [], arrow = '\u2192' } = activeEquation;
   const totalCompounds = reactants.length + products.length;
 
   // -------------------------------------------------------------------------
@@ -400,8 +411,7 @@ const EquationBalancer: React.FC<EquationBalancerProps> = ({ data, className }) 
   const [history, setHistory] = useState<Array<{ reactantCoeffs: number[]; productCoeffs: number[] }>>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  // Challenge state
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  // Challenge state (currentChallengeIndex declared above, near activeEquation)
   const [challengeResults, setChallengeResults] = useState<Array<{
     challengeId: string;
     correct: boolean;
@@ -430,6 +440,18 @@ const EquationBalancer: React.FC<EquationBalancerProps> = ({ data, className }) 
   const stableInstanceIdRef = useRef(instanceId || `equation-balancer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
+  // Sync coefficients when the active equation changes (per-challenge equations)
+  const prevEquationRef = useRef(activeEquation);
+  useEffect(() => {
+    if (prevEquationRef.current !== activeEquation) {
+      prevEquationRef.current = activeEquation;
+      setReactantCoeffs(reactants.map(r => r.coefficient || 1));
+      setProductCoeffs(products.map(p => p.coefficient || 1));
+      setHistory([]);
+      setHistoryIndex(-1);
+    }
+  }, [activeEquation, reactants, products]);
+
   // -------------------------------------------------------------------------
   // Computed
   // -------------------------------------------------------------------------
@@ -450,7 +472,7 @@ const EquationBalancer: React.FC<EquationBalancerProps> = ({ data, className }) 
     [productAtomCounts]
   );
 
-  const currentChallenge = challenges[currentChallengeIndex] || null;
+  // (currentChallenge declared above, near activeEquation)
   const allChallengesComplete = challenges.length > 0 &&
     challengeResults.filter(r => r.correct).length >= challenges.length;
 

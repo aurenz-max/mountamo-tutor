@@ -46,6 +46,11 @@ export interface ReactionAnimation {
   };
 }
 
+export interface ChallengeOption {
+  id: string;
+  text: string;
+}
+
 export interface ReactionChallenge {
   id: string;
   type: 'predict' | 'observe' | 'explain' | 'classify' | 'balance' | 'identify_signs' | 'conservation';
@@ -53,10 +58,18 @@ export interface ReactionChallenge {
   targetAnswer: string;
   hint: string;
   narration: string;
+  // Multiple choice scaffolding (optional — when present, renders MC buttons instead of textarea)
+  options?: ChallengeOption[];
+  correctOptionId?: string;
+  // True/False scaffolding (optional — when present, renders T/F buttons instead of textarea)
+  isTrueFalse?: boolean;
+  correctBoolean?: boolean;
 }
 
 export interface ReactionNotebook {
   predictPrompt: string;
+  predictionOptions?: ChallengeOption[];
+  correctPredictionId?: string;
   observePrompts: string[];
   explainPrompt: string;
 }
@@ -490,8 +503,11 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
     setFeedback('Great prediction! Now let\'s find out what happens...');
     setFeedbackType('success');
 
+    // Resolve the display text for MC predictions
+    const predictionText = notebook.predictionOptions?.find(o => o.id === prediction)?.text || prediction;
+
     sendText(
-      `[PREDICTION_MADE] Student predicted: "${prediction}". `
+      `[PREDICTION_MADE] Student predicted: "${predictionText}". `
       + `The actual result will show ${reaction.signs.join(', ')}. `
       + `Acknowledge their prediction warmly: "Interesting idea! Let's test it and see what really happens."`,
       { silent: true }
@@ -587,47 +603,42 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
 
     setCurrentAttempts(a => a + 1);
     const answer = challengeAnswer.trim().toLowerCase();
-    const target = currentChallenge.targetAnswer.toLowerCase();
 
     let isCorrect = false;
 
-    switch (currentChallenge.type) {
-      case 'classify': {
-        isCorrect = answer.includes(target) ||
-          (target === 'chemical' && (answer.includes('chemical') || answer.includes('chem'))) ||
-          (target === 'physical' && (answer.includes('physical') || answer.includes('phys')));
+    // ── Structured formats: T/F → MC → built-in buttons → fallback textarea ──
+
+    if (currentChallenge.isTrueFalse && currentChallenge.correctBoolean !== undefined) {
+      // True / False
+      const studentBool = answer === 'true';
+      isCorrect = studentBool === currentChallenge.correctBoolean;
+
+      if (currentChallenge.type === 'conservation' && isCorrect) setConservationUnderstood(true);
+    } else if (currentChallenge.options && currentChallenge.correctOptionId) {
+      // Multiple choice
+      isCorrect = answer === currentChallenge.correctOptionId.toLowerCase();
+
+      // Track type-specific metrics on correct MC
+      if (isCorrect) {
+        if (currentChallenge.type === 'balance') setEquationBalanced(true);
+        if (currentChallenge.type === 'conservation') setConservationUnderstood(true);
+        if (currentChallenge.type === 'classify') {
+          setClassificationTotal(prev => prev + 1);
+          setClassificationCorrect(prev => prev + 1);
+        }
+      } else if (currentChallenge.type === 'classify') {
         setClassificationTotal(prev => prev + 1);
-        if (isCorrect) setClassificationCorrect(prev => prev + 1);
-        break;
       }
-      case 'balance': {
-        isCorrect = answer.replace(/\s/g, '') === target.replace(/\s/g, '');
-        if (isCorrect) setEquationBalanced(true);
-        break;
-      }
-      case 'conservation': {
-        isCorrect = answer.includes(target) || answer.includes('same') || answer.includes('equal') || answer.includes('conserv');
-        if (isCorrect) setConservationUnderstood(true);
-        break;
-      }
-      case 'identify_signs': {
-        // Check if they mentioned enough signs
-        const mentionedSigns = reaction.signs.filter(s =>
-          answer.includes(s.replace('_', ' ')) ||
-          answer.includes(SIGN_LABELS[s]?.label.toLowerCase() || '')
-        );
-        isCorrect = mentionedSigns.length >= Math.ceil(reaction.signs.length / 2);
-        break;
-      }
-      case 'explain': {
-        // More lenient — accept if they mention key terms
-        isCorrect = answer.includes(target) || answer.length >= 15;
-        break;
-      }
-      default: {
-        isCorrect = answer.includes(target);
-        break;
-      }
+    } else if (currentChallenge.type === 'classify') {
+      // Built-in Chemical / Physical buttons (no MC needed)
+      const target = currentChallenge.targetAnswer.toLowerCase();
+      isCorrect = answer === target;
+      setClassificationTotal(prev => prev + 1);
+      if (isCorrect) setClassificationCorrect(prev => prev + 1);
+    } else {
+      // Open-ended textarea fallback (compare_substances, etc.)
+      const target = currentChallenge.targetAnswer.toLowerCase();
+      isCorrect = answer.includes(target) || answer.length >= 15;
     }
 
     if (isCorrect) {
@@ -677,7 +688,11 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
         const metrics: ReactionLabMetrics = {
           type: 'reaction-lab',
           predictionMade: predictionSubmitted,
-          predictionAccuracy: predictionSubmitted ? (prediction.toLowerCase().includes(reaction.signs[0]?.replace('_', ' ') || '') ? 1 : 0.5) : 0,
+          predictionAccuracy: predictionSubmitted
+            ? (notebook.correctPredictionId
+              ? (prediction === notebook.correctPredictionId ? 1 : 0)
+              : (prediction.toLowerCase().includes(reaction.signs[0]?.replace('_', ' ') || '') ? 1 : 0.5))
+            : 0,
           observationsRecorded: Object.values(observations).filter(v => v.trim()).length,
           observationPromptsTotal: notebook.observePrompts.length,
           chemicalVsPhysicalCorrect: classificationCorrect,
@@ -828,23 +843,71 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
               <p className="text-slate-200 text-sm font-medium mb-2">
                 {notebook.predictPrompt}
               </p>
-              <textarea
-                value={prediction}
-                onChange={e => setPrediction(e.target.value)}
-                placeholder="I think..."
-                className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-cyan-400/50 placeholder:text-slate-600 resize-none"
-                rows={2}
-                disabled={predictionSubmitted}
-              />
-              {!predictionSubmitted && (
-                <Button
-                  variant="ghost"
-                  className="mt-2 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleSubmitPrediction}
-                  disabled={!prediction.trim()}
-                >
-                  Submit Prediction
-                </Button>
+
+              {/* MC prediction options when available */}
+              {notebook.predictionOptions && notebook.predictionOptions.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 gap-2">
+                    {notebook.predictionOptions.map((option) => (
+                      <Button
+                        key={option.id}
+                        variant="ghost"
+                        className={`h-auto text-left p-3 border transition-all duration-300 ${
+                          prediction === option.id
+                            ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_12px_rgba(59,130,246,0.2)]'
+                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                        }`}
+                        onClick={() => !predictionSubmitted && setPrediction(option.id)}
+                        disabled={predictionSubmitted}
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <Badge
+                            className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border flex-shrink-0 ${
+                              prediction === option.id
+                                ? 'bg-white text-slate-900 border-white'
+                                : 'bg-black/30 text-slate-400 border-white/10'
+                            }`}
+                          >
+                            {option.id}
+                          </Badge>
+                          <span className="text-sm text-slate-200">{option.text}</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                  {!predictionSubmitted && (
+                    <Button
+                      variant="ghost"
+                      className="mt-3 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                      onClick={handleSubmitPrediction}
+                      disabled={!prediction.trim()}
+                    >
+                      Submit Prediction
+                    </Button>
+                  )}
+                </>
+              ) : (
+                /* Fallback: open-ended textarea */
+                <>
+                  <textarea
+                    value={prediction}
+                    onChange={e => setPrediction(e.target.value)}
+                    placeholder="I think..."
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-cyan-400/50 placeholder:text-slate-600 resize-none"
+                    rows={2}
+                    disabled={predictionSubmitted}
+                  />
+                  {!predictionSubmitted && (
+                    <Button
+                      variant="ghost"
+                      className="mt-2 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                      onClick={handleSubmitPrediction}
+                      disabled={!prediction.trim()}
+                    >
+                      Submit Prediction
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -1113,7 +1176,8 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
                 {/* Answer input */}
                 {!isCurrentChallengeComplete && (
                   <>
-                    {currentChallenge.type === 'classify' ? (
+                    {/* Classify: built-in Chemical / Physical buttons */}
+                    {currentChallenge.type === 'classify' && !currentChallenge.options ? (
                       <div className="flex gap-2">
                         <Button
                           variant="ghost"
@@ -1138,7 +1202,65 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
                           Physical Change
                         </Button>
                       </div>
+
+                    ) : currentChallenge.isTrueFalse ? (
+                      /* True / False buttons */
+                      <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+                        {([
+                          { value: 'true', label: 'True', icon: '✓' },
+                          { value: 'false', label: 'False', icon: '✗' },
+                        ] as const).map(({ value, label, icon }) => (
+                          <button
+                            key={value}
+                            onClick={() => setChallengeAnswer(value)}
+                            className={`relative p-5 rounded-xl border transition-all duration-300 ${
+                              challengeAnswer === value
+                                ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                                : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            <div className="flex flex-col items-center gap-2">
+                              <span className={`text-2xl ${challengeAnswer === value ? 'text-white' : 'text-slate-400'}`}>
+                                {icon}
+                              </span>
+                              <span className="text-sm font-bold text-slate-200">{label}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                    ) : currentChallenge.options && currentChallenge.options.length > 0 ? (
+                      /* Multiple choice options */
+                      <div className="grid grid-cols-1 gap-2">
+                        {currentChallenge.options.map((option) => (
+                          <Button
+                            key={option.id}
+                            variant="ghost"
+                            className={`h-auto text-left p-3 border transition-all duration-300 ${
+                              challengeAnswer === option.id
+                                ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_12px_rgba(59,130,246,0.2)]'
+                                : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                            }`}
+                            onClick={() => setChallengeAnswer(option.id)}
+                          >
+                            <div className="flex items-center gap-3 w-full">
+                              <Badge
+                                className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border flex-shrink-0 ${
+                                  challengeAnswer === option.id
+                                    ? 'bg-white text-slate-900 border-white'
+                                    : 'bg-black/30 text-slate-400 border-white/10'
+                                }`}
+                              >
+                                {option.id}
+                              </Badge>
+                              <span className="text-sm text-slate-200">{option.text}</span>
+                            </div>
+                          </Button>
+                        ))}
+                      </div>
+
                     ) : (
+                      /* Fallback: open-ended textarea */
                       <textarea
                         value={challengeAnswer}
                         onChange={e => setChallengeAnswer(e.target.value)}

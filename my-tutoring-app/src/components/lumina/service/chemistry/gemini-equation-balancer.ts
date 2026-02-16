@@ -1,7 +1,8 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import {
-  EquationBalancerData,
+  type EquationBalancerData,
+  type EquationData,
 } from "../../primitives/visual-primitives/chemistry/EquationBalancer";
 
 // Re-export type for convenience (no redefinition — sourced from the component)
@@ -52,9 +53,23 @@ const equationBalancerSchema: Schema = {
                   "Starting coefficient (should default to 1 so students adjust from scratch)",
               },
               atoms: {
-                type: Type.OBJECT,
+                type: Type.ARRAY,
                 description:
-                  "Map of element symbol to atom count in ONE molecule of this compound (e.g. { 'H': 2, 'O': 1 } for H2O). Keys are element symbols, values are integer counts.",
+                  "Array of {element, count} pairs for atoms in ONE molecule (e.g. [{element:'H',count:2},{element:'O',count:1}] for H2O)",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    element: {
+                      type: Type.STRING,
+                      description: "Element symbol (e.g. 'H', 'O', 'Fe')",
+                    },
+                    count: {
+                      type: Type.NUMBER,
+                      description: "Number of atoms of this element in one molecule",
+                    },
+                  },
+                  required: ["element", "count"],
+                },
               },
             },
             required: ["formula", "coefficient", "atoms"],
@@ -77,9 +92,23 @@ const equationBalancerSchema: Schema = {
                   "Starting coefficient (should default to 1 so students adjust from scratch)",
               },
               atoms: {
-                type: Type.OBJECT,
+                type: Type.ARRAY,
                 description:
-                  "Map of element symbol to atom count in ONE molecule of this compound. Keys are element symbols, values are integer counts.",
+                  "Array of {element, count} pairs for atoms in ONE molecule",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    element: {
+                      type: Type.STRING,
+                      description: "Element symbol (e.g. 'H', 'O', 'Fe')",
+                    },
+                    count: {
+                      type: Type.NUMBER,
+                      description: "Number of atoms of this element in one molecule",
+                    },
+                  },
+                  required: ["element", "count"],
+                },
               },
             },
             required: ["formula", "coefficient", "atoms"],
@@ -162,6 +191,95 @@ const equationBalancerSchema: Schema = {
             description:
               "Wonder-driven narration text to spark curiosity and celebrate success",
           },
+          reactants: {
+            type: Type.ARRAY,
+            description:
+              "Reactant compounds for THIS challenge's equation (same format as top-level equation.reactants)",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                formula: {
+                  type: Type.STRING,
+                  description: "Chemical formula (e.g. 'Fe', 'O2')",
+                },
+                coefficient: {
+                  type: Type.NUMBER,
+                  description: "Starting coefficient (always 1)",
+                },
+                atoms: {
+                  type: Type.ARRAY,
+                  description:
+                    "Array of {element, count} pairs for atoms in ONE molecule",
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      element: {
+                        type: Type.STRING,
+                        description: "Element symbol",
+                      },
+                      count: {
+                        type: Type.NUMBER,
+                        description: "Atom count",
+                      },
+                    },
+                    required: ["element", "count"],
+                  },
+                },
+              },
+              required: ["formula", "coefficient", "atoms"],
+            },
+          },
+          products: {
+            type: Type.ARRAY,
+            description:
+              "Product compounds for THIS challenge's equation",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                formula: {
+                  type: Type.STRING,
+                  description: "Chemical formula",
+                },
+                coefficient: {
+                  type: Type.NUMBER,
+                  description: "Starting coefficient (always 1)",
+                },
+                atoms: {
+                  type: Type.ARRAY,
+                  description:
+                    "Array of {element, count} pairs for atoms in ONE molecule",
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      element: {
+                        type: Type.STRING,
+                        description: "Element symbol",
+                      },
+                      count: {
+                        type: Type.NUMBER,
+                        description: "Atom count",
+                      },
+                    },
+                    required: ["element", "count"],
+                  },
+                },
+              },
+              required: ["formula", "coefficient", "atoms"],
+            },
+          },
+          challengeArrow: {
+            type: Type.STRING,
+            enum: ["\u2192", "\u21CC"],
+            description: "Arrow type for this challenge's equation",
+          },
+          solutionCoefficients: {
+            type: Type.ARRAY,
+            description:
+              "Correct coefficients for THIS challenge's equation [reactant1, reactant2, ..., product1, product2, ...]",
+            items: {
+              type: Type.NUMBER,
+            },
+          },
         },
         required: [
           "id",
@@ -172,6 +290,10 @@ const equationBalancerSchema: Schema = {
           "timeLimit",
           "hint",
           "narration",
+          "reactants",
+          "products",
+          "challengeArrow",
+          "solutionCoefficients",
         ],
       },
     },
@@ -330,9 +452,24 @@ CRITICAL REQUIREMENTS:
    - complex_balance: "Balance this combustion reaction." (grade 7-8 only)
    - timed: "Balance this equation in 60 seconds!" (grade 7-8 only)
 
-6. Each challenge's "equation" field should be the equation written as a string (e.g. "H2 + O2 \u2192 H2O").
+6. EACH CHALLENGE MUST INCLUDE ITS OWN STRUCTURED EQUATION DATA:
+   - "equation": the equation as a string (e.g. "H2 + O2 \u2192 H2O")
+   - "reactants": array of compounds with formula, coefficient (always 1), and atoms (array of {element, count} pairs)
+   - "products": array of compounds with formula, coefficient (always 1), and atoms (array of {element, count} pairs)
+   - "challengeArrow": "\u2192" or "\u21CC"
+   - "solutionCoefficients": array of correct coefficients [reactant1, ..., product1, ...]
+   The first 1-2 challenges (count_atoms, spot_imbalance) should use a SIMPLE equation.
+   Later challenges (balance, complex_balance, timed) can introduce HARDER equations.
+   Each challenge's reactants/products/solutionCoefficients must be self-consistent and correct.
 
-7. Provide 3-5 challenges sequenced by difficulty.
+7. Provide 3-5 challenges sequenced by difficulty. Each challenge is a STANDALONE balancing task with its own equation.
+   IMPORTANT: Use a DIFFERENT chemical equation for EACH challenge — do NOT repeat the same reaction.
+   Example progression for grade 6-7:
+     ch1 (count_atoms): N2 + H2 → NH3  (simple synthesis)
+     ch2 (spot_imbalance): Fe + O2 → Fe2O3  (metal + oxygen)
+     ch3 (balance): Na + Cl2 → NaCl  (alkali metal + halogen)
+     ch4 (balance): CH4 + O2 → CO2 + H2O  (combustion, if appropriate)
+   Vary the reaction types (synthesis, decomposition, single replacement, combustion) and the elements involved.
 
 8. Each challenge id must be unique (e.g. "ch1", "ch2", "ch3").
 
@@ -373,7 +510,39 @@ DOUBLE-CHECK: Verify that your solution coefficients actually balance the equati
       );
     }
 
-    const result = JSON.parse(text) as EquationBalancerData;
+    const raw = JSON.parse(text);
+
+    // Gemini returns atoms as [{element,count},...] arrays — convert to Record<string,number>
+    const toAtomMap = (
+      atoms: { element: string; count: number }[] | Record<string, number> | undefined
+    ): Record<string, number> => {
+      if (!atoms) return {};
+      if (Array.isArray(atoms)) {
+        const map: Record<string, number> = {};
+        for (const { element, count } of atoms) map[element] = count;
+        return map;
+      }
+      return atoms; // already a map (e.g. from config override)
+    };
+
+    if (raw.equation?.reactants) {
+      raw.equation.reactants = raw.equation.reactants.map(
+        (r: { formula: string; coefficient: number; atoms: unknown }) => ({
+          ...r,
+          atoms: toAtomMap(r.atoms as { element: string; count: number }[]),
+        })
+      );
+    }
+    if (raw.equation?.products) {
+      raw.equation.products = raw.equation.products.map(
+        (p: { formula: string; coefficient: number; atoms: unknown }) => ({
+          ...p,
+          atoms: toAtomMap(p.atoms as { element: string; count: number }[]),
+        })
+      );
+    }
+
+    const result = raw as EquationBalancerData;
 
     // -----------------------------------------------------------------------
     // Validation & Defaults
@@ -441,27 +610,63 @@ DOUBLE-CHECK: Verify that your solution coefficients actually balance the equati
         (gradeBand === "6-7" ? 6 : 10),
     };
 
-    // Ensure every challenge has required fields
-    if (result.challenges) {
-      result.challenges = result.challenges.map((ch, idx) => ({
-        ...ch,
-        id: ch.id || `ch${idx + 1}`,
-        type: ch.type || "balance",
-        instruction:
-          ch.instruction ||
-          "Balance the equation by adjusting the coefficients!",
-        equation: ch.equation || "",
-        difficulty: ch.difficulty || "simple",
-        timeLimit: ch.timeLimit ?? null,
-        hint:
-          ch.hint ||
-          "Remember: the same number of each atom must appear on both sides!",
-        narration: ch.narration || ch.instruction || "Great work!",
-      }));
+    // Ensure every challenge has required fields + build equationData/solutionData
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawChallenges: any[] = (result as any).challenges ?? [];
+    if (rawChallenges.length > 0) {
+      result.challenges = rawChallenges.map((ch: any, idx: number) => {
+        // Transform per-challenge atoms from array to map
+        const chReactants = (ch.reactants ?? []).map((r: any) => ({
+          formula: r.formula as string,
+          coefficient: r.coefficient ?? 1,
+          atoms: toAtomMap(r.atoms),
+        }));
+        const chProducts = (ch.products ?? []).map((p: any) => ({
+          formula: p.formula as string,
+          coefficient: p.coefficient ?? 1,
+          atoms: toAtomMap(p.atoms),
+        }));
+        const chArrow = ch.challengeArrow ?? "\u2192";
+        const chSolution = ch.solutionCoefficients ?? [];
+
+        return {
+          id: (ch.id as string) || `ch${idx + 1}`,
+          type: ch.type || "balance",
+          instruction:
+            (ch.instruction as string) ||
+            "Balance the equation by adjusting the coefficients!",
+          equation: (ch.equation as string) || "",
+          difficulty: ch.difficulty || "simple",
+          timeLimit: ch.timeLimit ?? null,
+          hint:
+            (ch.hint as string) ||
+            "Remember: the same number of each atom must appear on both sides!",
+          narration: (ch.narration as string) || ch.instruction || "Great work!",
+          // Per-challenge structured equation data
+          equationData:
+            chReactants.length > 0 && chProducts.length > 0
+              ? { reactants: chReactants, products: chProducts, arrow: chArrow as "\u2192" | "\u21CC" }
+              : undefined,
+          solutionData:
+            chSolution.length > 0
+              ? { coefficients: chSolution as number[] }
+              : undefined,
+        };
+      });
     }
 
     // Ensure at least one challenge exists
     if (!result.challenges || result.challenges.length === 0) {
+      const fallbackEq: EquationData = {
+        reactants: [
+          { formula: "H2", coefficient: 1, atoms: { H: 2 } },
+          { formula: "O2", coefficient: 1, atoms: { O: 2 } },
+        ],
+        products: [
+          { formula: "H2O", coefficient: 1, atoms: { H: 2, O: 1 } },
+        ],
+        arrow: "\u2192",
+      };
       result.challenges = [
         {
           id: "ch1",
@@ -474,6 +679,8 @@ DOUBLE-CHECK: Verify that your solution coefficients actually balance the equati
           hint: "Look at the subscript in H2 \u2014 that tells you how many hydrogen atoms are in one molecule!",
           narration:
             "Counting atoms is the first step to balancing! Each subscript tells you how many of that atom are in the molecule.",
+          equationData: fallbackEq,
+          solutionData: { coefficients: [2, 1, 2] },
         },
         {
           id: "ch2",
@@ -486,6 +693,8 @@ DOUBLE-CHECK: Verify that your solution coefficients actually balance the equati
           hint: "Count the oxygen atoms on each side. Are they equal?",
           narration:
             "Spotting the imbalance is key! Oxygen has 2 atoms on the left but only 1 on the right.",
+          equationData: fallbackEq,
+          solutionData: { coefficients: [2, 1, 2] },
         },
         {
           id: "ch3",
@@ -498,6 +707,8 @@ DOUBLE-CHECK: Verify that your solution coefficients actually balance the equati
           hint: "Try putting a 2 in front of H2O first, then see what else needs to change.",
           narration:
             "2H2 + O2 \u2192 2H2O. Every hydrogen and every oxygen is accounted for \u2014 that's conservation of mass!",
+          equationData: fallbackEq,
+          solutionData: { coefficients: [2, 1, 2] },
         },
       ];
     }

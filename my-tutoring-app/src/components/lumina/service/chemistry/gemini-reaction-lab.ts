@@ -6,6 +6,7 @@ import {
   ReactionChallenge,
   ReactionAnimation,
   ReactionNotebook,
+  ChallengeOption,
 } from "../../primitives/visual-primitives/chemistry/ReactionLab";
 
 // Re-export types for convenience (no redefinition — sourced from the component)
@@ -15,6 +16,7 @@ export type {
   ReactionChallenge,
   ReactionAnimation,
   ReactionNotebook,
+  ChallengeOption,
 };
 
 /**
@@ -256,7 +258,11 @@ const reactionLabSchema: Schema = {
     challenges: {
       type: Type.ARRAY,
       description:
-        "3-5 sequenced challenges: predict → observe → explain/classify/balance",
+        "3-5 sequenced challenges: predict → observe → explain/classify/balance. " +
+        "Use multiple-choice options for predict, observe, explain, balance, and identify_signs challenges. " +
+        "Use isTrueFalse for conservation challenges. " +
+        "classify has built-in Chemical/Physical buttons (no options needed). " +
+        "Only use open-ended textarea (no options, no isTrueFalse) when none of the above apply.",
       items: {
         type: Type.OBJECT,
         properties: {
@@ -294,6 +300,45 @@ const reactionLabSchema: Schema = {
             description:
               "Wonder-driven narration text to spark curiosity and celebrate success",
           },
+          options: {
+            type: Type.ARRAY,
+            description:
+              "Multiple-choice options (3-4 choices). Required for predict, observe, explain, balance, and identify_signs challenges. " +
+              "Omit for classify (has built-in Chemical/Physical buttons) and conservation (use isTrueFalse).",
+            nullable: true,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: {
+                  type: Type.STRING,
+                  description: "Option identifier (A, B, C, D)",
+                },
+                text: {
+                  type: Type.STRING,
+                  description: "The option text the student sees",
+                },
+              },
+              required: ["id", "text"],
+            },
+          },
+          correctOptionId: {
+            type: Type.STRING,
+            description:
+              "The id of the correct option (e.g. 'B'). Required when options are provided.",
+            nullable: true,
+          },
+          isTrueFalse: {
+            type: Type.BOOLEAN,
+            description:
+              "Set to true for conservation challenges to render True/False buttons instead of textarea.",
+            nullable: true,
+          },
+          correctBoolean: {
+            type: Type.BOOLEAN,
+            description:
+              "The correct True/False answer. Required when isTrueFalse is true.",
+            nullable: true,
+          },
         },
         required: [
           "id",
@@ -313,6 +358,31 @@ const reactionLabSchema: Schema = {
           description:
             "Prompt asking the student to predict what will happen (e.g. 'What do you think will happen when we mix baking soda and vinegar?')",
         },
+        predictionOptions: {
+          type: Type.ARRAY,
+          description:
+            "3-4 multiple-choice prediction options. Always provide these so students pick from choices instead of typing. " +
+            "One option should be the correct prediction, others should be plausible but wrong.",
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              id: {
+                type: Type.STRING,
+                description: "Option identifier (A, B, C, D)",
+              },
+              text: {
+                type: Type.STRING,
+                description: "The prediction text the student sees",
+              },
+            },
+            required: ["id", "text"],
+          },
+        },
+        correctPredictionId: {
+          type: Type.STRING,
+          description:
+            "The id of the correct prediction option (e.g. 'B'). Required when predictionOptions are provided.",
+        },
         observePrompts: {
           type: Type.ARRAY,
           items: { type: Type.STRING },
@@ -325,7 +395,7 @@ const reactionLabSchema: Schema = {
             "Prompt asking the student to explain what happened and why",
         },
       },
-      required: ["predictPrompt", "observePrompts", "explainPrompt"],
+      required: ["predictPrompt", "predictionOptions", "correctPredictionId", "observePrompts", "explainPrompt"],
     },
     showOptions: {
       type: Type.OBJECT,
@@ -489,11 +559,35 @@ GENERAL REQUIREMENTS:
     - showConservationCounter: false for K-2 and 3-5, true for 6-8
 11. Notebook prompts should guide structured scientific thinking:
     - predictPrompt: Wonder-filled question about what might happen
+    - predictionOptions: ALWAYS provide 3-4 multiple-choice prediction options. One correct, others plausible but wrong.
+      Example: [{id:"A", text:"Bubbles will form and overflow"}, {id:"B", text:"The color will change to green"}, {id:"C", text:"Nothing will happen"}, {id:"D", text:"It will get very cold"}].
+      Set correctPredictionId to the correct option id (e.g. "A").
     - observePrompts: 2-4 specific observation questions (sight, sound, temperature, smell)
     - explainPrompt: Age-appropriate "why did this happen?" question
 12. For K-2: formula fields should be null. equation should be null.
     For 3-5: formula fields are optional. equation is optional.
-    For 6-8: formula and equation fields are required.`;
+    For 6-8: formula and equation fields are required.
+
+CHALLENGE SCAFFOLDING (IMPORTANT):
+Use the right answer format for each challenge type:
+- predict: Provide "options" with 3-4 multiple-choice predictions of what will happen.
+  Example: [{id:"A", text:"Bubbles will form and it will fizz"}, {id:"B", text:"The color will change to blue"}, {id:"C", text:"Nothing will happen"}, {id:"D", text:"It will explode"}].
+  Set correctOptionId to the correct option id. Still set targetAnswer for fallback.
+- observe: Provide "options" with 3-4 choices about what was observed.
+  Example: [{id:"A", text:"The mixture turned cloudy and warm"}, {id:"B", text:"Bubbles formed and it fizzed"}, {id:"C", text:"Nothing happened"}].
+  Set correctOptionId to the correct option id.
+- explain: Provide "options" with 3-4 explanations of why the reaction happened.
+  Example: [{id:"A", text:"The acid broke apart the baking soda molecules"}, {id:"B", text:"The water dissolved the powder"}, {id:"C", text:"The heat melted the substances"}].
+  Set correctOptionId to the correct option id.
+- classify: No options needed (the UI has built-in Chemical Change / Physical Change buttons). Set targetAnswer to "chemical" or "physical".
+- balance: Provide "options" with 3-4 equation choices (only one is correctly balanced).
+  Example: [{id:"A", text:"2H₂ + O₂ → 2H₂O"}, {id:"B", text:"H₂ + O₂ → H₂O"}, {id:"C", text:"2H₂ + 2O₂ → 2H₂O"}].
+  Set correctOptionId to the correct option id.
+- identify_signs: Provide "options" with 3-4 sets of signs, only one list is fully correct.
+  Example: [{id:"A", text:"Fizzing and temperature change"}, {id:"B", text:"Color change and new smell"}, {id:"C", text:"No observable changes"}].
+  Set correctOptionId to the correct option id.
+- conservation: Set "isTrueFalse" to true and "correctBoolean" to the correct answer (true/false).
+  Frame the instruction as a true/false statement (e.g. "The total mass of products equals the total mass of reactants.").`;
 
   try {
     const response = await ai.models.generateContent({
@@ -600,15 +694,39 @@ GENERAL REQUIREMENTS:
 
     // Ensure every challenge has required fields
     if (result.challenges) {
-      result.challenges = result.challenges.map((ch, idx) => ({
-        ...ch,
-        id: ch.id || `challenge-${idx}`,
-        type: ch.type || "predict",
-        instruction: ch.instruction || "What do you think will happen?",
-        targetAnswer: ch.targetAnswer || "",
-        narration: ch.narration || ch.instruction || "",
-        hint: ch.hint || "Think about what you already know!",
-      }));
+      result.challenges = result.challenges.map((ch, idx) => {
+        const challenge = {
+          ...ch,
+          id: ch.id || `challenge-${idx}`,
+          type: ch.type || "predict",
+          instruction: ch.instruction || "What do you think will happen?",
+          targetAnswer: ch.targetAnswer || "",
+          narration: ch.narration || ch.instruction || "",
+          hint: ch.hint || "Think about what you already know!",
+        };
+
+        // Ensure correctOptionId is set when options are present
+        if (challenge.options && challenge.options.length > 0 && !challenge.correctOptionId) {
+          const target = challenge.targetAnswer.toLowerCase();
+          const match = challenge.options.find(
+            (o) => o.text.toLowerCase().includes(target) || target.includes(o.text.toLowerCase())
+          );
+          if (match) {
+            challenge.correctOptionId = match.id;
+          } else {
+            // Default to first option — generator gave us no usable signal
+            challenge.correctOptionId = challenge.options[0].id;
+          }
+        }
+
+        // Ensure correctBoolean is set when isTrueFalse is present
+        if (challenge.isTrueFalse && challenge.correctBoolean === undefined) {
+          const target = challenge.targetAnswer.toLowerCase();
+          challenge.correctBoolean = target === "true" || target === "yes";
+        }
+
+        return challenge;
+      });
     }
 
     // Ensure notebook defaults
@@ -617,6 +735,10 @@ GENERAL REQUIREMENTS:
         predictPrompt:
           result.notebook.predictPrompt ||
           "What do you think will happen when we mix these substances together?",
+        predictionOptions: result.notebook.predictionOptions?.length
+          ? result.notebook.predictionOptions
+          : undefined,
+        correctPredictionId: result.notebook.correctPredictionId || undefined,
         observePrompts:
           result.notebook.observePrompts?.length
             ? result.notebook.observePrompts
@@ -625,6 +747,11 @@ GENERAL REQUIREMENTS:
           result.notebook.explainPrompt ||
           "Why do you think this happened?",
       };
+
+      // Ensure correctPredictionId is set when predictionOptions are present
+      if (result.notebook.predictionOptions && result.notebook.predictionOptions.length > 0 && !result.notebook.correctPredictionId) {
+        result.notebook.correctPredictionId = result.notebook.predictionOptions[0].id;
+      }
     }
 
     console.log("🧪 Reaction Lab Generated:", {
