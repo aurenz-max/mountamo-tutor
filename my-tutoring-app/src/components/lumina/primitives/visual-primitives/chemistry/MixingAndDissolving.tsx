@@ -50,8 +50,10 @@ export interface SeparationMethod {
 export interface DissolvingChallenge {
   id: string;
   type: 'dissolve_sort' | 'particle_explain' | 'factor_test' | 'saturation' | 'separate' | 'concentration';
+  answerType: 'multiple_choice' | 'true_false';
   instruction: string;
-  targetAnswer: string;
+  options: string[];
+  correctOptionIndex: number;
   hint: string;
   narration: string;
 }
@@ -371,7 +373,7 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
     attempts: number;
   }>>([]);
   const [currentAttempts, setCurrentAttempts] = useState(0);
-  const [challengeAnswer, setChallengeAnswer] = useState('');
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
 
@@ -449,11 +451,12 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
     challengeType: currentChallenge?.type ?? 'dissolve_sort',
     instruction: currentChallenge?.instruction ?? title,
     attemptNumber: currentAttempts + 1,
-    studentAnswer: challengeAnswer,
+    selectedOption,
+    selectedOptionText: selectedOption !== null && currentChallenge ? currentChallenge.options[selectedOption] : null,
   }), [
     gradeBand, solvent.name, temperature, addedSubstances, isSaturated, isStirring,
     particleViewActive, selectedSeparation, currentChallengeIndex, challenges.length,
-    currentChallenge, currentAttempts, challengeAnswer, title,
+    currentChallenge, currentAttempts, selectedOption, title,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -549,19 +552,14 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
   }, [separationMethods, addedSubstances, sendText]);
 
   const handleSubmitAnswer = useCallback(() => {
-    if (!challengeAnswer.trim() || !currentChallenge) return;
+    if (selectedOption === null || !currentChallenge) return;
 
     setCurrentAttempts(prev => prev + 1);
     setTotalAttempts(prev => prev + 1);
 
-    const answer = challengeAnswer.trim().toLowerCase();
-    const target = String(currentChallenge.targetAnswer).toLowerCase();
-    const isCorrect = answer === target
-      || target.split('|').some(t => answer.includes(t.trim()))
-      || (currentChallenge.type === 'dissolve_sort' && (
-        (target.includes('dissolve') && answer.includes('dissolve'))
-        || (target.includes('insoluble') && (answer.includes('not') || answer.includes('insoluble')))
-      ));
+    const isCorrect = selectedOption === currentChallenge.correctOptionIndex;
+    const selectedText = currentChallenge.options[selectedOption] ?? '';
+    const correctText = currentChallenge.options[currentChallenge.correctOptionIndex] ?? '';
 
     if (isCorrect) {
       setFeedback('Correct! Great observation!');
@@ -589,7 +587,7 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
       }
 
       sendText(
-        `[ANSWER_CORRECT] Student answered "${challengeAnswer}" for ${currentChallenge.type}. `
+        `[ANSWER_CORRECT] Student selected "${selectedText}" for ${currentChallenge.type}. `
         + `Attempt ${currentAttempts + 1}. Congratulate!`,
         { silent: true }
       );
@@ -602,14 +600,14 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
       else if (currentChallenge.type === 'separate') setSeparationTotal(prev => prev + 1);
 
       sendText(
-        `[ANSWER_INCORRECT] Student answered "${challengeAnswer}" but correct is "${currentChallenge.targetAnswer}". `
+        `[ANSWER_INCORRECT] Student selected "${selectedText}" but correct is "${correctText}". `
         + `Type: ${currentChallenge.type}. Attempt ${currentAttempts + 1}. Hint: "${currentChallenge.hint}"`,
         { silent: true }
       );
     }
 
-    setChallengeAnswer('');
-  }, [challengeAnswer, currentChallenge, currentAttempts, sendText]);
+    setSelectedOption(null);
+  }, [selectedOption, currentChallenge, currentAttempts, sendText]);
 
   const handleNextChallenge = useCallback(() => {
     if (currentChallengeIndex < challenges.length - 1) {
@@ -617,7 +615,7 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
       setCurrentAttempts(0);
       setFeedback('');
       setFeedbackType('');
-      setChallengeAnswer('');
+      setSelectedOption(null);
 
       sendText(
         `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
@@ -888,23 +886,40 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
 
         {/* Challenge answer area */}
         {currentChallenge && !isCurrentChallengeComplete && (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={challengeAnswer}
-              onChange={(e) => setChallengeAnswer(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmitAnswer()}
-              placeholder="Type your answer..."
-              className="flex-1 bg-slate-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-white/20"
-            />
-            <Button
-              variant="ghost"
-              className="bg-indigo-500/20 border border-indigo-400/30 hover:bg-indigo-500/30 text-indigo-300"
-              onClick={handleSubmitAnswer}
-              disabled={!challengeAnswer.trim()}
-            >
-              Submit
-            </Button>
+          <div className="space-y-3">
+            <div className={`grid ${currentChallenge.answerType === 'true_false' ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'} gap-2`}>
+              {currentChallenge.options.map((option, i) => (
+                <Button
+                  key={i}
+                  variant="ghost"
+                  className={`text-left justify-start px-4 py-3 h-auto whitespace-normal ${
+                    selectedOption === i
+                      ? 'bg-indigo-500/20 border-indigo-400/40 text-indigo-200 ring-1 ring-indigo-400/40'
+                      : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300'
+                  }`}
+                  onClick={() => setSelectedOption(i)}
+                >
+                  {currentChallenge.answerType === 'true_false' ? (
+                    <span>{option}</span>
+                  ) : (
+                    <>
+                      <span className="mr-2 font-mono text-xs opacity-60">{String.fromCharCode(65 + i)}.</span>
+                      {option}
+                    </>
+                  )}
+                </Button>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                className="bg-indigo-500/20 border border-indigo-400/30 hover:bg-indigo-500/30 text-indigo-300"
+                onClick={handleSubmitAnswer}
+                disabled={selectedOption === null}
+              >
+                Submit Answer
+              </Button>
+            </div>
           </div>
         )}
 

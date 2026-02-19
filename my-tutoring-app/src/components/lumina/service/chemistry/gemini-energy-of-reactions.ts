@@ -202,14 +202,28 @@ const energyOfReactionsSchema: Schema = {
             ],
             description: "Type of challenge task",
           },
+          answerType: {
+            type: Type.STRING,
+            enum: ["multiple_choice", "true_false"],
+            description:
+              "Answer interaction type. Use 'true_false' for binary choices (e.g. Exothermic/Endothermic, True/False, Hot/Cold). " +
+              "Use 'multiple_choice' for questions with 3-4 options including plausible distractors.",
+          },
           instruction: {
             type: Type.STRING,
             description: "Kid-friendly instruction for this challenge",
           },
-          targetAnswer: {
-            type: Type.STRING,
+          options: {
+            type: Type.ARRAY,
             description:
-              "The correct answer (e.g. 'exothermic', '-890', 'lower activation energy')",
+              "Answer choices for the student. For true_false: exactly 2 options. For multiple_choice: 3-4 options. " +
+              "Include one correct answer and plausible distractors. Randomize correct answer position.",
+            items: { type: Type.STRING },
+          },
+          correctOptionIndex: {
+            type: Type.NUMBER,
+            description:
+              "0-based index of the correct option in the options array. MUST be a valid index within the options array.",
           },
           hint: {
             type: Type.STRING,
@@ -221,7 +235,7 @@ const energyOfReactionsSchema: Schema = {
               "Wonder-driven narration text to spark curiosity and celebrate success",
           },
         },
-        required: ["id", "type", "instruction", "targetAnswer", "hint", "narration"],
+        required: ["id", "type", "answerType", "instruction", "options", "correctOptionIndex", "hint", "narration"],
       },
     },
     showOptions: {
@@ -389,12 +403,21 @@ CRITICAL REQUIREMENTS:
    - VERIFY: sum(breaking energies) - sum(forming energies) should approximately equal deltaH.
    - For grade 5-6: set enabled=false and use empty arrays for bondsBreaking and bondsForming.
 
-4. CHALLENGES:
+4. CHALLENGES (Multiple Choice / True-False):
    - Provide 3-5 challenges sequenced by difficulty.
    - Each challenge must have a unique "id" (e.g. "ch1", "ch2").
-   - "targetAnswer" should be a clear, concise expected answer.
+   - ALL challenges use "answerType": either "multiple_choice" or "true_false".
+   - For "true_false": provide exactly 2 options (e.g. ["Exothermic", "Endothermic"] or ["True", "False"] or ["Hot", "Cold"]).
+   - For "multiple_choice": provide 3-4 options with plausible distractors. VARY the position of the correct answer (don't always put it first).
+   - "correctOptionIndex" is the 0-based index of the correct option in the options array.
    - "hint" should gently guide without giving away the answer.
    - "narration" should celebrate learning and build curiosity.
+   - Good answerType choices:
+     * classify → true_false (Exothermic / Endothermic)
+     * read_diagram → true_false or multiple_choice
+     * predict → true_false (Hot / Cold, or True / False)
+     * catalyst_effect → multiple_choice (3-4 options about what catalysts do)
+     * calculate_deltaH → multiple_choice (correct value + 2-3 plausible wrong values)
    - Challenge types by grade band:
      * 5-6: classify, read_diagram, predict ONLY
      * 7-8: classify, read_diagram, catalyst_effect, calculate_deltaH, predict
@@ -561,66 +584,82 @@ DOUBLE-CHECK: Verify that your deltaH sign matches the reaction type (negative =
 
     // Ensure every challenge has required fields
     if (result.challenges) {
-      result.challenges = result.challenges.map((ch, idx) => ({
-        ...ch,
-        id: ch.id || `ch${idx + 1}`,
-        type: ch.type || "classify",
-        instruction:
-          ch.instruction ||
-          "Is this reaction exothermic or endothermic?",
-        targetAnswer: ch.targetAnswer || result.reaction.type,
-        hint:
-          ch.hint ||
-          "Look at the energy diagram — are the products higher or lower than the reactants?",
-        narration: ch.narration || ch.instruction || "Great work!",
-      }));
+      result.challenges = result.challenges.map((ch, idx) => {
+        const challenge = {
+          ...ch,
+          id: ch.id || `ch${idx + 1}`,
+          type: ch.type || "classify",
+          answerType: ch.answerType || "true_false",
+          instruction:
+            ch.instruction ||
+            "Is this reaction exothermic or endothermic?",
+          options: ch.options && ch.options.length >= 2
+            ? ch.options
+            : ["Exothermic", "Endothermic"],
+          correctOptionIndex: ch.correctOptionIndex ?? 0,
+          hint:
+            ch.hint ||
+            "Look at the energy diagram — are the products higher or lower than the reactants?",
+          narration: ch.narration || ch.instruction || "Great work!",
+        };
+        // Ensure correctOptionIndex is within bounds
+        if (challenge.correctOptionIndex < 0 || challenge.correctOptionIndex >= challenge.options.length) {
+          challenge.correctOptionIndex = 0;
+        }
+        // Ensure true_false has exactly 2 options
+        if (challenge.answerType === "true_false" && challenge.options.length !== 2) {
+          challenge.answerType = "multiple_choice";
+        }
+        return challenge;
+      });
     }
 
     // Ensure at least one challenge exists
     if (!result.challenges || result.challenges.length === 0) {
+      const isExo = result.reaction.type === "exothermic";
       result.challenges = [
         {
           id: "ch1",
           type: "classify",
-          instruction:
-            result.reaction.type === "exothermic"
-              ? "This reaction releases energy. Is it exothermic or endothermic?"
-              : "This reaction absorbs energy. Is it exothermic or endothermic?",
-          targetAnswer: result.reaction.type,
+          answerType: "true_false" as const,
+          instruction: isExo
+            ? "This reaction releases energy. Is it exothermic or endothermic?"
+            : "This reaction absorbs energy. Is it exothermic or endothermic?",
+          options: ["Exothermic", "Endothermic"],
+          correctOptionIndex: isExo ? 0 : 1,
           hint:
             "Exothermic = energy exits (releases heat). Endothermic = energy enters (absorbs heat).",
-          narration:
-            result.reaction.type === "exothermic"
-              ? "That's right! Exothermic means 'heat out' — the reaction releases energy to its surroundings."
-              : "Correct! Endothermic means 'heat in' — the reaction absorbs energy from its surroundings.",
+          narration: isExo
+            ? "That's right! Exothermic means 'heat out' — the reaction releases energy to its surroundings."
+            : "Correct! Endothermic means 'heat in' — the reaction absorbs energy from its surroundings.",
         },
         {
           id: "ch2",
           type: "read_diagram",
+          answerType: "true_false" as const,
           instruction:
             "Look at the energy diagram. Are the products at a higher or lower energy level than the reactants?",
-          targetAnswer:
-            result.reaction.type === "exothermic" ? "lower" : "higher",
+          options: ["Lower", "Higher"],
+          correctOptionIndex: isExo ? 0 : 1,
           hint:
             "Compare the right side (products) to the left side (reactants) on the diagram.",
-          narration:
-            result.reaction.type === "exothermic"
-              ? "The products are lower — energy was released! That extra energy became heat."
-              : "The products are higher — energy was absorbed! The reaction needed energy from its surroundings.",
+          narration: isExo
+            ? "The products are lower — energy was released! That extra energy became heat."
+            : "The products are higher — energy was absorbed! The reaction needed energy from its surroundings.",
         },
         {
           id: "ch3",
           type: "predict",
+          answerType: "true_false" as const,
           instruction:
-            `If you touched the container during this reaction, would it feel hot or cold?`,
-          targetAnswer:
-            result.reaction.type === "exothermic" ? "hot" : "cold",
+            "If you touched the container during this reaction, would it feel hot or cold?",
+          options: ["Hot", "Cold"],
+          correctOptionIndex: isExo ? 0 : 1,
           hint:
-            `Think about whether energy is leaving the reaction (warming things up) or entering it (cooling things down).`,
-          narration:
-            result.reaction.type === "exothermic"
-              ? "It would feel hot! The reaction releases heat energy into its surroundings — including your hand."
-              : "It would feel cold! The reaction absorbs heat from its surroundings — pulling warmth away from your hand.",
+            "Think about whether energy is leaving the reaction (warming things up) or entering it (cooling things down).",
+          narration: isExo
+            ? "It would feel hot! The reaction releases heat energy into its surroundings — including your hand."
+            : "It would feel cold! The reaction absorbs heat from its surroundings — pulling warmth away from your hand.",
         },
       ];
     }

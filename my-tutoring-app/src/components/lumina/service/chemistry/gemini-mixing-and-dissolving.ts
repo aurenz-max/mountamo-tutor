@@ -187,15 +187,29 @@ const mixingAndDissolvingSchema: Schema = {
             ],
             description: "Type of challenge task",
           },
+          answerType: {
+            type: Type.STRING,
+            enum: ["multiple_choice", "true_false"],
+            description:
+              "Answer interaction type. Use 'true_false' for binary choices (e.g. Dissolves/Doesn't dissolve, Yes/No). " +
+              "Use 'multiple_choice' for questions with 3-4 options including plausible distractors.",
+          },
           instruction: {
             type: Type.STRING,
             description:
               "Kid-friendly instruction for this challenge",
           },
-          targetAnswer: {
-            type: Type.STRING,
+          options: {
+            type: Type.ARRAY,
             description:
-              "Expected answer or keywords separated by | for multiple acceptable answers (e.g. 'dissolves|soluble')",
+              "Answer choices for the student. For true_false: exactly 2 options. For multiple_choice: 3-4 options. " +
+              "Include one correct answer and plausible distractors. Randomize correct answer position.",
+            items: { type: Type.STRING },
+          },
+          correctOptionIndex: {
+            type: Type.NUMBER,
+            description:
+              "0-based index of the correct option in the options array. MUST be a valid index within the options array.",
           },
           hint: {
             type: Type.STRING,
@@ -210,8 +224,10 @@ const mixingAndDissolvingSchema: Schema = {
         required: [
           "id",
           "type",
+          "answerType",
           "instruction",
-          "targetAnswer",
+          "options",
+          "correctOptionIndex",
           "hint",
           "narration",
         ],
@@ -395,21 +411,24 @@ CRITICAL REQUIREMENTS:
    - decanting: works for immiscible liquids (oil)
    Each method's worksFor array should list the exact substance NAMES from your substances array.
 
-6. Challenges should progress in difficulty and reference the actual substances:
-   - dissolve_sort: "Add salt and sand to the water. Which one dissolves?"
-   - particle_explain: "Look at the particle view. Describe what happened to the salt particles."
-   - factor_test: "Turn up the temperature. What happens to how much sugar dissolves?" (grade 6-7)
-   - saturation: "Keep adding sugar. What happens when no more will dissolve?"
-   - separate: "Your friend mixed sand and salt in water. How would you get the salt back?"
-   - concentration: "Which beaker has a higher concentration?" (grade 6-7)
+6. Challenges (Multiple Choice / True-False):
+   - ALL challenges use "answerType": either "multiple_choice" or "true_false".
+   - For "true_false": provide exactly 2 options (e.g. ["Dissolves", "Doesn't dissolve"] or ["Yes", "No"]).
+   - For "multiple_choice": provide 3-4 options with plausible distractors. VARY the position of the correct answer.
+   - "correctOptionIndex" is the 0-based index of the correct option in the options array.
+   - Good answerType choices:
+     * dissolve_sort → true_false ("Dissolves" / "Doesn't dissolve") or multiple_choice for which substance
+     * particle_explain → multiple_choice (3-4 descriptions of what happened)
+     * factor_test → multiple_choice (3-4 options about what happens with temperature)
+     * saturation → true_false or multiple_choice
+     * separate → multiple_choice (3-4 separation methods to choose from)
+     * concentration → multiple_choice (comparing concentrations)
+   - Reference actual substances in challenges:
+     * dissolve_sort: "Will salt dissolve in water?" → ["Dissolves", "Doesn't dissolve"]
+     * particle_explain: "What happened to the salt particles?" → ["They spread out among water molecules", "They disappeared completely", "They sank to the bottom", "They evaporated"]
+     * separate: "How would you recover salt from salt water?" → ["Filtration", "Evaporation", "Using a magnet", "Decanting"]
 
-7. targetAnswer should include pipe-separated acceptable answers:
-   - "dissolves|soluble|yes" for dissolve_sort
-   - "spread out|mixed in|molecules" for particle_explain
-   - "more dissolves|increases|dissolves faster" for factor_test
-   - "evaporation|evaporate" for separation challenges
-
-8. Each challenge id must be unique (e.g. "ch1", "ch2", "ch3").
+7. Each challenge id must be unique (e.g. "ch1", "ch2", "ch3").
 
 9. Narrations should be educational and encouraging, connecting to real life:
    - "Salt disappears in water but it's still there — that's why the ocean tastes salty!"
@@ -588,19 +607,34 @@ CRITICAL REQUIREMENTS:
 
     // Ensure every challenge has required fields
     if (result.challenges && Array.isArray(result.challenges)) {
-      result.challenges = result.challenges.map((ch, idx) => ({
-        ...ch,
-        id: ch.id || `ch${idx + 1}`,
-        type: ch.type || "dissolve_sort",
-        instruction:
-          ch.instruction ||
-          "Add a substance to the water and see what happens!",
-        targetAnswer: ch.targetAnswer || "dissolves",
-        hint:
-          ch.hint ||
-          "Try adding the substance and watch carefully!",
-        narration: ch.narration || ch.instruction || "Great observation!",
-      }));
+      result.challenges = result.challenges.map((ch, idx) => {
+        const challenge = {
+          ...ch,
+          id: ch.id || `ch${idx + 1}`,
+          type: ch.type || "dissolve_sort",
+          answerType: ch.answerType || "true_false",
+          instruction:
+            ch.instruction ||
+            "Add a substance to the water and see what happens!",
+          options: ch.options && ch.options.length >= 2
+            ? ch.options
+            : ["Dissolves", "Doesn't dissolve"],
+          correctOptionIndex: ch.correctOptionIndex ?? 0,
+          hint:
+            ch.hint ||
+            "Try adding the substance and watch carefully!",
+          narration: ch.narration || ch.instruction || "Great observation!",
+        };
+        // Ensure correctOptionIndex is within bounds
+        if (challenge.correctOptionIndex < 0 || challenge.correctOptionIndex >= challenge.options.length) {
+          challenge.correctOptionIndex = 0;
+        }
+        // Ensure true_false has exactly 2 options
+        if (challenge.answerType === "true_false" && challenge.options.length !== 2) {
+          challenge.answerType = "multiple_choice";
+        }
+        return challenge;
+      });
     }
 
     // Ensure at least one challenge exists
@@ -609,19 +643,28 @@ CRITICAL REQUIREMENTS:
         {
           id: "ch1",
           type: "dissolve_sort",
+          answerType: "true_false" as const,
           instruction:
-            "Add each substance to the water one at a time. Which ones dissolve and which ones don't?",
-          targetAnswer: "salt|sugar|dissolves",
+            "Add salt to the water. Does it dissolve?",
+          options: ["Dissolves", "Doesn't dissolve"],
+          correctOptionIndex: 0,
           hint: "Watch carefully — does the substance disappear into the water or stay visible?",
           narration:
-            "Some substances dissolve and seem to disappear, while others stay right where they are!",
+            "Salt dissolves and seems to disappear — but it's still there! That's why the water tastes salty.",
         },
         {
           id: "ch2",
           type: "particle_explain",
+          answerType: "multiple_choice" as const,
           instruction:
             "Turn on the particle view. What happened to the salt particles when they dissolved?",
-          targetAnswer: "spread out|mixed in|separated|molecules",
+          options: [
+            "They spread out among the water molecules",
+            "They disappeared completely",
+            "They sank to the bottom",
+            "They floated to the top",
+          ],
+          correctOptionIndex: 0,
           hint: "Look at where the salt particles are now compared to the sand particles.",
           narration:
             "The salt particles broke apart and spread out among the water molecules — that's dissolving at the tiny particle level!",
@@ -629,9 +672,16 @@ CRITICAL REQUIREMENTS:
         {
           id: "ch3",
           type: "separate",
+          answerType: "multiple_choice" as const,
           instruction:
             "You have a mixture of sand and salt water. How would you get the salt back?",
-          targetAnswer: "filter|evaporate|filtration|evaporation",
+          options: [
+            "Use a magnet",
+            "Filter then evaporate",
+            "Just pour it out",
+            "Freeze the water",
+          ],
+          correctOptionIndex: 1,
           hint: "Think about it in two steps: first remove the sand, then get the salt out of the water.",
           narration:
             "Filter out the sand, then evaporate the water — the salt crystals appear like magic! But it's not magic, it's science!",

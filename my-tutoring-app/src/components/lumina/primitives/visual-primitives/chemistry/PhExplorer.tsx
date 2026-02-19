@@ -547,7 +547,8 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
     const substance = substances.find(s => s.id === substanceId);
     if (!substance) return;
 
-    setSortResults(prev => new Map(prev).set(substanceId, classification));
+    const nextSortResults = new Map(sortResults).set(substanceId, classification);
+    setSortResults(nextSortResults);
     setSortingTotal(prev => prev + 1);
 
     if (classification === substance.type) {
@@ -564,7 +565,23 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [substances, sendText]);
+
+    // Mark the sort challenge as complete once all substances have been sorted
+    if (currentChallenge?.type === 'sort' && nextSortResults.size >= substances.length) {
+      const correctCount = substances.filter(s => nextSortResults.get(s.id) === s.type).length;
+      setChallengeResults(prev => [
+        ...prev,
+        { challengeId: currentChallenge.id, correct: true, attempts: nextSortResults.size },
+      ]);
+      if (correctCount === substances.length) {
+        setFeedback(`Perfect! All ${substances.length} sorted correctly!`);
+        setFeedbackType('success');
+      } else {
+        setFeedback(`All sorted! ${correctCount}/${substances.length} correct — check the marks above.`);
+        setFeedbackType('success');
+      }
+    }
+  }, [substances, sendText, sortResults, currentChallenge]);
 
   const handleMixRatioChange = useCallback((ratio: number) => {
     setMixRatio(ratio);
