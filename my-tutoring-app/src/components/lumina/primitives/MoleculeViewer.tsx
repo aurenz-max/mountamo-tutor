@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { Atom, FlaskConical, Sparkles } from 'lucide-react';
 import { MoleculeViewerData, MoleculeAtom } from '../types';
 import { MoleculeScene } from './visual-primitives/chemistry/MoleculeScene';
+import { useLuminaAI } from '../hooks/useLuminaAI';
 
 interface MoleculeViewerProps {
   data: MoleculeViewerData;
@@ -19,6 +20,7 @@ interface MoleculeViewerProps {
  * - CPK color-coded atoms
  * - Auto-rotating view with orbit controls
  * - Responsive layout with side panel for molecular info
+ * - AI tutoring scaffolding for structure narration
  *
  * Use cases:
  * - Chemistry lessons on molecular structure
@@ -28,10 +30,80 @@ interface MoleculeViewerProps {
  */
 const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ data, className = '' }) => {
   const [selectedAtom, setSelectedAtom] = useState<MoleculeAtom | null>(null);
+  const atomsExploredRef = useRef<Set<string>>(new Set());
 
-  const handleAtomClick = (atom: MoleculeAtom) => {
+  const { instanceId, gradeBand } = data;
+  const resolvedInstanceId = instanceId || `molecule-viewer-${Date.now()}`;
+
+  // Derive unique elements and bond type summary for AI context
+  const uniqueElements = useMemo(() => {
+    const elements = new Set(data.atoms.map(a => a.name));
+    return Array.from(elements).join(', ');
+  }, [data.atoms]);
+
+  const bondTypeSummary = useMemo(() => {
+    const types = data.bonds.reduce((acc, bond) => {
+      acc[bond.type] = (acc[bond.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    return Object.entries(types).map(([t, c]) => `${c} ${t}`).join(', ');
+  }, [data.bonds]);
+
+  const aiPrimitiveData = useMemo(() => ({
+    moleculeName: data.name,
+    category: data.category,
+    atomCount: data.atoms.length,
+    bondCount: data.bonds.length,
+    uniqueElements,
+    bondTypes: bondTypeSummary,
+    selectedAtomElement: selectedAtom?.element || null,
+    selectedAtomName: selectedAtom?.name || null,
+    atomsExplored: atomsExploredRef.current.size,
+  }), [data.name, data.category, data.atoms.length, data.bonds.length, uniqueElements, bondTypeSummary, selectedAtom]);
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'molecule-viewer',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand,
+  });
+
+  const handleAtomClick = useCallback((atom: MoleculeAtom) => {
     setSelectedAtom(atom);
-  };
+
+    const isFirstExploration = atomsExploredRef.current.size === 0;
+    atomsExploredRef.current.add(atom.id);
+    const explored = atomsExploredRef.current.size;
+
+    if (isFirstExploration) {
+      // First atom click — introduce the element and encourage exploration
+      sendText(
+        `[ATOM_SELECTED] Student clicked their first atom: ${atom.name} (${atom.element}` +
+        `${atom.atomicNumber ? `, atomic number ${atom.atomicNumber}` : ''}). ` +
+        `Molecule: ${data.name}. Briefly describe what ${atom.element} does in this molecule ` +
+        `and encourage them to click more atoms to explore the structure.`,
+        { silent: true }
+      );
+    } else if (explored === Math.ceil(data.atoms.length * 0.5)) {
+      // Explored about half the atoms — narrate overall structure
+      sendText(
+        `[STRUCTURE_INSIGHT] Student has explored ${explored} of ${data.atoms.length} atoms in ${data.name}. ` +
+        `Elements found so far: ${Array.from(atomsExploredRef.current).join(', ')}. ` +
+        `Just selected ${atom.name} (${atom.element}). ` +
+        `Narrate the overall molecular shape and bonding pattern. Use a visual analogy for the 3D shape.`,
+        { silent: true }
+      );
+    } else {
+      // Regular atom selection — brief context about this element's role
+      sendText(
+        `[ATOM_SELECTED] Student clicked ${atom.name} (${atom.element}` +
+        `${atom.atomicNumber ? `, atomic number ${atom.atomicNumber}` : ''}) ` +
+        `in ${data.name}. ${explored} atoms explored so far. ` +
+        `Briefly describe this element's role in the molecule.`,
+        { silent: true }
+      );
+    }
+  }, [data.name, data.atoms.length, sendText]);
 
   return (
     <div className={`w-full ${className}`}>

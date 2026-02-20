@@ -1,16 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { Search, Atom } from 'lucide-react';
+import { PeriodicTableData } from '../types';
 import { ChemicalElement } from './chemistry-primitives/types';
 import { ELEMENTS } from './chemistry-primitives/constants';
 import { PeriodicTableGrid } from './chemistry-primitives/PeriodicTableGrid';
 import { ElementModal } from './chemistry-primitives/ElementModal';
-
-export interface PeriodicTableData {
-  title?: string;
-  description?: string;
-  highlightElements?: number[]; // Array of atomic numbers to highlight
-  focusCategory?: string; // Optional category to focus on
-}
+import { useLuminaAI } from '../hooks/useLuminaAI';
 
 interface PeriodicTableProps {
   data: PeriodicTableData;
@@ -21,6 +16,14 @@ const PeriodicTable: React.FC<PeriodicTableProps> = ({ data, className }) => {
   const [selectedElement, setSelectedElement] = useState<ChemicalElement | null>(null);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(data.focusCategory || null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Track exploration for AI context
+  const elementsExploredRef = useRef<Set<number>>(new Set());
+  const categoriesExploredRef = useRef<Set<string>>(new Set());
+  const groupsExploredRef = useRef<Map<number, string[]>>(new Map());
+
+  const { instanceId, gradeBand } = data;
+  const resolvedInstanceId = instanceId || `periodic-table-${Date.now()}`;
 
   const filteredElements = useMemo(() => {
     if (!searchTerm) return ELEMENTS;
@@ -33,6 +36,110 @@ const PeriodicTable: React.FC<PeriodicTableProps> = ({ data, className }) => {
   }, [searchTerm]);
 
   const categories = Array.from(new Set(ELEMENTS.map(e => e.category)));
+
+  // AI primitive data — updates when selection changes
+  const aiPrimitiveData = useMemo(() => ({
+    title: data.title || 'Periodic Table',
+    focusCategory: data.focusCategory || null,
+    selectedElementName: selectedElement?.name || null,
+    selectedElementSymbol: selectedElement?.symbol || null,
+    selectedElementNumber: selectedElement?.number || null,
+    selectedElementCategory: selectedElement?.category || null,
+    selectedElementGroup: selectedElement?.group || null,
+    selectedElementPeriod: selectedElement?.period || null,
+    selectedElementValence: selectedElement
+      ? selectedElement.electron_shells[selectedElement.electron_shells.length - 1]
+      : null,
+    selectedElementPhase: selectedElement?.phase || null,
+    hoveredCategory,
+    elementsExplored: elementsExploredRef.current.size,
+    categoriesExplored: categoriesExploredRef.current.size,
+  }), [data.title, data.focusCategory, selectedElement, hoveredCategory]);
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'periodic-table',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand,
+  });
+
+  // Handle element selection with AI triggers
+  const handleSelectElement = useCallback((element: ChemicalElement) => {
+    setSelectedElement(element);
+
+    const isFirstExploration = elementsExploredRef.current.size === 0;
+    elementsExploredRef.current.add(element.number);
+    categoriesExploredRef.current.add(element.category);
+    const explored = elementsExploredRef.current.size;
+
+    // Track group exploration for trend detection
+    const group = element.group;
+    if (group) {
+      const groupElements = groupsExploredRef.current.get(group) || [];
+      if (!groupElements.includes(element.name)) {
+        groupElements.push(element.name);
+        groupsExploredRef.current.set(group, groupElements);
+      }
+    }
+
+    const valence = element.electron_shells[element.electron_shells.length - 1];
+
+    if (isFirstExploration) {
+      // First element click — introduce and encourage exploration
+      sendText(
+        `[ELEMENT_SELECTED] Student clicked their first element: ${element.name} (${element.symbol}), ` +
+        `atomic number ${element.number}, a ${element.category}. ` +
+        `It has ${valence} valence electrons and is a ${element.phase.toLowerCase()} at room temperature. ` +
+        `Briefly introduce this element and encourage the student to explore more elements, ` +
+        `especially others in the same group (column ${element.group}) to discover patterns.`,
+        { silent: true }
+      );
+    } else if (group && (groupsExploredRef.current.get(group)?.length || 0) >= 2) {
+      // Student explored 2+ elements in the same group — highlight periodic trend
+      const groupMembers = groupsExploredRef.current.get(group)!;
+      sendText(
+        `[GROUP_TREND] Student clicked ${element.name} (${element.symbol}) in group ${group}. ` +
+        `They've now explored ${groupMembers.length} elements in this group: ${groupMembers.join(', ')}. ` +
+        `Briefly point out what these elements have in common (similar valence electrons, ` +
+        `similar reactivity) and one key trend (e.g., atomic radius increases going down the group).`,
+        { silent: true }
+      );
+    } else if (explored === 10) {
+      // Milestone — explored 10 unique elements
+      sendText(
+        `[EXPLORATION_MILESTONE] Student has now explored 10 unique elements! ` +
+        `Just clicked ${element.name} (${element.symbol}). ` +
+        `Categories explored: ${Array.from(categoriesExploredRef.current).join(', ')}. ` +
+        `Celebrate their curiosity and summarize one interesting pattern they might have noticed.`,
+        { silent: true }
+      );
+    } else {
+      // Regular element selection — brief context
+      sendText(
+        `[ELEMENT_SELECTED] Student clicked ${element.name} (${element.symbol}), ` +
+        `atomic number ${element.number}, group ${element.group}, period ${element.period}. ` +
+        `Category: ${element.category}. Phase: ${element.phase}. Valence: ${valence}. ` +
+        `${explored} elements explored so far. ` +
+        `Give a brief, interesting fact about this element or its position in the table.`,
+        { silent: true }
+      );
+    }
+  }, [sendText]);
+
+  // Handle category filter click with AI trigger
+  const handleCategoryClick = useCallback((cat: string) => {
+    const newCategory = hoveredCategory === cat ? (data.focusCategory || null) : cat;
+    setHoveredCategory(newCategory);
+
+    if (newCategory && newCategory !== hoveredCategory) {
+      sendText(
+        `[CATEGORY_EXPLORED] Student clicked the "${cat}" category filter, highlighting all ` +
+        `${cat} elements on the table. Briefly describe what makes this family of elements special ` +
+        `(shared properties, reactivity, common uses). Keep it to 1-2 sentences.`,
+        { silent: true }
+      );
+    }
+  }, [hoveredCategory, data.focusCategory, sendText]);
 
   return (
     <div className={`w-full ${className || ''}`}>
@@ -73,7 +180,7 @@ const PeriodicTable: React.FC<PeriodicTableProps> = ({ data, className }) => {
             key={cat}
             onMouseEnter={() => setHoveredCategory(cat)}
             onMouseLeave={() => setHoveredCategory(data.focusCategory || null)}
-            onClick={() => setHoveredCategory(hoveredCategory === cat ? (data.focusCategory || null) : cat)}
+            onClick={() => handleCategoryClick(cat)}
             className={`
               text-[10px] uppercase font-bold px-3 py-1 rounded-full border transition-all
               ${hoveredCategory === cat
@@ -90,7 +197,7 @@ const PeriodicTable: React.FC<PeriodicTableProps> = ({ data, className }) => {
       <div className="w-full overflow-x-auto pb-6 custom-scrollbar">
         <PeriodicTableGrid
           elements={filteredElements}
-          onSelectElement={setSelectedElement}
+          onSelectElement={handleSelectElement}
           hoveredCategory={hoveredCategory}
           setHoveredCategory={setHoveredCategory}
         />

@@ -29,6 +29,7 @@ import PropulsionLab from '../primitives/visual-primitives/engineering/Propulsio
 import PropulsionTimeline from '../primitives/visual-primitives/engineering/PropulsionTimeline';
 import PaperAirplaneDesigner from '../primitives/visual-primitives/engineering/PaperAirplaneDesigner';
 import EngineExplorer from '../primitives/visual-primitives/engineering/EngineExplorer';
+import VehicleDesignStudio from '../primitives/visual-primitives/engineering/VehicleDesignStudio';
 
 import {
   EvaluationProvider,
@@ -51,7 +52,8 @@ type PrimitiveType =
   | 'excavator-arm-simulator' | 'dump-truck-loader' | 'construction-sequence-planner' | 'blueprint-canvas'
   | 'machine-profile' | 'flight-forces-explorer' | 'airfoil-lab' | 'vehicle-comparison-lab' | 'propulsion-lab' | 'propulsion-timeline'
   | 'paper-airplane-designer'
-  | 'engine-explorer';
+  | 'engine-explorer'
+  | 'vehicle-design-studio';
 
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
@@ -89,6 +91,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'propulsion-timeline', label: 'Propulsion Timeline', icon: '⏳', topic: 'History of transportation from walking to spacecraft', strand: 'VF' },
   { value: 'paper-airplane-designer', label: 'Paper Airplane Designer', icon: '✈️', topic: 'Designing and testing paper airplanes using the engineering design process', strand: 'VF' },
   { value: 'engine-explorer', label: 'Engine Explorer', icon: '🔧', topic: 'Exploring engine types, components, and energy cycles', strand: 'VF' },
+  { value: 'vehicle-design-studio', label: 'Vehicle Design Studio', icon: '🚗', topic: 'Vehicle Engineering', strand: 'VF' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -321,6 +324,18 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'engineering-engines',
             subskillId: 'engine-components',
             objectiveId: 'understand-engine-types',
+          }}
+        />
+      );
+    case 'vehicle-design-studio':
+      return (
+        <VehicleDesignStudio
+          data={{
+            ...(data as Parameters<typeof VehicleDesignStudio>[0]['data']),
+            instanceId: `vehicle-design-studio-${Date.now()}`,
+            skillId: 'engineering-vehicle-design',
+            subskillId: 'iterative-design',
+            objectiveId: 'understand-vehicle-engineering',
           }}
         />
       );

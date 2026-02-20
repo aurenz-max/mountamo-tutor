@@ -31,6 +31,7 @@ import { generatePropulsionLab } from '../../engineering/gemini-propulsion-lab';
 import { generatePropulsionTimeline } from '../../engineering/gemini-propulsion-timeline';
 import { generatePaperAirplaneDesigner } from '../../engineering/gemini-paper-airplane-designer';
 import { generateEngineExplorer } from '../../engineering/gemini-engine-explorer';
+import { generateVehicleDesignStudio } from '../../engineering/gemini-vehicle-design-studio';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -183,6 +184,13 @@ registerGenerator('engine-explorer', async (item, topic, gradeContext) => ({
   data: await generateEngineExplorer(topic, gradeContext, item.config),
 }));
 
+// Vehicle Design Studio (drag-and-drop vehicle designer with physics simulation)
+registerGenerator('vehicle-design-studio', async (item, topic, gradeContext) => ({
+  type: 'vehicle-design-studio',
+  instanceId: item.instanceId,
+  data: await generateVehicleDesignStudio(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 21/21 engineering primitives registered
+// Migration status: 22/22 engineering primitives registered
 // ============================================================================

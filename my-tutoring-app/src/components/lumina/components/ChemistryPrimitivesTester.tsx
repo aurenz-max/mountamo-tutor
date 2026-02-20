@@ -4,7 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 // ============================================================================
 // Primitive Imports
 // ============================================================================
-// SC: Science Core (molecule-viewer, periodic-table handled by fallback)
+// SC: Science Core
+import MoleculeViewer from '../primitives/MoleculeViewer';
+import PeriodicTable from '../primitives/PeriodicTable';
 // CM: Chemistry - Matter & Particles
 import MatterExplorer from '../primitives/visual-primitives/chemistry/MatterExplorer';
 import StatesOfMatter from '../primitives/visual-primitives/chemistry/StatesOfMatter';
@@ -97,6 +99,22 @@ const PrimitiveRenderer: React.FC<{
   if (!data) return null;
 
   switch (componentId) {
+    // ===== SC: Science Core =====
+    case 'molecule-viewer':
+      return (
+        <MoleculeViewer
+          data={{
+            ...(data as Parameters<typeof MoleculeViewer>[0]['data']),
+            instanceId: `molecule-viewer-${Date.now()}`,
+          }}
+        />
+      );
+    case 'periodic-table':
+      return (
+        <PeriodicTable
+          data={data as Parameters<typeof PeriodicTable>[0]['data']}
+        />
+      );
     // ===== CM: Matter & Particles =====
     case 'matter-explorer':
       return (

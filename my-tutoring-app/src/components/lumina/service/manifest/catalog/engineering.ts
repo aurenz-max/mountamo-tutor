@@ -267,4 +267,24 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       ],
     },
   },
+  {
+    id: 'vehicle-design-studio',
+    description: 'Engineering design process studio where students pick vehicle body, propulsion, and control parts then test against physics simulation. Includes radar performance chart, design log for iteration tracking, and challenge mode with constraints. Perfect for teaching the engineering design cycle (design \u2192 test \u2192 analyze \u2192 iterate), trade-off analysis, and systematic testing. ESSENTIAL for grades 2-5 engineering and design thinking.',
+    constraints: 'Requires partsPalette with bodies, propulsion, and controls arrays. Each part needs numeric physics values. Challenges optional but recommended for grade 4-5.',
+    tutoring: {
+      taskDescription: 'Student is designing a {{domain}} vehicle. They select parts from a palette (body: {{selectedBody}}, propulsion: {{selectedPropulsion}}, controls: {{selectedControls}}) and test their design. Current simulation shows {{latestSimulation}}. This is iteration {{designIterations}}. Active challenge: {{activeChallenge}}.',
+      contextKeys: ['domain', 'selectedBody', 'selectedPropulsion', 'selectedControls', 'latestSimulation', 'designIterations', 'activeChallenge', 'constraintsMet'],
+      scaffoldingLevels: {
+        level1: '"What do you think will happen if you test this design? Which metric do you think will be strongest?"',
+        level2: '"Look at your stability score \u2014 it\'s {{latestSimulation.stability}}. What controls could you add to improve it? Remember, adding weight affects speed too."',
+        level3: '"Let\'s think step by step. Your vehicle weighs {{latestSimulation.totalWeight}}kg. The constraint says max {{activeChallenge.constraints.maxWeight}}kg. You need to either pick a lighter body or remove a control part. Try swapping just the body first \u2014 that way you\'ll know exactly what changed."',
+      },
+      commonStruggles: [
+        { pattern: 'Student changes multiple parts between tests', response: 'Encourage changing only one variable at a time so they can see what each change does to performance.' },
+        { pattern: 'Student ignores low stability scores and only focuses on speed', response: 'Ask what happens in real life when a vehicle is unstable. Guide them to notice the stability metric.' },
+        { pattern: 'Student does not use the design log to compare iterations', response: 'Suggest opening the design log to compare their current results with previous tests.' },
+        { pattern: 'Student is stuck and cannot meet constraints', response: 'Help them identify which constraint is hardest to meet, then focus on that one metric first.' },
+      ],
+    },
+  },
 ];

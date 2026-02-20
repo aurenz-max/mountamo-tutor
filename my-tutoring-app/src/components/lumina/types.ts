@@ -240,6 +240,9 @@ export interface MoleculeViewerData {
   atoms: MoleculeAtom[];
   bonds: MoleculeBond[];
   category: 'organic' | 'inorganic' | 'protein' | 'crystal' | 'other';
+  // AI tutoring support (auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  gradeBand?: string;
 }
 
 // Union Type for the Exhibit
@@ -891,6 +894,9 @@ export interface PeriodicTableData {
   description?: string;
   highlightElements?: number[]; // Array of atomic numbers to highlight
   focusCategory?: string; // Optional category to focus on
+  // AI tutoring support (auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  gradeBand?: string;
 }
 
 // Media Player Types (Audio-Visual Lesson Player with Knowledge Checks)
@@ -1182,6 +1188,7 @@ export type ComponentId =
   | 'vehicle-comparison-lab' // Side-by-side vehicle data analysis across speed, weight, capacity, range
   | 'propulsion-lab' // Newton's Third Law across propulsion types (jet, propeller, rocket, wheel)
   | 'propulsion-timeline' // Interactive timeline of transportation history from wheel to spacecraft
+  | 'vehicle-design-studio' // Interactive vehicle design studio for engineering education
 
   // Astronomy Primitives (K-5)
   | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
@@ -1379,6 +1386,7 @@ export type { VehicleComparisonLabData, ComparisonVehicle, ComparisonChallenge, 
 export type { PropulsionLabData, PropulsionType, NewtonThirdLaw, WhatIfExperiment, PropulsionComparison } from './primitives/visual-primitives/engineering/PropulsionLab';
 export type { PaperAirplaneDesignerData } from './primitives/visual-primitives/engineering/PaperAirplaneDesigner';
 export type { PropulsionTimelineData, TimelineMilestone, TimelineEra as PropulsionTimelineEra, SpeedRecord, SequencingChallenge, InnovationChain } from './primitives/visual-primitives/engineering/PropulsionTimeline';
+export type { VehicleDesignStudioData } from './primitives/visual-primitives/engineering/VehicleDesignStudio';
 
 // Math Phase 2
 export type { TenFrameData } from './primitives/visual-primitives/math/TenFrame';

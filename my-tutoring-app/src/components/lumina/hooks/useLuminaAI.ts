@@ -143,31 +143,25 @@ export function useLuminaAI({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, primitiveType, exhibitId, topic, gradeLevel]);
 
-  // Effect 2: Lesson-mode activation
-  // Watches for session becoming 'lesson' + connected, then switches primitive.
-  // No cleanup — lesson session is owned by LessonAIBootstrap, not this hook.
+  // Effect 2: Lesson-mode registration (no auto-switch)
+  // Marks this primitive as "lesson-aware" so ensureActive() and context updates
+  // work correctly. Does NOT call switchPrimitive() — viewport-based tracking in
+  // ManifestOrderRenderer handles sequential activation instead of all primitives
+  // racing to switch on mount.
   useEffect(() => {
     if (!enabled) return;
     if (context.sessionMode !== 'lesson' || !context.isConnected) return;
     if (hasLessonSwitchedRef.current) return;
 
     const stableId = stableInstanceIdRef.current;
-    console.log(`[useLuminaAI] Lesson mode ready — switching to ${primitiveType} (${stableId})`);
+    console.log(`[useLuminaAI] Lesson mode ready — registered ${primitiveType} (${stableId})`);
 
-    contextRef.current.switchPrimitive({
-      primitive_type: primitiveType,
-      instance_id: stableId,
-      primitive_data: primitiveDataRef.current,
-      exhibit_id: exhibitId,
-      topic: topic,
-      grade_level: gradeLevel,
-    });
     hasConnectedRef.current = true;
     hasLessonSwitchedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, primitiveType, context.sessionMode, context.isConnected]);
 
-  // Reset lesson switch flag on unmount so remounting triggers a fresh switch
+  // Reset lesson registration flag on unmount so remounting triggers a fresh registration
   useEffect(() => {
     return () => {
       hasLessonSwitchedRef.current = false;

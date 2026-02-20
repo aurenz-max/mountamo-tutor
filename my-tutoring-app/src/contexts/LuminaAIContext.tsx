@@ -131,6 +131,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Session mode and active primitive tracking
   const [sessionMode, setSessionMode] = useState<SessionMode>('idle');
   const [activePrimitiveId, setActivePrimitiveId] = useState<string | null>(null);
+  const activePrimitiveIdRef = useRef<string | null>(null);
 
   // Metrics tracking
   const [aiMetrics, setAIMetrics] = useState<AIMetrics>({
@@ -252,6 +253,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setIsAIResponding(false);
         } else if (messageType === 'primitive_switched') {
           console.log(`Lumina AI: switched to ${message.primitive_type} (${message.instance_id})`);
+          activePrimitiveIdRef.current = message.instance_id;
           setActivePrimitiveId(message.instance_id);
         } else if (messageType === 'auth_success' || messageType === 'session_ready') {
           console.log('Lumina AI session ready:', message.message);
@@ -265,6 +267,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.log('Lumina AI WebSocket closed:', event.code, event.reason);
       setIsConnected(false);
       setSessionMode('idle');
+      activePrimitiveIdRef.current = null;
       setActivePrimitiveId(null);
 
       if (sessionStartTimeRef.current > 0) {
@@ -377,6 +380,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           setIsConnected(true);
           setSessionMode('standalone');
+          activePrimitiveIdRef.current = primitiveContext.instance_id;
           setActivePrimitiveId(primitiveContext.instance_id);
           console.log('Lumina AI authenticated (standalone)');
         } catch (error) {
@@ -454,6 +458,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           setIsConnected(true);
           setSessionMode('lesson');
+          activePrimitiveIdRef.current = info.firstPrimitive.instance_id;
           setActivePrimitiveId(info.firstPrimitive.instance_id);
           console.log('Lumina AI authenticated (lesson mode)');
         } catch (error) {
@@ -476,6 +481,11 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    // Skip if already on this primitive — avoids redundant WebSocket messages
+    if (primitiveContext.instance_id === activePrimitiveIdRef.current) {
+      return;
+    }
+
     console.log(`[LuminaAI] switchPrimitive() to ${primitiveContext.primitive_type} (${primitiveContext.instance_id})`);
 
     currentPrimitiveRef.current = primitiveContext;
@@ -493,6 +503,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
 
     // Optimistically set active — server will confirm via primitive_switched
+    activePrimitiveIdRef.current = primitiveContext.instance_id;
     setActivePrimitiveId(primitiveContext.instance_id);
   }, []);
 
@@ -511,6 +522,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     setIsConnected(false);
     setSessionMode('idle');
+    activePrimitiveIdRef.current = null;
     setActivePrimitiveId(null);
     setConversation([]);
 

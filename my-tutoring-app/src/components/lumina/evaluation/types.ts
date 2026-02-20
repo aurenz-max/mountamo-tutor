@@ -2644,6 +2644,21 @@ export interface EngineExplorerMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface VehicleDesignStudioMetrics extends BasePrimitiveMetrics {
+  type: 'vehicle-design-studio';
+  designIterations: number;
+  constraintsMet: boolean;
+  improvementAcrossIterations: number;
+  partsExplored: number;
+  partsTotal: number;
+  challengesCompleted: number;
+  challengesTotal: number;
+  variableIsolation: boolean;
+  designLogUsed: boolean;
+  bestEfficiencyScore: number;
+  attemptsCount: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -2665,6 +2680,7 @@ export type PrimitiveMetrics =
   | BlueprintCanvasMetrics
   | PaperAirplaneDesignerMetrics
   | EngineExplorerMetrics
+  | VehicleDesignStudioMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics

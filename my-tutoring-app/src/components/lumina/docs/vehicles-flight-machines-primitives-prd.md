@@ -1156,132 +1156,132 @@ This is a **data display primitive** (not an interactive simulation). The AI gen
 
 ## DOMAIN 4: Design & Innovation Challenges
 
-### 12. `vehicle-design-studio` — Engineering Design Process
+  ### 12. `vehicle-design-studio` — Engineering Design Process
 
-**Purpose:** A drag-and-drop vehicle designer where students select a body shape, propulsion type, wheels/wings/hull, and payload — then test their creation against physics-based performance metrics. This is the engineering design process made tangible: define → design → test → iterate. The culminating challenge primitive that draws on concepts from all other domains.
+  **Purpose:** A drag-and-drop vehicle designer where students select a body shape, propulsion type, wheels/wings/hull, and payload — then test their creation against physics-based performance metrics. This is the engineering design process made tangible: define → design → test → iterate. The culminating challenge primitive that draws on concepts from all other domains.
 
-**Grade Band:** 2-5
+  **Grade Band:** 2-5
 
-**Cognitive Operation:** Design thinking, constraint reasoning, trade-off analysis, iteration
+  **Cognitive Operation:** Design thinking, constraint reasoning, trade-off analysis, iteration
 
-**Multimodal Features:**
-- **Visual:** Parts palette on the left, design canvas in the center, performance report on the right. Physics simulation shows the vehicle in motion. Performance radar chart comparing speed, range, stability, efficiency, capacity. Design version history showing improvement across iterations.
-- **AI Tutoring ([Scaffold](ADDING_TUTORING_SCAFFOLD.md)):** AI tutor sees selected parts, design constraints, simulation results, and iteration history. Coaches the design process: asks prediction questions before tests ("What do you think will happen with that heavy body and small engine?"), analyzes results with the student ("Your stability is low — what could you change?"), encourages single-variable testing, celebrates improvement across iterations, and guides constraint satisfaction.
-- **Interactive:** Drag-and-drop parts from palette. Test button runs simulation. Performance report auto-generates. Constraint cards show requirements. Design log tracks iterations.
+  **Multimodal Features:**
+  - **Visual:** Parts palette on the left, design canvas in the center, performance report on the right. Physics simulation shows the vehicle in motion. Performance radar chart comparing speed, range, stability, efficiency, capacity. Design version history showing improvement across iterations.
+  - **AI Tutoring ([Scaffold](ADDING_TUTORING_SCAFFOLD.md)):** AI tutor sees selected parts, design constraints, simulation results, and iteration history. Coaches the design process: asks prediction questions before tests ("What do you think will happen with that heavy body and small engine?"), analyzes results with the student ("Your stability is low — what could you change?"), encourages single-variable testing, celebrates improvement across iterations, and guides constraint satisfaction.
+  - **Interactive:** Drag-and-drop parts from palette. Test button runs simulation. Performance report auto-generates. Constraint cards show requirements. Design log tracks iterations.
 
-**Learning Progression:**
-| Grade | Focus |
-|-------|-------|
-| 2 | Picking parts: big wheels vs small wheels, flat bottom for boats, wings for planes |
-| 3 | Adding/removing parts changes performance; shapes matter |
-| 4 | Design constraints — can't have everything; trade-offs between speed and capacity |
-| 5 | Systematic testing with variable isolation; multi-objective optimization |
+  **Learning Progression:**
+  | Grade | Focus |
+  |-------|-------|
+  | 2 | Picking parts: big wheels vs small wheels, flat bottom for boats, wings for planes |
+  | 3 | Adding/removing parts changes performance; shapes matter |
+  | 4 | Design constraints — can't have everything; trade-offs between speed and capacity |
+  | 5 | Systematic testing with variable isolation; multi-objective optimization |
 
-**Interaction Model:**
-- Phase 1 (Design): Choose a domain (land/sea/air). Select body, propulsion, and control components from the parts palette.
-- Phase 2 (Test): Run the physics simulation and watch the vehicle perform.
-- Phase 3 (Analyze): Review performance report. Identify weakest metric.
-- Phase 4 (Iterate): Modify the design and retest. Compare to previous version in the design log.
-- Challenge Mode: Meet specific constraints ("Carry 100kg over 500km, use less than 50 liters of fuel").
+  **Interaction Model:**
+  - Phase 1 (Design): Choose a domain (land/sea/air). Select body, propulsion, and control components from the parts palette.
+  - Phase 2 (Test): Run the physics simulation and watch the vehicle perform.
+  - Phase 3 (Analyze): Review performance report. Identify weakest metric.
+  - Phase 4 (Iterate): Modify the design and retest. Compare to previous version in the design log.
+  - Challenge Mode: Meet specific constraints ("Carry 100kg over 500km, use less than 50 liters of fuel").
 
-**Schema:**
-```json
-{
-  "primitiveType": "vehicle-design-studio",
-  "domain": "string (land | sea | air | amphibious)",
-  "title": "string",
+  **Schema:**
+  ```json
+  {
+    "primitiveType": "vehicle-design-studio",
+    "domain": "string (land | sea | air | amphibious)",
+    "title": "string",
 
-  "partsPalette": {
-    "bodies": [
+    "partsPalette": {
+      "bodies": [
+        {
+          "id": "string",
+          "name": "string (e.g., 'Streamlined Car Body')",
+          "weight": "number (kg)",
+          "dragCoefficient": "number",
+          "capacity": "number (passengers or kg cargo)",
+          "cost": "number (budget units)",
+          "imagePrompt": "string"
+        }
+      ],
+      "propulsion": [
+        {
+          "id": "string",
+          "name": "string (e.g., 'Electric Motor')",
+          "thrustOutput": "number (N)",
+          "fuelEfficiency": "number (km per unit fuel)",
+          "weight": "number (kg)",
+          "cost": "number",
+          "requires": "string (e.g., 'air' | 'ground' | 'any')"
+        }
+      ],
+      "controls": [
+        {
+          "id": "string",
+          "name": "string (e.g., 'Fixed Wings')",
+          "stabilityBonus": "number",
+          "dragPenalty": "number",
+          "weight": "number (kg)",
+          "cost": "number"
+        }
+      ]
+    },
+
+    "constraints": {
+      "maxWeight": "number | null",
+      "maxCost": "number | null",
+      "minRange": "number | null",
+      "minSpeed": "number | null",
+      "minCapacity": "number | null",
+      "requiredDomain": "string | null"
+    },
+
+    "simulationOutput": {
+      "topSpeed": "number",
+      "range": "number",
+      "stability": "number (0-100)",
+      "efficiency": "number (0-100)",
+      "capacity": "number",
+      "totalWeight": "number",
+      "totalCost": "number",
+      "meetsConstraints": "boolean"
+    },
+
+    "designTips": [
       {
-        "id": "string",
-        "name": "string (e.g., 'Streamlined Car Body')",
-        "weight": "number (kg)",
-        "dragCoefficient": "number",
-        "capacity": "number (passengers or kg cargo)",
-        "cost": "number (budget units)",
-        "imagePrompt": "string"
+        "condition": "string (e.g., 'stability < 30')",
+        "tip": "string (e.g., 'Your vehicle wobbles too much — try adding a tail fin or widening the base')"
       }
     ],
-    "propulsion": [
+
+    "challenges": [
       {
-        "id": "string",
-        "name": "string (e.g., 'Electric Motor')",
-        "thrustOutput": "number (N)",
-        "fuelEfficiency": "number (km per unit fuel)",
-        "weight": "number (kg)",
-        "cost": "number",
-        "requires": "string (e.g., 'air' | 'ground' | 'any')"
+        "name": "string (e.g., 'Cargo Hauler Challenge')",
+        "description": "string",
+        "constraints": "object (same shape as constraints above)",
+        "targetMetric": "string (which metric to optimize)",
+        "difficulty": "number (1-5)"
       }
     ],
-    "controls": [
-      {
-        "id": "string",
-        "name": "string (e.g., 'Fixed Wings')",
-        "stabilityBonus": "number",
-        "dragPenalty": "number",
-        "weight": "number (kg)",
-        "cost": "number"
-      }
-    ]
-  },
 
-  "constraints": {
-    "maxWeight": "number | null",
-    "maxCost": "number | null",
-    "minRange": "number | null",
-    "minSpeed": "number | null",
-    "minCapacity": "number | null",
-    "requiredDomain": "string | null"
-  },
+    "gradeBand": "2-3 | 4-5"
+  }
+  ```
 
-  "simulationOutput": {
-    "topSpeed": "number",
-    "range": "number",
-    "stability": "number (0-100)",
-    "efficiency": "number (0-100)",
-    "capacity": "number",
-    "totalWeight": "number",
-    "totalCost": "number",
-    "meetsConstraints": "boolean"
-  },
+  **Evaluable:** Yes.
 
-  "designTips": [
-    {
-      "condition": "string (e.g., 'stability < 30')",
-      "tip": "string (e.g., 'Your vehicle wobbles too much — try adding a tail fin or widening the base')"
-    }
-  ],
+  **Evaluation Metrics:**
+  - `type: 'vehicle-design-studio'`
+  - `designIterations` (count of distinct designs tested)
+  - `constraintsMet` (boolean — did final design meet all constraints)
+  - `improvementAcrossIterations` (metric improvement from first to final design)
+  - `partsExplored` / `partsTotal` (how many different parts did they try)
+  - `challengesCompleted` / `challengesTotal`
+  - `variableIsolation` (boolean — did they change one thing at a time at least once)
+  - `designLogUsed` (boolean — did they reference previous designs)
+  - `bestEfficiencyScore` (0-100)
+  - `attemptsCount`
 
-  "challenges": [
-    {
-      "name": "string (e.g., 'Cargo Hauler Challenge')",
-      "description": "string",
-      "constraints": "object (same shape as constraints above)",
-      "targetMetric": "string (which metric to optimize)",
-      "difficulty": "number (1-5)"
-    }
-  ],
-
-  "gradeBand": "2-3 | 4-5"
-}
-```
-
-**Evaluable:** Yes.
-
-**Evaluation Metrics:**
-- `type: 'vehicle-design-studio'`
-- `designIterations` (count of distinct designs tested)
-- `constraintsMet` (boolean — did final design meet all constraints)
-- `improvementAcrossIterations` (metric improvement from first to final design)
-- `partsExplored` / `partsTotal` (how many different parts did they try)
-- `challengesCompleted` / `challengesTotal`
-- `variableIsolation` (boolean — did they change one thing at a time at least once)
-- `designLogUsed` (boolean — did they reference previous designs)
-- `bestEfficiencyScore` (0-100)
-- `attemptsCount`
-
----
+  ---
 
 ### 13. `cargo-loading-challenge` — Weight, Balance & Logistics
 

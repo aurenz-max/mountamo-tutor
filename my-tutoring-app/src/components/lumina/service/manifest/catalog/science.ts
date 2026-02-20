@@ -11,12 +11,64 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
   {
     id: 'molecule-viewer',
     description: 'Interactive 3D molecular structure visualization with CPK-colored atoms and chemical bonds. Perfect for chemistry lessons on molecular structure, bonding, organic compounds, crystal lattices, proteins, and biochemistry. Features interactive atom selection, bond analysis, and auto-rotating 3D view. HIGHLY RECOMMENDED for any chemistry topic involving molecular structure.',
-    constraints: 'Best for middle-school and above. Use for chemistry, biochemistry, organic chemistry, crystal structures, or any topic involving molecules, atoms, and chemical bonds.'
+    constraints: 'Best for middle-school and above. Use for chemistry, biochemistry, organic chemistry, crystal structures, or any topic involving molecules, atoms, and chemical bonds.',
+    tutoring: {
+      taskDescription: 'Student is exploring a 3D model of {{moleculeName}} ({{category}}). The molecule has {{atomCount}} atoms and {{bondCount}} bonds. They can click atoms to learn about each element and examine the bond structure. Help them understand the molecular geometry, bonding patterns, and why this molecule has the shape it does.',
+      contextKeys: ['moleculeName', 'category', 'atomCount', 'bondCount', 'uniqueElements', 'bondTypes', 'selectedAtomElement', 'selectedAtomName', 'atomsExplored'],
+      scaffoldingLevels: {
+        level1: '"Click on different atoms to explore them. What elements make up this molecule? Do you notice a pattern in how they\'re arranged?"',
+        level2: '"This is {{moleculeName}}, made of {{uniqueElements}}. Look at how the atoms connect — there are {{bondCount}} bonds. Can you find the different bond types? Try clicking the central atom to see what it connects to."',
+        level3: '"Let\'s look at {{moleculeName}} step by step. First, find the central atom — it\'s usually the one with the most bonds. Click it and count its connections. The shape of the molecule depends on how many atoms surround that center. {{bondCount}} bonds arranged around it push apart to get as far from each other as possible — that\'s what gives this molecule its 3D shape."',
+      },
+      commonStruggles: [
+        { pattern: 'Student clicks randomly without examining atom details', response: 'Guide: "When you click an atom, look at the info panel on the left. It tells you the element name, atomic number, and where it sits in the molecule. Try clicking one atom at a time and reading about it!"' },
+        { pattern: 'Student does not understand why atoms bond', response: 'Explain: "Atoms bond because they want to fill their outer electron shell. Carbon makes 4 bonds, oxygen makes 2, hydrogen makes 1. Count the bonds on each atom — do they match these numbers?"' },
+        { pattern: 'Student confuses single and double bonds', response: 'Clarify: "A single bond is one shared pair of electrons — one stick connecting two atoms. A double bond is TWO shared pairs — shown as two sticks. Double bonds are shorter and stronger. Look at the bond analysis panel to see which types are in this molecule."' },
+        { pattern: 'Student does not understand molecular shape', response: 'Use an analogy: "Think of the bonds around a central atom like balloons tied together. If there are 4 balloons, they push apart into a pyramid shape (tetrahedral). If there are 3, they spread into a flat triangle. The bonds push apart the same way!"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'STRUCTURE NARRATION',
+          instruction:
+            'When describing molecular structure, relate the 3D shape to everyday objects. '
+            + 'For tetrahedral: "like a camera tripod with a handle pointing up." '
+            + 'For linear: "like a straight stick." '
+            + 'For bent: "like a boomerang." '
+            + 'Keep descriptions visual and age-appropriate.',
+        },
+      ],
+    },
   },
   {
     id: 'periodic-table',
     description: 'Interactive periodic table of all 118 elements with detailed element information, electron shell visualization, stability charts, and category filtering. Perfect for teaching element properties, electron configuration, periodic trends, atomic structure, chemical categories, and the organization of the periodic table. Features clickable elements with modal views showing atomic number, mass, electron shells, valence electrons, phase, and band of stability.',
-    constraints: 'Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Ideal for introducing the periodic table or exploring specific element groups.'
+    constraints: 'Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Ideal for introducing the periodic table or exploring specific element groups.',
+    tutoring: {
+      taskDescription: 'Student is exploring the periodic table. They have clicked on {{elementsExplored}} unique element(s) so far. Currently viewing: {{selectedElementName}} ({{selectedElementSymbol}}, atomic number {{selectedElementNumber}}), a {{selectedElementCategory}} in group {{selectedElementGroup}}, period {{selectedElementPeriod}}. Phase: {{selectedElementPhase}}. Valence electrons: {{selectedElementValence}}. Category filter active: {{hoveredCategory}}.',
+      contextKeys: ['title', 'focusCategory', 'selectedElementName', 'selectedElementSymbol', 'selectedElementNumber', 'selectedElementCategory', 'selectedElementGroup', 'selectedElementPeriod', 'selectedElementValence', 'selectedElementPhase', 'hoveredCategory', 'elementsExplored', 'categoriesExplored'],
+      scaffoldingLevels: {
+        level1: '"Click on an element to learn about it. What do you notice about how the elements are arranged on the table?"',
+        level2: '"Look at where {{selectedElementName}} sits — it\'s in group {{selectedElementGroup}}, period {{selectedElementPeriod}}. Elements in the same column share similar properties. Try clicking another element in the same group to compare!"',
+        level3: '"Let\'s explore {{selectedElementName}} ({{selectedElementSymbol}}) step by step. It\'s element number {{selectedElementNumber}} in the {{selectedElementCategory}} family. It has {{selectedElementValence}} valence electrons — that\'s the key to how it bonds. All elements in group {{selectedElementGroup}} have similar valence electrons, which is why they behave alike in chemical reactions. Try clicking a neighbor to see the pattern!"',
+      },
+      commonStruggles: [
+        { pattern: 'Student clicks elements randomly without reading the modal details', response: 'Guide: "When you click an element, take a moment to read its properties — the atomic number, electron shells, and phase. Each detail tells a story about how that element behaves!"' },
+        { pattern: 'Student does not understand why elements are arranged in rows and columns', response: 'Explain: "The table is organized by atomic number — each element has one more proton than the last. Rows (periods) fill up electron shells. Columns (groups) have the same number of outer electrons, so they behave similarly!"' },
+        { pattern: 'Student confuses groups (columns) and periods (rows)', response: 'Clarify: "Groups go UP and DOWN (columns) — elements in the same group are like a family with similar personalities. Periods go LEFT to RIGHT (rows) — they show how shells fill up with electrons."' },
+        { pattern: 'Student does not understand category colors or element families', response: 'Connect to properties: "Each color represents a family of elements. Alkali metals (one color) are super reactive. Noble gases (another color) barely react at all. Click the category buttons at the top to highlight a whole family!"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PERIODIC TRENDS',
+          instruction:
+            'When the student explores multiple elements in the same group or period, highlight periodic trends: '
+            + 'atomic radius increases down a group and decreases across a period; '
+            + 'electronegativity increases across a period and decreases down a group; '
+            + 'reactivity patterns differ for metals vs nonmetals. '
+            + 'Keep explanations visual and age-appropriate.',
+        },
+      ],
+    },
   },
   {
     id: 'matter-explorer',

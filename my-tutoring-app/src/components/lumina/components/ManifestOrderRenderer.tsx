@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { getPrimitive, SectionHeader, CenteredSectionHeader } from '../config/primitiveRegistry';
 import { OrderedComponent } from '../types';
 import { useExhibitContext } from '../contexts/ExhibitContext';
 import { ObjectiveBadge } from './ObjectiveBadge';
 import { useEvaluationContext } from '../evaluation';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 
 interface ManifestOrderRendererProps {
   /**
@@ -28,8 +29,9 @@ interface ManifestOrderRendererProps {
  * This component iterates through the orderedComponents array (which preserves
  * the manifest's layout order) and renders each component using the primitive registry.
  *
- * This replaces the hardcoded component sections in App.tsx with a dynamic,
- * order-preserving renderer.
+ * Viewport tracking: Uses IntersectionObserver to detect which primitive the student
+ * is currently viewing and notifies the AI session via switchPrimitive(). This ensures
+ * the AI helper stays in sync with the student's position in the lesson.
  *
  * All component lookups go through the primitive registry - no manual imports needed.
  * The only special handling is for:
@@ -43,13 +45,86 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
 }) => {
   const { getObjectivesForComponent, manifestItems } = useExhibitContext();
   const evaluationContext = useEvaluationContext();
+  const aiContext = useLuminaAIContext();
+
+  // Refs for viewport tracking
+  const containerRef = useRef<HTMLDivElement>(null);
+  const switchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const aiContextRef = useRef(aiContext);
+  aiContextRef.current = aiContext;
+  // Keep a stable ref to orderedComponents for use in the observer callback
+  const orderedComponentsRef = useRef(orderedComponents);
+  orderedComponentsRef.current = orderedComponents;
+
+  // Debounced switch: waits 500ms after a primitive enters the viewport
+  // before switching, so fast scrolling doesn't spam the backend
+  const debouncedSwitch = useCallback((componentId: string, instanceId: string, data: any) => {
+    clearTimeout(switchTimerRef.current);
+    switchTimerRef.current = setTimeout(() => {
+      const ctx = aiContextRef.current;
+      if (ctx.sessionMode !== 'lesson' || !ctx.isConnected) return;
+
+      ctx.switchPrimitive({
+        primitive_type: componentId,
+        instance_id: instanceId,
+        primitive_data: data || {},
+      });
+    }, 500);
+  }, []);
+
+  // Set up IntersectionObserver for viewport-based primitive tracking
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Observe primitive sections — trigger when element enters the upper-center
+    // of the viewport (rootMargin shrinks the observation zone)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the entry that is most "in view" — prefer the one closest to viewport top
+        let bestEntry: IntersectionObserverEntry | null = null;
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          if (!bestEntry || entry.boundingClientRect.top < bestEntry.boundingClientRect.top) {
+            bestEntry = entry;
+          }
+        }
+
+        if (!bestEntry) return;
+
+        const target = bestEntry.target as HTMLElement;
+        const instanceId = target.dataset.primitiveInstanceId;
+        const componentId = target.dataset.primitiveComponentId;
+        if (!instanceId || !componentId) return;
+
+        // Find the component data from our ordered list
+        const component = orderedComponentsRef.current.find(c => c.instanceId === instanceId);
+        debouncedSwitch(componentId, instanceId, component?.data);
+      },
+      {
+        // Focus zone: ignore the top 20% and bottom 50% of the viewport
+        // so only elements in the upper-center area trigger switches
+        rootMargin: '-20% 0px -50% 0px',
+        threshold: 0.1,
+      }
+    );
+
+    // Observe all primitive sections within the container
+    const sections = container.querySelectorAll('[data-primitive-instance-id]');
+    sections.forEach(section => observer.observe(section));
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(switchTimerRef.current);
+    };
+  }, [orderedComponents, debouncedSwitch]);
 
   if (!orderedComponents || orderedComponents.length === 0) {
     return null;
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={containerRef}>
       {orderedComponents.map((item, index) => {
         const { componentId, instanceId, data } = item;
 
@@ -121,7 +196,12 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
             return null;
           }
           return (
-            <div key={instanceId} className="relative mb-20">
+            <div
+              key={instanceId}
+              className="relative mb-20"
+              data-primitive-instance-id={instanceId}
+              data-primitive-component-id={componentId}
+            >
               {objectives.length > 0 && (
                 <div className="mb-4">
                   <ObjectiveBadge objectives={objectives} compact={true} />
@@ -144,7 +224,12 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
 
         // Standard component rendering
         return (
-          <div key={instanceId} className={config.containerClassName || 'mb-20'}>
+          <div
+            key={instanceId}
+            className={config.containerClassName || 'mb-20'}
+            data-primitive-instance-id={instanceId}
+            data-primitive-component-id={componentId}
+          >
             {/* Objective badges above component */}
             {objectives.length > 0 && (
               <div className="mb-4">
