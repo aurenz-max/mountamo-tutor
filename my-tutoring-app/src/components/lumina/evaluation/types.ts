@@ -2439,6 +2439,14 @@ export interface NumberSequencerMetrics extends BasePrimitiveMetrics {
   decadeFillAccuracy?: number;
 }
 
+export interface NumberBondMetrics extends BasePrimitiveMetrics {
+  type: 'number-bond';
+  accuracy: number;
+  decomposePairsFound: number;
+  factFamilyComplete: boolean;
+  attemptsCount: number;
+}
+
 export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {
   type: 'regrouping-workbench';
 
@@ -2745,6 +2753,7 @@ export type PrimitiveMetrics =
   | MeasurementToolsMetrics
   | ShapeBuilderMetrics
   | NumberSequencerMetrics
+  | NumberBondMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

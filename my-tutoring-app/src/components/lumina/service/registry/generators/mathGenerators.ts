@@ -37,6 +37,7 @@ import { generateMeasurementTools } from '../../math/gemini-measurement-tools';
 import { generateShapeBuilder } from '../../math/gemini-shape-builder';
 import { generateComparisonBuilder } from '../../math/gemini-comparison-builder';
 import { generateNumberSequencer } from '../../math/gemini-number-sequencer';
+import { generateNumberBond } from '../../math/gemini-number-bond';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -242,6 +243,13 @@ registerGenerator('number-sequencer', async (item, topic, gradeContext) => ({
   data: await generateNumberSequencer(topic, gradeContext, item.config),
 }));
 
+// Number Bond (K-1 part-part-whole relationships)
+registerGenerator('number-bond', async (item, topic, gradeContext) => ({
+  type: 'number-bond',
+  instanceId: item.instanceId,
+  data: await generateNumberBond(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
 // Legacy Math Primitives (now have dedicated service files)
 // ============================================================================
@@ -290,6 +298,6 @@ registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
 }));
 
 // ============================================================================
-// Migration status: 25/25 math primitives registered
+// Migration status: 26/26 math primitives registered
 // All math generators now use dedicated service files in math/ folder
 // ============================================================================

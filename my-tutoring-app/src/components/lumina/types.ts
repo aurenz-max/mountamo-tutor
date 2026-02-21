@@ -1058,6 +1058,7 @@ export type ComponentId =
 
   // Math Visualization Primitives (Elementary Math)
   | 'bar-model'          // Comparative bar visualization for values
+  | 'number-bond'        // Part-whole number bond visualization for addition and subtraction
   | 'number-line'        // Linear number line with highlights
   | 'number-sequencer'   // Interactive number sequencing for building number sense
   | 'base-ten-blocks'    // Place value visualization (hundreds, tens, ones)
@@ -1498,6 +1499,7 @@ export type { BaseTenBlocksData, BaseTenBlocksChallenge } from './primitives/vis
 export type { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from './primitives/visual-primitives/math/BalanceScale';
 export type { ComparisonBuilderData } from './primitives/visual-primitives/math/ComparisonBuilder';
 export type { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from './primitives/visual-primitives/math/FunctionMachine';
+export type { NumberBondData } from './primitives/visual-primitives/math/NumberBond';
 export type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
 export type { RatioTableData, RatioTableChallenge } from './primitives/visual-primitives/math/RatioTable';
 

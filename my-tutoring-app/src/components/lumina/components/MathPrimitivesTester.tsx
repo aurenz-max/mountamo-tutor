@@ -32,7 +32,8 @@ import BaseTenBlocks from '../primitives/visual-primitives/math/BaseTenBlocks';
 import FractionCircles from '../primitives/visual-primitives/math/FractionCircles';
 import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
 import NumberSequencer from '../primitives/visual-primitives/math/NumberSequencer';
-import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData } from '../types';
+import NumberBond from '../primitives/visual-primitives/math/NumberBond';
+import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData } from '../types';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -45,7 +46,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -80,6 +81,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'base-ten-blocks', label: 'Base Ten Blocks', icon: '🧱', topic: 'Place value and regrouping' },
   { value: 'comparison-builder', label: 'Comparison Builder', icon: '🐻', topic: 'Compare numbers 1-10' },
   { value: 'number-sequencer', label: 'Number Sequencer', icon: '🔢', topic: 'Number sequences and counting' },
+  { value: 'number-bond', label: 'Number Bond', icon: '🔗', topic: 'number bonds' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -347,6 +349,18 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'math-number-sequences',
             subskillId: 'number-sequencing',
             objectiveId: 'understand-number-sequences',
+          }}
+        />
+      );
+    case 'number-bond':
+      return (
+        <NumberBond
+          data={{
+            ...(data as NumberBondData),
+            instanceId: `number-bond-${Date.now()}`,
+            skillId: 'math-number-bonds',
+            subskillId: 'decompose-compose',
+            objectiveId: 'understand-number-bonds',
           }}
         />
       );

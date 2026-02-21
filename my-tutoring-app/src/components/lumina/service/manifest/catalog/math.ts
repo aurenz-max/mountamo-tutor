@@ -1,7 +1,7 @@
 /**
  * Math Catalog - Component definitions for mathematics primitives
  *
- * Contains 23 math visualization components for teaching mathematical concepts
+ * Contains 24 math visualization components for teaching mathematical concepts
  * from elementary through advanced algebra.
  */
 
@@ -1066,6 +1066,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student reverses number order (e.g., puts 9 before 7)', response: 'Use the number line reference. "Which number is smaller? Smaller numbers go first when we count up."' },
         { pattern: 'Student struggles with decade transitions (e.g., 29 to 30)', response: 'Highlight the pattern: "When we finish counting 21, 22... 29, the next group of ten starts. After twenty-nine comes thirty!"' },
         { pattern: 'Student confuses before and after', response: 'Use physical direction: "Before means the number that comes first when counting. After means the number that comes next. When you count 5, 6, 7 — 6 comes AFTER 5 and BEFORE 7."' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'number-bond',
+    description: 'Classic number bond diagram (circle-and-branch visual) showing part-part-whole relationships. Supports 4 challenge types: decompose (find all pairs), missing-part, fact-family (write all 4 equations), and build-equation (drag tiles). Perfect for K-1 addition/subtraction fluency. ESSENTIAL for Kindergarten and Grade 1 number decomposition.',
+    constraints: 'Max number 5 for Kindergarten, 10 for Grade 1. Decompose challenges need allPairs computed. Fact-family requires all 4 equations.',
+    tutoring: {
+      taskDescription: 'Student is working on number bonds with whole number {{whole}}. Challenge type: {{challengeType}}. They are finding how numbers decompose into parts.',
+      contextKeys: ['challengeType', 'whole', 'part1', 'part2', 'missingValue', 'pairsFound', 'totalPairs', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"If the whole is {{whole}}, what two groups could you split it into?"',
+        level2: '"You put {{part1}} in one part. How many are left for the other part? Think: {{whole}} take away {{part1}} equals..."',
+        level3: '"{{whole}} = {{part1}} + {{part2}}. Now flip it: {{whole}} = {{part2}} + {{part1}}. And the subtraction: {{whole}} - {{part1}} = {{part2}}, {{whole}} - {{part2}} = {{part1}}. That\'s the whole fact family!"',
+      },
+      commonStruggles: [
+        { pattern: 'Student repeats the same pair in decompose mode', response: 'Guide systematic discovery: "You found {{part1}} + {{part2}}. What if we put one more in the left group?"' },
+        { pattern: 'Student cannot find the missing part', response: 'Use concrete strategy: "If the whole is {{whole}} and one part is {{part1}}, count up from {{part1}} to {{whole}} — how many more do you need?"' },
+        { pattern: 'Student writes only 2 of 4 fact family equations', response: 'Connect addition and subtraction: "You wrote the addition facts. Now think backwards — if {{part1}} + {{part2}} = {{whole}}, what is {{whole}} - {{part1}}?"' },
+        { pattern: 'Student arranges equation tiles in wrong order', response: 'Point to bond diagram: "Look at the number bond. The whole is {{whole}} at the top. Which operation connects the parts to the whole?"' },
       ],
     },
     supportsEvaluation: true,

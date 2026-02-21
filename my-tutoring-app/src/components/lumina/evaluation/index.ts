@@ -101,6 +101,7 @@ export type {
   MeasurementToolsMetrics,
   ShapeBuilderMetrics,
   NumberSequencerMetrics,
+  NumberBondMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,

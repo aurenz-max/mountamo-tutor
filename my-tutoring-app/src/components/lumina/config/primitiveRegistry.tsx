@@ -25,6 +25,7 @@ import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
 import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
+import NumberBond from '../primitives/visual-primitives/math/NumberBond';
 import NumberSequencer from '../primitives/visual-primitives/math/NumberSequencer';
 import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
@@ -293,6 +294,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+  },
+
+  'number-bond': {
+    component: NumberBond,
+    sectionTitle: 'Number Bond',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'number-line': {
