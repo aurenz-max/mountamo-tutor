@@ -1,25 +1,47 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   usePrimitiveEvaluation,
   type FractionBarMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+
+/**
+ * Fraction Bar — Multi-phase interactive fraction model
+ *
+ * Three-phase educational flow:
+ *   Phase 1: Identify the Numerator (multiple choice)
+ *   Phase 2: Identify the Denominator (multiple choice)
+ *   Phase 3: Build the Fraction on the bar (shade partitions)
+ *
+ * AI tutoring triggers at every pedagogical moment:
+ *   [ACTIVITY_START]      — introduce the fraction challenge
+ *   [ANSWER_CORRECT]      — celebrate correct MC answer
+ *   [ANSWER_INCORRECT]    — nudge after wrong MC answer
+ *   [PHASE_TRANSITION]    — introduce the next phase
+ *   [BUILD_CORRECT]       — celebrate successful bar construction
+ *   [BUILD_INCORRECT]     — coach on shading error
+ *   [ALL_COMPLETE]        — celebrate full completion
+ *   [HINT_REQUESTED]      — student asked for help
+ *
+ * Tracks per-phase accuracy, attempts, and interaction metrics.
+ */
 
 export interface FractionBarData {
   title: string;
   description: string;
-  partitions: number; // Number of equal parts (denominator)
-  shaded: number; // Number of shaded parts (numerator)
-  barCount: number; // Number of stacked bars
-  showLabels?: boolean; // Display fraction notation
-  allowPartitionEdit?: boolean; // Student can change denominator
-  showEquivalentLines?: boolean; // Draw alignment guides
+  numerator: number;            // Target numerator (parts to shade)
+  denominator: number;          // Target denominator (total equal parts)
+  showDecimal?: boolean;        // Show decimal approximation in build phase
+  gradeLevel?: string;          // Grade level for age-appropriate language
+  numeratorChoices?: number[];  // Pre-generated MC options for phase 1
+  denominatorChoices?: number[];// Pre-generated MC options for phase 2
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
-  targetFraction?: string;        // e.g., "3/4" for goal-based tasks
-  taskType?: 'build' | 'compare' | 'explore';  // What they should do
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -33,17 +55,24 @@ interface FractionBarProps {
   className?: string;
 }
 
+type LearningPhase = 'identify-numerator' | 'identify-denominator' | 'build-fraction';
+
+/** Compute a phase score from attempt count (shared between submit and summary) */
+function computePhaseScore(attempts: number, penalty: number): number {
+  if (attempts <= 1) return 100;
+  return Math.max(50, 100 - (attempts - 1) * penalty);
+}
+
 const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
   const {
-    partitions: initialPartitions = 4,
-    shaded: initialShaded,
-    barCount = 1,
-    showLabels = true,
-    allowPartitionEdit = false,
-    showEquivalentLines = false,
-    // Evaluation props
-    targetFraction,
-    taskType = 'explore',
+    title,
+    description,
+    numerator,
+    denominator,
+    showDecimal = true,
+    gradeLevel,
+    numeratorChoices: providedNumeratorChoices,
+    denominatorChoices: providedDenominatorChoices,
     instanceId,
     skillId,
     subskillId,
@@ -52,32 +81,70 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // Determine initial shaded value based on task type and target
-  // For 'build' tasks with a target, start with blank (0)
-  // For 'explore' or when no target is provided, use provided value or default to 1
-  const defaultShaded = (taskType === 'build' && targetFraction) ? 0 : 1;
-  const shadedValue = initialShaded !== undefined ? initialShaded : defaultShaded;
+  const resolvedInstanceId = instanceId || `fraction-bar-${Date.now()}`;
 
-  // State for each bar's configuration
-  const [bars, setBars] = useState<Array<{ partitions: number; shaded: number }>>(
-    Array.from({ length: barCount }, () => ({
-      partitions: initialPartitions,
-      shaded: shadedValue,
-    }))
+  // ── Phase state ──────────────────────────────────────────────
+  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('identify-numerator');
+  const [feedback, setFeedback] = useState<string>('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'hint' | 'info'>('info');
+
+  // Phase 1: Identify numerator
+  const [selectedNumerator, setSelectedNumerator] = useState<number | null>(null);
+  const [numeratorAttempts, setNumeratorAttempts] = useState(0);
+
+  // Phase 2: Identify denominator
+  const [selectedDenominator, setSelectedDenominator] = useState<number | null>(null);
+  const [denominatorAttempts, setDenominatorAttempts] = useState(0);
+
+  // Phase 3: Build fraction on bar
+  const [shadedCount, setShadedCount] = useState(0);
+  const [shadingChanges, setShadingChanges] = useState(0);
+  const [buildAttempts, setBuildAttempts] = useState(0);
+
+  // Hints
+  const [hintsUsed, setHintsUsed] = useState(0);
+
+  // ── AI Tutoring ──────────────────────────────────────────────
+  const aiPrimitiveData = useMemo(
+    () => ({
+      numerator,
+      denominator,
+      currentPhase,
+      shadedCount,
+      gradeLevel: gradeLevel || 'Grade 3',
+    }),
+    [numerator, denominator, currentPhase, shadedCount, gradeLevel],
   );
 
-  // Track interaction metrics
-  const [partitionChangeCount, setPartitionChangeCount] = useState(0);
-  const [shadingChangeCount, setShadingChangeCount] = useState(0);
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'fraction-bar',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
 
-  // Evaluation hook - tracks timing and handles submission
+  // Activity start — introduce the challenge
+  useEffect(() => {
+    if (!isConnected) return;
+    sendText(
+      `[ACTIVITY_START] This is a multi-phase fraction bar activity for ${gradeLevel || 'Grade 3'}. `
+        + `The student will learn about the fraction ${numerator}/${denominator}. `
+        + `Phase 1: identify the numerator. Phase 2: identify the denominator. Phase 3: build the fraction by shading ${numerator} of ${denominator} parts. `
+        + `Introduce the activity warmly and briefly.`,
+      { silent: true },
+    );
+  }, [isConnected, numerator, denominator, gradeLevel, sendText]);
+
+  // ── Evaluation hook ──────────────────────────────────────────
   const {
-    submitResult,
-    hasSubmitted,
-    resetAttempt,
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
+    resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<FractionBarMetrics>({
     primitiveType: 'fraction-bar',
-    instanceId: instanceId || `fraction-bar-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
@@ -85,294 +152,665 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // Handle partition change for a specific bar
-  const handlePartitionChange = (barIndex: number, newPartitions: number) => {
-    if (!allowPartitionEdit) return;
-    const validPartitions = Math.max(1, Math.min(24, newPartitions)); // Limit to 1-24
-    setBars((prev) =>
-      prev.map((bar, idx) =>
-        idx === barIndex
-          ? { ...bar, partitions: validPartitions, shaded: Math.min(bar.shaded, validPartitions) }
-          : bar
-      )
-    );
-    setPartitionChangeCount((prev) => prev + 1);
-  };
+  // ── Phase summary data (for PhaseSummaryPanel) ─────────────
+  const phaseSummaryData = useMemo((): PhaseResult[] => {
+    if (!hasSubmittedEvaluation) return [];
 
-  // Handle shading toggle for a specific partition in a specific bar
-  const togglePartition = (barIndex: number, partitionIndex: number) => {
-    setBars((prev) =>
-      prev.map((bar, idx) => {
-        if (idx !== barIndex) return bar;
+    const p1Score = computePhaseScore(numeratorAttempts, 20);
+    const p2Score = computePhaseScore(denominatorAttempts, 20);
+    // buildAttempts is 0-indexed at submit time, so +1 for display
+    const p3Score = buildAttempts === 0 ? 100 : Math.max(50, 100 - buildAttempts * 15);
 
-        const isCurrentlyShaded = partitionIndex < bar.shaded;
+    return [
+      {
+        label: 'Identify the Numerator',
+        score: p1Score,
+        attempts: numeratorAttempts,
+        firstTry: numeratorAttempts === 1,
+        icon: '\uD83D\uDD22',
+        accentColor: 'purple',
+      },
+      {
+        label: 'Identify the Denominator',
+        score: p2Score,
+        attempts: denominatorAttempts,
+        firstTry: denominatorAttempts === 1,
+        icon: '\uD83D\uDD22',
+        accentColor: 'blue',
+      },
+      {
+        label: 'Build the Fraction',
+        score: p3Score,
+        attempts: buildAttempts + 1,
+        firstTry: buildAttempts === 0,
+        icon: '\uD83C\uDFAF',
+        accentColor: 'emerald',
+      },
+    ];
+  }, [hasSubmittedEvaluation, numeratorAttempts, denominatorAttempts, buildAttempts]);
 
-        if (isCurrentlyShaded) {
-          // If clicking a shaded partition, unshade from that point onwards
-          return { ...bar, shaded: partitionIndex };
-        } else {
-          // If clicking an unshaded partition, shade up to and including it
-          return { ...bar, shaded: partitionIndex + 1 };
-        }
-      })
-    );
-    setShadingChangeCount((prev) => prev + 1);
-  };
+  // ── Generate MC choices ──────────────────────────────────────
+  const generateChoices = useCallback(
+    (correct: number, other: number): number[] => {
+      const choices = new Set<number>([correct]);
+      if (other !== correct) choices.add(other);
+      const sum = numerator + denominator;
+      if (!choices.has(sum)) choices.add(sum);
+      if (correct > 1 && !choices.has(correct - 1)) choices.add(correct - 1);
+      if (!choices.has(correct + 1)) choices.add(correct + 1);
+      if (!choices.has(correct + 2)) choices.add(correct + 2);
+      let v = 1;
+      while (choices.size < 4) {
+        if (!choices.has(v)) choices.add(v);
+        v++;
+      }
+      return Array.from(choices)
+        .sort((a, b) => a - b)
+        .slice(0, 4);
+    },
+    [numerator, denominator],
+  );
 
-  // Simplify fraction
-  const simplifyFraction = (numerator: number, denominator: number): { num: number; den: number } => {
-    const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
-    const divisor = gcd(numerator, denominator);
-    return { num: numerator / divisor, den: denominator / divisor };
-  };
+  const numeratorChoices = useMemo(
+    () => providedNumeratorChoices ?? generateChoices(numerator, denominator),
+    [providedNumeratorChoices, numerator, denominator, generateChoices],
+  );
 
-  // Handle evaluation submission
-  const handleSubmit = () => {
-    if (hasSubmitted) return;
+  const denominatorChoices = useMemo(
+    () => providedDenominatorChoices ?? generateChoices(denominator, numerator),
+    [providedDenominatorChoices, numerator, denominator, generateChoices],
+  );
 
-    // Calculate metrics from current state
-    const primaryBar = bars[0]; // Use first bar for single-bar scenarios
-    const selectedFraction = `${primaryBar.shaded}/${primaryBar.partitions}`;
-    const simplified = simplifyFraction(primaryBar.shaded, primaryBar.partitions);
-    const simplifiedFraction = `${simplified.num}/${simplified.den}`;
-
-    // Determine success
-    let isCorrect = true;
-    if (targetFraction) {
-      // Parse target (e.g., "3/4" -> {num: 3, den: 4})
-      const [targetNum, targetDen] = targetFraction.split('/').map(Number);
-      const targetSimplified = simplifyFraction(targetNum, targetDen);
-      isCorrect =
-        simplified.num === targetSimplified.num && simplified.den === targetSimplified.den;
+  // ── Phase 1: Check numerator ─────────────────────────────────
+  const handleCheckNumerator = useCallback(() => {
+    if (selectedNumerator === null) {
+      setFeedback('Please select an answer first!');
+      setFeedbackType('error');
+      return;
     }
+    setNumeratorAttempts((p) => p + 1);
 
-    // Calculate score based on task type
-    let score = 0;
-    if (taskType === 'build') {
-      // For build tasks: correct answer gets 100, incorrect gets 0
-      score = isCorrect ? 100 : 0;
-    } else if (taskType === 'explore') {
-      // For exploration tasks: score based on engagement (not correctness)
-      score = Math.min(100, (shadingChangeCount + partitionChangeCount) * 10);
-    } else if (taskType === 'compare') {
-      // For comparison tasks: score based on correct comparison
-      score = isCorrect ? 100 : 0;
+    if (selectedNumerator === numerator) {
+      setFeedback(
+        `Correct! The numerator is ${numerator} \u2014 it\u2019s the top number that tells us how many parts are shaded.`,
+      );
+      setFeedbackType('success');
+
+      sendText(
+        `[ANSWER_CORRECT] Student correctly identified the numerator as ${numerator} for the fraction ${numerator}/${denominator}. `
+          + `Attempt ${numeratorAttempts + 1}. Congratulate briefly and explain what the numerator means.`,
+        { silent: true },
+      );
+
+      setTimeout(() => {
+        setCurrentPhase('identify-denominator');
+        setFeedback('');
+        sendText(
+          `[PHASE_TRANSITION] Moving to Phase 2: Identify the Denominator. `
+            + `The student already knows the numerator is ${numerator}. Now they need to identify ${denominator} as the denominator. `
+            + `Briefly introduce what the denominator means.`,
+          { silent: true },
+        );
+      }, 2000);
     } else {
-      // Default: correctness-based scoring
-      score = isCorrect ? 100 : 0;
+      setFeedback(
+        `Not quite. The numerator is the top number in a fraction. In ${numerator}/${denominator}, look at which number is on top.`,
+      );
+      setFeedbackType('error');
+
+      sendText(
+        `[ANSWER_INCORRECT] Student chose ${selectedNumerator} but the correct numerator is ${numerator} for ${numerator}/${denominator}. `
+          + `Attempt ${numeratorAttempts + 1}. Give a gentle hint about what the numerator means without giving the answer.`,
+        { silent: true },
+      );
     }
+  }, [selectedNumerator, numerator, denominator, numeratorAttempts, sendText]);
+
+  // ── Phase 2: Check denominator ───────────────────────────────
+  const handleCheckDenominator = useCallback(() => {
+    if (selectedDenominator === null) {
+      setFeedback('Please select an answer first!');
+      setFeedbackType('error');
+      return;
+    }
+    setDenominatorAttempts((p) => p + 1);
+
+    if (selectedDenominator === denominator) {
+      setFeedback(
+        `Correct! The denominator is ${denominator} \u2014 it\u2019s the bottom number that tells us how many equal parts make up the whole.`,
+      );
+      setFeedbackType('success');
+
+      sendText(
+        `[ANSWER_CORRECT] Student correctly identified the denominator as ${denominator} for ${numerator}/${denominator}. `
+          + `Attempt ${denominatorAttempts + 1}. Congratulate and explain what the denominator means.`,
+        { silent: true },
+      );
+
+      setTimeout(() => {
+        setCurrentPhase('build-fraction');
+        setFeedback('');
+        sendText(
+          `[PHASE_TRANSITION] Moving to Phase 3: Build the Fraction. `
+            + `The student knows that in ${numerator}/${denominator}, the numerator is ${numerator} and the denominator is ${denominator}. `
+            + `Now they must shade exactly ${numerator} out of ${denominator} equal parts on the bar. Encourage them to apply what they learned.`,
+          { silent: true },
+        );
+      }, 2000);
+    } else {
+      setFeedback(
+        `Not quite. The denominator is the bottom number in a fraction. In ${numerator}/${denominator}, look at which number is on the bottom.`,
+      );
+      setFeedbackType('error');
+
+      sendText(
+        `[ANSWER_INCORRECT] Student chose ${selectedDenominator} but the correct denominator is ${denominator} for ${numerator}/${denominator}. `
+          + `Attempt ${denominatorAttempts + 1}. Give a gentle hint about what the denominator means without giving the answer.`,
+        { silent: true },
+      );
+    }
+  }, [selectedDenominator, numerator, denominator, denominatorAttempts, sendText]);
+
+  // ── Phase 3: Toggle partition ────────────────────────────────
+  const togglePartition = useCallback(
+    (partitionIndex: number) => {
+      if (partitionIndex < shadedCount) {
+        setShadedCount(partitionIndex);
+      } else {
+        setShadedCount(partitionIndex + 1);
+      }
+      setShadingChanges((p) => p + 1);
+    },
+    [shadedCount],
+  );
+
+  // ── Phase 3: Submit build ────────────────────────────────────
+  const handleSubmitBuild = useCallback(() => {
+    if (hasSubmittedEvaluation) return;
+    setBuildAttempts((p) => p + 1);
+
+    const isCorrect = shadedCount === numerator;
+    const selectedFraction = `${shadedCount}/${denominator}`;
+    const targetFraction = `${numerator}/${denominator}`;
+
+    if (!isCorrect) {
+      setFeedback(
+        `You shaded ${shadedCount} out of ${denominator} parts, making ${selectedFraction}. The target is ${targetFraction}. Try shading exactly ${numerator} part${numerator !== 1 ? 's' : ''}!`,
+      );
+      setFeedbackType('error');
+
+      sendText(
+        `[BUILD_INCORRECT] Student shaded ${shadedCount}/${denominator} but target is ${numerator}/${denominator}. `
+          + `Attempt ${buildAttempts + 1}. ${
+            shadedCount < numerator
+              ? `They shaded too few parts (${numerator - shadedCount} short). Encourage them to shade more.`
+              : `They shaded too many parts (${shadedCount - numerator} extra). Encourage them to unshade some.`
+          }`,
+        { silent: true },
+      );
+      return;
+    }
+
+    // ── Score each phase ──
+    const p1 = computePhaseScore(numeratorAttempts, 20);
+    const p2 = computePhaseScore(denominatorAttempts, 20);
+    const p3 = buildAttempts === 0 ? 100 : Math.max(50, 100 - buildAttempts * 15);
+    const overallScore = Math.round((p1 + p2 + p3) / 3);
 
     const metrics: FractionBarMetrics = {
       type: 'fraction-bar',
-      targetFraction: targetFraction || 'none',
+
+      // Overall
+      allPhasesCompleted: true,
+      finalSuccess: true,
+
+      // Phase 1
+      correctNumerator: numerator,
+      studentNumeratorAnswer: selectedNumerator,
+      numeratorCorrect: selectedNumerator === numerator,
+      numeratorAttempts,
+
+      // Phase 2
+      correctDenominator: denominator,
+      studentDenominatorAnswer: selectedDenominator,
+      denominatorCorrect: selectedDenominator === denominator,
+      denominatorAttempts,
+
+      // Phase 3
+      targetFraction,
       selectedFraction,
-      isCorrect,
-      numerator: primaryBar.shaded,
-      denominator: primaryBar.partitions,
-      decimalValue: primaryBar.shaded / primaryBar.partitions,
-      simplifiedFraction,
-      recognizedEquivalence: selectedFraction !== simplifiedFraction,
-      partitionChanges: partitionChangeCount,
-      shadingChanges: shadingChangeCount,
-      finalBarStates: bars.map((bar) => ({
-        partitions: bar.partitions,
-        shaded: bar.shaded,
-      })),
-      barsCompared: barCount,
+      buildCorrect: true,
+      buildAttempts: buildAttempts + 1,
+      shadingChanges,
+
+      // Aggregate
+      totalAttempts: numeratorAttempts + denominatorAttempts + buildAttempts + 1,
+      solvedOnFirstTry: numeratorAttempts === 1 && denominatorAttempts === 1 && buildAttempts === 0,
+      hintsUsed,
     };
 
-    submitResult(isCorrect, score, metrics, {
-      bars: [...bars],
+    submitEvaluation(true, overallScore, metrics, {
+      studentWork: {
+        phases: {
+          identifyNumerator: { answer: selectedNumerator, attempts: numeratorAttempts },
+          identifyDenominator: { answer: selectedDenominator, attempts: denominatorAttempts },
+          buildFraction: { shadedCount, attempts: buildAttempts + 1 },
+        },
+      },
     });
-  };
 
-  // Handle reset
-  const handleReset = () => {
-    setBars(
-      Array.from({ length: barCount }, () => ({
-        partitions: initialPartitions,
-        shaded: shadedValue,
-      }))
+    setFeedback(
+      `Excellent! You correctly built the fraction ${targetFraction} by shading ${numerator} out of ${denominator} equal parts!`,
     );
-    setPartitionChangeCount(0);
-    setShadingChangeCount(0);
-    resetAttempt();
+    setFeedbackType('success');
+
+    sendText(
+      `[ALL_COMPLETE] Student completed all 3 phases for ${numerator}/${denominator}! `
+        + `Phase scores: Identify Numerator ${p1}% (${numeratorAttempts} attempt${numeratorAttempts !== 1 ? 's' : ''}), `
+        + `Identify Denominator ${p2}% (${denominatorAttempts} attempt${denominatorAttempts !== 1 ? 's' : ''}), `
+        + `Build Fraction ${p3}% (${buildAttempts + 1} attempt${buildAttempts !== 0 ? 's' : ''}). `
+        + `Overall: ${overallScore}%. Hints used: ${hintsUsed}. `
+        + `Give a brief, encouraging summary of their performance across all three phases. `
+        + `If any phase had multiple attempts, mention what they could practice more.`,
+      { silent: true },
+    );
+  }, [
+    shadedCount,
+    numerator,
+    denominator,
+    hasSubmittedEvaluation,
+    numeratorAttempts,
+    denominatorAttempts,
+    buildAttempts,
+    selectedNumerator,
+    selectedDenominator,
+    shadingChanges,
+    hintsUsed,
+    submitEvaluation,
+    sendText,
+  ]);
+
+  // ── Hints ────────────────────────────────────────────────────
+  const handleShowHint = useCallback(() => {
+    setHintsUsed((p) => p + 1);
+    setFeedbackType('hint');
+
+    if (currentPhase === 'identify-numerator') {
+      setFeedback(
+        `Hint: The numerator is always the top number in a fraction. In ${numerator}/${denominator}, which number is on top?`,
+      );
+      sendText(
+        `[HINT_REQUESTED] Student asked for a hint during Phase 1 (Identify Numerator) for ${numerator}/${denominator}. `
+          + `Hint #${hintsUsed + 1}. Give a scaffolded hint about numerators without revealing the answer.`,
+        { silent: true },
+      );
+    } else if (currentPhase === 'identify-denominator') {
+      setFeedback(
+        `Hint: The denominator is always the bottom number in a fraction. It tells us how many equal parts the whole is divided into.`,
+      );
+      sendText(
+        `[HINT_REQUESTED] Student asked for a hint during Phase 2 (Identify Denominator) for ${numerator}/${denominator}. `
+          + `Hint #${hintsUsed + 1}. Give a scaffolded hint about denominators without revealing the answer.`,
+        { silent: true },
+      );
+    } else {
+      setFeedback(
+        `Hint: You need to shade exactly ${numerator} parts out of ${denominator}. Click parts from left to right to shade them!`,
+      );
+      sendText(
+        `[HINT_REQUESTED] Student asked for a hint during Phase 3 (Build Fraction). `
+          + `They have ${shadedCount}/${denominator} shaded, target is ${numerator}/${denominator}. `
+          + `Hint #${hintsUsed + 1}. Guide them on how many parts to shade.`,
+        { silent: true },
+      );
+    }
+  }, [currentPhase, numerator, denominator, hintsUsed, shadedCount, sendText]);
+
+  // ── Reset ────────────────────────────────────────────────────
+  const handleReset = useCallback(() => {
+    setCurrentPhase('identify-numerator');
+    setSelectedNumerator(null);
+    setSelectedDenominator(null);
+    setShadedCount(0);
+    setNumeratorAttempts(0);
+    setDenominatorAttempts(0);
+    setBuildAttempts(0);
+    setShadingChanges(0);
+    setHintsUsed(0);
+    setFeedback('');
+    setFeedbackType('info');
+    resetEvaluationAttempt();
+  }, [resetEvaluationAttempt]);
+
+  // ── Helpers ──────────────────────────────────────────────────
+  const feedbackColors: Record<typeof feedbackType, string> = {
+    success: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
+    error: 'bg-red-500/10 border-red-500/30 text-red-300',
+    hint: 'bg-blue-500/10 border-blue-500/30 text-blue-300',
+    info: 'bg-white/5 border-white/10 text-slate-300',
   };
 
+  // ── Render ───────────────────────────────────────────────────
   return (
-    <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8 justify-center">
-        <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
-          </svg>
-        </div>
-        <div className="text-left">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Fraction Bar</h2>
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
-            <p className="text-xs text-purple-400 font-mono uppercase tracking-wider">Visual Fraction Model</p>
-          </div>
-        </div>
-      </div>
+    <div className={`w-full ${className || ''}`}>
+      <div className="max-w-6xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
+        {/* Ambient glow */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[150px] opacity-15 bg-purple-500" />
 
-      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-purple-500/20 relative overflow-hidden">
-        {/* Background Texture */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(#a855f7 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-        ></div>
-
-        <div className="relative z-10 w-full">
-          <div className="mb-8 text-center max-w-3xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-2">{data.title}</h3>
-            <p className="text-slate-300 font-light">{data.description}</p>
+        <div className="relative z-10">
+          {/* ── Header ─────────────────────────────────────── */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">
+                Math:
+              </span>
+              <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-purple-500/20 text-purple-300 border-purple-500/30">
+                FRACTION BAR
+              </span>
+            </div>
+            <h2 className="text-3xl font-light text-white mb-3">{title}</h2>
+            <p className="text-slate-300 leading-relaxed">{description}</p>
           </div>
 
-          {/* Fraction Bars */}
-          <div className="space-y-6">
-            {bars.map((bar, barIndex) => {
-              const simplified = simplifyFraction(bar.shaded, bar.partitions);
-              const isSimplified = simplified.num === bar.shaded && simplified.den === bar.partitions;
-
-              return (
-                <div key={barIndex} className="relative">
-                  {/* Bar Label */}
-                  {showLabels && (
-                    <div className="mb-3 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="text-2xl font-bold text-white font-mono">
-                          <span className="text-purple-300">{bar.shaded}</span>
-                          <span className="text-slate-500 mx-1">/</span>
-                          <span className="text-blue-300">{bar.partitions}</span>
-                        </div>
-                        {!isSimplified && (
-                          <div className="text-sm text-slate-400">
-                            = <span className="text-purple-200 font-mono">{simplified.num}/{simplified.den}</span>
-                          </div>
-                        )}
-                      </div>
-                      {allowPartitionEdit && (
-                        <div className="flex items-center gap-2">
-                          <label className="text-xs text-slate-400 uppercase tracking-wide">Partitions:</label>
-                          <input
-                            type="number"
-                            min="1"
-                            max="24"
-                            value={bar.partitions}
-                            onChange={(e) => handlePartitionChange(barIndex, parseInt(e.target.value) || 1)}
-                            className="w-16 bg-slate-800/50 border border-slate-600 rounded px-2 py-1 text-center text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* The Bar */}
-                  <div className="relative">
-                    {/* Equivalent lines (alignment guides) */}
-                    {showEquivalentLines && barIndex > 0 && (
-                      <div className="absolute -top-3 left-0 right-0 h-0.5 bg-yellow-500/30"></div>
-                    )}
-
-                    <div className="flex border-2 border-slate-600 rounded-lg overflow-hidden bg-slate-800/30 h-16 shadow-lg">
-                      {Array.from({ length: bar.partitions }).map((_, partitionIndex) => {
-                        const isShaded = partitionIndex < bar.shaded;
-                        return (
-                          <button
-                            key={partitionIndex}
-                            onClick={() => togglePartition(barIndex, partitionIndex)}
-                            className={`flex-1 border-r border-slate-600 last:border-r-0 transition-all duration-200 cursor-pointer hover:brightness-110 ${
-                              isShaded
-                                ? 'bg-gradient-to-br from-purple-500 to-purple-600'
-                                : 'bg-slate-700/50 hover:bg-slate-700'
-                            }`}
-                            title={`${isShaded ? 'Unshade' : 'Shade'} partition ${partitionIndex + 1}`}
-                          >
-                            {/* Partition index (optional, for educational purposes) */}
-                            {bar.partitions <= 12 && (
-                              <span className="text-xs text-white/40 font-mono m-auto">
-                                {partitionIndex + 1}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Decimal representation */}
-                  {showLabels && (
-                    <div className="mt-2 text-xs text-slate-400 text-right font-mono">
-                      ≈ {(bar.shaded / bar.partitions).toFixed(3)}
-                    </div>
-                  )}
+          {/* ── Fraction display (constant reference) ──────── */}
+          <div className="flex justify-center mb-8">
+            <div className="glass-panel rounded-2xl border border-purple-500/20 px-12 py-6 text-center">
+              <div className="text-6xl font-bold text-white font-mono flex items-center justify-center gap-2">
+                <span className="text-purple-300">{numerator}</span>
+                <span className="text-slate-500 text-4xl">/</span>
+                <span className="text-blue-300">{denominator}</span>
+              </div>
+              {showDecimal && (
+                <div className="mt-2 text-sm text-slate-400 font-mono">
+                  = {(numerator / denominator).toFixed(3)}
                 </div>
-              );
-            })}
+              )}
+            </div>
           </div>
 
-          {/* Submit/Reset Controls */}
-          {(instanceId || onEvaluationSubmit) && (
-            <div className="mt-6 flex gap-3 justify-center">
-              <button
-                onClick={handleSubmit}
-                disabled={hasSubmitted}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-                  hasSubmitted
-                    ? 'bg-green-500/20 border border-green-500/50 text-green-300 cursor-not-allowed'
-                    : 'bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]'
-                }`}
-              >
-                {hasSubmitted ? (
-                  <>
-                    <span>✓</span>
-                    <span>Submitted</span>
-                  </>
-                ) : (
-                  <>
-                    <span>📊</span>
-                    <span>Submit Answer</span>
-                  </>
-                )}
-              </button>
+          {/* ── Phase progress indicator ───────────────────── */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            {/* Phase 1 pill */}
+            <div
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
+                currentPhase === 'identify-numerator'
+                  ? 'glass-panel border-white/30 text-white shadow-lg scale-105'
+                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              }`}
+            >
+              <span className="text-lg">
+                {currentPhase === 'identify-numerator' ? '\uD83D\uDD22' : '\u2705'}
+              </span>
+              <span className="font-medium text-sm">1. Numerator</span>
+            </div>
+            <div className="text-slate-600">{'\u2192'}</div>
 
-              {hasSubmitted && (
+            {/* Phase 2 pill */}
+            <div
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
+                currentPhase === 'identify-denominator'
+                  ? 'glass-panel border-white/30 text-white shadow-lg scale-105'
+                  : currentPhase === 'build-fraction'
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-white/5 border-white/10 text-slate-400'
+              }`}
+            >
+              <span className="text-lg">
+                {currentPhase === 'build-fraction'
+                  ? '\u2705'
+                  : currentPhase === 'identify-denominator'
+                    ? '\uD83D\uDD22'
+                    : '\uD83D\uDD22'}
+              </span>
+              <span className="font-medium text-sm">2. Denominator</span>
+            </div>
+            <div className="text-slate-600">{'\u2192'}</div>
+
+            {/* Phase 3 pill */}
+            <div
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
+                currentPhase === 'build-fraction'
+                  ? 'glass-panel border-white/30 text-white shadow-lg scale-105'
+                  : 'bg-white/5 border-white/10 text-slate-400'
+              }`}
+            >
+              <span className="text-lg">
+                {hasSubmittedEvaluation ? '\u2705' : '\uD83C\uDFAF'}
+              </span>
+              <span className="font-medium text-sm">3. Build It</span>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════
+              Phase 1 — Identify the Numerator
+             ═══════════════════════════════════════════════════ */}
+          {currentPhase === 'identify-numerator' && (
+            <div className="glass-panel rounded-2xl border border-purple-500/30 p-6 mb-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
+              <div className="pt-2">
+                <h3 className="text-xl font-light text-white mb-4 flex items-center gap-2">
+                  <span className="text-2xl">{'\uD83D\uDD22'}</span>
+                  Step 1: Identify the Numerator
+                </h3>
+                <p className="text-slate-300 leading-relaxed mb-6">
+                  In the fraction{' '}
+                  <span className="font-mono font-bold text-purple-300">
+                    {numerator}/{denominator}
+                  </span>
+                  , which number is the{' '}
+                  <span className="text-purple-300 font-semibold">numerator</span> (the top number)?
+                </p>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                  {numeratorChoices.map((choice) => (
+                    <button
+                      key={choice}
+                      onClick={() => setSelectedNumerator(choice)}
+                      className={`p-4 rounded-xl border text-center transition-all duration-300 text-2xl font-bold font-mono ${
+                        selectedNumerator === choice
+                          ? 'glass-panel border-purple-400/50 text-purple-300 shadow-lg scale-105'
+                          : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      {choice}
+                    </button>
+                  ))}
+                </div>
+
                 <button
-                  onClick={handleReset}
-                  className="px-6 py-3 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+                  onClick={handleCheckNumerator}
+                  disabled={selectedNumerator === null}
+                  className="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 px-6 rounded-xl disabled:bg-white/10 disabled:text-slate-500 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.02]"
                 >
-                  <span>↺</span>
-                  <span>Try Again</span>
+                  Check Answer
                 </button>
-              )}
+              </div>
             </div>
           )}
 
-          {/* Instructions */}
-          <div className="mt-8 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
-            <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">
-              Interactive Controls
-            </h4>
-            <ul className="text-sm text-slate-300 space-y-2">
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-1">▸</span>
-                <span>Click on any partition to shade or unshade parts of the bar</span>
-              </li>
-              {allowPartitionEdit && (
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-400 mt-1">▸</span>
-                  <span>Adjust the number of partitions using the input field</span>
-                </li>
-              )}
-              {barCount > 1 && (
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-400 mt-1">▸</span>
-                  <span>Compare fractions by observing the shaded portions across bars</span>
-                </li>
-              )}
-            </ul>
+          {/* ═══════════════════════════════════════════════════
+              Phase 2 — Identify the Denominator
+             ═══════════════════════════════════════════════════ */}
+          {currentPhase === 'identify-denominator' && (
+            <div className="glass-panel rounded-2xl border border-blue-500/30 p-6 mb-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
+              <div className="pt-2">
+                <h3 className="text-xl font-light text-white mb-4 flex items-center gap-2">
+                  <span className="text-2xl">{'\uD83D\uDD22'}</span>
+                  Step 2: Identify the Denominator
+                </h3>
+                <p className="text-slate-300 leading-relaxed mb-6">
+                  In the fraction{' '}
+                  <span className="font-mono font-bold text-blue-300">
+                    {numerator}/{denominator}
+                  </span>
+                  , which number is the{' '}
+                  <span className="text-blue-300 font-semibold">denominator</span> (the bottom
+                  number)?
+                </p>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                  {denominatorChoices.map((choice) => (
+                    <button
+                      key={choice}
+                      onClick={() => setSelectedDenominator(choice)}
+                      className={`p-4 rounded-xl border text-center transition-all duration-300 text-2xl font-bold font-mono ${
+                        selectedDenominator === choice
+                          ? 'glass-panel border-blue-400/50 text-blue-300 shadow-lg scale-105'
+                          : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      {choice}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleCheckDenominator}
+                  disabled={selectedDenominator === null}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 px-6 rounded-xl disabled:bg-white/10 disabled:text-slate-500 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.02]"
+                >
+                  Check Answer
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════
+              Phase 3 — Build the Fraction on the Bar
+             ═══════════════════════════════════════════════════ */}
+          {currentPhase === 'build-fraction' && (
+            <div className="glass-panel rounded-2xl border border-emerald-500/30 p-6 mb-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
+              <div className="pt-2">
+                <h3 className="text-xl font-light text-white mb-4 flex items-center gap-2">
+                  <span className="text-2xl">{'\uD83C\uDFAF'}</span>
+                  Step 3: Build the Fraction
+                </h3>
+                <p className="text-slate-300 leading-relaxed mb-6">
+                  Now shade exactly{' '}
+                  <span className="text-purple-300 font-bold">{numerator}</span> out of{' '}
+                  <span className="text-blue-300 font-bold">{denominator}</span> equal parts to
+                  build the fraction{' '}
+                  <span className="font-mono font-bold text-white">
+                    {numerator}/{denominator}
+                  </span>
+                  .
+                </p>
+
+                {/* Current vs target */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-lg font-mono text-white">
+                    Shaded:{' '}
+                    <span
+                      className={`font-bold ${shadedCount === numerator ? 'text-emerald-300' : 'text-purple-300'}`}
+                    >
+                      {shadedCount}
+                    </span>
+                    <span className="text-slate-500">/{denominator}</span>
+                  </div>
+                  <div className="text-sm text-slate-400">
+                    Target:{' '}
+                    <span className="font-mono text-white">
+                      {numerator}/{denominator}
+                    </span>
+                  </div>
+                </div>
+
+                {/* The fraction bar */}
+                <div
+                  className={`flex border-2 rounded-lg overflow-hidden h-20 shadow-lg mb-4 transition-colors duration-300 ${
+                    shadedCount === numerator
+                      ? 'border-emerald-500/50'
+                      : 'border-slate-600'
+                  }`}
+                >
+                  {Array.from({ length: denominator }).map((_, i) => {
+                    const isShaded = i < shadedCount;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => !hasSubmittedEvaluation && togglePartition(i)}
+                        disabled={hasSubmittedEvaluation}
+                        className={`flex-1 border-r border-slate-600 last:border-r-0 transition-all duration-200 flex items-center justify-center ${
+                          hasSubmittedEvaluation
+                            ? 'cursor-default'
+                            : 'cursor-pointer hover:brightness-110'
+                        } ${
+                          isShaded
+                            ? 'bg-gradient-to-br from-purple-500 to-purple-600'
+                            : 'bg-slate-700/50 hover:bg-slate-700'
+                        }`}
+                        title={`${isShaded ? 'Unshade' : 'Shade'} part ${i + 1}`}
+                      >
+                        {denominator <= 12 && (
+                          <span className="text-xs text-white/40 font-mono">{i + 1}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {showDecimal && (
+                  <div className="text-xs text-slate-400 text-right font-mono mb-4">
+                    {'\u2248'} {(shadedCount / denominator).toFixed(3)}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSubmitBuild}
+                  disabled={hasSubmittedEvaluation}
+                  className={`w-full font-medium py-3 px-6 rounded-xl transition-all duration-300 hover:scale-[1.02] ${
+                    hasSubmittedEvaluation
+                      ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 cursor-not-allowed'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                  }`}
+                >
+                  {hasSubmittedEvaluation ? '\u2713 Submitted' : 'Submit Fraction'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Feedback bar ───────────────────────────────── */}
+          {feedback && (
+            <div
+              className={`p-4 rounded-xl mb-6 border transition-all duration-300 ${feedbackColors[feedbackType]}`}
+            >
+              {feedback}
+            </div>
+          )}
+
+          {/* ── Phase Evaluation Summary ────────────────────── */}
+          {hasSubmittedEvaluation && phaseSummaryData.length > 0 && (
+            <PhaseSummaryPanel
+              phases={phaseSummaryData}
+              overallScore={submittedResult?.score}
+              durationMs={elapsedMs}
+              heading="Fraction Challenge Complete!"
+              celebrationMessage={`You correctly built the fraction ${numerator}/${denominator} by shading ${numerator} out of ${denominator} equal parts!`}
+              className="mb-6"
+            />
+          )}
+
+          {/* ── Bottom actions ─────────────────────────────── */}
+          <div className="flex gap-3 pt-4 border-t border-white/10">
+            <Button
+              variant="ghost"
+              onClick={handleShowHint}
+              className="px-5 py-2.5 bg-white/5 text-slate-300 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20"
+            >
+              Show Hint
+            </Button>
+            {hasSubmittedEvaluation && (
+              <Button
+                variant="ghost"
+                onClick={handleReset}
+                className="px-5 py-2.5 bg-white/5 text-slate-300 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20"
+              >
+                Try Again
+              </Button>
+            )}
           </div>
         </div>
       </div>

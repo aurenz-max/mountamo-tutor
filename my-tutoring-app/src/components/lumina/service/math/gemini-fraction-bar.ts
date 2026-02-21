@@ -1,167 +1,130 @@
-import { Type, Schema, ThinkingLevel } from "@google/genai";
+import { Type, Schema } from "@google/genai";
 import { FractionBarData } from "../../primitives/visual-primitives/math/FractionBar";
 import { ai } from "../geminiClient";
 
 /**
  * Schema definition for Fraction Bar Data
  *
- * This schema defines the structure for fraction bar visualization,
- * including partitions, shading, stacking, and interactive features.
+ * This schema defines the structure for the multi-phase fraction bar,
+ * including the target fraction, MC choices, and display options.
  */
 const fractionBarSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     title: {
       type: Type.STRING,
-      description: "Title for the fraction bar (e.g., 'Comparing Fractions: 1/2 and 3/4')"
+      description: "Title for the fraction bar challenge (e.g., 'Shade 3/4 of the bar')"
     },
     description: {
       type: Type.STRING,
-      description: "Educational description explaining what students will learn from this visualization"
+      description: "Educational description explaining what students will learn from this activity"
     },
-    partitions: {
+    numerator: {
       type: Type.NUMBER,
-      description: "Number of equal parts (denominator). Range 2-24. Common values: 2, 3, 4, 5, 6, 8, 10, 12"
+      description: "Target numerator — the number of parts to shade. Must be <= denominator"
     },
-    shaded: {
+    denominator: {
       type: Type.NUMBER,
-      description: "Number of shaded parts (numerator). Must be <= partitions. For 'build' tasks, should be 0 so student starts blank"
+      description: "Target denominator — total equal parts the bar is divided into. Must be >= 2"
     },
-    barCount: {
-      type: Type.NUMBER,
-      description: "Number of stacked bars for comparison. Use 1 for introduction, 2-3 for comparison/operations. Max: 4"
-    },
-    showLabels: {
+    showDecimal: {
       type: Type.BOOLEAN,
-      description: "Display fraction notation (numerator/denominator) and decimal representation. Default: true"
+      description: "Whether to show the decimal approximation during the build phase. Default: true"
     },
-    allowPartitionEdit: {
-      type: Type.BOOLEAN,
-      description: "Allow students to change the denominator for exploration. Use true for practice. Default: false"
-    },
-    showEquivalentLines: {
-      type: Type.BOOLEAN,
-      description: "Draw alignment guides between bars to show equivalence. Useful for comparing fractions. Default: false"
-    },
-    targetFraction: {
+    gradeLevel: {
       type: Type.STRING,
-      description: "Target fraction for evaluation (e.g., '3/4', '1/2'). Required for 'build' and 'compare' tasks. Omit for pure 'explore' activities"
+      description: "Grade level string for age-appropriate language (e.g., 'Grade 3', 'Grade 5')"
     },
-    taskType: {
-      type: Type.STRING,
-      description: "Type of task: 'build' (construct target fraction), 'compare' (compare fractions), 'explore' (free exploration). Default: 'build' if targetFraction provided"
+    numeratorChoices: {
+      type: Type.ARRAY,
+      items: { type: Type.NUMBER },
+      description: "Exactly 4 multiple-choice options for identifying the numerator. Must include the correct numerator plus 3 plausible distractors, shuffled"
+    },
+    denominatorChoices: {
+      type: Type.ARRAY,
+      items: { type: Type.NUMBER },
+      description: "Exactly 4 multiple-choice options for identifying the denominator. Must include the correct denominator plus 3 plausible distractors, shuffled"
     }
   },
-  required: ["title", "description", "partitions", "shaded", "barCount"]
+  required: ["title", "description", "numerator", "denominator"]
 };
 
 /**
- * Generate fraction bar data for visualization
+ * Generate fraction bar data for the multi-phase interactive component
  *
- * This function creates fraction bar data including:
- * - Appropriate partitions (denominator) for the topic and grade level
- * - Initial shading (numerator) to demonstrate concepts
- * - Multiple bars for comparison when needed
- * - Educational context and descriptions
- * - Configuration for interactive features
+ * The FractionBar component uses a three-phase educational flow:
+ *   Phase 1 — Identify the Numerator (multiple choice)
+ *   Phase 2 — Identify the Denominator (multiple choice)
+ *   Phase 3 — Build the Fraction on a bar by shading parts
+ *
+ * This generator produces a proper fraction with MC distractors
+ * appropriate for the given topic and grade level.
  *
  * @param topic - The math topic or concept to teach
  * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
+ * @param config - Optional overrides for numerator, denominator, showDecimal
  * @returns FractionBarData with complete configuration
  */
 export const generateFractionBar = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    partitions?: number;
-    shaded?: number;
-    barCount?: number;
-    showLabels?: boolean;
-    allowPartitionEdit?: boolean;
-    showEquivalentLines?: boolean;
-    targetFraction?: string;
-    taskType?: 'build' | 'compare' | 'explore';
+    numerator?: number;
+    denominator?: number;
+    showDecimal?: boolean;
   }
 ): Promise<FractionBarData> => {
   const prompt = `
-Create an educational fraction bar visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational fraction bar challenge for teaching "${topic}" to ${gradeLevel} students.
 
-CONTEXT:
-- Fraction bars are rectangular strips divided into equal parts
-- Students can see fractions as parts of a whole
-- Multiple bars can be stacked for comparison and operations
-- Interactive features help students explore fraction concepts
+THE FRACTION BAR COMPONENT — MULTI-PHASE FLOW:
+This component guides students through three phases to deeply understand a single fraction:
 
-GUIDELINES FOR GRADE LEVELS:
-- Grades 2-3: Simple fractions (halves, thirds, fourths), 1 bar, basic introduction
-- Grades 4-5: Equivalent fractions, comparing fractions, 2-3 bars, enable alignment guides
-- Grades 6-7: Operations with fractions (addition/subtraction), show relationships
-- Grades 8+: Advanced operations, improper fractions, mixed numbers
+  Phase 1 — Identify the Numerator (multiple choice)
+    The student sees a shaded bar and must pick how many parts are shaded.
+    You must provide "numeratorChoices": an array of exactly 4 numbers,
+    one of which is the correct numerator. The other 3 should be plausible
+    distractors (e.g., off-by-one, the denominator, or a nearby number).
 
-TOPIC-SPECIFIC GUIDANCE:
-- "Fraction introduction": Use 1 bar with simple denominators (2, 3, 4)
-- "Equivalent fractions": Use 2-3 bars with related denominators (e.g., 1/2 and 2/4, 3/6), enable alignment
-- "Comparing fractions": Use 2 bars with different denominators, enable alignment
-- "Adding fractions": Use 2 bars showing addends, optional third bar for sum
-- "Subtracting fractions": Use 2 bars showing minuend and subtrahend
-- "Fraction of a whole": Use 1 bar with word problem context
-- "Improper fractions": Show bars that exceed whole (shaded > partitions not directly supported, use multiple whole bars)
+  Phase 2 — Identify the Denominator (multiple choice)
+    The student must pick how many total equal parts the bar has.
+    You must provide "denominatorChoices": an array of exactly 4 numbers,
+    one of which is the correct denominator. Distractors should be plausible
+    (e.g., adjacent numbers, common denominators, the numerator).
 
-COMMON DENOMINATORS FOR DIFFERENT CONCEPTS:
-- Halves: 2 partitions
-- Thirds: 3 partitions
-- Fourths/Quarters: 4 partitions
-- Fifths: 5 partitions
-- Sixths: 6 partitions
-- Eighths: 8 partitions
-- Tenths: 10 partitions (connects to decimals)
-- Twelfths: 12 partitions (good for equivalence with thirds, fourths, sixths)
-
-${config ? `
-CONFIGURATION HINTS:
-${config.partitions !== undefined ? `- Partitions (denominator): ${config.partitions}` : ''}
-${config.shaded !== undefined ? `- Shaded parts (numerator): ${config.shaded}` : ''}
-${config.barCount !== undefined ? `- Number of bars: ${config.barCount}` : ''}
-${config.showLabels !== undefined ? `- Show labels: ${config.showLabels}` : ''}
-${config.allowPartitionEdit !== undefined ? `- Allow partition editing: ${config.allowPartitionEdit}` : ''}
-${config.showEquivalentLines !== undefined ? `- Show alignment guides: ${config.showEquivalentLines}` : ''}
-${config.targetFraction !== undefined ? `- Target fraction: ${config.targetFraction}` : ''}
-${config.taskType !== undefined ? `- Task type: ${config.taskType}` : ''}
-` : ''}
+  Phase 3 — Build the Fraction
+    The student shades the correct number of parts on a blank bar divided
+    into the correct number of equal parts.
 
 REQUIREMENTS:
-1. Choose appropriate partitions based on topic and grade level (range: 2-24)
-2. Set shaded value based on task type:
-   - For 'build' tasks: shaded = 0 (student starts blank and builds the target)
-   - For 'explore' or 'compare' tasks: shaded can be preset to show examples
-3. Use 1 bar for introduction, 2-3 bars for comparison/operations
-4. Write a clear, student-friendly title that includes the fraction(s) being shown
-5. Provide an educational description of what students will learn
-6. Enable allowPartitionEdit for practice/exploration activities
-7. Enable showEquivalentLines when comparing or showing equivalent fractions
-8. Always show labels unless specifically teaching visual estimation
+1. Generate a PROPER fraction: numerator <= denominator, denominator >= 2.
+2. Choose an appropriate fraction for the topic and grade level:
+   - Grades 2-3: Simple fractions with small denominators (2, 3, 4)
+   - Grades 4-5: Broader denominators (2-8), including unit and non-unit fractions
+   - Grades 6+: Larger denominators (2-12), more complex fractions
+3. Write a clear, student-friendly title that mentions the fraction.
+4. Provide an educational description of what the student will practice.
+5. numeratorChoices: exactly 4 numbers including the correct numerator. Shuffle the order.
+6. denominatorChoices: exactly 4 numbers including the correct denominator. Shuffle the order.
+7. Set showDecimal to true if connecting fractions to decimals is relevant, false otherwise.
+8. Set gradeLevel to "${gradeLevel}".
 
-EVALUATION SETTINGS:
-- Set targetFraction (e.g., "1/4", "3/4") for any task where students need to build or identify a specific fraction
-- Set taskType:
-  * 'build' - Student constructs the target fraction from scratch (shaded should be 0)
-  * 'compare' - Student compares multiple fractions (provide preset fractions)
-  * 'explore' - Free exploration without a specific goal (no targetFraction needed)
-- If topic involves building, constructing, or "what is X?" questions, use taskType='build' and set targetFraction
-- Examples:
-  * "What is 1/4?" → taskType='build', targetFraction='1/4', shaded=0
-  * "Compare 1/2 and 3/4" → taskType='compare', targetFraction='1/2', preset shading
-  * "Explore fractions" → taskType='explore', no targetFraction
+${config ? `
+CONFIGURATION HINTS (use these values if provided):
+${config.numerator !== undefined ? `- Numerator: ${config.numerator}` : ''}
+${config.denominator !== undefined ? `- Denominator: ${config.denominator}` : ''}
+${config.showDecimal !== undefined ? `- Show decimal: ${config.showDecimal}` : ''}
+` : ''}
 
-IMPORTANT:
-- For single fraction introduction: barCount = 1
-- For comparing two fractions: barCount = 2, showEquivalentLines = true
-- For adding fractions: barCount = 2 or 3 (two addends, optional sum bar)
-- Keep denominators reasonable (prefer 2-12 for elementary, up to 24 for advanced)
-- ALWAYS include targetFraction and taskType unless it's pure exploration
+DISTRACTOR GUIDELINES:
+- For numeratorChoices: include the correct numerator, plus 3 distractors such as
+  (numerator ± 1), the denominator, or 0. All values should be non-negative integers.
+- For denominatorChoices: include the correct denominator, plus 3 distractors such as
+  (denominator ± 1), the numerator, or a common denominator like 10.
+  All values should be positive integers >= 1.
+- Shuffle the choices so the correct answer is not always in the same position.
 
-Return the complete fraction bar configuration.
+Return the complete fraction bar configuration as JSON.
 `;
 
   const result = await ai.models.generateContent({
@@ -169,7 +132,7 @@ Return the complete fraction bar configuration.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: fractionBarSchema      
+      responseSchema: fractionBarSchema
     },
   });
 
@@ -179,32 +142,39 @@ Return the complete fraction bar configuration.
     throw new Error('No valid fraction bar data returned from Gemini API');
   }
 
-  // Validation: ensure shaded <= partitions
-  if (data.shaded > data.partitions) {
-    console.warn(`Invalid fraction bar: shaded (${data.shaded}) > partitions (${data.partitions}). Adjusting shaded to ${data.partitions}.`);
-    data.shaded = data.partitions;
-  }
-
-  // Apply any explicit config overrides from manifest
+  // Apply explicit config overrides
   if (config) {
-    if (config.partitions !== undefined) data.partitions = config.partitions;
-    if (config.shaded !== undefined) data.shaded = Math.min(config.shaded, data.partitions); // Ensure valid
-    if (config.barCount !== undefined) data.barCount = config.barCount;
-    if (config.showLabels !== undefined) data.showLabels = config.showLabels;
-    if (config.allowPartitionEdit !== undefined) data.allowPartitionEdit = config.allowPartitionEdit;
-    if (config.showEquivalentLines !== undefined) data.showEquivalentLines = config.showEquivalentLines;
-    if (config.targetFraction !== undefined) data.targetFraction = config.targetFraction;
-    if (config.taskType !== undefined) data.taskType = config.taskType;
+    if (config.denominator !== undefined) data.denominator = config.denominator;
+    if (config.numerator !== undefined) data.numerator = config.numerator;
+    if (config.showDecimal !== undefined) data.showDecimal = config.showDecimal;
   }
 
-  // If targetFraction is provided but taskType is not, default to 'build'
-  if (data.targetFraction && !data.taskType) {
-    data.taskType = 'build';
+  // Validation: denominator must be >= 2
+  if (data.denominator < 2) {
+    console.warn(`Invalid fraction bar: denominator (${data.denominator}) < 2. Setting to 2.`);
+    data.denominator = 2;
   }
 
-  // For 'build' tasks, ensure shaded starts at 0 unless explicitly set
-  if (data.taskType === 'build' && config?.shaded === undefined) {
-    data.shaded = 0;
+  // Validation: numerator must be <= denominator (proper fraction)
+  if (data.numerator > data.denominator) {
+    console.warn(`Invalid fraction bar: numerator (${data.numerator}) > denominator (${data.denominator}). Clamping numerator to ${data.denominator}.`);
+    data.numerator = data.denominator;
+  }
+
+  // Validation: numerator must be non-negative
+  if (data.numerator < 0) {
+    console.warn(`Invalid fraction bar: numerator (${data.numerator}) < 0. Setting to 0.`);
+    data.numerator = 0;
+  }
+
+  // Ensure numeratorChoices includes the correct numerator
+  if (Array.isArray(data.numeratorChoices) && !data.numeratorChoices.includes(data.numerator)) {
+    data.numeratorChoices[0] = data.numerator;
+  }
+
+  // Ensure denominatorChoices includes the correct denominator
+  if (Array.isArray(data.denominatorChoices) && !data.denominatorChoices.includes(data.denominator)) {
+    data.denominatorChoices[0] = data.denominator;
   }
 
   return data;

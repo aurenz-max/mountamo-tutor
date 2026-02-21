@@ -95,6 +95,47 @@ sendText('[ALL_COMPLETE] Student finished all items! Celebrate.', { silent: true
 - Include context (student answer, correct answer, attempt count)
 - Only trigger at moments where a human tutor would speak
 
+**RECOMMENDED: Use `PhaseSummaryPanel` for multi-phase primitives.**
+
+If the primitive has 2+ phases that each produce a score, add a phase evaluation summary screen when all phases complete. Import from `../../../components/PhaseSummaryPanel`.
+
+```tsx
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+
+// Compute phase results from your scoring state
+const phaseSummaryData = useMemo((): PhaseResult[] => {
+  if (!hasSubmittedEvaluation) return [];
+  return [
+    { label: 'Phase 1 Name', score: p1Score, attempts: p1Attempts, firstTry: p1Attempts === 1, icon: '🔢', accentColor: 'purple' },
+    { label: 'Phase 2 Name', score: p2Score, attempts: p2Attempts, firstTry: p2Attempts === 1, icon: '🎯', accentColor: 'emerald' },
+  ];
+}, [hasSubmittedEvaluation, /* ...phase deps */]);
+
+// Render after evaluation submission (after feedback bar)
+{hasSubmittedEvaluation && phaseSummaryData.length > 0 && (
+  <PhaseSummaryPanel
+    phases={phaseSummaryData}
+    overallScore={submittedResult?.score}
+    durationMs={elapsedMs}
+    heading="Challenge Complete!"
+    celebrationMessage="You completed all phases!"
+    className="mb-6"
+  />
+)}
+```
+
+Destructure `submittedResult` and `elapsedMs` from `usePrimitiveEvaluation` — they're already returned by the hook.
+
+Enhance the `[ALL_COMPLETE]` sendText with per-phase scores so the AI tutor gives phase-specific feedback:
+```tsx
+sendText(
+  `[ALL_COMPLETE] Phase scores: Phase 1 ${p1}% (${a1} attempts), Phase 2 ${p2}% (${a2} attempts). Overall: ${overall}%. Give encouraging phase-specific feedback.`,
+  { silent: true }
+);
+```
+
+**Skip PhaseSummaryPanel** for single-phase primitives or non-evaluable display components. Reference: `FractionBar.tsx`.
+
 ### 2c. Identify outputs for subagents
 
 After writing the component, note:
@@ -219,6 +260,7 @@ Tasks:
          { pattern: '<Observable behavior>', response: '<Actionable tutor response>' },
        ],
      },
+     supportsEvaluation: true,  // ← Add for evaluable primitives (used by practice-visual-catalog)
    },
    ```
 

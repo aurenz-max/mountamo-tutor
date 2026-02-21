@@ -22,20 +22,7 @@ const getGradeLevelContext = (gradeLevel: string): string => {
 };
 
 /**
- * Decode base64 audio data to Uint8Array
- */
-const decodeBase64 = (base64: string): Uint8Array => {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-};
-
-/**
- * Generate lesson plan with segments (text-only, no audio/images yet)
+ * Generate lesson plan with segments (text-only, no images yet)
  */
 const generateLessonPlan = async (
   topic: string,
@@ -178,7 +165,8 @@ const generateImageSegment = async (
 };
 
 /**
- * Generate complete media player content with lesson plan, audio, and images
+ * Generate complete media player content with lesson plan and images
+ * Audio narration is handled natively by Lumina AI at runtime.
  */
 export const generateMediaPlayer = async (
   topic: string,
@@ -210,7 +198,7 @@ export const generateMediaPlayer = async (
 
     const result: MediaPlayerData = {
       title: `Interactive Lesson: ${topic}`,
-      description: `A ${segmentCount}-part audio-visual walkthrough exploring ${topic}`,
+      description: `A ${segmentCount}-part visual walkthrough exploring ${topic}`,
       segments: fullSegments,
       imageResolution
     };

@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Pause, Play, RefreshCw, RotateCcw, Volume2, XCircle } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle, ChevronLeft, ChevronRight, Play, RotateCcw, XCircle } from 'lucide-react';
 import { MediaPlayerData } from '../types';
-import { base64ToAudioBuffer, getAudioContext } from '../utils/audioUtils';
-import { usePrimitiveEvaluation, type MediaPlayerMetrics } from '../evaluation';
+import { usePrimitiveEvaluation, type MediaPlayerMetrics, type PrimitiveEvaluationResult } from '../evaluation';
 import { useLuminaAI } from '../hooks/useLuminaAI';
+import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 
 interface MediaPlayerProps {
   data: MediaPlayerData;
@@ -11,49 +11,48 @@ interface MediaPlayerProps {
 }
 
 /**
- * MediaPlayer - Interactive audio-visual lesson player with knowledge checks
+ * MediaPlayer - Interactive visual lesson player with knowledge checks
  *
  * Features:
- * - Multi-segment lessons with audio narration and visual content
+ * - Multi-segment lessons with AI narration and visual content
  * - Segment-by-segment knowledge check questions
- * - Play/pause controls with progress tracking
  * - Progressive unlocking (must answer correctly to advance)
  * - Hybrid approach: 3 attempts, then show answer and allow skip
- * - Intro screen to prevent auto-play
- * - Evaluation tracking for student performance analytics
- * - Beautiful UI with ambient effects
- * - Uses Web Audio API for PCM audio playback
+ * - Intro screen before lesson begins
+ * - Evaluation tracking with PhaseSummaryPanel at completion
+ * - Native Lumina AI narration (no legacy TTS)
  */
 
 const MAX_ATTEMPTS_PER_SEGMENT = 3;
 
-type SegmentPhase = 'watching' | 'answering' | 'completed' | 'max-attempts-reached';
+type SegmentPhase = 'reading' | 'answering' | 'completed' | 'max-attempts-reached';
+
+/** Compute a phase score from attempt count */
+function computeSegmentScore(attempts: number, correct: boolean): number {
+  if (!correct) return 0;
+  if (attempts <= 1) return 100;
+  return Math.max(40, 100 - (attempts - 1) * 25);
+}
 
 const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
-  // Audio playback state
+  // Navigation state
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [isFinished, setIsFinished] = useState(false);
-  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
-  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
 
   // Knowledge check state
   const [segmentPhases, setSegmentPhases] = useState<SegmentPhase[]>(
-    data.segments.map(() => 'watching')
+    data.segments.map(() => 'reading')
   );
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [segmentAttempts, setSegmentAttempts] = useState<Record<number, number>>({});
   const [segmentAnswered, setSegmentAnswered] = useState<Record<number, boolean>>({});
+  const [segmentCorrect, setSegmentCorrect] = useState<Record<number, boolean>>({});
   const [segmentStartTimes, setSegmentStartTimes] = useState<Record<number, number>>({});
   const [feedback, setFeedback] = useState<Record<number, string>>({});
-  const [showCorrectAnswer, setShowCorrectAnswer] = useState<Record<number, boolean>>({});
+  const [, setShowCorrectAnswer] = useState<Record<number, boolean>>({});
 
-  const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const pausedAtRef = useRef<number>(0);
-  const animationFrameRef = useRef<number>(0);
+  // Lesson completion state
+  const [lessonComplete, setLessonComplete] = useState(false);
 
   const currentSegment = data.segments[currentIndex];
 
@@ -78,176 +77,135 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     knowledgeCheckOptions: currentSegment.knowledgeCheck?.options?.join(' | ') || '',
   }), [data.title, data.segments.length, currentIndex, currentSegment, segmentPhases]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'media-player',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     exhibitId: data.exhibitId,
   });
 
-  // Initialize evaluation hook
+  // ── Evaluation hook ────────────────────────────────────────────────────────
   const {
     submitResult,
-    hasSubmitted,
+    hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
     resetAttempt,
   } = usePrimitiveEvaluation<MediaPlayerMetrics>({
     primitiveType: 'media-player',
-    instanceId: data.instanceId || `media-player-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId: data.skillId,
     subskillId: data.subskillId,
     objectiveId: data.objectiveId,
     exhibitId: data.exhibitId,
-    onSubmit: data.onEvaluationSubmit,
+    onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const stopAudio = () => {
-    if (sourceNodeRef.current) {
-      try {
-        sourceNodeRef.current.stop();
-        sourceNodeRef.current.disconnect();
-      } catch (e) {
-        // Already stopped
-      }
-      sourceNodeRef.current = null;
+  // ── Phase summary data (for PhaseSummaryPanel) ─────────────────────────────
+  const phaseSummaryData = useMemo((): PhaseResult[] => {
+    if (!hasSubmittedEvaluation) return [];
+
+    const results: PhaseResult[] = [];
+    for (let index = 0; index < data.segments.length; index++) {
+      const segment = data.segments[index];
+      if (!segment.knowledgeCheck) continue;
+      const attempts = segmentAttempts[index] || 0;
+      const correct = segmentCorrect[index] || false;
+      const score = computeSegmentScore(attempts, correct);
+
+      results.push({
+        label: segment.title,
+        score,
+        attempts: Math.max(attempts, 1),
+        firstTry: correct && attempts === 1,
+        icon: correct ? '\u2705' : '\u274C',
+        accentColor: correct ? 'emerald' : 'amber',
+      });
     }
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
+    return results;
+  }, [hasSubmittedEvaluation, data.segments, segmentAttempts, segmentCorrect]);
+
+  // ── AI: Read aloud on segment entry ────────────────────────────────────────
+  useEffect(() => {
+    if (!hasStarted || !isConnected) return;
+
+    if (!hasTriggeredReadAloudRef.current.has(currentIndex)) {
+      hasTriggeredReadAloudRef.current.add(currentIndex);
+      sendText(
+        `[READ_ALOUD] The student is now viewing segment ${currentIndex + 1} of ${data.segments.length}: "${currentSegment.title}". ` +
+        `Read the following content aloud in a clear, engaging narrator voice:\n\n` +
+        `"${currentSegment.script}"`,
+        { silent: true }
+      );
     }
-    setIsPlaying(false);
-    startTimeRef.current = 0;
+  }, [hasStarted, isConnected, currentIndex, data.segments.length, currentSegment.title, currentSegment.script, sendText]);
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
+  const handleBeginLesson = () => {
+    setHasStarted(true);
+    setSegmentStartTimes({ 0: Date.now() });
   };
 
-  const playAudio = async () => {
-    if (!audioBuffer) return;
-
-    const audioContext = getAudioContext();
-
-    // Resume audio context if suspended (required for autoplay policy)
-    if (audioContext.state === 'suspended') {
-      await audioContext.resume();
+  const handleShowKnowledgeCheck = () => {
+    // Transition to answering phase
+    setSegmentPhases(prev => {
+      const updated = [...prev];
+      updated[currentIndex] = 'answering';
+      return updated;
+    });
+    if (!segmentStartTimes[currentIndex]) {
+      setSegmentStartTimes(prev => ({ ...prev, [currentIndex]: Date.now() }));
     }
 
-    // Stop any existing playback
-    stopAudio();
-
-    // Create source node
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioContext.destination);
-
-    // Track when playback started
-    const offset = pausedAtRef.current;
-    startTimeRef.current = audioContext.currentTime - offset;
-
-    source.start(0, offset);
-    sourceNodeRef.current = source;
-    setIsPlaying(true);
-    setIsFinished(false);
-
-    // Handle when audio ends
-    source.onended = () => {
-      if (sourceNodeRef.current === source) {
-        setIsPlaying(false);
-        setProgress(100);
-        setIsFinished(true);
-        pausedAtRef.current = 0;
-      }
-    };
-
-    // Progress tracking
-    const updateProgress = () => {
-      if (!audioBuffer || !sourceNodeRef.current) return;
-
-      const duration = audioBuffer.duration;
-      const currentTime = audioContext.currentTime - startTimeRef.current;
-
-      if (currentTime >= duration) {
-        setIsPlaying(false);
-        setProgress(100);
-        setIsFinished(true);
-        pausedAtRef.current = 0;
-      } else {
-        setProgress((currentTime / duration) * 100);
-        animationFrameRef.current = requestAnimationFrame(updateProgress);
-      }
-    };
-
-    animationFrameRef.current = requestAnimationFrame(updateProgress);
-  };
-
-  const handlePlayPause = () => {
-    if (!audioBuffer) return;
-
-    if (isPlaying) {
-      // Pause
-      const audioContext = getAudioContext();
-      const currentTime = audioContext.currentTime - startTimeRef.current;
-      pausedAtRef.current = currentTime;
-      stopAudio();
-    } else {
-      // Play/Resume — trigger read-aloud on first play of each segment
-      if (!hasTriggeredReadAloudRef.current.has(currentIndex)) {
-        hasTriggeredReadAloudRef.current.add(currentIndex);
-        sendText(
-          `[READ_ALOUD] The student pressed play on segment ${currentIndex + 1} of ${data.segments.length}: "${currentSegment.title}". ` +
-          `Read the following content aloud in a clear, engaging narrator voice:\n\n` +
-          `"${currentSegment.script}"`,
-          { silent: true }
-        );
-      }
-      if (progress >= 100) {
-        pausedAtRef.current = 0;
-        setProgress(0);
-        setIsFinished(false);
-      }
-      setHasStarted(true);
-      playAudio();
+    // AI: Read the knowledge check question
+    if (!hasTriggeredKnowledgeCheckRef.current.has(currentIndex)) {
+      hasTriggeredKnowledgeCheckRef.current.add(currentIndex);
+      const kc = currentSegment.knowledgeCheck!;
+      const optionsText = kc.options
+        .map((opt, i) => `${String.fromCharCode(65 + i)}: ${opt}`)
+        .join('. ');
+      sendText(
+        `[READ_KNOWLEDGE_CHECK] A knowledge check has appeared for segment "${currentSegment.title}". ` +
+        `Read the question aloud, then read each answer option:\n\n` +
+        `Question: "${kc.question}"\n` +
+        `Options: ${optionsText}\n\n` +
+        `Read these clearly and encourage the student to choose an answer. Do NOT hint at the correct answer.`,
+        { silent: true }
+      );
     }
   };
 
   const handleNext = () => {
-    // Check if current segment has a knowledge check that hasn't been answered
     const hasKnowledgeCheck = currentSegment.knowledgeCheck !== undefined;
     const hasAnswered = segmentAnswered[currentIndex];
 
-    if (hasKnowledgeCheck && !hasAnswered) {
-      // Can't advance without answering knowledge check
-      return;
-    }
+    if (hasKnowledgeCheck && !hasAnswered) return;
 
-    stopAudio();
-    setProgress(0);
-    setIsFinished(false);
-    pausedAtRef.current = 0;
     if (currentIndex < data.segments.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      // Record start time for next segment
-      setSegmentStartTimes({
-        ...segmentStartTimes,
-        [currentIndex + 1]: Date.now()
-      });
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      setSegmentStartTimes(prev => ({ ...prev, [nextIndex]: Date.now() }));
+
+      // AI: Introduce the next segment
+      if (!hasTriggeredNextSegmentRef.current.has(nextIndex)) {
+        hasTriggeredNextSegmentRef.current.add(nextIndex);
+        const nextSegment = data.segments[nextIndex];
+        sendText(
+          `[NEXT_SEGMENT] Moving to segment ${nextIndex + 1} of ${data.segments.length}: "${nextSegment.title}". ` +
+          `Briefly introduce this segment.`,
+          { silent: true }
+        );
+      }
     }
   };
 
   const handlePrev = () => {
-    stopAudio();
-    setProgress(0);
-    setIsFinished(false);
-    pausedAtRef.current = 0;
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
     }
   };
 
-  const handleReplay = () => {
-    stopAudio();
-    pausedAtRef.current = 0;
-    setProgress(0);
-    setIsFinished(false);
-    playAudio();
-  };
-
-  // Knowledge Check Handlers
   const handleAnswerSubmit = (segmentIndex: number) => {
     const segment = data.segments[segmentIndex];
     const knowledgeCheck = segment.knowledgeCheck;
@@ -258,64 +216,57 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
     const isCorrect = selectedIndex === knowledgeCheck.correctOptionIndex;
     const attempts = (segmentAttempts[segmentIndex] || 0) + 1;
-    setSegmentAttempts({ ...segmentAttempts, [segmentIndex]: attempts });
+    setSegmentAttempts(prev => ({ ...prev, [segmentIndex]: attempts }));
 
     if (isCorrect) {
-      // Mark segment as completed successfully
-      setSegmentAnswered({ ...segmentAnswered, [segmentIndex]: true });
+      setSegmentAnswered(prev => ({ ...prev, [segmentIndex]: true }));
+      setSegmentCorrect(prev => ({ ...prev, [segmentIndex]: true }));
       setSegmentPhases(prev => {
         const updated = [...prev];
         updated[segmentIndex] = 'completed';
         return updated;
       });
-      setFeedback({ ...feedback, [segmentIndex]: '' });
+      setFeedback(prev => ({ ...prev, [segmentIndex]: '' }));
 
-      // AI: Celebrate correct answer
       sendText(
-        `[ANSWER_CORRECT] The student answered the knowledge check correctly on attempt ${attempts} ` +
+        `[ANSWER_CORRECT] The student answered correctly on attempt ${attempts} ` +
         `for segment "${segment.title}". Briefly congratulate them!`,
         { silent: true }
       );
 
-      // Show success feedback, then auto-advance
+      // Auto-advance after celebration
       setTimeout(() => {
         advanceToNextSegment(segmentIndex);
       }, 2000);
     } else {
-      // Incorrect answer
       if (attempts >= MAX_ATTEMPTS_PER_SEGMENT) {
-        // Max attempts reached - show correct answer and allow skip
-        setShowCorrectAnswer({ ...showCorrectAnswer, [segmentIndex]: true });
+        setShowCorrectAnswer(prev => ({ ...prev, [segmentIndex]: true }));
         setSegmentPhases(prev => {
           const updated = [...prev];
           updated[segmentIndex] = 'max-attempts-reached';
           return updated;
         });
-        setFeedback({ ...feedback, [segmentIndex]: '' });
+        setFeedback(prev => ({ ...prev, [segmentIndex]: '' }));
 
-        // AI: Comfort after max attempts
         const correctAnswer = knowledgeCheck.options[knowledgeCheck.correctOptionIndex];
         sendText(
           `[MAX_ATTEMPTS] The student used all ${MAX_ATTEMPTS_PER_SEGMENT} attempts on segment "${segment.title}". ` +
           `The correct answer was "${correctAnswer}". ` +
           (knowledgeCheck.explanation ? `Explanation: ${knowledgeCheck.explanation}. ` : '') +
-          `Read the correct answer aloud and reassure them that learning from mistakes is valuable.`,
+          `Read the correct answer aloud and reassure them.`,
           { silent: true }
         );
       } else {
-        // Show error feedback, allow retry
-        setFeedback({
-          ...feedback,
-          [segmentIndex]: 'Not quite right. Review the content above and try again.'
-        });
+        setFeedback(prev => ({
+          ...prev,
+          [segmentIndex]: 'Not quite right. Review the content and try again.'
+        }));
 
-        // AI: Give a hint without revealing the answer
         const studentAnswer = knowledgeCheck.options[selectedIndex];
         sendText(
           `[ANSWER_INCORRECT] The student chose "${studentAnswer}" but that's not correct. ` +
           `Attempt ${attempts} of ${MAX_ATTEMPTS_PER_SEGMENT} for segment "${segment.title}". ` +
-          `Give a brief, encouraging hint without revealing the answer. ` +
-          `Suggest they re-listen to the narration if needed.`,
+          `Give a brief, encouraging hint without revealing the answer.`,
           { silent: true }
         );
       }
@@ -323,47 +274,42 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
   };
 
   const handleSkipAfterMaxAttempts = (segmentIndex: number) => {
-    // Student hit max attempts - mark as answered (but incorrect) and advance
-    setSegmentAnswered({ ...segmentAnswered, [segmentIndex]: true });
+    setSegmentAnswered(prev => ({ ...prev, [segmentIndex]: true }));
+    setSegmentCorrect(prev => ({ ...prev, [segmentIndex]: false }));
     advanceToNextSegment(segmentIndex);
   };
 
   const advanceToNextSegment = (currentSegmentIndex: number) => {
     if (currentSegmentIndex === data.segments.length - 1) {
-      // Last segment - submit final evaluation
+      // Last segment — complete the lesson
       if (!hasTriggeredLessonCompleteRef.current) {
         hasTriggeredLessonCompleteRef.current = true;
-        const correctCount = Object.entries(segmentAnswered)
-          .filter(([, answered]) => answered).length;
+        const correctCount = Object.values(segmentCorrect).filter(Boolean).length;
         sendText(
           `[LESSON_COMPLETE] The student finished all ${data.segments.length} segments of "${data.title || 'the lesson'}"! ` +
-          `They answered ${correctCount} knowledge checks. ` +
+          `They got ${correctCount} knowledge checks correct. ` +
           `Celebrate their accomplishment and summarize what they learned.`,
           { silent: true }
         );
       }
       submitFinalEvaluation();
+      setLessonComplete(true);
     } else {
-      // Move to next segment
       const nextIndex = currentSegmentIndex + 1;
-      const nextSegment = data.segments[nextIndex];
       setCurrentIndex(nextIndex);
-      setSegmentStartTimes({
-        ...segmentStartTimes,
-        [nextIndex]: Date.now()
-      });
+      setSegmentStartTimes(prev => ({ ...prev, [nextIndex]: Date.now() }));
       setSegmentPhases(prev => {
         const updated = [...prev];
-        updated[nextIndex] = 'watching';
+        updated[nextIndex] = 'reading';
         return updated;
       });
 
-      // AI: Introduce the next segment
       if (!hasTriggeredNextSegmentRef.current.has(nextIndex)) {
         hasTriggeredNextSegmentRef.current.add(nextIndex);
+        const nextSegment = data.segments[nextIndex];
         sendText(
           `[NEXT_SEGMENT] Moving to segment ${nextIndex + 1} of ${data.segments.length}: "${nextSegment.title}". ` +
-          `Briefly introduce this segment and tell the student to press play to listen.`,
+          `Briefly introduce this segment and tell the student to read along.`,
           { silent: true }
         );
       }
@@ -374,7 +320,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     const segmentResults = data.segments.map((segment, index) => {
       const knowledgeCheck = segment.knowledgeCheck;
       const studentAnswerIndex = selectedAnswers[index];
-      const isCorrect = studentAnswerIndex === knowledgeCheck?.correctOptionIndex;
+      const isCorrect = segmentCorrect[index] || false;
       const attempts = segmentAttempts[index] || 0;
       const maxAttemptsReached = attempts >= MAX_ATTEMPTS_PER_SEGMENT && !isCorrect;
 
@@ -408,7 +354,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       type: 'media-player',
       totalSegments: data.segments.length,
       segmentsCompleted: segmentResults.filter(r => r.questionAnswered).length,
-      allSegmentsCompleted: segmentResults.every(r => r.questionAnswered),
+      allSegmentsCompleted: segmentResults.every(r => !r.question || r.questionAnswered),
 
       totalQuestions,
       correctAnswers,
@@ -437,90 +383,90 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     });
   };
 
-  // When audio finishes, show knowledge check (if present)
-  useEffect(() => {
-    if (isFinished && currentSegment.knowledgeCheck && !segmentAnswered[currentIndex]) {
-      // Audio finished - transition to answering phase
-      setSegmentPhases(prev => {
-        const updated = [...prev];
-        updated[currentIndex] = 'answering';
-        return updated;
-      });
-      // Record segment start time if not already recorded
-      if (!segmentStartTimes[currentIndex]) {
-        setSegmentStartTimes({ ...segmentStartTimes, [currentIndex]: Date.now() });
-      }
+  const handleReset = () => {
+    setCurrentIndex(0);
+    setHasStarted(false);
+    setLessonComplete(false);
+    setSegmentPhases(data.segments.map(() => 'reading'));
+    setSelectedAnswers({});
+    setSegmentAttempts({});
+    setSegmentAnswered({});
+    setSegmentCorrect({});
+    setSegmentStartTimes({});
+    setFeedback({});
+    setShowCorrectAnswer({});
+    hasTriggeredReadAloudRef.current = new Set();
+    hasTriggeredKnowledgeCheckRef.current = new Set();
+    hasTriggeredNextSegmentRef.current = new Set();
+    hasTriggeredLessonCompleteRef.current = false;
+    resetAttempt();
+  };
 
-      // Trigger AI to read the knowledge check question and options
-      if (!hasTriggeredKnowledgeCheckRef.current.has(currentIndex)) {
-        hasTriggeredKnowledgeCheckRef.current.add(currentIndex);
-        const kc = currentSegment.knowledgeCheck;
-        const optionsText = kc.options
-          .map((opt, i) => `${String.fromCharCode(65 + i)}: ${opt}`)
-          .join('. ');
-        sendText(
-          `[READ_KNOWLEDGE_CHECK] A knowledge check has appeared for segment "${currentSegment.title}". ` +
-          `Read the question aloud, then read each answer option:\n\n` +
-          `Question: "${kc.question}"\n` +
-          `Options: ${optionsText}\n\n` +
-          `Read these clearly and encourage the student to choose an answer. Do NOT hint at the correct answer.`,
-          { silent: true }
-        );
-      }
-    }
-  }, [isFinished, currentIndex, currentSegment.knowledgeCheck, segmentAnswered, segmentStartTimes, currentSegment.title, sendText]);
+  // ── Segment progress dots ─────────────────────────────────────────────────
+  const segmentDots = data.segments.map((seg, i) => {
+    const phase = segmentPhases[i];
+    const isCurrent = i === currentIndex;
+    const isAnswered = segmentAnswered[i];
+    const isCorrect = segmentCorrect[i];
+    const hasCheck = !!seg.knowledgeCheck;
 
-  // Load audio buffer when segment changes
-  useEffect(() => {
-    const loadAudio = async () => {
-      if (!currentSegment.audioBase64) {
-        setAudioBuffer(null);
-        return;
-      }
+    let dotColor = 'bg-slate-700';
+    if (isAnswered && isCorrect) dotColor = 'bg-emerald-500';
+    else if (isAnswered && !isCorrect) dotColor = 'bg-amber-500';
+    else if (phase === 'completed') dotColor = 'bg-emerald-500';
+    else if (isCurrent) dotColor = 'bg-indigo-500';
+    else if (!hasCheck && i < currentIndex) dotColor = 'bg-slate-500';
 
-      setIsLoadingAudio(true);
-      try {
-        const buffer = await base64ToAudioBuffer(currentSegment.audioBase64);
-        setAudioBuffer(buffer);
-      } catch (error) {
-        console.error('Error loading audio:', error);
-        setAudioBuffer(null);
-      } finally {
-        setIsLoadingAudio(false);
-      }
-    };
+    return (
+      <div key={i} className="flex flex-col items-center gap-1">
+        <div
+          className={`h-2.5 w-2.5 rounded-full transition-all ${dotColor} ${
+            isCurrent ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900 scale-125' : ''
+          }`}
+        />
+      </div>
+    );
+  });
 
-    loadAudio();
-  }, [currentSegment.audioBase64]);
+  // ── Render: Lesson Complete Summary ────────────────────────────────────────
+  if (lessonComplete && hasSubmittedEvaluation) {
+    const totalQuestions = data.segments.filter(s => s.knowledgeCheck).length;
+    const correctCount = Object.values(segmentCorrect).filter(Boolean).length;
 
-  // Auto-play on segment change (after audio is loaded) - only if already started
-  useEffect(() => {
-    setProgress(0);
-    setIsFinished(false);
-    pausedAtRef.current = 0;
+    return (
+      <div className={`min-h-[600px] w-full bg-slate-950 flex items-center justify-center p-4 md:p-6 lg:p-8 font-sans relative overflow-hidden rounded-3xl ${className}`}>
+        {/* Ambient Background */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px]" />
 
-    if (audioBuffer && hasStarted) {
-      // Small delay to ensure everything is ready
-      const timer = setTimeout(() => {
-        playAudio();
-      }, 100);
+        <div className="w-full max-w-2xl relative z-10 space-y-6">
+          <PhaseSummaryPanel
+            phases={phaseSummaryData}
+            overallScore={submittedResult?.score}
+            durationMs={elapsedMs}
+            heading="Lesson Complete!"
+            celebrationMessage={
+              correctCount === totalQuestions
+                ? `Perfect score! You aced all ${totalQuestions} knowledge checks!`
+                : `You completed ${data.segments.length} segments and got ${correctCount} of ${totalQuestions} knowledge checks correct.`
+            }
+          />
 
-      return () => {
-        clearTimeout(timer);
-        stopAudio();
-      };
-    }
+          <div className="flex justify-center">
+            <button
+              onClick={handleReset}
+              className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-medium border border-white/10 hover:border-white/20 transition-all"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-    return () => stopAudio();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, audioBuffer, hasStarted]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => stopAudio();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  // ── Render: Main Lesson UI ─────────────────────────────────────────────────
   return (
     <div className={`min-h-[600px] w-full bg-slate-950 flex items-center justify-center p-4 md:p-6 lg:p-8 font-sans relative overflow-hidden rounded-3xl ${className}`}>
 
@@ -532,7 +478,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       {!hasStarted && (
         <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center rounded-3xl">
           <div className="w-full max-w-2xl mx-auto px-6">
-            {/* Glass Panel Card */}
             <div className="glass-panel rounded-3xl overflow-hidden border border-indigo-500/20 relative animate-fade-in-up">
               {/* Terminal-style Header */}
               <div className="bg-slate-900/80 p-4 flex items-center justify-between border-b border-white/5">
@@ -543,7 +488,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
                     <span className="w-2 h-2 rounded-full bg-slate-600"></span>
                   </div>
                   <span className="text-xs font-mono uppercase tracking-widest text-indigo-400">
-                    Interactive Media Lesson
+                    Interactive Lesson
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 font-mono">
@@ -553,19 +498,16 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
               {/* Content */}
               <div className="p-8 md:p-12 text-center space-y-6">
-                {/* Icon */}
                 <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 mb-2">
-                  <Play className="h-10 w-10 text-indigo-400 fill-current ml-1" />
+                  <BookOpen className="h-10 w-10 text-indigo-400" />
                 </div>
 
-                {/* Title */}
                 <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight">
                   {data.title || 'Interactive Lesson'}
                 </h2>
 
-                {/* Description */}
                 <p className="text-slate-300 text-lg leading-relaxed max-w-md mx-auto">
-                  Experience a multi-segment lesson with audio narration, visual illustrations, and knowledge checks
+                  A multi-segment lesson with AI narration, visual illustrations, and knowledge checks
                 </p>
 
                 {/* Features Grid */}
@@ -582,22 +524,21 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-indigo-400">
-                      <Volume2 className="h-6 w-6 inline-block" />
+                      <BookOpen className="h-6 w-6 inline-block" />
                     </div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Audio</div>
+                    <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">AI Narrated</div>
                   </div>
                 </div>
 
                 {/* CTA Button */}
                 <div className="pt-4">
                   <button
-                    onClick={handlePlayPause}
-                    disabled={!audioBuffer || isLoadingAudio}
-                    className="group inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-lg shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden"
+                    onClick={handleBeginLesson}
+                    className="group inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-lg shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                     <Play className="h-5 w-5 fill-current relative z-10" />
-                    <span className="relative z-10">{isLoadingAudio ? 'Loading...' : 'Begin Lesson'}</span>
+                    <span className="relative z-10">Begin Lesson</span>
                   </button>
                 </div>
               </div>
@@ -613,8 +554,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
         <div className="relative w-full lg:w-2/3 h-[45%] lg:h-full bg-slate-900 flex items-center justify-center p-6 group">
           {/* Subtle Grid Pattern Background */}
           <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
-
-          {/* Vignette for depth */}
           <div className="absolute inset-0 bg-radial-at-c from-transparent to-slate-900/50 pointer-events-none" />
 
           {currentSegment.imageUrl ? (
@@ -626,12 +565,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
             />
           ) : (
             <div className="flex flex-col items-center justify-center text-slate-500 z-10">
-              <RefreshCw className="mb-4 h-10 w-10 animate-spin opacity-50" />
-              <p className="font-medium tracking-wide">Rendering Visualization...</p>
+              <BookOpen className="mb-4 h-10 w-10 opacity-50" />
+              <p className="font-medium tracking-wide">Visual Loading...</p>
             </div>
           )}
 
-          {/* Visual Controls Overlay (Visible on hover) */}
+          {/* Overlay badge */}
           <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="bg-slate-800/80 backdrop-blur-md rounded-full px-3 py-1 text-xs font-medium text-white/70 border border-white/10 shadow-lg">
               Gemini Visualization
@@ -643,20 +582,26 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
         <div className="w-full lg:w-1/3 h-[55%] lg:h-full bg-slate-950/50 border-t lg:border-t-0 lg:border-l border-white/5 flex flex-col">
 
           {/* Progress Header */}
-          <div className="p-6 border-b border-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-bold text-indigo-400">
-                {currentIndex + 1}
-              </span>
-              <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">
-                Step {currentIndex + 1} of {data.segments.length}
-              </span>
-            </div>
-            {data.title && (
-              <div className="text-xs text-slate-500 hidden md:block">
-                {data.title}
+          <div className="p-6 border-b border-white/5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-bold text-indigo-400">
+                  {currentIndex + 1}
+                </span>
+                <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+                  Step {currentIndex + 1} of {data.segments.length}
+                </span>
               </div>
-            )}
+              {data.title && (
+                <div className="text-xs text-slate-500 hidden md:block">
+                  {data.title}
+                </div>
+              )}
+            </div>
+            {/* Segment progress dots */}
+            <div className="flex items-center gap-2 justify-center">
+              {segmentDots}
+            </div>
           </div>
 
           {/* Scrollable Content Area */}
@@ -671,7 +616,23 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
               </p>
             </div>
 
-            {/* Knowledge Check UI */}
+            {/* "Continue to Knowledge Check" Button — shown during reading phase when segment has a check */}
+            {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'reading' && (
+              <div className="mt-6">
+                <button
+                  onClick={handleShowKnowledgeCheck}
+                  className="group w-full py-3 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 transition-all transform hover:scale-[1.02] active:scale-95 relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    <CheckCircle className="h-5 w-5" />
+                    I&apos;m Ready — Show Knowledge Check
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {/* Knowledge Check UI — answering phase */}
             {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'answering' && (
               <div className="mt-6 p-6 bg-slate-800/50 rounded-xl border border-blue-500/30">
                 <div className="flex items-center gap-2 mb-4">
@@ -687,7 +648,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
                   {currentSegment.knowledgeCheck.options.map((option, optionIndex) => (
                     <button
                       key={optionIndex}
-                      onClick={() => setSelectedAnswers({ ...selectedAnswers, [currentIndex]: optionIndex })}
+                      onClick={() => setSelectedAnswers(prev => ({ ...prev, [currentIndex]: optionIndex }))}
                       className={`w-full text-left p-4 rounded-lg transition-all ${
                         selectedAnswers[currentIndex] === optionIndex
                           ? 'bg-blue-600 text-white ring-2 ring-blue-400'
@@ -728,7 +689,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
               </div>
             )}
 
-            {/* Success Feedback */}
+            {/* Success Feedback — completed phase */}
             {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'completed' && (
               <div className="mt-6 p-6 bg-emerald-900/20 border border-emerald-500/30 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
@@ -741,7 +702,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
               </div>
             )}
 
-            {/* Max Attempts Reached - Show Answer */}
+            {/* Max Attempts Reached — show correct answer */}
             {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'max-attempts-reached' && (
               <div className="mt-6 p-6 bg-amber-900/20 border border-amber-500/30 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
@@ -772,77 +733,37 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
             )}
           </div>
 
-          {/* Bottom Controls Area */}
-          <div className="p-6 lg:p-8 bg-slate-900/50 border-t border-white/5 space-y-6">
-
-            {/* Scrubbing Bar */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-medium text-slate-500">
-                <span className="flex items-center gap-1">
-                  <Volume2 className="h-3 w-3" />
-                  {isLoadingAudio ? 'Loading Audio...' : 'Audio Playback'}
-                </span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-100 ease-linear ${isFinished ? 'bg-emerald-500' : 'bg-indigo-500'}`}
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Buttons Row */}
+          {/* Bottom Navigation */}
+          <div className="p-6 lg:p-8 bg-slate-900/50 border-t border-white/5">
             <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <button
-                  onClick={handlePlayPause}
-                  disabled={!audioBuffer || isLoadingAudio}
-                  className="h-12 w-12 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition-all ring-1 ring-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
-                  title={isPlaying ? "Pause" : "Play"}
-                >
-                  {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
-                </button>
-                <button
-                  onClick={handleReplay}
-                  disabled={!audioBuffer || isLoadingAudio}
-                  className="h-12 w-12 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all ring-1 ring-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Replay"
-                >
-                  <RotateCcw className="h-5 w-5" />
-                </button>
-              </div>
+              <button
+                onClick={handlePrev}
+                disabled={currentIndex === 0}
+                className="h-12 w-12 flex items-center justify-center rounded-xl hover:bg-slate-800 text-slate-500 disabled:opacity-30 hover:text-white transition-all disabled:cursor-not-allowed"
+                title="Previous"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={handlePrev}
-                  disabled={currentIndex === 0}
-                  className="h-12 w-12 flex items-center justify-center rounded-xl hover:bg-slate-800 text-slate-500 disabled:opacity-30 hover:text-white transition-all disabled:cursor-not-allowed"
-                  title="Previous"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-
-                <button
-                  onClick={handleNext}
-                  disabled={
-                    currentIndex >= data.segments.length - 1 ||
-                    (currentSegment.knowledgeCheck && !segmentAnswered[currentIndex])
-                  }
-                  className={`h-12 px-6 flex items-center gap-2 rounded-xl font-semibold transition-all transform active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${
-                    segmentAnswered[currentIndex] || !currentSegment.knowledgeCheck
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
-                  }`}
-                  title={
-                    currentSegment.knowledgeCheck && !segmentAnswered[currentIndex]
-                      ? 'Complete knowledge check to continue'
-                      : 'Next'
-                  }
-                >
-                  Next <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+              <button
+                onClick={handleNext}
+                disabled={
+                  currentIndex >= data.segments.length - 1 ||
+                  (!!currentSegment.knowledgeCheck && !segmentAnswered[currentIndex])
+                }
+                className={`h-12 px-6 flex items-center gap-2 rounded-xl font-semibold transition-all transform active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${
+                  segmentAnswered[currentIndex] || !currentSegment.knowledgeCheck
+                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900'
+                    : 'bg-white/10 hover:bg-white/20 text-white'
+                }`}
+                title={
+                  currentSegment.knowledgeCheck && !segmentAnswered[currentIndex]
+                    ? 'Complete knowledge check to continue'
+                    : 'Next'
+                }
+              >
+                Next <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
 

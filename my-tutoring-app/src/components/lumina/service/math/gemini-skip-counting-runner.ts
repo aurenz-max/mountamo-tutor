@@ -83,6 +83,10 @@ const skipCountingRunnerSchema: Schema = {
           narration: {
             type: Type.STRING,
             description: "AI narration for this challenge"
+          },
+          startPosition: {
+            type: Type.NUMBER,
+            description: "The position the character should be at when this challenge starts. REQUIRED for predict (the position the student predicts FROM, e.g. 16 means 'what comes after 16?') and connect_multiplication (the target position showing the full journey, e.g. 28 means show jumps from 0 to 28). Must be a multiple of skipValue from startFrom."
           }
         },
         required: ["id", "type", "instruction", "hint", "narration"]
@@ -196,12 +200,17 @@ GUIDELINES FOR GRADE LEVELS:
   * showEquation: true
   * showDigitPattern: true for 5s and 10s
 
-CHALLENGE TYPES:
-- "count_along": Character jumps automatically, student watches and counts. Complete when reaching endAt.
-- "predict": Student guesses the next landing spot before the jump. Uses hiddenPositions for hidden labels.
-- "fill_missing": Some positions are hidden, student types the missing numbers.
-- "find_skip_value": Student looks at the sequence and identifies the skip amount.
-- "connect_multiplication": After jumping, student states the multiplication fact (e.g., "4 x 5 = 20").
+CHALLENGE TYPES AND startPosition:
+Each challenge has a "startPosition" — the number-line position the character occupies when the challenge begins.
+The component builds landing spots from startFrom up to startPosition automatically.
+
+- "count_along": Character jumps automatically, student watches and counts. startPosition = startFrom (e.g. 0).
+- "predict": Student guesses the NEXT landing after startPosition. Set startPosition to a position partway along the sequence. Example: skip by 4, startPosition=16 → student must answer 20. The instruction MUST match: "The rabbit is at 16. Where is the next landing?"
+- "fill_missing": Some positions are hidden, student types the missing numbers. startPosition = startFrom.
+- "find_skip_value": Student identifies the skip amount. startPosition = startFrom.
+- "connect_multiplication": Student states the multiplication fact for the full journey up to startPosition. Example: skip by 4, startPosition=28 → show 7 jumps → student answers "7 × 4 = 28". The instruction MUST reference the same number as startPosition.
+
+CRITICAL: The position mentioned in the instruction text MUST exactly match startPosition. If instruction says "at 16", startPosition MUST be 16.
 
 CHARACTER TYPES: frog, kangaroo, rabbit, rocket
 - Frog: "leaping" by 2s or 3s
@@ -229,6 +238,9 @@ REQUIREMENTS:
 8. Choose a character that fits the story context
 9. For grade 1-2: keep it simple (2s, 5s, 10s), no backward counting
 10. For grade 2-3: can add complexity (3s, 4s), multiplication connections
+11. EVERY challenge MUST have a startPosition that is a valid multiple of skipValue from startFrom
+12. For predict: startPosition should be a few jumps in (not 0), and instruction must reference that position
+13. For connect_multiplication: startPosition should be far enough along for a meaningful multiplication fact
 
 Return the complete skip counting runner configuration.
 `;
@@ -334,6 +346,79 @@ Return the complete skip counting runner configuration.
     if (config.direction !== undefined) data.direction = config.direction;
     if (config.characterType !== undefined) data.character.type = config.characterType;
   }
+
+  // ── Validate / compute startPosition for each challenge ──
+  // Build the full sequence of valid positions
+  const positions: number[] = [];
+  if (data.direction === 'forward') {
+    for (let pos = data.startFrom; pos <= data.endAt; pos += data.skipValue) positions.push(pos);
+  } else {
+    for (let pos = data.startFrom; pos >= data.endAt; pos -= data.skipValue) positions.push(pos);
+  }
+
+  const positionSet = new Set(positions);
+  let progressIdx = 0; // tracks progression through sequence across challenges
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data.challenges.forEach((challenge: any) => {
+    // If Gemini provided a valid startPosition, use it
+    if (typeof challenge.startPosition === 'number' && positionSet.has(challenge.startPosition)) {
+      const idx = positions.indexOf(challenge.startPosition);
+      if (idx >= 0) progressIdx = idx;
+      return;
+    }
+
+    // Try to extract a position from the instruction text (e.g. "is at 16", "landed on 28")
+    const posRegex = /(?:at|on|reached|landed on|is at)\s+(\d+)/i;
+    const match = challenge.instruction?.match(posRegex);
+    if (match) {
+      const mentioned = parseInt(match[1], 10);
+      if (positionSet.has(mentioned)) {
+        challenge.startPosition = mentioned;
+        const idx = positions.indexOf(mentioned);
+        if (idx >= 0) progressIdx = idx;
+        return;
+      }
+    }
+
+    // For connect_multiplication, try parsing targetFact (e.g. "7 × 4 = 28")
+    if (challenge.type === 'connect_multiplication' && challenge.targetFact) {
+      const factMatch = challenge.targetFact.match(/=\s*(\d+)/);
+      if (factMatch) {
+        const product = parseInt(factMatch[1], 10);
+        if (positionSet.has(product)) {
+          challenge.startPosition = product;
+          const idx = positions.indexOf(product);
+          if (idx >= 0) progressIdx = idx;
+          return;
+        }
+      }
+    }
+
+    // Fallback: compute a reasonable startPosition based on challenge type
+    switch (challenge.type) {
+      case 'count_along':
+      case 'fill_missing':
+      case 'find_skip_value':
+        challenge.startPosition = data.startFrom;
+        progressIdx = 0;
+        break;
+      case 'predict':
+        // Place a few jumps into the sequence so the prediction isn't trivial
+        progressIdx = Math.min(Math.max(progressIdx + 2, 3), positions.length - 2);
+        if (progressIdx < 0) progressIdx = 0;
+        challenge.startPosition = positions[progressIdx];
+        break;
+      case 'connect_multiplication':
+        // Place far enough for a meaningful multiplication fact
+        progressIdx = Math.min(Math.max(progressIdx + 3, Math.floor(positions.length * 0.5)), positions.length - 1);
+        challenge.startPosition = positions[progressIdx];
+        break;
+      default:
+        challenge.startPosition = data.startFrom;
+        break;
+    }
+  });
 
   return data;
 };

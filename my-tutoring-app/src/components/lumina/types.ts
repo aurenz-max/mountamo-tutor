@@ -1494,6 +1494,7 @@ export type { NumberLineData, NumberLineOperation, NumberLineChallenge } from '.
 export type { BaseTenBlocksData, BaseTenBlocksChallenge } from './primitives/visual-primitives/math/BaseTenBlocks';
 export type { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from './primitives/visual-primitives/math/BalanceScale';
 export type { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from './primitives/visual-primitives/math/FunctionMachine';
+export type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
 
 // Chemistry
 export type { MatterExplorerData } from './primitives/visual-primitives/chemistry/MatterExplorer';

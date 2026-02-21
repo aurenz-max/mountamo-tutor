@@ -3,12 +3,15 @@
 import React, { useState } from 'react';
 import MediaPlayer from '../primitives/MediaPlayer';
 import { MediaPlayerData } from '../types';
+import { EvaluationProvider } from '../evaluation';
+import { ExhibitProvider } from '../contexts/ExhibitContext';
+import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 
 interface MediaPlayerTesterProps {
   onBack: () => void;
 }
 
-export const MediaPlayerTester: React.FC<MediaPlayerTesterProps> = ({ onBack }) => {
+const MediaPlayerTesterInner: React.FC<MediaPlayerTesterProps> = ({ onBack }) => {
   const [mediaData, setMediaData] = useState<MediaPlayerData | null>(null);
 
   // Generation controls
@@ -263,3 +266,24 @@ export const MediaPlayerTester: React.FC<MediaPlayerTesterProps> = ({ onBack }) 
     </div>
   );
 };
+
+// Main export - wraps with EvaluationProvider, ExhibitProvider, and LuminaAIProvider
+export const MediaPlayerTester: React.FC<MediaPlayerTesterProps> = (props) => {
+  return (
+    <EvaluationProvider
+      sessionId={`media-player-tester-${Date.now()}`}
+      exhibitId="media-player-tester"
+      onCompetencyUpdate={(updates) => {
+        console.log('Competency updates received:', updates);
+      }}
+    >
+      <ExhibitProvider objectives={[]} manifestItems={[]}>
+        <LuminaAIProvider>
+          <MediaPlayerTesterInner {...props} />
+        </LuminaAIProvider>
+      </ExhibitProvider>
+    </EvaluationProvider>
+  );
+};
+
+export default MediaPlayerTester;

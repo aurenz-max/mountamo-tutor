@@ -21,6 +21,7 @@ export interface SkipCountingChallenge {
   instruction: string;
   hiddenPositions?: number[];
   targetFact?: string | null;
+  startPosition?: number;
   hint: string;
   narration: string;
 }
@@ -141,9 +142,24 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     return 'jump';
   });
 
-  // Number line state
-  const [currentPosition, setCurrentPosition] = useState(startFrom);
-  const [landingSpots, setLandingSpots] = useState<number[]>([startFrom]);
+  // Number line state — honor first challenge's startPosition
+  const [currentPosition, setCurrentPosition] = useState(() => {
+    const first = challenges[0];
+    return first?.startPosition !== undefined ? first.startPosition : startFrom;
+  });
+  const [landingSpots, setLandingSpots] = useState<number[]>(() => {
+    const first = challenges[0];
+    if (first?.startPosition !== undefined && first.startPosition !== startFrom) {
+      const spots: number[] = [];
+      if (direction === 'forward') {
+        for (let pos = startFrom; pos <= first.startPosition; pos += skipValue) spots.push(pos);
+      } else {
+        for (let pos = startFrom; pos >= first.startPosition; pos -= skipValue) spots.push(pos);
+      }
+      return spots.length > 0 ? spots : [startFrom];
+    }
+    return [startFrom];
+  });
   const [isAnimating, setIsAnimating] = useState(false);
 
   // Prediction state
@@ -575,13 +591,27 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     setMultiplicationInput('');
     setFillInput('');
 
-    // Reset number line for the next challenge (keep progress for connect challenges)
+    // Position character based on challenge's startPosition
     const nextChallenge = challenges[nextIndex];
-    if (nextChallenge.type !== 'connect_multiplication') {
+    const targetPos = nextChallenge.startPosition;
+
+    if (targetPos !== undefined) {
+      // Build landing spots from startFrom up to targetPos
+      const spots: number[] = [];
+      if (direction === 'forward') {
+        for (let pos = startFrom; pos <= targetPos; pos += skipValue) spots.push(pos);
+      } else {
+        for (let pos = startFrom; pos >= targetPos; pos -= skipValue) spots.push(pos);
+      }
+      setLandingSpots(spots.length > 0 ? spots : [startFrom]);
+      setCurrentPosition(spots.length > 0 ? spots[spots.length - 1] : startFrom);
+    } else if (nextChallenge.type === 'connect_multiplication') {
+      // Backward compat: keep current state when no startPosition for connect
+    } else {
       setCurrentPosition(startFrom);
       setLandingSpots([startFrom]);
-      setCurrentStreak(0);
     }
+    setCurrentStreak(0);
 
     // Set phase
     if (nextChallenge.type === 'count_along') setCurrentPhase('watch');

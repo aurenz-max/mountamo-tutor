@@ -114,17 +114,18 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'place-value-chart':
-      // PlaceValueChart supports evaluation - pass the props
+      // PlaceValueChart handles its own evaluation internally — do NOT pass onEvaluationSubmit
+      // to avoid double submission.  The generator now produces PlaceValueChartData with:
+      //   targetNumber, highlightedDigitPlace, minPlace, maxPlace, etc.
       return (
         <PlaceValueChart
           data={{
             ...(data as Parameters<typeof PlaceValueChart>[0]['data']),
-            // Evaluation integration props
+            // Evaluation integration props (no onEvaluationSubmit)
             instanceId: `place-value-chart-${Date.now()}`,
             skillId: 'math-place-value',
             subskillId: 'decimal-numbers',
             objectiveId: 'understand-place-value',
-            onEvaluationSubmit,
           }}
         />
       );
@@ -381,20 +382,22 @@ const EvaluationResultsPanel: React.FC = () => {
                 {/* Show FractionBar-specific metrics */}
                 {result.metrics.type === 'fraction-bar' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>All Phases: {result.metrics.allPhasesCompleted ? 'Complete' : 'Incomplete'}</span>
                     <span>Target: {result.metrics.targetFraction || 'N/A'}</span>
+                    <span>Numerator: {result.metrics.numeratorCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.numeratorAttempts} attempt{result.metrics.numeratorAttempts !== 1 ? 's' : ''})</span>
+                    <span>Denominator: {result.metrics.denominatorCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.denominatorAttempts} attempt{result.metrics.denominatorAttempts !== 1 ? 's' : ''})</span>
+                    <span>Build: {result.metrics.buildCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.buildAttempts} attempt{result.metrics.buildAttempts !== 1 ? 's' : ''})</span>
                     <span>Selected: {result.metrics.selectedFraction}</span>
-                    <span>Numerator: {result.metrics.numerator}</span>
-                    <span>Denominator: {result.metrics.denominator}</span>
-                    <span>Simplified: {result.metrics.simplifiedFraction}</span>
-                    <span>Equivalent: {result.metrics.recognizedEquivalence ? 'Yes' : 'No'}</span>
                   </div>
                 )}
                 {/* Show PlaceValueChart-specific metrics */}
                 {result.metrics.type === 'place-value-chart' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>All Phases: {result.metrics.allPhasesCompleted ? 'Complete' : 'Incomplete'}</span>
+                    <span>Place ID: {result.metrics.placeIdentifyCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.placeAttempts} attempt{result.metrics.placeAttempts !== 1 ? 's' : ''})</span>
+                    <span>Value ID: {result.metrics.valueIdentifyCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.valueAttempts} attempt{result.metrics.valueAttempts !== 1 ? 's' : ''})</span>
+                    <span>Build: {result.metrics.isCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.buildAttempts} attempt{result.metrics.buildAttempts !== 1 ? 's' : ''})</span>
                     <span>Final Value: {result.metrics.finalValue}</span>
-                    <span>Digits: {result.metrics.totalDigitsEntered}</span>
-                    <span>Decimals: {result.metrics.usesDecimals ? 'Yes' : 'No'}</span>
                     <span>Changes: {result.metrics.digitChanges}</span>
                   </div>
                 )}

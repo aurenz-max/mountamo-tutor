@@ -424,11 +424,22 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Observable student behavior', response: 'Actionable tutor response' },
       ],
     },
+
+    // ⭐ Set to true if this primitive supports evaluation (used by practice-visual-catalog)
+    supportsEvaluation: true,  // ← Add this for evaluable primitives
   },
 ];
 ```
 
 **The `tutoring` field is optional but recommended for interactive primitives.** It tells the AI tutor what the student is doing, what runtime state to watch, and how to scaffold help at progressive levels. Primitives without it still work — they just get a generic fallback. See [ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md) for the full guide.
+
+**When to set `supportsEvaluation: true` in the catalog:**
+- ✅ Primitive involves student interaction (building, selecting, manipulating, answering)
+- ✅ Has a clear goal or target state that can be assessed
+- ✅ You've integrated the `usePrimitiveEvaluation` hook in the component
+- ✅ You've defined metrics in `evaluation/types.ts`
+
+**⭐ Default to `true` for interactive primitives.** This flag is used by the practice-visual-catalog to determine which primitives can be included in evaluated practice sessions. It must be set in **both** the catalog entry here and the `primitiveRegistry.tsx` (Step 6).
 
 ### Step 6: Register UI Component
 
@@ -988,6 +999,154 @@ Start with 3 phases (explore → practice → apply) and adjust based on concept
 
 ---
 
+### Phase Evaluation Summary: Showing Students Their Results
+
+**RECOMMENDED: Use `PhaseSummaryPanel` to show per-phase performance after multi-phase primitives complete.**
+
+When a multi-phase primitive finishes, students deserve to see how they performed on each phase — not just a generic "Great job!" message. The `PhaseSummaryPanel` component provides an animated, achievement-screen-style breakdown with an SVG score ring, staggered phase rows, and first-try stars.
+
+#### When to Use PhaseSummaryPanel
+
+**Use it when:**
+- Your primitive has 2+ distinct phases that each produce a score
+- You track attempt counts per phase
+- The primitive uses `usePrimitiveEvaluation`
+
+**Skip it when:**
+- Single-phase primitives (use the feedback bar instead)
+- Non-evaluable display components
+
+#### Quick Integration (3 Steps)
+
+**Step 1: Import the component**
+
+```tsx
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+```
+
+**Step 2: Compute phase results from your existing scoring**
+
+Map your primitive's per-phase state into the generic `PhaseResult[]` format using a `useMemo`:
+
+```tsx
+const phaseSummaryData = useMemo((): PhaseResult[] => {
+  if (!hasSubmittedEvaluation) return [];
+
+  return [
+    {
+      label: 'Phase 1 Name',
+      score: phase1Score,       // 0-100
+      attempts: phase1Attempts,
+      firstTry: phase1Attempts === 1,
+      icon: '🔢',              // Optional emoji
+      accentColor: 'purple',    // Optional: 'purple' | 'blue' | 'emerald' | 'amber' | 'cyan' | 'pink' | 'orange'
+    },
+    {
+      label: 'Phase 2 Name',
+      score: phase2Score,
+      attempts: phase2Attempts,
+      firstTry: phase2Attempts === 1,
+      icon: '🎯',
+      accentColor: 'emerald',
+    },
+  ];
+}, [hasSubmittedEvaluation, phase1Score, phase1Attempts, phase2Score, phase2Attempts]);
+```
+
+**Step 3: Render after evaluation submission**
+
+Place the panel after your feedback bar, guarded by `hasSubmittedEvaluation`:
+
+```tsx
+{/* Feedback bar */}
+{feedback && ( ... )}
+
+{/* Phase Evaluation Summary */}
+{hasSubmittedEvaluation && phaseSummaryData.length > 0 && (
+  <PhaseSummaryPanel
+    phases={phaseSummaryData}
+    overallScore={submittedResult?.score}    // from usePrimitiveEvaluation
+    durationMs={elapsedMs}                   // from usePrimitiveEvaluation
+    heading="Challenge Complete!"
+    celebrationMessage="You completed all phases!"
+    className="mb-6"
+  />
+)}
+```
+
+**Note:** Destructure `submittedResult` and `elapsedMs` from `usePrimitiveEvaluation` — they're already returned by the hook:
+
+```tsx
+const {
+  submitResult,
+  hasSubmitted: hasSubmittedEvaluation,
+  submittedResult,    // ← add this
+  elapsedMs,          // ← add this
+  resetAttempt,
+} = usePrimitiveEvaluation<YourMetrics>({ ... });
+```
+
+#### Interface Reference
+
+```typescript
+export interface PhaseResult {
+  label: string;           // "Identify Numerator"
+  score: number;           // 0-100
+  attempts: number;        // number of tries
+  firstTry: boolean;       // got it on first attempt?
+  icon?: string;           // emoji
+  accentColor?: 'purple' | 'blue' | 'emerald' | 'amber' | 'cyan' | 'pink' | 'orange';
+}
+
+export interface PhaseSummaryPanelProps {
+  phases: PhaseResult[];
+  overallScore?: number;       // defaults to average of phase scores
+  durationMs?: number;         // optional time display
+  heading?: string;            // defaults to "Your Results"
+  celebrationMessage?: string; // shown above breakdown
+  animate?: boolean;           // defaults to true
+  onAnimationComplete?: () => void;
+  className?: string;
+}
+```
+
+#### Performance Tier Color Coding
+
+The panel automatically color-codes the score ring and tier badge:
+
+| Score Range | Tier | Ring Color | Label |
+|-------------|------|------------|-------|
+| 100 | Perfect | Emerald | "Perfect!" |
+| 80-99 | Great | Blue | "Great Job!" |
+| 50-79 | Good | Amber | "Good Work" |
+| <50 | Needs Work | Rose | "Keep Practicing" |
+
+Individual phase bars use the `accentColor` prop if provided, otherwise derive from the score tier.
+
+#### AI Tutoring Integration
+
+When showing the summary, enhance your `[ALL_COMPLETE]` AI message with per-phase scores so the AI can give phase-specific commentary:
+
+```tsx
+sendText(
+  `[ALL_COMPLETE] Student completed all phases. ` +
+  `Phase scores: Phase 1 ${p1}% (${attempts1} attempts), ` +
+  `Phase 2 ${p2}% (${attempts2} attempts). ` +
+  `Overall: ${overallScore}%. ` +
+  `Give a brief, encouraging summary of their performance across all phases. ` +
+  `If any phase had multiple attempts, mention what they could practice more.`,
+  { silent: true }
+);
+```
+
+The PhaseSummaryPanel is purely presentational — it does NOT call `sendText`. The calling primitive handles all AI communication.
+
+#### Reference Implementation
+
+See [FractionBar.tsx](../primitives/visual-primitives/math/FractionBar.tsx) for the complete reference implementation with 3 phases (Identify Numerator, Identify Denominator, Build Fraction), each with its own accent color and scoring formula.
+
+---
+
 ## Domain Catalog Reference
 
 Add new components to the appropriate domain file:
@@ -1102,13 +1261,14 @@ Use this checklist when adding a new primitive:
 - [ ] **ComponentId**: Added to `types.ts`
 - [ ] **Generator**: Created in `service/[domain]/`
 - [ ] **Registry**: Registered in `generators/[domain]Generators.ts`
-- [ ] **Catalog**: Added to `catalog/[domain].ts` with clear description and `tutoring` field if interactive
+- [ ] **Catalog**: Added to `catalog/[domain].ts` with clear description, `tutoring` field if interactive, and `supportsEvaluation: true` if evaluable
 - [ ] **UI config**: Added to `primitiveRegistry.tsx` with `supportsEvaluation: true` if interactive
 - [ ] **Metrics** (if evaluable): Custom metrics interface in `evaluation/types.ts`
 - [ ] **Evaluation hook** (if evaluable): Integrated `usePrimitiveEvaluation` with submit/reset handlers
 - [ ] **No double submission** (if evaluable): Tester does NOT pass `onEvaluationSubmit` that calls `context.submitEvaluation()` — the hook handles this
 - [ ] **AI tutoring scaffold** (if interactive): Added `tutoring` field to catalog entry with taskDescription, scaffoldingLevels, contextKeys, and commonStruggles (see [ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md))
 - [ ] **Pedagogical speech triggers** (if interactive): Added `sendText('[TAG] ...', { silent: true })` calls at key interaction points (correct/incorrect, phase transitions, item progression, completion)
+- [ ] **Phase summary** (if multi-phase): Integrated `PhaseSummaryPanel` with per-phase scores, rendered when `hasSubmittedEvaluation` is true (see [Phase Evaluation Summary](#phase-evaluation-summary-showing-students-their-results))
 - [ ] **Testing**: Verified primitive works standalone and within exhibits; tested AI scaffolding with Lumina Tutor Tester
 
 ## Additional Resources

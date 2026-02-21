@@ -740,31 +740,33 @@ export interface PercentBarMetrics extends BasePrimitiveMetrics {
 export interface FractionBarMetrics extends BasePrimitiveMetrics {
   type: 'fraction-bar';
 
-  // Goal achievement
-  targetFraction: string;        // e.g., "3/4" (from task description if applicable)
-  selectedFraction: string;      // e.g., "6/8" (what student built)
-  isCorrect: boolean;           // Matches target if provided
+  // Overall
+  allPhasesCompleted: boolean;
+  finalSuccess: boolean;
 
-  // Fraction understanding
-  numerator: number;            // Shaded parts
-  denominator: number;          // Total partitions
-  decimalValue: number;         // Student's fraction as decimal
+  // Phase 1: Identify Numerator
+  correctNumerator: number;
+  studentNumeratorAnswer: number | null;
+  numeratorCorrect: boolean;
+  numeratorAttempts: number;
 
-  // Equivalence understanding
-  simplifiedFraction: string;   // e.g., "3/4" if student made "6/8"
-  recognizedEquivalence: boolean; // Did they create an equivalent fraction?
+  // Phase 2: Identify Denominator
+  correctDenominator: number;
+  studentDenominatorAnswer: number | null;
+  denominatorCorrect: boolean;
+  denominatorAttempts: number;
 
-  // Interaction patterns
-  partitionChanges: number;     // How many times they changed denominator
-  shadingChanges: number;       // How many times they adjusted shading
-  finalBarStates: Array<{       // State of each bar at submission
-    partitions: number;
-    shaded: number;
-  }>;
+  // Phase 3: Build Fraction
+  targetFraction: string;
+  selectedFraction: string;
+  buildCorrect: boolean;
+  buildAttempts: number;
+  shadingChanges: number;
 
-  // Comparison tasks (if multiple bars)
-  barsCompared: number;
-  correctComparison?: boolean;  // If comparing fractions (e.g., which is larger)
+  // Aggregate
+  totalAttempts: number;
+  solvedOnFirstTry: boolean;
+  hintsUsed: number;
 }
 
 export interface AreaModelMetrics extends BasePrimitiveMetrics {
@@ -846,30 +848,50 @@ export interface FunctionMachineMetrics extends BasePrimitiveMetrics {
 export interface PlaceValueChartMetrics extends BasePrimitiveMetrics {
   type: 'place-value-chart';
 
-  // Goal achievement
-  targetValue?: number;         // Target number if specified in task
-  finalValue: number;           // Number student created
-  isCorrect: boolean;           // Matches target if provided
+  // Overall
+  allPhasesCompleted: boolean;
+  finalSuccess: boolean;
+
+  // Phase 1: Identify the place
+  correctPlaceName: string;
+  studentPlaceAnswer: string | null;
+  placeIdentifyCorrect: boolean;
+  placeAttempts: number;
+
+  // Phase 2: Find the value
+  correctDigitValue: number;
+  studentValueAnswer: number | null;
+  valueIdentifyCorrect: boolean;
+  valueAttempts: number;
+
+  // Phase 3: Build the number
+  targetValue?: number;
+  finalValue: number;
+  isCorrect: boolean;
+  buildAttempts: number;
+  digitChanges: number;
 
   // Place value understanding
   placeRange: {
-    minPlace: number;           // Smallest place value used (e.g., -2 for hundredths)
-    maxPlace: number;           // Largest place value used (e.g., 3 for thousands)
+    minPlace: number;
+    maxPlace: number;
   };
-  usesDecimals: boolean;        // Whether student worked with decimal places
-  usesLargeNumbers: boolean;    // Whether number is >= 1000
+  usesDecimals: boolean;
+  usesLargeNumbers: boolean;
 
   // Digit composition
-  totalDigitsEntered: number;   // Count of non-zero digits
-  digitsByPlace: { [place: number]: string }; // Final state of all digits
+  totalDigitsEntered: number;
+  digitsByPlace: { [place: number]: string };
 
-  // Expanded form accuracy (if shown)
-  expandedFormCorrect: boolean; // Whether expanded form matches digits
-  expandedFormParts: string[];  // Array of parts like ["400", "20", "5"]
+  // Expanded form accuracy
+  expandedFormCorrect: boolean;
+  expandedFormParts: string[];
+  placeValueAccuracy: number;
 
-  // Interaction patterns
-  digitChanges: number;         // How many times digits were modified
-  placeValueAccuracy: number;   // 0-100 score based on understanding shown
+  // Aggregate
+  totalAttempts: number;
+  solvedOnFirstTry: boolean;
+  hintsUsed: number;
 }
 
 export interface FactorTreeMetrics extends BasePrimitiveMetrics {

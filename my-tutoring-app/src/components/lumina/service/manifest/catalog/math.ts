@@ -147,31 +147,30 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fraction-bar',
-    description: 'Interactive rectangular bar models showing fractional parts with adjustable partitions. Perfect for teaching fractions, equivalent fractions, comparing fractions, and fraction operations. Students can click to shade/unshade parts. ESSENTIAL for elementary math.',
-    constraints: 'Requires fraction values (numerator/denominator). Supports multiple bars for comparison.',
+    description: 'Multi-phase interactive fraction bar with three learning stages: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. ESSENTIAL for elementary fraction introduction.',
+    constraints: 'Requires a proper fraction (numerator <= denominator). Denominator range 2-12 for best visual clarity.',
     tutoring: {
-      taskDescription: 'Build and compare fractions. Target: {{targetFraction}}. Current: {{currentFraction}}.',
-      contextKeys: ['targetFraction', 'currentFraction', 'denominator', 'numerator'],
+      taskDescription: 'Three-phase fraction learning: identify numerator and denominator of {{numerator}}/{{denominator}}, then build it on a bar. Phase: {{currentPhase}}.',
+      contextKeys: ['numerator', 'denominator', 'currentPhase', 'shadedCount', 'attemptNumber'],
       scaffoldingLevels: {
-        level1: '"How many parts is the whole divided into?"',
-        level2: '"You need {{denominator}} equal pieces. How many should be shaded?"',
-        level3: '"Denominator = bottom number = total pieces. Numerator = top = shaded pieces."',
+        level1: '"Look at the fraction. The top number and bottom number each have a special name."',
+        level2: '"The numerator is the top number — it tells how many parts are shaded. The denominator is the bottom number — it tells how many equal parts there are."',
+        level3: '"In {{numerator}}/{{denominator}}, the numerator is {{numerator}} (top) and the denominator is {{denominator}} (bottom). Now shade exactly {{numerator}} parts on the bar."',
       },
       commonStruggles: [
-        { pattern: 'Confusing numerator/denominator', response: 'Use "out of" language: 3 out of 4 pieces' },
-        { pattern: 'Unequal parts', response: '"Are all the pieces the same size?"' },
-        { pattern: 'Equivalence confusion', response: 'Show different ways to divide the same whole' },
+        { pattern: 'Confusing numerator and denominator', response: '"Remember: the Denominator is Down (bottom). The Numerator is the Number on top."' },
+        { pattern: 'Shading wrong number of parts in build phase', response: '"Count the shaded parts carefully. You need exactly {{numerator}} parts shaded out of {{denominator}}."' },
+        { pattern: 'Selecting the denominator when asked for numerator', response: '"The numerator is the TOP number. Look at which number sits above the fraction line."' },
       ],
       aiDirectives: [
         {
-          title: 'BAR MODEL FRACTION COACHING',
+          title: 'PHASE-AWARE FRACTION COACHING',
           instruction:
-            'Use "out of" language consistently: "3 out of 4 pieces are shaded — that is 3/4." '
-            + 'For comparison tasks with multiple bars: "Look at both bars. Which one has MORE shaded? '
-            + 'That fraction is larger." '
-            + 'For equivalence: "Click to shade {{numerator}} out of {{denominator}} pieces. '
-            + 'Now look at the other bar — same amount shaded, different number of pieces!" '
-            + 'Emphasize that the whole must be the same size for comparison to be fair.',
+            'In Phase 1 (Identify Numerator): focus on vocabulary — "The numerator is the top number. It tells us how many parts." '
+            + 'In Phase 2 (Identify Denominator): reinforce vocabulary — "The denominator is the bottom number. It tells us how many equal parts the whole is divided into." '
+            + 'In Phase 3 (Build): connect vocabulary to action — "You said the numerator is {{numerator}}, so shade {{numerator}} parts. '
+            + 'The denominator is {{denominator}}, so the bar has {{denominator}} equal parts." '
+            + 'Use the mnemonic: "Denominator is Down, Numerator is the Number of parts."',
         },
       ],
     },
@@ -179,29 +178,40 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'place-value-chart',
-    description: 'Interactive place value chart showing digit positions from millions to thousandths. Perfect for teaching place value, decimal notation, expanded form, and number decomposition. Students can edit digits to explore different numbers. ESSENTIAL for elementary math.',
-    constraints: 'Best for numbers with clear place value structure (whole numbers and decimals)',
+    description: 'Multi-phase interactive place value chart with three learning stages: (1) identify the place of a highlighted digit via multiple choice, (2) find the value of that digit via multiple choice, (3) build the number by entering digits into an interactive chart. Progressive scaffolding from place recognition to value understanding to full number construction. Supports whole numbers and decimals from millions to thousandths. ESSENTIAL for elementary place value instruction.',
+    constraints: 'Requires a target number with clear place value structure. Grade level determines digit range and decimal inclusion. Denominator range for places depends on grade band.',
     tutoring: {
-      taskDescription: 'Build or decompose numbers using place value positions. Target: {{targetValue}}.',
-      contextKeys: ['targetValue', 'initialValue', 'showExpandedForm'],
+      taskDescription: 'Three-phase place value learning: identify the place of the highlighted digit in {{targetNumber}}, find its value, then build the number on the chart. Phase: {{currentPhase}}.',
+      contextKeys: ['targetNumber', 'highlightedDigit', 'highlightedPlace', 'highlightedValue', 'currentPhase', 'gradeLevel'],
       scaffoldingLevels: {
-        level1: '"What place is this digit in? What is it worth?"',
-        level2: '"The digit {{digit}} is in the {{placeName}} place, so it is worth {{digit}} × {{placeValue}}."',
-        level3: '"Write each digit times its place value, then add them all together for the expanded form."',
+        level1: '"Look at the highlighted digit. Think about its position in the number. What place is it in?"',
+        level2: '"The digit {{highlightedDigit}} is in the {{highlightedPlace}} place. What is {{highlightedDigit}} worth in that position? Multiply the digit by the place value."',
+        level3: '"In {{targetNumber}}, the digit {{highlightedDigit}} is in the {{highlightedPlace}} place, so it is worth {{highlightedValue}}. Now place each digit in the correct column on the chart to build the whole number."',
       },
       commonStruggles: [
-        { pattern: 'Confusing place values', response: '"Each place is 10 times the one to its right"' },
-        { pattern: 'Decimal place confusion', response: '"After the decimal point, places get 10 times smaller: tenths, hundredths, thousandths"' },
+        { pattern: 'Confusing place name with digit value', response: '"The PLACE tells you the position (ones, tens, hundreds). The VALUE is the digit times its place. A 5 in the tens place is worth 50, not 5."' },
+        { pattern: 'Selecting the digit value when asked for the place', response: '"This question asks WHICH PLACE the digit is in — not what it is worth. Look at the column name above the highlighted digit."' },
+        { pattern: 'Entering digits in wrong columns during build phase', response: '"Read the number left to right: {{targetNumber}}. Match each digit to its column header. The leftmost digit goes in the highest place."' },
+        { pattern: 'Decimal place confusion', response: '"After the decimal point, places get 10 times smaller: tenths, hundredths, thousandths. The first digit after the dot is in the tenths place."' },
       ],
       aiDirectives: [
         {
-          title: 'PLACE VALUE DISCOVERY',
+          title: 'PHASE-AWARE PLACE VALUE COACHING',
           instruction:
-            'Guide students to discover the ×10 pattern: "What happens when a digit moves one place to the left? '
-            + 'Its value becomes 10 times bigger!" '
-            + 'For expanded form, build piece by piece: "The 5 is in the hundreds place, so it is worth 500. '
-            + 'The 3 is in the tens place, so it is worth 30. Add them up!" '
-            + 'For decimals, connect to fractions: "The tenths place means 1/10. So 0.7 is seven tenths."',
+            'In Phase 1 (Identify the Place): focus on position vocabulary — "The highlighted digit is in the {{highlightedPlace}} place. '
+            + 'Remember: places go ones, tens, hundreds as you move LEFT." '
+            + 'In Phase 2 (Find the Value): connect place to value — "You know the digit {{highlightedDigit}} is in the {{highlightedPlace}} place. '
+            + 'Multiply the digit by its place value to find what it is worth." '
+            + 'In Phase 3 (Build the Number): guide construction column by column — "Read {{targetNumber}} digit by digit. '
+            + 'Which column does each digit go in? Start with the highest place and work right." '
+            + 'Use the mnemonic: "Each place is 10 times the one to its right."',
+        },
+        {
+          title: 'GRADE-LEVEL ADAPTATION',
+          instruction:
+            'For K-2: focus on ones, tens, hundreds with whole numbers only. Use concrete language: "The 3 is in the tens column, so it means 3 tens, which is 30." '
+            + 'For grades 3-4: extend to thousands and introduce decimals (tenths). Connect to money: "0.5 is like 50 cents — five tenths of a dollar." '
+            + 'For grade 5+: include millions and thousandths. Guide the ×10 pattern: "Moving one place left multiplies by 10. Moving right divides by 10."',
         },
       ],
     },
