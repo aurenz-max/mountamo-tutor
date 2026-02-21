@@ -75,6 +75,7 @@ export type {
   BalanceScaleMetrics,
   BaseTenBlocksMetrics,
   FractionCirclesMetrics,
+  ComparisonBuilderMetrics,
   FractionBarMetrics,
   AreaModelMetrics,
   NumberLineMetrics,
@@ -99,6 +100,7 @@ export type {
   MultiplicationExplorerMetrics,
   MeasurementToolsMetrics,
   ShapeBuilderMetrics,
+  NumberSequencerMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,

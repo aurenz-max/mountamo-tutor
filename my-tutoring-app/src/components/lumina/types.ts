@@ -1059,6 +1059,7 @@ export type ComponentId =
   // Math Visualization Primitives (Elementary Math)
   | 'bar-model'          // Comparative bar visualization for values
   | 'number-line'        // Linear number line with highlights
+  | 'number-sequencer'   // Interactive number sequencing for building number sense
   | 'base-ten-blocks'    // Place value visualization (hundreds, tens, ones)
   | 'fraction-circles'   // Fractional parts shown as pie charts
   | 'fraction-bar'       // Rectangular bar divided into parts to represent fractions
@@ -1072,6 +1073,7 @@ export type ComponentId =
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
   | 'balance-scale'      // Interactive balance scale for equation solving
+  | 'comparison-builder' // Interactive comparison builder for comparing quantities and values
   | 'coordinate-graph'   // 2D Cartesian coordinate plane for plotting points, lines, curves, and regions
   | 'slope-triangle'     // Right triangle overlay showing rise/run for slope visualization
   | 'systems-equations-visualizer' // Systems of linear equations with graphical and algebraic solution methods
@@ -1491,8 +1493,10 @@ export type { MultiplicationExplorerData } from './primitives/visual-primitives/
 export type { MeasurementToolsData } from './primitives/visual-primitives/math/MeasurementTools';
 export type { ShapeBuilderData } from './primitives/visual-primitives/math/ShapeBuilder';
 export type { NumberLineData, NumberLineOperation, NumberLineChallenge } from './primitives/visual-primitives/math/NumberLine';
+export type { NumberSequencerData } from './primitives/visual-primitives/math/NumberSequencer';
 export type { BaseTenBlocksData, BaseTenBlocksChallenge } from './primitives/visual-primitives/math/BaseTenBlocks';
 export type { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from './primitives/visual-primitives/math/BalanceScale';
+export type { ComparisonBuilderData } from './primitives/visual-primitives/math/ComparisonBuilder';
 export type { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from './primitives/visual-primitives/math/FunctionMachine';
 export type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
 export type { RatioTableData, RatioTableChallenge } from './primitives/visual-primitives/math/RatioTable';

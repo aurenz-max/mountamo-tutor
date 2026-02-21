@@ -824,6 +824,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
   },
   {
+    id: 'comparison-builder',
+    description: 'Multi-phase comparison activity with four challenge types: compare groups of objects visually, compare written numerals with inequality symbols, order numbers least-to-greatest or greatest-to-least, and identify one more / one less. Features animated correspondence lines and alligator mouth mnemonic for < and >. Perfect for teaching quantity comparison and number ordering. ESSENTIAL for K-1 math.',
+    constraints: 'Supports numbers 1-20. Groups contain up to 10 objects. Order challenges use 3-5 numbers. Object types: bears, apples, stars, blocks, fish, butterflies, hearts, flowers, cookies, balls.',
+    tutoring: {
+      taskDescription: 'Student is comparing quantities and numbers. Challenge type: {{challengeType}}. {{#if leftCount}}Left group: {{leftCount}}, Right group: {{rightCount}}.{{/if}} {{#if leftNumber}}Left number: {{leftNumber}}, Right number: {{rightNumber}}.{{/if}} {{#if targetNumber}}Target number: {{targetNumber}}, finding {{askFor}}.{{/if}} Attempt: {{attemptNumber}}.',
+      contextKeys: ['challengeType', 'leftCount', 'rightCount', 'leftNumber', 'rightNumber', 'correctAnswer', 'targetNumber', 'askFor', 'gradeBand', 'useAlligatorMnemonic', 'instruction', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"Which group looks like it has more? Can you tell just by looking?"',
+        level2: '"Count each group carefully. Which number is bigger? {{#if useAlligatorMnemonic}}Remember, the alligator eats the bigger number!{{/if}}"',
+        level3: '"Left has {{leftCount}}, right has {{rightCount}}. {{leftCount}} is {{correctAnswer}} {{rightCount}}, so we use the {{correctAnswer}} symbol."',
+      },
+      commonStruggles: [
+        { pattern: 'Student confuses < and > symbols', response: 'Use the alligator mnemonic: the alligator mouth always opens toward the bigger number because it wants to eat more!' },
+        { pattern: 'Student cannot compare groups without counting', response: 'Encourage one-to-one matching: "Try pointing to one on the left and one on the right. Match them up. Which side has leftovers?"' },
+        { pattern: 'Student reverses ascending/descending order', response: 'Clarify the direction: "Least to greatest means we start with the smallest number. Which is the smallest here?"' },
+        { pattern: 'Student confuses one-more with one-less', response: 'Use the number line: "If we go forward one step from the target, what do we land on? That is one more."' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
     id: 'pattern-builder',
     description: 'Interactive pattern recognition, extension, and creation for K-3 algebraic thinking. Students build, extend, identify cores, translate, and create repeating patterns (AB, AAB, ABC), growing patterns (1,3,5,7), and number patterns. Supports color tokens, shape tokens, and numbers. Progressive phases: Copy → Identify → Create → Translate. Connects pattern skills to skip counting, multiplication foundations, and early algebra. ESSENTIAL for grades K-3 algebraic thinking, pattern recognition, and early algebra foundations.',
     constraints: 'Best for grades K-3. K-1: repeating patterns with colors/shapes only (AB, AAB, ABB). Grades 2-3: growing and number patterns, translation and creation challenges.',
@@ -1024,6 +1045,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'For grades 4-5: use full classification vocabulary — "parallel sides," "congruent," "perpendicular." '
             + 'Guide hierarchical thinking: "A square IS a rectangle — it just has all sides equal too!"',
         },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'number-sequencer',
+    description: 'Interactive number sequencing with 5 challenge types: fill-missing (complete number sequences with blanks), before-after (identify numbers before/after a given number), order-cards (arrange shuffled numbers in order), count-from (continue counting forward/backward from a starting number), and decade-fill (fill missing numbers on a hundred chart). Uses a "number train" visual metaphor. Perfect for building sequential number understanding. ESSENTIAL for K-1 math.',
+    constraints: 'Best for numbers 1-100. K: 1-20 range, Grade 1: 1-100 range. Each challenge set should include 5-10 challenges mixing different types.',
+    tutoring: {
+      taskDescription: 'Student is working on number sequence challenges. Current challenge type is {{challengeType}}: {{instruction}}. The sequence is {{sequence}} and student must provide {{correctAnswers}}. Direction: {{direction}}.',
+      contextKeys: ['challengeType', 'sequence', 'correctAnswers', 'direction', 'attemptNumber', 'startNumber', 'rangeMin', 'rangeMax', 'instruction'],
+      scaffoldingLevels: {
+        level1: '"Say the numbers in order out loud. What number comes next in the pattern?"',
+        level2: '"Count from {{rangeMin}}: what comes after {{startNumber}}? Try saying the numbers: ..., __, ..."',
+        level3: '"Let me help you count. After 7 comes 8, and after 8 comes 9. Now look at the pattern: what number fits in the blank?"',
+      },
+      commonStruggles: [
+        { pattern: 'Student skips numbers when counting (e.g., 5, 6, 8)', response: 'Slow down and count with the student. Touch each number as you say it together. "Let\'s count slowly: 5... 6... what comes next?"' },
+        { pattern: 'Student reverses number order (e.g., puts 9 before 7)', response: 'Use the number line reference. "Which number is smaller? Smaller numbers go first when we count up."' },
+        { pattern: 'Student struggles with decade transitions (e.g., 29 to 30)', response: 'Highlight the pattern: "When we finish counting 21, 22... 29, the next group of ten starts. After twenty-nine comes thirty!"' },
+        { pattern: 'Student confuses before and after', response: 'Use physical direction: "Before means the number that comes first when counting. After means the number that comes next. When you count 5, 6, 7 — 6 comes AFTER 5 and BEFORE 7."' },
       ],
     },
     supportsEvaluation: true,

@@ -24,6 +24,8 @@ import RatioTable from '../primitives/visual-primitives/math/RatioTable';
 import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
+import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
+import NumberSequencer from '../primitives/visual-primitives/math/NumberSequencer';
 import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
 import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
@@ -426,6 +428,26 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'function-machine': {
     component: FunctionMachine,
     sectionTitle: 'Function Machine',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'comparison-builder': {
+    component: ComparisonBuilder,
+    sectionTitle: 'Comparison Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'number-sequencer': {
+    component: NumberSequencer,
+    sectionTitle: 'Number Sequencer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

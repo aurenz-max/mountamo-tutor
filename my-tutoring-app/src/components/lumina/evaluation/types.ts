@@ -639,6 +639,18 @@ export interface FractionCirclesMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface ComparisonBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'comparison-builder';
+  overallAccuracy: number;
+  compareGroupsAccuracy: number;
+  compareNumbersAccuracy: number;
+  orderAccuracy: number;
+  oneMoreOneLessAccuracy: number;
+  symbolsCorrect: number;
+  symbolsTotal: number;
+  attemptsCount: number;
+}
+
 export interface NumberLineMetrics extends BasePrimitiveMetrics {
   type: 'number-line';
 
@@ -2415,6 +2427,18 @@ export interface ShapeBuilderMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface NumberSequencerMetrics extends BasePrimitiveMetrics {
+  type: 'number-sequencer';
+  accuracy: number;
+  attemptsCount: number;
+  sequenceUnderstanding: boolean;
+  fillMissingAccuracy?: number;
+  beforeAfterAccuracy?: number;
+  orderCardsAccuracy?: number;
+  countFromAccuracy?: number;
+  decadeFillAccuracy?: number;
+}
+
 export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {
   type: 'regrouping-workbench';
 
@@ -2698,6 +2722,7 @@ export type PrimitiveMetrics =
   | BalanceScaleMetrics
   | BaseTenBlocksMetrics
   | FractionCirclesMetrics
+  | ComparisonBuilderMetrics
   | FractionBarMetrics
   | AreaModelMetrics
   | NumberLineMetrics
@@ -2719,6 +2744,7 @@ export type PrimitiveMetrics =
   | MultiplicationExplorerMetrics
   | MeasurementToolsMetrics
   | ShapeBuilderMetrics
+  | NumberSequencerMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

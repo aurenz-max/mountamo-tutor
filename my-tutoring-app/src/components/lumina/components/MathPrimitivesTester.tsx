@@ -30,7 +30,9 @@ import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import NumberLine from '../primitives/visual-primitives/math/NumberLine';
 import BaseTenBlocks from '../primitives/visual-primitives/math/BaseTenBlocks';
 import FractionCircles from '../primitives/visual-primitives/math/FractionCircles';
-import type { ShapeBuilderData } from '../types';
+import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
+import NumberSequencer from '../primitives/visual-primitives/math/NumberSequencer';
+import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData } from '../types';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -43,7 +45,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -76,6 +78,8 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'shape-builder', label: 'Shape Builder', icon: '📐', topic: 'Identifying quadrilaterals' },
   { value: 'number-line' as PrimitiveType, label: 'Number Line', icon: '📏', topic: 'Addition and subtraction on a number line' },
   { value: 'base-ten-blocks', label: 'Base Ten Blocks', icon: '🧱', topic: 'Place value and regrouping' },
+  { value: 'comparison-builder', label: 'Comparison Builder', icon: '🐻', topic: 'Compare numbers 1-10' },
+  { value: 'number-sequencer', label: 'Number Sequencer', icon: '🔢', topic: 'Number sequences and counting' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -322,6 +326,30 @@ const PrimitiveRenderer: React.FC<{
       return <BaseTenBlocks data={data as Parameters<typeof BaseTenBlocks>[0]['data']} />;
     case 'shape-builder':
       return <ShapeBuilder data={data as ShapeBuilderData} />;
+    case 'comparison-builder':
+      return (
+        <ComparisonBuilder
+          data={{
+            ...(data as ComparisonBuilderData),
+            instanceId: `comparison-builder-${Date.now()}`,
+            skillId: 'math-comparison',
+            subskillId: 'compare-numbers',
+            objectiveId: 'compare-and-order-numbers',
+          }}
+        />
+      );
+    case 'number-sequencer':
+      return (
+        <NumberSequencer
+          data={{
+            ...(data as NumberSequencerData),
+            instanceId: `number-sequencer-${Date.now()}`,
+            skillId: 'math-number-sequences',
+            subskillId: 'number-sequencing',
+            objectiveId: 'understand-number-sequences',
+          }}
+        />
+      );
     default:
       return <div className="text-slate-400">Unknown primitive: {componentId}</div>;
   }

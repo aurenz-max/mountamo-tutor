@@ -35,6 +35,8 @@ import { generateRegroupingWorkbench } from '../../math/gemini-regrouping-workbe
 import { generateMultiplicationExplorer } from '../../math/gemini-multiplication-explorer';
 import { generateMeasurementTools } from '../../math/gemini-measurement-tools';
 import { generateShapeBuilder } from '../../math/gemini-shape-builder';
+import { generateComparisonBuilder } from '../../math/gemini-comparison-builder';
+import { generateNumberSequencer } from '../../math/gemini-number-sequencer';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -226,6 +228,20 @@ registerGenerator('shape-builder', async (item, topic, gradeContext) => ({
   data: await generateShapeBuilder(topic, gradeContext, item.config),
 }));
 
+// Comparison Builder (K-1 quantity comparison & inequality symbols)
+registerGenerator('comparison-builder', async (item, topic, gradeContext) => ({
+  type: 'comparison-builder',
+  instanceId: item.instanceId,
+  data: await generateComparisonBuilder(topic, gradeContext, item.config),
+}));
+
+// Number Sequencer (K-1 sequential number understanding)
+registerGenerator('number-sequencer', async (item, topic, gradeContext) => ({
+  type: 'number-sequencer',
+  instanceId: item.instanceId,
+  data: await generateNumberSequencer(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
 // Legacy Math Primitives (now have dedicated service files)
 // ============================================================================
@@ -274,6 +290,6 @@ registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
 }));
 
 // ============================================================================
-// Migration status: 24/24 math primitives registered
+// Migration status: 25/25 math primitives registered
 // All math generators now use dedicated service files in math/ folder
 // ============================================================================
