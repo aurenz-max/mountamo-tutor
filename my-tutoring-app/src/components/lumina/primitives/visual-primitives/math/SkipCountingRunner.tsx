@@ -108,7 +108,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     startFrom = 0,
     endAt,
     direction = 'forward',
-    character,
+    character = { type: 'frog' as const },
     challenges = [],
     showOptions = {},
     gradeBand = '1-2',

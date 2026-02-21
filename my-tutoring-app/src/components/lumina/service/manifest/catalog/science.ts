@@ -89,6 +89,7 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student struggles with temperature slider', response: 'Guide: "Watch what happens to the ice cube as we make it warmer. See it changing? That\'s because heat can turn solids into liquids!"' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'reaction-lab',
@@ -110,6 +111,7 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student struggles to balance equation (grades 6-8)', response: 'Guide: "Count the atoms on each side. The number of each type of atom must be the same before and after — nothing is created or destroyed, just rearranged!"' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'equation-balancer',
@@ -130,6 +132,7 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student seems stuck after 5+ attempts', response: 'Offer guided mode: "Let\'s try a strategy! Start with the element that appears in the fewest places — it\'s easier to control. Which element only shows up in one compound on each side?"' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'energy-of-reactions',
@@ -150,6 +153,7 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student struggles with bond energy calculations', response: 'Break it into steps: "First, add up ALL the energy to break bonds (that costs energy). Then add up ALL the energy from forming bonds (that releases energy). Subtract: if breaking costs more, it is endothermic. If forming releases more, it is exothermic."' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'states-of-matter',
@@ -170,6 +174,7 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student struggles with heating curve plateaus', response: 'Guide: "The flat parts on the graph are the exciting moments — that\'s where the substance is changing state! All the energy goes into breaking particles apart, not making them hotter."' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'mixing-and-dissolving',
@@ -190,6 +195,7 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student picks wrong separation method', response: 'Guide method selection: "Think about what kind of mixture you have. Is the substance dissolved (invisible) or undissolved (you can see it)? Filtration catches big pieces, evaporation recovers dissolved things."' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'atom-builder',
@@ -211,6 +217,7 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student cannot identify element from particle counts', response: 'Guide: "The SECRET to identifying any element is simple: count the protons! The number of protons IS the atomic number, and the atomic number tells you exactly which element it is. Look at the periodic table!"' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'molecule-constructor',
@@ -232,6 +239,7 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student does not understand double or triple bonds', response: 'Explain: "Some atoms need to share more than one bond! Click two already-bonded atoms again to upgrade to a double bond. Double bonds share 2 connections, triple bonds share 3. Oxygen in O\u2082 uses a double bond because each oxygen needs 2 connections."' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'ph-explorer',
@@ -252,6 +260,7 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student cannot interpret indicator colors', response: 'Guide with the color chart: "Each indicator has its own color code. Litmus is simple: red = acid, blue = base. Cabbage juice is a rainbow: red and pink = acid, purple = neutral, blue and green = base, yellow = very strong base!"' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'safety-lab',
@@ -272,5 +281,6 @@ export const SCIENCE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student gets emergency sequence wrong', response: 'Walk through the logic: "In an emergency, think: What is the FIRST thing you need to do to stop the harm? Then what comes next? The order matters because each step builds on the last one."' },
       ],
     },
+    supportsEvaluation: true,
   },
 ];

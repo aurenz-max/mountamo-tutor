@@ -11,7 +11,8 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
   {
     id: 'motion-diagram',
     description: 'Motion Diagram / Strobe Diagram showing object positions at equal time intervals with velocity and acceleration vectors. Perfect for teaching kinematics qualitatively. ESSENTIAL for Middle School - High School physics: introduction to motion (MS), velocity concepts (MS/HS), acceleration (HS), projectile motion (HS), circular motion (AP).',
-    constraints: 'Best for grades 6-12. Use uniform motion for MS, accelerated/projectile for HS, circular for AP.'
+    constraints: 'Best for grades 6-12. Use uniform motion for MS, accelerated/projectile for HS, circular for AP.',
+    supportsEvaluation: true,
   },
   // Additional physics primitives will be added here
   // Examples could include:

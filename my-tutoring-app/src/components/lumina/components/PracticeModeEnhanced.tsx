@@ -1,16 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { KnowledgeCheck } from '../primitives/KnowledgeCheck';
-import { ProblemData, ProblemType } from '../types';
+import { ProblemData, ProblemType, HydratedPracticeItem, PracticeItemResult } from '../types';
 import { GradeLevelSelector, GradeLevel } from './GradeLevelSelector';
 import { SubjectSelector, Subject } from './SubjectSelector';
 import { AIHelper } from './AIHelper';
 import { SpotlightCard } from './SpotlightCard';
+import { PracticeManifestRenderer } from './PracticeManifestRenderer';
+import { PracticeSessionSummaryCard } from './PracticeSessionSummaryCard';
+import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
+import { EvaluationProvider } from '../evaluation';
 import {
   generateKnowledgeCheckProblems,
-  generateProblemHint,
   generatePracticeAssessment,
+  generatePracticeManifestAndHydrateStreaming,
   generateQuests,
   generateWarmUpQuestion,
   Quest,
@@ -57,6 +61,13 @@ const getSubjectColor = (subject: Subject): string => {
   return colorMap[subject] || '120, 119, 198';
 };
 
+interface ManifestPreviewItem {
+  instanceId: string;
+  problemText: string;
+  difficulty: string;
+  isVisual: boolean;
+}
+
 export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore }) => {
   // Setup state
   const [step, setStep] = useState<PracticeStep>('setup');
@@ -72,12 +83,25 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
   const [isLoadingWarmUp, setIsLoadingWarmUp] = useState(false);
   const [selectedWarmUpAnswer, setSelectedWarmUpAnswer] = useState<number | null>(null);
 
-  // Practice state
-  const [problems, setProblems] = useState<ProblemData[]>([]);
+  // Practice state — hydrated items from practice manifest
+  const [hydratedItems, setHydratedItems] = useState<HydratedPracticeItem[]>([]);
+  // Legacy fallback: raw problems (used when manifest generation fails)
+  const [legacyProblems, setLegacyProblems] = useState<ProblemData[]>([]);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
-  const [answers, setAnswers] = useState<Map<string, any>>(new Map());
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Streaming progress state
+  const [streamingMessage, setStreamingMessage] = useState<string>('');
+  const [manifestPreview, setManifestPreview] = useState<ManifestPreviewItem[]>([]);
+  const [readyCount, setReadyCount] = useState(0);
+  const [totalExpected, setTotalExpected] = useState(0);
+  const readyCountRef = useRef(0);
+
+  // Results tracking
+  const [itemResults, setItemResults] = useState<PracticeItemResult[]>([]);
+  // Session key — incremented to reset EvaluationProvider between sessions
+  const [evalSessionKey, setEvalSessionKey] = useState(0);
 
   // Assessment state
   const [assessment, setAssessment] = useState<{
@@ -92,36 +116,12 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
   } | null>(null);
   const [isGeneratingAssessment, setIsGeneratingAssessment] = useState(false);
 
-  // Problem type distribution for variety
-  const problemTypeDistribution: ProblemType[] = [
-    'multiple_choice',
-    'true_false',
-    'fill_in_blanks',
-    'categorization_activity',
-    'sequencing_activity',
-    'matching_activity'
-  ];
-
-  // Use universal generateKnowledgeCheckProblems for all problem types
-  const generateProblemsForType = async (
-    problemType: ProblemType,
-    topic: string,
-    gradeLevel: string,
-    count: number
-  ): Promise<any[]> => {
-    return generateKnowledgeCheckProblems(topic, gradeLevel, problemType, count);
-  };
-
-  const generatorMap: Record<ProblemType, (topic: string, gradeLevel: string, count: number, context?: string) => Promise<any[]>> = {
-    'multiple_choice': (topic, gradeLevel, count) => generateProblemsForType('multiple_choice', topic, gradeLevel, count),
-    'true_false': (topic, gradeLevel, count) => generateProblemsForType('true_false', topic, gradeLevel, count),
-    'fill_in_blanks': (topic, gradeLevel, count) => generateProblemsForType('fill_in_blanks', topic, gradeLevel, count),
-    'categorization_activity': (topic, gradeLevel, count) => generateProblemsForType('categorization_activity', topic, gradeLevel, count),
-    'sequencing_activity': (topic, gradeLevel, count) => generateProblemsForType('sequencing_activity', topic, gradeLevel, count),
-    'matching_activity': (topic, gradeLevel, count) => generateProblemsForType('matching_activity', topic, gradeLevel, count),
-    'scenario_problem': async () => [], // Not implemented
-    'short_answer': async () => [], // Not implemented
-  };
+  // Determine which mode we're in
+  const isManifestMode = hydratedItems.length > 0;
+  const totalItems = isManifestMode ? hydratedItems.length : legacyProblems.length;
+  const currentItem = isManifestMode ? hydratedItems[currentProblemIndex] : null;
+  const currentLegacyProblem = !isManifestMode ? legacyProblems[currentProblemIndex] : null;
+  const progress = totalItems > 0 ? ((currentProblemIndex + 1) / totalItems) * 100 : 0;
 
   // Load quests and warm-up when subject is selected
   useEffect(() => {
@@ -171,63 +171,120 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
     setIsGenerating(true);
     setError(null);
     setStep('practicing');
+    setStreamingMessage('');
+    setManifestPreview([]);
+    setReadyCount(0);
+    setTotalExpected(0);
+    readyCountRef.current = 0;
+    setEvalSessionKey(prev => prev + 1);
+
+    const topicContext = quest
+      ? `${quest.title}: ${quest.description}. Focus on ${quest.focusArea}.`
+      : subject.replace('-', ' ');
 
     try {
-      // Generate a mix of problem types
-      const allProblems: ProblemData[] = [];
-      const typesToGenerate = problemTypeDistribution.slice(0, 3); // Use first 3 types for variety
-      const perType = Math.ceil(problemCount / typesToGenerate.length);
+      // Use the streaming practice manifest system
+      const items = await generatePracticeManifestAndHydrateStreaming(
+        topicContext,
+        gradeLevel,
+        problemCount,
+        {
+          onProgress: (message) => {
+            setStreamingMessage(message);
+          },
+          onManifestReady: (preview) => {
+            setManifestPreview(preview);
+            setTotalExpected(preview.length);
+          },
+          onItemReady: (_item, _index, total) => {
+            readyCountRef.current += 1;
+            setReadyCount(readyCountRef.current);
+            setTotalExpected(total);
+          },
+        },
+      );
 
-      const topicContext = quest
-        ? `${quest.title}: ${quest.description}. Focus on ${quest.focusArea}.`
-        : subject.replace('-', ' ');
-
-      for (const problemType of typesToGenerate) {
-        const generator = generatorMap[problemType];
-        if (generator) {
-          try {
-            const generatedProblems = await generator(
-              topicContext,
-              gradeLevel,
-              perType,
-              `Practice problems for ${topicContext}`
-            );
-
-            const typedProblems = generatedProblems.map(p => ({
-              ...p,
-              type: problemType,
-              gradeLevel: gradeLevel
-            }));
-
-            allProblems.push(...typedProblems);
-          } catch (err) {
-            console.warn(`Failed to generate ${problemType} problems:`, err);
-          }
-        }
+      if (items && items.length > 0) {
+        setHydratedItems(items);
+        setLegacyProblems([]);
+        setCurrentProblemIndex(0);
+        setItemResults([]);
+        return;
       }
 
-      // Shuffle and limit to requested count
-      const shuffled = allProblems.sort(() => Math.random() - 0.5);
-      const finalProblems = shuffled.slice(0, problemCount);
+      // If manifest returned empty, fall through to legacy
+      throw new Error('Manifest returned no items');
+    } catch (manifestErr) {
+      console.warn('Practice manifest failed, falling back to legacy generation:', manifestErr);
 
-      if (finalProblems.length === 0) {
-        throw new Error('Failed to generate any problems. Please try again.');
+      // Legacy fallback: generate problems the old way
+      try {
+        setStreamingMessage('Falling back to standard generation...');
+        await generateLegacyProblems(topicContext);
+      } catch (legacyErr) {
+        console.error('Legacy generation also failed:', legacyErr);
+        setError(legacyErr instanceof Error ? legacyErr.message : 'Failed to generate problems');
+        setStep('quest-selection');
       }
-
-      setProblems(finalProblems);
-      setCurrentProblemIndex(0);
-      setAnswers(new Map());
-    } catch (err) {
-      console.error('Generation error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate problems');
-      setStep('quest-selection');
     } finally {
       setIsGenerating(false);
+      setStreamingMessage('');
+      setManifestPreview([]);
+      setReadyCount(0);
+      setTotalExpected(0);
+      readyCountRef.current = 0;
     }
   };
 
+  // Legacy problem generation (fallback)
+  const generateLegacyProblems = async (topicContext: string) => {
+    const typesToGenerate: ProblemType[] = ['multiple_choice', 'true_false', 'fill_in_blanks'];
+    const perType = Math.ceil(problemCount / typesToGenerate.length);
+    const allProblems: ProblemData[] = [];
+
+    for (const problemType of typesToGenerate) {
+      try {
+        const generated = await generateKnowledgeCheckProblems(
+          topicContext,
+          gradeLevel,
+          problemType,
+          perType
+        );
+        const typed = generated.map((p: any) => ({ ...p, type: problemType, gradeLevel }));
+        allProblems.push(...typed);
+      } catch (err) {
+        console.warn(`Failed to generate ${problemType} problems:`, err);
+      }
+    }
+
+    const shuffled = allProblems.sort(() => Math.random() - 0.5);
+    const finalProblems = shuffled.slice(0, problemCount);
+
+    if (finalProblems.length === 0) {
+      throw new Error('Failed to generate any problems. Please try again.');
+    }
+
+    setLegacyProblems(finalProblems);
+    setHydratedItems([]);
+    setCurrentProblemIndex(0);
+    setItemResults([]);
+  };
+
+  // Handle item completion from PracticeManifestRenderer
+  const handleItemComplete = useCallback((result: PracticeItemResult) => {
+    setItemResults(prev => {
+      const existing = prev.findIndex(r => r.instanceId === result.instanceId);
+      if (existing >= 0) {
+        const updated = [...prev];
+        updated[existing] = result;
+        return updated;
+      }
+      return [...prev, result];
+    });
+  }, []);
+
   const handleNext = async () => {
-    if (currentProblemIndex < problems.length - 1) {
+    if (currentProblemIndex < totalItems - 1) {
       setCurrentProblemIndex(currentProblemIndex + 1);
     } else {
       setStep('results');
@@ -235,11 +292,25 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
       if (subject) {
         setIsGeneratingAssessment(true);
         try {
+          // For assessment, pass either hydrated problem texts or legacy problems
+          const problemsForAssessment = isManifestMode
+            ? hydratedItems.map(item => ({
+                type: 'multiple_choice' as const,
+                question: item.manifestItem.problemText,
+                id: item.manifestItem.instanceId,
+                difficulty: item.manifestItem.difficulty,
+                gradeLevel,
+                rationale: item.manifestItem.rationale,
+                teachingNote: item.manifestItem.teachingNote,
+                successCriteria: [],
+              }))
+            : legacyProblems;
+
           const assessmentResult = await generatePracticeAssessment(
             subject,
             gradeLevel,
-            problems.length,
-            problems
+            totalItems,
+            problemsForAssessment as ProblemData[]
           );
           setAssessment(assessmentResult);
         } catch (err) {
@@ -260,9 +331,10 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
   const handleRestart = () => {
     setStep('setup');
     setSubject(null);
-    setProblems([]);
+    setHydratedItems([]);
+    setLegacyProblems([]);
     setCurrentProblemIndex(0);
-    setAnswers(new Map());
+    setItemResults([]);
     setError(null);
     setAssessment(null);
     setQuests([]);
@@ -272,10 +344,10 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
   const handleMorePractice = async () => {
     if (!subject) return;
 
-    // Go directly to practice, skip quest selection
-    setProblems([]);
+    setHydratedItems([]);
+    setLegacyProblems([]);
     setCurrentProblemIndex(0);
-    setAnswers(new Map());
+    setItemResults([]);
     setAssessment(null);
     setError(null);
 
@@ -289,9 +361,10 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
 
   const handleBackToQuests = () => {
     setStep('quest-selection');
-    setProblems([]);
+    setHydratedItems([]);
+    setLegacyProblems([]);
     setCurrentProblemIndex(0);
-    setAnswers(new Map());
+    setItemResults([]);
     setError(null);
     setSelectedQuest(null);
   };
@@ -315,23 +388,19 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
 
     setSubject(mappedSubject as Subject);
     setStep('quest-selection');
-    setProblems([]);
+    setHydratedItems([]);
+    setLegacyProblems([]);
     setCurrentProblemIndex(0);
-    setAnswers(new Map());
+    setItemResults([]);
     setAssessment(null);
   };
 
-  const handleRequestHint = async (hintLevel: number): Promise<string> => {
-    if (!currentProblem) {
-      throw new Error('No current problem');
-    }
-    return await generateProblemHint(currentProblem, hintLevel);
-  };
-
-  const currentProblem = problems[currentProblemIndex];
-  const progress = problems.length > 0 ? ((currentProblemIndex + 1) / problems.length) * 100 : 0;
+  // Hydration progress percentage
+  const hydrationProgress = totalExpected > 0 ? Math.round((readyCount / totalExpected) * 100) : 0;
 
   return (
+    <LuminaAIProvider>
+    <EvaluationProvider key={evalSessionKey} localOnly>
     <div className="min-h-screen">
       {/* Header */}
       <div className="mb-8 text-center">
@@ -508,13 +577,13 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
       )}
 
       {/* Practice Step */}
-      {step === 'practicing' && currentProblem && !isGenerating && (
+      {step === 'practicing' && !isGenerating && totalItems > 0 && (
         <div className="max-w-5xl mx-auto animate-fade-in">
           {/* Progress Bar */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-slate-400">
-                Question {currentProblemIndex + 1} of {problems.length}
+                Question {currentProblemIndex + 1} of {totalItems}
               </span>
               <span className="text-sm font-medium text-blue-400">
                 {Math.round(progress)}% Complete
@@ -528,9 +597,18 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
             </div>
           </div>
 
-          {/* Current Problem */}
+          {/* Current Problem — Manifest Mode or Legacy Mode */}
           <div className="mb-8">
-            <KnowledgeCheck data={{ problems: [currentProblem] }} />
+            {isManifestMode && currentItem ? (
+              <PracticeManifestRenderer
+                key={currentItem.manifestItem.instanceId}
+                item={currentItem}
+                itemIndex={currentProblemIndex}
+                onItemComplete={handleItemComplete}
+              />
+            ) : currentLegacyProblem ? (
+              <KnowledgeCheck data={{ problems: [currentLegacyProblem] }} />
+            ) : null}
           </div>
 
           {/* Navigation */}
@@ -557,7 +635,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
               onClick={handleNext}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
             >
-              {currentProblemIndex === problems.length - 1 ? 'Finish' : 'Next'}
+              {currentProblemIndex === totalItems - 1 ? 'Finish' : 'Next'}
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
               </svg>
@@ -565,25 +643,111 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
           </div>
 
           {/* AI Helper - Fixed Position */}
-          <AIHelper problem={currentProblem} onRequestHint={handleRequestHint} />
+          {currentLegacyProblem && (
+            <AIHelper
+              primitiveType="knowledge-check"
+              instanceId={currentLegacyProblem.id || `legacy-${currentProblemIndex}`}
+              primitiveData={currentLegacyProblem}
+            />
+          )}
+          {isManifestMode && currentItem?.manifestItem.visualPrimitive && (
+            <AIHelper
+              primitiveType={currentItem.manifestItem.visualPrimitive.componentId as any}
+              instanceId={currentItem.manifestItem.instanceId}
+              primitiveData={currentItem.visualData || currentItem.manifestItem}
+            />
+          )}
         </div>
       )}
 
-      {/* Loading State for Practice Generation */}
+      {/* Streaming Loading State for Practice Generation */}
       {step === 'practicing' && isGenerating && (
         <div className="max-w-3xl mx-auto animate-fade-in">
-          <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+          <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
+            {/* Spinner */}
             <div className="relative">
               <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 animate-pulse rounded-full"></div>
               <div className="w-16 h-16 border-4 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin relative z-10"></div>
             </div>
-            <h2 className="text-2xl font-bold text-white">Generating your quest...</h2>
-            <p className="text-slate-400">Our AI is crafting unique problems for you</p>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-white">
+              {manifestPreview.length > 0 ? 'Building your challenges...' : 'Generating your quest...'}
+            </h2>
+
+            {/* Streaming status message */}
+            <p className="text-slate-400 text-center min-h-[1.5em] transition-all duration-300">
+              {streamingMessage || 'Our AI is crafting interactive challenges for you'}
+            </p>
+
+            {/* Hydration progress bar — shown once manifest is ready */}
+            {totalExpected > 0 && (
+              <div className="w-full max-w-md">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-slate-500">Preparing problems</span>
+                  <span className="text-xs font-medium text-indigo-400">
+                    {readyCount} / {totalExpected}
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 ease-out"
+                    style={{ width: `${hydrationProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Manifest preview — show problem list as it arrives */}
+            {manifestPreview.length > 0 && (
+              <div className="w-full max-w-md mt-4 space-y-2">
+                {manifestPreview.map((item, idx) => {
+                  const isReady = idx < readyCount;
+                  return (
+                    <div
+                      key={item.instanceId}
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-all duration-500 ${
+                        isReady
+                          ? 'bg-indigo-500/10 border-indigo-500/30'
+                          : 'bg-white/5 border-white/5'
+                      }`}
+                    >
+                      {/* Status indicator */}
+                      <div className="flex-shrink-0 w-5 h-5">
+                        {isReady ? (
+                          <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                        ) : (
+                          <div className="w-4 h-4 mt-0.5 border-2 border-slate-600 border-t-slate-400 rounded-full animate-spin"></div>
+                        )}
+                      </div>
+
+                      {/* Problem info */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm truncate ${isReady ? 'text-slate-200' : 'text-slate-500'}`}>
+                          {item.problemText}
+                        </p>
+                      </div>
+
+                      {/* Type badge */}
+                      <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded ${
+                        item.isVisual
+                          ? 'bg-purple-500/20 text-purple-300'
+                          : 'bg-blue-500/20 text-blue-300'
+                      }`}>
+                        {item.isVisual ? 'Interactive' : 'Quiz'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Results Step - Same as original */}
+      {/* Results Step */}
       {step === 'results' && (
         <div className="max-w-5xl mx-auto animate-fade-in">
           {/* Success Header */}
@@ -595,26 +759,19 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
             </div>
             <h2 className="text-5xl font-bold text-white mb-4">Quest Complete!</h2>
             <p className="text-slate-400 text-xl">
-              You've completed {problems.length} questions
+              You've completed {totalItems} questions
             </p>
           </div>
 
-          {/* Session Stats */}
-          <div className="mb-10 p-8 bg-slate-800/50 rounded-2xl border border-slate-700">
-            <div className="grid grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">{problems.length}</div>
-                <div className="text-sm text-slate-400 uppercase tracking-wider">Questions</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-blue-400 mb-2 capitalize">{subject?.replace('-', ' ')}</div>
-                <div className="text-sm text-slate-400 uppercase tracking-wider">Subject</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-purple-400 mb-2 capitalize">{gradeLevel.replace('-', ' ')}</div>
-                <div className="text-sm text-slate-400 uppercase tracking-wider">Level</div>
-              </div>
-            </div>
+          {/* Session Summary with per-item breakdown */}
+          <div className="mb-10">
+            <PracticeSessionSummaryCard
+              itemResults={itemResults}
+              hydratedItems={hydratedItems}
+              totalItems={totalItems}
+              subject={subject || ''}
+              gradeLevel={gradeLevel}
+            />
           </div>
 
           {/* AI Assessment Section */}
@@ -646,7 +803,6 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
 
               {/* Strengths & Growth Areas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Strengths */}
                 {assessment.strengths.length > 0 && (
                   <div className="p-6 bg-green-900/10 rounded-2xl border border-green-500/30">
                     <div className="flex items-center gap-2 mb-4">
@@ -666,7 +822,6 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
                   </div>
                 )}
 
-                {/* Areas for Growth */}
                 {assessment.areasForGrowth.length > 0 && (
                   <div className="p-6 bg-amber-900/10 rounded-2xl border border-amber-500/30">
                     <div className="flex items-center gap-2 mb-4">
@@ -812,6 +967,8 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
         </div>
       )}
     </div>
+    </EvaluationProvider>
+    </LuminaAIProvider>
   );
 };
 

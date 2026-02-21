@@ -110,8 +110,47 @@ const numberLineSchema: Schema = {
             type: Type.STRING,
             description: "Hint text shown after 2+ incorrect attempts",
           },
+          startValue: {
+            type: Type.NUMBER,
+            description:
+              "REQUIRED for show_jump challenges. The starting position on the number line for this specific challenge.",
+          },
+          operations: {
+            type: Type.ARRAY,
+            description:
+              "REQUIRED for show_jump challenges. The sequence of operations for THIS challenge (each with type, startValue, changeValue, showJumpArc).",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                type: {
+                  type: Type.STRING,
+                  description: "Operation type",
+                  enum: ["add", "subtract"],
+                },
+                startValue: {
+                  type: Type.NUMBER,
+                  description: "Starting point for this jump",
+                },
+                changeValue: {
+                  type: Type.NUMBER,
+                  description: "How far to jump (always positive)",
+                },
+                showJumpArc: {
+                  type: Type.BOOLEAN,
+                  description: "Whether to display the jump arc as a reference",
+                },
+              },
+              required: ["type", "startValue", "changeValue", "showJumpArc"],
+            },
+          },
         },
-        required: ["id", "type", "instruction", "targetValues", "hint"],
+        required: [
+          "id",
+          "type",
+          "instruction",
+          "targetValues",
+          "hint",
+        ],
       },
     },
     gradeBand: {
@@ -187,7 +226,11 @@ REQUIREMENTS:
 1. Generate 2-4 challenges with unique IDs ("c1", "c2", etc.)
 2. Each challenge must have a clear instruction, targetValues array, and a helpful hint
 3. targetValues must all fall within the specified range
-4. For "show_jump" challenges: include an operations array where each operation has type, startValue, changeValue, and showJumpArc=false (student must figure out the endpoint)
+4. For "show_jump" challenges: EACH challenge MUST include its own "startValue" and "operations" array.
+   - "startValue" is the starting position on the number line for that challenge
+   - "operations" lists the jumps for that challenge, each with type, startValue, changeValue, showJumpArc=false
+   - "targetValues" should contain the FINAL landing value after all operations
+   - Each challenge should have DIFFERENT starting points and operations
 5. For "plot_point" challenges: targetValues contains the exact value(s) to plot
 6. For "order_values" challenges: targetValues contains 3-5 values to be ordered
 7. For "find_between" challenges: targetValues contains exactly 2 boundary values (student finds a value between them)
@@ -281,27 +324,63 @@ Return the complete number line data structure.`;
     ];
   }
 
-  // Ensure operations array exists for jump mode
+  // ---------------------------------------------------------------------------
+  // Ensure every show_jump challenge has per-challenge startValue + operations
+  // ---------------------------------------------------------------------------
+  const validateOp = (op: NumberLineOperation) => ({
+    type: op.type === "subtract" ? ("subtract" as const) : ("add" as const),
+    startValue: typeof op.startValue === "number" ? op.startValue : data.range.min,
+    changeValue:
+      typeof op.changeValue === "number" && op.changeValue > 0
+        ? op.changeValue
+        : 3,
+    showJumpArc: typeof op.showJumpArc === "boolean" ? op.showJumpArc : false,
+  });
+
+  data.challenges = data.challenges.map((c: NumberLineChallenge) => {
+    if (c.type !== "show_jump") return c;
+
+    // Populate startValue if missing — derive from per-challenge operations or target
+    if (typeof c.startValue !== "number") {
+      if (Array.isArray(c.operations) && c.operations.length > 0) {
+        c.startValue = c.operations[0].startValue ?? data.range.min;
+      } else {
+        // Fallback: assume target = start + some jump from range min
+        c.startValue = data.range.min;
+      }
+    }
+
+    const start: number = c.startValue as number;
+
+    // Populate per-challenge operations if missing
+    if (!Array.isArray(c.operations) || c.operations.length === 0) {
+      const target = c.targetValues[0] ?? start + 3;
+      const change = target - start;
+      c.operations = [
+        {
+          type: change >= 0 ? ("add" as const) : ("subtract" as const),
+          startValue: start,
+          changeValue: Math.abs(change),
+          showJumpArc: false,
+        },
+      ];
+    } else {
+      // Validate each per-challenge operation
+      c.operations = c.operations.map(validateOp);
+    }
+
+    return c;
+  });
+
+  // Keep global operations for backward compatibility but no longer primary
   if (data.interactionMode === "jump") {
     if (!Array.isArray(data.operations) || data.operations.length === 0) {
-      // Build operations from show_jump challenges
-      const jumpChallenges = data.challenges.filter(
+      const firstJump = data.challenges.find(
         (c: NumberLineChallenge) => c.type === "show_jump"
       );
-      if (jumpChallenges.length > 0) {
-        const first = jumpChallenges[0];
-        const target = first.targetValues[0] ?? data.range.min + 3;
-        const start = data.range.min;
-        data.operations = [
-          {
-            type: "add" as const,
-            startValue: start,
-            changeValue: target - start,
-            showJumpArc: false,
-          },
-        ];
+      if (firstJump?.operations?.length) {
+        data.operations = firstJump.operations;
       } else {
-        // Fallback operation
         data.operations = [
           {
             type: "add" as const,
@@ -311,20 +390,10 @@ Return the complete number line data structure.`;
           },
         ];
       }
+    } else {
+      data.operations = data.operations.map(validateOp);
     }
-
-    // Validate each operation
-    data.operations = data.operations.map((op: NumberLineOperation) => ({
-      type: op.type === "subtract" ? "subtract" : "add",
-      startValue: typeof op.startValue === "number" ? op.startValue : data.range.min,
-      changeValue:
-        typeof op.changeValue === "number" && op.changeValue > 0
-          ? op.changeValue
-          : 3,
-      showJumpArc: typeof op.showJumpArc === "boolean" ? op.showJumpArc : false,
-    }));
   } else {
-    // Non-jump modes: operations not needed, keep if provided but default to empty
     if (!Array.isArray(data.operations)) {
       data.operations = [];
     }

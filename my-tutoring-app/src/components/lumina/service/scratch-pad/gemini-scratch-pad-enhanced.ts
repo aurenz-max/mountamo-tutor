@@ -392,7 +392,7 @@ Be encouraging, educational, and helpful in tone.`;
     callbacks?.onProgress?.('analyzing', 'Analyzing your work...');
 
     const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-flash-lite-latest",
       contents: [
         {
           parts: [

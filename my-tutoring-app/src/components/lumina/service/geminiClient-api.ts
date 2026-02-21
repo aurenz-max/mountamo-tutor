@@ -12,7 +12,9 @@ import {
   ProblemData,
   IntroBriefingData,
   ComponentId,
-  ManifestItemConfig
+  ManifestItemConfig,
+  PracticeManifest,
+  HydratedPracticeItem,
 } from '../types';
 
 /**
@@ -267,4 +269,114 @@ export const generateWarmUpQuestion = async (
   gradeLevel: string
 ): Promise<WarmUpQuestion> => {
   return callAPI('generateWarmUpQuestion', { subject, gradeLevel });
+};
+
+// ============================================
+// PRACTICE MANIFEST (Problem + Visual Primitive Bridge)
+// ============================================
+
+/**
+ * Progress callback for practice manifest streaming
+ */
+export interface PracticeStreamCallbacks {
+  onProgress?: (message: string) => void;
+  onManifestReady?: (preview: { instanceId: string; problemText: string; difficulty: string; isVisual: boolean }[]) => void;
+  onItemReady?: (item: HydratedPracticeItem, index: number, total: number) => void;
+}
+
+/**
+ * Generate a practice manifest and hydrate items with streaming progress.
+ * Uses Server-Sent Events to stream real-time progress, manifest preview,
+ * and individual hydrated items as they complete.
+ */
+export const generatePracticeManifestAndHydrateStreaming = async (
+  topic: string,
+  gradeLevel: string,
+  problemCount: number,
+  callbacks?: PracticeStreamCallbacks,
+): Promise<HydratedPracticeItem[]> => {
+  const response = await fetch('/api/lumina/practice-stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic, gradeLevel, problemCount }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Practice streaming failed');
+  }
+
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+
+  if (!reader) {
+    throw new Error('No response body reader available');
+  }
+
+  let buffer = '';
+  let finalItems: HydratedPracticeItem[] | null = null;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        try {
+          const event = JSON.parse(line);
+
+          switch (event.type) {
+            case 'progress':
+              callbacks?.onProgress?.(event.message);
+              break;
+            case 'manifest':
+              callbacks?.onManifestReady?.(event.items);
+              break;
+            case 'item':
+              callbacks?.onItemReady?.(event.item, event.index, event.total);
+              break;
+            case 'complete':
+              finalItems = event.items;
+              break;
+            case 'error':
+              throw new Error(event.error);
+          }
+        } catch (parseError) {
+          if (parseError instanceof Error && parseError.message !== line) {
+            // Re-throw if it's our own error from the 'error' event type
+            if ((parseError as Error).message === JSON.parse(line)?.error) {
+              throw parseError;
+            }
+          }
+          console.warn('Failed to parse practice stream event:', line);
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!finalItems) {
+    throw new Error('No items received from practice stream');
+  }
+
+  return finalItems;
+};
+
+/**
+ * Generate a practice manifest that pairs problems with visual primitives.
+ * Non-streaming fallback.
+ */
+export const generatePracticeManifestAndHydrate = async (
+  topic: string,
+  gradeLevel: string,
+  problemCount: number
+): Promise<HydratedPracticeItem[]> => {
+  return callAPI('generatePracticeManifestAndHydrate', { topic, gradeLevel, problemCount });
 };

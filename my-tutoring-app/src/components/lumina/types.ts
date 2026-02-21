@@ -3,6 +3,8 @@
 // Components access these types via orderedComponents.data which is typed as 'any'.
 // The specific types remain in their source files for type-safety within generators.
 
+import type { PrimitiveEvaluationResult } from './evaluation/types';
+
 export enum GameState {
   IDLE = 'IDLE',
   GENERATING = 'GENERATING',
@@ -1259,6 +1261,8 @@ export interface ComponentDefinition {
   constraints?: string; // e.g. "Max 1 per page" or "Requires numeric data"
   /** Optional AI tutoring scaffold. When present, sent to backend during WebSocket auth. */
   tutoring?: TutoringScaffold;
+  /** Whether this primitive supports evaluation tracking (used by practice-visual-catalog). */
+  supportsEvaluation?: boolean;
 }
 
 /**
@@ -1351,6 +1355,95 @@ export interface ExhibitManifest {
 
   // Legacy flat layout - computed from objectiveBlocks for backward compatibility
   layout?: ManifestItem[];
+}
+
+// --- PRACTICE MANIFEST SYSTEM ---
+// Bridges problem-primitives with visual-primitives by pairing
+// problems with interactive visual answer mechanisms
+
+/**
+ * Specification for a visual primitive that serves as the answer mechanism.
+ * The visual replaces traditional multiple-choice options.
+ * The manifest only selects which primitive to use and describes the intent —
+ * dedicated generators handle full config generation during hydration.
+ */
+export interface VisualPrimitiveSpec {
+  componentId: ComponentId;
+  /** Natural-language instructions for the generator (what to build, target values, etc.) */
+  intent: string;
+  successCriteria: {
+    description: string;
+    targetValue?: string;
+  };
+}
+
+/**
+ * Specification for a standard text-based problem (fallback when no visual fits).
+ */
+export interface StandardProblemSpec {
+  problemType: ProblemType;
+  generationIntent: string;
+}
+
+/**
+ * A single item in the practice manifest.
+ * Each item is ONE problem that may or may not have a visual primitive.
+ */
+export interface PracticeManifestItem {
+  instanceId: string;
+  problemText: string;
+  difficulty: ProblemDifficulty;
+  rationale: string;
+  teachingNote: string;
+  visualPrimitive: VisualPrimitiveSpec | null;
+  standardProblem: StandardProblemSpec | null;
+}
+
+/**
+ * Complete practice manifest returned by Gemini.
+ */
+export interface PracticeManifest {
+  topic: string;
+  gradeLevel: string;
+  problemCount: number;
+  items: PracticeManifestItem[];
+}
+
+/**
+ * A hydrated practice item with generated content ready for rendering.
+ */
+export interface HydratedPracticeItem {
+  manifestItem: PracticeManifestItem;
+  visualData?: any;
+  problemData?: ProblemData;
+}
+
+/**
+ * Unified result for a single practice item (visual or standard).
+ */
+export interface PracticeItemResult {
+  instanceId: string;
+  itemIndex: number;
+  mode: 'visual-primitive' | 'standard-problem';
+  visualComponentId?: ComponentId;
+  problemType?: ProblemType;
+  success: boolean;
+  score: number;
+  durationMs: number;
+  /** Full evaluation result with rich metrics (when available) */
+  evaluationResult?: PrimitiveEvaluationResult;
+}
+
+/**
+ * Session-level summary aggregating all practice items.
+ */
+export interface PracticeSessionSummary {
+  totalItems: number;
+  completedItems: number;
+  correctItems: number;
+  averageScore: number;
+  totalDurationMs: number;
+  itemResults: PracticeItemResult[];
 }
 
 // Re-export component data types for external use

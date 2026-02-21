@@ -179,7 +179,7 @@ IMPORTANT: Every event ID referenced in lineages MUST exist in the events array.
 Return ONLY valid JSON matching the schema.`;
 
   const result = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-flash-lite-latest',
     contents: prompt,
     config: {
       responseMimeType: 'application/json',

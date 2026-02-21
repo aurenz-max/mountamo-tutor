@@ -133,6 +133,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'knowledge-check',
@@ -207,6 +208,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'generative-table',
@@ -224,6 +226,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   {
     id: 'feature-exhibit',
     description: 'Deep-dive editorial section with multiple subsections. Use for comprehensive exploration of a topic.',
+    supportsEvaluation: true,
   },
   {
     id: 'annotated-example',

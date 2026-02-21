@@ -10,67 +10,80 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   {
     id: 'lever-lab',
     description: 'Interactive lever/fulcrum simulation for teaching simple machines. Students explore balance, mechanical advantage, and force trade-offs by manipulating loads, fulcrum position, and effort force. Features multiple themes (seesaw, excavator, crowbar) to connect abstract physics to real-world tools. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for elementary engineering and physics.',
-    constraints: 'Best for grades K-5. Use for simple machines, balance concepts, mechanical advantage, force multiplication. Themes adapt complexity: seesaw for K-2 (basic balance), excavator/crowbar for 3-5 (mechanical advantage). Supports both exploration (movable fulcrum) and problem-solving (fixed challenges).'
+    constraints: 'Best for grades K-5. Use for simple machines, balance concepts, mechanical advantage, force multiplication. Themes adapt complexity: seesaw for K-2 (basic balance), excavator/crowbar for 3-5 (mechanical advantage). Supports both exploration (movable fulcrum) and problem-solving (fixed challenges).',
+    supportsEvaluation: true,
   },
   {
     id: 'pulley-system-builder',
     description: 'Interactive pulley system simulation for teaching mechanical advantage and simple machines. Students build and explore pulley configurations by adding fixed and movable pulleys, threading rope, and lifting loads. Shows how cranes, flagpoles, wells, and construction hoists work. Features multiple themes (crane, flagpole, well, construction) to connect physics to real-world applications. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching pulleys and mechanical advantage.',
-    constraints: 'Best for grades K-5. Use for pulleys, mechanical advantage, force reduction, rope systems. Themes adapt complexity: flagpole for K-1 (direction change), well for 1-2 (fixed vs movable), crane/construction for 3-5 (mechanical advantage calculations). Supports exploration (add pulleys) and guided challenges (fixed configurations).'
+    constraints: 'Best for grades K-5. Use for pulleys, mechanical advantage, force reduction, rope systems. Themes adapt complexity: flagpole for K-1 (direction change), well for 1-2 (fixed vs movable), crane/construction for 3-5 (mechanical advantage calculations). Supports exploration (add pulleys) and guided challenges (fixed configurations).',
+    supportsEvaluation: true,
   },
   {
     id: 'ramp-lab',
     description: 'Interactive inclined plane (ramp) simulation for teaching simple machines. Students explore how ramps reduce the force needed to lift objects by trading distance for effort. Adjust angle, friction, and push force to see how steeper ramps require more force. Shows real-world connections: loading docks, wheelchair ramps (ADA), dump trucks, skateboard ramps. Features multiple themes (loading_dock, dump_truck, skateboard, generic) and load types (box, barrel, wheel). Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching inclined planes and force trade-offs.',
-    constraints: 'Best for grades K-5. Use for inclined planes, ramps, force reduction, friction effects. K-1: rolling vs sliding exploration (wheel vs box). 1-2: steeper = harder to push. 2-3: height vs length trade-off. 4-5: mechanical advantage calculations, force decomposition. Themes adapt context: skateboard for fun exploration, loading_dock/dump_truck for real-world applications.'
+    constraints: 'Best for grades K-5. Use for inclined planes, ramps, force reduction, friction effects. K-1: rolling vs sliding exploration (wheel vs box). 1-2: steeper = harder to push. 2-3: height vs length trade-off. 4-5: mechanical advantage calculations, force decomposition. Themes adapt context: skateboard for fun exploration, loading_dock/dump_truck for real-world applications.',
+    supportsEvaluation: true,
   },
   {
     id: 'wheel-axle-explorer',
     description: 'Interactive wheel and axle simulation for teaching simple machines and force multiplication. Students rotate wheels of different sizes connected to axles to discover how steering wheels, doorknobs, winches, and well cranks multiply force. Adjust wheel and axle diameters to see how larger wheels make turning easier. Attach loads to axle to simulate lifting with a winch. Shows real-world connections: steering wheel, doorknob, well crank, winch, screwdriver. Features multiple themes (steering_wheel, winch, doorknob, well_crank) to connect physics to everyday objects. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching wheel and axle machines and gear ratios.',
-    constraints: 'Best for grades K-5. Use for wheel and axle, force multiplication, gear ratios. K-1: doorknobs are easier than handles (doorknob theme). 1-2: well cranks and turning (well_crank theme). 2-3: bigger wheel = easier turn (winch theme). 4-5: mechanical advantage calculations, gear ratio introduction (steering_wheel theme). Supports exploration (adjustable sizes) and challenges (fixed configurations with loads to lift).'
+    constraints: 'Best for grades K-5. Use for wheel and axle, force multiplication, gear ratios. K-1: doorknobs are easier than handles (doorknob theme). 1-2: well cranks and turning (well_crank theme). 2-3: bigger wheel = easier turn (winch theme). 4-5: mechanical advantage calculations, gear ratio introduction (steering_wheel theme). Supports exploration (adjustable sizes) and challenges (fixed configurations with loads to lift).',
+    supportsEvaluation: true,
   },
   {
     id: 'gear-train-builder',
     description: 'Interactive gear train sandbox for teaching speed/torque trade-offs fundamental to all machinery. Students place gears on a grid, connect them by proximity (auto-mesh), rotate driver gear, and watch followers spin. Count teeth and observe speed ratios. Build gear chains for specific ratios. Shows real-world connections: bicycle gears, clock mechanisms, wind-up toys, car transmissions. Features multiple themes (toy, machine, clock, bicycle) to connect engineering to everyday objects. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching gears, speed ratios, direction changes, and mechanical advantage.',
-    constraints: 'Best for grades K-5. Use for gears, speed ratios, direction changes, torque trade-offs. K-1: gears turn together (toy theme, free play). 1-2: direction changes with each gear (showDirection). 2-3: big gear turns small gear fast (showSpeedRatio). 3-4: counting teeth for ratios (showTeethCount). 4-5: design challenges with specific output speeds (targetRatio). Supports free exploration and guided design challenges.'
+    constraints: 'Best for grades K-5. Use for gears, speed ratios, direction changes, torque trade-offs. K-1: gears turn together (toy theme, free play). 1-2: direction changes with each gear (showDirection). 2-3: big gear turns small gear fast (showSpeedRatio). 3-4: counting teeth for ratios (showTeethCount). 4-5: design challenges with specific output speeds (targetRatio). Supports free exploration and guided design challenges.',
+    supportsEvaluation: true,
   },
   {
     id: 'bridge-builder',
     description: 'Interactive 2D bridge construction canvas for teaching structural engineering. Students place beams, cables, and supports to span gaps, then test bridges with loads (cars, trucks, trains) to see if they hold. Watch bridges deform under stress with color-coded feedback (green/yellow/red). Teaches triangles are strong, load distribution, and truss optimization. Shows real-world connections: highway bridges, railroad trestles, footbridges. Features multiple themes (construction, medieval, modern) to connect engineering to different contexts. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching structural engineering, forces, and design iteration.',
-    constraints: 'Best for grades K-5. Use for bridges, structural engineering, trusses, load distribution. K-1: connect two sides (simple spanning). 1-2: supports at edges vs middle (support concepts). 2-3: triangles are strong (truss introduction). 3-4: load distribution concepts (stress visualization). 4-5: truss design optimization (budget constraints, efficiency). Supports free building exploration and guided design challenges with piece limits.'
+    constraints: 'Best for grades K-5. Use for bridges, structural engineering, trusses, load distribution. K-1: connect two sides (simple spanning). 1-2: supports at edges vs middle (support concepts). 2-3: triangles are strong (truss introduction). 3-4: load distribution concepts (stress visualization). 4-5: truss design optimization (budget constraints, efficiency). Supports free building exploration and guided design challenges with piece limits.',
+    supportsEvaluation: true,
   },
   {
     id: 'tower-stacker',
     description: 'Interactive vertical building challenge for teaching stability and center of gravity. Students stack blocks, beams, triangles, and arches to reach target heights while maintaining stability. Features wind/shake test to check structural integrity. Shows center of gravity indicator to help students understand balance. Teaches wider base = more stable, center of gravity concepts, material efficiency, and wind resistance design. Shows real-world connections: skyscrapers, building construction, architecture. Features multiple themes (blocks, construction, city) to adapt to different age groups. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching structural stability, balance, and physics of building.',
-    constraints: 'Best for grades K-5. Use for stacking, balance, stability, center of gravity, building design. K: simple stacking exploration (blocks theme, no wind). K-1: wider base = more stable (introduce stability concept). 2-3: center of gravity exploration (showCenterOfGravity: true). 3-4: material efficiency - height per piece (limited pieces). 4-5: wind resistance design (high wind strength, optimization). Supports free building and height challenges with piece limits.'
+    constraints: 'Best for grades K-5. Use for stacking, balance, stability, center of gravity, building design. K: simple stacking exploration (blocks theme, no wind). K-1: wider base = more stable (introduce stability concept). 2-3: center of gravity exploration (showCenterOfGravity: true). 3-4: material efficiency - height per piece (limited pieces). 4-5: wind resistance design (high wind strength, optimization). Supports free building and height challenges with piece limits.',
+    supportsEvaluation: true,
   },
   {
     id: 'shape-strength-tester',
     description: 'Interactive experimental rig for testing shape strength under load. Students discover why triangles dominate structural engineering by testing different 2D shapes (triangle, square, pentagon, hexagon) in a compression frame. Watch shapes deform or hold under increasing loads. Add diagonal bracing to weak shapes and see them become rigid. Teaches shape recognition, triangles are rigid, squares squish, triangulation principles, and truss analysis. Shows real-world connections: bridge trusses, building frames, tower structures, bicycle geometry. Features multiple materials (straw, wood, steel) and joint types (pinned, rigid) to explore structural behavior. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching why triangles are strong and how triangulation provides structural stability.',
-    constraints: 'Best for grades K-5. Use for shapes in structures, triangulation, truss analysis, structural rigidity. K-1: shape recognition, triangles vs squares (simple comparison). 1-2: squares squish, triangles don\'t (discovery). 2-3: adding diagonals makes shapes strong (introduce bracing). 3-4: triangulation principles (understand why diagonals help). 4-5: truss analysis and optimization (minimize bracing, maximize strength). Supports free exploration and guided challenges with target loads and shapes.'
+    constraints: 'Best for grades K-5. Use for shapes in structures, triangulation, truss analysis, structural rigidity. K-1: shape recognition, triangles vs squares (simple comparison). 1-2: squares squish, triangles don\'t (discovery). 2-3: adding diagonals makes shapes strong (introduce bracing). 3-4: triangulation principles (understand why diagonals help). 4-5: truss analysis and optimization (minimize bracing, maximize strength). Supports free exploration and guided challenges with target loads and shapes.',
+    supportsEvaluation: true,
   },
   {
     id: 'foundation-builder',
     description: 'Interactive soil/foundation simulator for teaching why buildings need foundations and how engineers design them. Students select foundation types (spread, strip, slab, piles), adjust footing size, and test if their design supports the building without sinking. Different soil types (rock, gravel, sand, clay, mud) have different bearing capacities, teaching that soil matters. Calculate pressure = force ÷ area to understand how bigger footings reduce pressure on soil. Watch buildings settle/sink when pressure exceeds soil capacity. Teaches foundations spread weight like snowshoes, bigger footings = less pressure, soil types affect design, pressure calculations, and foundation optimization. Shows real-world connections: house footings, skyscraper foundations, deep piles for soft soil. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching foundations, pressure, and structural engineering fundamentals.',
-    constraints: 'Best for grades K-5. Use for foundations, soil types, pressure calculations, structural support. K-1: buildings need foundations, bigger is better (discovery). 1-2: bigger footings spread weight (like snowshoes). 2-3: different soils are stronger or weaker (soil comparison). 3-4: pressure = force ÷ area calculations (introduce formula). 4-5: foundation optimization (minimal area that still works). Supports free design exploration and guided challenges with target loads and soil types.'
+    constraints: 'Best for grades K-5. Use for foundations, soil types, pressure calculations, structural support. K-1: buildings need foundations, bigger is better (discovery). 1-2: bigger footings spread weight (like snowshoes). 2-3: different soils are stronger or weaker (soil comparison). 3-4: pressure = force ÷ area calculations (introduce formula). 4-5: foundation optimization (minimal area that still works). Supports free design exploration and guided challenges with target loads and soil types.',
+    supportsEvaluation: true,
   },
   {
     id: 'excavator-arm-simulator',
     description: 'Interactive multi-jointed excavator arm simulation with boom, stick, and bucket for teaching hydraulics, kinematics, and coordinated movement. Students control three joints (boom angle, stick angle, bucket angle) to position the bucket, dig material from different soil layers, lift loads, and dump at target zones. Features realistic Verlet physics for smooth arm movement. Material layers have different hardness values affecting excavation difficulty. Shows reach envelope to visualize workspace. Teaches cause and effect with joints, sequential operations (dig-lift-move-dump), joint coordination, reach and range concepts, efficiency optimization, and how excavators work. Shows real-world connections: construction excavators, backhoes, mining equipment, robotic arms. Features multiple control methods (sliders, buttons, drag) and themes (realistic, cartoon, blueprint) to adapt to different age groups. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching multi-jointed mechanisms, hydraulics, robotics, and construction equipment.',
-    constraints: 'Best for grades K-5. Use for excavators, construction equipment, multi-joint systems, hydraulics, kinematics, robotics. K-1: cause and effect with joints, basic digging (buttons control, cartoon theme). 1-2: reach and range exploration (sliders, show reach envelope). 2-3: sequencing dig operations (dig-move-dump sequences, challenges). 3-4: joint angle coordination (all three joints working together, angles shown). 4-5: reach envelope and efficiency optimization (minimize operations, advanced challenges, blueprint theme). Supports free exploration and guided challenges with material excavation targets and dump zones.'
+    constraints: 'Best for grades K-5. Use for excavators, construction equipment, multi-joint systems, hydraulics, kinematics, robotics. K-1: cause and effect with joints, basic digging (buttons control, cartoon theme). 1-2: reach and range exploration (sliders, show reach envelope). 2-3: sequencing dig operations (dig-move-dump sequences, challenges). 3-4: joint angle coordination (all three joints working together, angles shown). 4-5: reach envelope and efficiency optimization (minimize operations, advanced challenges, blueprint theme). Supports free exploration and guided challenges with material excavation targets and dump zones.',
+    supportsEvaluation: true,
   },
   {
     id: 'dump-truck-loader',
     description: 'Interactive dump truck loading and hauling simulation for teaching capacity, weight limits, and material transport efficiency. Students load material into the truck bed, monitor weight and volume capacity, drive to dump location, raise the bed to dump, and return for more loads. Features realistic Verlet physics for material particle simulation. Material types (dirt, gravel, sand, debris) have different densities affecting weight vs volume trade-offs. Teaches full and empty concepts, capacity constraints (weight AND volume), overloading consequences, counting loads, weight vs volume understanding, efficiency optimization (material per trip), and how dump trucks work. Shows real-world connections: construction sites, material delivery, landscaping, mining operations, waste management. Features multiple themes (realistic, cartoon, simple) to adapt to different age groups. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching capacity, material handling, weight concepts, and construction equipment.',
-    constraints: 'Best for grades K-5. Use for dump trucks, capacity concepts, weight limits, material handling, construction equipment, efficiency. K: full and empty concepts (cartoon theme, simple loads). K-1: capacity and "too much" understanding (overload feedback). 1-2: counting loads, how many trips needed (target loads). 2-3: weight limits vs volume limits (different materials, show both). 3-4: material density understanding (gravel is heavier than debris for same volume). 4-5: efficiency optimization (maximize load size, minimize trips, time limits). Supports free exploration and guided challenges with material moving targets and efficiency goals.'
+    constraints: 'Best for grades K-5. Use for dump trucks, capacity concepts, weight limits, material handling, construction equipment, efficiency. K: full and empty concepts (cartoon theme, simple loads). K-1: capacity and "too much" understanding (overload feedback). 1-2: counting loads, how many trips needed (target loads). 2-3: weight limits vs volume limits (different materials, show both). 3-4: material density understanding (gravel is heavier than debris for same volume). 4-5: efficiency optimization (maximize load size, minimize trips, time limits). Supports free exploration and guided challenges with material moving targets and efficiency goals.',
+    supportsEvaluation: true,
   },
   {
     id: 'construction-sequence-planner',
     description: 'Interactive timeline/flowchart tool for ordering construction tasks and understanding dependencies. Students learn that building follows logical sequences by arranging tasks in order, drawing dependency arrows, and seeing what must come first. Features drag-and-drop task ordering, dependency visualization, sequence validation, and animated playthrough of construction steps. Teaches first-then-last sequencing, dependency understanding, parallel vs sequential task concepts, and critical path basics. Shows real-world connections: house construction, bridge building, project management, any multi-step construction project. Project types include house, bridge, tower, road, and playground. Features three learning phases: Explore (identify first task), Practice (order subset), Apply (complete sequence). Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching planning, sequencing, logical thinking, and construction project management.',
-    constraints: 'Best for grades K-5. Use for construction sequencing, project planning, dependencies, logical ordering, critical path. K-1: first, then, last (3-4 simple tasks, list display). 1-2: some things must wait (4-5 tasks with simple dependencies, show arrows). 2-3: dependency chains (5-6 tasks, multiple dependencies, flowchart display). 3-4: parallel vs sequential (6-8 tasks, some can happen together, parallelAllowed: true). 4-5: critical path basics (8-10 tasks, timeline display, identify longest path). Supports progressive difficulty with three learning phases and animated sequence visualization.'
+    constraints: 'Best for grades K-5. Use for construction sequencing, project planning, dependencies, logical ordering, critical path. K-1: first, then, last (3-4 simple tasks, list display). 1-2: some things must wait (4-5 tasks with simple dependencies, show arrows). 2-3: dependency chains (5-6 tasks, multiple dependencies, flowchart display). 3-4: parallel vs sequential (6-8 tasks, some can happen together, parallelAllowed: true). 4-5: critical path basics (8-10 tasks, timeline display, identify longest path). Supports progressive difficulty with three learning phases and animated sequence visualization.',
+    supportsEvaluation: true,
   },
   {
     id: 'blueprint-canvas',
     description: 'Grid-based drawing surface for creating top-down and side-view technical drawings. Students learn to communicate designs before building by sketching floor plans, elevations, and sections with measurements. Features gridded canvas, snap-to-grid drawing, multiple view types (plan/elevation/section), dimension tools, and export functionality. Teaches bird\'s eye view concepts, floor plan drawing, measurement labeling, multiple view correspondence, scale drawing principles, and architectural communication. Shows real-world connections: architecture, engineering drawings, building design, technical documentation. Themes adapt to age: sketch (playful) for K-1, blueprint (classic blue) for 2-3, technical (professional) for 4-5. Perfect for K-5 engineering and NGSS design standards. ESSENTIAL for teaching technical drawing, spatial reasoning, and design communication.',
-    constraints: 'Best for grades K-5. Use for floor plans, technical drawings, architectural design, spatial reasoning, scale drawings. K-1: bird\'s eye view concept, draw simple shapes for rooms (2-3 rooms, sketch theme, no measurements). 1-2: simple floor plans with walls and labels (3-4 rooms, show grid, snap enabled). 2-3: adding measurements and dimensions (4-5 rooms, blueprint theme, showMeasurements: true). 3-4: multiple views introduction, plan vs elevation (5-6 rooms, can switch viewType). 4-5: scale drawings and technical precision (6-7 rooms, technical theme, smaller gridScale, snapToGrid optional). Supports free drawing exploration and guided challenges with target room counts.'
+    constraints: 'Best for grades K-5. Use for floor plans, technical drawings, architectural design, spatial reasoning, scale drawings. K-1: bird\'s eye view concept, draw simple shapes for rooms (2-3 rooms, sketch theme, no measurements). 1-2: simple floor plans with walls and labels (3-4 rooms, show grid, snap enabled). 2-3: adding measurements and dimensions (4-5 rooms, blueprint theme, showMeasurements: true). 3-4: multiple views introduction, plan vs elevation (5-6 rooms, can switch viewType). 4-5: scale drawings and technical precision (6-7 rooms, technical theme, smaller gridScale, snapToGrid optional). Supports free drawing exploration and guided challenges with target room counts.',
+    supportsEvaluation: true,
   },
   // Vehicles, Flight & Machines Primitives
   {
@@ -120,6 +133,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'airfoil-lab',
@@ -139,6 +153,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         { pattern: 'Confuses lift and drag', response: '"Lift goes UP (keeps the plane in the air). Drag goes BACKWARD (slows the plane down). Which one do we want more of?"' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'vehicle-comparison-lab',
@@ -168,6 +183,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'propulsion-lab',
@@ -197,6 +213,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'propulsion-timeline',
@@ -226,6 +243,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'paper-airplane-designer',
@@ -246,6 +264,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student frustrated by decreasing performance', response: 'Normalize setbacks: Engineers learn from every test! Look at what changed — that tells you what NOT to do next time.' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'engine-explorer',
@@ -266,6 +285,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student struggles with engine-to-vehicle connection', response: 'Use size and speed analogies: "A jet engine pushes air backward really fast — that is like blowing up a balloon and letting it fly across the room!"' },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'vehicle-design-studio',
@@ -286,5 +306,6 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student is stuck and cannot meet constraints', response: 'Help them identify which constraint is hardest to meet, then focus on that one metric first.' },
       ],
     },
+    supportsEvaluation: true,
   },
 ];

@@ -101,7 +101,7 @@ Be encouraging, educational, and helpful in tone.`;
     callbacks?.onProgress?.('analyzing', 'Analyzing your work...');
 
     const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-flash-lite-latest",
       contents: [
         {
           parts: [
@@ -169,7 +169,7 @@ Respond with ONLY the hint text, nothing else. Keep it under 2 sentences.`;
 
   try {
     const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-flash-lite-latest",
       contents: [
         {
           parts: [
@@ -235,7 +235,7 @@ Examples of good problems for different subjects:
 
   try {
     const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-flash-lite-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",

@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { BaseTenBlocksMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import CalculatorInput from '../../input-primitives/CalculatorInput';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -132,6 +133,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   const [regroupAnimating, setRegroupAnimating] = useState<PlaceValue | null>(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
+  const [typedAnswer, setTypedAnswer] = useState('');
 
   // Challenge state
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
@@ -145,6 +147,12 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
   const currentChallenge = challenges[currentChallengeIndex] || null;
   const currentTotal = useMemo(() => computeTotal(columns, activePlaces), [columns, activePlaces]);
+
+  // Determine if blocks should be interactive (have +/- buttons)
+  // read_blocks: blocks are pre-placed, student just reads them — no manipulation
+  const blocksInteractive = currentChallenge
+    ? currentChallenge.type !== 'read_blocks'
+    : supplyTray;
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -285,6 +293,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     setFeedback('');
     setFeedbackType('');
     setRegroupCount(0);
+    setTypedAnswer('');
   }, [initialColumns]);
 
   // -------------------------------------------------------------------------
@@ -293,30 +302,33 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   const checkAnswer = useCallback(() => {
     if (!currentChallenge) return;
     const target = currentChallenge.targetNumber;
-    const correct = Math.abs(currentTotal - target) < 0.01;
+    const parsed = parseFloat(typedAnswer);
+    if (isNaN(parsed)) return;
+    const correct = Math.abs(parsed - target) < 0.01;
     setCurrentAttempts(a => a + 1);
 
     if (correct) {
-      setFeedback(`Correct! ${currentTotal} is right!`);
+      setFeedback(`Correct! ${parsed} is right!`);
       setFeedbackType('success');
       setChallengeResults(prev => [...prev, { correct: true, attempts: currentAttempts + 1, regroupsUsed: regroupCount }]);
       sendText(
-        `[ANSWER_CORRECT] Student built ${currentTotal} correctly! `
+        `[ANSWER_CORRECT] Student answered ${parsed} correctly! `
         + `${regroupCount > 0 ? `Used ${regroupCount} regroups. ` : ''}`
         + `Celebrate briefly.`,
         { silent: true }
       );
     } else {
-      setFeedback(`Your blocks show ${currentTotal}, but the target is ${target}. Try again!`);
+      setFeedback(`You entered ${parsed}, but the answer is ${target}. Try again!`);
       setFeedbackType('error');
+      setTypedAnswer('');
       sendText(
-        `[ANSWER_INCORRECT] Student has ${currentTotal} but target is ${target}. `
+        `[ANSWER_INCORRECT] Student entered ${parsed} but target is ${target}. `
         + `Attempt ${currentAttempts + 1}. `
-        + `Help: "Look at each column. How many ${currentTotal < target ? 'more' : 'fewer'} do you need?"`,
+        + `Help: "Look at each column. How many ${parsed < target ? 'more' : 'fewer'} do you need?"`,
         { silent: true }
       );
     }
-  }, [currentChallenge, currentTotal, currentAttempts, regroupCount, sendText]);
+  }, [currentChallenge, typedAnswer, currentAttempts, regroupCount, sendText]);
 
   const advanceChallenge = useCallback(() => {
     const nextIdx = currentChallengeIndex + 1;
@@ -350,6 +362,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     setRegroupCount(0);
     setFeedback('');
     setFeedbackType('');
+    setTypedAnswer('');
     // Reset columns for next challenge
     const next = challenges[nextIdx];
     if (next.type === 'read_blocks' || next.type === 'regroup') {
@@ -489,8 +502,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
                   {renderBlockVisual(place, count)}
                 </div>
 
-                {/* Add/Remove Buttons */}
-                {supplyTray && (
+                {/* Add/Remove Buttons — only when blocks are interactive */}
+                {blocksInteractive && (
                   <div className="flex gap-1">
                     <Button
                       variant="ghost"
@@ -513,47 +526,57 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
                   </div>
                 )}
 
-                {/* Regroup Buttons */}
-                <div className="flex flex-col gap-1 w-full">
-                  {placeIdx > 0 && count >= 10 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-6 text-[10px] ${config.bgColor}/10 border ${config.borderColor}/30 hover:${config.bgColor}/20 ${config.color} w-full`}
-                      onClick={() => regroupUp(place)}
-                      disabled={hasSubmittedEvaluation}
-                    >
-                      10 &rarr; 1 {PLACE_CONFIG[activePlaces[placeIdx - 1]].label.slice(0, 4)}
-                    </Button>
-                  )}
-                  {placeIdx < activePlaces.length - 1 && count >= 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-6 text-[10px] ${config.bgColor}/10 border ${config.borderColor}/30 hover:${config.bgColor}/20 ${config.color} w-full`}
-                      onClick={() => regroupDown(place)}
-                      disabled={hasSubmittedEvaluation}
-                    >
-                      1 &rarr; 10 {PLACE_CONFIG[activePlaces[placeIdx + 1]].label.slice(0, 4)}
-                    </Button>
-                  )}
-                </div>
+                {/* Regroup Buttons — only when blocks are interactive */}
+                {blocksInteractive && (
+                  <div className="flex flex-col gap-1 w-full">
+                    {placeIdx > 0 && count >= 10 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-6 text-[10px] ${config.bgColor}/10 border ${config.borderColor}/30 hover:${config.bgColor}/20 ${config.color} w-full`}
+                        onClick={() => regroupUp(place)}
+                        disabled={hasSubmittedEvaluation}
+                      >
+                        10 &rarr; 1 {PLACE_CONFIG[activePlaces[placeIdx - 1]].label.slice(0, 4)}
+                      </Button>
+                    )}
+                    {placeIdx < activePlaces.length - 1 && count >= 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-6 text-[10px] ${config.bgColor}/10 border ${config.borderColor}/30 hover:${config.bgColor}/20 ${config.color} w-full`}
+                        onClick={() => regroupDown(place)}
+                        disabled={hasSubmittedEvaluation}
+                      >
+                        1 &rarr; 10 {PLACE_CONFIG[activePlaces[placeIdx + 1]].label.slice(0, 4)}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Total Display */}
+        {/* Running Total from blocks (helper display) */}
         <div className="flex items-center justify-center gap-4 bg-slate-800/30 rounded-lg p-3 border border-white/5">
-          <span className="text-slate-400 text-sm">Total:</span>
+          <span className="text-slate-400 text-sm">Blocks Total:</span>
           <span className="text-white font-bold text-2xl font-mono">{currentTotal}</span>
-          {currentChallenge && (
-            <>
-              <span className="text-slate-600">/</span>
-              <span className="text-slate-400 font-mono text-lg">{currentChallenge.targetNumber}</span>
-            </>
-          )}
         </div>
+
+        {/* Calculator Input for answer submission */}
+        {challenges.length > 0 && !allComplete && (
+          <CalculatorInput
+            label="Your Answer"
+            value={typedAnswer}
+            onChange={setTypedAnswer}
+            onSubmit={!isCurrentComplete ? checkAnswer : undefined}
+            allowDecimal={decimalMode}
+            allowNegative={false}
+            disabled={hasSubmittedEvaluation || isCurrentComplete}
+            showSubmitButton={!isCurrentComplete}
+          />
+        )}
 
         {/* Feedback */}
         {feedback && (
@@ -566,19 +589,9 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex justify-center gap-3">
-          {challenges.length > 0 && !isCurrentComplete && !allComplete && (
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-              onClick={checkAnswer}
-              disabled={hasSubmittedEvaluation}
-            >
-              Check Answer
-            </Button>
-          )}
-          {isCurrentComplete && !allComplete && (
+        {/* Next Challenge Button */}
+        {isCurrentComplete && !allComplete && (
+          <div className="flex justify-center">
             <Button
               variant="ghost"
               className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
@@ -586,7 +599,11 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
             >
               Next Challenge
             </Button>
-          )}
+          </div>
+        )}
+
+        {/* Reset Button */}
+        <div className="flex justify-center">
           <Button
             variant="ghost"
             className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"

@@ -10,7 +10,8 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
   {
     id: 'knowledge-check',
     description: 'Multiple choice quiz question. RECOMMENDED: Include at the end to assess understanding.',
-    constraints: 'Typically one per exhibit, at the end'
+    constraints: 'Typically one per exhibit, at the end',
+    supportsEvaluation: true,
   },
   {
     id: 'scale-spectrum',

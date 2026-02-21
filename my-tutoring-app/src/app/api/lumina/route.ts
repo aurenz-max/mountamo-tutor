@@ -230,6 +230,26 @@ export async function POST(request: NextRequest) {
         const machineImageUrl = await generateMachineImage(params.imagePrompt);
         return NextResponse.json({ imageUrl: machineImageUrl });
 
+      // ============================================
+      // PRACTICE MANIFEST (Problem + Visual Bridge)
+      // ============================================
+
+      case 'generatePracticeManifestAndHydrate': {
+        const { generatePracticeManifest } = await import(
+          '@/components/lumina/service/manifest/practice-manifest'
+        );
+        const { hydratePracticeManifest } = await import(
+          '@/components/lumina/service/manifest/practice-content-hydrator'
+        );
+        const practiceManifest = await generatePracticeManifest(
+          params.topic,
+          params.gradeLevel,
+          params.problemCount
+        );
+        const hydratedItems = await hydratePracticeManifest(practiceManifest);
+        return NextResponse.json(hydratedItems);
+      }
+
       default:
         return NextResponse.json(
           { error: `Unknown action: ${action}` },

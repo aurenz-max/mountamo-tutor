@@ -101,7 +101,7 @@ export const generateBaseTenBlocks = async (
         description: "Target grade band for difficulty calibration"
       }
     },
-    required: ["title", "description", "numberValue"]
+    required: ["title", "description", "numberValue", "challenges", "gradeBand", "interactionMode"]
   };
 
   const prompt = `You are generating a Base-Ten Blocks visualization for elementary math education.

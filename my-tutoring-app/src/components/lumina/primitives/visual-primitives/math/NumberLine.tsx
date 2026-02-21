@@ -28,6 +28,10 @@ export interface NumberLineChallenge {
   instruction: string;
   targetValues: number[];
   hint: string;
+  /** Starting position for show_jump challenges */
+  startValue?: number;
+  /** Per-challenge operations for show_jump challenges */
+  operations?: NumberLineOperation[];
 }
 
 export interface NumberLineData {
@@ -223,6 +227,11 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   const currentPhase: InteractionPhase = currentChallenge
     ? challengeTypeToPhase(currentChallenge.type)
     : 'explore';
+
+  // Per-challenge operations take priority over global operations
+  const activeOperations: NumberLineOperation[] = currentChallenge?.operations?.length
+    ? currentChallenge.operations
+    : operations;
 
   // -------------------------------------------------------------------------
   // Coordinate Conversion
@@ -438,8 +447,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
         break;
       }
       case 'show_jump': {
-        if (operations.length > 0 && jumpEndPoint !== null) {
-          const op = operations[0];
+        if (activeOperations.length > 0 && jumpEndPoint !== null) {
+          const op = activeOperations[0];
           const expected = op.type === 'add'
             ? op.startValue + op.changeValue
             : op.startValue - op.changeValue;
@@ -496,7 +505,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [currentChallenge, placedPoints, jumpEndPoint, orderedPlacements, operations,
+  }, [currentChallenge, placedPoints, jumpEndPoint, orderedPlacements, activeOperations,
       activeNumberType, zoomLevel, rangeMin, rangeMax, isK2, currentAttempts, sendText]);
 
   const advanceToNextChallenge = useCallback(() => {
@@ -854,7 +863,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
             })}
 
             {/* Operation Jump Arcs (pre-defined, shown as reference) */}
-            {operations.map((op, i) => {
+            {activeOperations.map((op, i) => {
               if (!op.showJumpArc) return null;
               const endVal = op.type === 'add'
                 ? op.startValue + op.changeValue
@@ -868,10 +877,10 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
             })}
 
             {/* Jump Mode: Start Point */}
-            {currentChallenge?.type === 'show_jump' && operations.length > 0 && (
+            {currentChallenge?.type === 'show_jump' && activeOperations.length > 0 && (
               <g>
                 <circle
-                  cx={valueToX(operations[0].startValue)}
+                  cx={valueToX(activeOperations[0].startValue)}
                   cy={LINE_Y}
                   r={POINT_RADIUS}
                   fill="#3b82f6"
@@ -879,22 +888,22 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
                   strokeWidth={2}
                 />
                 <text
-                  x={valueToX(operations[0].startValue)}
+                  x={valueToX(activeOperations[0].startValue)}
                   y={LINE_Y + POINT_RADIUS + 20}
                   textAnchor="middle"
                   fill="#93c5fd"
                   fontSize={12}
                   fontWeight="bold"
                 >
-                  Start: {formatValue(operations[0].startValue, activeNumberType)}
+                  Start: {formatValue(activeOperations[0].startValue, activeNumberType)}
                 </text>
               </g>
             )}
 
             {/* Jump Mode: Student's Jump Arc */}
-            {currentChallenge?.type === 'show_jump' && operations.length > 0 && jumpEndPoint !== null && (
+            {currentChallenge?.type === 'show_jump' && activeOperations.length > 0 && jumpEndPoint !== null && (
               renderJumpArc(
-                operations[0].startValue,
+                activeOperations[0].startValue,
                 jumpEndPoint,
                 feedbackType === 'success' ? '#34d399' : feedbackType === 'error' ? '#f87171' : '#fbbf24',
               )

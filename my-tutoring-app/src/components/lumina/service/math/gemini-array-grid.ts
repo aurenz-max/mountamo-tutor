@@ -150,7 +150,7 @@ Return a complete task configuration. Make it educational, clear, and age-approp
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-2.0-flash-exp",
+    model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",

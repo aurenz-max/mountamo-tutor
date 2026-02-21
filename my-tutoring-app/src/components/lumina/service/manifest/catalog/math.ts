@@ -74,6 +74,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'base-ten-blocks',
@@ -111,6 +112,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'fraction-circles',
@@ -141,6 +143,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'fraction-bar',
@@ -172,6 +175,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'place-value-chart',
@@ -201,6 +205,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'area-model',
@@ -231,6 +236,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'array-grid',
@@ -261,6 +267,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'double-number-line',
@@ -298,6 +305,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'tape-diagram',
@@ -326,6 +334,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'factor-tree',
@@ -357,6 +366,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'ratio-table',
@@ -387,6 +397,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'percent-bar',
@@ -415,6 +426,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'balance-scale',
@@ -452,6 +464,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'function-machine',
@@ -491,6 +504,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'coordinate-graph',
@@ -528,6 +542,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'slope-triangle',
@@ -759,6 +774,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'counting-board',
@@ -788,6 +804,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'pattern-builder',
@@ -818,6 +835,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'skip-counting-runner',
@@ -848,6 +866,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'regrouping-workbench',
@@ -878,6 +897,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'multiplication-explorer',
@@ -909,6 +929,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'measurement-tools',
@@ -947,6 +968,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'shape-builder',
@@ -987,5 +1009,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
 ];
