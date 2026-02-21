@@ -46,17 +46,25 @@ function scoreBadgeBg(score: number): string {
 }
 
 /** Get a short label for the component/problem type */
-function getTypeLabel(result: PracticeItemResult): string {
-  if (result.mode === 'visual-primitive' && result.visualComponentId) {
-    return result.visualComponentId
+function getTypeLabel(
+  result: PracticeItemResult | null,
+  manifestVisualComponentId?: string,
+  manifestProblemType?: string,
+): string {
+  // Prefer manifest-level type info (always available), fall back to result
+  const visualId = manifestVisualComponentId ?? result?.visualComponentId;
+  const problemType = manifestProblemType ?? result?.problemType;
+
+  if (visualId) {
+    return visualId
       .split('-')
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' ');
   }
-  if (result.problemType) {
-    return result.problemType.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  if (problemType) {
+    return problemType.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   }
-  return result.mode === 'visual-primitive' ? 'Interactive' : 'Quiz';
+  return result?.mode === 'visual-primitive' ? 'Interactive' : 'Quiz';
 }
 
 /**
@@ -79,6 +87,7 @@ function evalResultToPracticeResult(
     itemIndex,
     mode: isVisual ? 'visual-primitive' : 'standard-problem',
     visualComponentId: isVisual ? (evalResult.primitiveType as ComponentId) : undefined,
+    problemType: hydratedItem?.manifestItem.standardProblem?.problemType,
     success: evalResult.success,
     score: evalResult.score,
     durationMs: evalResult.durationMs,
@@ -151,6 +160,8 @@ export const PracticeSessionSummaryCard: React.FC<PracticeSessionSummaryCardProp
           problemText: hi.manifestItem.problemText,
           difficulty: hi.manifestItem.difficulty,
           isVisual: !!hi.manifestItem.visualPrimitive,
+          visualComponentId: hi.manifestItem.visualPrimitive?.componentId,
+          problemType: hi.manifestItem.standardProblem?.problemType,
           result: mergedResults.get(hi.manifestItem.instanceId) ?? null,
         }))
       : allResults.map((r, idx) => ({
@@ -158,6 +169,8 @@ export const PracticeSessionSummaryCard: React.FC<PracticeSessionSummaryCardProp
           problemText: `Question ${(r.itemIndex ?? idx) + 1}`,
           difficulty: undefined as string | undefined,
           isVisual: r.mode === 'visual-primitive',
+          visualComponentId: r.visualComponentId,
+          problemType: r.problemType,
           result: r,
         }));
 
@@ -264,10 +277,15 @@ export const PracticeSessionSummaryCard: React.FC<PracticeSessionSummaryCardProp
                         {item.index + 1}
                       </span>
 
-                      {/* Problem text */}
-                      <span className="flex-1 min-w-0 truncate text-sm text-slate-300">
-                        {item.problemText}
-                      </span>
+                      {/* Problem text + type label */}
+                      <div className="flex-1 min-w-0">
+                        <span className="block truncate text-sm text-slate-300">
+                          {item.problemText}
+                        </span>
+                        <span className={`text-xs ${item.isVisual ? 'text-purple-400' : 'text-blue-400'}`}>
+                          {getTypeLabel(item.result, item.visualComponentId, item.problemType)}
+                        </span>
+                      </div>
 
                       {/* Score badge or not-attempted */}
                       {item.result ? (
@@ -347,7 +365,7 @@ export const PracticeSessionSummaryCard: React.FC<PracticeSessionSummaryCardProp
                             variant="outline"
                             className="border border-white/10 bg-white/5 text-slate-400 text-xs"
                           >
-                            {getTypeLabel(item.result)}
+                            {getTypeLabel(item.result, item.visualComponentId, item.problemType)}
                           </Badge>
 
                           {/* Difficulty */}

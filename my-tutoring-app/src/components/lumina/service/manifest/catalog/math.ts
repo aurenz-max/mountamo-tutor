@@ -116,30 +116,31 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fraction-circles',
-    description: 'Visual pie charts showing fractional parts. Perfect for teaching fractions, parts of a whole, equivalent fractions, and basic fraction comparison. ESSENTIAL for elementary math.',
-    constraints: 'Requires fraction values (numerator/denominator)',
+    description: 'Multi-phase fraction learning with circle diagrams. Challenges include identifying fractions from shaded circles, building target fractions by clicking slices, comparing two fractions visually, and discovering equivalent fractions. ESSENTIAL for elementary fraction concepts.',
+    constraints: 'Generates 4-6 challenges mixing identify, build, compare, and equivalent types. Denominators 2-12.',
     tutoring: {
-      taskDescription: 'Explore fractions using circle diagrams. Target: {{targetFraction}}. Task: {{taskType}}.',
-      contextKeys: ['targetFraction', 'taskType', 'shadedSections', 'totalSections'],
+      taskDescription: 'Complete fraction challenges using circle diagrams. Current challenge: {{instruction}} (type: {{challengeType}}). Circle has {{denominator}} slices.',
+      contextKeys: ['challengeType', 'instruction', 'denominator', 'numerator', 'shadedCount', 'attemptNumber', 'currentChallengeIndex', 'totalChallenges'],
       scaffoldingLevels: {
-        level1: '"How many total pieces is this circle cut into?"',
-        level2: '"You shaded {{shadedSections}} out of {{totalSections}} pieces. What fraction is that?"',
-        level3: '"The denominator (bottom) is total pieces = {{totalSections}}. The numerator (top) is shaded pieces = {{shadedSections}}."',
+        level1: '"How many total pieces is this circle divided into? Count the lines."',
+        level2: '"The circle has {{denominator}} slices. Count the shaded ones — that is your numerator. The total slices is the denominator."',
+        level3: '"The numerator (top number) = shaded pieces. The denominator (bottom number) = total pieces = {{denominator}}. So the fraction is shaded/{{denominator}}."',
       },
       commonStruggles: [
-        { pattern: 'Counting unshaded instead of shaded', response: '"Count only the colored pieces for the numerator"' },
-        { pattern: 'Not recognizing equivalent fractions', response: '"Do both circles have the same amount shaded? Then they are equivalent even with different numbers"' },
-        { pattern: 'Confusing numerator and denominator', response: '"Denominator = total slices, numerator = slices you ate"' },
+        { pattern: 'Counting unshaded instead of shaded slices', response: '"Count only the colored pieces for the numerator — the blue/purple sections."' },
+        { pattern: 'Confusing numerator and denominator', response: '"Remember: denominator = total slices (the whole pie), numerator = slices you colored (the part)."' },
+        { pattern: 'Not recognizing equivalent fractions', response: '"Both circles have the same amount shaded even though the numbers look different. They are equivalent fractions!"' },
+        { pattern: 'Difficulty comparing fractions with different denominators', response: '"Look at how much of each circle is filled with color. Which circle has more color showing?"' },
       ],
       aiDirectives: [
         {
-          title: 'VISUAL FRACTION COACHING',
+          title: 'FRACTION CIRCLE COACHING',
           instruction:
-            'Always tie the fraction to the visual: "See the colored pieces? Count them — that is your numerator." '
-            + 'Use food analogies for younger students: "Imagine this is a pizza cut into {{totalSections}} slices. '
-            + 'You ate {{shadedSections}} slices. What fraction did you eat?" '
-            + 'For equivalence: guide the student to compare how much of each circle is shaded, '
-            + 'not just the numbers — "Both circles have the same amount colored, even though the numbers look different!"',
+            'Always tie the fraction to the visual circle. For identify challenges: "Count the colored slices — that is your top number." '
+            + 'For build challenges: "Click slices until you have exactly {{numerator}} colored." '
+            + 'For compare: "Look at how much of each circle is filled. Which has more color?" '
+            + 'For equivalent: "Can you make the same amount of color using {{equivalentDenominator}} slices instead?" '
+            + 'Use food analogies for younger students: "Imagine this is a pizza cut into {{denominator}} slices."',
         },
       ],
     },

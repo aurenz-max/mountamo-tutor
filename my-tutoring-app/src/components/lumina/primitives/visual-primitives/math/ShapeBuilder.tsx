@@ -10,6 +10,9 @@ import {
 } from '../../../evaluation';
 import type { ShapeBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -95,6 +98,15 @@ const GRID_PADDING = 20;
 const DOT_RADIUS = 3;
 const VERTEX_RADIUS = 8;
 const SNAP_DISTANCE = 15;
+
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  build:            { label: 'Build',       icon: '🔨', accentColor: 'purple' },
+  measure:          { label: 'Measure',     icon: '📏', accentColor: 'blue' },
+  classify:         { label: 'Classify',    icon: '📋', accentColor: 'emerald' },
+  compose:          { label: 'Compose',     icon: '🧩', accentColor: 'cyan' },
+  find_symmetry:    { label: 'Symmetry',    icon: '🪞', accentColor: 'pink' },
+  coordinate_shape: { label: 'Coordinates', icon: '📐', accentColor: 'amber' },
+};
 
 // ============================================================================
 // Geometry Helpers
@@ -308,16 +320,24 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   // Tool state
   const [activeTool, setActiveTool] = useState<'select' | 'ruler' | 'protractor' | 'symmetry'>('select');
 
-  // Challenge tracking
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  // Challenge tracking (shared hooks)
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [currentAttempts, setCurrentAttempts] = useState(0);
 
   // Evaluation tracking
-  const [challengeResults, setChallengeResults] = useState<
-    Array<{ challengeId: string; correct: boolean; attempts: number }>
-  >([]);
   const [shapesBuiltCorrectly, setShapesBuiltCorrectly] = useState(0);
   const [propertiesIdentified, setPropertiesIdentified] = useState(0);
   const [propertiesTotal, setPropertiesTotal] = useState(0);
@@ -366,12 +386,32 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     return activeShape?.vertices || [];
   }, [activeMode, placedVertices, activeShape]);
 
+  // Phase results (for PhaseSummaryPanel)
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
+  // Overall score for panel fallback
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    const correct = challengeResults.filter(r => r.correct).length;
+    return Math.round((correct / challenges.length) * 100);
+  }, [allChallengesComplete, challenges, challengeResults]);
+
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
 
-  const { submitResult: submitEvaluation, hasSubmitted: hasSubmittedEvaluation } =
-    usePrimitiveEvaluation<ShapeBuilderMetrics>({
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
+  } = usePrimitiveEvaluation<ShapeBuilderMetrics>({
       primitiveType: 'shape-builder',
       instanceId: resolvedInstanceId,
       skillId,
@@ -706,7 +746,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
   const handleCheckAnswer = useCallback(() => {
     if (!currentChallenge || hasSubmittedEvaluation) return;
-    setCurrentAttempts((prev) => prev + 1);
+    incrementAttempts();
 
     if (activeMode === 'build' || activeMode === 'coordinate_shape') {
       if (!isShapeClosed || !currentShapeProps) {
@@ -719,10 +759,11 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         setShapesBuiltCorrectly((prev) => prev + 1);
         setFeedback(`Great! You built a ${currentShapeName}!`);
         setFeedbackType('success');
-        setChallengeResults((prev) => [
-          ...prev,
-          { challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 },
-        ]);
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+        });
         sendText(
           `[BUILD_CORRECT] Student successfully built a ${currentShapeName}. Celebrate!`,
           { silent: true },
@@ -758,10 +799,11 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         setShapesBuiltCorrectly((prev) => prev + 1);
         setFeedback(`Perfect! That's a ${currentShapeName}!`);
         setFeedbackType('success');
-        setChallengeResults((prev) => [
-          ...prev,
-          { challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 },
-        ]);
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+        });
         sendText(
           `[BUILD_CORRECT] Student built a ${currentShapeName} matching target. `
           + `${target.sides} sides, ${target.rightAngles || 0} right angles. Celebrate!`,
@@ -792,10 +834,11 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         setPropertiesTotal((prev) => prev + propsNeeded);
         setFeedback(`You discovered all properties of this ${currentShapeName}!`);
         setFeedbackType('success');
-        setChallengeResults((prev) => [
-          ...prev,
-          { challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 },
-        ]);
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+        });
         sendText(
           `[MEASURE_COMPLETE] Student measured all properties of ${currentShapeName}: `
           + `${currentShapeProps.sides} sides, ${currentShapeProps.rightAngles} right angles, `
@@ -821,14 +864,11 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       if (classified >= totalShapes) {
         setFeedback(`All shapes classified! ${classificationsCorrect}/${totalShapes} correct.`);
         setFeedbackType(classificationsCorrect === totalShapes ? 'success' : 'info');
-        setChallengeResults((prev) => [
-          ...prev,
-          {
-            challengeId: currentChallenge.id,
-            correct: classificationsCorrect === totalShapes,
-            attempts: currentAttempts + 1,
-          },
-        ]);
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: classificationsCorrect === totalShapes,
+          attempts: currentAttempts + 1,
+        });
         sendText(
           `[CLASSIFY_COMPLETE] All ${totalShapes} shapes classified. `
           + `${classificationsCorrect}/${totalShapes} correct. `
@@ -851,10 +891,11 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           `You found ${validSymmetryLines} line${validSymmetryLines > 1 ? 's' : ''} of symmetry!`,
         );
         setFeedbackType('success');
-        setChallengeResults((prev) => [
-          ...prev,
-          { challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 },
-        ]);
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+        });
         sendText(
           `[SYMMETRY_COMPLETE] Found ${validSymmetryLines}/${target} lines. Celebrate!`,
           { silent: true },
@@ -874,16 +915,18 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     if (activeMode === 'compose') {
       setFeedback('Shape composed! Great work with pattern blocks.');
       setFeedbackType('success');
-      setChallengeResults((prev) => [
-        ...prev,
-        { challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 },
-      ]);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts: currentAttempts + 1,
+      });
       sendText('[COMPOSE_COMPLETE] Student completed the composition. Celebrate!', { silent: true });
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, currentAttempts, activeMode, isShapeClosed,
     currentShapeProps, currentShapeName, tools, showSideLengths, showAngles, showParallel,
     preloadedShapes, classifications, classificationsCorrect, validSymmetryLines, sendText,
+    incrementAttempts, recordResult,
   ]);
 
   // -------------------------------------------------------------------------
@@ -893,16 +936,21 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   const isCurrentChallengeComplete = challengeResults.some(
     (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
-  const allChallengesComplete =
-    challenges.length > 0 &&
-    challengeResults.filter((r) => r.correct).length >= challenges.length;
 
   const advanceToNextChallenge = useCallback(() => {
-    const nextIndex = currentChallengeIndex + 1;
+    if (!advanceProgress()) {
+      // All challenges done — send AI summary and submit evaluation
+      const phaseScoreStr = phaseResults
+        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+        .join(', ');
+      const overallPct = Math.round(
+        challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0)
+        / challenges.length
+      );
 
-    if (nextIndex >= challenges.length) {
       sendText(
-        `[ALL_COMPLETE] Student completed all ${challenges.length} shape challenges! Celebrate!`,
+        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+        + `Give encouraging phase-specific feedback.`,
         { silent: true },
       );
 
@@ -939,9 +987,8 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       return;
     }
 
-    // Reset for next challenge
-    setCurrentChallengeIndex(nextIndex);
-    setCurrentAttempts(0);
+    // advanceProgress() already incremented index and reset attempts.
+    // Just reset domain-specific state:
     setFeedback('');
     setFeedbackType('');
     setPlacedVertices([]);
@@ -956,6 +1003,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     setValidSymmetryLines(0);
     setActiveTool('select');
 
+    const nextIndex = currentChallengeIndex + 1;
     const next = challenges[nextIndex];
     sendText(
       `[NEXT_ITEM] Challenge ${nextIndex + 1} of ${challenges.length}: `
@@ -963,9 +1011,10 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       { silent: true },
     );
   }, [
-    currentChallengeIndex, challenges, challengeResults, sendText, hasSubmittedEvaluation,
+    advanceProgress, phaseResults, challengeResults, challenges, sendText, hasSubmittedEvaluation,
     shapesBuiltCorrectly, propertiesIdentified, propertiesTotal, classificationsCorrect,
     classificationsTotal, symmetryLinesFoundTotal, hierarchyUnderstood, toolsUsed, submitEvaluation,
+    currentChallengeIndex,
   ]);
 
   const handleReset = useCallback(() => {
@@ -1637,17 +1686,19 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
                 Next Challenge
               </Button>
             )}
-            {allChallengesComplete && (
-              <div className="text-center">
-                <p className="text-emerald-400 text-sm font-medium mb-2">
-                  All challenges complete!
-                </p>
-                <p className="text-slate-400 text-xs">
-                  {challengeResults.filter((r) => r.correct).length} / {challenges.length} correct
-                </p>
-              </div>
-            )}
           </div>
+        )}
+
+        {/* Phase Summary Panel */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="Challenge Complete!"
+            celebrationMessage={`You completed all ${challenges.length} shape challenges!`}
+            className="mt-4"
+          />
         )}
 
         {/* Hint */}

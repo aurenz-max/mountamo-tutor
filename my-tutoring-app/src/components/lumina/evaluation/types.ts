@@ -629,14 +629,14 @@ export interface BaseTenBlocksMetrics extends BasePrimitiveMetrics {
 
 export interface FractionCirclesMetrics extends BasePrimitiveMetrics {
   type: 'fraction-circles';
-
-  targetFraction: string;       // e.g., "3/4"
-  selectedFraction: string;
-  isCorrect: boolean;
-
-  // Equivalence understanding
-  equivalentFormsExplored: string[];
-  understoodEquivalence: boolean;
+  totalChallenges: number;
+  correctCount: number;
+  accuracy: number;
+  identifyAccuracy: number;
+  buildAccuracy: number;
+  compareAccuracy: number;
+  equivalentAccuracy: number;
+  attemptsCount: number;
 }
 
 export interface NumberLineMetrics extends BasePrimitiveMetrics {

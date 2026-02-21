@@ -29,6 +29,7 @@ import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTo
 import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import NumberLine from '../primitives/visual-primitives/math/NumberLine';
 import BaseTenBlocks from '../primitives/visual-primitives/math/BaseTenBlocks';
+import FractionCircles from '../primitives/visual-primitives/math/FractionCircles';
 import type { ShapeBuilderData } from '../types';
 import {
   EvaluationProvider,
@@ -42,11 +43,12 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
   { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊', topic: 'Understanding fractions' },
+  { value: 'fraction-circles', label: 'Fraction Circles', icon: '🥧', topic: 'Understanding fractions' },
   { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢', topic: 'Place value and decimal numbers' },
   { value: 'area-model', label: 'Area Model', icon: '📐', topic: 'Multi-digit multiplication' },
   { value: 'array-grid', label: 'Array / Grid', icon: '⊞', topic: 'Introduction to multiplication' },
@@ -110,6 +112,19 @@ const PrimitiveRenderer: React.FC<{
             subskillId: 'fraction-representation',
             objectiveId: 'understand-fraction-models',
             onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'fraction-circles':
+      // FractionCircles handles its own evaluation via usePrimitiveEvaluation hook
+      return (
+        <FractionCircles
+          data={{
+            ...(data as Parameters<typeof FractionCircles>[0]['data']),
+            instanceId: `fraction-circles-${Date.now()}`,
+            skillId: 'math-fractions',
+            subskillId: 'fraction-circles',
+            objectiveId: 'understand-fractions-with-circles',
           }}
         />
       );
