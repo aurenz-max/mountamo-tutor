@@ -1006,42 +1006,22 @@ export interface ArrayGridMetrics extends BasePrimitiveMetrics {
 export interface RatioTableMetrics extends BasePrimitiveMetrics {
   type: 'ratio-table';
 
-  // Goal achievement
-  taskType: 'missing-value' | 'find-multiplier' | 'build-ratio' | 'unit-rate-challenge' | 'explore';
-  goalMet: boolean;
+  // Overall achievement
+  goalMet: boolean;                   // All challenges correct
+  overallAccuracy: number;            // 0-100
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;              // Total attempts across all challenges
 
-  // Base ratio information
-  baseRatio: [number, number];      // The reference ratio [qty1, qty2]
-  unitRate: number;                 // qty2 / qty1
+  // Precision & scaffolding
+  averagePrecision: number;           // 0-100, how close answers were on average
+  hintsRequested: number;             // Total hints used across all challenges
 
-  // Missing-value task metrics
-  targetMultiplier?: number;        // The multiplier for the hidden value
-  targetValue?: number;             // The specific hidden value student should find
-  studentAnswer?: number;           // What student entered
-  answerCorrect?: boolean;          // Did they get it right
-  answerPrecision?: number;         // How close they were (0-100)
-
-  // Find-multiplier task metrics
-  selectedMultiplier?: number;      // Multiplier student chose
-  multiplierCorrect?: boolean;      // Matches target multiplier
-
-  // Build-ratio task metrics
-  finalScaledRatio?: [number, number]; // The ratio they built
-  ratioCorrect?: boolean;           // Matches target
-
-  // Performance tracking
-  attempts: number;                 // Total attempts before success
-  hintsRequested: number;           // How many hints student asked for
-
-  // Strategy indicators
-  sliderAdjustments: number;        // Times they moved the multiplier slider
-  explorationRange?: [number, number]; // [min, max] multipliers explored
-  usedCalculation?: boolean;        // Evidence they calculated vs trial-and-error
-  strategyUsed?: 'calculation' | 'trial-and-error' | 'pattern-recognition' | 'unknown';
-
-  // Final state for replay
-  finalMultiplier: number;          // Where slider ended up
-  finalScaledValues: [number, number]; // Final scaled quantities
+  // Per-type scores (undefined if no challenges of that type)
+  missingValueScore?: number;         // 0-100
+  findMultiplierScore?: number;       // 0-100
+  buildRatioScore?: number;           // 0-100
+  unitRateScore?: number;             // 0-100
 }
 
 export interface TapeDiagramMetrics extends BasePrimitiveMetrics {

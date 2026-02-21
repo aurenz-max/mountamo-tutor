@@ -10,6 +10,9 @@ import {
 } from '../../../evaluation';
 import type { CountingBoardMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -20,7 +23,9 @@ export interface CountingBoardChallenge {
   type: 'count_all' | 'subitize' | 'count_on' | 'group_count' | 'compare';
   instruction: string;
   targetAnswer: number;
-  flashDuration?: number | null; // ms, for subitize mode
+  count: number;
+  arrangement: 'scattered' | 'line' | 'groups' | 'circle';
+  groupSize?: number | null;
   startFrom?: number | null;    // for count_on mode
   hint: string;
   narration: string;
@@ -31,9 +36,6 @@ export interface CountingBoardData {
   description?: string;
   objects: {
     type: 'bears' | 'apples' | 'stars' | 'blocks' | 'fish' | 'butterflies' | 'custom';
-    count: number;
-    arrangement: 'scattered' | 'line' | 'groups' | 'circle';
-    groupSize?: number | null;
   };
   challenges: CountingBoardChallenge[];
   showOptions?: {
@@ -67,14 +69,22 @@ const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
   countOn: { label: 'Count On', description: 'Start from a number and keep counting' },
 };
 
+const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  count_all: { label: 'Count All', icon: '\uD83D\uDD22', accentColor: 'orange' },
+  subitize: { label: 'Subitize', icon: '\u26A1', accentColor: 'purple' },
+  group_count: { label: 'Group Count', icon: '\uD83C\uDFAF', accentColor: 'emerald' },
+  count_on: { label: 'Count On', icon: '\u2795', accentColor: 'blue' },
+  compare: { label: 'Compare', icon: '\u2696\uFE0F', accentColor: 'amber' },
+};
+
 const OBJECT_EMOJI: Record<string, string> = {
-  bears: '🧸',
-  apples: '🍎',
-  stars: '⭐',
-  blocks: '🟦',
-  fish: '🐟',
-  butterflies: '🦋',
-  custom: '⬤',
+  bears: '\uD83E\uDDF8',
+  apples: '\uD83C\uDF4E',
+  stars: '\u2B50',
+  blocks: '\uD83D\uDFE6',
+  fish: '\uD83D\uDC1F',
+  butterflies: '\uD83E\uDD8B',
+  custom: '\u2B24',
 };
 
 const WORKSPACE_WIDTH = 480;
@@ -88,7 +98,6 @@ const OBJECT_PADDING = 24;
 
 function generateScatteredPositions(count: number, seed: number = 42): Array<{ x: number; y: number }> {
   const positions: Array<{ x: number; y: number }> = [];
-  // Simple seeded pseudo-random for deterministic layout
   let s = seed;
   const rand = () => {
     s = (s * 16807 + 0) % 2147483647;
@@ -101,7 +110,6 @@ function generateScatteredPositions(count: number, seed: number = 42): Array<{ x
   const maxY = WORKSPACE_HEIGHT - padY;
 
   for (let i = 0; i < count; i++) {
-    // Try to place without overlap
     let bestX = padX + rand() * (maxX - padX);
     let bestY = padY + rand() * (maxY - padY);
 
@@ -234,19 +242,34 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
-  const objectCount = objects.count;
   const emoji = OBJECT_EMOJI[objects.type] || OBJECT_EMOJI.custom;
 
-  const positions = useMemo(() =>
-    generatePositions(objectCount, objects.arrangement, objects.groupSize),
-    [objectCount, objects.arrangement, objects.groupSize]
-  );
-
   const [countedObjects, setCountedObjects] = useState<Set<number>>(new Set());
-  const [countOrder, setCountOrder] = useState<Map<number, number>>(new Map()); // objectIndex -> countNumber
+  const [countOrder, setCountOrder] = useState<Map<number, number>>(new Map());
   const [doubleCounted, setDoubleCounted] = useState(false);
 
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  // Challenge progress tracking (shared hooks)
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: CHALLENGE_TYPE_CONFIG,
+  });
+
   const [currentPhase, setCurrentPhase] = useState<Phase>(() => {
     if (challenges.length === 0) return 'count';
     const firstType = challenges[0].type;
@@ -260,8 +283,6 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
 
   // Subitize state
-  const [isFlashing, setIsFlashing] = useState(false);
-  const [showObjects, setShowObjects] = useState(true);
   const [subitizeInput, setSubitizeInput] = useState('');
   const [subitizeStartTime, setSubitizeStartTime] = useState(0);
 
@@ -269,15 +290,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const [countOnInput, setCountOnInput] = useState('');
   const [preCountedCount, setPreCountedCount] = useState(0);
 
-  // Tracking
-  const [challengeResults, setChallengeResults] = useState<Array<{
-    challengeId: string;
-    correct: boolean;
-    timeMs?: number;
-    attempts: number;
-    oneToOne: boolean;
-  }>>([]);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
+  // Domain-specific tracking (not covered by shared hooks)
   const [usedGrouping, setUsedGrouping] = useState(false);
   const [usedCountOn, setUsedCountOn] = useState(false);
 
@@ -285,16 +298,22 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const stableInstanceIdRef = useRef(instanceId || `counting-board-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // Defensive: ensure targetAnswer matches objectCount for whole-board challenges.
-  // The AI generator can produce mismatched values (e.g. targetAnswer=12 when count=25).
+  // -------------------------------------------------------------------------
+  // Per-challenge layout
+  // -------------------------------------------------------------------------
+  const rawChallenge = challenges[currentChallengeIndex] ?? null;
+  const challengeCount = rawChallenge?.count ?? 5;
+  const challengeArrangement = rawChallenge?.arrangement ?? 'scattered';
+  const challengeGroupSize = rawChallenge?.groupSize;
+
   const currentChallenge = useMemo(() => {
-    const raw = challenges[currentChallengeIndex] || null;
-    if (!raw) return null;
-    if (['count_all', 'group_count', 'count_on'].includes(raw.type)) {
-      return { ...raw, targetAnswer: objectCount };
-    }
-    return raw;
-  }, [challenges, currentChallengeIndex, objectCount]);
+    return challenges[currentChallengeIndex] || null;
+  }, [challenges, currentChallengeIndex]);
+
+  const positions = useMemo(() =>
+    generatePositions(challengeCount, challengeArrangement, challengeGroupSize),
+    [challengeCount, challengeArrangement, challengeGroupSize]
+  );
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -302,6 +321,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<CountingBoardMetrics>({
     primitiveType: 'counting-board',
     instanceId: resolvedInstanceId,
@@ -317,19 +338,19 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     objectType: objects.type,
-    objectCount,
-    arrangement: objects.arrangement,
+    objectCount: challengeCount,
+    arrangement: challengeArrangement,
     gradeBand,
     totalChallenges: challenges.length,
     currentChallengeIndex,
     instruction: currentChallenge?.instruction ?? 'Free counting',
     challengeType: currentChallenge?.type ?? 'count_all',
-    targetAnswer: currentChallenge?.targetAnswer ?? objectCount,
+    targetAnswer: currentChallenge?.targetAnswer ?? challengeCount,
     currentCount: countedObjects.size,
     attemptNumber: currentAttempts + 1,
     currentPhase,
   }), [
-    objects.type, objectCount, objects.arrangement, gradeBand, challenges.length,
+    objects.type, challengeCount, challengeArrangement, gradeBand, challenges.length,
     currentChallengeIndex, currentChallenge, countedObjects.size, currentAttempts, currentPhase,
   ]);
 
@@ -348,23 +369,22 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
     sendText(
       `[ACTIVITY_START] This is a counting board activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `There are ${objectCount} ${objects.type} arranged in a ${objects.arrangement} pattern. `
-      + `${challenges.length} challenges. First challenge: "${currentChallenge?.instruction}". `
+      + `The first challenge has ${challengeCount} ${objects.type} arranged in a ${challengeArrangement} pattern. `
+      + `Each challenge has a different count and arrangement. `
+      + `${challenges.length} challenges total. First challenge: "${currentChallenge?.instruction}". `
       + `Introduce the activity warmly: "Look at all these ${objects.type}! Let's count them together." `
       + `Then read the first instruction.`,
       { silent: true }
     );
-  }, [isConnected, challenges.length, objectCount, objects.type, objects.arrangement, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, challengeCount, objects.type, challengeArrangement, gradeBand, currentChallenge, sendText]);
 
   // -------------------------------------------------------------------------
   // Interaction Handlers
   // -------------------------------------------------------------------------
   const handleObjectTap = useCallback((objectIndex: number) => {
-    if (currentPhase === 'subitize' && !showObjects) return;
     if (hasSubmittedEvaluation) return;
 
     if (countedObjects.has(objectIndex)) {
-      // Double-counting detected
       if (!doubleCounted) {
         setDoubleCounted(true);
         if (isConnected) {
@@ -393,7 +413,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     });
     setFeedback('');
     setFeedbackType('');
-  }, [currentPhase, showObjects, hasSubmittedEvaluation, countedObjects, doubleCounted, isConnected, sendText, objects.type]);
+  }, [hasSubmittedEvaluation, countedObjects, doubleCounted, isConnected, sendText, objects.type]);
 
   // -------------------------------------------------------------------------
   // Challenge Checking
@@ -404,7 +424,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     const counted = countedObjects.size;
     const correct = counted === target;
     const oneToOne = counted === target && !doubleCounted;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setFeedback(`Yes! There are ${target} ${objects.type}!`);
@@ -426,22 +446,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     }
 
     return { correct, oneToOne };
-  }, [currentChallenge, countedObjects.size, doubleCounted, objects.type, currentAttempts, sendText]);
-
-  const startSubitizeFlash = useCallback(() => {
-    if (!currentChallenge) return;
-
-    setIsFlashing(true);
-    setShowObjects(true);
-    setSubitizeInput('');
-    setSubitizeStartTime(Date.now());
-
-    const duration = currentChallenge.flashDuration || 1500;
-    setTimeout(() => {
-      setShowObjects(false);
-      setIsFlashing(false);
-    }, duration);
-  }, [currentChallenge]);
+  }, [currentChallenge, countedObjects.size, doubleCounted, objects.type, currentAttempts, sendText, incrementAttempts]);
 
   const checkSubitizeAnswer = useCallback(() => {
     if (!currentChallenge) return { correct: false, timeMs: 0 };
@@ -449,10 +454,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     const answer = parseInt(subitizeInput, 10);
     const correct = answer === target;
     const timeMs = Date.now() - subitizeStartTime;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
-      setShowObjects(true);
       setFeedback(`Yes! There are ${target} ${objects.type}!`);
       setFeedbackType('success');
       sendText(
@@ -471,14 +475,14 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     }
 
     return { correct, timeMs };
-  }, [currentChallenge, subitizeInput, subitizeStartTime, objects.type, sendText]);
+  }, [currentChallenge, subitizeInput, subitizeStartTime, objects.type, sendText, incrementAttempts]);
 
   const checkCountOnAnswer = useCallback(() => {
     if (!currentChallenge) return false;
     const target = currentChallenge.targetAnswer;
     const answer = parseInt(countOnInput, 10);
     const correct = answer === target;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setFeedback(`Yes! ${preCountedCount} and ${target - preCountedCount} more makes ${target}!`);
@@ -500,7 +504,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     }
 
     return correct;
-  }, [currentChallenge, countOnInput, preCountedCount, sendText]);
+  }, [currentChallenge, countOnInput, preCountedCount, sendText, incrementAttempts]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -529,40 +533,41 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       }
       case 'count_on':
         correct = checkCountOnAnswer() ?? false;
-        oneToOne = true; // count-on inherently shows understanding
+        oneToOne = true;
         break;
     }
 
     if (correct) {
-      setChallengeResults(prev => [
-        ...prev,
-        {
-          challengeId: currentChallenge.id,
-          correct: true,
-          timeMs,
-          attempts: currentAttempts + 1,
-          oneToOne,
-        },
-      ]);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        timeMs,
+        attempts: currentAttempts + 1,
+        oneToOne,
+      });
     }
-  }, [currentChallenge, currentAttempts, checkCountChallenge, checkSubitizeAnswer, checkCountOnAnswer]);
+  }, [currentChallenge, currentAttempts, checkCountChallenge, checkSubitizeAnswer, checkCountOnAnswer, recordResult]);
 
   const advanceToNextChallenge = useCallback(() => {
-    const nextIndex = currentChallengeIndex + 1;
+    if (!advanceProgress()) {
+      // All challenges complete — use phaseResults for AI feedback
+      const phaseScoreStr = phaseResults
+        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+        .join(', ');
+      const overallPct = Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100);
 
-    if (nextIndex >= challenges.length) {
-      // All challenges complete
       sendText(
-        `[CHALLENGE_COMPLETE] The student completed all ${challenges.length} counting challenges! `
-        + `Celebrate and summarize: "You counted ${objects.type} like a pro!"`,
+        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+        + `Give encouraging phase-specific feedback about their counting skills!`,
         { silent: true }
       );
 
       // Submit evaluation
       if (!hasSubmittedEvaluation) {
-        const subitizeResults = challengeResults.filter(
-          (_, i) => challenges[i]?.type === 'subitize'
-        );
+        const subitizeResults = challengeResults.filter(r => {
+          const ch = challenges.find(c => c.id === r.challengeId);
+          return ch?.type === 'subitize';
+        });
 
         const countingCorrect = challengeResults.filter(r => r.correct).length;
         const countingAccuracy = challenges.length > 0
@@ -570,7 +575,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         const subitizeAccuracy = subitizeResults.length > 0
           ? Math.round((subitizeResults.filter(r => r.correct).length / subitizeResults.length) * 100) : 0;
         const subitizeSpeed = subitizeResults.length > 0
-          ? Math.round(subitizeResults.reduce((s, r) => s + (r.timeMs || 0), 0) / subitizeResults.length) : 0;
+          ? Math.round(subitizeResults.reduce((s, r) => s + ((r.timeMs as number) || 0), 0) / subitizeResults.length) : 0;
         const oneToOneAll = challengeResults.every(r => r.oneToOne);
 
         const score = countingAccuracy;
@@ -597,9 +602,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       return;
     }
 
-    // Move to next challenge
-    setCurrentChallengeIndex(nextIndex);
-    setCurrentAttempts(0);
+    // advanceProgress() already incremented index and reset attempts.
+    // Now reset domain-specific state.
     setFeedback('');
     setFeedbackType('');
     setSubitizeInput('');
@@ -607,20 +611,18 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     setCountedObjects(new Set());
     setCountOrder(new Map());
     setDoubleCounted(false);
-    setShowObjects(true);
-
-    const nextChallenge = challenges[nextIndex];
+    const nextChallenge = challenges[currentChallengeIndex + 1];
 
     // Set phase
     if (nextChallenge.type === 'subitize') setCurrentPhase('subitize');
     else if (nextChallenge.type === 'count_on') {
       setCurrentPhase('countOn');
-      // Pre-count some objects for count-on
+      const nextChallengeCount = nextChallenge.count ?? 5;
       const startFrom = nextChallenge.startFrom || Math.floor(nextChallenge.targetAnswer / 2);
       setPreCountedCount(startFrom);
       const preCounted = new Set<number>();
       const preOrder = new Map<number, number>();
-      for (let i = 0; i < startFrom && i < objectCount; i++) {
+      for (let i = 0; i < startFrom && i < nextChallengeCount; i++) {
         preCounted.add(i);
         preOrder.set(i, i + 1);
       }
@@ -634,25 +636,24 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     else setCurrentPhase('count');
 
     sendText(
-      `[PHASE_TRANSITION] Moving to challenge ${nextIndex + 1} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). `
+      `[PHASE_TRANSITION] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
+      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}, ${nextChallenge.count} objects in ${nextChallenge.arrangement}). `
       + `Read the instruction to the student and encourage them.`,
       { silent: true }
     );
   }, [
-    currentChallengeIndex, challenges, challengeResults, sendText, objects.type,
-    hasSubmittedEvaluation, usedCountOn, usedGrouping, objectCount, submitEvaluation,
+    advanceProgress, phaseResults, challenges, challengeResults, sendText,
+    hasSubmittedEvaluation, usedCountOn, usedGrouping, submitEvaluation, currentChallengeIndex,
   ]);
 
   // -------------------------------------------------------------------------
-  // Subitize auto-start
+  // Subitize timer start
   // -------------------------------------------------------------------------
   useEffect(() => {
-    if (currentPhase === 'subitize' && currentChallenge?.type === 'subitize' && showObjects && !isFlashing) {
-      const timer = setTimeout(() => startSubitizeFlash(), 800);
-      return () => clearTimeout(timer);
+    if (currentChallenge?.type === 'subitize') {
+      setSubitizeStartTime(Date.now());
     }
-  }, [currentPhase, currentChallenge, showObjects, isFlashing, startSubitizeFlash]);
+  }, [currentChallengeIndex, currentChallenge?.type]);
 
   // -------------------------------------------------------------------------
   // Computed Values
@@ -660,7 +661,26 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct
   );
-  const allChallengesComplete = challenges.length > 0 && challengeResults.filter(r => r.correct).length >= challenges.length;
+
+  // -------------------------------------------------------------------------
+  // Auto-submit evaluation when all challenges complete
+  // -------------------------------------------------------------------------
+  const hasAutoSubmittedRef = useRef(false);
+  useEffect(() => {
+    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
+      hasAutoSubmittedRef.current = true;
+      advanceToNextChallenge();
+    }
+  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
+
+  // -------------------------------------------------------------------------
+  // Overall Score
+  // -------------------------------------------------------------------------
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    const correct = challengeResults.filter(r => r.correct).length;
+    return Math.round((correct / challenges.length) * 100);
+  }, [allChallengesComplete, challenges, challengeResults]);
 
   // -------------------------------------------------------------------------
   // Render
@@ -675,7 +695,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
             </Badge>
             <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
-              {objects.arrangement}
+              {challengeArrangement}
             </Badge>
           </div>
         </div>
@@ -738,10 +758,10 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
             />
 
             {/* Group circles */}
-            {showGroupCircles && objects.arrangement === 'groups' && objects.groupSize && (
+            {showGroupCircles && challengeArrangement === 'groups' && challengeGroupSize && (
               (() => {
-                const gs = objects.groupSize;
-                const numGroups = Math.ceil(objectCount / gs);
+                const gs = challengeGroupSize;
+                const numGroups = Math.ceil(challengeCount / gs);
                 const groupSpacing = Math.min(
                   (WORKSPACE_WIDTH - 2 * OBJECT_PADDING) / Math.max(numGroups, 1),
                   160
@@ -749,9 +769,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                 const startX = (WORKSPACE_WIDTH - groupSpacing * (numGroups - 1)) / 2;
 
                 return Array.from({ length: numGroups }, (_, g) => {
-                  const itemsInGroup = Math.min(gs, objectCount - g * gs);
+                  const itemsInGroup = Math.min(gs, challengeCount - g * gs);
                   const rows = Math.ceil(itemsInGroup / 3);
-                  // Match the vertical offset used in generateGroupPositions
                   const groupCenterY = WORKSPACE_HEIGHT / 2 - 20 + ((rows - 1) * (OBJECT_SIZE * 0.6)) / 2;
                   const cols = Math.min(3, itemsInGroup);
                   const rx = Math.max(((cols - 1) * (OBJECT_SIZE * 0.6)) / 2 + OBJECT_SIZE / 2 + 6, OBJECT_SIZE);
@@ -778,10 +797,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
             {positions.map((pos, index) => {
               const isCounted = countedObjects.has(index);
               const countNum = countOrder.get(index);
-              const shouldShow = showObjects;
               const isPreCounted = currentPhase === 'countOn' && index < preCountedCount;
-
-              if (!shouldShow) return null;
 
               return (
                 <g
@@ -863,15 +879,15 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
           <div className="flex items-center justify-center gap-4 text-sm">
             <span className="text-slate-300">
               Counted: <span className="text-orange-300 font-bold text-lg">{countedObjects.size}</span>
-              <span className="text-slate-500"> / {objectCount}</span>
+              <span className="text-slate-500"> / {challengeCount}</span>
             </span>
           </div>
         )}
 
         {/* Subitize Input */}
-        {currentPhase === 'subitize' && !showObjects && !isFlashing && !isCurrentChallengeComplete && (
+        {currentPhase === 'subitize' && !isCurrentChallengeComplete && (
           <div className="flex items-center justify-center gap-3">
-            <span className="text-slate-300 text-sm">How many {objects.type} did you see?</span>
+            <span className="text-slate-300 text-sm">How many {objects.type} do you see?</span>
             <input
               type="number"
               min={0}
@@ -905,19 +921,6 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Flash button for subitize */}
-        {currentPhase === 'subitize' && showObjects && !isFlashing && !isCurrentChallengeComplete && (
-          <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              className="bg-orange-500/10 border border-orange-400/30 hover:bg-orange-500/20 text-orange-300"
-              onClick={startSubitizeFlash}
-            >
-              Flash Objects
-            </Button>
-          </div>
-        )}
-
         {/* Feedback */}
         {feedback && (
           <div className={`text-center text-sm font-medium ${
@@ -938,7 +941,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                 className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
                 onClick={handleCheckAnswer}
                 disabled={
-                  (currentPhase === 'subitize' && (showObjects || isFlashing)) ||
+                  (currentPhase === 'subitize' && !subitizeInput) ||
                   (currentPhase === 'count' && countedObjects.size === 0) ||
                   hasSubmittedEvaluation
                 }
@@ -973,6 +976,18 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
           <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
           </div>
+        )}
+
+        {/* Phase Summary */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="Counting Complete!"
+            celebrationMessage={`You completed all ${challenges.length} challenges with ${objects.type}!`}
+            className="mt-4"
+          />
         )}
       </CardContent>
     </Card>

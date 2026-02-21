@@ -1,55 +1,76 @@
 import { Type, Schema } from "@google/genai";
-import { RatioTableData } from "../../primitives/visual-primitives/math/RatioTable";
+import { RatioTableData, RatioTableChallenge } from "../../primitives/visual-primitives/math/RatioTable";
 import { ai } from "../geminiClient";
 
 /**
- * Schema definition for Ratio Table Data
+ * Schema definition for Ratio Table Data (multi-challenge format)
  *
- * This schema defines the structure for ratio table visualization,
- * showing proportional relationships through interactive problem-solving tasks.
+ * Each challenge defines its own proportional relationship context,
+ * base ratio, row labels, target multiplier, and task type.
+ * This allows a single activity to present 3-5 varied ratio challenges.
  */
-const ratioTableSchema: Schema = {
+const ratioTableChallengeSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: {
+    id: {
       type: Type.STRING,
-      description: "Title for the ratio table (e.g., 'Baking Cookies: Flour to Cookie Ratio')"
+      description: "Unique challenge ID (e.g., 'rt1', 'rt2', 'rt3')"
     },
-    description: {
+    type: {
       type: Type.STRING,
-      description: "Educational description explaining what students will learn from this task"
+      description: "Challenge type: 'missing-value' (find hidden scaled value), 'find-multiplier' (determine scaling factor), 'build-ratio' (construct equivalent ratio), 'unit-rate' (calculate and apply unit rate)",
+      enum: ["missing-value", "find-multiplier", "build-ratio", "unit-rate"]
+    },
+    instruction: {
+      type: Type.STRING,
+      description: "Student-facing instruction/question for this challenge (e.g., 'If 3 cups of flour makes 36 cookies, how many cookies can you make with 7.5 cups?')"
+    },
+    baseRatio: {
+      type: Type.ARRAY,
+      items: { type: Type.NUMBER },
+      description: "The reference ratio as [quantity1, quantity2] (e.g., [3, 36]). This is the locked reference column."
     },
     rowLabels: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
       description: "Two labels for the quantities being compared (e.g., ['Cups of Flour', 'Cookies Made']). Must have exactly 2 items."
     },
-    baseRatio: {
-      type: Type.ARRAY,
-      items: { type: Type.NUMBER },
-      description: "The reference ratio as [quantity1, quantity2] (e.g., [3, 36] means 3 cups of flour makes 36 cookies). This is the locked reference column."
-    },
-    taskType: {
-      type: Type.STRING,
-      description: "Type of learning task: 'missing-value' (find hidden value using proportional reasoning), 'find-multiplier', 'build-ratio', 'unit-rate-challenge', or 'explore' (free exploration)",
-      enum: ["missing-value", "find-multiplier", "build-ratio", "unit-rate-challenge", "explore"]
-    },
     targetMultiplier: {
       type: Type.NUMBER,
-      description: "For tasks: the multiplier used to calculate the hidden/target value. E.g., if baseRatio is [3, 36] and targetMultiplier is 2.5, the scaled ratio is [7.5, 90]."
-    },
-    questionPrompt: {
-      type: Type.STRING,
-      description: "The specific question students need to answer (e.g., 'If 3 cups of flour makes 36 cookies, how many cookies can you make with 7.5 cups of flour?')"
+      description: "The multiplier used to create the scaled ratio. E.g., if baseRatio is [3, 36] and targetMultiplier is 2.5, scaled values are [7.5, 90]."
     },
     hiddenValue: {
       type: Type.STRING,
-      description: "For missing-value task: which value to hide - 'scaled-first' or 'scaled-second'",
+      description: "For missing-value challenges: which scaled value to hide — 'scaled-first' or 'scaled-second'",
       enum: ["scaled-first", "scaled-second"]
     },
-    maxMultiplier: {
+    hint: {
+      type: Type.STRING,
+      description: "Hint text shown after incorrect attempts to guide the student"
+    },
+    tolerance: {
       type: Type.NUMBER,
-      description: "Maximum value for the multiplier slider (default: 10)."
+      description: "Percentage tolerance for answer checking (default 1%). Use higher values for challenges where rounding is expected."
+    }
+  },
+  required: ["id", "type", "instruction", "baseRatio", "rowLabels", "targetMultiplier", "hint"]
+};
+
+const ratioTableSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: {
+      type: Type.STRING,
+      description: "Title for the ratio table activity (e.g., 'Ratio Reasoning: Recipes & Speed')"
+    },
+    description: {
+      type: Type.STRING,
+      description: "Educational description explaining what students will practice across these challenges"
+    },
+    challenges: {
+      type: Type.ARRAY,
+      items: ratioTableChallengeSchema,
+      description: "Array of 3-5 ratio challenges with mixed types and progressive difficulty"
     },
     showUnitRate: {
       type: Type.BOOLEAN,
@@ -57,155 +78,153 @@ const ratioTableSchema: Schema = {
     },
     showBarChart: {
       type: Type.BOOLEAN,
-      description: "Display visual bar chart. Default: true"
+      description: "Display visual bar chart comparing quantities. Default: true"
+    },
+    maxMultiplier: {
+      type: Type.NUMBER,
+      description: "Maximum value for the multiplier slider (default: 10)"
     }
   },
-  required: ["title", "description", "rowLabels", "baseRatio", "taskType"]
+  required: ["title", "description", "challenges"]
 };
 
 /**
- * Generate ratio table data for problem-solving tasks
+ * Generate ratio table data with multiple progressive challenges
  *
- * This function creates ratio table data with interactive tasks:
+ * Produces 3-5 challenges of mixed types:
  * - missing-value: Students find a hidden value using proportional reasoning
  * - find-multiplier: Determine the scaling factor between ratios
  * - build-ratio: Construct a specific equivalent ratio
- * - unit-rate-challenge: Calculate and apply unit rates
- * - explore: Free exploration of proportional relationships
+ * - unit-rate: Calculate and apply unit rates
+ *
+ * Each challenge has its own real-world context, base ratio, and row labels,
+ * allowing variety within a single activity.
  *
  * @param topic - The math topic or concept to teach
  * @param gradeLevel - Grade level for age-appropriate content
  * @param config - Optional configuration hints from the manifest
- * @returns RatioTableData with complete configuration
+ * @returns RatioTableData with challenges array
  */
 export const generateRatioTable = async (
   topic: string,
   gradeLevel: string,
   config?: Partial<RatioTableData>
 ): Promise<RatioTableData> => {
-  const taskType = config?.taskType || 'missing-value';
-
   const prompt = `
-Create an educational ratio table problem for teaching "${topic}" to ${gradeLevel} students.
+Create an educational ratio table activity for teaching "${topic}" to ${gradeLevel} students.
 
-TASK TYPE: ${taskType}
+This activity should contain 3-5 CHALLENGES of MIXED TYPES that progress in difficulty.
+Each challenge is a separate ratio problem with its own context, base ratio, and row labels.
 
-${ taskType === 'missing-value' ? `
-MISSING-VALUE TASK DESIGN:
-- Create a real-world proportional relationship problem
-- Present a reference ratio (e.g., [3, 36] for "3 cups flour makes 36 cookies")
-- Set a targetMultiplier (e.g., 2.5) to create the scaled scenario
-- Hide one value in the scaled column (use hiddenValue: 'scaled-first' or 'scaled-second')
-- Write a clear questionPrompt asking students to find the missing value
-- Example: "If 3 cups of flour makes 36 cookies, how many cookies can you make with 7.5 cups of flour?"
-  - baseRatio: [3, 36]
-  - targetMultiplier: 2.5
-  - hiddenValue: 'scaled-second'
-  - The answer would be 90 cookies
+CHALLENGE TYPES (use a mix of these):
 
-CHALLENGE DIFFICULTY BY GRADE:
-- Grades 6-7: Simple whole number multipliers (2, 3, 4), integer results
-- Grades 7-8: Decimal multipliers (1.5, 2.5), may have decimal answers
-- Grades 8+: Complex multipliers (3.75, 0.75), requires precision
+1. "missing-value" — Student finds a hidden value in a scaled ratio.
+   - Set hiddenValue to 'scaled-first' or 'scaled-second'
+   - Example: baseRatio [3, 36], targetMultiplier 2.5, hiddenValue 'scaled-second'
+     → "If 3 cups flour makes 36 cookies, how many cookies from 7.5 cups?" (Answer: 90)
 
-CONTEXT SELECTION:
-Choose engaging, age-appropriate contexts like:
-- Recipes: ingredients scaling (flour to cookies, cups to servings)
+2. "find-multiplier" — Student determines the scaling factor.
+   - Give both the base and scaled values; student finds the multiplier
+   - Example: baseRatio [4, 12], targetMultiplier 3
+     → "A recipe uses 4 eggs for 12 muffins. If you used 12 eggs, what multiplier did you use?" (Answer: 3)
+
+3. "build-ratio" — Student constructs an equivalent ratio.
+   - Student adjusts the multiplier to create a target scaled value
+   - Example: baseRatio [5, 20], targetMultiplier 4
+     → "Build a ratio equivalent to 5:20 that gives you 80 in the second column." (Answer: multiplier 4)
+
+4. "unit-rate" — Student calculates and applies the unit rate.
+   - Focus on finding the rate per 1 unit
+   - Example: baseRatio [6, 48], targetMultiplier 1 (unit rate focus)
+     → "If 6 notebooks cost $48, what is the cost per notebook?" (Answer: $8)
+
+DIFFICULTY PROGRESSION BY GRADE:
+- Grades 6-7: Whole number multipliers (2, 3, 4, 5), integer results, simple contexts
+- Grades 7-8: Decimal multipliers (1.5, 2.5, 3.5), may have decimal answers
+- Grades 8+: Complex multipliers (2.25, 3.75, 0.75), multi-step reasoning
+
+REAL-WORLD CONTEXTS (vary across challenges):
+- Recipes: ingredients scaling (flour to cookies, eggs to muffins)
 - Shopping: unit pricing (items to cost, quantity to total)
 - Speed/Distance: travel problems (hours to miles, time to distance)
 - Mixing: paint colors, solutions (parts A to parts B)
-- Unit conversion: measurement problems
-
-` : `
-EXPLORE MODE DESIGN:
-- Create an interesting proportional relationship to explore
-- Students use a slider to adjust the multiplier
-- Visual bar chart shows how quantities scale together
-- Focus on discovering patterns in ratios
-`}
-
-CONTEXT:
-- baseRatio: The reference ratio [quantity1, quantity2] that stays locked
-- targetMultiplier: Used to calculate the hidden value for tasks
-- questionPrompt: The specific question students must answer
-- hiddenValue: Which scaled value to hide ('scaled-first' or 'scaled-second')
-
-NUMBER SELECTION:
-- Choose baseRatio that creates interesting problems
-- For missing-value: ensure targetMultiplier creates reasonable scaled values
-- Elementary (6-7): whole numbers, simple multipliers (2, 3, 4)
-- Middle school (7-8): friendly decimals (1.5, 2.5, 3.5)
-- Advanced (8+): complex multipliers (2.25, 3.75, 0.75)
+- Science: measurements, conversions, density
+- Maps: scale factors (inches to miles)
 
 ${config ? `
 CONFIGURATION HINTS:
-${config.rowLabels ? `- Row labels: ${config.rowLabels.join(', ')}` : ''}
-${config.baseRatio ? `- Base ratio: [${config.baseRatio.join(', ')}]` : ''}
-${config.targetMultiplier ? `- Target multiplier: ${config.targetMultiplier}` : ''}
-${config.questionPrompt ? `- Question: ${config.questionPrompt}` : ''}
 ${config.maxMultiplier ? `- Max multiplier: ${config.maxMultiplier}` : ''}
+${config.showUnitRate !== undefined ? `- Show unit rate: ${config.showUnitRate}` : ''}
+${config.showBarChart !== undefined ? `- Show bar chart: ${config.showBarChart}` : ''}
 ` : ''}
 
 REQUIREMENTS:
-1. Choose meaningful row labels that fit the context (e.g., "Cups of Flour", "Cookies Made")
-2. Set a baseRatio that creates a clear proportional relationship
-3. For missing-value tasks:
-   - Set targetMultiplier to create the scaled scenario
-   - Choose which value to hide (hiddenValue: 'scaled-first' or 'scaled-second')
-   - Write a clear questionPrompt that asks students to find the missing value
-   - Ensure the answer is reasonable and makes sense in context
-4. Write a descriptive title and educational description
-5. Enable showUnitRate (true) for most cases to support solving
-6. Set maxMultiplier appropriate for grade level (default: 10)
+1. Generate 3-5 challenges that PROGRESS in difficulty
+2. Use a MIX of challenge types — do NOT make them all the same type
+3. Each challenge MUST have its own:
+   - id: unique string (e.g., 'rt1', 'rt2', ...)
+   - type: one of the four challenge types
+   - instruction: a clear, specific question or task
+   - baseRatio: [number, number] with positive values
+   - rowLabels: [string, string] matching the context
+   - targetMultiplier: positive number appropriate for grade level
+   - hint: helpful guidance without giving the answer
+4. For "missing-value" challenges, set hiddenValue to 'scaled-first' or 'scaled-second'
+5. Start with easier challenges (simpler numbers, missing-value type) and progress to harder ones
+6. Write engaging, age-appropriate instructions
+7. Ensure all numbers produce reasonable, contextually sensible answers
+8. Set tolerance for challenges where rounding may be needed (e.g., 5 for 5% tolerance)
+9. Write a descriptive title and educational description that spans all challenges
 
-EXAMPLES:
-
-Grade 7 - Missing Value (Recipe Scaling):
+EXAMPLE OUTPUT:
 {
-  "title": "Baking Cookies - Flour to Cookies",
-  "description": "Use proportional reasoning to find how many cookies you can make",
-  "taskType": "missing-value",
-  "rowLabels": ["Cups of Flour", "Cookies Made"],
-  "baseRatio": [3, 36],
-  "targetMultiplier": 2.5,
-  "hiddenValue": "scaled-second",
-  "questionPrompt": "If 3 cups of flour makes 36 cookies, how many cookies can you make with 7.5 cups of flour?",
+  "title": "Ratio Reasoning: Recipes & Shopping",
+  "description": "Practice proportional reasoning across different real-world scenarios",
+  "challenges": [
+    {
+      "id": "rt1",
+      "type": "missing-value",
+      "instruction": "If 3 cups of flour makes 36 cookies, how many cookies can you make with 6 cups?",
+      "baseRatio": [3, 36],
+      "rowLabels": ["Cups of Flour", "Cookies Made"],
+      "targetMultiplier": 2,
+      "hiddenValue": "scaled-second",
+      "hint": "Think about how many times 3 goes into 6, then multiply the cookies by the same amount."
+    },
+    {
+      "id": "rt2",
+      "type": "find-multiplier",
+      "instruction": "A car travels 60 miles in 1 hour. If it traveled 210 miles, what multiplier was used?",
+      "baseRatio": [1, 60],
+      "rowLabels": ["Hours", "Miles"],
+      "targetMultiplier": 3.5,
+      "hint": "Divide the total miles (210) by the miles per hour (60) to find how many hours."
+    },
+    {
+      "id": "rt3",
+      "type": "unit-rate",
+      "instruction": "If 5 notebooks cost $15, what is the cost per notebook?",
+      "baseRatio": [5, 15],
+      "rowLabels": ["Notebooks", "Cost ($)"],
+      "targetMultiplier": 1,
+      "hint": "To find the unit rate, divide the total cost by the number of items."
+    },
+    {
+      "id": "rt4",
+      "type": "build-ratio",
+      "instruction": "Build an equivalent ratio to 4:20 where the second value is 100.",
+      "baseRatio": [4, 20],
+      "rowLabels": ["Workers", "Widgets Made"],
+      "targetMultiplier": 5,
+      "hint": "What number do you multiply 20 by to get 100? Use that same multiplier for both values."
+    }
+  ],
   "showUnitRate": true,
+  "showBarChart": true,
   "maxMultiplier": 10
 }
-// Answer: 90 cookies
 
-Grade 8 - Missing Value (Speed):
-{
-  "title": "Road Trip - Time and Distance",
-  "description": "Calculate distance traveled using constant speed",
-  "taskType": "missing-value",
-  "rowLabels": ["Hours", "Miles Traveled"],
-  "baseRatio": [2, 120],
-  "targetMultiplier": 3.5,
-  "hiddenValue": "scaled-second",
-  "questionPrompt": "If you travel 120 miles in 2 hours, how far will you go in 7 hours at the same speed?",
-  "showUnitRate": true,
-  "maxMultiplier": 12
-}
-// Answer: 420 miles
-
-Grade 6 - Missing Value (Shopping):
-{
-  "title": "Grocery Shopping - Unit Price",
-  "description": "Find the total cost using unit pricing",
-  "taskType": "missing-value",
-  "rowLabels": ["Items", "Total Cost ($)"],
-  "baseRatio": [4, 10],
-  "targetMultiplier": 1.5,
-  "hiddenValue": "scaled-second",
-  "questionPrompt": "If 4 apples cost $10, how much will 6 apples cost?",
-  "showUnitRate": true,
-  "maxMultiplier": 8
-}
-// Answer: $15
-
-Return the complete ratio table configuration with all required fields.
+Return the complete ratio table configuration.
 `;
 
   const result = await ai.models.generateContent({
@@ -223,49 +242,86 @@ Return the complete ratio table configuration with all required fields.
     throw new Error('No valid ratio table data returned from Gemini API');
   }
 
-  // Validation: ensure rowLabels has exactly 2 items
-  if (!data.rowLabels || data.rowLabels.length !== 2) {
-    console.warn(`Invalid rowLabels: expected 2, got ${data.rowLabels?.length}. Using defaults.`);
-    data.rowLabels = ["Quantity 1", "Quantity 2"];
+  // ── Validate challenges array ──────────────────────────────────────────
+
+  if (!Array.isArray(data.challenges) || data.challenges.length === 0) {
+    throw new Error('Gemini returned no challenges for ratio table');
   }
 
-  // Validation: ensure baseRatio has exactly 2 values
-  if (!data.baseRatio || !Array.isArray(data.baseRatio) || data.baseRatio.length !== 2) {
-    console.warn(`Invalid baseRatio: expected [num, num], got ${data.baseRatio}. Using [1, 2].`);
-    data.baseRatio = [1, 2];
+  const validTypes: RatioTableChallenge['type'][] = [
+    'missing-value', 'find-multiplier', 'build-ratio', 'unit-rate'
+  ];
+
+  // Filter to only valid challenge types
+  data.challenges = data.challenges.filter(
+    (c: { type: string }) => validTypes.includes(c.type as RatioTableChallenge['type'])
+  );
+
+  if (data.challenges.length === 0) {
+    throw new Error('No valid challenge types in Gemini response');
   }
 
-  // Validation: ensure baseRatio values are positive numbers
-  if (data.baseRatio[0] <= 0 || data.baseRatio[1] <= 0) {
-    console.warn(`Invalid baseRatio values: must be positive. Got [${data.baseRatio}]. Using [1, 2].`);
-    data.baseRatio = [1, 2];
+  // ── Per-challenge validation ───────────────────────────────────────────
+
+  const seenIds = new Set<string>();
+
+  for (let i = 0; i < data.challenges.length; i++) {
+    const c = data.challenges[i];
+
+    // Ensure unique id
+    if (!c.id || seenIds.has(c.id)) {
+      c.id = `rt${i + 1}`;
+    }
+    seenIds.add(c.id);
+
+    // Validate baseRatio: must be [positive, positive]
+    if (!Array.isArray(c.baseRatio) || c.baseRatio.length !== 2 ||
+        c.baseRatio[0] <= 0 || c.baseRatio[1] <= 0) {
+      console.warn(`Challenge ${c.id}: invalid baseRatio [${c.baseRatio}]. Using [1, 2].`);
+      c.baseRatio = [1, 2];
+    }
+
+    // Validate rowLabels: must be [string, string]
+    if (!Array.isArray(c.rowLabels) || c.rowLabels.length !== 2) {
+      console.warn(`Challenge ${c.id}: invalid rowLabels. Using defaults.`);
+      c.rowLabels = ["Quantity A", "Quantity B"];
+    }
+
+    // Validate targetMultiplier: must be a positive number
+    if (!c.targetMultiplier || c.targetMultiplier <= 0) {
+      console.warn(`Challenge ${c.id}: invalid targetMultiplier. Using 2.`);
+      c.targetMultiplier = 2;
+    }
+
+    // For missing-value challenges, ensure hiddenValue is set
+    if (c.type === 'missing-value' && !c.hiddenValue) {
+      c.hiddenValue = 'scaled-second';
+    }
+
+    // Ensure instruction exists
+    if (!c.instruction) {
+      c.instruction = `Solve the ratio problem with base ratio ${c.baseRatio[0]}:${c.baseRatio[1]}`;
+    }
+
+    // Ensure hint exists
+    if (!c.hint) {
+      c.hint = 'Think about the relationship between the two quantities.';
+    }
   }
 
-  // Set defaults for optional fields
-  if (!data.taskType) data.taskType = 'missing-value';
+  // ── Top-level defaults ─────────────────────────────────────────────────
+
   if (!data.maxMultiplier || data.maxMultiplier < 2) data.maxMultiplier = 10;
   if (data.showUnitRate === undefined) data.showUnitRate = true;
   if (data.showBarChart === undefined) data.showBarChart = true;
 
-  // For missing-value tasks, ensure required fields are present
-  if (data.taskType === 'missing-value') {
-    if (!data.targetMultiplier) {
-      console.warn('Missing targetMultiplier for missing-value task. Using 2.');
-      data.targetMultiplier = 2;
-    }
-    if (!data.hiddenValue) {
-      data.hiddenValue = 'scaled-second';
-    }
-    if (!data.questionPrompt) {
-      const knownIndex = data.hiddenValue === 'scaled-first' ? 1 : 0;
-      const knownScaled = data.baseRatio[knownIndex] * data.targetMultiplier;
-      data.questionPrompt = `If ${data.baseRatio[0]} ${data.rowLabels[0]} gives you ${data.baseRatio[1]} ${data.rowLabels[1]}, how many ${data.rowLabels[data.hiddenValue === 'scaled-first' ? 0 : 1]} will ${knownScaled} ${data.rowLabels[knownIndex]} give you?`;
-    }
-  }
+  // ── Apply explicit config overrides from manifest ──────────────────────
 
-  // Apply any explicit config overrides from manifest
   if (config) {
-    Object.assign(data, config);
+    if (config.showUnitRate !== undefined) data.showUnitRate = config.showUnitRate;
+    if (config.showBarChart !== undefined) data.showBarChart = config.showBarChart;
+    if (config.maxMultiplier !== undefined) data.maxMultiplier = config.maxMultiplier;
+    if (config.challenges) data.challenges = config.challenges;
   }
 
   return data as RatioTableData;

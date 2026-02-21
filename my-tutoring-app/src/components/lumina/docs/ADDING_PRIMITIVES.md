@@ -45,7 +45,7 @@ See **[ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md)** for the full 
 
 ---
 
-## Quick Start: 6 Files, Zero Switch Statements
+## Quick Start: 7 Files, Zero Switch Statements
 
 Adding a new primitive involves these files:
 
@@ -57,7 +57,7 @@ Adding a new primitive involves these files:
 | 4 | `service/registry/generators/[domain]Generators.ts` | Register the generator |
 | 5 | `service/manifest/catalog/[domain].ts` | Add to catalog for AI selection |
 | 6 | `config/primitiveRegistry.tsx` | Register UI component for rendering |
-| 7 (Optional) | `evaluation/types.ts` | Add metrics type if supporting evaluation |
+| 7 | `evaluation/types.ts` | Add metrics type (interactive primitives) |
 
 **No changes needed to:**
 - ~~`geminiService.ts`~~ - Registry pattern handles all component generation
@@ -473,9 +473,9 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
 
 **⭐ Default to `true` for interactive primitives.** Evaluation powers adaptive learning and helps students learn faster.
 
-### Step 7 (Optional): Add Evaluation Metrics
+### Step 7: Add Evaluation Metrics (Interactive Primitives)
 
-If your primitive supports evaluation, define a custom metrics interface in the evaluation system.
+For interactive primitives, define a custom metrics interface in the evaluation system.
 
 ```typescript
 // evaluation/types.ts
@@ -728,345 +728,137 @@ When `supportsEvaluation: true` is set in the registry, `ManifestOrderRenderer` 
 
 ### Progressive Difficulty: Multi-Phase Learning Design
 
-**⭐ RECOMMENDED: Structure complex primitives with progressive difficulty phases to maximize learning outcomes.**
+**⭐ RECOMMENDED: Structure complex primitives with progressive difficulty phases.**
 
-Research in cognitive science shows that scaffolded learning (breaking complex tasks into progressive steps) significantly improves:
-- **Mastery**: Students achieve 2x higher success rates vs. all-at-once learning
-- **Transfer**: Students can apply concepts to new problems 60% more effectively
-- **Confidence**: Reduces frustration and builds self-efficacy through small wins
-- **Retention**: Multi-step learning creates stronger neural pathways
+Instead of asking students to solve the entire problem at once, break learning into 3-4 phases that build on each other:
 
-#### The Progressive Difficulty Pattern
+1. **Explore (Discovery)**: Students discover the core concept (1-2 items, strong scaffolding)
+2. **Practice (Guided Application)**: Students apply the concept with support (2-3 problems, immediate feedback)
+3. **Apply (Independent Work)**: Students solve the full problem (minimal scaffolding)
+4. **Extend (Optional)**: Push beyond the original problem for advanced students
 
-Instead of asking students to solve the entire problem at once, break the learning into 3-5 phases that build on each other:
+**When to use this pattern:**
+- The primitive teaches a multi-step concept (ratios, proportions, percent problems)
+- Students need to discover a relationship before applying it
+- The full problem has 5+ values/steps that could overwhelm at once
 
-```typescript
-type LearningPhase = 'explore' | 'practice' | 'apply' | 'extend';
+**When to skip it:**
+- Simple primitives with <3 interactions
+- Each interaction is independent (not building on previous)
+- Students already know the relationship (just practicing execution)
 
-const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
-```
+**Implementation:** Use the shared hooks described in the next section (`useChallengeProgress` + `usePhaseResults`) to implement multi-phase tracking with minimal boilerplate. Model each phase's challenges as entries in a unified challenges array with a `type` field for phase grouping.
 
-**Phase Structure:**
-
-1. **Explore (Discovery)**: Students discover the core concept or relationship
-   - Focused on ONE key insight
-   - Provides strong scaffolding and hints
-   - Usually just 1-2 values to find
-   - Example: "Find the unit rate (when input = 1, what's the output?)"
-
-2. **Practice (Guided Application)**: Students apply the concept with support
-   - Limited scope (2-3 problems)
-   - Immediate feedback on correctness
-   - Still provides hints if needed
-   - Example: "Use the unit rate to find 2 more values"
-
-3. **Apply (Independent Work)**: Students solve the full problem
-   - Complete the entire task
-   - Minimal scaffolding
-   - Example: "Find all remaining values using what you learned"
-
-4. **Extend (Optional Challenge)**: Push beyond the original problem
-   - Reverse the problem or add complexity
-   - For advanced students who finish early
-   - Example: "Now given the output, find the input"
-
-#### Real-World Example: Double Number Line
-
-The [DoubleNumberLine.tsx](../primitives/visual-primitives/math/DoubleNumberLine.tsx) primitive demonstrates this pattern perfectly:
-
-**Phase 1 - Explore (Unit Rate Discovery)**
-```typescript
-// Student finds the fundamental relationship
-{currentPhase === 'explore' && (
-  <div>
-    <label>When {topLabel} = 1, what is {bottomLabel}?</label>
-    <input
-      value={studentUnitRate}
-      onChange={(e) => setStudentUnitRate(e.target.value)}
-    />
-    <button onClick={handleCheckUnitRate}>Check Unit Rate</button>
-  </div>
-)}
-```
-
-Key aspects:
-- Students focus on ONE insight: the unit rate
-- Clear question guides discovery
-- Immediate feedback when they check
-- Success unlocks next phase
-
-**Phase 2 - Practice (Guided Scaling)**
-```typescript
-// Show only first 2 target points
-{currentPhase === 'practice' && targetPoints.map((point, i) => {
-  if (i >= 2) return null; // Limit to 2 points
-  // Render input for this point
-})}
-
-// Check if practice points are correct before advancing
-const practiceCorrect = studentPoints.slice(0, 2).every((p, i) => {
-  const target = targetPoints[i];
-  return isWithinTolerance(parseFloat(p.bottomValue), target.bottomValue);
-});
-
-if (practiceCorrect) {
-  setFeedback('Excellent! Now try finding all the remaining points!');
-  setCurrentPhase('apply');
-}
-```
-
-Key aspects:
-- Limited to 2-3 points (manageable cognitive load)
-- Students apply the unit rate they discovered
-- Success feedback builds confidence
-- Automatic progression to next phase
-
-**Phase 3 - Apply (Full Problem)**
-```typescript
-// Show ALL target points
-{currentPhase === 'apply' && targetPoints.map((point, i) => {
-  // Render all points
-})}
-
-// Final evaluation when all points correct
-if (allCorrect) {
-  handleSubmit(finalPoints); // Submit to evaluation system
-}
-```
-
-Key aspects:
-- Students complete the full problem
-- Uses all previously learned concepts
-- Final evaluation tracks overall mastery
-
-#### Visual Progress Indicators
-
-Make phases visible to students so they know where they are:
-
-```typescript
-{/* Phase Progress Indicator */}
-<div className="flex items-center gap-2">
-  <div className={currentPhase === 'explore' ? 'active' : 'inactive'}>
-    <span>1. Explore</span>
-  </div>
-  <div className={currentPhase === 'practice' ? 'active' : 'inactive'}>
-    <span>2. Practice</span>
-  </div>
-  <div className={currentPhase === 'apply' ? 'active' : 'inactive'}>
-    <span>3. Apply</span>
-  </div>
-</div>
-```
-
-Benefits:
-- Students understand the learning journey
-- Provides sense of progress and accomplishment
-- Clear expectations for what comes next
-
-#### Phase-Specific Instructions
-
-Provide different instructions for each phase:
-
-```typescript
-{currentPhase === 'explore' && (
-  <p>Step 1: Find the Unit Rate - Look for where {topLabel} = 1...</p>
-)}
-
-{currentPhase === 'practice' && (
-  <p>Step 2: Practice Scaling - Use the unit rate to find other values...</p>
-)}
-
-{currentPhase === 'apply' && (
-  <p>Step 3: Apply Your Understanding - Find all remaining values...</p>
-)}
-```
-
-#### Evaluation Tracking Across Phases
-
-Track which phases students complete and how they perform:
-
-```typescript
-const metrics: DoubleNumberLineMetrics = {
-  type: 'double-number-line',
-
-  // Overall performance
-  totalTargetPoints: targetPoints.length,
-  correctPoints,
-  allPointsCorrect,
-
-  // Phase 1 tracking
-  unitRateIdentified: true, // Did they find the unit rate?
-
-  // Attempt tracking (includes practice attempts)
-  attemptsCount: attemptCount,
-
-  // Support used
-  hintsUsed: showHints ? 1 : 0,
-
-  // Accuracy breakdown
-  topValueAccuracy: (topCorrect / targetPoints.length) * 100,
-  bottomValueAccuracy: (bottomCorrect / targetPoints.length) * 100,
-};
-```
-
-This rich data enables:
-- Identifying which phase students struggle with
-- Adapting future problems based on phase performance
-- Understanding conceptual gaps (e.g., found unit rate but couldn't scale)
-
-#### Design Guidelines for Progressive Phases
-
-**✅ DO:**
-- Break complex problems into 3-4 distinct phases
-- Make each phase have a clear, achievable goal
-- Provide phase-specific instructions and feedback
-- Limit scope in early phases (1-2 items in explore, 2-3 in practice)
-- Auto-advance when students demonstrate mastery
-- Track phase completion in evaluation metrics
-- Use visual indicators to show progress
-- Celebrate phase completion with positive feedback
-
-**❌ DON'T:**
-- Create too many phases (>5 becomes tedious)
-- Make phases feel like arbitrary gates
-- Require perfection to advance (allow "skip ahead" option)
-- Repeat the same type of problem in each phase
-- Hide what's coming next (show the full problem early)
-- Force students to restart if they fail a phase
-
-#### Progressive Difficulty in Generator Services
-
-Generators should create data that supports phases. See [gemini-double-number-line.ts](../service/math/gemini-double-number-line.ts):
-
-```typescript
-const prompt = `
-Create a double number line problem with 3 learning phases:
-1. Students find the UNIT RATE (when input = 1, what's the output?)
-2. Students practice with 2-3 points
-3. Students find all remaining points
-
-Return:
-- unitRateInput: 1 (the discover phase question)
-- unitRateOutput: The answer students find in phase 1
-- targetInputs: 3-4 OTHER values for phases 2-3
-`;
-
-// Structure the response data to support phases
-const data: DoubleNumberLineData = {
-  targetPoints: [
-    // Phase 1: Unit rate discovery
-    { topValue: unitRateInput, bottomValue: unitRateOutput, label: 'Unit Rate' },
-    // Phases 2-3: Progressive practice
-    ...targetInputs.map(input => ({
-      topValue: input,
-      bottomValue: input * unitRate,
-    }))
-  ],
-};
-```
-
-The generator explicitly creates data knowing how the primitive will use it across phases.
-
-#### When to Use Progressive Difficulty
-
-Use this pattern when:
-- ✅ The primitive teaches a multi-step concept (ratios, proportions, algebraic thinking)
-- ✅ Students need to discover a relationship before applying it
-- ✅ The full problem has 5+ values/steps to complete
-- ✅ Students might get overwhelmed by the full problem at once
-- ✅ You can identify a clear "key insight" that unlocks the rest
-
-Skip this pattern when:
-- ❌ The primitive is simple with <3 interactions
-- ❌ Each interaction is independent (not building on previous)
-- ❌ The concept is procedural (just following steps, not discovering patterns)
-- ❌ Students already know the relationship (just practicing execution)
-
-#### Progressive Difficulty Summary
-
-**Progressive difficulty transforms good primitives into excellent learning experiences.** By scaffolding complex problems into manageable phases, you:
-- Reduce cognitive overload and frustration
-- Build confidence through incremental success
-- Help students discover concepts rather than memorizing procedures
-- Create richer evaluation data for adaptive learning
-- Significantly improve learning outcomes
-
-**Reference implementations:**
-- [DoubleNumberLine.tsx](../primitives/visual-primitives/math/DoubleNumberLine.tsx) - Multi-phase ratio learning
-- [gemini-double-number-line.ts](../service/math/gemini-double-number-line.ts) - Generator supporting phases
-
-Start with 3 phases (explore → practice → apply) and adjust based on concept complexity.
+**Migrating an existing primitive?** See **[MIGRATING_TO_PHASE_SUMMARY.md](MIGRATING_TO_PHASE_SUMMARY.md)** for a step-by-step recipe.
 
 ---
 
-### Phase Evaluation Summary: Showing Students Their Results
+### Multi-Phase Challenge Tracking: Shared Hooks
 
-**RECOMMENDED: Use `PhaseSummaryPanel` to show per-phase performance after multi-phase primitives complete.**
+**RECOMMENDED: Use `useChallengeProgress` and `usePhaseResults` for multi-phase primitives.**
 
-When a multi-phase primitive finishes, students deserve to see how they performed on each phase — not just a generic "Great job!" message. The `PhaseSummaryPanel` component provides an animated, achievement-screen-style breakdown with an SVG score ring, staggered phase rows, and first-try stars.
+Multi-phase primitives share common boilerplate: challenge result tracking, phase grouping, and result display. Instead of duplicating this in every primitive, use the shared hooks in `lumina/hooks/`.
 
-#### When to Use PhaseSummaryPanel
+#### When to Use the Shared Hooks
 
-**Use it when:**
-- Your primitive has 2+ distinct phases that each produce a score
-- You track attempt counts per phase
-- The primitive uses `usePrimitiveEvaluation`
+**Use them when:**
+- Your primitive has 2+ distinct challenge phases
+- Students progress through challenges sequentially
+- You track per-challenge correctness and attempts
+- You want to show a `PhaseSummaryPanel` at the end
 
-**Skip it when:**
-- Single-phase primitives (use the feedback bar instead)
+**Skip them when:**
+- Single-phase primitives with simple submit logic
 - Non-evaluable display components
 
-#### Quick Integration (3 Steps)
+#### Quick Integration (4 Steps)
 
-**Step 1: Import the component**
+**Step 1: Import the hooks and PhaseSummaryPanel**
 
 ```tsx
-import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 ```
 
-**Step 2: Compute phase results from your existing scoring**
+**Step 2: Define phase config and initialize hooks**
 
-Map your primitive's per-phase state into the generic `PhaseResult[]` format using a `useMemo`:
+Define a phase config mapping challenge types to display properties, then call the hooks:
 
 ```tsx
-const phaseSummaryData = useMemo((): PhaseResult[] => {
-  if (!hasSubmittedEvaluation) return [];
+// Module-level constant (outside the component)
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  build:    { label: 'Build',    icon: '🧱', accentColor: 'purple' },
+  subitize: { label: 'Subitize', icon: '👁️', accentColor: 'blue' },
+  make_ten: { label: 'Make Ten', icon: '🎯', accentColor: 'emerald' },
+};
 
-  return [
-    {
-      label: 'Phase 1 Name',
-      score: phase1Score,       // 0-100
-      attempts: phase1Attempts,
-      firstTry: phase1Attempts === 1,
-      icon: '🔢',              // Optional emoji
-      accentColor: 'purple',    // Optional: 'purple' | 'blue' | 'emerald' | 'amber' | 'cyan' | 'pink' | 'orange'
-    },
-    {
-      label: 'Phase 2 Name',
-      score: phase2Score,
-      attempts: phase2Attempts,
-      firstTry: phase2Attempts === 1,
-      icon: '🎯',
-      accentColor: 'emerald',
-    },
-  ];
-}, [hasSubmittedEvaluation, phase1Score, phase1Attempts, phase2Score, phase2Attempts]);
+// Inside the component:
+const {
+  currentIndex: currentChallengeIndex,  // replaces useState(0)
+  currentAttempts,                       // replaces useState(0)
+  results: challengeResults,             // replaces useState<Array<...>>([])
+  isComplete: allChallengesComplete,     // replaces manual completion check
+  recordResult,                          // replaces setChallengeResults(prev => [...])
+  incrementAttempts,                     // replaces setCurrentAttempts(a => a + 1)
+  advance: advanceProgress,             // replaces setIndex(i+1); setAttempts(0)
+} = useChallengeProgress({
+  challenges,
+  getChallengeId: (ch) => ch.id,
+});
+
+const phaseResults = usePhaseResults({
+  challenges,
+  results: challengeResults,
+  isComplete: allChallengesComplete,
+  getChallengeType: (ch) => ch.type,
+  phaseConfig: PHASE_TYPE_CONFIG,
+  // Optional: custom scoring (default is count-based: correct/total * 100)
+  // getScore: (rs) => Math.round(rs.reduce((s, r) => s + (r.score ?? 0), 0) / rs.length),
+});
 ```
 
-**Step 3: Render after evaluation submission**
-
-Place the panel after your feedback bar, guarded by `hasSubmittedEvaluation`:
+**Step 3: Use hook methods in your challenge logic**
 
 ```tsx
-{/* Feedback bar */}
-{feedback && ( ... )}
+// In check functions — replace setCurrentAttempts(a => a + 1):
+incrementAttempts();
 
-{/* Phase Evaluation Summary */}
-{hasSubmittedEvaluation && phaseSummaryData.length > 0 && (
+// In handleCheckAnswer — replace setChallengeResults(prev => [...prev, {...}]):
+if (correct) {
+  recordResult({
+    challengeId: currentChallenge.id,
+    correct: true,
+    attempts: currentAttempts + 1,
+    timeMs,  // optional
+  });
+}
+
+// In advanceToNextChallenge:
+if (!advanceProgress()) {
+  // All challenges done — submit evaluation and send AI summary
+  const phaseScoreStr = phaseResults
+    .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+    .join(', ');
+  sendText(`[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. ...`, { silent: true });
+  // ... submit metrics via submitEvaluation() ...
+  return;
+}
+// advanceProgress() already incremented index and reset attempts.
+// Now reset your domain-specific state:
+setFeedback('');
+setMyCustomInput('');
+// ...
+```
+
+**Step 4: Render PhaseSummaryPanel**
+
+```tsx
+{allChallengesComplete && phaseResults.length > 0 && (
   <PhaseSummaryPanel
-    phases={phaseSummaryData}
-    overallScore={submittedResult?.score}    // from usePrimitiveEvaluation
-    durationMs={elapsedMs}                   // from usePrimitiveEvaluation
+    phases={phaseResults}
+    overallScore={submittedResult?.score ?? localOverallScore}
+    durationMs={elapsedMs}
     heading="Challenge Complete!"
     celebrationMessage="You completed all phases!"
     className="mb-6"
@@ -1074,37 +866,95 @@ Place the panel after your feedback bar, guarded by `hasSubmittedEvaluation`:
 )}
 ```
 
-**Note:** Destructure `submittedResult` and `elapsedMs` from `usePrimitiveEvaluation` — they're already returned by the hook:
+**Note:** Destructure `submittedResult` and `elapsedMs` from `usePrimitiveEvaluation`:
 
 ```tsx
 const {
-  submitResult,
+  submitResult: submitEvaluation,
   hasSubmitted: hasSubmittedEvaluation,
-  submittedResult,    // ← add this
-  elapsedMs,          // ← add this
-  resetAttempt,
+  submittedResult,
+  elapsedMs,
 } = usePrimitiveEvaluation<YourMetrics>({ ... });
+```
+
+#### What the Hooks Replace
+
+| Before (manual) | After (shared hooks) |
+|---|---|
+| `useState<Array<{challengeId, correct, attempts, ...}>>([])` | `useChallengeProgress` → `results` |
+| `useState(0)` for currentChallengeIndex | `useChallengeProgress` → `currentIndex` |
+| `useState(0)` for currentAttempts | `useChallengeProgress` → `currentAttempts` |
+| `setCurrentAttempts(a => a + 1)` | `incrementAttempts()` |
+| `setChallengeResults(prev => [...prev, {...}])` | `recordResult({...})` |
+| `setCurrentChallengeIndex(i+1); setCurrentAttempts(0)` | `advanceProgress()` |
+| `challenges.length > 0 && results.filter(r => r.correct).length >= challenges.length` | `isComplete` |
+| 40-line `useMemo` grouping results by type → PhaseResult[] | `usePhaseResults` → `phaseResults` |
+
+This eliminates ~100 lines of boilerplate per multi-phase primitive.
+
+#### Custom Scoring
+
+By default, `usePhaseResults` uses count-based scoring: `(correct / total) * 100`.
+
+For accuracy-based scoring (e.g. NumberLine where each challenge has a per-challenge accuracy score), pass a custom `getScore`:
+
+```tsx
+const phaseResults = usePhaseResults({
+  // ...
+  getScore: (rs) => Math.round(
+    rs.reduce((s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)), 0) / rs.length
+  ),
+});
+```
+
+The `ChallengeResult` interface supports extra fields via an index signature, so you can pass domain-specific data (e.g. `oneToOne`, `accuracy`) alongside the standard fields.
+
+#### Composite Hook
+
+For the common case where you need both hooks together, use `useMultiPhaseEvaluation`:
+
+```tsx
+import { useMultiPhaseEvaluation } from '../../../hooks/useMultiPhaseEvaluation';
+
+const {
+  currentIndex, currentAttempts, results, isComplete,
+  recordResult, incrementAttempts, advance, phaseResults,
+} = useMultiPhaseEvaluation({
+  challenges,
+  getChallengeId: (ch) => ch.id,
+  getChallengeType: (ch) => ch.type,
+  phaseConfig: PHASE_TYPE_CONFIG,
+});
 ```
 
 #### Interface Reference
 
 ```typescript
-export interface PhaseResult {
-  label: string;           // "Identify Numerator"
-  score: number;           // 0-100
-  attempts: number;        // number of tries
-  firstTry: boolean;       // got it on first attempt?
-  icon?: string;           // emoji
+// From useChallengeProgress
+interface ChallengeResult {
+  challengeId: string;
+  correct: boolean;
+  attempts: number;
+  timeMs?: number;
+  score?: number;            // For accuracy-based scoring
+  [key: string]: unknown;    // Domain-specific extras
+}
+
+// From usePhaseResults
+interface PhaseConfig {
+  label: string;
+  icon?: string;
   accentColor?: 'purple' | 'blue' | 'emerald' | 'amber' | 'cyan' | 'pink' | 'orange';
 }
 
-export interface PhaseSummaryPanelProps {
+// PhaseSummaryPanel props (unchanged)
+interface PhaseSummaryPanelProps {
   phases: PhaseResult[];
-  overallScore?: number;       // defaults to average of phase scores
-  durationMs?: number;         // optional time display
-  heading?: string;            // defaults to "Your Results"
-  celebrationMessage?: string; // shown above breakdown
-  animate?: boolean;           // defaults to true
+  overallScore?: number;
+  durationMs?: number;
+  heading?: string;
+  celebrationMessage?: string;
+  animate?: boolean;
   onAnimationComplete?: () => void;
   className?: string;
 }
@@ -1121,29 +971,29 @@ The panel automatically color-codes the score ring and tier badge:
 | 50-79 | Good | Amber | "Good Work" |
 | <50 | Needs Work | Rose | "Keep Practicing" |
 
-Individual phase bars use the `accentColor` prop if provided, otherwise derive from the score tier.
-
 #### AI Tutoring Integration
 
-When showing the summary, enhance your `[ALL_COMPLETE]` AI message with per-phase scores so the AI can give phase-specific commentary:
+Use `phaseResults` directly in your `[ALL_COMPLETE]` sendText:
 
 ```tsx
+const phaseScoreStr = phaseResults
+  .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+  .join(', ');
+
 sendText(
-  `[ALL_COMPLETE] Student completed all phases. ` +
-  `Phase scores: Phase 1 ${p1}% (${attempts1} attempts), ` +
-  `Phase 2 ${p2}% (${attempts2} attempts). ` +
-  `Overall: ${overallScore}%. ` +
-  `Give a brief, encouraging summary of their performance across all phases. ` +
-  `If any phase had multiple attempts, mention what they could practice more.`,
+  `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. ` +
+  `Give encouraging phase-specific feedback.`,
   { silent: true }
 );
 ```
 
 The PhaseSummaryPanel is purely presentational — it does NOT call `sendText`. The calling primitive handles all AI communication.
 
-#### Reference Implementation
+#### Reference Implementations
 
-See [FractionBar.tsx](../primitives/visual-primitives/math/FractionBar.tsx) for the complete reference implementation with 3 phases (Identify Numerator, Identify Denominator, Build Fraction), each with its own accent color and scoring formula.
+- [TenFrame.tsx](../primitives/visual-primitives/math/TenFrame.tsx) — Multi-phase with shared hooks (build, subitize, make-ten, operate)
+- [CountingBoard.tsx](../primitives/visual-primitives/math/CountingBoard.tsx) — Multi-phase with shared hooks and domain-specific extras (oneToOne)
+- [NumberLine.tsx](../primitives/visual-primitives/math/NumberLine.tsx) — Custom accuracy-based scoring via `getScore`
 
 ---
 
@@ -1268,11 +1118,13 @@ Use this checklist when adding a new primitive:
 - [ ] **No double submission** (if evaluable): Tester does NOT pass `onEvaluationSubmit` that calls `context.submitEvaluation()` — the hook handles this
 - [ ] **AI tutoring scaffold** (if interactive): Added `tutoring` field to catalog entry with taskDescription, scaffoldingLevels, contextKeys, and commonStruggles (see [ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md))
 - [ ] **Pedagogical speech triggers** (if interactive): Added `sendText('[TAG] ...', { silent: true })` calls at key interaction points (correct/incorrect, phase transitions, item progression, completion)
-- [ ] **Phase summary** (if multi-phase): Integrated `PhaseSummaryPanel` with per-phase scores, rendered when `hasSubmittedEvaluation` is true (see [Phase Evaluation Summary](#phase-evaluation-summary-showing-students-their-results))
+- [ ] **Multi-phase hooks** (if multi-phase): Used `useChallengeProgress` + `usePhaseResults` for challenge tracking and phase grouping (see [Multi-Phase Challenge Tracking](#multi-phase-challenge-tracking-shared-hooks))
+- [ ] **Phase summary** (if multi-phase): Rendered `PhaseSummaryPanel` with `phaseResults` from `usePhaseResults` when `allChallengesComplete` is true
 - [ ] **Testing**: Verified primitive works standalone and within exhibits; tested AI scaffolding with Lumina Tutor Tester
 
 ## Additional Resources
 
+- **[MIGRATING_TO_PHASE_SUMMARY.md](MIGRATING_TO_PHASE_SUMMARY.md)** - Step-by-step recipe for adding PhaseSummaryPanel to existing multi-phase primitives
 - **[ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md)** - Full guide for adding AI tutoring scaffolding and speech triggers to primitives
 - **[MIGRATING_TO_SHADCN.md](MIGRATING_TO_SHADCN.md)** - Guide for converting existing primitives to use shadcn/ui
 - **[INTEGRATION_GUIDE.md](../evaluation/INTEGRATION_GUIDE.md)** - Comprehensive guide to the evaluation system

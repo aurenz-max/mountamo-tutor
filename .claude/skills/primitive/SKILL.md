@@ -95,27 +95,50 @@ sendText('[ALL_COMPLETE] Student finished all items! Celebrate.', { silent: true
 - Include context (student answer, correct answer, attempt count)
 - Only trigger at moments where a human tutor would speak
 
-**RECOMMENDED: Use `PhaseSummaryPanel` for multi-phase primitives.**
+**RECOMMENDED: Use shared hooks + `PhaseSummaryPanel` for multi-phase primitives.**
 
-If the primitive has 2+ phases that each produce a score, add a phase evaluation summary screen when all phases complete. Import from `../../../components/PhaseSummaryPanel`.
+If the primitive has 2+ phases with sequential challenges, use the shared hooks to eliminate boilerplate:
 
 ```tsx
-import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
-// Compute phase results from your scoring state
-const phaseSummaryData = useMemo((): PhaseResult[] => {
-  if (!hasSubmittedEvaluation) return [];
-  return [
-    { label: 'Phase 1 Name', score: p1Score, attempts: p1Attempts, firstTry: p1Attempts === 1, icon: '🔢', accentColor: 'purple' },
-    { label: 'Phase 2 Name', score: p2Score, attempts: p2Attempts, firstTry: p2Attempts === 1, icon: '🎯', accentColor: 'emerald' },
-  ];
-}, [hasSubmittedEvaluation, /* ...phase deps */]);
+// Module-level phase config
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  build:    { label: 'Build',    icon: '🧱', accentColor: 'purple' },
+  subitize: { label: 'Subitize', icon: '👁️', accentColor: 'blue' },
+};
 
-// Render after evaluation submission (after feedback bar)
-{hasSubmittedEvaluation && phaseSummaryData.length > 0 && (
+// Inside the component — replaces ~100 lines of manual state + useMemo:
+const {
+  currentIndex: currentChallengeIndex,
+  currentAttempts,
+  results: challengeResults,
+  isComplete: allChallengesComplete,
+  recordResult,       // replaces setChallengeResults(prev => [...prev, {...}])
+  incrementAttempts,  // replaces setCurrentAttempts(a => a + 1)
+  advance: advanceProgress,  // replaces setIndex(i+1); setAttempts(0)
+} = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+
+const phaseResults = usePhaseResults({
+  challenges, results: challengeResults, isComplete: allChallengesComplete,
+  getChallengeType: (ch) => ch.type,
+  phaseConfig: PHASE_TYPE_CONFIG,
+  // Optional: custom scoring (default: correct/total * 100)
+  // getScore: (rs) => Math.round(rs.reduce((s, r) => s + (r.score ?? 0), 0) / rs.length),
+});
+```
+
+In check functions use `incrementAttempts()`. In handleCheckAnswer use `recordResult({...})`.
+In advanceToNextChallenge: `if (!advanceProgress()) { /* all done — submit eval */ return; }` then reset domain-specific state.
+
+Render the summary:
+```tsx
+{allChallengesComplete && phaseResults.length > 0 && (
   <PhaseSummaryPanel
-    phases={phaseSummaryData}
-    overallScore={submittedResult?.score}
+    phases={phaseResults}
+    overallScore={submittedResult?.score ?? localOverallScore}
     durationMs={elapsedMs}
     heading="Challenge Complete!"
     celebrationMessage="You completed all phases!"
@@ -124,17 +147,13 @@ const phaseSummaryData = useMemo((): PhaseResult[] => {
 )}
 ```
 
-Destructure `submittedResult` and `elapsedMs` from `usePrimitiveEvaluation` — they're already returned by the hook.
-
-Enhance the `[ALL_COMPLETE]` sendText with per-phase scores so the AI tutor gives phase-specific feedback:
+Use `phaseResults` for `[ALL_COMPLETE]` AI message:
 ```tsx
-sendText(
-  `[ALL_COMPLETE] Phase scores: Phase 1 ${p1}% (${a1} attempts), Phase 2 ${p2}% (${a2} attempts). Overall: ${overall}%. Give encouraging phase-specific feedback.`,
-  { silent: true }
-);
+const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
+sendText(`[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. Give encouraging phase-specific feedback.`, { silent: true });
 ```
 
-**Skip PhaseSummaryPanel** for single-phase primitives or non-evaluable display components. Reference: `FractionBar.tsx`.
+**Skip shared hooks** for single-phase primitives or non-evaluable display components. Reference: `TenFrame.tsx`, `CountingBoard.tsx`.
 
 ### 2c. Identify outputs for subagents
 

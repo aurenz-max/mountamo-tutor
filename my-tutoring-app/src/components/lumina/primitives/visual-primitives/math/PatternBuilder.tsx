@@ -10,6 +10,9 @@ import {
 } from '../../../evaluation';
 import type { PatternBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -77,6 +80,14 @@ const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
   translate: { label: 'Translate', description: 'Same pattern, new look' },
 };
 
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  extend: { label: 'Extend the Pattern', icon: '\uD83D\uDD17', accentColor: 'blue' },
+  identify_core: { label: 'Identify the Core', icon: '\uD83D\uDD0D', accentColor: 'purple' },
+  create: { label: 'Create a Pattern', icon: '\u2728', accentColor: 'emerald' },
+  translate: { label: 'Translate the Pattern', icon: '\uD83D\uDD04', accentColor: 'cyan' },
+  find_rule: { label: 'Find the Rule', icon: '\uD83D\uDCD0', accentColor: 'amber' },
+};
+
 // Visual representations for token types
 const TOKEN_DISPLAY: Record<string, { bg: string; border: string; text: string }> = {
   // Colors
@@ -97,12 +108,12 @@ const TOKEN_DISPLAY: Record<string, { bg: string; border: string; text: string }
 };
 
 const SHAPE_SYMBOLS: Record<string, string> = {
-  circle: '●',
-  square: '■',
-  triangle: '▲',
-  star: '★',
-  diamond: '◆',
-  heart: '♥',
+  circle: '\u25CF',
+  square: '\u25A0',
+  triangle: '\u25B2',
+  star: '\u2605',
+  diamond: '\u25C6',
+  heart: '\u2665',
 };
 
 function getTokenDisplay(token: string): { bg: string; border: string; text: string; label: string } {
@@ -117,7 +128,6 @@ function getTokenDisplay(token: string): { bg: string; border: string; text: str
 }
 
 const CELL_SIZE = 52;
-const CELL_GAP = 6;
 
 // ============================================================================
 // Props
@@ -160,7 +170,29 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+
+  // Challenge progress tracking (shared hooks)
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
   const [currentPhase, setCurrentPhase] = useState<Phase>(() => {
     if (challenges.length === 0) return 'copy';
     const firstType = challenges[0].type;
@@ -189,14 +221,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
 
-  // Tracking
-  const [challengeResults, setChallengeResults] = useState<Array<{
-    challengeId: string;
-    correct: boolean;
-    type: string;
-    attempts: number;
-  }>>([]);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
+  // Domain-specific tracking (not covered by shared hooks)
   const [coreIdentifiedCorrectly, setCoreIdentifiedCorrectly] = useState(false);
   const [ruleArticulated, setRuleArticulated] = useState(false);
   const [patternCreated, setPatternCreated] = useState(false);
@@ -215,6 +240,8 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<PatternBuilderMetrics>({
     primitiveType: 'pattern-builder',
     instanceId: resolvedInstanceId,
@@ -355,7 +382,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       : [currentChallenge.answer];
     const correct = extensionAnswers.length === expected.length
       && extensionAnswers.every((a, i) => a.toLowerCase() === expected[i].toLowerCase());
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setFeedback('Great job! You extended the pattern correctly!');
@@ -379,7 +406,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, extensionAnswers, currentAttempts, sendText, sequence]);
+  }, [currentChallenge, extensionAnswers, currentAttempts, sendText, sequence, incrementAttempts]);
 
   const checkIdentifyCoreChallenge = useCallback(() => {
     if (!currentChallenge) return false;
@@ -392,7 +419,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     // Check if selected tokens match the core (must be contiguous and match)
     const correct = selectedTokens.length === sequence.core.length
       && selectedTokens.every((t, i) => t.toLowerCase() === sequence.core[i].toLowerCase());
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setCoreIdentifiedCorrectly(true);
@@ -415,7 +442,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, selectedCoreIndices, sequence, currentAttempts, sendText]);
+  }, [currentChallenge, selectedCoreIndices, sequence, currentAttempts, sendText, incrementAttempts]);
 
   const checkCreateChallenge = useCallback(() => {
     if (!currentChallenge) return false;
@@ -442,7 +469,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       }
     }
 
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (hasRepetition) {
       setPatternCreated(true);
@@ -471,7 +498,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       );
     }
     return hasRepetition;
-  }, [currentChallenge, createdPattern, currentAttempts, sendText]);
+  }, [currentChallenge, createdPattern, currentAttempts, sendText, incrementAttempts]);
 
   const checkTranslateChallenge = useCallback(() => {
     if (!currentChallenge || !translationTarget?.mapping) return false;
@@ -481,7 +508,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     const expected = sequence.given.map(t => mapping[t.toLowerCase()] || mapping[t] || t);
     const correct = translatedPattern.length === expected.length
       && translatedPattern.every((t, i) => t.toLowerCase() === expected[i].toLowerCase());
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setTranslationCorrect(true);
@@ -498,13 +525,13 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[TRANSLATE_INCORRECT] Student translated: ${translatedPattern.join(', ')} but expected: ${expected.join(', ')}. `
-        + `Mapping: ${Object.entries(mapping).map(([k, v]) => `${k}→${v}`).join(', ')}. `
+        + `Mapping: ${Object.entries(mapping).map(([k, v]) => `${k}\u2192${v}`).join(', ')}. `
         + `Hint: "Look at the mapping: each ${translationTarget.sourceType} becomes a ${translationTarget.targetType}."`,
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, translationTarget, sequence.given, translatedPattern, currentAttempts, sendText]);
+  }, [currentChallenge, translationTarget, sequence.given, translatedPattern, currentAttempts, sendText, incrementAttempts]);
 
   const checkFindRuleChallenge = useCallback(() => {
     if (!currentChallenge || !sequence.rule) return false;
@@ -519,7 +546,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       ruleWords.some(rw => rw.includes(op)) && inputWords.some(iw => iw.includes(op))
     );
     const correct = ruleInput.trim().length > 3 && (hasNumberMatch || hasOperationMatch);
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setRuleArticulated(true);
@@ -540,7 +567,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, sequence.rule, sequence.given, ruleInput, currentAttempts, sendText]);
+  }, [currentChallenge, sequence.rule, sequence.given, ruleInput, currentAttempts, sendText, incrementAttempts]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -569,37 +596,45 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     }
 
     if (correct) {
-      setChallengeResults(prev => [
-        ...prev,
-        {
-          challengeId: currentChallenge.id,
-          correct: true,
-          type: currentChallenge.type,
-          attempts: currentAttempts + 1,
-        },
-      ]);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        type: currentChallenge.type,
+        attempts: currentAttempts + 1,
+      });
     }
   }, [
     currentChallenge, currentAttempts,
     checkExtendChallenge, checkIdentifyCoreChallenge,
     checkCreateChallenge, checkTranslateChallenge, checkFindRuleChallenge,
+    recordResult,
   ]);
 
   const advanceToNextChallenge = useCallback(() => {
-    const nextIndex = currentChallengeIndex + 1;
+    if (!advanceProgress()) {
+      // All challenges complete — use phaseResults for AI feedback
+      const phaseScoreStr = phaseResults
+        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+        .join(', ');
+      const overallCorrect = challengeResults.filter(r => r.correct).length;
+      const overallPct = challenges.length > 0
+        ? Math.round((overallCorrect / challenges.length) * 100)
+        : 0;
 
-    if (nextIndex >= challenges.length) {
-      // All challenges complete
       sendText(
-        `[CHALLENGE_COMPLETE] The student completed all ${challenges.length} pattern challenges! `
-        + `Pattern type: ${patternType}. `
-        + `Celebrate and summarize what they learned about patterns.`,
+        `[ALL_COMPLETE] The student completed all ${challenges.length} pattern challenges! `
+        + `Pattern type: ${patternType}. Phase scores: ${phaseScoreStr}. `
+        + `Overall: ${overallPct}%. `
+        + `Give encouraging phase-specific feedback highlighting strengths and areas to grow.`,
         { silent: true }
       );
 
       // Submit evaluation
       if (!hasSubmittedEvaluation) {
-        const extendResults = challengeResults.filter(r => r.type === 'extend');
+        const extendResults = challengeResults.filter(r => {
+          const ch = challenges.find(c => c.id === r.challengeId);
+          return ch?.type === 'extend';
+        });
         const totalCorrect = challengeResults.filter(r => r.correct).length;
         const score = challenges.length > 0
           ? Math.round((totalCorrect / challenges.length) * 100)
@@ -627,9 +662,8 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       return;
     }
 
-    // Move to next challenge
-    setCurrentChallengeIndex(nextIndex);
-    setCurrentAttempts(0);
+    // advanceProgress() already incremented index and reset attempts.
+    // Now reset domain-specific state.
     setFeedback('');
     setFeedbackType('');
     setExtensionAnswers([]);
@@ -638,7 +672,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     setTranslatedPattern([]);
     setRuleInput('');
 
-    const nextChallenge = challenges[nextIndex];
+    const nextChallenge = challenges[currentChallengeIndex + 1];
 
     // Set phase
     if (nextChallenge.type === 'identify_core') setCurrentPhase('identify');
@@ -647,15 +681,16 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     else setCurrentPhase('copy');
 
     sendText(
-      `[PHASE_TRANSITION] Moving to challenge ${nextIndex + 1} of ${challenges.length}: `
+      `[PHASE_TRANSITION] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
       + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). `
       + `Read the instruction to the student and encourage them.`,
       { silent: true }
     );
   }, [
-    currentChallengeIndex, challenges, challengeResults, sendText, patternType,
+    advanceProgress, phaseResults, challenges, challengeResults, sendText, patternType,
     hasSubmittedEvaluation, coreIdentifiedCorrectly, ruleArticulated,
     patternCreated, translationCorrect, patternTypesExplored, submitEvaluation,
+    currentChallengeIndex,
   ]);
 
   // -------------------------------------------------------------------------
@@ -666,8 +701,32 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct
   );
-  const allChallengesComplete = challenges.length > 0
-    && challengeResults.filter(r => r.correct).length >= challenges.length;
+
+  // -------------------------------------------------------------------------
+  // Auto-submit evaluation when all challenges complete
+  // -------------------------------------------------------------------------
+  const hasAutoSubmittedRef = useRef(false);
+  useEffect(() => {
+    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
+      hasAutoSubmittedRef.current = true;
+      advanceToNextChallenge();
+    }
+  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
+
+  // -------------------------------------------------------------------------
+  // Overall Score
+  // -------------------------------------------------------------------------
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    const correct = challengeResults.filter(r => r.correct).length;
+    return Math.round((correct / challenges.length) * 100);
+  }, [allChallengesComplete, challenges, challengeResults]);
+
+  // Snapshot duration when challenges complete (elapsedMs from hook keeps ticking)
+  const completionDurationRef = useRef<number | undefined>(undefined);
+  if (allChallengesComplete && completionDurationRef.current === undefined) {
+    completionDurationRef.current = elapsedMs;
+  }
 
   // Determine available tokens for the current challenge
   const availableTokens = useMemo(() => {
@@ -814,7 +873,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
 
                 {/* Separator */}
                 {currentPhase === 'copy' && sequence.hidden.length > 0 && (
-                  <div className="text-slate-600 text-xl mx-1">→</div>
+                  <div className="text-slate-600 text-xl mx-1">{'\u2192'}</div>
                 )}
 
                 {/* Hidden slots / extension answers */}
@@ -891,7 +950,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                         className="inline-block w-5 h-5 rounded"
                         style={{ backgroundColor: fromDisplay.bg }}
                       />
-                      →
+                      {'\u2192'}
                       <span
                         className="inline-block w-5 h-5 rounded"
                         style={{ backgroundColor: toDisplay.bg }}
@@ -1023,7 +1082,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                 Next Challenge
               </Button>
             )}
-            {allChallengesComplete && (
+            {allChallengesComplete && !hasSubmittedEvaluation && (
               <div className="text-center">
                 <p className="text-emerald-400 text-sm font-medium mb-2">
                   All challenges complete!
@@ -1034,6 +1093,18 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
               </div>
             )}
           </div>
+        )}
+
+        {/* Phase Summary Panel */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={completionDurationRef.current}
+            heading="Pattern Challenge Complete!"
+            celebrationMessage="You explored patterns like a mathematician!"
+            className="mb-6"
+          />
         )}
 
         {/* Hint */}

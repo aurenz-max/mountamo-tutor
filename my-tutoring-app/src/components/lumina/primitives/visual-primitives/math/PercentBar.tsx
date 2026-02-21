@@ -1,43 +1,31 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   usePrimitiveEvaluation,
-  type PercentBarMetrics,
+  type PrimitiveEvaluationResult,
 } from '../../../evaluation';
+import type { PercentBarMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
-/**
- * PercentBar - Interactive percent problem-solving primitive
- *
- * K-8 Math Primitive for understanding:
- * - Part-whole relationships as percentages (Grade 5-8)
- * - Percent of a number calculations (Grade 6-8)
- * - Real-world percent applications: tax, tips, discounts (Grade 7-8)
- * - Benchmark percentages and estimation (Grade 5-7)
- *
- * EDUCATIONAL DESIGN:
- * - Guided 3-phase learning: Explore → Practice → Apply
- * - Phase 1: Students discover the target percentage through contextual questioning
- * - Phase 2: Students practice finding related percentages (2-3 practice problems)
- * - Phase 3: Students solve the main problem with precision
- * - Visual feedback helps students estimate and refine their answers
- *
- * EVALUATION INTEGRATION:
- * - Tracks accuracy, attempts, and hint usage across all three phases
- * - Submits comprehensive metrics when the main problem is solved
- * - Supports competency tracking via skillId/subskillId/objectiveId
- */
+// ============================================================================
+// Data Types (Single Source of Truth)
+// ============================================================================
 
-// Context for understanding different percent formulations
 export interface PercentContext {
   problemType: 'addition' | 'subtraction' | 'direct' | 'comparison';
   initialValue: number;
-  changeRate: number; // Signed percentage: +8 for tax, -20 for discount, 0 for direct
-  discountFactor: number; // Multiplier as decimal: 1.08 for tax, 0.80 for 20% off, 0.50 for "50% of"
+  changeRate: number;
+  discountFactor: number;
   finalValue: number;
 }
 
-// Multi-phase practice question
 export interface PracticeQuestion {
   question: string;
   targetPercent: number;
@@ -46,12 +34,10 @@ export interface PracticeQuestion {
 }
 
 export interface PercentBarData {
-  // Header and context
   title: string;
   description: string;
   scenario: string;
 
-  // Whole value configuration
   wholeValue: number;
   wholeValueLabel: string;
 
@@ -76,23 +62,52 @@ export interface PercentBarData {
   benchmarkLines?: number[];
   doubleBar?: boolean;
 
-  // Evaluation integration (auto-injected by ManifestOrderRenderer)
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
-  onEvaluationSubmit?: (
-    result: import('../../../evaluation').PrimitiveEvaluationResult<import('../../../evaluation').PrimitiveMetrics>
-  ) => void;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<PercentBarMetrics>) => void;
 }
+
+// ============================================================================
+// Internal challenge type for shared hooks
+// ============================================================================
+
+interface PercentChallenge {
+  id: string;
+  type: 'explore' | 'practice' | 'apply';
+  question: string;
+  targetPercent: number;
+  hint: string;
+  context: PercentContext;
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  explore: { label: 'Explore', icon: '\uD83D\uDD0D', accentColor: 'cyan' },
+  practice: { label: 'Practice', icon: '\uD83D\uDCDD', accentColor: 'purple' },
+  apply: { label: 'Apply', icon: '\uD83C\uDFAF', accentColor: 'emerald' },
+};
+
+const TOLERANCE = 2; // ±2% for accepting answers
+
+// ============================================================================
+// Props
+// ============================================================================
 
 interface PercentBarProps {
   data: PercentBarData;
   className?: string;
 }
 
-type LearningPhase = 'explore' | 'practice' | 'apply' | 'completed';
+// ============================================================================
+// Component
+// ============================================================================
 
 const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   const {
@@ -105,7 +120,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     exploreTargetPercent,
     exploreHint,
     exploreContext,
-    practiceQuestions,
+    practiceQuestions = [],
     mainQuestion,
     mainTargetPercent,
     mainHint,
@@ -122,448 +137,551 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // Phase management
-  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
-  const [currentPracticeIndex, setCurrentPracticeIndex] = useState(0);
+  // -------------------------------------------------------------------------
+  // Build unified challenges array
+  // -------------------------------------------------------------------------
+  const challenges = useMemo((): PercentChallenge[] => {
+    const items: PercentChallenge[] = [
+      {
+        id: 'explore-0',
+        type: 'explore',
+        question: exploreQuestion,
+        targetPercent: exploreTargetPercent,
+        hint: exploreHint,
+        context: exploreContext,
+      },
+    ];
 
-  // Student interaction
+    practiceQuestions.forEach((pq, i) => {
+      items.push({
+        id: `practice-${i}`,
+        type: 'practice',
+        question: pq.question,
+        targetPercent: pq.targetPercent,
+        hint: pq.hint,
+        context: pq.context,
+      });
+    });
+
+    items.push({
+      id: 'apply-0',
+      type: 'apply',
+      question: mainQuestion,
+      targetPercent: mainTargetPercent,
+      hint: mainHint,
+      context: mainContext,
+    });
+
+    return items;
+  }, [
+    exploreQuestion, exploreTargetPercent, exploreHint, exploreContext,
+    practiceQuestions, mainQuestion, mainTargetPercent, mainHint, mainContext,
+  ]);
+
+  // -------------------------------------------------------------------------
+  // Shared hooks for challenge progression
+  // -------------------------------------------------------------------------
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+    getScore: (rs) =>
+      Math.round(rs.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / rs.length),
+  });
+
+  // -------------------------------------------------------------------------
+  // Local state
+  // -------------------------------------------------------------------------
   const [currentPercent, setCurrentPercent] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
-
-  // Feedback and hints
   const [feedback, setFeedback] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [showHint, setShowHint] = useState(false);
   const [hoveredBenchmark, setHoveredBenchmark] = useState<number | null>(null);
 
-  // Tracking metrics for evaluation
-  const [exploreAttempts, setExploreAttempts] = useState(0);
+  // Hint tracking per phase
   const [exploreHintsUsed, setExploreHintsUsed] = useState(0);
-  const [practiceAttempts, setPracticeAttempts] = useState(0);
   const [practiceHintsUsed, setPracticeHintsUsed] = useState(0);
-  const [practiceCorrectCount, setPracticeCorrectCount] = useState(0);
-  const [mainAttempts, setMainAttempts] = useState(0);
   const [mainHintsUsed, setMainHintsUsed] = useState(0);
 
-  // Initialize evaluation hook
+  // Refs
+  const stableInstanceIdRef = useRef(instanceId || `percent-bar-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  // -------------------------------------------------------------------------
+  // Derived state
+  // -------------------------------------------------------------------------
+  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  const currentPhase = currentChallenge?.type ?? 'explore';
+  const currentValue = (currentPercent / 100) * wholeValue;
+
+  const practiceTotal = practiceQuestions.length;
+  const currentPracticeIndex = currentPhase === 'practice'
+    ? currentChallengeIndex - 1 // subtract explore challenge
+    : 0;
+
+  const isCurrentChallengeComplete = challengeResults.some(
+    r => r.challengeId === currentChallenge?.id && r.correct,
+  );
+
+  // -------------------------------------------------------------------------
+  // Evaluation Hook
+  // -------------------------------------------------------------------------
   const {
-    submitResult,
-    hasSubmitted,
-    resetAttempt,
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<PercentBarMetrics>({
     primitiveType: 'percent-bar',
-    instanceId: instanceId || `percent-bar-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
-    onSubmit: onEvaluationSubmit,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // Calculate the actual value based on the percentage
-  const currentValue = (currentPercent / 100) * wholeValue;
+  // -------------------------------------------------------------------------
+  // AI Tutoring Integration
+  // -------------------------------------------------------------------------
+  const aiPrimitiveData = useMemo(() => ({
+    wholeValue,
+    wholeValueLabel,
+    currentPercent,
+    currentValue: (currentPercent / 100) * wholeValue,
+    currentPhase,
+    question: currentChallenge?.question ?? '',
+    targetPercent: currentChallenge?.targetPercent ?? 0,
+    context: currentChallenge?.context,
+    totalChallenges: challenges.length,
+    currentChallengeIndex,
+    attemptNumber: currentAttempts + 1,
+  }), [
+    wholeValue, wholeValueLabel, currentPercent, currentPhase,
+    currentChallenge, challenges.length, currentChallengeIndex, currentAttempts,
+  ]);
 
-  // Tolerance for accepting answers (±2%)
-  const TOLERANCE = 2;
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'percent-bar',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: 'Grade 5-8',
+  });
 
-  const isWithinTolerance = (studentPercent: number, targetPercent: number): boolean => {
-    return Math.abs(studentPercent - targetPercent) <= TOLERANCE;
-  };
+  // Activity introduction
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
+    hasIntroducedRef.current = true;
 
-  const getAccuracyScore = (studentPercent: number, targetPercent: number): number => {
-    const error = Math.abs(studentPercent - targetPercent);
+    sendText(
+      `[ACTIVITY_START] This is a percent bar activity about "${title}". `
+      + `Scenario: "${scenario}". The whole value is ${wholeValue} (${wholeValueLabel}). `
+      + `${challenges.length} challenges across 3 phases: Explore, Practice (${practiceTotal} problems), Apply. `
+      + `First challenge: "${currentChallenge?.question}". `
+      + `Introduce the activity warmly and read the first question.`,
+      { silent: true },
+    );
+  }, [isConnected, challenges.length, title, scenario, wholeValue, wholeValueLabel, practiceTotal, currentChallenge, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Helpers
+  // -------------------------------------------------------------------------
+  const isWithinTolerance = (studentPct: number, targetPct: number): boolean =>
+    Math.abs(studentPct - targetPct) <= TOLERANCE;
+
+  const getAccuracyScore = (studentPct: number, targetPct: number): number => {
+    const error = Math.abs(studentPct - targetPct);
     if (error === 0) return 100;
-    if (error <= TOLERANCE) return 100 - (error / TOLERANCE) * 10; // 90-100 within tolerance
-    return Math.max(0, 100 - error * 2); // Decreasing score beyond tolerance
+    if (error <= TOLERANCE) return 100 - (error / TOLERANCE) * 10;
+    return Math.max(0, 100 - error * 2);
   };
 
-  // Handle click or drag to adjust percentage
+  // -------------------------------------------------------------------------
+  // Bar interaction handlers
+  // -------------------------------------------------------------------------
   const handleBarInteraction = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (allChallengesComplete || hasSubmittedEvaluation) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
     setCurrentPercent(Math.round(percentage));
-    setFeedback(''); // Clear feedback when adjusting
+    setFeedback('');
+    setFeedbackType('');
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging) {
-      handleBarInteraction(e);
-    }
+    if (isDragging) handleBarInteraction(e);
   };
 
   const handleShowHint = () => {
     setShowHint(true);
-    if (currentPhase === 'explore') {
-      setExploreHintsUsed(prev => prev + 1);
-    } else if (currentPhase === 'practice') {
-      setPracticeHintsUsed(prev => prev + 1);
-    } else if (currentPhase === 'apply') {
-      setMainHintsUsed(prev => prev + 1);
-    }
+    if (currentPhase === 'explore') setExploreHintsUsed(prev => prev + 1);
+    else if (currentPhase === 'practice') setPracticeHintsUsed(prev => prev + 1);
+    else if (currentPhase === 'apply') setMainHintsUsed(prev => prev + 1);
+
+    sendText(
+      `[HINT_REQUESTED] Student requested a hint for: "${currentChallenge?.question}". `
+      + `Hint shown: "${currentChallenge?.hint}". Current percent: ${currentPercent}%, target: ${currentChallenge?.targetPercent}%. `
+      + `Provide additional encouragement without revealing the answer.`,
+      { silent: true },
+    );
   };
 
-  const handleExploreCheck = () => {
-    setExploreAttempts(prev => prev + 1);
+  // -------------------------------------------------------------------------
+  // Check answer
+  // -------------------------------------------------------------------------
+  const handleCheckAnswer = useCallback(() => {
+    if (!currentChallenge) return;
 
-    if (isWithinTolerance(currentPercent, exploreTargetPercent)) {
-      setFeedback('🎉 Excellent! You found the right percentage! Let\'s practice with similar problems.');
-      setTimeout(() => {
-        setCurrentPhase('practice');
-        setCurrentPercent(50); // Reset for practice
-        setFeedback('');
-        setShowHint(false);
-      }, 2000);
-    } else {
-      const diff = currentPercent - exploreTargetPercent;
-      if (Math.abs(diff) <= 5) {
-        setFeedback('🔍 Very close! Adjust slightly and try again.');
-      } else if (diff > 0) {
-        setFeedback('📉 Too high. Try a lower percentage.');
-      } else {
-        setFeedback('📈 Too low. Try a higher percentage.');
-      }
-    }
-  };
+    incrementAttempts();
+    const target = currentChallenge.targetPercent;
+    const correct = isWithinTolerance(currentPercent, target);
+    const accuracy = getAccuracyScore(currentPercent, target);
 
-  const handlePracticeCheck = () => {
-    setPracticeAttempts(prev => prev + 1);
-    const targetPercent = practiceQuestions[currentPracticeIndex].targetPercent;
+    if (correct) {
+      const partValue = ((target / 100) * wholeValue).toFixed(2);
+      setFeedback(`${target}% of ${wholeValue} = ${partValue}!`);
+      setFeedbackType('success');
 
-    if (isWithinTolerance(currentPercent, targetPercent)) {
-      setPracticeCorrectCount(prev => prev + 1);
-      setFeedback('✅ Correct! Great job!');
-
-      setTimeout(() => {
-        if (currentPracticeIndex < practiceQuestions.length - 1) {
-          // More practice questions
-          setCurrentPracticeIndex(prev => prev + 1);
-          setCurrentPercent(50);
-          setFeedback('');
-          setShowHint(false);
-        } else {
-          // Practice complete, move to apply phase
-          setFeedback('🌟 Practice complete! Now let\'s solve the main problem.');
-          setTimeout(() => {
-            setCurrentPhase('apply');
-            setCurrentPercent(50);
-            setFeedback('');
-            setShowHint(false);
-          }, 2000);
-        }
-      }, 1500);
-    } else {
-      const diff = currentPercent - targetPercent;
-      if (Math.abs(diff) <= 5) {
-        setFeedback('🔍 Very close! Adjust slightly.');
-      } else if (diff > 0) {
-        setFeedback('📉 Too high. Try lower.');
-      } else {
-        setFeedback('📈 Too low. Try higher.');
-      }
-    }
-  };
-
-  const handleMainSubmit = () => {
-    if (hasSubmitted) return;
-
-    setMainAttempts(prev => prev + 1);
-    const accuracy = getAccuracyScore(currentPercent, mainTargetPercent);
-    const isCorrect = isWithinTolerance(currentPercent, mainTargetPercent);
-
-    if (isCorrect) {
-      setFeedback('🎊 Perfect! You\'ve mastered this percent problem!');
-      setCurrentPhase('completed');
-
-      // Calculate comprehensive metrics
-      const totalAttempts = exploreAttempts + practiceAttempts + mainAttempts;
-      const totalHints = exploreHintsUsed + practiceHintsUsed + mainHintsUsed;
-      const averageAccuracy = (
-        getAccuracyScore(currentPercent, exploreTargetPercent) +
-        (practiceCorrectCount / practiceQuestions.length) * 100 +
-        accuracy
-      ) / 3;
-
-      const metrics: PercentBarMetrics = {
-        type: 'percent-bar',
-
-        // Goal achievement
-        allPhasesCompleted: true,
-        finalSuccess: true,
-
-        // Phase completion
-        explorePhaseCompleted: true,
-        practicePhaseCompleted: true,
-        applyPhaseCompleted: true,
-
-        // Per-phase performance
-        exploreAccuracy: getAccuracyScore(currentPercent, exploreTargetPercent),
-        exploreAttempts,
-        exploreHintsUsed,
-
-        practiceQuestionsCorrect: practiceCorrectCount,
-        practiceTotalQuestions: practiceQuestions.length,
-        practiceAttempts,
-        practiceHintsUsed,
-
-        mainProblemAccuracy: accuracy,
-        mainProblemAttempts: mainAttempts,
-        mainProblemHintsUsed: mainHintsUsed,
-
-        // Overall performance
-        totalAttempts,
-        totalHintsUsed: totalHints,
-        averageAccuracy,
-
-        // Precision analysis
-        targetPercent: mainTargetPercent,
-        finalStudentPercent: currentPercent,
-        percentageError: Math.abs(currentPercent - mainTargetPercent),
-
-        // Efficiency
-        solvedWithoutHints: totalHints === 0,
-        firstAttemptSuccess: mainAttempts === 1,
-      };
-
-      submitResult(true, accuracy, metrics, {
-        studentWork: {
-          explorePercent: currentPercent,
-          practiceAnswers: practiceQuestions.map((_, i) => i <= currentPracticeIndex),
-          finalPercent: currentPercent,
-        },
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts: currentAttempts + 1,
+        score: accuracy,
       });
-    } else {
-      const diff = currentPercent - mainTargetPercent;
-      if (Math.abs(diff) <= 5) {
-        setFeedback(`🔍 Very close! You're at ${currentPercent}%, target is ${mainTargetPercent}%`);
-      } else if (diff > 0) {
-        setFeedback(`📉 Too high. You're at ${currentPercent}%, try lower.`);
-      } else {
-        setFeedback(`📈 Too low. You're at ${currentPercent}%, try higher.`);
-      }
-    }
-  };
 
-  const handleReset = () => {
-    setCurrentPhase('explore');
-    setCurrentPracticeIndex(0);
+      sendText(
+        `[ANSWER_CORRECT] Student set ${currentPercent}% (target: ${target}%). `
+        + `Phase: ${currentPhase}. Accuracy: ${accuracy.toFixed(0)}%. Attempts: ${currentAttempts + 1}. `
+        + `Congratulate briefly and explain: ${target}% of ${wholeValue} = ${partValue}.`,
+        { silent: true },
+      );
+    } else {
+      const diff = currentPercent - target;
+      if (Math.abs(diff) <= 5) {
+        setFeedback(`Very close! You're at ${currentPercent}%, adjust slightly.`);
+        setFeedbackType('info');
+      } else if (diff > 0) {
+        setFeedback(`Too high at ${currentPercent}%. Try lower.`);
+        setFeedbackType('error');
+      } else {
+        setFeedback(`Too low at ${currentPercent}%. Try higher.`);
+        setFeedbackType('error');
+      }
+
+      sendText(
+        `[ANSWER_INCORRECT] Student set ${currentPercent}% but target is ${target}%. `
+        + `Difference: ${Math.abs(diff)}%. Attempt ${currentAttempts + 1}. Phase: ${currentPhase}. `
+        + `Give a directional hint without revealing the exact answer.`,
+        { silent: true },
+      );
+    }
+  }, [currentChallenge, currentPercent, currentAttempts, wholeValue, currentPhase,
+      incrementAttempts, recordResult, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Advance to next challenge
+  // -------------------------------------------------------------------------
+  const advanceToNextChallenge = useCallback(() => {
+    if (!advanceProgress()) {
+      // All challenges complete — compute and submit evaluation
+      const phaseScoreStr = phaseResults
+        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+        .join(', ');
+      const overallPct = Math.round(
+        challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / challenges.length,
+      );
+
+      sendText(
+        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+        + `Give encouraging phase-specific feedback about their percent problem-solving!`,
+        { silent: true },
+      );
+
+      if (!hasSubmittedEvaluation) {
+        const exploreResults = challengeResults.filter(r => r.challengeId.startsWith('explore'));
+        const practiceResults = challengeResults.filter(r => r.challengeId.startsWith('practice'));
+        const applyResults = challengeResults.filter(r => r.challengeId.startsWith('apply'));
+
+        const exploreAccuracy = exploreResults.length > 0
+          ? Math.round(exploreResults.reduce((s, r) => s + (r.score ?? 0), 0) / exploreResults.length) : 0;
+        const practiceCorrect = practiceResults.filter(r => r.correct).length;
+        const mainAccuracy = applyResults.length > 0
+          ? Math.round(applyResults.reduce((s, r) => s + (r.score ?? 0), 0) / applyResults.length) : 0;
+        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
+        const totalHints = exploreHintsUsed + practiceHintsUsed + mainHintsUsed;
+        const averageAccuracy = Math.round(
+          challengeResults.reduce((s, r) => s + (r.score ?? 0), 0) / challenges.length,
+        );
+
+        const metrics: PercentBarMetrics = {
+          type: 'percent-bar',
+          allPhasesCompleted: true,
+          finalSuccess: applyResults.every(r => r.correct),
+          explorePhaseCompleted: exploreResults.every(r => r.correct),
+          practicePhaseCompleted: practiceResults.every(r => r.correct),
+          applyPhaseCompleted: applyResults.every(r => r.correct),
+          exploreAccuracy,
+          exploreAttempts: exploreResults.reduce((s, r) => s + r.attempts, 0),
+          exploreHintsUsed,
+          practiceQuestionsCorrect: practiceCorrect,
+          practiceTotalQuestions: practiceTotal,
+          practiceAttempts: practiceResults.reduce((s, r) => s + r.attempts, 0),
+          practiceHintsUsed,
+          mainProblemAccuracy: mainAccuracy,
+          mainProblemAttempts: applyResults.reduce((s, r) => s + r.attempts, 0),
+          mainProblemHintsUsed: mainHintsUsed,
+          totalAttempts,
+          totalHintsUsed: totalHints,
+          averageAccuracy,
+          targetPercent: mainTargetPercent,
+          finalStudentPercent: currentPercent,
+          percentageError: Math.abs(currentPercent - mainTargetPercent),
+          solvedWithoutHints: totalHints === 0,
+          firstAttemptSuccess: applyResults.length > 0 && applyResults[0].attempts === 1,
+        };
+
+        submitEvaluation(
+          applyResults.every(r => r.correct),
+          averageAccuracy,
+          metrics,
+          { challengeResults },
+        );
+      }
+      return;
+    }
+
+    // Reset for next challenge
     setCurrentPercent(50);
     setFeedback('');
+    setFeedbackType('');
     setShowHint(false);
-    setExploreAttempts(0);
-    setExploreHintsUsed(0);
-    setPracticeAttempts(0);
-    setPracticeHintsUsed(0);
-    setPracticeCorrectCount(0);
-    setMainAttempts(0);
-    setMainHintsUsed(0);
-    resetAttempt();
-  };
 
-  const getCurrentQuestion = (): string => {
-    if (currentPhase === 'explore') return exploreQuestion;
-    if (currentPhase === 'practice') return practiceQuestions[currentPracticeIndex].question;
-    if (currentPhase === 'apply') return mainQuestion;
-    return 'Problem completed!';
-  };
+    const nextChallenge = challenges[currentChallengeIndex + 1];
+    sendText(
+      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
+      + `Phase: ${nextChallenge.type}. Question: "${nextChallenge.question}". `
+      + `Target: ${nextChallenge.targetPercent}%. Read the question to the student.`,
+      { silent: true },
+    );
+  }, [
+    advanceProgress, phaseResults, challenges, challengeResults, sendText,
+    hasSubmittedEvaluation, currentChallengeIndex, currentPercent, mainTargetPercent,
+    exploreHintsUsed, practiceHintsUsed, mainHintsUsed, practiceTotal, submitEvaluation,
+  ]);
 
-  const getCurrentHint = (): string => {
-    if (currentPhase === 'explore') return exploreHint;
-    if (currentPhase === 'practice') return practiceQuestions[currentPracticeIndex].hint;
-    if (currentPhase === 'apply') return mainHint;
-    return '';
-  };
+  // -------------------------------------------------------------------------
+  // Auto-submit when all challenges complete
+  // -------------------------------------------------------------------------
+  const hasAutoSubmittedRef = useRef(false);
+  useEffect(() => {
+    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
+      hasAutoSubmittedRef.current = true;
+      advanceToNextChallenge();
+    }
+  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
 
+  // -------------------------------------------------------------------------
+  // Overall score
+  // -------------------------------------------------------------------------
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    return Math.round(
+      challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / challenges.length,
+    );
+  }, [allChallengesComplete, challenges, challengeResults]);
+
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
   return (
-    <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8 justify-center">
-        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-          </svg>
-        </div>
-        <div className="text-left">
-          <h2 className="text-2xl font-bold text-white tracking-tight">{title}</h2>
+    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <p className="text-xs text-emerald-400 font-mono uppercase tracking-wider">Percent Problem Solving</p>
+            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
+              Percent
+            </Badge>
           </div>
         </div>
-      </div>
+        {description && (
+          <p className="text-slate-400 text-sm mt-1">{description}</p>
+        )}
+      </CardHeader>
 
-      <div className="glass-panel p-8 md:p-16 rounded-3xl border border-emerald-500/20 relative overflow-hidden">
-        {/* Background Texture */}
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(#10b981 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-        ></div>
+      <CardContent className="space-y-4">
+        {/* Scenario */}
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+          <p className="text-blue-200 text-sm italic">{scenario}</p>
+        </div>
 
-        <div className="relative z-10">
-          {/* Problem Context */}
-          <div className="mb-8 text-center max-w-2xl mx-auto">
-            <p className="text-slate-300 font-light mb-4">{description}</p>
-            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-              <p className="text-blue-200 text-sm italic">{scenario}</p>
-            </div>
+        {/* Phase Progress Tabs */}
+        {challenges.length > 0 && !allChallengesComplete && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {(['explore', 'practice', 'apply'] as const).map((phase) => {
+              const isActive = currentPhase === phase;
+              const isDone = phase === 'explore'
+                ? currentChallengeIndex > 0
+                : phase === 'practice'
+                ? currentChallengeIndex > practiceTotal
+                : false;
+
+              return (
+                <Badge
+                  key={phase}
+                  className={`text-xs ${
+                    isActive
+                      ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
+                      : isDone
+                      ? 'bg-emerald-500/10 border-emerald-400/20 text-emerald-400/60'
+                      : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
+                  }`}
+                >
+                  {PHASE_TYPE_CONFIG[phase].icon}{' '}
+                  {phase === 'practice'
+                    ? `Practice (${Math.min(currentPracticeIndex + 1, practiceTotal)}/${practiceTotal})`
+                    : PHASE_TYPE_CONFIG[phase].label}
+                </Badge>
+              );
+            })}
+            <span className="text-slate-500 text-xs ml-auto">
+              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
+            </span>
           </div>
+        )}
 
-          {/* Phase Progress Indicator */}
-          <div className="flex justify-center gap-2 mb-8">
-            <div className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              currentPhase === 'explore'
-                ? 'bg-emerald-500 text-white'
-                : currentPhase === 'completed'
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : 'bg-slate-700 text-slate-400'
-            }`}>
-              1. Explore
-            </div>
-            <div className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              currentPhase === 'practice'
-                ? 'bg-emerald-500 text-white'
-                : currentPhase === 'apply' || currentPhase === 'completed'
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : 'bg-slate-700 text-slate-400'
-            }`}>
-              2. Practice ({currentPracticeIndex + 1}/{practiceQuestions.length})
-            </div>
-            <div className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              currentPhase === 'apply'
-                ? 'bg-emerald-500 text-white'
-                : currentPhase === 'completed'
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : 'bg-slate-700 text-slate-400'
-            }`}>
-              3. Apply
-            </div>
+        {/* Current Question */}
+        {currentChallenge && !allChallengesComplete && (
+          <div className="bg-slate-800/30 rounded-lg p-4 border border-white/5">
+            <p className="text-slate-200 text-sm font-medium">
+              {currentChallenge.question}
+            </p>
           </div>
+        )}
 
-          {/* Current Question */}
-          <div className="mb-8 p-6 bg-slate-800/50 rounded-xl border border-slate-700">
-            <div className="text-lg font-semibold text-white mb-2">
-              {currentPhase === 'completed' ? '✅ Challenge Complete!' : getCurrentQuestion()}
-            </div>
-            {feedback && (
-              <div className={`mt-3 p-3 rounded-lg ${
-                feedback.includes('🎉') || feedback.includes('✅') || feedback.includes('🎊')
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : feedback.includes('🔍')
-                  ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                  : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-              }`}>
-                {feedback}
-              </div>
-            )}
-          </div>
-
-          {/* Current Values Display */}
-          <div className="flex justify-center gap-8 mb-8">
+        {/* Current Values Display */}
+        {!allChallengesComplete && (
+          <div className="flex justify-center gap-8">
             <div className="text-center">
-              <div className="text-sm text-slate-400 uppercase tracking-wider mb-1">Current Percentage</div>
+              <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Current Percentage</div>
               <div className="text-3xl font-bold text-emerald-400">{currentPercent}%</div>
             </div>
             {showValueLabels && (
               <>
                 <div className="text-center">
-                  <div className="text-sm text-slate-400 uppercase tracking-wider mb-1">Part Value</div>
+                  <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Part Value</div>
                   <div className="text-3xl font-bold text-white">{currentValue.toFixed(2)}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-sm text-slate-400 uppercase tracking-wider mb-1">{wholeValueLabel}</div>
+                  <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{wholeValueLabel}</div>
                   <div className="text-3xl font-bold text-slate-400">{wholeValue}</div>
                 </div>
               </>
             )}
           </div>
+        )}
 
-          {/* Percent Bar Visualization */}
-          <div className="w-full max-w-3xl mx-auto px-8 py-12 space-y-8">
+        {/* Percent Bar Visualization */}
+        {!allChallengesComplete && (
+          <div className="w-full max-w-3xl mx-auto px-4 py-6 space-y-6">
             {/* Main Percent Bar */}
             <div className="relative">
-              {/* Label */}
-              <div className="absolute -top-8 left-0 text-sm font-semibold text-emerald-300 uppercase tracking-wide">
-                Percentage (0% - 100%)
-              </div>
+              {showPercentLabels && (
+                <div className="text-xs font-semibold text-emerald-300 uppercase tracking-wide mb-2">
+                  Percentage (0% - 100%)
+                </div>
+              )}
 
-              {/* Interactive Bar Container */}
               <div
-                className="relative h-16 bg-slate-700 rounded-xl cursor-pointer shadow-inner overflow-hidden border border-slate-600"
+                className="relative h-14 bg-slate-700/60 rounded-xl cursor-pointer shadow-inner overflow-hidden border border-white/10"
                 onClick={handleBarInteraction}
                 onMouseMove={handleMouseMove}
                 onMouseDown={() => setIsDragging(true)}
                 onMouseUp={() => setIsDragging(false)}
                 onMouseLeave={() => setIsDragging(false)}
               >
-                {/* Shaded Portion */}
+                {/* Shaded portion */}
                 <div
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-200 rounded-l-xl"
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-150 rounded-l-xl"
                   style={{ width: `${currentPercent}%` }}
-                >
-                  {/* Shimmer Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-                </div>
+                />
 
-                {/* Benchmark Lines */}
+                {/* Benchmark lines */}
                 {benchmarkLines.map((benchmark, i) => (
                   <div
                     key={i}
-                    className="absolute top-0 h-full w-0.5 bg-slate-400/50 cursor-help"
+                    className="absolute top-0 h-full w-px bg-slate-400/40 cursor-help z-10"
                     style={{ left: `${benchmark}%` }}
                     onMouseEnter={() => setHoveredBenchmark(benchmark)}
                     onMouseLeave={() => setHoveredBenchmark(null)}
                   >
-                    {/* Benchmark Label */}
                     {showPercentLabels && (
-                      <div className={`absolute -top-8 left-1/2 -translate-x-1/2 text-xs transition-all ${hoveredBenchmark === benchmark ? 'text-emerald-300 font-bold scale-110' : 'text-slate-400'}`}>
+                      <div className={`absolute -top-6 left-1/2 -translate-x-1/2 text-xs transition-all ${
+                        hoveredBenchmark === benchmark ? 'text-emerald-300 font-bold' : 'text-slate-500'
+                      }`}>
                         {benchmark}%
                       </div>
                     )}
-                    {/* Tooltip on Hover */}
                     {hoveredBenchmark === benchmark && showValueLabels && (
-                      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white text-xs rounded whitespace-nowrap pointer-events-none">
+                      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-emerald-600 text-white text-xs rounded whitespace-nowrap pointer-events-none z-20">
                         {((benchmark / 100) * wholeValue).toFixed(2)}
                       </div>
                     )}
                   </div>
                 ))}
 
-                {/* End Labels */}
+                {/* End labels */}
                 {showPercentLabels && (
                   <>
-                    <div className="absolute -bottom-8 left-0 text-xs text-slate-400 font-mono">0%</div>
-                    <div className="absolute -bottom-8 right-0 text-xs text-slate-400 font-mono">100%</div>
+                    <div className="absolute -bottom-6 left-0 text-xs text-slate-500 font-mono">0%</div>
+                    <div className="absolute -bottom-6 right-0 text-xs text-slate-500 font-mono">100%</div>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Double Bar - Value Bar */}
+            {/* Double bar: actual value bar */}
             {doubleBar && (
-              <div className="relative mt-16">
-                {/* Label */}
-                <div className="absolute -top-8 left-0 text-sm font-semibold text-slate-300 uppercase tracking-wide">
+              <div className="relative mt-8">
+                <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-2">
                   Actual Value (0 - {wholeValue})
                 </div>
 
-                {/* Value Bar */}
-                <div className="relative h-12 bg-slate-700 rounded-xl shadow-inner border border-slate-600">
-                  {/* Shaded Portion */}
+                <div className="relative h-10 bg-slate-700/60 rounded-xl shadow-inner border border-white/10">
                   <div
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-200 rounded-l-xl"
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-150 rounded-l-xl"
                     style={{ width: `${currentPercent}%` }}
-                  ></div>
+                  />
 
-                  {/* Tick Marks for Values */}
                   {[0, 0.25, 0.5, 0.75, 1].map((fraction, i) => {
                     const value = fraction * wholeValue;
-                    const percent = fraction * 100;
+                    const pct = fraction * 100;
                     return (
                       <div
                         key={i}
-                        className="absolute top-0 h-full w-px bg-slate-400/50"
-                        style={{ left: `${percent}%` }}
+                        className="absolute top-0 h-full w-px bg-slate-400/40"
+                        style={{ left: `${pct}%` }}
                       >
                         {showValueLabels && (
-                          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-slate-400 font-mono">
+                          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-500 font-mono">
                             {value % 1 === 0 ? value : value.toFixed(1)}
                           </div>
                         )}
@@ -574,95 +692,121 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
               </div>
             )}
           </div>
+        )}
 
-          {/* Calculation Display */}
-          <div className="mt-12 p-6 bg-slate-800/50 rounded-xl border border-slate-700">
-            <div className="text-center text-slate-300">
-              <div className="text-sm uppercase tracking-wider text-slate-400 mb-2">Calculation</div>
-              <div className="text-lg font-mono">
-                <span className="text-emerald-400">{currentPercent}%</span>
-                {' of '}
-                <span className="text-white">{wholeValue}</span>
-                {' = '}
-                <span className="text-emerald-300 font-bold">{currentValue.toFixed(2)}</span>
-              </div>
-              <div className="text-xs text-slate-500 mt-2">
-                ({currentPercent} ÷ 100) × {wholeValue} = {currentValue.toFixed(2)}
-              </div>
+        {/* Calculation Display */}
+        {!allChallengesComplete && (
+          <div className="bg-slate-800/30 rounded-lg p-4 border border-white/5 text-center">
+            <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">Calculation</div>
+            <div className="text-lg font-mono">
+              <span className="text-emerald-400">{currentPercent}%</span>
+              {' of '}
+              <span className="text-white">{wholeValue}</span>
+              {' = '}
+              <span className="text-emerald-300 font-bold">{currentValue.toFixed(2)}</span>
+            </div>
+            <div className="text-xs text-slate-600 mt-1">
+              ({currentPercent} &divide; 100) &times; {wholeValue} = {currentValue.toFixed(2)}
             </div>
           </div>
+        )}
 
-          {/* Action Buttons */}
-          <div className="mt-8 flex flex-col items-center gap-4">
-            <div className="flex gap-3">
-              {currentPhase === 'explore' && (
-                <button
-                  onClick={handleExploreCheck}
-                  className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-emerald-500/50"
-                >
-                  Check Answer
-                </button>
-              )}
-              {currentPhase === 'practice' && (
-                <button
-                  onClick={handlePracticeCheck}
-                  className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-emerald-500/50"
-                >
-                  Check Answer
-                </button>
-              )}
-              {currentPhase === 'apply' && (
-                <button
-                  onClick={handleMainSubmit}
-                  disabled={hasSubmitted}
-                  className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-blue-500/50"
-                >
-                  {hasSubmitted ? '✅ Submitted' : 'Submit Final Answer'}
-                </button>
-              )}
-              {currentPhase === 'completed' && (
-                <button
-                  onClick={handleReset}
-                  className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-lg transition-all"
-                >
-                  Try Again
-                </button>
-              )}
-            </div>
+        {/* Feedback */}
+        {feedback && (
+          <div className={`text-center text-sm font-medium ${
+            feedbackType === 'success' ? 'text-emerald-400' :
+            feedbackType === 'error' ? 'text-red-400' :
+            feedbackType === 'info' ? 'text-amber-400' :
+            'text-slate-300'
+          }`}>
+            {feedback}
+          </div>
+        )}
 
-            {/* Hint Button */}
-            {currentPhase !== 'completed' && (
-              <div className="flex flex-col items-center gap-2">
-                {!showHint ? (
-                  <button
-                    onClick={handleShowHint}
-                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-all"
-                  >
-                    💡 Show Hint
-                  </button>
-                ) : (
-                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg max-w-md">
-                    <div className="text-yellow-300 text-sm">
-                      <span className="font-semibold">Hint:</span> {getCurrentHint()}
-                    </div>
-                  </div>
-                )}
+        {/* Action Buttons */}
+        {challenges.length > 0 && !allChallengesComplete && (
+          <div className="flex justify-center gap-3">
+            {!isCurrentChallengeComplete && (
+              <Button
+                variant="ghost"
+                className={`border ${
+                  currentPhase === 'apply'
+                    ? 'bg-emerald-500/10 border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300'
+                    : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
+                }`}
+                onClick={handleCheckAnswer}
+                disabled={hasSubmittedEvaluation}
+              >
+                {currentPhase === 'apply' ? 'Submit Final Answer' : 'Check Answer'}
+              </Button>
+            )}
+            {isCurrentChallengeComplete && (
+              <Button
+                variant="ghost"
+                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+                onClick={advanceToNextChallenge}
+              >
+                {currentPhase === 'apply' ? 'See Results' : 'Next Challenge'}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Hint */}
+        {!allChallengesComplete && currentChallenge && (
+          <div className="flex flex-col items-center gap-2">
+            {!showHint ? (
+              currentAttempts >= 1 && (
+                <Button
+                  variant="ghost"
+                  className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 text-xs"
+                  onClick={handleShowHint}
+                >
+                  Show Hint
+                </Button>
+              )
+            ) : (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 max-w-md">
+                <p className="text-amber-300 text-xs">
+                  <span className="font-semibold">Hint:</span> {currentChallenge.hint}
+                </p>
               </div>
             )}
           </div>
+        )}
 
-          {/* Interactive Instructions */}
-          <div className="mt-8 text-center text-sm text-slate-400">
-            <span className="inline-flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
-              </svg>
-              Click or drag on the bar to adjust the percentage
-            </span>
+        {/* Drag instruction */}
+        {!allChallengesComplete && (
+          <div className="text-center text-xs text-slate-600">
+            Click or drag on the bar to adjust the percentage
           </div>
-        </div>
-      </div>
-    </div>
+        )}
+
+        {/* All complete summary */}
+        {allChallengesComplete && (
+          <div className="text-center">
+            <p className="text-emerald-400 text-sm font-medium mb-1">
+              All challenges complete!
+            </p>
+            <p className="text-slate-400 text-xs">
+              {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
+            </p>
+          </div>
+        )}
+
+        {/* Phase Summary */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="Challenge Complete!"
+            celebrationMessage={`You completed all phases of this percent problem!`}
+            className="mt-4"
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

@@ -380,30 +380,36 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'ratio-table',
-    description: 'Structured table showing equivalent ratios in rows with columns for each quantity in the ratio relationship. Perfect for teaching equivalent ratios, unit rates, proportional reasoning, scaling relationships, and ratio problem-solving. Shows multiplicative relationships between rows. ESSENTIAL for grades 5-7 ratios and proportions.',
+    description: 'Multi-challenge ratio table with 4 challenge types: missing-value (find a hidden scaled value), find-multiplier (determine the scaling factor), build-ratio (use a slider to construct an equivalent ratio), and unit-rate (calculate the unit rate). Structured table showing equivalent ratios with columns for each quantity. Progressive difficulty with scaffolded hints. Perfect for teaching equivalent ratios, unit rates, proportional reasoning, scaling relationships, and ratio problem-solving. ESSENTIAL for grades 5-7 ratios and proportions.',
     constraints: 'Requires a ratio relationship between 2-3 quantities. Best with 3-5 rows showing equivalent ratios.',
     tutoring: {
-      taskDescription: 'Explore equivalent ratios for {{rowLabel1}}:{{rowLabel2}} = {{baseRatio1}}:{{baseRatio2}}. Task: {{taskType}}.',
-      contextKeys: ['rowLabels', 'baseRatio', 'taskType', 'multiplier', 'studentAnswer'],
+      taskDescription: 'Work through {{totalChallenges}} ratio challenges covering missing values, multipliers, ratio building, and unit rates. Current challenge: {{instruction}} with base ratio {{baseRatio}}.',
+      contextKeys: ['baseRatio', 'rowLabels', 'challengeType', 'targetMultiplier', 'studentAnswer', 'targetValue', 'unitRate', 'hintsUsed', 'currentChallengeIndex', 'totalChallenges', 'currentAttempts'],
       scaffoldingLevels: {
-        level1: '"What happens to both values when you move the slider? Do they grow at the same rate?"',
-        level2: '"The base ratio is {{baseRatio1}}:{{baseRatio2}}. If you multiply both by {{multiplier}}, what do you get?"',
-        level3: '"{{baseRatio1}} × {{multiplier}} = {{scaledValue1}} and {{baseRatio2}} × {{multiplier}} = {{scaledValue2}}. Equivalent ratios keep the same multiplier."',
+        level1: '"What is the relationship between {{rowLabel1}} and {{rowLabel2}}? Look at the base ratio."',
+        level2: '"The base ratio is {{baseRatio1}}:{{baseRatio2}}. The unit rate is {{unitRate}}. How can you use that to solve this?"',
+        level3: '"Step by step: First find the unit rate ({{baseRatio2}} ÷ {{baseRatio1}} = {{unitRate}}). Then use it: {{unitRate}} × the known value gives the answer."',
       },
       commonStruggles: [
         { pattern: 'Only scaling one value', response: '"To keep the ratio equivalent, multiply BOTH values by the same number."' },
         { pattern: 'Adding instead of multiplying', response: '"Ratios scale by multiplication. 2:3 doubled is 4:6, not 4:5."' },
-        { pattern: 'Cannot find unit rate', response: '"Divide both values by the first value to find the ratio to 1."' },
+        { pattern: 'Cannot find unit rate', response: '"Divide the second quantity by the first: {{baseRatio2}} ÷ {{baseRatio1}}."' },
+        { pattern: 'Confusing multiplier with unit rate', response: '"The multiplier tells you how many times bigger the scaled ratio is. The unit rate tells you the ratio when the first quantity is 1."' },
       ],
       aiDirectives: [
         {
-          title: 'MULTIPLICATIVE THINKING COACHING',
+          title: 'MULTI-CHALLENGE RATIO COACHING',
           instruction:
-            'The core concept is that BOTH values must be multiplied by the SAME number. '
-            + 'Watch for additive errors: if a student adds instead of multiplies, correct with a concrete example — '
-            + '"If 2 apples cost 6 dollars, then 4 apples cost 12 dollars. We multiplied both by 2, not added 2." '
-            + 'Use the table structure: "Look across the row — what did you multiply by to get from the base ratio to this row?" '
-            + 'For unit rate discovery: "Find the row where the first value is 1. That tells you the rate for one unit."',
+            'This primitive uses 4 challenge types in sequence. Adapt coaching to the current challenge type. '
+            + 'For MISSING-VALUE: guide proportional reasoning — "The base ratio is {{baseRatio1}}:{{baseRatio2}}. '
+            + 'What multiplier scales the base to this row? Use it to find the hidden value." '
+            + 'For FIND-MULTIPLIER: focus on the scaling factor — "Compare the scaled value to the base value. '
+            + 'What did you multiply by? That number works for BOTH columns." '
+            + 'For BUILD-RATIO: guide slider use — "Slide to build a ratio equivalent to {{baseRatio1}}:{{baseRatio2}}. '
+            + 'Both values must scale by the same factor." '
+            + 'For UNIT-RATE: guide division — "Divide the second quantity by the first to find the rate per 1 unit." '
+            + 'Track progress across challenges: "You have completed {{currentChallengeIndex}} of {{totalChallenges}} challenges." '
+            + 'Use hints sparingly — let the student struggle productively before offering the next scaffold level.',
         },
       ],
     },

@@ -10,6 +10,9 @@ import {
 } from '../../../evaluation';
 import type { NumberLineMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -77,6 +80,13 @@ const PHASE_LABELS: Record<InteractionPhase, string> = {
   plot: 'Plot',
   operate: 'Operate',
   compare: 'Compare',
+};
+
+const CHALLENGE_PHASE_CONFIG: Record<string, PhaseConfig> = {
+  plot_point: { label: 'Plot', icon: '\uD83D\uDCCD', accentColor: 'blue' },
+  show_jump: { label: 'Operate', icon: '\uD83E\uDD98', accentColor: 'orange' },
+  order_values: { label: 'Compare', icon: '\uD83D\uDCCA', accentColor: 'purple' },
+  find_between: { label: 'Find Between', icon: '\uD83D\uDD0D', accentColor: 'emerald' },
 };
 
 // ============================================================================
@@ -204,19 +214,34 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   const [orderedPlacements, setOrderedPlacements] = useState<Map<number, number>>(new Map());
 
   // Jump mode
-  const [jumpEndPoint, setJumpEndPoint] = useState<number | null>(null);
+  const [jumpEndPoints, setJumpEndPoints] = useState<number[]>([]);
 
-  // Challenge tracking
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  // Challenge tracking (shared hooks)
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: CHALLENGE_PHASE_CONFIG,
+    getScore: (rs) => Math.round(rs.reduce((s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)), 0) / rs.length),
+  });
+
+  // Feedback state
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [currentAttempts, setCurrentAttempts] = useState(0);
-  const [challengeResults, setChallengeResults] = useState<Array<{
-    challengeId: string;
-    correct: boolean;
-    attempts: number;
-    accuracy: number;
-  }>>([]);
 
   // Refs
   const svgRef = useRef<SVGSVGElement>(null);
@@ -276,6 +301,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<NumberLineMetrics>({
     primitiveType: 'number-line',
     instanceId: resolvedInstanceId,
@@ -355,7 +382,15 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
     // Jump mode: set endpoint
     if (currentChallenge?.type === 'show_jump') {
-      setJumpEndPoint(snappedValue);
+      setJumpEndPoints(prev => {
+        if (prev.length >= activeOperations.length) {
+          // Replace last endpoint when all steps already placed
+          const next = [...prev];
+          next[next.length - 1] = snappedValue;
+          return next;
+        }
+        return [...prev, snappedValue];
+      });
       return;
     }
 
@@ -421,7 +456,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const checkAnswer = useCallback(() => {
     if (!currentChallenge) return;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     const targets = currentChallenge.targetValues;
     let correct = false;
@@ -447,14 +482,22 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
         break;
       }
       case 'show_jump': {
-        if (activeOperations.length > 0 && jumpEndPoint !== null) {
-          const op = activeOperations[0];
-          const expected = op.type === 'add'
-            ? op.startValue + op.changeValue
-            : op.startValue - op.changeValue;
+        if (activeOperations.length > 0 && jumpEndPoints.length === activeOperations.length) {
           const tolerance = getSnapPrecision(activeNumberType, zoomLevel);
-          correct = Math.abs(jumpEndPoint - expected) <= tolerance + 0.001;
-          accuracy = correct ? Math.max(0, 100 - (Math.abs(jumpEndPoint - expected) / Math.max(rangeMax - rangeMin, 1)) * 100) : 0;
+          let totalError = 0;
+          let allCorrect = true;
+          for (let i = 0; i < activeOperations.length; i++) {
+            const op = activeOperations[i];
+            const expected = op.type === 'add'
+              ? op.startValue + op.changeValue
+              : op.startValue - op.changeValue;
+            const error = Math.abs(jumpEndPoints[i] - expected);
+            if (error > tolerance + 0.001) allCorrect = false;
+            totalError += error;
+          }
+          correct = allCorrect;
+          const avgError = totalError / activeOperations.length;
+          accuracy = correct ? Math.max(0, 100 - (avgError / Math.max(rangeMax - rangeMin, 1)) * 100) : 0;
         }
         break;
       }
@@ -484,12 +527,13 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     if (correct) {
       setFeedback(isK2 ? 'Great job!' : 'Correct!');
       setFeedbackType('success');
-      setChallengeResults(prev => [...prev, {
+      recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
+        score: Math.round(accuracy),
         accuracy: Math.round(accuracy),
-      }]);
+      });
       sendText(
         `[ANSWER_CORRECT] Student correctly completed "${currentChallenge.instruction}". `
         + `Attempts: ${currentAttempts + 1}. Congratulate briefly.`,
@@ -505,28 +549,36 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [currentChallenge, placedPoints, jumpEndPoint, orderedPlacements, activeOperations,
-      activeNumberType, zoomLevel, rangeMin, rangeMax, isK2, currentAttempts, sendText]);
+  }, [currentChallenge, placedPoints, jumpEndPoints, orderedPlacements, activeOperations,
+      activeNumberType, zoomLevel, rangeMin, rangeMax, isK2, currentAttempts, sendText,
+      incrementAttempts, recordResult]);
 
   const advanceToNextChallenge = useCallback(() => {
-    const nextIndex = currentChallengeIndex + 1;
+    if (!advanceProgress()) {
+      // All challenges complete — use phaseResults for AI feedback
+      const phaseScoreStr = phaseResults
+        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+        .join(', ');
+      const overallPct = challengeResults.length > 0
+        ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)), 0) / challengeResults.length)
+        : 0;
 
-    if (nextIndex >= challenges.length) {
       sendText(
-        `[ALL_COMPLETE] Student finished all ${challenges.length} number line challenges! Celebrate.`,
+        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+        + `${challenges.length} challenges completed. Give encouraging phase-specific feedback.`,
         { silent: true }
       );
 
       if (!hasSubmittedEvaluation) {
         const totalCorrect = challengeResults.filter(r => r.correct).length;
         const avgAccuracy = challengeResults.length > 0
-          ? Math.round(challengeResults.reduce((s, r) => s + r.accuracy, 0) / challengeResults.length)
+          ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)), 0) / challengeResults.length)
           : 0;
         const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
         const score = Math.round((totalCorrect / challenges.length) * 100);
 
         const lastTarget = currentChallenge?.targetValues?.[0] ?? 0;
-        const lastPlaced = placedPoints[0] ?? jumpEndPoint ?? 0;
+        const lastPlaced = placedPoints[0] ?? jumpEndPoints[jumpEndPoints.length - 1] ?? 0;
 
         const metrics: NumberLineMetrics = {
           type: 'number-line',
@@ -555,23 +607,37 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
       return;
     }
 
-    setCurrentChallengeIndex(nextIndex);
-    setCurrentAttempts(0);
+    // advanceProgress() already incremented index and reset attempts.
+    // Now reset domain-specific state.
     setFeedback('');
     setFeedbackType('');
     setPlacedPoints([]);
-    setJumpEndPoint(null);
+    setJumpEndPoints([]);
     setOrderedPlacements(new Map());
     setSelectedOrderValue(null);
 
+    const nextChallenge = challenges[currentChallengeIndex + 1];
+
     sendText(
-      `[NEXT_ITEM] Moving to challenge ${nextIndex + 1} of ${challenges.length}: `
-      + `"${challenges[nextIndex].instruction}". Introduce it briefly.`,
+      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
+      + `"${nextChallenge.instruction}". Introduce it briefly.`,
       { silent: true }
     );
-  }, [currentChallengeIndex, challenges, challengeResults, sendText,
-      hasSubmittedEvaluation, placedPoints, jumpEndPoint, currentChallenge,
-      rangeMin, rangeMax, activeNumberType, interactionMode, gradeBand, submitEvaluation]);
+  }, [advanceProgress, phaseResults, challenges, challengeResults, sendText,
+      hasSubmittedEvaluation, placedPoints, jumpEndPoints, currentChallenge,
+      rangeMin, rangeMax, activeNumberType, interactionMode, gradeBand, submitEvaluation,
+      currentChallengeIndex]);
+
+  // -------------------------------------------------------------------------
+  // Auto-submit evaluation when all challenges complete
+  // -------------------------------------------------------------------------
+  const hasAutoSubmittedRef = useRef(false);
+  useEffect(() => {
+    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
+      hasAutoSubmittedRef.current = true;
+      advanceToNextChallenge();
+    }
+  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
 
   // -------------------------------------------------------------------------
   // Computed Values
@@ -579,13 +645,11 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct
   );
-  const allChallengesComplete = challenges.length > 0 &&
-    challengeResults.filter(r => r.correct).length >= challenges.length;
 
   const canCheck = (() => {
     if (!currentChallenge || hasSubmittedEvaluation || isCurrentChallengeComplete) return false;
     if (currentChallenge.type === 'plot_point' || currentChallenge.type === 'find_between') return placedPoints.length > 0;
-    if (currentChallenge.type === 'show_jump') return jumpEndPoint !== null;
+    if (currentChallenge.type === 'show_jump') return jumpEndPoints.length === activeOperations.length;
     if (currentChallenge.type === 'order_values') return orderedPlacements.size >= currentChallenge.targetValues.length;
     return false;
   })();
@@ -758,6 +822,13 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
         {currentChallenge && !allChallengesComplete && (
           <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
             <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+            {currentChallenge.type === 'show_jump' && activeOperations.length > 1 && (
+              <p className="text-slate-400 text-xs mt-1">
+                {jumpEndPoints.length < activeOperations.length
+                  ? `Click to place jump ${jumpEndPoints.length + 1} of ${activeOperations.length}`
+                  : `All ${activeOperations.length} jumps placed — check your answer!`}
+              </p>
+            )}
           </div>
         )}
 
@@ -900,20 +971,20 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
               </g>
             )}
 
-            {/* Jump Mode: Student's Jump Arc */}
-            {currentChallenge?.type === 'show_jump' && activeOperations.length > 0 && jumpEndPoint !== null && (
+            {/* Jump Mode: Student's Jump Arcs */}
+            {currentChallenge?.type === 'show_jump' && activeOperations.length > 0 && jumpEndPoints.map((endPt, i) => (
               renderJumpArc(
-                activeOperations[0].startValue,
-                jumpEndPoint,
+                activeOperations[i].startValue,
+                endPt,
                 feedbackType === 'success' ? '#34d399' : feedbackType === 'error' ? '#f87171' : '#fbbf24',
               )
-            )}
+            ))}
 
-            {/* Jump Mode: Student's Endpoint */}
-            {currentChallenge?.type === 'show_jump' && jumpEndPoint !== null && (
-              <g>
+            {/* Jump Mode: Student's Endpoints */}
+            {currentChallenge?.type === 'show_jump' && jumpEndPoints.map((endPt, i) => (
+              <g key={`jump-pt-${i}`}>
                 <circle
-                  cx={valueToX(jumpEndPoint)}
+                  cx={valueToX(endPt)}
                   cy={LINE_Y}
                   r={POINT_RADIUS}
                   fill="#fbbf24"
@@ -921,17 +992,17 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
                   strokeWidth={2}
                 />
                 <text
-                  x={valueToX(jumpEndPoint)}
+                  x={valueToX(endPt)}
                   y={LINE_Y + POINT_RADIUS + 20}
                   textAnchor="middle"
                   fill="#fbbf24"
                   fontSize={12}
                   fontWeight="bold"
                 >
-                  {formatValue(jumpEndPoint, activeNumberType)}
+                  {formatValue(endPt, activeNumberType)}
                 </text>
               </g>
-            )}
+            ))}
 
             {/* Student-placed Points (draggable) */}
             {placedPoints.map((val, i) => {
@@ -1062,13 +1133,13 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
                 >
                   Check Answer
                 </Button>
-                {(placedPoints.length > 0 || jumpEndPoint !== null || orderedPlacements.size > 0) && (
+                {(placedPoints.length > 0 || jumpEndPoints.length > 0 || orderedPlacements.size > 0) && (
                   <Button
                     variant="ghost"
                     className="bg-slate-800/30 border border-white/10 hover:bg-white/5 text-slate-400"
                     onClick={() => {
                       setPlacedPoints([]);
-                      setJumpEndPoint(null);
+                      setJumpEndPoints([]);
                       setOrderedPlacements(new Map());
                       setSelectedOrderValue(null);
                     }}
@@ -1103,6 +1174,17 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
           <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
           </div>
+        )}
+
+        {/* Phase Summary Panel — shown when all challenges complete */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score}
+            durationMs={elapsedMs}
+            heading="Number Line Complete!"
+            celebrationMessage={`You completed all ${challenges.length} challenges!`}
+          />
         )}
       </CardContent>
     </Card>

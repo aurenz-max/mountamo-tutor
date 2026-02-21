@@ -10,6 +10,9 @@ import {
 } from '../../../evaluation';
 import type { RegroupingWorkbenchMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -75,11 +78,16 @@ export interface RegroupingWorkbenchData {
 
 type Phase = 'explore' | 'regroup' | 'solve' | 'connect';
 
-const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
+const UI_PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
   explore: { label: 'Explore', description: 'Combine blocks and discover' },
   regroup: { label: 'Regroup', description: 'Trade 10 ones for a ten' },
   solve: { label: 'Solve', description: 'Work through the algorithm' },
   connect: { label: 'Connect', description: 'Link blocks to algorithm' },
+};
+
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  regroup:  { label: 'Regrouping', icon: '🔄', accentColor: 'orange' },
+  standard: { label: 'Standard',   icon: '🧮', accentColor: 'blue' },
 };
 
 const PLACE_LABELS = ['Ones', 'Tens', 'Hundreds', 'Thousands'];
@@ -146,9 +154,29 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   const places = maxPlace === 'thousands' ? 4 : maxPlace === 'hundreds' ? 3 : 2;
 
   // -------------------------------------------------------------------------
-  // State
+  // State — shared hooks
   // -------------------------------------------------------------------------
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.requiresRegrouping ? 'regroup' : 'standard',
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
   const [currentPhase, setCurrentPhase] = useState<Phase>('explore');
 
   // Current problem
@@ -181,15 +209,6 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
 
   // Tracking
-  const [challengeResults, setChallengeResults] = useState<Array<{
-    challengeId: string;
-    correct: boolean;
-    attempts: number;
-    regroupingCorrect: number;
-    regroupingTotal: number;
-    timeMs: number;
-  }>>([]);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
   const [incorrectRegroupAttempts, setIncorrectRegroupAttempts] = useState(0);
   const [algorithmConnectionMade, setAlgorithmConnectionMade] = useState(false);
   const [stepByStepUsed] = useState(stepByStepMode);
@@ -205,6 +224,8 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<RegroupingWorkbenchMetrics>({
     primitiveType: 'regrouping-workbench',
     instanceId: resolvedInstanceId,
@@ -353,7 +374,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
 
   const handleCheckAnswer = useCallback(() => {
     if (!currentChallenge) return;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     // Build answer from digits
     const studentAnswer = answerDigits.reduce<number>((sum, d, i) => {
@@ -379,17 +400,14 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         { silent: true }
       );
 
-      setChallengeResults(prev => [
-        ...prev,
-        {
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-          regroupingCorrect,
-          regroupingTotal: expectedRegroups,
-          timeMs,
-        },
-      ]);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts: currentAttempts + 1,
+        regroupingCorrect,
+        regroupingTotal: expectedRegroups,
+        timeMs,
+      });
     } else {
       setFeedback(`Your answer is ${studentAnswer}, but the correct answer is ${correctAnswer}. Check your work!`);
       setFeedbackType('error');
@@ -401,28 +419,35 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         { silent: true }
       );
     }
-  }, [currentChallenge, answerDigits, correctAnswer, currentAttempts, challengeStartTime, regroupedPlaces, sendText]);
+  }, [currentChallenge, answerDigits, correctAnswer, currentAttempts, challengeStartTime, regroupedPlaces, sendText, incrementAttempts, recordResult]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
   // -------------------------------------------------------------------------
   const advanceToNextChallenge = useCallback(() => {
-    const nextIndex = currentChallengeIndex + 1;
+    if (!advanceProgress()) {
+      // All challenges done
+      const phaseScoreStr = phaseResults
+        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+        .join(', ');
+      const overallPct = challenges.length > 0
+        ? Math.round(challengeResults.filter(r => r.correct).length / challenges.length * 100)
+        : 0;
 
-    if (nextIndex >= challenges.length) {
       sendText(
-        `[CHALLENGE_COMPLETE] Student completed all ${challenges.length} regrouping problems! `
-        + `Celebrate and summarize what they learned about ${operation} with regrouping.`,
+        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+        + `Student completed all ${challenges.length} regrouping problems! `
+        + `Celebrate and give encouraging phase-specific feedback about ${operation} with regrouping.`,
         { silent: true }
       );
 
       // Submit evaluation
       if (!hasSubmittedEvaluation) {
         const totalCorrect = challengeResults.filter(r => r.correct).length;
-        const totalRegroups = challengeResults.reduce((s, r) => s + r.regroupingTotal, 0);
-        const correctRegroups = challengeResults.reduce((s, r) => s + r.regroupingCorrect, 0);
+        const totalRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingTotal as number) ?? 0), 0);
+        const correctRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingCorrect as number) ?? 0), 0);
         const avgTime = challengeResults.length > 0
-          ? challengeResults.reduce((s, r) => s + r.timeMs, 0) / challengeResults.length
+          ? challengeResults.reduce((s, r) => s + ((r.timeMs as number) ?? 0), 0) / challengeResults.length
           : 0;
         const score = challenges.length > 0
           ? Math.round((totalCorrect / challenges.length) * 100)
@@ -452,9 +477,8 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
       return;
     }
 
-    // Move to next challenge
-    setCurrentChallengeIndex(nextIndex);
-    setCurrentAttempts(0);
+    // advanceProgress() already incremented index and reset attempts.
+    // Just reset domain-specific state:
     setFeedback('');
     setFeedbackType('');
     setRegroupedPlaces(new Set());
@@ -463,6 +487,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     setChallengeStartTime(Date.now());
 
     // Parse new problem
+    const nextIndex = currentChallengeIndex + 1;
     const nextChallenge = challenges[nextIndex];
     const nextOp1 = parseInt(nextChallenge.problem.split(/[+\-−]/)[0].trim(), 10) || operand1;
     const nextOp2 = parseInt(nextChallenge.problem.split(/[+\-−]/)[1]?.trim(), 10) || operand2;
@@ -484,10 +509,10 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
       { silent: true }
     );
   }, [
-    currentChallengeIndex, challenges, challengeResults, sendText, operation,
+    advanceProgress, phaseResults, challenges, challengeResults, sendText, operation,
     hasSubmittedEvaluation, algorithmConnectionMade, incorrectRegroupAttempts,
     stepByStepUsed, wordProblemContext, submitEvaluation, places, maxPlace,
-    operand1, operand2,
+    operand1, operand2, currentChallengeIndex,
   ]);
 
   // -------------------------------------------------------------------------
@@ -496,8 +521,12 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct
   );
-  const allChallengesComplete = challenges.length > 0
-    && challengeResults.filter(r => r.correct).length >= challenges.length;
+
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    const correct = challengeResults.filter(r => r.correct).length;
+    return Math.round((correct / challenges.length) * 100);
+  }, [allChallengesComplete, challenges, challengeResults]);
 
   // Digits for display
   const d1Display = getDigits(operand1, maxPlace);
@@ -540,7 +569,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         {/* Phase Progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(PHASE_CONFIG).map(([phase, config]) => (
+            {Object.entries(UI_PHASE_CONFIG).map(([phase, config]) => (
               <Badge
                 key={phase}
                 className={`text-xs ${
@@ -770,16 +799,6 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                 Next Problem
               </Button>
             )}
-            {allChallengesComplete && (
-              <div className="text-center">
-                <p className="text-emerald-400 text-sm font-medium mb-2">
-                  All problems complete!
-                </p>
-                <p className="text-slate-400 text-xs">
-                  {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-                </p>
-              </div>
-            )}
           </div>
         )}
 
@@ -788,6 +807,18 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
           <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
           </div>
+        )}
+
+        {/* Phase Summary Panel */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="Challenge Complete!"
+            celebrationMessage={`You completed all ${challenges.length} regrouping problems!`}
+            className="mt-4"
+          />
         )}
       </CardContent>
     </Card>

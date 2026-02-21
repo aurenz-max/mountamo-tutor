@@ -162,7 +162,20 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'ratio-table':
-      return <RatioTable data={data as Parameters<typeof RatioTable>[0]['data']} />;
+      // RatioTable handles its own evaluation internally — do NOT pass onEvaluationSubmit
+      // to avoid double submission.  The generator now produces RatioTableData with a
+      // `challenges` array instead of flat task fields.
+      return (
+        <RatioTable
+          data={{
+            ...(data as Parameters<typeof RatioTable>[0]['data']),
+            instanceId: `ratio-table-${Date.now()}`,
+            skillId: 'math-ratios',
+            subskillId: 'equivalent-ratios',
+            objectiveId: 'understand-ratio-relationships',
+          }}
+        />
+      );
     case 'double-number-line':
       return <DoubleNumberLine data={data as Parameters<typeof DoubleNumberLine>[0]['data']} />;
     case 'percent-bar':

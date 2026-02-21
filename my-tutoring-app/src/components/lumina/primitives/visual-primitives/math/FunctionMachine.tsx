@@ -10,7 +10,10 @@ import {
 } from '../../../evaluation';
 import type { FunctionMachineMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -69,6 +72,14 @@ const PHASE_CONFIG: Record<Phase, { label: string; description: string; icon: st
 };
 
 const PHASES: Phase[] = ['observe', 'predict', 'discover', 'create'];
+
+/** Phase type config for usePhaseResults hook (maps challenge types to display config). */
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  discover: { label: 'Discover', icon: '💡', accentColor: 'emerald' },
+  predict: { label: 'Predict', icon: '🔮', accentColor: 'amber' },
+  create: { label: 'Create', icon: '🛠️', accentColor: 'purple' },
+  chain: { label: 'Chain', icon: '🔗', accentColor: 'blue' },
+};
 
 // ============================================================================
 // Helpers
@@ -142,6 +153,33 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
+  // Challenge Progress (shared hook)
+  // -------------------------------------------------------------------------
+  const {
+    currentIndex: _currentChallengeIndex,
+    currentAttempts: _currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult: _recordResult,
+    incrementAttempts: _incrementAttempts,
+    advance: _advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => `${ch.type}-${ch.rule}`,
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase Results (shared hook — used when challenges are provided)
+  // -------------------------------------------------------------------------
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
+  // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
   const [phase, setPhase] = useState<Phase>('observe');
@@ -175,16 +213,14 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   const [chainResults, setChainResults] = useState<Array<{ machineId: string; input: number; output: number }>>([]);
   const [showChainView, setShowChainView] = useState(chainable && chainedMachines.length > 1);
 
-  // Challenge state
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [challengeResults, setChallengeResults] = useState<Array<{ correct: boolean; attempts: number }>>([]);
-
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<FunctionMachineMetrics>({
     primitiveType: 'function-machine',
     instanceId: resolvedInstanceId,
@@ -236,6 +272,71 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
       { silent: true }
     );
   }, [isConnected]);
+
+  // -------------------------------------------------------------------------
+  // Exploration-based Phase Summary (fallback when no challenges provided)
+  // -------------------------------------------------------------------------
+  // FunctionMachine's phase summary is computed from exploration state
+  // (processedPairs, predictions, guessAttempts) rather than from challenge
+  // results. When the challenges array is populated, usePhaseResults provides
+  // the summary; otherwise this exploration-based computation is used.
+  const explorationPhaseResults = useMemo(() => {
+    if (!hasSubmittedEvaluation) return [];
+    // If usePhaseResults produced results, defer to those
+    if (phaseResults.length > 0) return [];
+
+    const phases: Array<{
+      label: string;
+      score: number;
+      attempts: number;
+      firstTry: boolean;
+      icon?: string;
+      accentColor?: 'purple' | 'blue' | 'emerald' | 'amber' | 'cyan' | 'pink' | 'orange';
+    }> = [];
+
+    // Observe phase: score based on thoroughness of exploration
+    const observeScore = processedPairs.length >= 5 ? 100
+      : processedPairs.length >= 3 ? 85
+      : processedPairs.length >= 2 ? 70
+      : 50;
+    phases.push({
+      label: 'Observation',
+      score: observeScore,
+      attempts: processedPairs.length,
+      firstTry: processedPairs.length >= 3,
+      icon: '👁️',
+      accentColor: 'blue',
+    });
+
+    // Predict phase: only include if the student made predictions
+    if (predictionsTotal > 0) {
+      const predictScore = Math.round((predictionsCorrect / predictionsTotal) * 100);
+      phases.push({
+        label: 'Prediction',
+        score: predictScore,
+        attempts: predictionsTotal,
+        firstTry: predictionsCorrect === predictionsTotal,
+        icon: '🔮',
+        accentColor: 'amber',
+      });
+    }
+
+    // Discover phase: score based on guess attempts
+    const discoverScore = Math.max(50, 100 - ((guessAttempts - 1) * 10));
+    phases.push({
+      label: 'Rule Discovery',
+      score: discoverScore,
+      attempts: guessAttempts,
+      firstTry: guessAttempts === 1,
+      icon: '💡',
+      accentColor: 'emerald',
+    });
+
+    return phases;
+  }, [hasSubmittedEvaluation, phaseResults.length, processedPairs.length, predictionsTotal, predictionsCorrect, guessAttempts]);
+
+  /** Resolved phase results: prefer hook-computed results, fall back to exploration-based. */
+  const resolvedPhaseResults = phaseResults.length > 0 ? phaseResults : explorationPhaseResults;
 
   // -------------------------------------------------------------------------
   // Process value through the machine
@@ -313,9 +414,18 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     setGuessResult(isCorrect ? 'correct' : 'incorrect');
 
     if (isCorrect) {
+      const observeScore = processedPairs.length >= 5 ? 100 : processedPairs.length >= 3 ? 85 : processedPairs.length >= 2 ? 70 : 50;
+      const discoverScore = Math.max(50, 100 - (guessAttempts * 10));
+      const predictScore = predictionsTotal > 0 ? Math.round((predictionsCorrect / predictionsTotal) * 100) : null;
+      const overallScore = Math.max(50, 100 - (guessAttempts * 10));
+
       sendText(
-        `[RULE_DISCOVERED] Student discovered the rule after ${guessAttempts + 1} attempts! `
-        + `They guessed "${guessedRule}", rule was "${rule}". Celebrate enthusiastically!`,
+        `[ALL_COMPLETE] Student discovered the rule after ${guessAttempts + 1} attempts! `
+        + `They guessed "${guessedRule}", rule was "${rule}". `
+        + `Phase scores: Observation ${observeScore}% (${processedPairs.length} pairs), `
+        + `${predictScore !== null ? `Prediction ${predictScore}% (${predictionsCorrect}/${predictionsTotal}), ` : ''}`
+        + `Discovery ${discoverScore}% (${guessAttempts + 1} attempts). `
+        + `Overall: ${overallScore}%. Give encouraging phase-specific feedback and celebrate!`,
         { silent: true }
       );
 
@@ -573,6 +683,18 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* Phase Summary Panel */}
+      {hasSubmittedEvaluation && resolvedPhaseResults.length > 0 && (
+        <PhaseSummaryPanel
+          phases={resolvedPhaseResults}
+          overallScore={submittedResult?.score}
+          durationMs={elapsedMs}
+          heading="Challenge Complete!"
+          celebrationMessage="You explored the function machine and discovered the hidden rule!"
+          className="mb-6"
+        />
       )}
 
       {/* Machine Visualization (single or chain) */}

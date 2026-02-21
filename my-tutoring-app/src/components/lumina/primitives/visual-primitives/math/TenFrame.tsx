@@ -10,7 +10,10 @@ import {
 } from '../../../evaluation';
 import type { TenFrameMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -74,6 +77,14 @@ const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
   operate: { label: 'Operate', description: 'Add & subtract with frames' },
 };
 
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  build: { label: 'Build', icon: '🧱', accentColor: 'purple' },
+  subitize: { label: 'Subitize', icon: '👁️', accentColor: 'blue' },
+  make_ten: { label: 'Make Ten', icon: '🎯', accentColor: 'emerald' },
+  add: { label: 'Add', icon: '➕', accentColor: 'amber' },
+  subtract: { label: 'Subtract', icon: '➖', accentColor: 'orange' },
+};
+
 const COUNTER_COLORS: Record<string, string> = {
   red: '#ef4444',
   yellow: '#eab308',
@@ -124,7 +135,6 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     showCount = true,
     showEmptyCount = false,
     showEquation = false,
-    allowFlip = false,
   } = showOptions;
 
   // -------------------------------------------------------------------------
@@ -151,7 +161,28 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     return map;
   });
 
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  // Challenge progress tracking (shared hooks)
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
   const [currentPhase, setCurrentPhase] = useState<Phase>(() => {
     if (challenges.length === 0) return 'build';
     const firstType = challenges[0].type;
@@ -173,14 +204,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   // Make-ten state
   const [makeTenInput, setMakeTenInput] = useState('');
 
-  // Tracking
-  const [challengeResults, setChallengeResults] = useState<Array<{
-    challengeId: string;
-    correct: boolean;
-    timeMs?: number;
-    attempts: number;
-  }>>([]);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
+  // Domain-specific tracking (not covered by shared hooks)
   const [placementChanges, setPlacementChanges] = useState(0);
   const [fullFrameReached, setFullFrameReached] = useState(false);
   const [twoColorExplorations, setTwoColorExplorations] = useState(0);
@@ -197,6 +221,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    elapsedMs,
   } = usePrimitiveEvaluation<TenFrameMetrics>({
     primitiveType: 'ten-frame',
     instanceId: resolvedInstanceId,
@@ -310,7 +335,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     const target = currentChallenge.targetCount;
     const current = filledCells.size;
     const correct = current === target;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setFeedback(`Correct! You placed ${target} counters!`);
@@ -333,7 +358,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     }
 
     return correct;
-  }, [currentChallenge, filledCells.size, currentAttempts, sendText]);
+  }, [currentChallenge, filledCells.size, currentAttempts, sendText, incrementAttempts]);
 
   const startSubitizeFlash = useCallback(() => {
     if (!currentChallenge) return;
@@ -369,7 +394,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     const answer = parseInt(subitizeInput, 10);
     const correct = answer === target;
     const timeMs = Date.now() - subitizeStartTime;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setShowCounters(true);
@@ -391,7 +416,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     }
 
     return { correct, timeMs };
-  }, [currentChallenge, subitizeInput, subitizeStartTime, sendText]);
+  }, [currentChallenge, subitizeInput, subitizeStartTime, sendText, incrementAttempts]);
 
   const checkMakeTenAnswer = useCallback(() => {
     if (!currentChallenge) return;
@@ -399,7 +424,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     const complement = 10 - currentCount;
     const answer = parseInt(makeTenInput, 10);
     const correct = answer === complement;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setFeedback(`Yes! ${currentCount} + ${complement} = 10!`);
@@ -420,7 +445,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     }
 
     return correct;
-  }, [currentChallenge, filledCells.size, makeTenInput, sendText]);
+  }, [currentChallenge, filledCells.size, makeTenInput, sendText, incrementAttempts]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -451,43 +476,46 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     }
 
     if (correct) {
-      setChallengeResults(prev => [
-        ...prev,
-        {
-          challengeId: currentChallenge.id,
-          correct: true,
-          timeMs,
-          attempts: currentAttempts + 1,
-        },
-      ]);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        timeMs,
+        attempts: currentAttempts + 1,
+      });
     }
-  }, [currentChallenge, currentAttempts, checkBuildChallenge, checkSubitizeAnswer, checkMakeTenAnswer]);
+  }, [currentChallenge, currentAttempts, checkBuildChallenge, checkSubitizeAnswer, checkMakeTenAnswer, recordResult]);
 
   const advanceToNextChallenge = useCallback(() => {
-    const nextIndex = currentChallengeIndex + 1;
+    if (!advanceProgress()) {
+      // All challenges complete — compute per-phase scores for AI feedback
+      const phaseScoreStr = phaseResults
+        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+        .join(', ');
+      const overallCorrect = challengeResults.filter(r => r.correct).length;
+      const overallPct = Math.round((overallCorrect / challenges.length) * 100);
 
-    if (nextIndex >= challenges.length) {
-      // All challenges complete
       sendText(
-        `[CHALLENGE_COMPLETE] The student completed all ${challenges.length} challenges! `
-        + `Celebrate the full session and summarize what they learned.`,
+        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+        + `Give encouraging phase-specific feedback.`,
         { silent: true }
       );
 
       // Submit evaluation
       if (!hasSubmittedEvaluation) {
-        const subitizeResults = challengeResults.filter(
-          (r, i) => challenges[i]?.type === 'subitize'
-        );
-        const makeTenResults = challengeResults.filter(
-          (r, i) => challenges[i]?.type === 'make_ten'
-        );
+        const subitizeResults = challengeResults.filter(r => {
+          const ch = challenges.find(c => c.id === r.challengeId);
+          return ch?.type === 'subitize';
+        });
+        const makeTenResults = challengeResults.filter(r => {
+          const ch = challenges.find(c => c.id === r.challengeId);
+          return ch?.type === 'make_ten';
+        });
 
         const subitizeAccuracy = subitizeResults.length > 0
           ? (subitizeResults.filter(r => r.correct).length / subitizeResults.length) * 100
           : 0;
         const subitizeAvgTime = subitizeResults.length > 0
-          ? subitizeResults.reduce((sum, r) => sum + (r.timeMs || 0), 0) / subitizeResults.length
+          ? subitizeResults.reduce((sum, r) => sum + ((r.timeMs as number) || 0), 0) / subitizeResults.length
           : 0;
 
         const totalCorrect = challengeResults.filter(r => r.correct).length;
@@ -519,16 +547,15 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       return;
     }
 
-    // Move to next challenge
-    setCurrentChallengeIndex(nextIndex);
-    setCurrentAttempts(0);
+    // advanceProgress() already incremented index and reset attempts.
+    // Now reset domain-specific state.
     setFeedback('');
     setFeedbackType('');
     setSubitizeInput('');
     setMakeTenInput('');
     setShowCounters(true);
 
-    const nextChallenge = challenges[nextIndex];
+    const nextChallenge = challenges[currentChallengeIndex + 1];
 
     // Reset frame for next challenge unless it's an operate challenge building on previous
     if (nextChallenge.type !== 'add' && nextChallenge.type !== 'subtract') {
@@ -543,15 +570,15 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     else setCurrentPhase('build');
 
     sendText(
-      `[PHASE_TRANSITION] Moving to challenge ${nextIndex + 1} of ${challenges.length}: `
+      `[PHASE_TRANSITION] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
       + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). `
       + `Read the instruction to the student and encourage them.`,
       { silent: true }
     );
   }, [
-    currentChallengeIndex, challenges, challengeResults, sendText,
+    advanceProgress, phaseResults, challenges, challengeResults, sendText,
     hasSubmittedEvaluation, fullFrameReached, placementChanges,
-    twoColorExplorations, submitEvaluation,
+    twoColorExplorations, submitEvaluation, currentChallengeIndex,
   ]);
 
   // -------------------------------------------------------------------------
@@ -684,7 +711,32 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct
   );
-  const allChallengesComplete = challenges.length > 0 && challengeResults.filter(r => r.correct).length >= challenges.length;
+
+  // -------------------------------------------------------------------------
+  // Auto-submit evaluation when all challenges complete
+  // -------------------------------------------------------------------------
+  const hasAutoSubmittedRef = useRef(false);
+  useEffect(() => {
+    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
+      hasAutoSubmittedRef.current = true;
+      advanceToNextChallenge();
+    }
+  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
+
+  // -------------------------------------------------------------------------
+  // Overall Score
+  // -------------------------------------------------------------------------
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    const correct = challengeResults.filter(r => r.correct).length;
+    return Math.round((correct / challenges.length) * 100);
+  }, [allChallengesComplete, challenges, challengeResults]);
+
+  // Snapshot duration when challenges complete (elapsedMs from hook keeps ticking)
+  const completionDurationRef = useRef<number | undefined>(undefined);
+  if (allChallengesComplete && completionDurationRef.current === undefined) {
+    completionDurationRef.current = elapsedMs;
+  }
 
   // -------------------------------------------------------------------------
   // Render
@@ -847,7 +899,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
                 Next Challenge
               </Button>
             )}
-            {allChallengesComplete && (
+            {allChallengesComplete && !hasSubmittedEvaluation && (
               <div className="text-center">
                 <p className="text-emerald-400 text-sm font-medium mb-2">
                   All challenges complete!
@@ -865,6 +917,18 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
           <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
           </div>
+        )}
+
+        {/* Phase Summary */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={localOverallScore}
+            durationMs={completionDurationRef.current}
+            heading="Challenge Complete!"
+            celebrationMessage="You completed all ten frame challenges!"
+            className="mb-6"
+          />
         )}
       </CardContent>
     </Card>
