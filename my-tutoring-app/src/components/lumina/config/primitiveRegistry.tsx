@@ -28,6 +28,8 @@ import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachin
 import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
 import NumberBond from '../primitives/visual-primitives/math/NumberBond';
 import NumberSequencer from '../primitives/visual-primitives/math/NumberSequencer';
+import OrdinalLine from '../primitives/visual-primitives/math/OrdinalLine';
+import SortingStation from '../primitives/visual-primitives/math/SortingStation';
 import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
 import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
@@ -43,6 +45,7 @@ import RegroupingWorkbench from '../primitives/visual-primitives/math/Regrouping
 import MultiplicationExplorer from '../primitives/visual-primitives/math/MultiplicationExplorer';
 import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTools';
 import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
+import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -477,6 +480,26 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  'ordinal-line': {
+    component: OrdinalLine,
+    sectionTitle: 'Ordinal Line',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'sorting-station': {
+    component: SortingStation,
+    sectionTitle: 'Sorting Station',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   'coordinate-graph': {
     component: CoordinateGraph,
     sectionTitle: 'Coordinate Graph',
@@ -615,6 +638,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'shape-builder': {
     component: ShapeBuilder,
     sectionTitle: 'Shape Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'shape-sorter': {
+    component: ShapeSorter,
+    sectionTitle: 'Shape Sorter',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

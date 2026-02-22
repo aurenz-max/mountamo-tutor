@@ -239,7 +239,7 @@ Respond ONLY with the complete HTML code. Do not include explanations or markdow
     model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
-      maxOutputTokens: 15000,
+      maxOutputTokens: 25000,
       thinkingConfig: {
         thinkingLevel: ThinkingLevel.HIGH,
       },

@@ -39,6 +39,9 @@ import { generateComparisonBuilder } from '../../math/gemini-comparison-builder'
 import { generateNumberSequencer } from '../../math/gemini-number-sequencer';
 import { generateNumberBond } from '../../math/gemini-number-bond';
 import { generateAdditionSubtractionScene } from '../../math/gemini-addition-subtraction-scene';
+import { generateOrdinalLine } from '../../math/gemini-ordinal-line';
+import { generateSortingStation } from '../../math/gemini-sorting-station';
+import { generateShapeSorter } from '../../math/gemini-shape-sorter';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -258,6 +261,27 @@ registerGenerator('addition-subtraction-scene', async (item, topic, gradeContext
   data: await generateAdditionSubtractionScene(topic, gradeContext, item.config),
 }));
 
+// Ordinal Line (K-1 ordinal position sequencing)
+registerGenerator('ordinal-line', async (item, topic, gradeContext) => ({
+  type: 'ordinal-line',
+  instanceId: item.instanceId,
+  data: await generateOrdinalLine(topic, gradeContext, item.config),
+}));
+
+// Sorting Station (K-1 categorization & data organization)
+registerGenerator('sorting-station', async (item, topic, gradeContext) => ({
+  type: 'sorting-station',
+  instanceId: item.instanceId,
+  data: await generateSortingStation(topic, gradeContext, item.config),
+}));
+
+// Shape Sorter (K-1 shape identification, naming, matching & classification)
+registerGenerator('shape-sorter', async (item, topic, gradeContext) => ({
+  type: 'shape-sorter',
+  instanceId: item.instanceId,
+  data: await generateShapeSorter(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
 // Legacy Math Primitives (now have dedicated service files)
 // ============================================================================
@@ -306,6 +330,6 @@ registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
 }));
 
 // ============================================================================
-// Migration status: 26/26 math primitives registered
+// Migration status: 29/29 math primitives registered
 // All math generators now use dedicated service files in math/ folder
 // ============================================================================

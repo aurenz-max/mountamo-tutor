@@ -1062,6 +1062,7 @@ export type ComponentId =
   | 'number-bond'        // Part-whole number bond visualization for addition and subtraction
   | 'number-line'        // Linear number line with highlights
   | 'number-sequencer'   // Interactive number sequencing for building number sense
+  | 'ordinal-line'       // Interactive ordinal position line
   | 'base-ten-blocks'    // Place value visualization (hundreds, tens, ones)
   | 'fraction-circles'   // Fractional parts shown as pie charts
   | 'fraction-bar'       // Rectangular bar divided into parts to represent fractions
@@ -1089,10 +1090,12 @@ export type ComponentId =
   | 'counting-board'     // Flexible counting workspace with draggable objects, subitizing, and counting strategies (K-1)
   | 'pattern-builder'   // Pattern recognition, extension, creation for algebraic thinking (K-3)
   | 'skip-counting-runner' // Rhythmic skip counting with number line jumps, arrays, and multiplication connection (1-3)
+  | 'sorting-station'     // Interactive sorting station for categorizing objects into groups
   | 'regrouping-workbench' // Addition/subtraction with carrying/borrowing using base-ten blocks and written algorithm (1-4)
   | 'multiplication-explorer' // Multi-representation multiplication workspace: equal groups, arrays, repeated addition, number line, area model (2-4)
   | 'measurement-tools'       // Virtual measurement instruments: ruler, scale, measuring cup, thermometer for length, weight, capacity, temperature (1-5)
   | 'shape-builder'           // Interactive shape construction and property exploration
+  | 'shape-sorter'            // Interactive shape sorting for categorizing shapes by attributes
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, shape-builder
@@ -1517,3 +1520,6 @@ export type { EngineExplorerData } from './primitives/visual-primitives/engineer
 export type { PhExplorerData } from './primitives/visual-primitives/chemistry/PhExplorer';
 export type { SafetyLabData } from './primitives/visual-primitives/chemistry/SafetyLab';
 export type { AdditionSubtractionSceneData } from './primitives/visual-primitives/math/AdditionSubtractionScene';
+export type { OrdinalLineData } from './primitives/visual-primitives/math/OrdinalLine';
+export type { SortingStationData, SortingObject, SortingCategory, SortingStationChallenge } from './primitives/visual-primitives/math/SortingStation';
+export type { ShapeSorterData } from './primitives/visual-primitives/math/ShapeSorter';

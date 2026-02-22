@@ -35,6 +35,10 @@ import NumberSequencer from '../primitives/visual-primitives/math/NumberSequence
 import NumberBond from '../primitives/visual-primitives/math/NumberBond';
 import AdditionSubtractionScene from '../primitives/visual-primitives/math/AdditionSubtractionScene';
 import type { AdditionSubtractionSceneData } from '../primitives/visual-primitives/math/AdditionSubtractionScene';
+import OrdinalLine from '../primitives/visual-primitives/math/OrdinalLine';
+import SortingStation from '../primitives/visual-primitives/math/SortingStation';
+import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
+
 import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData } from '../types';
 import {
   EvaluationProvider,
@@ -48,7 +52,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -85,6 +89,9 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'number-sequencer', label: 'Number Sequencer', icon: '🔢', topic: 'Number sequences and counting' },
   { value: 'number-bond', label: 'Number Bond', icon: '🔗', topic: 'number bonds' },
   { value: 'addition-subtraction-scene', label: 'Addition & Subtraction Scene', icon: '🎭', topic: 'Addition and subtraction stories within 10' },
+  { value: 'ordinal-line', label: 'Ordinal Line', icon: '📏', topic: 'Ordinal positions' },
+  { value: 'sorting-station', label: 'Sorting Station', icon: '📦', topic: 'sorting shapes and colors' },
+  { value: 'shape-sorter', label: 'Shape Sorter', icon: '📐', topic: 'Shapes and Geometry' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -384,6 +391,35 @@ const PrimitiveRenderer: React.FC<{
       };
       return <AdditionSubtractionScene data={testData} />;
     }
+    case 'ordinal-line':
+      // OrdinalLine handles its own evaluation via usePrimitiveEvaluation hook
+      return (
+        <OrdinalLine
+          data={{
+            ...(data as Parameters<typeof OrdinalLine>[0]['data']),
+            instanceId: `ordinal-line-${Date.now()}`,
+            skillId: 'math-number-sense',
+            subskillId: 'ordinal-positions',
+            objectiveId: 'understand-ordinal-numbers',
+          }}
+        />
+      );
+    case 'sorting-station':
+      // SortingStation handles its own evaluation via usePrimitiveEvaluation hook
+      return (
+        <SortingStation
+          data={data as any}
+          className="w-full"
+        />
+      );
+    case 'shape-sorter':
+      // ShapeSorter handles its own evaluation via usePrimitiveEvaluation hook
+      return (
+        <ShapeSorter
+          data={data as any}
+          className="w-full"
+        />
+      );
     default:
       return <div className="text-slate-400">Unknown primitive: {componentId}</div>;
   }

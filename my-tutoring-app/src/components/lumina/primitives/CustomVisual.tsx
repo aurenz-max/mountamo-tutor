@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { CustomSVGData, CustomWebData } from '../types';
 
 interface CustomVisualProps {
@@ -10,17 +10,34 @@ interface CustomVisualProps {
 export const CustomVisual: React.FC<CustomVisualProps> = ({ data }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
+  const prevDataRef = useRef(data);
 
-  // Reset loading state when data changes
-  useEffect(() => {
-    if (data.type === 'custom-web') {
-      setIsLoading(true);
-    }
-  }, [data]);
+  // Ref callback: fires when iframe mounts. Attach onload reliably,
+  // and if the iframe already finished loading (srcDoc race), clear immediately.
+  const iframeRef = useCallback(
+    (iframe: HTMLIFrameElement | null) => {
+      if (!iframe) return;
 
-  const handleIframeLoad = () => {
-    setIsLoading(false);
-  };
+      // Reset loading when data changes
+      if (prevDataRef.current !== data) {
+        setIsLoading(true);
+        prevDataRef.current = data;
+      }
+
+      const done = () => setIsLoading(false);
+      iframe.addEventListener('load', done, { once: true });
+
+      // srcDoc may already be loaded by the time React attaches the ref
+      try {
+        if (iframe.contentDocument?.readyState === 'complete') {
+          done();
+        }
+      } catch {
+        // cross-origin; rely on the event listener
+      }
+    },
+    [data],
+  );
 
   const toggleTheaterMode = () => {
     setIsTheaterMode(!isTheaterMode);
@@ -90,11 +107,11 @@ export const CustomVisual: React.FC<CustomVisualProps> = ({ data }) => {
           {/* Custom Web - Iframe Rendering */}
           {data.type === 'custom-web' && (
             <iframe
+              ref={iframeRef}
               className={`w-full h-full border-0 bg-white rounded-lg ${isTheaterMode ? 'min-h-[calc(100vh-300px)]' : 'min-h-[800px]'}`}
               srcDoc={data.htmlContent}
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               title={data.title}
-              onLoad={handleIframeLoad}
             />
           )}
         </div>

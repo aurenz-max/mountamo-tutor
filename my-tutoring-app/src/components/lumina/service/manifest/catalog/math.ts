@@ -1112,4 +1112,67 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'ordinal-line',
+    description: 'Interactive ordinal positions activity with a horizontal queue of characters. Students identify positions (1st-10th), match ordinal words to symbols, answer relative position questions, solve story-based word problems, and build sequences from clues. Perfect for teaching ordinal numbers in context. ESSENTIAL for K-1 number sense.',
+    constraints: 'maxPosition 5 for Kindergarten, 10 for Grade 1. Characters array must have distinct emoji. Each challenge needs correctAnswer matching the expected response.',
+    tutoring: {
+      taskDescription: 'The student is working with ordinal positions in a {{context}} context. They are on a {{challengeType}} challenge: "{{instruction}}". The line has {{characters}} in positions up to {{maxPosition}}.',
+      contextKeys: ['challengeType', 'targetPosition', 'targetOrdinalWord', 'characters', 'context', 'storyText', 'attemptNumber', 'correctAnswer', 'instruction', 'maxPosition', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Count from the front of the line: first, second, third... Which one is in the spot we need?"',
+        level2: '"Point to each character and count: 1st, 2nd, 3rd. Which one is in the {{targetOrdinalWord}} spot? Remember, {{targetOrdinalWord}} means position number {{targetPosition}} from the front."',
+        level3: '"The {{targetOrdinalWord}} position is number {{targetPosition}} from the front. Start at the first character and count forward: 1st, 2nd, 3rd... stop at {{targetPosition}}. That\'s the one we need!"',
+      },
+      commonStruggles: [
+        { pattern: 'Student counts from the wrong end of the line', response: 'Remind student that ordinal positions start from the front/left: "We always start counting from the front of the line. Who is first in line?"' },
+        { pattern: 'Student confuses ordinal word with cardinal number', response: 'Connect ordinal to cardinal: "Third means the 3rd one. Count 1, 2, 3 and stop! That\'s the third one."' },
+        { pattern: 'Student selects adjacent position (off by one)', response: 'Guide careful recount: "You are very close! Let\'s count together one more time, touching each character as we go."' },
+        { pattern: 'Student struggles with relative position questions', response: 'Anchor from known position: "You found the 3rd one. Now, what is right before it? Count: 1st, 2nd... that is the one just before 3rd."' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'sorting-station',
+    description: 'Interactive sorting station where students categorize objects by attributes (color, shape, size). Supports single-attribute sorting, multi-attribute classification, count-and-compare, odd-one-out, and tally recording. Perfect for teaching data organization and logical reasoning. ESSENTIAL for Kindergarten and Grade 1 math.',
+    constraints: 'Best for K-1. Objects should be familiar (animals, shapes, food, toys). Max 4 sorting categories. Max 10 objects per challenge.',
+    tutoring: {
+      taskDescription: 'Student is sorting {{totalObjects}} objects into categories based on {{sortingAttribute}}. Challenge type: {{challengeType}}. Categories: {{categories}}.',
+      contextKeys: ['challengeType', 'sortingAttribute', 'categories', 'objectsSorted', 'totalObjects', 'studentAnswer', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"Look at the objects. What do you notice about them? Do any look alike?"',
+        level2: '"Look at the {{sortingAttribute}} of each object. Can you put all the ones that are the same together? Try the {{categories}} bins."',
+        level3: '"Let\'s sort step by step. Pick up this object — what {{sortingAttribute}} is it? Now find the bin that matches. Great! Now do the next one."',
+      },
+      commonStruggles: [
+        { pattern: 'Student places objects in random bins without considering attributes', response: 'Ask "What color/shape/size is this one?" before placing. Point to the bin labels.' },
+        { pattern: 'Student confuses "more" and "fewer" in comparisons', response: 'Have the student count each group aloud, then ask "Which number is bigger?"' },
+        { pattern: 'Student struggles with two-attribute sorting', response: 'Break into steps: "First, find all the BLUE ones. Now, which of those are also CIRCLES?"' },
+        { pattern: 'Student cannot identify the odd one out', response: 'Ask "What do most of these have in common?" then "Which one is different from the rest?"' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'shape-sorter',
+    description: 'Attribute-focused geometry primitive with 3 challenge types: identify (find shapes matching a rule), count (count sides and corners), and sort (group by attribute). Teaches Defining vs Non-Defining Attributes through a unified shape pool — correctness derived in code. Perfect for K-1 geometry foundations. ESSENTIAL for Kindergarten and Grade 1 geometry.',
+    constraints: 'Shapes limited to: circle, square, triangle, rectangle, diamond, rhombus, hexagon, pentagon, oval. Grade K-1 only. Rules: shape, color, sides, curved.',
+    tutoring: {
+      taskDescription: 'Student is working on a {{challengeType}} challenge. Rule attribute: {{ruleAttribute}}. Instruction: "{{instruction}}".',
+      contextKeys: ['challengeType', 'ruleAttribute', 'targetValue', 'shapeName', 'expectedSides', 'expectedCorners', 'instruction', 'attemptNumber', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Look at the shapes. Which ones look alike? What do you notice about them?"',
+        level2: '"Count the sides. How many sides does this one have? Remember, shapes keep their name no matter how big, small, or rotated they are."',
+        level3: '"This shape has {{expectedSides}} straight sides and {{expectedCorners}} corners. Even when it is turned sideways, it is still the same shape!"',
+      },
+      commonStruggles: [
+        { pattern: 'Student confuses rotated shapes with different shape types', response: 'Emphasize that shapes keep their identity regardless of orientation. A triangle turned on its side is still a triangle — count the sides together.' },
+        { pattern: 'Student counts sides incorrectly for shapes with many sides', response: 'Guide the student to tap each side one at a time. Use the sequential highlighting to make each side visible.' },
+        { pattern: 'Student confuses similar shapes like square/rectangle or diamond/rhombus', response: 'Compare the shapes side by side. Point out specific differences: "A square has 4 equal sides, but a rectangle has 2 long sides and 2 short sides."' },
+        { pattern: 'Student sorts by non-defining attribute when asked about defining attribute', response: 'Redirect: "Color and size can change, but the number of sides stays the same. Count the sides to decide which group it belongs in."' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

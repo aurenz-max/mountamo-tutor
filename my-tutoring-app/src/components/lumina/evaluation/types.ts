@@ -2457,6 +2457,33 @@ export interface AdditionSubtractionSceneMetrics extends BasePrimitiveMetrics {
   storyTypesUsed: string[];
 }
 
+export interface OrdinalLineMetrics extends BasePrimitiveMetrics {
+  type: 'ordinal-line';
+  accuracy: number;
+  identifyAccuracy: number;
+  matchAccuracy: number;
+  relativePositionAccuracy: number;
+  storyAccuracy: number;
+  buildAccuracy: number;
+  attemptsCount: number;
+  maxPositionReached: number;
+}
+
+export interface SortingStationMetrics extends BasePrimitiveMetrics {
+  type: 'sorting-station';
+  sortingAccuracy: number;
+  categoriesUsed: number;
+  attemptsCount: number;
+}
+
+export interface ShapeSorterMetrics extends BasePrimitiveMetrics {
+  type: 'shape-sorter';
+  identifyAccuracy: number;
+  countAccuracy: number;
+  sortAccuracy: number;
+  attemptsCount: number;
+}
+
 export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {
   type: 'regrouping-workbench';
 
@@ -2765,6 +2792,9 @@ export type PrimitiveMetrics =
   | NumberSequencerMetrics
   | NumberBondMetrics
   | AdditionSubtractionSceneMetrics
+  | OrdinalLineMetrics
+  | SortingStationMetrics
+  | ShapeSorterMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

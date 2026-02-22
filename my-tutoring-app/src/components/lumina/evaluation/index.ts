@@ -103,6 +103,9 @@ export type {
   NumberSequencerMetrics,
   NumberBondMetrics,
   AdditionSubtractionSceneMetrics,
+  OrdinalLineMetrics,
+  SortingStationMetrics,
+  ShapeSorterMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,
