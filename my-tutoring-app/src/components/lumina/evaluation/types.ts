@@ -2447,6 +2447,16 @@ export interface NumberBondMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface AdditionSubtractionSceneMetrics extends BasePrimitiveMetrics {
+  type: 'addition-subtraction-scene';
+  overallAccuracy: number;
+  equationBuildingAccuracy: number;
+  storySolvingAccuracy: number;
+  attemptsCount: number;
+  operationsUsed: string[];
+  storyTypesUsed: string[];
+}
+
 export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {
   type: 'regrouping-workbench';
 
@@ -2754,6 +2764,7 @@ export type PrimitiveMetrics =
   | ShapeBuilderMetrics
   | NumberSequencerMetrics
   | NumberBondMetrics
+  | AdditionSubtractionSceneMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

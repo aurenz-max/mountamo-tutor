@@ -9,6 +9,7 @@ import { MathVisuals } from '../primitives/MathVisuals';
 import { SentenceAnalyzer } from '../primitives/SentenceAnalyzer';
 import { CustomVisual } from '../primitives/CustomVisual';
 import GraphBoard from '../primitives/GraphBoard';
+import AdditionSubtractionScene from '../primitives/visual-primitives/math/AdditionSubtractionScene';
 import BarModel from '../primitives/visual-primitives/math/BarModel';
 import NumberLine from '../primitives/visual-primitives/math/NumberLine';
 import BaseTenBlocks from '../primitives/visual-primitives/math/BaseTenBlocks';
@@ -287,6 +288,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   },
 
   // Math Visualization Primitives
+  'addition-subtraction-scene': {
+    component: AdditionSubtractionScene,
+    sectionTitle: 'Addition & Subtraction Scene',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   'bar-model': {
     component: BarModel,
     sectionTitle: 'Bar Model',

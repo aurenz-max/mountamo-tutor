@@ -33,6 +33,8 @@ import FractionCircles from '../primitives/visual-primitives/math/FractionCircle
 import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
 import NumberSequencer from '../primitives/visual-primitives/math/NumberSequencer';
 import NumberBond from '../primitives/visual-primitives/math/NumberBond';
+import AdditionSubtractionScene from '../primitives/visual-primitives/math/AdditionSubtractionScene';
+import type { AdditionSubtractionSceneData } from '../primitives/visual-primitives/math/AdditionSubtractionScene';
 import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData } from '../types';
 import {
   EvaluationProvider,
@@ -46,7 +48,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -82,6 +84,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'comparison-builder', label: 'Comparison Builder', icon: '🐻', topic: 'Compare numbers 1-10' },
   { value: 'number-sequencer', label: 'Number Sequencer', icon: '🔢', topic: 'Number sequences and counting' },
   { value: 'number-bond', label: 'Number Bond', icon: '🔗', topic: 'number bonds' },
+  { value: 'addition-subtraction-scene', label: 'Addition & Subtraction Scene', icon: '🎭', topic: 'Addition and subtraction stories within 10' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -364,6 +367,23 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'addition-subtraction-scene': {
+      const testData: AdditionSubtractionSceneData = {
+        title: 'Addition & Subtraction Scene: Addition and subtraction stories within 10',
+        description: 'Act out stories, build equations, and solve word problems!',
+        challenges: [
+          { id: 'as-1', type: 'act-out', instruction: 'Count all the ducks in the pond!', storyText: '3 ducks are swimming in the pond. 2 more ducks arrive.', scene: 'pond', objectType: 'ducks', operation: 'addition', storyType: 'join', startCount: 3, changeCount: 2, resultCount: 5, equation: '3 + 2 = 5' },
+          { id: 'as-2', type: 'build-equation', instruction: 'Build the equation that matches this story.', storyText: '4 frogs are on a log. 1 more hops on.', scene: 'garden', objectType: 'frogs', operation: 'addition', storyType: 'join', startCount: 4, changeCount: 1, resultCount: 5, equation: '4 + 1 = 5' },
+          { id: 'as-3', type: 'solve-story', instruction: 'How many birds are left?', storyText: '5 birds are on a branch. 2 fly away. How many are left?', scene: 'farm', objectType: 'birds', operation: 'subtraction', storyType: 'separate', startCount: 5, changeCount: 2, resultCount: 3, equation: '5 - 2 = 3', unknownPosition: 'result' },
+          { id: 'as-4', type: 'create-story', instruction: 'Create a story for this equation!', storyText: 'Can you make up a story for 4 + 3 = 7?', scene: 'playground', objectType: 'butterflies', operation: 'addition', storyType: 'join', startCount: 4, changeCount: 3, resultCount: 7, equation: '4 + 3 = 7' },
+        ],
+        maxNumber: 10,
+        showTenFrame: true,
+        showEquationBar: true,
+        gradeBand: 'K',
+      };
+      return <AdditionSubtractionScene data={testData} />;
+    }
     default:
       return <div className="text-slate-400">Unknown primitive: {componentId}</div>;
   }

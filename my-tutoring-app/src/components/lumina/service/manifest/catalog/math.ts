@@ -1091,4 +1091,25 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'addition-subtraction-scene',
+    description: 'An animated story scene where objects join, leave, or are compared to teach addition and subtraction. Students act out stories by counting objects, build matching equations from tiles, solve word problems, and create their own stories for given equations. Supports join, separate, compare, and part-part-whole story types. Perfect for K-1 students bridging from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
+    constraints: 'Numbers limited to maxNumber (5 for K, 10 for Grade 1). Requires 4 challenge types: act-out, build-equation, solve-story, create-story. Story contexts must match scene theme.',
+    tutoring: {
+      taskDescription: 'The student is working through addition and subtraction story challenges. Current story: "{{storyText}}" ({{operation}}, {{storyType}} type). The equation is {{equation}}. They are in a {{challengeType}} phase where they must {{instruction}}.',
+      contextKeys: ['storyText', 'operation', 'storyType', 'startCount', 'changeCount', 'resultCount', 'unknownPosition', 'equation', 'objectType', 'scene', 'challengeType', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"What happened in the story? Did the {{objectType}} come or go away?"',
+        level2: '"You started with {{startCount}} {{objectType}}. Then {{changeCount}} more came/went away. Can you count them all?"',
+        level3: '"Let\'s count together: {{startCount}} {{objectType}} and {{changeCount}} more makes... {{startCount}} + {{changeCount}} = {{resultCount}}. The equation matches the story!"',
+      },
+      commonStruggles: [
+        { pattern: 'Student counts incorrectly in act-out phase', response: 'Encourage tapping each object one at a time while saying the number aloud: "Touch each one as you count: 1, 2, 3..."' },
+        { pattern: 'Student confuses addition and subtraction operations', response: 'Connect to the story action: "In our story, the ducks flew AWAY. When things leave, we subtract!"' },
+        { pattern: 'Student builds equation with wrong operator', response: 'Ask about the story direction: "Did more objects come, or did some leave? That tells us which symbol to use!"' },
+        { pattern: 'Student struggles with unknown position other than result', response: 'Reframe the problem: "We know the answer is {{resultCount}}. We know {{changeCount}} left. So how many were there before?"' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

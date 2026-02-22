@@ -38,6 +38,7 @@ import { generateShapeBuilder } from '../../math/gemini-shape-builder';
 import { generateComparisonBuilder } from '../../math/gemini-comparison-builder';
 import { generateNumberSequencer } from '../../math/gemini-number-sequencer';
 import { generateNumberBond } from '../../math/gemini-number-bond';
+import { generateAdditionSubtractionScene } from '../../math/gemini-addition-subtraction-scene';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -248,6 +249,13 @@ registerGenerator('number-bond', async (item, topic, gradeContext) => ({
   type: 'number-bond',
   instanceId: item.instanceId,
   data: await generateNumberBond(topic, gradeContext, item.config),
+}));
+
+// Addition/Subtraction Scene (K-1 story-based addition & subtraction)
+registerGenerator('addition-subtraction-scene', async (item, topic, gradeContext) => ({
+  type: 'addition-subtraction-scene',
+  instanceId: item.instanceId,
+  data: await generateAdditionSubtractionScene(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

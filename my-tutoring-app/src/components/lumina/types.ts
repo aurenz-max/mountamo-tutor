@@ -1057,6 +1057,7 @@ export type ComponentId =
   | 'custom-visual'      // The SVG/HTML wildcard
 
   // Math Visualization Primitives (Elementary Math)
+  | 'addition-subtraction-scene' // Interactive addition and subtraction scene
   | 'bar-model'          // Comparative bar visualization for values
   | 'number-bond'        // Part-whole number bond visualization for addition and subtraction
   | 'number-line'        // Linear number line with highlights
@@ -1515,3 +1516,4 @@ export type { EquationBalancerData } from './primitives/visual-primitives/chemis
 export type { EngineExplorerData } from './primitives/visual-primitives/engineering/EngineExplorer';
 export type { PhExplorerData } from './primitives/visual-primitives/chemistry/PhExplorer';
 export type { SafetyLabData } from './primitives/visual-primitives/chemistry/SafetyLab';
+export type { AdditionSubtractionSceneData } from './primitives/visual-primitives/math/AdditionSubtractionScene';
