@@ -48,6 +48,8 @@ import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTo
 import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
 import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
+import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
+import FastFact from '../primitives/visual-primitives/core/FastFact';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -204,6 +206,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     component: ConceptCard,
     allowMultiple: true,
     containerClassName: 'grid grid-cols-1 lg:grid-cols-3 gap-8 justify-items-center max-w-7xl mx-auto mb-20',
+  },
+
+  'fast-fact': {
+    component: FastFact,
+    sectionTitle: 'Fast Fact',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'feature-exhibit': {
@@ -465,6 +477,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'function-machine': {
     component: FunctionMachine,
     sectionTitle: 'Function Machine',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'math-fact-fluency': {
+    component: MathFactFluency,
+    sectionTitle: 'Math Fact Fluency',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

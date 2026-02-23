@@ -108,6 +108,8 @@ export type {
   ShapeSorterMetrics,
   ThreeDShapeExplorerMetrics,
   ShapeTracerMetrics,
+  MathFactFluencyMetrics,
+  FastFactMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,

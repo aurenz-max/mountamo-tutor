@@ -44,6 +44,7 @@ import { generateSortingStation } from '../../math/gemini-sorting-station';
 import { generateShapeSorter } from '../../math/gemini-shape-sorter';
 import { generateThreeDShapeExplorer } from '../../math/gemini-3d-shape-explorer';
 import { generateShapeTracer } from '../../math/gemini-shape-tracer';
+import { generateMathFactFluency } from '../../math/gemini-math-fact-fluency';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -296,6 +297,13 @@ registerGenerator('shape-tracer', async (item, topic, gradeContext) => ({
   type: 'shape-tracer',
   instanceId: item.instanceId,
   data: await generateShapeTracer(topic, gradeContext, item.config),
+}));
+
+// Math Fact Fluency (K-1 rapid recall of addition & subtraction facts)
+registerGenerator('math-fact-fluency', async (item, topic, gradeContext) => ({
+  type: 'math-fact-fluency',
+  instanceId: item.instanceId,
+  data: await generateMathFactFluency(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

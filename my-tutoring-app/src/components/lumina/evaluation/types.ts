@@ -938,6 +938,18 @@ export interface FactorTreeMetrics extends BasePrimitiveMetrics {
   treeDepth: number;              // Maximum depth of the tree
 }
 
+export interface FastFactMetrics extends BasePrimitiveMetrics {
+  type: 'fast-fact';
+  subject: string;
+  accuracy: number;                   // 0-100
+  averageResponseTime: number;        // ms
+  fastAnswerCount: number;
+  bestStreak: number;
+  attemptsCount: number;
+  challengesTotal: number;
+  challengesCorrect: number;
+}
+
 export interface FormulaCardMetrics extends BasePrimitiveMetrics {
   type: 'formula-card';
 
@@ -2500,6 +2512,17 @@ export interface ShapeTracerMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface MathFactFluencyMetrics extends BasePrimitiveMetrics {
+  type: 'math-fact-fluency';
+  accuracy: number;
+  averageResponseTime: number;   // ms
+  fastAnswerCount: number;
+  bestStreak: number;
+  attemptsCount: number;
+  factsWithinTarget: number;
+  factsTotal: number;
+}
+
 export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {
   type: 'regrouping-workbench';
 
@@ -2813,6 +2836,8 @@ export type PrimitiveMetrics =
   | ShapeSorterMetrics
   | ThreeDShapeExplorerMetrics
   | ShapeTracerMetrics
+  | MathFactFluencyMetrics
+  | FastFactMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

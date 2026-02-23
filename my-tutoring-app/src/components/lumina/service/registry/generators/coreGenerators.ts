@@ -71,6 +71,7 @@ import { generateSentenceAnalyzer } from '../../sentence-analyzer/gemini-sentenc
 // Assessment Component Imports (from dedicated service files)
 // ============================================================================
 import { generateKnowledgeCheck } from '../../knowledge-check/gemini-knowledge-check';
+import { generateFastFact } from '../../fast-fact/gemini-fast-fact';
 
 
 // ============================================================================
@@ -537,8 +538,20 @@ registerGenerator('knowledge-check', async (item, topic, gradeContext) => {
   };
 });
 
+// Fast Fact (timed fluency drill across all subjects)
+registerGenerator('fast-fact', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
+  const gradeLevel = inferGradeLevel(gradeContext);
+  const data = await generateFastFact(topic, gradeLevel, config);
+  return {
+    type: 'fast-fact',
+    instanceId: item.instanceId,
+    data,
+  };
+});
+
 // ============================================================================
-// Migration status: 21 core components registered from dedicated service files
+// Migration status: 22 core components registered from dedicated service files
 // Math primitives (bar-model, number-line, etc.) moved to mathGenerators.ts
 // NO IMPORTS FROM geminiService.ts - all generators use dedicated files
 // ============================================================================

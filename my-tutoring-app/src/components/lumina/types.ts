@@ -1042,6 +1042,7 @@ export type ComponentId =
   // Core Narrative
   | 'curator-brief'      // The hook/intro
   | 'concept-card-grid'  // The 3-card layout
+  | 'fast-fact'          // Interactive fast fact display
   | 'feature-exhibit'    // The deep dive editorial
   | 'detail-drawer'      // (Usually triggered by interaction, but can be pre-seeded)
 
@@ -1074,6 +1075,7 @@ export type ComponentId =
   | 'tape-diagram'       // Tape diagram / bar model for part-whole and comparison word problems
   | 'factor-tree'        // Tree diagram showing prime factorization
   | 'function-machine'   // Visual machine with input hopper, rule display, and output chute for function concepts
+  | 'math-fact-fluency'  // Interactive math fact fluency practice
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
   | 'balance-scale'      // Interactive balance scale for equation solving
@@ -1457,6 +1459,7 @@ export interface PracticeSessionSummary {
 
 // Re-export component data types for external use
 export type { CounterexamplePairData } from './primitives/visual-primitives/core/CounterexamplePair';
+export type { FastFactData } from './primitives/visual-primitives/core/FastFact';
 export type { DecisionFlowchartData, DecisionNode } from './primitives/visual-primitives/core/DecisionFlowchart';
 export type { ScaleComparatorData, CelestialObject, ReferenceObject } from './primitives/visual-primitives/astronomy/ScaleComparator';
 export type { DayNightSeasonsData, LocationMarker } from './primitives/visual-primitives/astronomy/DayNightSeasons';
@@ -1527,3 +1530,4 @@ export type { SortingStationData, SortingObject, SortingCategory, SortingStation
 export type { ShapeSorterData } from './primitives/visual-primitives/math/ShapeSorter';
 export type { ShapeTracerData } from './primitives/visual-primitives/math/ShapeTracer';
 export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/math/ThreeDShapeExplorer';
+export type { MathFactFluencyData } from './primitives/visual-primitives/math/MathFactFluency';

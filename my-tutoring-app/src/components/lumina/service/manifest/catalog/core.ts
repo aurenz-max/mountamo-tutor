@@ -310,4 +310,90 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       ],
     },
   },
+  {
+    id: 'fast-fact',
+    description: 'Timed fluency drill for rapid recall across any subject. '
+      + 'Supports choice and type-in response modes with configurable phases, time limits, and visual prompts. '
+      + 'Use for: math facts, sight words, vocabulary, element symbols, dates & events, translations — '
+      + 'any domain requiring automaticity. Generates 8-12 challenges across 2-3 phases with streak tracking and speed metrics. '
+      + 'ESSENTIAL for building fluency and automaticity at any grade level.',
+    constraints: 'Best for factual recall (not reasoning or multi-step problems). '
+      + 'Challenges should have single correct answers. Keep to 8-15 challenges per session for engagement.',
+    tutoring: {
+      taskDescription:
+        'Guide the student through a timed fluency drill. Subject: {{subject}}. '
+        + 'Current challenge: "{{promptText}}" ({{challengeType}}, {{responseMode}} mode). '
+        + 'Correct answer: "{{correctAnswer}}". '
+        + 'Attempt {{attemptNumber}}. Streak: {{streak}}. Accuracy: {{accuracy}}%. '
+        + 'Average time: {{averageTime}}s (target: {{targetResponseTime}}s). '
+        + 'Challenge {{currentIndex}} of {{totalChallenges}}.',
+      contextKeys: [
+        'subject', 'challengeType', 'promptText', 'correctAnswer',
+        'responseMode', 'difficulty', 'attemptNumber', 'streak',
+        'accuracy', 'averageTime', 'totalChallenges', 'currentIndex',
+        'gradeBand', 'targetResponseTime',
+      ],
+      scaffoldingLevels: {
+        level1:
+          '"Take a moment and think. What do you already know about this?"',
+        level2:
+          '"Let\'s break it down. Look at the question again — what clue stands out? '
+          + 'Can you narrow it to two options?"',
+        level3:
+          '"Here\'s a strategy: {{correctAnswer}} relates to what we learned. '
+          + 'Think about the key connection and try again."',
+      },
+      commonStruggles: [
+        { pattern: 'Student answers very quickly but incorrectly', response: 'Slow down just a little. Speed matters, but accuracy comes first. Read the question one more time.' },
+        { pattern: 'Student freezes and lets the timer run out repeatedly', response: 'It is okay to guess! Even a guess helps you learn. Try your best answer before time runs out.' },
+        { pattern: 'Student gets frustrated after wrong answers', response: 'Every wrong answer teaches your brain something. You are getting faster — keep going!' },
+        { pattern: 'Student answers correctly but slowly', response: 'You know this! The more you practice, the faster it will come. Try to beat your own time on the next one.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ACTIVITY INTRODUCTION',
+          instruction:
+            'When you receive [ACTIVITY_START], welcome the student to the fluency drill. '
+            + 'Mention the subject and number of challenges. Encourage them to be fast AND accurate. '
+            + 'Keep it to 2-3 sentences.',
+        },
+        {
+          title: 'CORRECT ANSWER FEEDBACK',
+          instruction:
+            'When you receive [ANSWER_CORRECT], briefly celebrate. '
+            + 'If the answer was fast, be extra enthusiastic. If slow but correct, affirm and encourage speed. '
+            + 'If on a streak, mention it. Keep to 1-2 sentences.',
+        },
+        {
+          title: 'INCORRECT ANSWER GUIDANCE',
+          instruction:
+            'When you receive [ANSWER_INCORRECT], do NOT punish. '
+            + 'If more attempts remain, give a brief subject-appropriate hint without revealing the answer. '
+            + 'If max attempts reached, acknowledge the correct answer and move on encouragingly. '
+            + 'Keep to 1-2 sentences.',
+        },
+        {
+          title: 'TIME UP HANDLING',
+          instruction:
+            'When you receive [TIME_UP], be supportive. '
+            + 'Say the correct answer matter-of-factly and encourage the student to try to remember it. '
+            + 'Never shame for running out of time. Keep to 1 sentence.',
+        },
+        {
+          title: 'NEXT CHALLENGE TRANSITION',
+          instruction:
+            'When you receive [NEXT_ITEM], briefly introduce the new challenge. '
+            + 'Acknowledge progress if relevant. Keep to 1 sentence.',
+        },
+        {
+          title: 'COMPLETION CELEBRATION',
+          instruction:
+            'When you receive [ALL_COMPLETE], celebrate the student\'s effort. '
+            + 'Mention phase scores, best streak, and speed improvements. '
+            + 'Give subject-specific encouragement. Keep to 2-3 sentences.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];
