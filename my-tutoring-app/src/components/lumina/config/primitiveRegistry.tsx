@@ -47,6 +47,7 @@ import MultiplicationExplorer from '../primitives/visual-primitives/math/Multipl
 import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTools';
 import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
+import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -659,6 +660,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'shape-sorter': {
     component: ShapeSorter,
     sectionTitle: 'Shape Sorter',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'shape-tracer': {
+    component: ShapeTracer,
+    sectionTitle: 'Shape Tracer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

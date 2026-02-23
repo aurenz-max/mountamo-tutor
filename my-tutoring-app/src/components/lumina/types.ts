@@ -1097,6 +1097,7 @@ export type ComponentId =
   | 'measurement-tools'       // Virtual measurement instruments: ruler, scale, measuring cup, thermometer for length, weight, capacity, temperature (1-5)
   | 'shape-builder'           // Interactive shape construction and property exploration
   | 'shape-sorter'            // Interactive shape sorting for categorizing shapes by attributes
+  | 'shape-tracer'            // Interactive shape tracing
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, shape-builder
@@ -1524,4 +1525,5 @@ export type { AdditionSubtractionSceneData } from './primitives/visual-primitive
 export type { OrdinalLineData } from './primitives/visual-primitives/math/OrdinalLine';
 export type { SortingStationData, SortingObject, SortingCategory, SortingStationChallenge } from './primitives/visual-primitives/math/SortingStation';
 export type { ShapeSorterData } from './primitives/visual-primitives/math/ShapeSorter';
+export type { ShapeTracerData } from './primitives/visual-primitives/math/ShapeTracer';
 export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/math/ThreeDShapeExplorer';

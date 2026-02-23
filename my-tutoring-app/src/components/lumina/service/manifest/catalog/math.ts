@@ -1196,4 +1196,25 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'shape-tracer',
+    description: 'Interactive shape construction canvas with 4 progressive challenge types: trace (follow dotted outlines), complete (finish half-drawn shapes), draw-from-description (build shapes from verbal property descriptions), and connect-dots (reveal shapes by connecting numbered dots). Develops geometric reasoning by linking shape properties to motor construction. Perfect for K-1 shape recognition and spatial reasoning. ESSENTIAL for Kindergarten and Grade 1 geometry.',
+    constraints: 'Canvas coordinate space is 500x400. All vertex coordinates must be within bounds (x: 40-460, y: 40-360). Shapes should be large enough for small hands to tap. Maximum 6 challenges per activity.',
+    tutoring: {
+      taskDescription: 'Student is constructing shapes on a drawing canvas. Current challenge type: {{challengeType}}. Target shape: {{targetShape}}. They have completed {{sidesCompleted}} of {{totalSides}} sides. Attempt {{attemptNumber}}.',
+      contextKeys: ['challengeType', 'targetShape', 'description', 'requiredProperties', 'sidesCompleted', 'totalSides', 'attemptNumber', 'tracingAccuracy'],
+      scaffoldingLevels: {
+        level1: '"Follow the dots slowly. Start at the first dot and draw to the next one. Which dot is next?"',
+        level2: '"You\'ve drawn {{sidesCompleted}} sides. How many more do you need? Look at the dots \u2014 where does the next side go?"',
+        level3: '"A {{targetShape}} has {{totalSides}} sides. You drew {{sidesCompleted}} already \u2014 now connect the last dot back to where you started to close the shape!"',
+      },
+      commonStruggles: [
+        { pattern: 'Student taps vertices out of order repeatedly', response: 'Guide them to the numbered dots: "See the numbers? Let\'s go in order: 1, then 2, then 3. Find number [next] and tap it!"' },
+        { pattern: 'Student draws wrong number of sides for draw-from-description', response: 'Redirect to properties: "How many sides does the shape need? Count your corners \u2014 how many do you have? Do you need more or fewer?"' },
+        { pattern: 'Student connects dots in wrong order', response: 'Point to the labels: "Look at the numbers on the dots. Which number comes next? Find it and tap!"' },
+        { pattern: 'Student struggles with shape completion', response: 'Point to where the shape needs to close: "Look at where the shape started. Can you draw a line back to the beginning to close it up?"' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

@@ -107,6 +107,7 @@ export type {
   SortingStationMetrics,
   ShapeSorterMetrics,
   ThreeDShapeExplorerMetrics,
+  ShapeTracerMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,

@@ -2492,6 +2492,14 @@ export interface ThreeDShapeExplorerMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface ShapeTracerMetrics extends BasePrimitiveMetrics {
+  type: 'shape-tracer';
+  tracingAccuracy: number;
+  shapesCompleted: number;
+  totalShapes: number;
+  attemptsCount: number;
+}
+
 export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {
   type: 'regrouping-workbench';
 
@@ -2804,6 +2812,7 @@ export type PrimitiveMetrics =
   | SortingStationMetrics
   | ShapeSorterMetrics
   | ThreeDShapeExplorerMetrics
+  | ShapeTracerMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

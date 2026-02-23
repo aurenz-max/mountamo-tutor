@@ -43,6 +43,7 @@ import { generateOrdinalLine } from '../../math/gemini-ordinal-line';
 import { generateSortingStation } from '../../math/gemini-sorting-station';
 import { generateShapeSorter } from '../../math/gemini-shape-sorter';
 import { generateThreeDShapeExplorer } from '../../math/gemini-3d-shape-explorer';
+import { generateShapeTracer } from '../../math/gemini-shape-tracer';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -288,6 +289,13 @@ registerGenerator('3d-shape-explorer', async (item, topic, gradeContext) => ({
   type: '3d-shape-explorer',
   instanceId: item.instanceId,
   data: await generateThreeDShapeExplorer(topic, gradeContext, item.config),
+}));
+
+// Shape Tracer (K-1 shape construction through tracing, drawing & completion)
+registerGenerator('shape-tracer', async (item, topic, gradeContext) => ({
+  type: 'shape-tracer',
+  instanceId: item.instanceId,
+  data: await generateShapeTracer(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

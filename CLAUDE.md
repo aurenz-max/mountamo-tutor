@@ -2,9 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Adding Primitives
+## Primitives
 
-When implementing new primitives or components, follow the existing ADDING_PRIMITIVES checklist exactly. Create all files (component, generator, types, registry entries, catalog, tester) before moving to verification. Do not skip steps or deviate from the documented pattern.
+When building new primitives, always use the Gemini generator pattern — never hardcode test data. Follow the established registration pattern: component, types, catalog entry, generator, and tester. When implementing new primitives or components, follow the existing ADDING_PRIMITIVES checklist exactly. Create all files before moving to verification. Do not skip steps or deviate from the documented pattern.
+
+Never reveal answers in placeholder text, labels, or default UI state. All educational primitives must be pedagogically sound — students should not be able to trivially solve challenges from visual layout or default values.
+
+When Gemini schemas are too complex (6+ types, deeply nested), the LLM will produce malformed JSON. Simplify schemas proactively to 3-4 types max and reduce redundancy.
 
 ## Development Workflow
 
