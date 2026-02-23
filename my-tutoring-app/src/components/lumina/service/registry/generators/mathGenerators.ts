@@ -45,6 +45,7 @@ import { generateShapeSorter } from '../../math/gemini-shape-sorter';
 import { generateThreeDShapeExplorer } from '../../math/gemini-3d-shape-explorer';
 import { generateShapeTracer } from '../../math/gemini-shape-tracer';
 import { generateMathFactFluency } from '../../math/gemini-math-fact-fluency';
+import { generateStrategyPicker } from '../../math/gemini-strategy-picker';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -304,6 +305,13 @@ registerGenerator('math-fact-fluency', async (item, topic, gradeContext) => ({
   type: 'math-fact-fluency',
   instanceId: item.instanceId,
   data: await generateMathFactFluency(topic, gradeContext, item.config),
+}));
+
+// Strategy Picker (K-1 multi-strategy problem solving & computational flexibility)
+registerGenerator('strategy-picker', async (item, topic, gradeContext) => ({
+  type: 'strategy-picker',
+  instanceId: item.instanceId,
+  data: await generateStrategyPicker(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

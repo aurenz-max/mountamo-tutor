@@ -24,6 +24,7 @@ export interface TenFrameChallenge {
   type: 'build' | 'subitize' | 'make_ten' | 'add' | 'subtract';
   instruction: string;
   targetCount: number;
+  startCount?: number; // for subtract: how many counters to pre-fill before removal
   flashDuration?: number | null; // ms, for subitize mode
   hint: string;
   narration: string;
@@ -557,8 +558,11 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
 
-    // Reset frame for next challenge unless it's an operate challenge building on previous
-    if (nextChallenge.type !== 'add' && nextChallenge.type !== 'subtract') {
+    // Reset frame for next challenge unless it's an operate challenge building on previous.
+    // Subtract challenges with startCount get pre-filled by their own useEffect.
+    const keepFrame = (nextChallenge.type === 'add' || nextChallenge.type === 'subtract')
+      && nextChallenge.startCount == null;
+    if (!keepFrame) {
       setFilledCells(new Set());
       setCellColors(new Map());
     }
@@ -608,6 +612,23 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       });
     }
   }, [currentPhase, currentChallenge, initialCounters?.color]);
+
+  // -------------------------------------------------------------------------
+  // Subtract: pre-fill counters with startCount
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (currentPhase === 'operate' && currentChallenge?.type === 'subtract' && currentChallenge.startCount != null) {
+      const count = currentChallenge.startCount;
+      const positions: number[] = [];
+      for (let i = 0; i < count && i < totalCells; i++) positions.push(i);
+      setFilledCells(new Set(positions));
+      setCellColors(() => {
+        const m = new Map<number, string>();
+        positions.forEach(p => m.set(p, initialCounters?.color || 'red'));
+        return m;
+      });
+    }
+  }, [currentPhase, currentChallenge, initialCounters?.color, totalCells]);
 
   // -------------------------------------------------------------------------
   // SVG Rendering Helpers
@@ -815,9 +836,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
               Empty: <span className="text-slate-400 font-bold">{emptyCount}</span>
             </span>
           )}
-          {showEquation && currentChallenge?.type === 'add' && (
+          {showEquation && (currentChallenge?.type === 'add' || currentChallenge?.type === 'subtract') && (
             <span className="text-slate-300">
-              Equation: <span className="text-emerald-300 font-mono">{counterCount} = ?</span>
+              {currentChallenge?.type === 'subtract' && currentChallenge.startCount != null
+                ? <>Equation: <span className="text-emerald-300 font-mono">{currentChallenge.startCount} − {currentChallenge.startCount - currentChallenge.targetCount} = ?</span></>
+                : <>Equation: <span className="text-emerald-300 font-mono">{counterCount} = ?</span></>
+              }
             </span>
           )}
         </div>

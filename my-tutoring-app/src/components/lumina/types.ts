@@ -1094,6 +1094,7 @@ export type ComponentId =
   | 'pattern-builder'   // Pattern recognition, extension, creation for algebraic thinking (K-3)
   | 'skip-counting-runner' // Rhythmic skip counting with number line jumps, arrays, and multiplication connection (1-3)
   | 'sorting-station'     // Interactive sorting station for categorizing objects into groups
+  | 'strategy-picker'     // Interactive strategy picker for math problem-solving
   | 'regrouping-workbench' // Addition/subtraction with carrying/borrowing using base-ten blocks and written algorithm (1-4)
   | 'multiplication-explorer' // Multi-representation multiplication workspace: equal groups, arrays, repeated addition, number line, area model (2-4)
   | 'measurement-tools'       // Virtual measurement instruments: ruler, scale, measuring cup, thermometer for length, weight, capacity, temperature (1-5)
@@ -1531,3 +1532,4 @@ export type { ShapeSorterData } from './primitives/visual-primitives/math/ShapeS
 export type { ShapeTracerData } from './primitives/visual-primitives/math/ShapeTracer';
 export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/math/ThreeDShapeExplorer';
 export type { MathFactFluencyData } from './primitives/visual-primitives/math/MathFactFluency';
+export type { StrategyPickerData } from './primitives/visual-primitives/math/StrategyPicker';

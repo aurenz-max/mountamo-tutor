@@ -1238,4 +1238,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'strategy-picker',
+    description: 'An interactive strategy-comparison activity where students solve the same problem using 2-3 different strategies (counting on, make-ten, doubles, tally marks, draw objects), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10.',
+    constraints: 'Numbers within 5 (K) or 10 (Grade 1). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.',
+    tutoring: {
+      taskDescription: 'Student is solving {{equation}} using {{assignedStrategy}}. Challenge type: {{challengeType}}. They have completed strategies: {{strategiesCompleted}}.',
+      contextKeys: ['challengeType', 'equation', 'assignedStrategy', 'strategySteps', 'studentAnswer', 'attemptNumber', 'chosenStrategy', 'strategiesCompleted'],
+      scaffoldingLevels: {
+        level1: '"Let\'s try this problem a different way! This time, we\'ll use {{assignedStrategy}}. What do you think the answer might be?"',
+        level2: '"For counting on, start at {{operand1}} and hop forward {{operand2}} times. Let\'s count together: what comes after {{operand1}}?"',
+        level3: '"Watch the number line — we start at {{operand1}} and make {{operand2}} hops: {{operand1}}... [count each hop]. Where did we land? That\'s our answer!"',
+      },
+      commonStruggles: [
+        { pattern: 'Student gives different answers with different strategies', response: 'Highlight that all strategies should give the same answer. Ask them to recheck the strategy that gave a different result.' },
+        { pattern: 'Student always chooses the same strategy in choose-your-strategy', response: 'Gently encourage trying a different approach: "You\'re great at counting on! Want to try make-ten this time to see if it works too?"' },
+        { pattern: 'Student cannot identify the strategy in match-strategy', response: 'Point out the key visual feature: "Look — do you see a number line with hops? That\'s counting on! Do you see a ten frame? That\'s make-ten!"' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

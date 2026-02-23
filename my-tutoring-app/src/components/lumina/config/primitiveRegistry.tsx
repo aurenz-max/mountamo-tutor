@@ -49,6 +49,7 @@ import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
 import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
+import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker';
 import FastFact from '../primitives/visual-primitives/core/FastFact';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
@@ -527,6 +528,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'sorting-station': {
     component: SortingStation,
     sectionTitle: 'Sorting Station',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'strategy-picker': {
+    component: StrategyPicker,
+    sectionTitle: 'Strategy Picker',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

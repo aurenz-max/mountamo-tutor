@@ -950,6 +950,15 @@ export interface FastFactMetrics extends BasePrimitiveMetrics {
   challengesCorrect: number;
 }
 
+export interface StrategyPickerMetrics extends BasePrimitiveMetrics {
+  type: 'strategy-picker';
+  accuracy: number;
+  strategiesUsed: string[];
+  strategyFlexibility: boolean;
+  comparisonCompleted: boolean;
+  attemptsCount: number;
+}
+
 export interface FormulaCardMetrics extends BasePrimitiveMetrics {
   type: 'formula-card';
 
@@ -2838,6 +2847,7 @@ export type PrimitiveMetrics =
   | ShapeTracerMetrics
   | MathFactFluencyMetrics
   | FastFactMetrics
+  | StrategyPickerMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

@@ -90,6 +90,10 @@ const tenFrameSchema: Schema = {
             type: Type.NUMBER,
             description: "Target number for this challenge (0-10 for single, 0-20 for double)"
           },
+          startCount: {
+            type: Type.NUMBER,
+            description: "For subtract challenges: how many counters are pre-filled on the frame before removal. E.g. startCount=7, targetCount=4 means 'start with 7, take away 3, 4 remain'."
+          },
           flashDuration: {
             type: Type.NUMBER,
             description: "Duration in ms for subitize flash (e.g., 1500). Only used for subitize challenges."
@@ -197,7 +201,15 @@ CHALLENGE TYPES:
 - "subitize": Counters flash briefly, student types how many. Set flashDuration (ms).
 - "make_ten": Frame shows some counters, student enters how many more to make 10. targetCount = current count shown.
 - "add": Student shows addition result on frame (could span to second frame). targetCount = sum.
-- "subtract": Student removes counters to show subtraction result. targetCount = result.
+- "subtract": Student removes counters from a pre-filled frame. MUST set startCount (how many counters appear initially) AND targetCount (how many remain after removal). Example: "Start with 7 counters. Take away 3. How many are left?" → startCount=7, targetCount=4. The frame will be pre-filled with startCount counters; the student clicks to remove some until targetCount remain.
+
+SUBTRACTION GUIDELINES:
+- Always include startCount for subtract challenges (it controls how many counters appear)
+- Use numbers within 10 for single frame (startCount ≤ 10)
+- Instruction should name the starting amount AND the amount to remove, e.g. "There are 8 counters. Take away 5!"
+- Do NOT reveal the answer in the instruction — ask "How many are left?" without stating the result
+- Good subtraction progressions: start with removing 1-2, then 3-4, then larger amounts
+- Pair subtraction with prior build/add challenges so students see the inverse relationship
 
 ${config ? `
 CONFIGURATION HINTS:
@@ -262,6 +274,23 @@ Return the complete ten frame configuration.
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validTypes.includes(c.type)
   );
+
+  // Validate subtract challenges: ensure startCount is present and sensible
+  for (const ch of data.challenges as Array<{ type: string; startCount?: number; targetCount: number }>) {
+    if (ch.type === 'subtract') {
+      const maxCount = data.mode === 'double' ? 20 : 10;
+      if (ch.startCount == null || ch.startCount <= 0) {
+        // Infer startCount: targetCount + a reasonable removal (default: remove 2)
+        ch.startCount = Math.min(ch.targetCount + 2, maxCount);
+      }
+      // Ensure startCount > targetCount (must remove at least 1)
+      if (ch.startCount <= ch.targetCount) {
+        ch.startCount = Math.min(ch.targetCount + 1, maxCount);
+      }
+      // Clamp within frame capacity
+      if (ch.startCount > maxCount) ch.startCount = maxCount;
+    }
+  }
 
   // Ensure at least one challenge
   if (data.challenges.length === 0) {

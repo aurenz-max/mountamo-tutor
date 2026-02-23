@@ -110,6 +110,7 @@ export type {
   ShapeTracerMetrics,
   MathFactFluencyMetrics,
   FastFactMetrics,
+  StrategyPickerMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,
