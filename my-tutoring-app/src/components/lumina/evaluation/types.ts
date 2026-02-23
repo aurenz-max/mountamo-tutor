@@ -2484,6 +2484,14 @@ export interface ShapeSorterMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface ThreeDShapeExplorerMetrics extends BasePrimitiveMetrics {
+  type: '3d-shape-explorer';
+  identificationAccuracy: number;
+  propertyKnowledge: boolean;
+  realWorldConnections: boolean;
+  attemptsCount: number;
+}
+
 export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {
   type: 'regrouping-workbench';
 
@@ -2795,6 +2803,7 @@ export type PrimitiveMetrics =
   | OrdinalLineMetrics
   | SortingStationMetrics
   | ShapeSorterMetrics
+  | ThreeDShapeExplorerMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

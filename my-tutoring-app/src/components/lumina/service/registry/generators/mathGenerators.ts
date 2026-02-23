@@ -42,6 +42,7 @@ import { generateAdditionSubtractionScene } from '../../math/gemini-addition-sub
 import { generateOrdinalLine } from '../../math/gemini-ordinal-line';
 import { generateSortingStation } from '../../math/gemini-sorting-station';
 import { generateShapeSorter } from '../../math/gemini-shape-sorter';
+import { generateThreeDShapeExplorer } from '../../math/gemini-3d-shape-explorer';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -282,6 +283,13 @@ registerGenerator('shape-sorter', async (item, topic, gradeContext) => ({
   data: await generateShapeSorter(topic, gradeContext, item.config),
 }));
 
+// 3D Shape Explorer (K-1 3D shape identification, properties & comparison)
+registerGenerator('3d-shape-explorer', async (item, topic, gradeContext) => ({
+  type: '3d-shape-explorer',
+  instanceId: item.instanceId,
+  data: await generateThreeDShapeExplorer(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
 // Legacy Math Primitives (now have dedicated service files)
 // ============================================================================
@@ -330,6 +338,6 @@ registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
 }));
 
 // ============================================================================
-// Migration status: 29/29 math primitives registered
+// Migration status: 30/30 math primitives registered
 // All math generators now use dedicated service files in math/ folder
 // ============================================================================

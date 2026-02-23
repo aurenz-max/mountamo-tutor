@@ -1057,6 +1057,7 @@ export type ComponentId =
   | 'custom-visual'      // The SVG/HTML wildcard
 
   // Math Visualization Primitives (Elementary Math)
+  | '3d-shape-explorer'   // Interactive 3D shape explorer
   | 'addition-subtraction-scene' // Interactive addition and subtraction scene
   | 'bar-model'          // Comparative bar visualization for values
   | 'number-bond'        // Part-whole number bond visualization for addition and subtraction
@@ -1523,3 +1524,4 @@ export type { AdditionSubtractionSceneData } from './primitives/visual-primitive
 export type { OrdinalLineData } from './primitives/visual-primitives/math/OrdinalLine';
 export type { SortingStationData, SortingObject, SortingCategory, SortingStationChallenge } from './primitives/visual-primitives/math/SortingStation';
 export type { ShapeSorterData } from './primitives/visual-primitives/math/ShapeSorter';
+export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/math/ThreeDShapeExplorer';

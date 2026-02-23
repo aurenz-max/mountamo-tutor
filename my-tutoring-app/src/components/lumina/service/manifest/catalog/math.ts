@@ -1175,4 +1175,25 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: '3d-shape-explorer',
+    description: '3D Shape Explorer — introduces cubes, cones, cylinders, spheres, and rectangular prisms through multi-phase challenges: identifying shapes, sorting 2D vs 3D, matching to real-world objects, analyzing properties (faces, rolling, stacking), and comparing shapes side by side. Perfect for building 3D geometry vocabulary and spatial reasoning. ESSENTIAL for Kindergarten and Grade 1 geometry.',
+    constraints: 'Shapes limited to: cube, sphere, cylinder, cone, rectangular-prism. Properties must use accurate geometry (e.g., cube has 6 flat faces, sphere has 0). Real-world object matches must be unambiguous.',
+    tutoring: {
+      taskDescription: 'Student is exploring 3D shapes through {{challengeType}} challenges. Current shape: {{shape3d}}. They need to identify, sort, match, or analyze properties of 3D shapes.',
+      contextKeys: ['challengeType', 'shape3d', 'displayShape', 'properties', 'attemptNumber', 'shape1', 'shape2', 'instruction', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Look at this shape. Is it flat like a piece of paper, or could you pick it up and hold it?"',
+        level2: '"Try to think about its flat parts. How many flat faces can you see? What shape are those flat parts?"',
+        level3: '"This is a {{shape3d}}. Let me tell you about it: [describe faces, curved surfaces, real-world example]. A cube is like a dice block. A sphere is like a ball. A cylinder is like a can."',
+      },
+      commonStruggles: [
+        { pattern: 'Confuses 2D circle with 3D sphere', response: 'A circle is flat — you can draw it on paper. A sphere is round all the way around, like a ball you can hold. Can you hold a circle? No, but you can hold a sphere!' },
+        { pattern: 'Cannot count flat faces on a shape', response: 'Let us look at one side at a time. The top is flat — that is one face. Now the bottom — that is two. What about the sides?' },
+        { pattern: 'Struggles to connect real-world objects to shape names', response: 'Think about what you can find at home. A soup can is a cylinder — it has circles on top and bottom. A box is a rectangular prism. What shape is a ball?' },
+        { pattern: 'Confuses "roll" and "slide" properties', response: 'Rolling means it can move smoothly like a ball. Sliding means it moves flat on a surface. A cube slides but does not roll. A sphere rolls but does not slide flat.' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];
