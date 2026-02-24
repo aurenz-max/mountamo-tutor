@@ -1130,6 +1130,7 @@ export type ComponentId =
   | 'revision-workshop'         // Edit and revise drafts with targeted feedback (grades 2-6)
   | 'listen-and-respond'        // Audio comprehension with hidden text (K-6)
   | 'read-aloud-studio'         // Fluency practice with model reading and recording (grades 1-6)
+  | 'rhyme-studio'              // Interactive rhyming word exploration and practice
   | 'sentence-builder'          // Construct grammatical sentences from word tiles (grades 1-6)
   | 'context-clues-detective'   // Determine word meaning from context clues (grades 2-6)
   | 'figurative-language-finder' // Identify and interpret figurative language (grades 3-6)
@@ -1533,3 +1534,6 @@ export type { ShapeTracerData } from './primitives/visual-primitives/math/ShapeT
 export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/math/ThreeDShapeExplorer';
 export type { MathFactFluencyData } from './primitives/visual-primitives/math/MathFactFluency';
 export type { StrategyPickerData } from './primitives/visual-primitives/math/StrategyPicker';
+
+// Literacy
+export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';

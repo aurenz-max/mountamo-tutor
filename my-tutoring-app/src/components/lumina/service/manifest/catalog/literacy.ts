@@ -154,6 +154,53 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     },
   },
 
+  {
+    id: 'rhyme-studio',
+    description: 'Interactive rhyme awareness activity with three progressive modes: Recognition (do these words rhyme?), Identification (which word rhymes?), and Production (type a rhyming word). Covers the full rhyme awareness progression. Perfect for kindergarten phonological awareness. ESSENTIAL for K-2 literacy.',
+    constraints: 'Requires 8-10 challenges mixing all three modes. Recognition challenges need doesRhyme boolean. Identification needs 2-3 options. Production needs acceptableAnswers array.',
+    tutoring: {
+      taskDescription:
+        'Rhyme awareness activity. Mode: {{challengeMode}}. '
+        + 'Challenge {{currentChallenge}}/{{totalChallenges}}: '
+        + 'Target word: "{{targetWord}}" (rhyme family: {{rhymeFamily}}). '
+        + 'Phase: {{currentPhase}}. Attempts: {{attempts}}.',
+      contextKeys: [
+        'challengeMode', 'targetWord', 'rhymeFamily',
+        'currentChallenge', 'totalChallenges', 'currentPhase', 'attempts',
+      ],
+      scaffoldingLevels: {
+        level1:
+          'RECOGNITION: "Listen to how the words end. Do they sound the same?" '
+          + 'IDENTIFICATION: "Say each word slowly. Which one ends like {{targetWord}}?" '
+          + 'PRODUCTION: "What sounds like {{targetWord}}? Think of the -{{rhymeFamily}} family."',
+        level2:
+          'RECOGNITION: "{{targetWord}} ends with {{rhymeFamily}}. Does the other word end the same way?" '
+          + 'IDENTIFICATION: "{{targetWord}} ends in {{rhymeFamily}}. Which choice has that same ending?" '
+          + 'PRODUCTION: "Words that rhyme with {{targetWord}} end in {{rhymeFamily}}. Can you think of one?"',
+        level3:
+          'RECOGNITION: "Listen: {{targetWord}}... hear the {{rhymeFamily}}? Now listen to the other word." '
+          + 'IDENTIFICATION: "The answer rhymes with {{targetWord}} — it ends in {{rhymeFamily}}. Try saying each choice." '
+          + 'PRODUCTION: "Here are some {{rhymeFamily}} words: [examples]. Can you think of another?"',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing rhyme with alliteration (same beginning)', response: 'Rhyming is about the ENDING sound. Cat and hat end the same: -at.' },
+        { pattern: 'Cannot produce rhymes', response: 'Start with the rhyme family. If the word is "cat", the family is -at. Now put a new sound at the beginning: b-at, m-at, s-at.' },
+        { pattern: 'Random guessing in identification', response: 'Say each word out loud slowly. Listen to the ending of each one.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRONUNCIATION COMMANDS',
+          instruction:
+            'When you receive [PRONOUNCE_WORDS], clearly say the word(s) for this challenge. '
+            + 'Say each word distinctly with a brief pause between them. '
+            + 'Slightly emphasize the ending sounds to draw attention to the rhyme pattern. '
+            + 'Do NOT add extra commentary — just say the words.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+
   // ===== READING: LITERATURE (RL) =====
   {
     id: 'story-map',

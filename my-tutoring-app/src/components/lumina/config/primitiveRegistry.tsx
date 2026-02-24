@@ -143,6 +143,7 @@ import RevisionWorkshop from '../primitives/visual-primitives/literacy/RevisionW
 import GenreExplorer from '../primitives/visual-primitives/literacy/GenreExplorer';
 import SpellingPatternExplorer from '../primitives/visual-primitives/literacy/SpellingPatternExplorer';
 import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
+import RhymeStudio from '../primitives/visual-primitives/literacy/RhymeStudio';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -1559,6 +1560,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'rhyme-studio': {
+    component: RhymeStudio,
+    sectionTitle: 'Rhyme Studio',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 

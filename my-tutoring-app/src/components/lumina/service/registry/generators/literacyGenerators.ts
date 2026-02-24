@@ -47,6 +47,7 @@ import { generateStoryPlanner } from '../../literacy/gemini-story-planner';
 import { generateRevisionWorkshop } from '../../literacy/gemini-revision-workshop';
 import { generateGenreExplorer } from '../../literacy/gemini-genre-explorer';
 import { generateSpellingPatternExplorer } from '../../literacy/gemini-spelling-pattern-explorer';
+import { generateRhymeStudio } from '../../literacy/gemini-rhyme-studio';
 
 // ============================================================================
 // Helper Types
@@ -441,4 +442,27 @@ registerGenerator('spelling-pattern-explorer', async (item, topic, gradeContext)
   };
 });
 
-console.log('📚 Literacy generators registered: 18 (Wave 1-4 complete)');
+// ============================================================================
+// Kindergarten Phonics & Alphabet — Rhyme Studio
+// ============================================================================
+
+/**
+ * Rhyme Studio - Multi-mode rhyme practice (recognition, identification, production)
+ *
+ * Perfect for:
+ * - K-2 phonological awareness and rhyme fluency
+ * - Progressive difficulty: recognize → identify → produce rhymes
+ * - Rhyme family pattern recognition (-at, -un, -ig, etc.)
+ *
+ * Grade Scaling:
+ * - K: Simple CVC words, 2-option identification, common rhyme families
+ * - Grade 1: CVCE words, 3-option identification, near-miss distractors
+ * - Grade 2: Multisyllabic words, trickier pairs, broader vocabulary
+ */
+registerGenerator('rhyme-studio', async (item, topic, gradeContext) => ({
+  type: 'rhyme-studio',
+  instanceId: item.instanceId,
+  data: await generateRhymeStudio(topic, gradeContext, item.config),
+}));
+
+console.log('📚 Literacy generators registered: 19 (Wave 1-4 + Rhyme Studio)');

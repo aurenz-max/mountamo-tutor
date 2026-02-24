@@ -2189,6 +2189,18 @@ export interface PhonicsBlenderMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface RhymeStudioMetrics extends BasePrimitiveMetrics {
+  type: 'rhyme-studio';
+  challengeMode: 'recognition' | 'identification' | 'production';
+  challengesCorrect: number;
+  challengesTotal: number;
+  recognitionAccuracy: number;
+  identificationAccuracy: number;
+  productionAccuracy: number;
+  rhymeFamiliesPracticed: string[];
+  attemptsCount: number;
+}
+
 // -----------------------------------------------------------------------------
 // Literacy Primitives (Wave 1)
 // -----------------------------------------------------------------------------
@@ -2910,7 +2922,8 @@ export type PrimitiveMetrics =
   | StoryPlannerMetrics
   | RevisionWorkshopMetrics
   | GenreExplorerMetrics
-  | SpellingPatternExplorerMetrics;
+  | SpellingPatternExplorerMetrics
+  | RhymeStudioMetrics;
 
 // =============================================================================
 // Session & Summary Types
