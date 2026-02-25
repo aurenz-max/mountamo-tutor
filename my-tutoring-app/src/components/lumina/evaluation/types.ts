@@ -2267,6 +2267,20 @@ export interface CvcSpellerMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface WordWorkoutMetrics extends BasePrimitiveMetrics {
+  type: 'word-workout';
+  mode: 'real-vs-nonsense' | 'picture-match' | 'word-chains' | 'sentence-reading';
+  challengesCorrect: number;
+  challengesTotal: number;
+  realVsNonsenseAccuracy: number;
+  pictureMatchAccuracy: number;
+  wordChainFluency: number;
+  sentenceComprehensionCorrect: boolean;
+  wordsReadIndependently: number;
+  wordsTotal: number;
+  attemptsCount: number;
+}
+
 // -----------------------------------------------------------------------------
 // Literacy Primitives (Wave 1)
 // -----------------------------------------------------------------------------
@@ -2995,7 +3009,9 @@ export type PrimitiveMetrics =
   | SoundSwapMetrics
   | LetterSpotterMetrics
   | LetterSoundLinkMetrics
-  | CvcSpellerMetrics;
+  | CvcSpellerMetrics
+  // Literacy (Wave 5)
+  | WordWorkoutMetrics;
 
 // =============================================================================
 // Session & Summary Types

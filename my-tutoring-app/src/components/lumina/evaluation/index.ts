@@ -152,6 +152,7 @@ export type {
   LetterSpotterMetrics,
   LetterSoundLinkMetrics,
   CvcSpellerMetrics,
+  WordWorkoutMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

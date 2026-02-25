@@ -464,6 +464,60 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'word-workout',
+    description:
+      'CVC word application activity with four modes: Real vs. Nonsense (discriminate real from made-up words), '
+      + 'Picture Match (connect decoded words to meaning), Word Chains (build automaticity with one-letter-change sequences), '
+      + 'and Sentence Reading (apply decoding in connected text). Capstone assessment for CVC mastery. ESSENTIAL for K-2 literacy.',
+    constraints:
+      'Requires mode selection. Real/Nonsense needs phonetically plausible nonsense words. '
+      + 'Word Chains must follow one-letter-change rule. Sentences use only mastered CVC words + approved sight words.',
+    tutoring: {
+      taskDescription:
+        'CVC word application activity. Mode: {{mode}}. '
+        + 'Challenge {{currentChallenge}}/{{totalChallenges}}. '
+        + 'Mastered vowels: {{masteredVowels}}. Phase: {{currentPhase}}. Attempts: {{attempts}}.',
+      contextKeys: [
+        'mode', 'currentChallenge', 'totalChallenges', 'masteredVowels',
+        'currentPhase', 'attempts',
+      ],
+      scaffoldingLevels: {
+        level1:
+          'REAL/NONSENSE: "Sound out both words. Which one is a word you know?" '
+          + 'PICTURE MATCH: "Read the word, then look at each picture." '
+          + 'WORD CHAINS: "Read each word. What letter changed?" '
+          + 'SENTENCES: "Try reading the sentence. Tap any word you need help with."',
+        level2:
+          'REAL/NONSENSE: "One of these makes sense and one is a silly made-up word. Sound them out." '
+          + 'PICTURE MATCH: "What sounds do you hear in the word? Which picture matches those sounds?" '
+          + 'WORD CHAINS: "The word changed from [old] to [new]. What\'s different?" '
+          + 'SENTENCES: "Start with the first word. Sound it out. Then the next one."',
+        level3:
+          'REAL/NONSENSE: "The real word is one you\'ve seen before or that means something. The nonsense word is just sounds." '
+          + 'PICTURE MATCH: "The word says [word]. Can you find the picture of a [word]?" '
+          + 'WORD CHAINS: "In [old word], we changed the [position] letter from [old] to [new] to make [new word]." '
+          + 'SENTENCES: "Let me read it first, then you try."',
+      },
+      commonStruggles: [
+        { pattern: 'Cannot distinguish real from nonsense', response: 'Sound out each word slowly. Does it mean something? Is it a thing you know?' },
+        { pattern: 'Picking picture by phonetic similarity, not meaning', response: 'Read the word one more time. What does it mean? Now find that picture.' },
+        { pattern: 'Getting stuck in word chains', response: 'Just one letter changed! Look at the word above \u2014 what\'s different?' },
+        { pattern: 'Cannot read sentences fluently', response: 'Read one word at a time. Don\'t rush. Tap any word you need help with.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRONUNCIATION COMMANDS',
+          instruction:
+            'When you receive [PRONOUNCE], say ONLY the requested word. No extra commentary. '
+            + 'When you receive [READ_SENTENCE], read the sentence fluently and naturally. No extra commentary. '
+            + 'When you receive [CHAIN_WORD], say the word and optionally add a brief note about what changed '
+            + '(e.g., "mat \u2014 we changed the first letter!").',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 
   // ===== READING: LITERATURE (RL) =====
   {

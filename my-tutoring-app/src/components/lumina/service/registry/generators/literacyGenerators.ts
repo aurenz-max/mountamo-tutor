@@ -54,6 +54,7 @@ import { generateSoundSwap } from '../../literacy/gemini-sound-swap';
 import { generateLetterSpotter } from '../../literacy/gemini-letter-spotter';
 import { generateLetterSoundLink } from '../../literacy/gemini-letter-sound-link';
 import { generateCvcSpeller } from '../../literacy/gemini-cvc-speller';
+import { generateWordWorkout } from '../../literacy/gemini-word-workout';
 
 // ============================================================================
 // Helper Types
@@ -615,4 +616,29 @@ registerGenerator('cvc-speller', async (item, topic, gradeContext) => ({
   data: await generateCvcSpeller(topic, gradeContext, item.config),
 }));
 
-console.log('📚 Literacy generators registered: 25 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller)');
+// ============================================================================
+// Kindergarten Phonics & Alphabet — Word Workout
+// ============================================================================
+
+/**
+ * Word Workout - CVC word application across 4 modes
+ *
+ * Perfect for:
+ * - K-2 CVC word fluency and application
+ * - Real vs. Nonsense: distinguish real CVC words from plausible nonsense
+ * - Picture Match: match CVC words to emoji pictures
+ * - Word Chains: read chains of words with one-letter changes
+ * - Sentence Reading: read decodable sentences built from CVC + sight words
+ *
+ * Grade Scaling:
+ * - K: Simple CVC words, short vowels, common consonants
+ * - Grade 1: Wider CVC vocabulary, mixed vowels
+ * - Grade 2: Full CVC mastery review, fluency focus
+ */
+registerGenerator('word-workout', async (item, topic, gradeContext) => ({
+  type: 'word-workout',
+  instanceId: item.instanceId,
+  data: await generateWordWorkout(topic, gradeContext, item.config),
+}));
+
+console.log('📚 Literacy generators registered: 26 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout)');

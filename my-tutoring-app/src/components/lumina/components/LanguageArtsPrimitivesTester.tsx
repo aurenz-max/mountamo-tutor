@@ -35,6 +35,7 @@ import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableCl
 import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotter';
 import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
 import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
+import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
 
 import {
   EvaluationProvider,
@@ -61,7 +62,8 @@ type PrimitiveType =
   | 'sound-swap' | 'phoneme-explorer' | 'syllable-clapper'
   | 'letter-spotter'
   | 'letter-sound-link'
-  | 'cvc-speller';
+  | 'cvc-speller'
+  | 'word-workout';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -85,6 +87,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'letter-spotter', label: 'Letter Spotter', icon: '🔎', topic: 'Letter recognition', strand: 'RF', wave: 2 },
   { value: 'letter-sound-link', label: 'Letter-Sound Link', icon: '🔊', topic: 'Letter sounds', strand: 'RF', wave: 2 },
   { value: 'cvc-speller', label: 'CVC Speller', icon: '✏️', topic: 'CVC word spelling', strand: 'RF', wave: 2 },
+  { value: 'word-workout', label: 'Word Workout', icon: '💪', topic: 'CVC word application activities', strand: 'RF', wave: 2 },
   // ===== RL: Reading Literature =====
   { value: 'story-map', label: 'Story Map', icon: '🗺️', topic: 'Plot structure of a short story', strand: 'RL', wave: 1 },
   { value: 'character-web', label: 'Character Web', icon: '🕸️', topic: 'Character analysis and relationships', strand: 'RL', wave: 3 },
@@ -185,6 +188,8 @@ const PrimitiveRenderer: React.FC<{
       return <LetterSoundLink data={data as Parameters<typeof LetterSoundLink>[0]['data']} />;
     case 'cvc-speller':
       return <CvcSpeller data={data as Parameters<typeof CvcSpeller>[0]['data']} />;
+    case 'word-workout':
+      return <WordWorkout data={data as Parameters<typeof WordWorkout>[0]['data']} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">
