@@ -1129,6 +1129,8 @@ export type ComponentId =
   | 'story-planner'             // Narrative pre-writing organizer (K-6)
   | 'opinion-builder'           // Argument/persuasive writing scaffold (grades 2-6)
   | 'revision-workshop'         // Edit and revise drafts with targeted feedback (grades 2-6)
+  | 'letter-sound-link'         // Interactive letter-sound linking
+  | 'letter-spotter'            // Interactive letter spotting and recognition
   | 'listen-and-respond'        // Audio comprehension with hidden text (K-6)
   | 'read-aloud-studio'         // Fluency practice with model reading and recording (grades 1-6)
   | 'rhyme-studio'              // Interactive rhyming word exploration and practice
@@ -1543,3 +1545,5 @@ export type { RhymeStudioData } from './primitives/visual-primitives/literacy/Rh
 export type { SyllableClapperData } from './primitives/visual-primitives/literacy/SyllableClapper';
 export type { PhonemeExplorerData } from './primitives/visual-primitives/literacy/PhonemeExplorer';
 export type { SoundSwapData } from './primitives/visual-primitives/literacy/SoundSwap';
+export type { LetterSpotterData } from './primitives/visual-primitives/literacy/LetterSpotter';
+export type { LetterSoundLinkData } from './primitives/visual-primitives/literacy/LetterSoundLink';

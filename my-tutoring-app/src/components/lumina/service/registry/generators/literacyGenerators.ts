@@ -51,6 +51,8 @@ import { generateRhymeStudio } from '../../literacy/gemini-rhyme-studio';
 import { generateSyllableClapper } from '../../literacy/gemini-syllable-clapper';
 import { generatePhonemeExplorer } from '../../literacy/gemini-phoneme-explorer';
 import { generateSoundSwap } from '../../literacy/gemini-sound-swap';
+import { generateLetterSpotter } from '../../literacy/gemini-letter-spotter';
+import { generateLetterSoundLink } from '../../literacy/gemini-letter-sound-link';
 
 // ============================================================================
 // Helper Types
@@ -538,4 +540,54 @@ registerGenerator('sound-swap', async (item, topic, gradeContext) => ({
   data: await generateSoundSwap(topic, gradeContext, item.config),
 }));
 
-console.log('📚 Literacy generators registered: 22 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap)');
+// ============================================================================
+// Kindergarten Phonics & Alphabet — Letter Spotter
+// ============================================================================
+
+/**
+ * Letter Spotter - Interactive letter recognition across three modes
+ *
+ * Perfect for:
+ * - K-2 letter identification and alphabet knowledge
+ * - Name It: see a letter, pick its name from options
+ * - Find It: hear a letter name, find all instances in a 4x4 grid
+ * - Match It: match uppercase to lowercase
+ * - Cumulative group progression (4 groups covering all 26 letters)
+ *
+ * Grade Scaling:
+ * - K: Groups 1-2, high-frequency letters, larger visual display
+ * - Grade 1: Groups 2-3, uppercase/lowercase discrimination
+ * - Grade 2: Groups 3-4, full alphabet review with similar-letter distractors
+ */
+registerGenerator('letter-spotter', async (item, topic, gradeContext) => ({
+  type: 'letter-spotter',
+  instanceId: item.instanceId,
+  data: await generateLetterSpotter(topic, gradeContext, item.config),
+}));
+
+// ============================================================================
+// Kindergarten Phonics & Alphabet — Letter Sound Link
+// ============================================================================
+
+/**
+ * Letter Sound Link - Letter-sound correspondence mapping
+ *
+ * Perfect for:
+ * - K-2 phonics and alphabetic principle instruction
+ * - See-Hear: see a letter, pick its phoneme from options
+ * - Hear-See: hear a sound, identify which letter makes it
+ * - Keyword-Match: match letter to keyword association (s -> sun)
+ * - Cumulative group progression (4 groups covering all 26 letters + qu)
+ *
+ * Grade Scaling:
+ * - K: Groups 1-2, high-frequency letter sounds, keyword anchoring
+ * - Grade 1: Groups 2-3, c/k disambiguation, more distractors
+ * - Grade 2: Groups 3-4, full alphabet including x=/ks/ and qu=/kw/
+ */
+registerGenerator('letter-sound-link', async (item, topic, gradeContext) => ({
+  type: 'letter-sound-link',
+  instanceId: item.instanceId,
+  data: await generateLetterSoundLink(topic, gradeContext, item.config),
+}));
+
+console.log('📚 Literacy generators registered: 24 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link)');

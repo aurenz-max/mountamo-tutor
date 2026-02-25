@@ -32,6 +32,8 @@ import RhymeStudio from '../primitives/visual-primitives/literacy/RhymeStudio';
 import SoundSwap from '../primitives/visual-primitives/literacy/SoundSwap';
 import PhonemeExplorer from '../primitives/visual-primitives/literacy/PhonemeExplorer';
 import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableClapper';
+import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotter';
+import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
 
 import {
   EvaluationProvider,
@@ -55,7 +57,9 @@ type PrimitiveType =
   | 'listen-and-respond' | 'read-aloud-studio'
   | 'sentence-builder' | 'context-clues-detective' | 'figurative-language-finder' | 'spelling-pattern-explorer'
   | 'rhyme-studio'
-  | 'sound-swap' | 'phoneme-explorer' | 'syllable-clapper';
+  | 'sound-swap' | 'phoneme-explorer' | 'syllable-clapper'
+  | 'letter-spotter'
+  | 'letter-sound-link';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -76,6 +80,8 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'sound-swap', label: 'Sound Swap', icon: '🔄', topic: 'Phoneme manipulation', strand: 'RF', wave: 2 },
   { value: 'phoneme-explorer', label: 'Phoneme Explorer', icon: '🔊', topic: 'Phoneme awareness', strand: 'RF', wave: 2 },
   { value: 'syllable-clapper', label: 'Syllable Clapper', icon: '👏', topic: 'Syllable counting', strand: 'RF', wave: 2 },
+  { value: 'letter-spotter', label: 'Letter Spotter', icon: '🔎', topic: 'Letter recognition', strand: 'RF', wave: 2 },
+  { value: 'letter-sound-link', label: 'Letter-Sound Link', icon: '🔊', topic: 'Letter sounds', strand: 'RF', wave: 2 },
   // ===== RL: Reading Literature =====
   { value: 'story-map', label: 'Story Map', icon: '🗺️', topic: 'Plot structure of a short story', strand: 'RL', wave: 1 },
   { value: 'character-web', label: 'Character Web', icon: '🕸️', topic: 'Character analysis and relationships', strand: 'RL', wave: 3 },
@@ -170,6 +176,10 @@ const PrimitiveRenderer: React.FC<{
       return <PhonemeExplorer data={data as Parameters<typeof PhonemeExplorer>[0]['data']} />;
     case 'syllable-clapper':
       return <SyllableClapper data={data as Parameters<typeof SyllableClapper>[0]['data']} />;
+    case 'letter-spotter':
+      return <LetterSpotter data={data as Parameters<typeof LetterSpotter>[0]['data']} />;
+    case 'letter-sound-link':
+      return <LetterSoundLink data={data as Parameters<typeof LetterSoundLink>[0]['data']} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">

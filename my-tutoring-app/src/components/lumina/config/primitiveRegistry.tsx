@@ -147,6 +147,8 @@ import RhymeStudio from '../primitives/visual-primitives/literacy/RhymeStudio';
 import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableClapper';
 import PhonemeExplorer from '../primitives/visual-primitives/literacy/PhonemeExplorer';
 import SoundSwap from '../primitives/visual-primitives/literacy/SoundSwap';
+import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotter';
+import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -1599,6 +1601,26 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'sound-swap': {
     component: SoundSwap,
     sectionTitle: 'Sound Swap',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'letter-spotter': {
+    component: LetterSpotter,
+    sectionTitle: 'Letter Spotter',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'letter-sound-link': {
+    component: LetterSoundLink,
+    sectionTitle: 'Letter-Sound Link',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

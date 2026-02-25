@@ -326,6 +326,98 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'letter-spotter',
+    description:
+      'Interactive letter recognition with three modes: Name It (identify a displayed letter), Find It (locate letters in a grid), '
+      + 'and Match It (pair uppercase with lowercase). Supports cumulative letter group progression (Groups 1-4). '
+      + 'Perfect for kindergarten letter naming assessments. ESSENTIAL for K-2 literacy foundations.',
+    constraints:
+      'Requires letterGroup (1-4). Group 1: s,a,t,i,p,n. Group 2: adds c,k,e,h,r,m,d. '
+      + 'Group 3: adds g,o,u,l,f,b. Group 4: adds j,z,w,v,y,x,q. b and d deliberately separated across groups.',
+    tutoring: {
+      taskDescription:
+        'Letter recognition activity. Group {{letterGroup}} (letters: {{cumulativeLetters}}). '
+        + 'Mode: {{challengeMode}}. Target letter: {{targetLetter}} ({{targetCase}}). '
+        + 'Challenge {{currentChallenge}}/{{totalChallenges}}. Attempts: {{attempts}}.',
+      contextKeys: [
+        'letterGroup', 'cumulativeLetters', 'newLetters', 'challengeMode',
+        'targetLetter', 'targetCase', 'currentChallenge', 'totalChallenges', 'attempts',
+      ],
+      scaffoldingLevels: {
+        level1: '"Look at this letter carefully. What is its name?"',
+        level2: '"This letter looks like [shape hint]. Does it remind you of any letter you know?"',
+        level3: '"This is the letter {{targetLetter}}. Say it with me: {{targetLetter}}!"',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing b and d', response: 'Make a "bed" with your fists — left thumb up is b, right thumb up is d.' },
+        { pattern: 'Confusing p and q', response: 'The letter p has its stick going DOWN. The letter q has its stick going DOWN too, but the circle is on the other side.' },
+        { pattern: 'Confusing uppercase and lowercase forms', response: 'Big [letter] and little [letter] are the same letter, just different sizes. They make the same sound!' },
+        { pattern: 'Cannot name new letters', response: 'This is a new letter! Let me introduce you: this is [name]. Can you say [name]?' },
+      ],
+      aiDirectives: [
+        {
+          title: 'LETTER NAMING',
+          instruction:
+            'When you receive [SAY_LETTER_NAME] or [FIND_LETTER], say the letter name clearly. '
+            + 'Use the standard letter name (e.g., "A" as "ay", "S" as "ess"). '
+            + 'For [FIND_LETTER], say "Find the letter [name]!" with enthusiasm. '
+            + 'For [NEW_LETTER_INTRO], warmly introduce the letter with a brief description of its shape.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'letter-sound-link',
+    description:
+      'Letter-sound correspondence activity where students learn the sounds letters make. Three modes: see a letter and select its sound, '
+      + 'hear a sound and find the letter, or match letters to keyword images. Uses cumulative letter groups (1-4) following systematic phonics '
+      + 'progression. Color-coded: consonant sounds in blue, short vowel sounds in red. AI tutor pronounces clean phonemes. '
+      + 'ESSENTIAL for kindergarten and first-grade phonics instruction.',
+    constraints:
+      'Requires AI tutor voice connection for phoneme pronunciation. Supports 4 cumulative letter groups. '
+      + 'Each challenge needs 4 options with one correct answer.',
+    tutoring: {
+      taskDescription:
+        'Letter-sound correspondence activity. Group {{letterGroup}}. '
+        + 'Mode: {{challengeMode}}. Target: letter "{{targetLetter}}" → sound {{targetSound}}. '
+        + 'Keyword: "{{keywordWord}}". Challenge {{currentChallenge}}/{{totalChallenges}}. Attempts: {{attempts}}.',
+      contextKeys: [
+        'letterGroup', 'challengeMode', 'targetLetter', 'targetSound',
+        'keywordWord', 'currentChallenge', 'totalChallenges', 'attempts',
+        'sharedSoundLetters',
+      ],
+      scaffoldingLevels: {
+        level1: '"What sound does this letter make? Think of a word that starts with it."',
+        level2: '"This letter makes the sound... think of {{keywordWord}}. What sound does {{keywordWord}} start with?"',
+        level3: '"The letter {{targetLetter}} makes the sound {{targetSound}}, like in {{keywordWord}}. Say it with me: {{targetSound}}!"',
+      },
+      commonStruggles: [
+        { pattern: 'Saying the letter name instead of the sound', response: 'That\'s the letter NAME. We want the SOUND it makes. The letter S is named "ess" but it SOUNDS like /s/.' },
+        { pattern: 'Adding "uh" to consonant sounds', response: 'Make the sound really short and crisp. Just /t/, not "tuh". Clip it off quickly!' },
+        { pattern: 'Confusing short vowel sounds (e vs i)', response: 'For /ĕ/, think of "egg". For /ĭ/, think of "itch". They\'re different mouth shapes.' },
+        { pattern: 'Confused by c and k making the same sound', response: 'C and K are best friends — they make the same sound! /k/ like in "cat" and "kite".' },
+      ],
+      aiDirectives: [
+        {
+          title: 'CLEAN SOUND PRODUCTION',
+          instruction:
+            'CRITICAL: When you receive [PRONOUNCE_SOUND] or [TAP_OPTION], produce ONLY the clean phoneme. '
+            + 'Consonants must NOT have an "uh" added: say /t/ not "tuh", /s/ not "suh", /p/ not "puh". '
+            + 'Vowels should be the short sound: /ă/ as in apple, /ĕ/ as in egg, /ĭ/ as in itch, /ŏ/ as in octopus, /ŭ/ as in up. '
+            + 'No letter names, no extra words. Just the sound.',
+        },
+        {
+          title: 'KEYWORD ASSOCIATIONS',
+          instruction:
+            'When you receive [SAY_KEYWORD], say the sound followed by "as in [keyword]". '
+            + 'Example: "/s/ as in sun". Keep it brief.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 
   // ===== READING: LITERATURE (RL) =====
   {

@@ -2229,6 +2229,32 @@ export interface SoundSwapMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface LetterSpotterMetrics extends BasePrimitiveMetrics {
+  type: 'letter-spotter';
+  letterGroup: 1 | 2 | 3 | 4;
+  challengesCorrect: number;
+  challengesTotal: number;
+  newLetterAccuracy: number;
+  reviewLetterAccuracy: number;
+  uppercaseAccuracy: number;
+  lowercaseAccuracy: number;
+  confusedLetterPairs: string[];
+  attemptsCount: number;
+}
+
+export interface LetterSoundLinkMetrics extends BasePrimitiveMetrics {
+  type: 'letter-sound-link';
+  letterGroup: 1 | 2 | 3 | 4;
+  challengesCorrect: number;
+  challengesTotal: number;
+  graphemeToPhonemeAccuracy: number;
+  phonemeToGraphemeAccuracy: number;
+  vowelSoundAccuracy: number;
+  consonantSoundAccuracy: number;
+  confusedSoundPairs: string[];
+  attemptsCount: number;
+}
+
 // -----------------------------------------------------------------------------
 // Literacy Primitives (Wave 1)
 // -----------------------------------------------------------------------------
@@ -2954,7 +2980,9 @@ export type PrimitiveMetrics =
   | SpellingPatternExplorerMetrics
   | RhymeStudioMetrics
   | SyllableClapperMetrics
-  | SoundSwapMetrics;
+  | SoundSwapMetrics
+  | LetterSpotterMetrics
+  | LetterSoundLinkMetrics;
 
 // =============================================================================
 // Session & Summary Types

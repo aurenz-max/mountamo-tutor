@@ -149,6 +149,8 @@ export type {
   RhymeStudioMetrics,
   SyllableClapperMetrics,
   SoundSwapMetrics,
+  LetterSpotterMetrics,
+  LetterSoundLinkMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,
