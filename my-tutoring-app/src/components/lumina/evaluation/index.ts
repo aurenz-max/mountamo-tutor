@@ -145,7 +145,10 @@ export type {
   SentenceBuilderMetrics,
   StoryMapMetrics,
   ListenAndRespondMetrics,
+  PhonemeExplorerMetrics,
   RhymeStudioMetrics,
+  SyllableClapperMetrics,
+  SoundSwapMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

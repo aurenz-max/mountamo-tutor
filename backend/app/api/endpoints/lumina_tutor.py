@@ -291,6 +291,7 @@ When the student requests a hint, respond based on the level they request:
 - ALWAYS wait for the student to respond before continuing (except for [PRONOUNCE] commands)
 - BE PATIENT - learning takes time
 - ENCOURAGE mistakes as learning opportunities
+- NEVER invent, create, or advance to new challenges on your own. The app UI controls all challenge progression. After responding, STOP and wait silently. Do not fill silence by presenting new content.
 """
 
     return system_instruction
@@ -360,6 +361,7 @@ When the student requests a hint, respond based on the level they request:
 - ALWAYS wait for the student to respond before continuing (except for [PRONOUNCE] commands)
 - BE PATIENT - learning takes time
 - ENCOURAGE mistakes as learning opportunities
+- NEVER invent, create, or advance to new challenges on your own. The app UI controls all challenge progression. After responding, STOP and wait silently. Do not fill silence by presenting new content.
 """
 
     return system_instruction
@@ -589,7 +591,10 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                             logger.info(f"Context update received for {primitive_type}")
 
-                            # Forward state change to Gemini (silent — no response expected)
+                            # Forward state change to Gemini (silent — no response expected).
+                            # end_of_turn=False injects context without giving Gemini the
+                            # floor; the system prompt also says to ignore [CONTEXT UPDATE]
+                            # unless the student is clearly struggling.
                             context_lines = [f"  {k}: {v}" for k, v in new_state.items()]
                             context_summary = (
                                 f"[CONTEXT UPDATE] The student's current state has changed:\n"
@@ -600,7 +605,7 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                             await text_queue.put(TextQueueEntry(
                                 text=context_summary,
-                                end_of_turn=True,  # Silent injection — don't trigger a response
+                                end_of_turn=False,
                             ))
 
                         elif message_type == "student_action":
@@ -616,7 +621,7 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                             await text_queue.put(TextQueueEntry(
                                 text=action_text,
-                                end_of_turn=True,  # Silent injection
+                                end_of_turn=True,
                             ))
 
                         elif message_type == "switch_primitive":

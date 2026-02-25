@@ -2166,6 +2166,14 @@ export interface DecodableReaderMetrics extends BasePrimitiveMetrics {
   attemptsOnComprehension: number;
 }
 
+export interface PhonemeExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'phoneme-explorer';
+  challengesCorrect: number;
+  challengesTotal: number;
+  accuracy: number;
+  attemptsCount: number;
+}
+
 export interface PhonicsBlenderMetrics extends BasePrimitiveMetrics {
   type: 'phonics-blender';
 
@@ -2198,6 +2206,26 @@ export interface RhymeStudioMetrics extends BasePrimitiveMetrics {
   identificationAccuracy: number;
   productionAccuracy: number;
   rhymeFamiliesPracticed: string[];
+  attemptsCount: number;
+}
+
+export interface SyllableClapperMetrics extends BasePrimitiveMetrics {
+  type: 'syllable-clapper';
+  wordsCorrect: number;
+  wordsTotal: number;
+  clapCountAccuracy: number;
+  syllableCountsEncountered: Record<number, number>;
+  attemptsCount: number;
+}
+
+export interface SoundSwapMetrics extends BasePrimitiveMetrics {
+  type: 'sound-swap';
+  operation: 'addition' | 'deletion' | 'substitution';
+  challengesCorrect: number;
+  challengesTotal: number;
+  additionAccuracy: number;
+  deletionAccuracy: number;
+  substitutionAccuracy: number;
   attemptsCount: number;
 }
 
@@ -2907,6 +2935,7 @@ export type PrimitiveMetrics =
   | StoryMapMetrics
   | ListenAndRespondMetrics
   // Literacy (Wave 2)
+  | PhonemeExplorerMetrics
   | PhonicsBlenderMetrics
   | DecodableReaderMetrics
   | EvidenceFinderMetrics
@@ -2923,7 +2952,9 @@ export type PrimitiveMetrics =
   | RevisionWorkshopMetrics
   | GenreExplorerMetrics
   | SpellingPatternExplorerMetrics
-  | RhymeStudioMetrics;
+  | RhymeStudioMetrics
+  | SyllableClapperMetrics
+  | SoundSwapMetrics;
 
 // =============================================================================
 // Session & Summary Types

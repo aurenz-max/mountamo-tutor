@@ -29,6 +29,9 @@ import ContextCluesDetective from '../primitives/visual-primitives/literacy/Cont
 import FigurativeLanguageFinder from '../primitives/visual-primitives/literacy/FigurativeLanguageFinder';
 import SpellingPatternExplorer from '../primitives/visual-primitives/literacy/SpellingPatternExplorer';
 import RhymeStudio from '../primitives/visual-primitives/literacy/RhymeStudio';
+import SoundSwap from '../primitives/visual-primitives/literacy/SoundSwap';
+import PhonemeExplorer from '../primitives/visual-primitives/literacy/PhonemeExplorer';
+import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableClapper';
 
 import {
   EvaluationProvider,
@@ -51,7 +54,8 @@ type PrimitiveType =
   | 'paragraph-architect' | 'story-planner' | 'opinion-builder' | 'revision-workshop'
   | 'listen-and-respond' | 'read-aloud-studio'
   | 'sentence-builder' | 'context-clues-detective' | 'figurative-language-finder' | 'spelling-pattern-explorer'
-  | 'rhyme-studio';
+  | 'rhyme-studio'
+  | 'sound-swap' | 'phoneme-explorer' | 'syllable-clapper';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -69,6 +73,9 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'phonics-blender', label: 'Phonics Blender', icon: '🔤', topic: 'CVC word building with phonemes', strand: 'RF', wave: 2 },
   { value: 'decodable-reader', label: 'Decodable Reader', icon: '📖', topic: 'Controlled-vocabulary reading passage', strand: 'RF', wave: 2 },
   { value: 'rhyme-studio', label: 'Rhyme Studio', icon: '🎵', topic: 'Rhyming Words', strand: 'RF', wave: 2 },
+  { value: 'sound-swap', label: 'Sound Swap', icon: '🔄', topic: 'Phoneme manipulation', strand: 'RF', wave: 2 },
+  { value: 'phoneme-explorer', label: 'Phoneme Explorer', icon: '🔊', topic: 'Phoneme awareness', strand: 'RF', wave: 2 },
+  { value: 'syllable-clapper', label: 'Syllable Clapper', icon: '👏', topic: 'Syllable counting', strand: 'RF', wave: 2 },
   // ===== RL: Reading Literature =====
   { value: 'story-map', label: 'Story Map', icon: '🗺️', topic: 'Plot structure of a short story', strand: 'RL', wave: 1 },
   { value: 'character-web', label: 'Character Web', icon: '🕸️', topic: 'Character analysis and relationships', strand: 'RL', wave: 3 },
@@ -157,6 +164,12 @@ const PrimitiveRenderer: React.FC<{
       return <SpellingPatternExplorer data={data as Parameters<typeof SpellingPatternExplorer>[0]['data']} />;
     case 'rhyme-studio':
       return <RhymeStudio data={data as Parameters<typeof RhymeStudio>[0]['data']} />;
+    case 'sound-swap':
+      return <SoundSwap data={data as Parameters<typeof SoundSwap>[0]['data']} />;
+    case 'phoneme-explorer':
+      return <PhonemeExplorer data={data as Parameters<typeof PhonemeExplorer>[0]['data']} />;
+    case 'syllable-clapper':
+      return <SyllableClapper data={data as Parameters<typeof SyllableClapper>[0]['data']} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">

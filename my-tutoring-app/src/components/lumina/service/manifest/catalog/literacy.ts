@@ -200,6 +200,132 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'syllable-clapper',
+    description: 'Syllable clapping activity where students hear a word and tap/clap to count its syllables. Visual bar splits into color-coded syllable segments. AI tutor pronounces words and syllables. Supports 1-4 syllable words. Perfect for phonological awareness development. ESSENTIAL for kindergarten literacy.',
+    constraints: 'Requires 1-4 syllable words appropriate for kindergarten. Each word needs correct syllable segmentation.',
+    tutoring: {
+      taskDescription:
+        'Syllable clapping activity. Word {{currentChallenge}}/{{totalChallenges}}: '
+        + '"{{currentWord}}" ({{syllableCount}} syllables: {{syllables}}). '
+        + 'Student clapped: {{studentClaps}}. Attempts: {{attempts}}.',
+      contextKeys: [
+        'currentWord', 'syllableCount', 'syllables',
+        'studentClaps', 'currentChallenge', 'totalChallenges', 'attempts',
+      ],
+      scaffoldingLevels: {
+        level1: '"Let\'s clap the word! Say it with me and clap each part."',
+        level2: '"Listen: {{currentWord}}. I\'ll say it slowly — clap when you hear a new part."',
+        level3: '"{{currentWord}} has {{syllableCount}} parts: {{syllables}}. Clap with me: [clap each syllable]."',
+      },
+      commonStruggles: [
+        { pattern: 'Clapping too many times (adding extra syllables)', response: 'Say the word slowly and naturally. Only clap when your mouth makes a new sound.' },
+        { pattern: 'Clapping once for all multi-syllable words', response: 'Put your hand under your chin. Each time your chin drops, that\'s a new syllable.' },
+        { pattern: 'Confusing syllables with phonemes', response: 'We\'re listening for big parts, not little sounds. "Cat" is one clap. "Kitten" is two claps.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRONUNCIATION COMMANDS',
+          instruction:
+            'When you receive [PRONOUNCE_WORD], say the word naturally and clearly. Just the word. '
+            + 'When you receive [PRONOUNCE_SYLLABLES], say the word with clear pauses between syllables '
+            + '(e.g., "but...ter...fly"). Exaggerate the breaks slightly. '
+            + 'When you receive [PRONOUNCE_SYLLABLE], say just the single syllable requested.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'phoneme-explorer',
+    description:
+      'Emoji-based phoneme matching activity. Students hear a letter sound, see an example word with emoji, '
+      + 'then pick from 4 emoji+word choices to find the word that starts with the same sound. '
+      + 'Audio-first with AI tutor pronouncing phonemes. Perfect for beginning phoneme awareness. ESSENTIAL for K-2 literacy.',
+    constraints: 'Use concrete, picturable words with clear emoji matches. Focus on beginning sounds.',
+    tutoring: {
+      taskDescription:
+        'Phoneme matching activity. '
+        + 'Challenge {{currentChallenge}}/{{totalChallenges}}: Sound "{{phonemeSound}}" (letter {{phoneme}}). '
+        + 'Example: {{exampleWord}}. Attempts: {{attempts}}.',
+      contextKeys: [
+        'phoneme', 'phonemeSound', 'exampleWord', 'currentChallenge',
+        'totalChallenges', 'attempts',
+      ],
+      scaffoldingLevels: {
+        level1:
+          '"Listen to the sound: {{phonemeSound}}. {{exampleWord}} starts with that sound. '
+          + 'Which other word starts the same way?"',
+        level2:
+          '"Say {{phonemeSound}} slowly. Now say each word and listen for the beginning sound. '
+          + 'Which one starts with {{phonemeSound}}?"',
+        level3:
+          '"The answer starts with the {{phoneme}} sound, like {{exampleWord}}. Listen: {{phonemeSound}}..."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing letter names with sounds', response: 'We want the SOUND, not the letter name. "B" makes the sound "buh".' },
+        { pattern: 'Looking at emojis instead of listening', response: 'Say each word out loud. Listen to the FIRST sound. Does it match?' },
+        { pattern: 'Guessing randomly', response: 'Let\'s say the sound together: "{{phonemeSound}}". Now say each word. Which one starts the same?' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRONUNCIATION COMMANDS',
+          instruction:
+            'When you receive [NEW_CHALLENGE], say the phoneme sound clearly and slowly. '
+            + 'Then say the example word, emphasizing the first sound. '
+            + 'Ask which other word starts the same way. Keep it encouraging and playful.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'sound-swap',
+    description:
+      'Interactive phoneme manipulation activity where students add, delete, or substitute individual sounds in words to create new words. '
+      + 'Three operation modes: Addition (add a phoneme to make a new word), Deletion (remove a phoneme to reveal a new word), '
+      + 'and Substitution (swap one phoneme for another to transform a word). Uses visual sound tiles with animated transitions. '
+      + 'Perfect for advanced phonological awareness practice. ESSENTIAL for K-2 reading readiness.',
+    constraints: 'Use simple CVC/CVCC words. All result words must be real words. Use proper phoneme notation with slashes.',
+    tutoring: {
+      taskDescription:
+        'Phoneme manipulation activity. Operation: {{operation}}. '
+        + 'Challenge {{currentChallenge}}/{{totalChallenges}}: '
+        + '"{{originalWord}}" \u2192 {{operationDescription}} \u2192 "{{resultWord}}". '
+        + 'Phase: {{currentPhase}}. Attempts: {{attempts}}.',
+      contextKeys: [
+        'operation', 'originalWord', 'resultWord', 'operationDescription',
+        'currentChallenge', 'totalChallenges', 'currentPhase', 'attempts',
+        'targetPhoneme', 'newPhoneme', 'position', 'originalPhonemes',
+      ],
+      scaffoldingLevels: {
+        level1: '"Say {{originalWord}}. Now {{operationDescription}}. What word do you get?"',
+        level2: '"Listen to {{originalWord}}: {{originalPhonemes}}. If we {{operationDescription}}, what changes?"',
+        level3: '"{{originalWord}} is made of {{originalPhonemes}}. When we {{operationDescription}}, it becomes {{resultWord}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Cannot hold the original word in memory', response: 'Say the original word one more time. Now say it again, but this time...' },
+        { pattern: 'Changes the wrong sound', response: 'Point to the sound we are changing. Which tile are we working with?' },
+        { pattern: 'Produces a nonsense word', response: 'Let\'s try again. Say the sounds one at a time after the change.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'CHALLENGE PRESENTATION',
+          instruction:
+            'When you receive [PRESENT_CHALLENGE], deliver the full manipulation instruction clearly. '
+            + 'Say the original word, then the operation, then ask for the result. '
+            + 'Example: "Say cat. Now change the /k/ to /b/. What word do you get?"',
+        },
+        {
+          title: 'PRONUNCIATION COMMANDS',
+          instruction:
+            'When you receive [PRONOUNCE], say ONLY the requested word or sound. No extra commentary. '
+            + 'Produce clean phonemes \u2014 /t/ not "tuh", /s/ not "suh".',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 
   // ===== READING: LITERATURE (RL) =====
   {

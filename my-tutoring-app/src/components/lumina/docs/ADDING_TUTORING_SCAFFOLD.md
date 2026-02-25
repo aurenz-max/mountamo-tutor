@@ -293,6 +293,90 @@ sendText(
 
 ---
 
+## Avoiding Gemini Turn Races
+
+When a student advances to the next challenge, multiple things happen in quick succession: React state updates, effects fire, and `useLuminaAI` sends context updates. If more than one of these sends a message with `end_of_turn=True`, Gemini gets multiple turns to speak — and the first one often arrives **before** the actual challenge data, causing Gemini to hallucinate content.
+
+### The Problem
+
+```
+User clicks "Next" → handleNext fires
+  1. sendText("[NEXT_CHALLENGE] Moving to challenge 2 of 5.")   ← end_of_turn=True, NO data
+  2. useEffect fires (currentIndex changed) →
+     sendText("[NEW_CHALLENGE] Say the D sound, like in Dog!")   ← end_of_turn=True, HAS data
+  3. useLuminaAI auto-updates context →
+     updateContext({ currentChallenge: 2, ... })                 ← end_of_turn=False (silent)
+```
+
+Message #1 reaches Gemini first and gives it the floor. But it only says "Moving to challenge 2 of 5" with **zero challenge data**. Gemini invents a challenge (e.g., "T sound, like Tiger") from its imagination. Then message #2 arrives and triggers a *second* correct response. The student hears both — the hallucinated one first.
+
+### The Rule: One `end_of_turn=True` Per Advance
+
+When the student advances to a new challenge, **exactly one message** should trigger a Gemini response, and that message must contain the **full challenge data**. All other messages should either be removed or sent as silent injections (`end_of_turn=False` via `updateContext`).
+
+### Correct Pattern
+
+```typescript
+// ── handleNext: Just advance state, no sendText ──────────────
+const handleNext = useCallback(() => {
+  if (!advanceProgress()) {
+    submitFinalEvaluation();
+    setShowSummary(true);
+    return;
+  }
+  // Do NOT sendText here. The useEffect below fires when
+  // currentIndex changes and contains the full challenge data.
+}, [advanceProgress, submitFinalEvaluation]);
+
+// ── useEffect: Fires on currentIndex change, sends real data ──
+useEffect(() => {
+  if (!currentChallenge || !isConnected || currentIndex === 0) return;
+
+  sendText(
+    `[NEW_CHALLENGE] Say the sound "${currentChallenge.phonemeSound}". ` +
+    `This is the ${currentChallenge.phoneme} sound, like in ${currentChallenge.exampleWord}! ` +
+    `Options: ${currentChallenge.choices.map(c => c.word).join(', ')}.`,
+    { silent: true },
+  );
+}, [currentIndex, currentChallenge, isConnected, sendText]);
+```
+
+### Wrong Pattern
+
+```typescript
+// ❌ handleNext sends a bare message with no data
+const handleNext = useCallback(() => {
+  if (!advanceProgress()) { /* ... */ return; }
+  sendText(
+    `[NEXT_CHALLENGE] Moving to challenge ${currentIndex + 2} of ${total}.`,
+    { silent: true },
+  );
+  // This triggers Gemini BEFORE the useEffect sends the real data.
+  // Gemini halluctes a challenge from its imagination.
+}, [advanceProgress, currentIndex, total, sendText]);
+```
+
+### How the Backend Channels Map to Gemini Turns
+
+| Frontend call | Backend message type | `end_of_turn` | Gemini speaks? |
+|---------------|---------------------|---------------|----------------|
+| `sendText(text, { silent: true })` | `type: 'text'` | `True` | **Yes** |
+| `sendText(text)` (no silent) | `type: 'text'` | `True` | **Yes** |
+| `updateContext(data)` (auto from hook) | `type: 'update_context'` | `False` | **No** |
+
+Note: The `{ silent: true }` flag on `sendText` only affects the **frontend** (hides from conversation UI, doesn't set `isAIResponding`). On the backend, **all** `type: 'text'` messages are sent to Gemini with `end_of_turn=True`. There is no way to send a "text" message that doesn't trigger a Gemini response.
+
+### Checklist for Challenge Advancement
+
+When implementing a "next challenge" flow:
+
+1. `handleNext` should call `advanceProgress()` and nothing else (no `sendText`)
+2. A `useEffect` watching `currentIndex` should send `[NEW_CHALLENGE]` with **full challenge data**
+3. `aiPrimitiveData` (passed to `useLuminaAI`) should contain only metadata (index, attempt count) — not challenge content — to avoid duplicate data in the context update
+4. Verify in the backend logs that only **one** Gemini turn fires per advance (look for a single "AI turn finished" between advances)
+
+---
+
 ## What Gets Generated
 
 The backend formats the scaffold into this prompt section:
@@ -402,7 +486,10 @@ The AI will still have lesson context, student progress, and general tutoring in
 - [ ] Added `sendText('[TAG] ...', { silent: true })` calls at each pedagogical moment
 - [ ] Each `sendText` includes context (student answer, correct answer, attempt count) and brief instructions
 - [ ] Documented any special tags in `aiDirectives` if they require non-default AI behavior
+- [ ] Challenge advancement sends exactly **one** `sendText` per advance (from a `useEffect`, not `handleNext`) — see [Avoiding Gemini Turn Races](#avoiding-gemini-turn-races)
+- [ ] `aiPrimitiveData` contains only progress metadata, not challenge content (avoids duplicate context updates)
 - [ ] Tested with Lumina Tutor Tester to verify scaffold is sent and formatted correctly
+- [ ] Checked backend logs for a single "AI turn finished" per challenge advance (no hallucinated double responses)
 
 ## Additional Resources
 

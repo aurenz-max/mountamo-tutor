@@ -48,6 +48,9 @@ import { generateRevisionWorkshop } from '../../literacy/gemini-revision-worksho
 import { generateGenreExplorer } from '../../literacy/gemini-genre-explorer';
 import { generateSpellingPatternExplorer } from '../../literacy/gemini-spelling-pattern-explorer';
 import { generateRhymeStudio } from '../../literacy/gemini-rhyme-studio';
+import { generateSyllableClapper } from '../../literacy/gemini-syllable-clapper';
+import { generatePhonemeExplorer } from '../../literacy/gemini-phoneme-explorer';
+import { generateSoundSwap } from '../../literacy/gemini-sound-swap';
 
 // ============================================================================
 // Helper Types
@@ -465,4 +468,74 @@ registerGenerator('rhyme-studio', async (item, topic, gradeContext) => ({
   data: await generateRhymeStudio(topic, gradeContext, item.config),
 }));
 
-console.log('📚 Literacy generators registered: 19 (Wave 1-4 + Rhyme Studio)');
+// ============================================================================
+// Kindergarten Phonics & Alphabet — Syllable Clapper
+// ============================================================================
+
+/**
+ * Syllable Clapper - Syllable counting & segmentation practice
+ *
+ * Perfect for:
+ * - K-2 phonological awareness and syllable segmentation
+ * - Clap/tap syllable counting with immediate visual feedback
+ * - Progressive difficulty: 1-syllable → 4-syllable words
+ *
+ * Grade Scaling:
+ * - K: Simple CVC + common 2-syllable words, one or two 3-syllable
+ * - Grade 1: Wider vocabulary, 1-4 syllable words
+ * - Grade 2: Academic words, compound words, prefixed/suffixed words
+ */
+registerGenerator('syllable-clapper', async (item, topic, gradeContext) => ({
+  type: 'syllable-clapper',
+  instanceId: item.instanceId,
+  data: await generateSyllableClapper(topic, gradeContext, item.config),
+}));
+
+// ============================================================================
+// Kindergarten Phonics & Alphabet — Phoneme Explorer
+// ============================================================================
+
+/**
+ * Phoneme Explorer - Phoneme isolation, onset-rime, and segmentation practice
+ *
+ * Perfect for:
+ * - K-2 phonological awareness ("breaking apart" skills)
+ * - Onset-rime blending and isolation
+ * - Beginning, ending, and medial sound isolation
+ * - Full phoneme segmentation
+ *
+ * Grade Scaling:
+ * - K: Simple CVC words, 3-phoneme segmentation, common word families
+ * - Grade 1: Blends, digraphs, 3-4 phoneme words, blend onsets
+ * - Grade 2: Complex onsets, r-controlled vowels, 3-5 phoneme words
+ */
+registerGenerator('phoneme-explorer', async (item, topic, gradeContext) => ({
+  type: 'phoneme-explorer',
+  instanceId: item.instanceId,
+  data: await generatePhonemeExplorer(topic, gradeContext, item.config),
+}));
+
+// ============================================================================
+// Kindergarten Phonics & Alphabet — Sound Swap
+// ============================================================================
+
+/**
+ * Sound Swap - Phoneme manipulation (addition, deletion, substitution)
+ *
+ * Perfect for:
+ * - K-2 phoneme manipulation — the most advanced phonological awareness skill
+ * - Adding, deleting, or substituting individual phonemes in words
+ * - Direct predictor of reading success
+ *
+ * Grade Scaling:
+ * - K: Simple CVC words, single consonant manipulations
+ * - Grade 1: CVC/CVCC words, blends, digraphs
+ * - Grade 2: CCVC, CVCC, multisyllabic, r-controlled vowels
+ */
+registerGenerator('sound-swap', async (item, topic, gradeContext) => ({
+  type: 'sound-swap',
+  instanceId: item.instanceId,
+  data: await generateSoundSwap(topic, gradeContext, item.config),
+}));
+
+console.log('📚 Literacy generators registered: 22 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap)');

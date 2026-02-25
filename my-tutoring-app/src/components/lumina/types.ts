@@ -1125,15 +1125,18 @@ export type ComponentId =
   | 'text-structure-analyzer'   // Informational text organizational pattern identification (grades 2-6)
   | 'evidence-finder'           // Text evidence citing with CER framework (grades 2-6)
   | 'paragraph-architect'       // Scaffolded paragraph construction (grades 1-6)
+  | 'phoneme-explorer'          // Interactive phoneme exploration and manipulation
   | 'story-planner'             // Narrative pre-writing organizer (K-6)
   | 'opinion-builder'           // Argument/persuasive writing scaffold (grades 2-6)
   | 'revision-workshop'         // Edit and revise drafts with targeted feedback (grades 2-6)
   | 'listen-and-respond'        // Audio comprehension with hidden text (K-6)
   | 'read-aloud-studio'         // Fluency practice with model reading and recording (grades 1-6)
   | 'rhyme-studio'              // Interactive rhyming word exploration and practice
+  | 'syllable-clapper'          // Interactive syllable clapping and segmentation
   | 'sentence-builder'          // Construct grammatical sentences from word tiles (grades 1-6)
   | 'context-clues-detective'   // Determine word meaning from context clues (grades 2-6)
   | 'figurative-language-finder' // Identify and interpret figurative language (grades 3-6)
+  | 'sound-swap'                // Interactive sound substitution for phonemic awareness
   | 'spelling-pattern-explorer' // Discover spelling rules through pattern investigation (grades 1-6)
 
   // Assessment
@@ -1537,3 +1540,6 @@ export type { StrategyPickerData } from './primitives/visual-primitives/math/Str
 
 // Literacy
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';
+export type { SyllableClapperData } from './primitives/visual-primitives/literacy/SyllableClapper';
+export type { PhonemeExplorerData } from './primitives/visual-primitives/literacy/PhonemeExplorer';
+export type { SoundSwapData } from './primitives/visual-primitives/literacy/SoundSwap';

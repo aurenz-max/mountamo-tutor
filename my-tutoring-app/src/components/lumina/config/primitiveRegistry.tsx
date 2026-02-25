@@ -144,6 +144,9 @@ import GenreExplorer from '../primitives/visual-primitives/literacy/GenreExplore
 import SpellingPatternExplorer from '../primitives/visual-primitives/literacy/SpellingPatternExplorer';
 import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
 import RhymeStudio from '../primitives/visual-primitives/literacy/RhymeStudio';
+import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableClapper';
+import PhonemeExplorer from '../primitives/visual-primitives/literacy/PhonemeExplorer';
+import SoundSwap from '../primitives/visual-primitives/literacy/SoundSwap';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -1566,6 +1569,36 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'rhyme-studio': {
     component: RhymeStudio,
     sectionTitle: 'Rhyme Studio',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'syllable-clapper': {
+    component: SyllableClapper,
+    sectionTitle: 'Syllable Clapper',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'phoneme-explorer': {
+    component: PhonemeExplorer,
+    sectionTitle: 'Phoneme Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'sound-swap': {
+    component: SoundSwap,
+    sectionTitle: 'Sound Swap',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
