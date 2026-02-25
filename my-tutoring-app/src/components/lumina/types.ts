@@ -1137,6 +1137,7 @@ export type ComponentId =
   | 'syllable-clapper'          // Interactive syllable clapping and segmentation
   | 'sentence-builder'          // Construct grammatical sentences from word tiles (grades 1-6)
   | 'context-clues-detective'   // Determine word meaning from context clues (grades 2-6)
+  | 'cvc-speller'               // Interactive CVC word spelling practice
   | 'figurative-language-finder' // Identify and interpret figurative language (grades 3-6)
   | 'sound-swap'                // Interactive sound substitution for phonemic awareness
   | 'spelling-pattern-explorer' // Discover spelling rules through pattern investigation (grades 1-6)
@@ -1547,3 +1548,4 @@ export type { PhonemeExplorerData } from './primitives/visual-primitives/literac
 export type { SoundSwapData } from './primitives/visual-primitives/literacy/SoundSwap';
 export type { LetterSpotterData } from './primitives/visual-primitives/literacy/LetterSpotter';
 export type { LetterSoundLinkData } from './primitives/visual-primitives/literacy/LetterSoundLink';
+export type { CvcSpellerData } from './primitives/visual-primitives/literacy/CvcSpeller';

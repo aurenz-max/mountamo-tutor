@@ -53,6 +53,7 @@ import { generatePhonemeExplorer } from '../../literacy/gemini-phoneme-explorer'
 import { generateSoundSwap } from '../../literacy/gemini-sound-swap';
 import { generateLetterSpotter } from '../../literacy/gemini-letter-spotter';
 import { generateLetterSoundLink } from '../../literacy/gemini-letter-sound-link';
+import { generateCvcSpeller } from '../../literacy/gemini-cvc-speller';
 
 // ============================================================================
 // Helper Types
@@ -590,4 +591,28 @@ registerGenerator('letter-sound-link', async (item, topic, gradeContext) => ({
   data: await generateLetterSoundLink(topic, gradeContext, item.config),
 }));
 
-console.log('📚 Literacy generators registered: 24 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link)');
+// ============================================================================
+// Kindergarten Phonics & Alphabet — CVC Speller
+// ============================================================================
+
+/**
+ * CVC Speller - CVC word encoding (spelling from audio)
+ *
+ * Perfect for:
+ * - K-2 CVC word spelling and phonemic encoding
+ * - Students hear a CVC word and spell it by placing letters in 3 slots
+ * - Short vowel focus with progressive letter group difficulty
+ * - Common error feedback for targeted remediation
+ *
+ * Grade Scaling:
+ * - K: Letter groups 1-2, simple CVC words, high-frequency consonants
+ * - Grade 1: Letter groups 2-3, wider CVC vocabulary
+ * - Grade 2: Letter groups 3-4, full consonant set, review and fluency
+ */
+registerGenerator('cvc-speller', async (item, topic, gradeContext) => ({
+  type: 'cvc-speller',
+  instanceId: item.instanceId,
+  data: await generateCvcSpeller(topic, gradeContext, item.config),
+}));
+
+console.log('📚 Literacy generators registered: 25 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller)');

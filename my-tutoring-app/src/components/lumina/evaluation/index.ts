@@ -151,6 +151,7 @@ export type {
   SoundSwapMetrics,
   LetterSpotterMetrics,
   LetterSoundLinkMetrics,
+  CvcSpellerMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

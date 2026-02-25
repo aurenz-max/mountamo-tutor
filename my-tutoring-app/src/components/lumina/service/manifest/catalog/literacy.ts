@@ -418,6 +418,52 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'cvc-speller',
+    description:
+      'CVC word spelling from audio. Students hear a word and place letters in three Elkonin-box slots. '
+      + 'Covers five short vowels (a, e, i, o, u) with progressive difficulty. Color-coded consonant/vowel letter bank. '
+      + 'Perfect for K-2 encoding practice. ESSENTIAL for Kindergarten and Grade 1 phonics.',
+    constraints: 'Only CVC (3-letter) words. One vowel focus per activity. Requires AI tutor voice for pronunciation.',
+    tutoring: {
+      taskDescription:
+        'CVC spelling activity. Vowel focus: {{vowelFocus}}. Letter group: {{letterGroup}}. '
+        + 'Word {{currentChallenge}}/{{totalChallenges}}: "{{targetWord}}" ({{targetPhonemes}}). '
+        + 'Student placed: {{placedLetters}}. Attempts: {{attempts}}.',
+      contextKeys: [
+        'vowelFocus', 'letterGroup', 'targetWord', 'targetPhonemes', 'targetLetters',
+        'placedLetters', 'currentChallenge', 'totalChallenges', 'attempts',
+      ],
+      scaffoldingLevels: {
+        level1: '"Say the word slowly. What sounds do you hear? Find those letters."',
+        level2: '"{{targetWord}} starts with the sound {{firstPhoneme}}. Which letter makes that sound?"',
+        level3: '"{{targetWord}} is spelled {{targetLetters}}. The sounds are {{targetPhonemes}}. Find each letter."',
+      },
+      commonStruggles: [
+        { pattern: 'Vowel confusion (e.g., placing "e" instead of "a")', response: 'Listen to the middle sound. Is it /ă/ like apple or /ĕ/ like egg? They sound different.' },
+        { pattern: 'Reversing letter order', response: 'What\'s the FIRST sound? That goes in the first box. Then the middle, then the last.' },
+        { pattern: 'Cannot identify the medial vowel', response: 'Use the stretch button. Listen to the middle sound carefully. It\'s the loud sound in the middle.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRONUNCIATION COMMANDS',
+          instruction:
+            'When you receive [PRONOUNCE_WORD] or [REPEAT_WORD], say the word clearly and naturally. '
+            + 'When you receive [STRETCH_WORD], say each phoneme with a pause: "/k/... /æ/... /t/". '
+            + 'When you receive [CONFIRM_SOUND], say just the clean phoneme for that letter. '
+            + 'No extra commentary for any pronunciation command.',
+        },
+        {
+          title: 'VOWEL CONFUSION FEEDBACK',
+          instruction:
+            'When you receive [VOWEL_CONFUSION], give specific corrective feedback comparing the two vowel sounds. '
+            + 'Use keyword associations: /ă/ = apple, /ĕ/ = egg, /ĭ/ = itch, /ŏ/ = octopus, /ŭ/ = up. '
+            + 'Say both sounds so the student can hear the difference.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 
   // ===== READING: LITERATURE (RL) =====
   {

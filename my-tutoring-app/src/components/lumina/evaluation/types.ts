@@ -2255,6 +2255,18 @@ export interface LetterSoundLinkMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface CvcSpellerMetrics extends BasePrimitiveMetrics {
+  type: 'cvc-speller';
+  vowelFocus: 'short-a' | 'short-e' | 'short-i' | 'short-o' | 'short-u';
+  wordsSpelledCorrectly: number;
+  wordsTotal: number;
+  vowelAccuracy: number;
+  consonantAccuracy: number;
+  commonErrors: string[];
+  stretchUsed: number;
+  attemptsCount: number;
+}
+
 // -----------------------------------------------------------------------------
 // Literacy Primitives (Wave 1)
 // -----------------------------------------------------------------------------
@@ -2982,7 +2994,8 @@ export type PrimitiveMetrics =
   | SyllableClapperMetrics
   | SoundSwapMetrics
   | LetterSpotterMetrics
-  | LetterSoundLinkMetrics;
+  | LetterSoundLinkMetrics
+  | CvcSpellerMetrics;
 
 // =============================================================================
 // Session & Summary Types

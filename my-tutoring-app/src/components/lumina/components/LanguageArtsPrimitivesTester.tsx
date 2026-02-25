@@ -34,6 +34,7 @@ import PhonemeExplorer from '../primitives/visual-primitives/literacy/PhonemeExp
 import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableClapper';
 import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotter';
 import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
+import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
 
 import {
   EvaluationProvider,
@@ -59,7 +60,8 @@ type PrimitiveType =
   | 'rhyme-studio'
   | 'sound-swap' | 'phoneme-explorer' | 'syllable-clapper'
   | 'letter-spotter'
-  | 'letter-sound-link';
+  | 'letter-sound-link'
+  | 'cvc-speller';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -82,6 +84,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'syllable-clapper', label: 'Syllable Clapper', icon: '👏', topic: 'Syllable counting', strand: 'RF', wave: 2 },
   { value: 'letter-spotter', label: 'Letter Spotter', icon: '🔎', topic: 'Letter recognition', strand: 'RF', wave: 2 },
   { value: 'letter-sound-link', label: 'Letter-Sound Link', icon: '🔊', topic: 'Letter sounds', strand: 'RF', wave: 2 },
+  { value: 'cvc-speller', label: 'CVC Speller', icon: '✏️', topic: 'CVC word spelling', strand: 'RF', wave: 2 },
   // ===== RL: Reading Literature =====
   { value: 'story-map', label: 'Story Map', icon: '🗺️', topic: 'Plot structure of a short story', strand: 'RL', wave: 1 },
   { value: 'character-web', label: 'Character Web', icon: '🕸️', topic: 'Character analysis and relationships', strand: 'RL', wave: 3 },
@@ -180,6 +183,8 @@ const PrimitiveRenderer: React.FC<{
       return <LetterSpotter data={data as Parameters<typeof LetterSpotter>[0]['data']} />;
     case 'letter-sound-link':
       return <LetterSoundLink data={data as Parameters<typeof LetterSoundLink>[0]['data']} />;
+    case 'cvc-speller':
+      return <CvcSpeller data={data as Parameters<typeof CvcSpeller>[0]['data']} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">

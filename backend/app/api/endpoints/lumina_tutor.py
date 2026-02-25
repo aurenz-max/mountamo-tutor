@@ -38,7 +38,7 @@ client = genai.Client(
 )
 
 DEFAULT_VOICE = "Leda"
-MODEL = "gemini-2.5-flash-native-audio-preview-09-2025"
+MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
 
 # Audio constants
 FORMAT = "audio/pcm"
