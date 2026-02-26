@@ -38,6 +38,7 @@
 
 // Types
 export type {
+  LessonContext,
   PrimitiveEvaluationResult,
   PrimitiveMetrics,
   BasePrimitiveMetrics,

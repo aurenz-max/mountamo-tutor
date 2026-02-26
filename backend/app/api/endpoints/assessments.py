@@ -200,16 +200,23 @@ async def get_problem_optimizer(
     from ...dependencies import get_problem_optimizer as get_main_problem_optimizer
     return await get_main_problem_optimizer(cosmos_db, recommender)
 
+def _get_firestore_service():
+    """Get Firestore service from main dependencies"""
+    from ...dependencies import get_firestore_service as get_main_firestore_service
+    return get_main_firestore_service()
+
 async def get_submission_service(
     review_service: ReviewService = Depends(get_review_service),
     competency_service: CompetencyService = Depends(get_competency_service),
-    cosmos_service: CosmosDBService = Depends(get_cosmos_service)
+    cosmos_service: CosmosDBService = Depends(get_cosmos_service),
+    firestore_service=Depends(_get_firestore_service)
 ) -> SubmissionService:
     """Get submission service instance with proper dependency injection"""
     return SubmissionService(
         review_service=review_service,
         competency_service=competency_service,
-        cosmos_db=cosmos_service
+        cosmos_db=cosmos_service,
+        firestore_service=firestore_service,
     )
 
 async def get_assessment_service(

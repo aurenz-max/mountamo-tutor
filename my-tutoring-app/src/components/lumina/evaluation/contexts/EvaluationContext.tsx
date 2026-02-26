@@ -28,6 +28,10 @@ export interface EvaluationContextType {
   exhibitId?: string;
   studentId?: string;
 
+  // Lesson context for curriculum mapping
+  topic?: string;
+  gradeLevel?: string;
+
   // Submission
   submitEvaluation: (result: PrimitiveEvaluationResult) => Promise<void>;
 
@@ -68,6 +72,12 @@ export interface EvaluationProviderProps {
   exhibitId?: string;
   studentId?: string;
 
+  /** Lesson topic for curriculum mapping */
+  topic?: string;
+
+  /** Grade level for curriculum mapping */
+  gradeLevel?: string;
+
   /** Maximum retries for failed submissions */
   maxRetries?: number;
 
@@ -96,6 +106,8 @@ export function EvaluationProvider({
   sessionId: providedSessionId,
   exhibitId,
   studentId,
+  topic,
+  gradeLevel,
   maxRetries = 3,
   retryDelay = 2000,
   autoFlushInterval = 30000, // 30 seconds
@@ -428,6 +440,8 @@ export function EvaluationProvider({
     sessionId,
     exhibitId,
     studentId,
+    topic,
+    gradeLevel,
     submitEvaluation,
     pendingSubmissions,
     submittedResults,

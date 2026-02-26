@@ -177,9 +177,15 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
             additionalProps.subskillId = manifestItem.config.subskillId;
           }
 
-          // Use first objective ID if available
+          // Use first objective ID and text if available
           if (objectives.length > 0) {
             additionalProps.objectiveId = objectives[0].id;
+            additionalProps.objectiveText = objectives[0].text;
+          }
+
+          // Pass component intent for curriculum mapping
+          if (manifestItem?.intent) {
+            additionalProps.componentIntent = manifestItem.intent;
           }
         }
 

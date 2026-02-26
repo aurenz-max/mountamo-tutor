@@ -9,6 +9,23 @@ import type { ComponentId } from '../types';
 import type { PlacedPiece } from '../primitives/visual-primitives/engineering/TowerStacker';
 
 // =============================================================================
+// Lesson Context (for curriculum mapping)
+// =============================================================================
+
+/**
+ * Context from the Lumina lesson manifest, sent with evaluation results so the
+ * backend can resolve generic primitives (e.g. compare-contrast) to specific
+ * curriculum subskills.
+ */
+export interface LessonContext {
+  topic?: string;
+  gradeLevel?: string;
+  componentIntent?: string;
+  primitiveType?: string;
+  objectiveText?: string;
+}
+
+// =============================================================================
 // Core Evaluation Result
 // =============================================================================
 
@@ -40,6 +57,9 @@ export interface PrimitiveEvaluationResult<TMetrics extends PrimitiveMetrics = P
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
+
+  // Lesson context for curriculum mapping
+  lessonContext?: LessonContext;
 
   // Student work artifact (serializable state for replay)
   studentWork?: unknown;

@@ -14,20 +14,26 @@ logger = logging.getLogger(__name__)
 
 class FirestoreService:
     """
-    Firestore service for real-time analytics migration.
-    Handles student attempts, reviews, and competencies with real-time capabilities.
+    Firestore service for real-time analytics.
+
+    Data lives under student-level subcollections:
+        students/{student_id}/attempts/{attempt_id}
+        students/{student_id}/reviews/{review_id}
+        students/{student_id}/competencies/{subject}_{skill}_{subskill}
+
+    Curriculum graphs remain a flat top-level collection (read-only).
     """
-    
+
     def __init__(self, project_id: Optional[str] = None):
         """Initialize Firestore client"""
         try:
             self.project_id = project_id or settings.FIREBASE_PROJECT_ID
-            
+
             # Initialize Firestore client with Firebase Admin credentials
             # Use explicit credentials instead of overriding global environment
             if hasattr(settings, 'FIREBASE_ADMIN_CREDENTIALS_PATH'):
                 firebase_creds_path = settings.firebase_admin_credentials_full_path
-                
+
                 # Load credentials explicitly for Firestore only
                 if os.path.exists(firebase_creds_path):
                     credentials = service_account.Credentials.from_service_account_file(firebase_creds_path)
@@ -37,20 +43,53 @@ class FirestoreService:
                     self.client = firestore.Client(project=self.project_id)
             else:
                 self.client = firestore.Client(project=self.project_id)
-            
-            # Collection references for analytics data
-            self.attempts_collection = self.client.collection('student_attempts')
-            self.reviews_collection = self.client.collection('student_reviews')
-            self.competencies_collection = self.client.collection('student_competencies')
 
-            # Collection reference for curriculum graphs (read-only)
+            # Collection reference for curriculum graphs (read-only, flat)
             self.curriculum_graphs = self.client.collection('curriculum_graphs')
 
             logger.info(f"Firestore service initialized for project: {self.project_id}")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize Firestore service: {str(e)}")
             raise
+
+    # ============================================================================
+    # SUBCOLLECTION HELPERS
+    # ============================================================================
+
+    def _student_doc(self, student_id: int):
+        """Get reference to a student document: students/{student_id}"""
+        return self.client.collection('students').document(str(student_id))
+
+    def _attempts_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/attempts"""
+        return self._student_doc(student_id).collection('attempts')
+
+    def _reviews_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/reviews"""
+        return self._student_doc(student_id).collection('reviews')
+
+    def _competencies_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/competencies"""
+        return self._student_doc(student_id).collection('competencies')
+
+    async def _ensure_student_document(self, student_id: int, firebase_uid: Optional[str] = None):
+        """Ensure the student document exists with minimal metadata (merge=True)"""
+        try:
+            doc_ref = self._student_doc(student_id)
+            data = {
+                "student_id": student_id,
+                "last_activity": datetime.now(timezone.utc).isoformat(),
+            }
+            if firebase_uid:
+                data["firebase_uid"] = firebase_uid
+            doc_ref.set(data, merge=True)
+        except Exception as e:
+            logger.warning(f"Failed to ensure student document for {student_id}: {e}")
+
+    # ============================================================================
+    # DATA HELPERS
+    # ============================================================================
 
     def _add_migration_metadata(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Add migration tracking metadata to documents"""
@@ -65,7 +104,7 @@ class FirestoreService:
     def _prepare_firestore_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Prepare data for Firestore by handling unsupported types"""
         prepared_data = {}
-        
+
         for key, value in data.items():
             if value is None:
                 prepared_data[key] = None
@@ -75,7 +114,7 @@ class FirestoreService:
                 prepared_data[key] = self._prepare_firestore_data(value)
             elif isinstance(value, list):
                 prepared_data[key] = [
-                    self._prepare_firestore_data(item) if isinstance(item, dict) else item 
+                    self._prepare_firestore_data(item) if isinstance(item, dict) else item
                     for item in value
                 ]
             elif isinstance(value, datetime):
@@ -83,7 +122,7 @@ class FirestoreService:
             else:
                 # Convert other types to string
                 prepared_data[key] = str(value)
-        
+
         return prepared_data
 
     # ============================================================================
@@ -102,11 +141,11 @@ class FirestoreService:
         firebase_uid: Optional[str] = None,
         additional_data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Save student attempt to Firestore"""
+        """Save student attempt to Firestore under students/{student_id}/attempts/"""
         try:
             attempt_id = str(uuid.uuid4())
             timestamp = datetime.now(timezone.utc).isoformat()
-            
+
             attempt_data = {
                 "id": attempt_id,
                 "student_id": student_id,
@@ -120,24 +159,25 @@ class FirestoreService:
                 "firebase_uid": firebase_uid,
                 "created_at": timestamp
             }
-            
+
             # Add any additional data
             if additional_data:
                 attempt_data.update(additional_data)
-            
+
             # Add migration metadata
             attempt_data = self._add_migration_metadata(attempt_data)
-            
+
             # Prepare for Firestore
             firestore_data = self._prepare_firestore_data(attempt_data)
-            
-            # Save to Firestore
-            doc_ref = self.attempts_collection.document(attempt_id)
+
+            # Ensure student doc exists, then save to subcollection
+            await self._ensure_student_document(student_id, firebase_uid)
+            doc_ref = self._attempts_subcollection(student_id).document(attempt_id)
             doc_ref.set(firestore_data)
-            
+
             logger.info(f"Saved attempt {attempt_id} to Firestore for student {student_id}")
             return firestore_data
-            
+
         except Exception as e:
             logger.error(f"Error saving attempt to Firestore: {str(e)}")
             raise
@@ -150,25 +190,25 @@ class FirestoreService:
         subskill_id: Optional[str] = None,
         limit: int = 100
     ) -> List[Dict[str, Any]]:
-        """Get student attempts from Firestore"""
+        """Get student attempts from Firestore subcollection"""
         try:
-            query = self.attempts_collection.where('student_id', '==', student_id)
-            
+            query = self._attempts_subcollection(student_id)
+
             if subject:
                 query = query.where('subject', '==', subject)
             if skill_id:
                 query = query.where('skill_id', '==', skill_id)
             if subskill_id:
                 query = query.where('subskill_id', '==', subskill_id)
-            
+
             query = query.order_by('timestamp', direction=firestore.Query.DESCENDING).limit(limit)
-            
+
             docs = query.stream()
             results = [doc.to_dict() for doc in docs]
-            
+
             logger.info(f"Retrieved {len(results)} attempts for student {student_id}")
             return results
-            
+
         except Exception as e:
             logger.error(f"Error getting student attempts from Firestore: {str(e)}")
             return []
@@ -188,11 +228,11 @@ class FirestoreService:
         problem_content: Dict[str, Any] = None,
         firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Save problem review to Firestore"""
+        """Save problem review to Firestore under students/{student_id}/reviews/"""
         try:
             review_id = str(uuid.uuid4())
             timestamp = datetime.now(timezone.utc).isoformat()
-            
+
             review_item = {
                 "id": review_id,
                 "student_id": student_id,
@@ -207,26 +247,27 @@ class FirestoreService:
                 "analysis": review_data.get("analysis", {}),
                 "evaluation": review_data.get("evaluation", {}),
                 "feedback": review_data.get("feedback", {}),
-                "score": float(review_data.get("evaluation", {}).get("score", 0)) 
-                    if isinstance(review_data.get("evaluation"), dict) 
+                "score": float(review_data.get("evaluation", {}).get("score", 0))
+                    if isinstance(review_data.get("evaluation"), dict)
                     else float(review_data.get("evaluation", 0)),
                 "firebase_uid": firebase_uid,
                 "created_at": timestamp
             }
-            
+
             # Add migration metadata
             review_item = self._add_migration_metadata(review_item)
-            
+
             # Prepare for Firestore
             firestore_data = self._prepare_firestore_data(review_item)
-            
-            # Save to Firestore
-            doc_ref = self.reviews_collection.document(review_id)
+
+            # Ensure student doc exists, then save to subcollection
+            await self._ensure_student_document(student_id, firebase_uid)
+            doc_ref = self._reviews_subcollection(student_id).document(review_id)
             doc_ref.set(firestore_data)
-            
+
             logger.info(f"Saved review {review_id} to Firestore for student {student_id}")
             return firestore_data
-            
+
         except Exception as e:
             logger.error(f"Error saving review to Firestore: {str(e)}")
             raise
@@ -239,25 +280,25 @@ class FirestoreService:
         subskill_id: Optional[str] = None,
         limit: int = 100
     ) -> List[Dict[str, Any]]:
-        """Get problem reviews from Firestore"""
+        """Get problem reviews from Firestore subcollection"""
         try:
-            query = self.reviews_collection.where('student_id', '==', student_id)
-            
+            query = self._reviews_subcollection(student_id)
+
             if subject:
                 query = query.where('subject', '==', subject)
             if skill_id:
                 query = query.where('skill_id', '==', skill_id)
             if subskill_id:
                 query = query.where('subskill_id', '==', subskill_id)
-            
+
             query = query.order_by('timestamp', direction=firestore.Query.DESCENDING).limit(limit)
-            
+
             docs = query.stream()
             results = [doc.to_dict() for doc in docs]
-            
+
             logger.info(f"Retrieved {len(results)} reviews for student {student_id}")
             return results
-            
+
         except Exception as e:
             logger.error(f"Error getting reviews from Firestore: {str(e)}")
             return []
@@ -277,12 +318,14 @@ class FirestoreService:
         total_attempts: int,
         firebase_uid: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Update competency in Firestore"""
+        """Update competency in Firestore under students/{student_id}/competencies/"""
         try:
-            # Use consistent ID based on student, subject, skill, and subskill
+            # Subcollection doc ID omits student_id (already scoped by parent)
+            competency_doc_id = f"{subject}_{skill_id}_{subskill_id}"
+            # Keep full composite ID in the data for backward compatibility
             competency_id = f"{student_id}_{subject}_{skill_id}_{subskill_id}"
             timestamp = datetime.now(timezone.utc).isoformat()
-            
+
             competency_data = {
                 "id": competency_id,
                 "student_id": student_id,
@@ -295,30 +338,33 @@ class FirestoreService:
                 "last_updated": timestamp,
                 "firebase_uid": firebase_uid
             }
-            
+
+            # Ensure student doc exists
+            await self._ensure_student_document(student_id, firebase_uid)
+
             # Check if document exists to preserve created_at
-            doc_ref = self.competencies_collection.document(competency_id)
+            doc_ref = self._competencies_subcollection(student_id).document(competency_doc_id)
             existing_doc = doc_ref.get()
-            
+
             if existing_doc.exists:
                 # Preserve created_at from existing document
                 existing_data = existing_doc.to_dict()
                 competency_data["created_at"] = existing_data.get("created_at", timestamp)
             else:
                 competency_data["created_at"] = timestamp
-            
+
             # Add migration metadata
             competency_data = self._add_migration_metadata(competency_data)
-            
+
             # Prepare for Firestore
             firestore_data = self._prepare_firestore_data(competency_data)
-            
+
             # Save to Firestore
             doc_ref.set(firestore_data)
-            
+
             logger.info(f"Updated competency {competency_id} in Firestore")
             return firestore_data
-            
+
         except Exception as e:
             logger.error(f"Error updating competency in Firestore: {str(e)}")
             raise
@@ -330,12 +376,12 @@ class FirestoreService:
         skill_id: str,
         subskill_id: str
     ) -> Dict[str, Any]:
-        """Get competency from Firestore"""
+        """Get competency from Firestore subcollection"""
         try:
-            competency_id = f"{student_id}_{subject}_{skill_id}_{subskill_id}"
-            doc_ref = self.competencies_collection.document(competency_id)
+            competency_doc_id = f"{subject}_{skill_id}_{subskill_id}"
+            doc_ref = self._competencies_subcollection(student_id).document(competency_doc_id)
             doc = doc_ref.get()
-            
+
             if doc.exists:
                 return doc.to_dict()
             else:
@@ -350,7 +396,7 @@ class FirestoreService:
                     "total_attempts": 0,
                     "last_updated": None
                 }
-                
+
         except Exception as e:
             logger.error(f"Error getting competency from Firestore: {str(e)}")
             return {
@@ -369,15 +415,15 @@ class FirestoreService:
         student_id: int,
         subject: str
     ) -> List[Dict[str, Any]]:
-        """Get all competencies for a specific subject from Firestore"""
+        """Get all competencies for a specific subject from Firestore subcollection"""
         try:
-            query = self.competencies_collection.where('student_id', '==', student_id).where('subject', '==', subject)
+            query = self._competencies_subcollection(student_id).where('subject', '==', subject)
             docs = query.stream()
             results = [doc.to_dict() for doc in docs]
-            
+
             logger.info(f"Retrieved {len(results)} competencies for student {student_id}, subject {subject}")
             return results
-            
+
         except Exception as e:
             logger.error(f"Error getting subject competencies from Firestore: {str(e)}")
             return []
@@ -524,64 +570,103 @@ class FirestoreService:
     # ============================================================================
 
     async def batch_write_attempts(self, attempts: List[Dict[str, Any]]) -> bool:
-        """Batch write attempts to Firestore for migration"""
+        """Batch write attempts to Firestore subcollections"""
         try:
             batch = self.client.batch()
-            
+            student_ids_seen = set()
+
             for attempt in attempts:
-                # Add migration metadata
+                student_id = attempt['student_id']
+                student_ids_seen.add(student_id)
+
                 attempt_data = self._add_migration_metadata(attempt)
                 firestore_data = self._prepare_firestore_data(attempt_data)
-                
-                doc_ref = self.attempts_collection.document(attempt['id'])
+
+                doc_ref = self._attempts_subcollection(student_id).document(attempt['id'])
                 batch.set(doc_ref, firestore_data)
-            
+
+            # Ensure student docs exist
+            for sid in student_ids_seen:
+                student_ref = self._student_doc(sid)
+                batch.set(student_ref, {
+                    "student_id": sid,
+                    "last_activity": datetime.now(timezone.utc).isoformat(),
+                }, merge=True)
+
             batch.commit()
-            logger.info(f"Batch wrote {len(attempts)} attempts to Firestore")
+            logger.info(f"Batch wrote {len(attempts)} attempts to Firestore subcollections")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error in batch write attempts: {str(e)}")
             return False
 
     async def batch_write_reviews(self, reviews: List[Dict[str, Any]]) -> bool:
-        """Batch write reviews to Firestore for migration"""
+        """Batch write reviews to Firestore subcollections"""
         try:
             batch = self.client.batch()
-            
+            student_ids_seen = set()
+
             for review in reviews:
-                # Add migration metadata
+                student_id = review['student_id']
+                student_ids_seen.add(student_id)
+
                 review_data = self._add_migration_metadata(review)
                 firestore_data = self._prepare_firestore_data(review_data)
-                
-                doc_ref = self.reviews_collection.document(review['id'])
+
+                doc_ref = self._reviews_subcollection(student_id).document(review['id'])
                 batch.set(doc_ref, firestore_data)
-            
+
+            # Ensure student docs exist
+            for sid in student_ids_seen:
+                student_ref = self._student_doc(sid)
+                batch.set(student_ref, {
+                    "student_id": sid,
+                    "last_activity": datetime.now(timezone.utc).isoformat(),
+                }, merge=True)
+
             batch.commit()
-            logger.info(f"Batch wrote {len(reviews)} reviews to Firestore")
+            logger.info(f"Batch wrote {len(reviews)} reviews to Firestore subcollections")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error in batch write reviews: {str(e)}")
             return False
 
     async def batch_write_competencies(self, competencies: List[Dict[str, Any]]) -> bool:
-        """Batch write competencies to Firestore for migration"""
+        """Batch write competencies to Firestore subcollections"""
         try:
             batch = self.client.batch()
-            
+            student_ids_seen = set()
+
             for competency in competencies:
-                # Add migration metadata
+                student_id = competency['student_id']
+                student_ids_seen.add(student_id)
+
                 competency_data = self._add_migration_metadata(competency)
                 firestore_data = self._prepare_firestore_data(competency_data)
-                
-                doc_ref = self.competencies_collection.document(competency['id'])
+
+                # Use subcollection doc ID without student_id prefix
+                subject = competency.get('subject', '')
+                skill_id = competency.get('skill_id', '')
+                subskill_id = competency.get('subskill_id', '')
+                doc_id = f"{subject}_{skill_id}_{subskill_id}"
+
+                doc_ref = self._competencies_subcollection(student_id).document(doc_id)
                 batch.set(doc_ref, firestore_data)
-            
+
+            # Ensure student docs exist
+            for sid in student_ids_seen:
+                student_ref = self._student_doc(sid)
+                batch.set(student_ref, {
+                    "student_id": sid,
+                    "last_activity": datetime.now(timezone.utc).isoformat(),
+                }, merge=True)
+
             batch.commit()
-            logger.info(f"Batch wrote {len(competencies)} competencies to Firestore")
+            logger.info(f"Batch wrote {len(competencies)} competencies to Firestore subcollections")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error in batch write competencies: {str(e)}")
             return False
@@ -591,8 +676,8 @@ class FirestoreService:
     # ============================================================================
 
     async def validate_data_consistency(
-        self, 
-        cosmos_data: Dict[str, Any], 
+        self,
+        cosmos_data: Dict[str, Any],
         firestore_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Validate data consistency between CosmosDB and Firestore"""
@@ -602,20 +687,20 @@ class FirestoreService:
             "missing_fields": [],
             "validation_timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
         # Check for missing fields in Firestore
         for key in cosmos_data.keys():
             if key not in firestore_data and key not in ['_rid', '_self', '_etag', '_attachments', '_ts']:
                 validation_result["missing_fields"].append(key)
                 validation_result["consistent"] = False
-        
+
         # Check for value differences (excluding system fields)
         system_fields = ['_rid', '_self', '_etag', '_attachments', '_ts', 'migration_timestamp', 'firestore_created_at', 'source_system']
-        
+
         for key, cosmos_value in cosmos_data.items():
             if key in system_fields:
                 continue
-                
+
             if key in firestore_data:
                 firestore_value = firestore_data[key]
                 if cosmos_value != firestore_value:
@@ -625,32 +710,31 @@ class FirestoreService:
                         "firestore_value": firestore_value
                     })
                     validation_result["consistent"] = False
-        
+
         return validation_result
 
     async def get_collection_stats(self) -> Dict[str, Any]:
-        """Get statistics about Firestore collections"""
+        """Get statistics about Firestore collections using collection group queries"""
         stats = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "attempts_count": 0,
             "reviews_count": 0,
             "competencies_count": 0
         }
-        
+
         try:
-            # Note: These operations can be expensive for large collections
-            # In production, consider using Firestore aggregation queries
-            attempts_docs = self.attempts_collection.limit(1).stream()
+            # Use collection group queries for subcollections
+            attempts_docs = self.client.collection_group('attempts').limit(1).stream()
             stats["attempts_count"] = len(list(attempts_docs))
-            
-            reviews_docs = self.reviews_collection.limit(1).stream()
+
+            reviews_docs = self.client.collection_group('reviews').limit(1).stream()
             stats["reviews_count"] = len(list(reviews_docs))
-            
-            competencies_docs = self.competencies_collection.limit(1).stream()
+
+            competencies_docs = self.client.collection_group('competencies').limit(1).stream()
             stats["competencies_count"] = len(list(competencies_docs))
-            
+
         except Exception as e:
             logger.error(f"Error getting collection stats: {str(e)}")
             stats["error"] = str(e)
-        
+
         return stats

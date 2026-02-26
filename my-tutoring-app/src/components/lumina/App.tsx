@@ -1340,7 +1340,9 @@ export default function App() {
             <EvaluationProvider
                 sessionId={`exhibit-${Date.now()}`}
                 exhibitId={exhibitData.topic || 'unknown'}
-                localOnly={true}
+                topic={exhibitData.topic}
+                gradeLevel={gradeLevel}
+                localOnly={false}
                 onCompetencyUpdate={(updates) => {
                     console.log('Competency updates:', updates);
                 }}

@@ -30,6 +30,12 @@ export interface UsePrimitiveEvaluationOptions {
   /** Parent exhibit ID */
   exhibitId?: string;
 
+  /** Component intent from the manifest (for curriculum mapping) */
+  componentIntent?: string;
+
+  /** Objective text from the manifest (for curriculum mapping) */
+  objectiveText?: string;
+
   /** Callback fired when result is submitted */
   onSubmit?: (result: PrimitiveEvaluationResult) => void;
 
@@ -138,6 +144,8 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     subskillId,
     objectiveId,
     exhibitId,
+    componentIntent,
+    objectiveText,
     onSubmit,
     onSubmitSuccess,
     onSubmitError,
@@ -198,6 +206,17 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - new Date(startedAt).getTime();
 
+    // Build lesson context from EvaluationContext + component-level props
+    const lessonContext = (evaluationContext?.topic || componentIntent)
+      ? {
+          topic: evaluationContext?.topic,
+          gradeLevel: evaluationContext?.gradeLevel,
+          componentIntent,
+          primitiveType: primitiveType as string,
+          objectiveText,
+        }
+      : undefined;
+
     const result: PrimitiveEvaluationResult<TMetrics> = {
       primitiveType,
       instanceId,
@@ -213,6 +232,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       subskillId,
       objectiveId,
       exhibitId,
+      lessonContext,
       studentWork,
     };
 
@@ -259,6 +279,8 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     subskillId,
     objectiveId,
     exhibitId,
+    componentIntent,
+    objectiveText,
     onSubmit,
     onSubmitSuccess,
     onSubmitError,

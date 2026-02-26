@@ -15,7 +15,7 @@ from ...services.user_profiles import user_profiles_service
 from ...services.engagement_service import engagement_service
 from ...core.decorators import log_engagement_activity
 from ...models.user_profiles import ActivityLog
-from ...dependencies import get_problem_service, get_competency_service, get_review_service, get_problem_recommender, get_cosmos_db, get_problem_optimizer
+from ...dependencies import get_problem_service, get_competency_service, get_review_service, get_problem_recommender, get_cosmos_db, get_problem_optimizer, get_curriculum_mapping_service, get_firestore_service
 from ...services.problems import ProblemService
 from ...services.competency import CompetencyService
 from ...services.review import ReviewService
@@ -347,7 +347,8 @@ async def submit_problem(
     user_context: dict = Depends(get_user_context),
     review_service: ReviewService = Depends(get_review_service),
     competency_service: CompetencyService = Depends(get_competency_service),
-    cosmos_db = Depends(get_cosmos_db)
+    cosmos_db = Depends(get_cosmos_db),
+    curriculum_mapping_service = Depends(get_curriculum_mapping_service),
 ) -> SubmissionResult:
     """
     Universal problem submission endpoint. Engagement XP is handled automatically.
@@ -380,7 +381,9 @@ async def submit_problem(
             review_service,
             competency_service,
             cosmos_db,
-            user_profiles_service  # Enable misconception resolution
+            user_profiles_service,  # Enable misconception resolution
+            curriculum_mapping_service,  # Enable curriculum mapping for Lumina primitives
+            firestore_service=get_firestore_service(),  # Enable Firestore dual-write
         )
 
         # The endpoint is now ONLY responsible for the submission logic
@@ -425,7 +428,8 @@ async def submit_problem_batch(
     user_context: dict = Depends(get_user_context),
     review_service: ReviewService = Depends(get_review_service),
     competency_service: CompetencyService = Depends(get_competency_service),
-    cosmos_db = Depends(get_cosmos_db)
+    cosmos_db = Depends(get_cosmos_db),
+    curriculum_mapping_service = Depends(get_curriculum_mapping_service),
 ) -> BatchSubmissionResponse:
     """
     Batch problem submission endpoint. Processes multiple problems using the same logic
@@ -445,7 +449,9 @@ async def submit_problem_batch(
             review_service,
             competency_service,
             cosmos_db,
-            user_profiles_service  # Enable misconception resolution
+            user_profiles_service,  # Enable misconception resolution
+            curriculum_mapping_service,  # Enable curriculum mapping for Lumina primitives
+            firestore_service=get_firestore_service(),  # Enable Firestore dual-write
         )
 
         import uuid

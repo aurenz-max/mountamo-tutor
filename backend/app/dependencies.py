@@ -9,6 +9,7 @@ from .services.anthropic import AnthropicService
 from .services.problems import ProblemService
 from .services.competency import CompetencyService
 from .services.curriculum_service import CurriculumService
+from .services.curriculum_mapping_service import CurriculumMappingService
 from .services.recommender import ProblemRecommender
 from .services.visual_content_service import VisualContentService
 from .services.visual_content_manager import VisualContentManager
@@ -56,6 +57,7 @@ _problem_service: Optional[ProblemService] = None
 _learning_paths_service: Optional[LearningPathsService] = None
 _problem_optimizer: Optional[ProblemOptimizer] = None
 _review_service: Optional[ReviewService] = None
+_curriculum_mapping_service: Optional[CurriculumMappingService] = None
 
 
 # 🔥 UPDATED: Authentication dependency functions using service layer
@@ -228,6 +230,17 @@ async def get_curriculum_service() -> CurriculumService:
         logger.info("✅ CurriculumService with BigQuery initialized successfully")
     
     return _curriculum_service
+
+async def get_curriculum_mapping_service() -> CurriculumMappingService:
+    """Get or create CurriculumMappingService singleton."""
+    global _curriculum_mapping_service
+    if _curriculum_mapping_service is None:
+        logger.info("Initializing CurriculumMappingService")
+        curriculum_service = await get_curriculum_service()
+        gemini_service = get_gemini_generate_service()
+        _curriculum_mapping_service = CurriculumMappingService(curriculum_service, gemini_service)
+        logger.info("✅ CurriculumMappingService initialized successfully")
+    return _curriculum_mapping_service
 
 async def get_competency_service() -> CompetencyService:
     """Get Competency service with BigQuery curriculum service - CLEAN ASYNC"""

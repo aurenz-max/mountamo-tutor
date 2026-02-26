@@ -28,11 +28,13 @@ logger = logging.getLogger(__name__)
 class SubmissionService:
     """Universal problem submission handler"""
 
-    def __init__(self, review_service: ReviewService, competency_service: CompetencyService, cosmos_db=None, user_profiles_service=None):
+    def __init__(self, review_service: ReviewService, competency_service: CompetencyService, cosmos_db=None, user_profiles_service=None, curriculum_mapping_service=None, firestore_service=None):
         self.review_service = review_service
         self.competency_service = competency_service
         self.cosmos_db = cosmos_db
         self.user_profiles_service = user_profiles_service
+        self.curriculum_mapping_service = curriculum_mapping_service
+        self.firestore_service = firestore_service
     
     async def handle_submission(
         self,
@@ -331,12 +333,55 @@ class SubmissionService:
         logger.info(f"[LUMINA_PRIMITIVE] Score: {frontend_score}% (backend: {backend_score}), Success: {is_correct}")
         logger.info(f"[LUMINA_PRIMITIVE] Metrics type: {metrics.get('type', 'unknown')}")
 
-        # TODO: Currently skill_id/subskill_id/subject come from the frontend eval data.
-        # In the future, these should be resolved by a curriculum service that maps
-        # primitive_type → proper curriculum skill/subskill hierarchy for the student.
+        # Resolve skill_id/subskill_id/subject — prefer explicit values from
+        # the frontend, but use curriculum mapping when they look like defaults.
         skill_id = submission.skill_id or problem.get('skill_id', f'{primitive_type}_skill')
         subskill_id = submission.subskill_id or problem.get('subskill_id', f'{primitive_type}_subskill')
         subject = submission.subject or 'language_arts'
+
+        # Curriculum mapping: if IDs look like fallbacks, subject is 'auto', or
+        # the subject doesn't match the skill_id (e.g. language_arts default with
+        # a math-* skill), ask the CurriculumMappingService to resolve proper IDs.
+        _subject_skill_mismatch = (
+            subject == 'language_arts'
+            and skill_id.startswith('math-')
+        )
+        is_fallback = (
+            skill_id.endswith('_skill')
+            or subskill_id.endswith('_subskill')
+            or subject == 'auto'
+            or _subject_skill_mismatch
+        )
+        if is_fallback and self.curriculum_mapping_service:
+            try:
+                ctx = submission.lesson_context
+                mapping = await self.curriculum_mapping_service.resolve_mapping(
+                    topic=(ctx.topic if ctx else '') or '',
+                    component_intent=(ctx.component_intent if ctx else '') or '',
+                    grade_level=(ctx.grade_level if ctx else '') or '',
+                    primitive_type=(ctx.primitive_type if ctx else None) or primitive_type,
+                    subject_hint=subject if subject not in ('auto', 'language_arts') else None,
+                )
+                if mapping.confidence >= 0.3:
+                    skill_id = mapping.skill_id
+                    subskill_id = mapping.subskill_id
+                    subject = mapping.subject
+                    logger.info(
+                        f"[LUMINA_PRIMITIVE] Curriculum resolved: "
+                        f"{subject}/{skill_id}/{subskill_id} "
+                        f"(confidence={mapping.confidence:.2f}, via={mapping.resolved_by})"
+                    )
+                else:
+                    logger.info(
+                        f"[LUMINA_PRIMITIVE] Mapping confidence too low ({mapping.confidence:.2f}), "
+                        f"using fallback IDs"
+                    )
+            except Exception as e:
+                logger.warning(f"[LUMINA_PRIMITIVE] Curriculum mapping failed, using fallbacks: {e}")
+
+        # Ensure subject is never 'auto' when reaching competency update
+        if subject == 'auto':
+            subject = 'language_arts'
 
         # Build a review object matching the standard shape
         review = {
@@ -534,40 +579,72 @@ class SubmissionService:
         review: dict,
         problem_content: dict
     ) -> None:
-        """Save both attempt and review to CosmosDB"""
+        """Save both attempt and review to CosmosDB and Firestore (dual write)"""
         try:
             student_id = user_context["student_id"]
             firebase_uid = user_context["firebase_uid"]
-            
+
             # Extract score from review
             score = self._extract_score(review)
-            
-            # Save attempt (simple tracking record)
-            await self.cosmos_db.save_attempt(
+
+            # Use resolved values from review (curriculum mapping may have
+            # corrected them), falling back to raw submission values.
+            resolved_subject = review.get('subject') or submission.subject
+            resolved_skill = review.get('skill_id') or submission.skill_id
+            resolved_subskill = review.get('subskill_id') or submission.subskill_id or submission.skill_id
+
+            # Common kwargs for save_attempt
+            attempt_kwargs = dict(
                 student_id=student_id,
-                subject=submission.subject,
-                skill_id=submission.skill_id,
-                subskill_id=submission.subskill_id or submission.skill_id,
+                subject=resolved_subject,
+                skill_id=resolved_skill,
+                subskill_id=resolved_subskill,
                 score=score,
                 analysis=f"Problem attempt: Score {score}",
                 feedback=review.get('feedback', {}).get('guidance', ''),
-                firebase_uid=firebase_uid
+                firebase_uid=firebase_uid,
             )
-            
-            # Save detailed review
-            await self.cosmos_db.save_problem_review(
+
+            # Common kwargs for save_problem_review
+            review_kwargs = dict(
                 student_id=student_id,
-                subject=submission.subject,
-                skill_id=submission.skill_id,
-                subskill_id=submission.subskill_id or submission.skill_id,
+                subject=resolved_subject,
+                skill_id=resolved_skill,
+                subskill_id=resolved_subskill,
                 problem_id=submission.problem.get('id', 'unknown'),
                 review_data=review,
                 problem_content=problem_content,
-                firebase_uid=firebase_uid
+                firebase_uid=firebase_uid,
             )
-            
-            logger.info(f"Saved attempt and review to CosmosDB for student {student_id}")
-            
+
+            # === CosmosDB writes ===
+            if self.cosmos_db:
+                try:
+                    await self.cosmos_db.save_attempt(**attempt_kwargs)
+                    logger.info(f"Saved attempt to CosmosDB for student {student_id}")
+                except Exception as e:
+                    logger.error(f"Error saving attempt to CosmosDB: {str(e)}")
+
+                try:
+                    await self.cosmos_db.save_problem_review(**review_kwargs)
+                    logger.info(f"Saved review to CosmosDB for student {student_id}")
+                except Exception as e:
+                    logger.error(f"Error saving review to CosmosDB: {str(e)}")
+
+            # === Firestore writes (dual write) ===
+            if self.firestore_service:
+                try:
+                    await self.firestore_service.save_attempt(**attempt_kwargs)
+                    logger.info(f"Saved attempt to Firestore for student {student_id}")
+                except Exception as e:
+                    logger.error(f"Error saving attempt to Firestore: {str(e)}")
+
+                try:
+                    await self.firestore_service.save_problem_review(**review_kwargs)
+                    logger.info(f"Saved review to Firestore for student {student_id}")
+                except Exception as e:
+                    logger.error(f"Error saving review to Firestore: {str(e)}")
+
         except Exception as e:
-            logger.error(f"Error saving to CosmosDB: {str(e)}")
+            logger.error(f"Error saving to databases: {str(e)}")
             # Don't raise - submission should continue even if DB save fails

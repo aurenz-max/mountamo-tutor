@@ -71,15 +71,22 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
   student_answer: string;
   canvas_used: boolean;
   primitive_response: Record<string, unknown>;
+  lesson_context?: {
+    topic?: string;
+    grade_level?: string;
+    component_intent?: string;
+    primitive_type?: string;
+    objective_text?: string;
+  };
 } {
   return {
-    // TODO: subject should come from curriculum service mapping primitive → subject
-    subject: 'language_arts',
+    // When lesson context is present the backend resolves the subject
+    // via curriculum mapping; otherwise fall back to language_arts.
+    subject: result.lessonContext?.topic ? 'auto' : 'language_arts',
     problem: {
       problem_type: 'lumina_primitive',
       id: result.attemptId,
       primitive_type: result.primitiveType,
-      // TODO: skill_id/subskill_id should be resolved by curriculum service
       skill_id: result.skillId || `${result.primitiveType}_skill`,
       subskill_id: result.subskillId || `${result.primitiveType}_subskill`,
     },
@@ -97,6 +104,16 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
       completed_at: result.completedAt,
       student_work: result.studentWork,
     },
+    // Lesson context for backend curriculum mapping
+    lesson_context: result.lessonContext
+      ? {
+          topic: result.lessonContext.topic,
+          grade_level: result.lessonContext.gradeLevel,
+          component_intent: result.lessonContext.componentIntent,
+          primitive_type: result.lessonContext.primitiveType,
+          objective_text: result.lessonContext.objectiveText,
+        }
+      : undefined,
   };
 }
 

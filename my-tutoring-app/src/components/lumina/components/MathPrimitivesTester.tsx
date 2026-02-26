@@ -604,6 +604,9 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
 
   const selectedOption = PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)!;
 
+  // Topic from the selected primitive — used by EvaluationProvider for curriculum mapping
+  const topic = selectedOption.topic;
+
   // Callback when an evaluation is submitted
   const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
     console.log('Evaluation submitted:', result);
@@ -644,6 +647,15 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
   };
 
   return (
+    <EvaluationProvider
+      sessionId={`math-tester-${Date.now()}`}
+      exhibitId="math-primitives-tester"
+      topic={topic}
+      gradeLevel={gradeLevel}
+      onCompetencyUpdate={(updates) => {
+        console.log('Competency updates received:', updates);
+      }}
+    >
     <div className="min-h-screen">
       {/* Header */}
       <div className="mb-8 text-center">
@@ -775,27 +787,20 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
         </div>
       </div>
     </div>
+    </EvaluationProvider>
   );
 };
 
-// Main export - wraps with EvaluationProvider, ExhibitProvider, and LuminaAIProvider
+// Main export - wraps with ExhibitProvider and LuminaAIProvider
+// EvaluationProvider is inside MathPrimitivesTesterInner so it has access to
+// the selected primitive's topic and grade level for curriculum mapping.
 export const MathPrimitivesTester: React.FC<MathPrimitivesTesterProps> = (props) => {
   return (
-    <EvaluationProvider
-      sessionId={`math-tester-${Date.now()}`}
-      exhibitId="math-primitives-tester"
-      // In production, pass actual studentId from auth context
-      // studentId={currentUser?.studentId}
-      onCompetencyUpdate={(updates) => {
-        console.log('Competency updates received:', updates);
-      }}
-    >
-      <ExhibitProvider objectives={[]} manifestItems={[]}>
-        <LuminaAIProvider>
-          <MathPrimitivesTesterInner {...props} />
-        </LuminaAIProvider>
-      </ExhibitProvider>
-    </EvaluationProvider>
+    <ExhibitProvider objectives={[]} manifestItems={[]}>
+      <LuminaAIProvider>
+        <MathPrimitivesTesterInner {...props} />
+      </LuminaAIProvider>
+    </ExhibitProvider>
   );
 };
 

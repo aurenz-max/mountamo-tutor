@@ -9,6 +9,19 @@ from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 
 
+class LessonContext(BaseModel):
+    """Context from the Lumina lesson manifest for curriculum mapping.
+
+    Carries topic/intent/grade information so the backend can resolve
+    generic primitives (e.g. compare-contrast) to specific curriculum subskills.
+    """
+    topic: Optional[str] = None
+    grade_level: Optional[str] = None
+    component_intent: Optional[str] = None
+    primitive_type: Optional[str] = None
+    objective_text: Optional[str] = None
+
+
 class ProblemSubmission(BaseModel):
     """Schema for problem submission requests"""
     subject: str
@@ -19,6 +32,7 @@ class ProblemSubmission(BaseModel):
     student_answer: Optional[str] = ""
     canvas_used: bool = True
     primitive_response: Optional[Dict[str, Any]] = None  # For interactive problems
+    lesson_context: Optional[LessonContext] = None  # For curriculum mapping
 
 
 class SubmissionResult(BaseModel):
