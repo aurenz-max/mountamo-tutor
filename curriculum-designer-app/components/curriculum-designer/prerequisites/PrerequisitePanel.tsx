@@ -57,7 +57,7 @@ export function PrerequisitePanel({
           if (subskill.id === entityId) {
             // Found current subskill, now find the previous one
             const currentOrder = subskill.order;
-            if (currentOrder === 0) return null; // No previous subskill
+            if (currentOrder == null || currentOrder === 0) return null; // No previous subskill
 
             // Find subskill with order = currentOrder - 1 in the same skill
             const prevSubskill = skill.subskills.find(

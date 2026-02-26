@@ -1,83 +1,101 @@
-# Curriculum Authoring Service
+# Curriculum Knowledge Graph Service
 
-A standalone microservice for managing educational curriculum with AI-assisted authoring, prerequisite graphs, and version control.
+Defines what students need to master. [Lumina](../my-tutoring-app/src/components/lumina/) handles how they learn it.
 
 ## Overview
 
-This service replaces the fragmented file-based curriculum management system with a unified, database-driven platform that enables curriculum designers to create, edit, and publish educational content without engineering intervention.
+A standalone microservice that manages the educational knowledge graph — the hierarchical taxonomy of subjects, skills, and prerequisites that defines complete mastery of a domain. This is the single source of truth for curriculum structure; all content delivery (primitives, interactive exercises, AI tutoring) lives in Lumina.
 
-## Key Features
+## Core Concepts
 
-- **Visual Curriculum Editor**: Hierarchical tree view (Subject → Unit → Skill → Subskill)
-- **Prerequisite Graph Management**: Define and visualize learning paths
-- **AI-Assisted Content Generation**: LLM-powered curriculum drafting
-- **Version Control**: Draft/publish workflow with rollback capabilities
-- **RESTful API**: Complete CRUD operations for all curriculum entities
+```
+Subject  (e.g. "Language Arts — Kindergarten")
+  └─ Unit  (e.g. "Phonological & Phonemic Awareness")
+       └─ Skill  (e.g. "Phoneme Blending & Segmentation")
+            └─ Subskill  (e.g. "Segment a CVC word into three phonemes")
+                 ├─ difficulty range (0-10 scale)
+                 ├─ prerequisites (what must be mastered first)
+                 └─ Lumina primitives (how Lumina teaches it)
+```
+
+**Prerequisites** form a directed acyclic graph across skills and subskills, defining the learning path. A student achieves full mastery when every subskill in the graph is complete.
+
+## Features
+
+- **Hierarchical curriculum editor** — Subject / Unit / Skill / Subskill CRUD
+- **Prerequisite graph** — define and visualize learning paths with proficiency thresholds
+- **AI-assisted scaffolding** — generate unit structures from a topic prompt via Gemini
+- **Lumina primitive assignment** — link subskills to the interactive primitives that teach them
+- **Version control** — draft/publish workflow with rollback
+- **Graph caching** — Firestore-backed prerequisite graph cache for performance
 
 ## Architecture
 
-### Backend (FastAPI)
-- **Database**: BigQuery (shared relational schema)
-- **Authentication**: Firebase (role-based access for designers)
-- **AI Integration**: Gemini API for content generation
+| Layer | Tech | Purpose |
+|-------|------|---------|
+| API | FastAPI | REST endpoints |
+| Database | BigQuery | Curriculum entities, prerequisites, versions |
+| Cache | Firestore | Prerequisite graph cache |
+| Auth | Firebase | Role-based access for designers |
+| AI | Gemini | Curriculum structure generation |
 
-### Frontend (Next.js) - Coming Soon
-- Web-based admin interface for curriculum designers
+## Database Tables
 
-## Database Schema
-
-### Core Tables
-- `curriculum_subjects` - Subject-level metadata
-- `curriculum_units` - Unit structure
-- `curriculum_skills` - Skill definitions
-- `curriculum_subskills` - Subskill details with difficulty ranges
-- `curriculum_prerequisites` - Universal prerequisite relationships
-- `curriculum_versions` - Version tracking and history
+| Table | Purpose |
+|-------|---------|
+| `curriculum_subjects` | Subject metadata |
+| `curriculum_units` | Unit structure |
+| `curriculum_skills` | Skill definitions |
+| `curriculum_subskills` | Subskill details with difficulty ranges |
+| `curriculum_prerequisites` | Prerequisite relationships (polymorphic) |
+| `curriculum_versions` | Version history |
+| `curriculum_primitives` | Lumina primitive library |
+| `curriculum_subskill_primitives` | Junction: subskill ↔ primitive |
 
 ## API Endpoints
 
-### Curriculum Management
-- `GET /api/curriculum/subjects` - List all subjects
-- `GET /api/curriculum/subjects/{subject_id}/tree` - Full hierarchy
-- `POST /api/curriculum/units` - Create new unit
-- `PUT /api/curriculum/skills/{skill_id}` - Update skill
-- `DELETE /api/curriculum/subskills/{subskill_id}` - Delete subskill
+### Curriculum (`/api/curriculum`)
+- `GET /subjects` — list all subjects
+- `GET /subjects/{id}/tree` — full hierarchical tree
+- `POST /units` — create unit
+- `PUT /skills/{id}` — update skill
+- `DELETE /subskills/{id}` — delete subskill
 
-### Prerequisite Graph
-- `GET /api/prerequisites/{entity_id}` - Get prerequisites & unlocks
-- `POST /api/prerequisites` - Create prerequisite link
-- `DELETE /api/prerequisites/{prerequisite_id}` - Remove link
+### Prerequisites (`/api/prerequisites`)
+- `GET /{entity_id}` — get prerequisites & unlocks for an entity
+- `GET /subjects/{id}/graph` — full prerequisite graph
+- `GET /subjects/{id}/base-skills` — entry points (no prerequisites)
+- `POST /` — create prerequisite link
+- `POST /validate` — validate before creating
 
-### AI Assistance
-- `POST /api/ai/generate-unit` - Generate curriculum unit from prompt
+### Publishing (`/api/publishing`)
+- `GET /subjects/{id}/draft-changes` — view pending changes
+- `POST /subjects/{id}/publish` — publish new version
+- `GET /subjects/{id}/versions` — version history
+- `POST /subjects/{id}/rollback/{version_id}` — rollback
 
-### Publishing & Versioning
-- `GET /api/curriculum/subjects/{subject_id}/draft-changes` - View draft changes
-- `POST /api/curriculum/subjects/{subject_id}/publish` - Publish new version
-- `GET /api/curriculum/versions/{subject_id}` - Version history
-- `POST /api/curriculum/versions/{version_id}/rollback` - Rollback to previous version
+### AI (`/api/ai`)
+- `POST /generate-unit` — generate unit structure from prompt
+- `POST /generate-skill` — generate skill with subskills
+- `POST /suggest-prerequisites` — AI-suggested learning paths
+- `POST /improve-description` — refine entity descriptions
+
+### Graph Cache (`/api/graph`)
+- Graph caching and invalidation endpoints
 
 ## Getting Started
 
 ### Prerequisites
 - Python 3.9+
-- Google Cloud credentials with BigQuery access
+- Google Cloud credentials (BigQuery + Firestore)
 - Firebase project for authentication
 
 ### Installation
 
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your credentials
-
-# Run database migrations
+cp .env.example .env   # edit with your credentials
 python scripts/setup_database.py
-
-# Start the service
 uvicorn app.main:app --reload --port 8001
 ```
 
@@ -91,34 +109,21 @@ FIREBASE_PROJECT_ID=your-firebase-project
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
-## Migration from Legacy System
+## Code Structure
 
-The service includes a migration script to import data from existing CSV files and JSON decision trees:
-
-```bash
-python scripts/migrate_from_legacy.py --source ../backend/data
-```
-
-## Development
-
-### Running Tests
-```bash
-pytest tests/
-```
-
-### Code Structure
 ```
 app/
-├── core/          # Configuration, database, security
-├── models/        # Pydantic models
-├── services/      # Business logic
-└── api/           # API endpoints
+├── api/           # REST endpoints (curriculum, prerequisites, publishing, ai, graph)
+├── core/          # Config, database, security
+├── db/            # Firestore graph caching
+├── models/        # Pydantic models (curriculum, prerequisites, versioning)
+├── services/      # Business logic (curriculum_manager, prerequisite_manager, version_control, ai_assistant, graph_cache_manager)
+└── utils/         # LLM logging
 ```
 
-## Contributing
+## How This Connects to Lumina
 
-This service is designed to be the single source of truth for curriculum management. All curriculum changes should flow through this service's API.
-
-## License
-
-Proprietary - Internal Use Only
+1. Curriculum designers build the knowledge graph here (subjects → subskills + prerequisites)
+2. Designers assign Lumina primitives to each subskill
+3. Lumina reads the graph to know *what* to teach and *which primitives* to use
+4. Student progress is tracked against the knowledge graph to determine mastery

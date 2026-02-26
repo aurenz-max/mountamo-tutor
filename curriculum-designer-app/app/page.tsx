@@ -9,9 +9,7 @@ import { DraftSummary } from '@/components/curriculum-designer/publishing/DraftS
 import { VersionHistory } from '@/components/curriculum-designer/publishing/VersionHistory';
 import { GraphCachePanel } from '@/components/curriculum-designer/graph/GraphCachePanel';
 import { AIUnitGenerator } from '@/components/curriculum-designer/ai/AIUnitGenerator';
-import { ProblemGenerationPanel } from '@/components/curriculum-designer/problems';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Plus, Save, GitBranch, Sparkles, Database } from 'lucide-react';
@@ -22,7 +20,7 @@ export default function CurriculumDesignerPage() {
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | undefined>();
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showPrerequisites, setShowPrerequisites] = useState(false);
-  const [activeTab, setActiveTab] = useState<'editor' | 'prerequisites' | 'problems' | 'drafts' | 'versions' | 'cache'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'prerequisites' | 'drafts' | 'versions' | 'cache'>('editor');
   const [sidebarWidth, setSidebarWidth] = useState(384); // 384px = w-96
   const [isResizing, setIsResizing] = useState(false);
 
@@ -213,12 +211,6 @@ export default function CurriculumDesignerPage() {
                   >
                     Prerequisites
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="problems"
-                    disabled={!selectedEntity || selectedEntity.type !== 'subskill'}
-                  >
-                    Practice Problems
-                  </TabsTrigger>
                   <TabsTrigger value="drafts">Draft Changes</TabsTrigger>
                   <TabsTrigger value="versions">Version History</TabsTrigger>
                   <TabsTrigger value="cache">Graph Cache</TabsTrigger>
@@ -251,16 +243,6 @@ export default function CurriculumDesignerPage() {
                   ) : (
                     <div className="flex h-64 items-center justify-center">
                       <p className="text-sm text-gray-500">Select an entity to manage prerequisites</p>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="problems" className="mt-0">
-                  {selectedEntity && selectedEntity.type === 'subskill' ? (
-                    <ProblemGenerationPanel subskill={selectedEntity.data as any} />
-                  ) : (
-                    <div className="flex h-64 items-center justify-center">
-                      <p className="text-sm text-gray-500">Select a subskill to generate practice problems</p>
                     </div>
                   )}
                 </TabsContent>

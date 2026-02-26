@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import db
 from app.db.firestore_graph_service import firestore_graph_service
-from app.api import curriculum, prerequisites, publishing, ai, graph, foundations, content, problems, prompts
+from app.api import curriculum, prerequisites, publishing, ai, graph
 
 # Configure logging
 logging.basicConfig(
@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app
 app = FastAPI(
     title=settings.SERVICE_NAME,
-    description="AI-powered curriculum authoring and management platform",
+    description="Curriculum knowledge graph service — defines what students need to master",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -106,30 +106,6 @@ app.include_router(
     tags=["Curriculum Graph & Caching"]
 )
 
-app.include_router(
-    foundations.router,
-    prefix="/api",
-    tags=["AI Foundations"]
-)
-
-app.include_router(
-    content.router,
-    prefix="/api",
-    tags=["Content Generation"]
-)
-
-app.include_router(
-    problems.router,
-    prefix="/api",
-    tags=["Problem Generation"]
-)
-
-app.include_router(
-    prompts.router,
-    prefix="/api",
-    tags=["Prompt Management"]
-)
-
 
 # Root endpoints
 @app.get("/")
@@ -137,22 +113,17 @@ async def root():
     """Service information"""
     return {
         "service": settings.SERVICE_NAME,
-        "version": "1.0.0",
-        "description": "Curriculum Authoring Service API",
+        "version": "2.0.0",
+        "description": "Curriculum Knowledge Graph Service — defines what students need to master. Lumina handles how they learn it.",
         "docs": "/docs",
         "status": "operational",
         "features": [
-            "Visual curriculum editor",
+            "Subject / Unit / Skill / Subskill hierarchy",
             "Prerequisite graph management",
-            "AI-assisted content generation",
-            "AI Foundations (Master Context, Context Primitives)",
-            "Reading content generation with interactive primitives",
-            "Visual snippet generation (interactive HTML)",
-            "Section-level content editing",
-            "Practice problem generation with Gemini AI",
-            "Prompt template management and versioning",
-            "3-tier problem evaluation (coming soon)",
+            "AI-assisted curriculum scaffolding",
+            "Lumina primitive assignment",
             "Version control and publishing",
+            "Graph caching",
             "RESTful API"
         ],
         "endpoints": {
@@ -160,11 +131,7 @@ async def root():
             "prerequisites": "/api/prerequisites",
             "publishing": "/api/publishing",
             "ai_assistant": "/api/ai",
-            "graph": "/api/graph",
-            "foundations": "/api/subskills/{subskill_id}/foundations",
-            "content": "/api/subskills/{subskill_id}/content",
-            "problems": "/api/subskills/{subskill_id}/problems",
-            "prompts": "/api/prompts"
+            "graph": "/api/graph"
         }
     }
 
