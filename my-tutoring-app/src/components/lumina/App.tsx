@@ -43,6 +43,7 @@ import { ScratchPad } from './components/scratch-pad';
 import { EvaluationProvider, useEvaluationContext } from './evaluation';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
+import { CurriculumBrowser } from './components/CurriculumBrowser';
 
 // Simple evaluation results indicator
 const EvaluationResultsIndicator: React.FC = () => {
@@ -498,6 +499,15 @@ export default function App() {
     startExhibit();
   };
 
+  // Handle curriculum browser selection
+  const handleCurriculumSelect = useCallback((topicString: string, grade?: GradeLevel) => {
+    if (grade) {
+      setGradeLevel(grade);
+    }
+    setTopic(topicString);
+    startExhibit(topicString);
+  }, [startExhibit]);
+
   // Handle transition from practice to learning exhibit
   const handleLearnMoreFromPractice = useCallback((subject: string, practiceLevelGrade: GradeLevel) => {
     setShowPracticeMode(false);
@@ -729,6 +739,11 @@ export default function App() {
                             </SpotlightCard>
                         ))}
                     </div>
+                </div>
+
+                {/* Curriculum Browser */}
+                <div className="pt-8 max-w-5xl mx-auto">
+                  <CurriculumBrowser onSelectTopic={handleCurriculumSelect} />
                 </div>
 
                 {/* Main Actions Section */}

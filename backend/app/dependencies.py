@@ -56,8 +56,7 @@ _problem_service: Optional[ProblemService] = None
 _learning_paths_service: Optional[LearningPathsService] = None
 _problem_optimizer: Optional[ProblemOptimizer] = None
 _review_service: Optional[ReviewService] = None
-_lesson_manifest_service: Optional[LessonManifestService] = None
-_eval_events_service: Optional[EvalEventsService] = None
+
 
 # 🔥 UPDATED: Authentication dependency functions using service layer
 async def get_authenticated_user(firebase_user: dict = Depends(verify_firebase_token)) -> dict:
@@ -430,32 +429,6 @@ def get_gemini_problem_integration(
     gemini_problem = GeminiProblemIntegration()
     gemini_problem.problem_service = problem_service
     return gemini_problem
-
-def get_lesson_manifest_service() -> LessonManifestService:
-    """Get or create LessonManifestService singleton."""
-    global _lesson_manifest_service
-    if _lesson_manifest_service is None:
-        logger.info("Initializing LessonManifestService")
-        _lesson_manifest_service = LessonManifestService(
-            project_id=settings.GCP_PROJECT_ID,
-            authoring_dataset_id=getattr(settings, 'CURRICULUM_AUTHORING_DATASET_ID', 'curriculum_authoring'),
-        )
-        logger.info("LessonManifestService initialized successfully")
-    return _lesson_manifest_service
-
-
-def get_eval_events_service(
-    firestore_service: FirestoreService = Depends(get_firestore_service),
-) -> EvalEventsService:
-    """Get or create EvalEventsService singleton."""
-    global _eval_events_service
-    if _eval_events_service is None:
-        logger.info("Initializing EvalEventsService")
-        if firestore_service is None:
-            raise RuntimeError("Firestore service required for EvalEventsService")
-        _eval_events_service = EvalEventsService(firestore_service)
-        logger.info("EvalEventsService initialized successfully")
-    return _eval_events_service
 
 
 async def initialize_services():

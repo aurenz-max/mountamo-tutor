@@ -16,7 +16,7 @@ import type {
   EvaluationStatus,
   CompetencyUpdateSuggestion,
 } from '../types';
-import { submitEvaluationToBackend, submitBatchEvaluations, submitCurriculumEvalEvent } from '../api/evaluationApi';
+import { submitEvaluationToBackend, submitBatchEvaluations } from '../api/evaluationApi';
 
 // =============================================================================
 // Context Types
@@ -85,12 +85,6 @@ export interface EvaluationProviderProps {
 
   /** If true, skip backend submission and keep results local only */
   localOnly?: boolean;
-
-  /** Lesson ID for curriculum-driven mode */
-  lessonId?: string;
-
-  /** Lesson mode: curriculum routes eval events to the subskill tracking endpoint */
-  mode?: 'curriculum' | 'interest' | 'practice';
 }
 
 // =============================================================================
@@ -108,8 +102,6 @@ export function EvaluationProvider({
   persistToStorage = true,
   onCompetencyUpdate,
   localOnly = false,
-  lessonId,
-  mode,
 }: EvaluationProviderProps) {
   // Generate session ID if not provided
   const [sessionId] = useState(() => {
@@ -230,17 +222,7 @@ export function EvaluationProvider({
         )
       );
 
-      // Route to appropriate endpoint based on mode
-      let response;
-      if (mode === 'curriculum' && lessonId) {
-        // Curriculum mode: send to eval-events endpoint with subskill context
-        const subskillIds = result.subskillId
-          ? [result.subskillId]
-          : (result as any).__subskillIds || [];
-        response = await submitCurriculumEvalEvent(result, lessonId, subskillIds, studentId);
-      } else {
-        response = await submitEvaluationToBackend(result, studentId);
-      }
+      const response = await submitEvaluationToBackend(result, studentId);
 
       // Success - move to submitted
       setPendingSubmissions(prev =>

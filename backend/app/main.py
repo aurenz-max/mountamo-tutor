@@ -22,9 +22,7 @@ from .api.endpoints import (
     lumina_tutor,
     assessments,
     parent_portal,
-    weekly_planner,
-    eval_events,
-)
+    weekly_planner)
 
 from .api import etl_routes
 from .core.config import settings
@@ -211,21 +209,7 @@ app.include_router(
     dependencies=[Depends(get_user_context)]
 )
 
-# Lesson Manifest Router (curriculum-driven lessons for Lumina)
-app.include_router(
-    lesson_manifest.router,
-    prefix="/api/lessons",
-    tags=["lessons"],
-    dependencies=[Depends(get_user_context)]
-)
 
-# Eval Events Router (evaluation logging with subskill tracking)
-app.include_router(
-    eval_events.router,
-    prefix="/api/v1/eval-events",
-    tags=["eval-events"],
-    dependencies=[Depends(get_user_context)]
-)
 
 
 # ============================================================================

@@ -2,7 +2,8 @@
  * Evaluation API Client
  *
  * Handles submission of primitive evaluation results to the backend.
- * Uses the existing authApi client for authentication.
+ * Converts Lumina PrimitiveEvaluationResult → ProblemSubmission format
+ * and submits via the universal /api/problems/submit endpoint.
  */
 
 import { authApi } from '@/lib/authApiClient';
@@ -21,6 +22,19 @@ export interface EvaluationSubmitResponse {
   evaluationId: string;
   competencyUpdates?: CompetencyUpdateSuggestion[];
   message?: string;
+}
+
+/** Backend SubmissionResult shape from /api/problems/submit */
+interface BackendSubmissionResult {
+  review: Record<string, unknown>;
+  competency: Record<string, unknown>;
+  points_earned: number;
+  encouraging_message: string;
+  student_id?: number;
+  user_id?: string;
+  xp_earned?: number;
+  level_up?: boolean;
+  new_level?: number;
 }
 
 export interface BatchEvaluationResponse {
@@ -42,32 +56,104 @@ export interface SessionSummaryResponse {
 }
 
 // =============================================================================
+// Conversion: PrimitiveEvaluationResult → ProblemSubmission
+// =============================================================================
+
+/**
+ * Convert a Lumina PrimitiveEvaluationResult into the ProblemSubmission shape
+ * expected by the backend /api/problems/submit endpoint.
+ */
+function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
+  subject: string;
+  problem: Record<string, unknown>;
+  skill_id: string;
+  subskill_id?: string;
+  student_answer: string;
+  canvas_used: boolean;
+  primitive_response: Record<string, unknown>;
+} {
+  return {
+    // TODO: subject should come from curriculum service mapping primitive → subject
+    subject: 'language_arts',
+    problem: {
+      problem_type: 'lumina_primitive',
+      id: result.attemptId,
+      primitive_type: result.primitiveType,
+      // TODO: skill_id/subskill_id should be resolved by curriculum service
+      skill_id: result.skillId || `${result.primitiveType}_skill`,
+      subskill_id: result.subskillId || `${result.primitiveType}_subskill`,
+    },
+    skill_id: result.skillId || `${result.primitiveType}_skill`,
+    subskill_id: result.subskillId || `${result.primitiveType}_subskill`,
+    student_answer: `${result.primitiveType} — ${result.score}%`,
+    canvas_used: false,
+    primitive_response: {
+      pre_evaluated: true,
+      success: result.success,
+      score: result.score,
+      metrics: result.metrics,
+      duration_ms: result.durationMs,
+      started_at: result.startedAt,
+      completed_at: result.completedAt,
+      student_work: result.studentWork,
+    },
+  };
+}
+
+// =============================================================================
 // API Functions
 // =============================================================================
 
 /**
- * Submit a single evaluation result to the backend.
+ * Submit a single evaluation result to the backend via /api/problems/submit.
+ *
+ * Converts the Lumina evaluation result to ProblemSubmission format and sends
+ * it through the universal submission pipeline (competency update, CosmosDB, etc.)
  *
  * @param result - The evaluation result to submit
- * @param studentId - Optional student ID (uses authenticated user if not provided)
+ * @param _studentId - Unused (auth middleware resolves student from token)
  * @returns Response with evaluation ID and any competency updates
  */
 export async function submitEvaluationToBackend(
   result: PrimitiveEvaluationResult,
-  studentId?: string
+  _studentId?: string
 ): Promise<EvaluationSubmitResponse> {
   try {
-    const payload = {
-      ...result,
-      studentId,
-    };
+    const payload = convertToProblemSubmission(result);
 
-    const response = await authApi.post<EvaluationSubmitResponse>(
-      '/api/evaluations/submit',
+    console.log('[evaluationApi] Submitting Lumina eval via /api/problems/submit', {
+      primitiveType: result.primitiveType,
+      score: result.score,
+      success: result.success,
+    });
+
+    const response = await authApi.post<BackendSubmissionResult>(
+      '/api/problems/submit',
       payload
     );
 
-    return response;
+    // Map backend SubmissionResult → EvaluationSubmitResponse
+    const competencyUpdates: CompetencyUpdateSuggestion[] = [];
+    if (response.competency && Object.keys(response.competency).length > 0) {
+      competencyUpdates.push({
+        skillId: result.skillId || result.primitiveType,
+        subskillId: result.subskillId,
+        currentScore: 0, // Backend doesn't return previous score
+        suggestedScore: result.score,
+        scoreDelta: result.score,
+        basedOnAttempts: 1,
+        successRate: result.success ? 100 : 0,
+        averageScore: result.score,
+        confidence: result.score >= 80 ? 'high' : result.score >= 50 ? 'medium' : 'low',
+      });
+    }
+
+    return {
+      success: true,
+      evaluationId: result.attemptId,
+      competencyUpdates,
+      message: response.encouraging_message,
+    };
   } catch (error) {
     console.error('[evaluationApi] Failed to submit evaluation:', error);
     throw error;

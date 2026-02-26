@@ -59,6 +59,11 @@ class SubmissionService:
             logger.info(f"📝 [SUBMISSION_SERVICE] This is a standard problem submission")
 
         try:
+            # FAST PATH: Lumina primitives are pre-evaluated on the frontend
+            if submission.problem.get('problem_type') == 'lumina_primitive':
+                logger.info(f"[SUBMISSION_SERVICE] Lumina primitive detected — using pre-evaluated path")
+                return await self._handle_lumina_primitive(submission, user_context)
+
             # STEP 1: Convert problem to standardized format
             logger.info(f"[SUBMISSION_SERVICE] Converting problem to standardized format")
             standard_question = ProblemConverter.convert_to_standard_question(submission.problem)
@@ -290,6 +295,123 @@ class SubmissionService:
             "your_answer_text": evaluation.student_answer
         }
     
+    # ============================================================================
+    # LUMINA PRIMITIVE HANDLER
+    # ============================================================================
+
+    async def _handle_lumina_primitive(
+        self,
+        submission: ProblemSubmission,
+        user_context: dict
+    ) -> SubmissionResult:
+        """
+        Handle Lumina primitive evaluations that were already scored on the frontend.
+
+        Lumina primitives (RhymeStudio, PhonicsBlender, etc.) perform their own
+        evaluation — the frontend sends pre-computed score, success, and metrics.
+        The backend records the result, updates competency, and saves to CosmosDB
+        without re-validating the answer.
+        """
+        firebase_uid = user_context["firebase_uid"]
+        student_id = user_context["student_id"]
+
+        primitive_response = submission.primitive_response or {}
+        problem = submission.problem
+
+        # Extract pre-evaluated results from primitive_response
+        is_correct = primitive_response.get('success', False)
+        # Frontend score is 0-100, backend expects 0-10 for competency
+        frontend_score = primitive_response.get('score', 0)
+        backend_score = round(frontend_score / 10, 1)  # 0-100 → 0-10
+
+        primitive_type = problem.get('primitive_type', 'unknown')
+        metrics = primitive_response.get('metrics', {})
+
+        logger.info(f"[LUMINA_PRIMITIVE] Primitive: {primitive_type}")
+        logger.info(f"[LUMINA_PRIMITIVE] Score: {frontend_score}% (backend: {backend_score}), Success: {is_correct}")
+        logger.info(f"[LUMINA_PRIMITIVE] Metrics type: {metrics.get('type', 'unknown')}")
+
+        # TODO: Currently skill_id/subskill_id/subject come from the frontend eval data.
+        # In the future, these should be resolved by a curriculum service that maps
+        # primitive_type → proper curriculum skill/subskill hierarchy for the student.
+        skill_id = submission.skill_id or problem.get('skill_id', f'{primitive_type}_skill')
+        subskill_id = submission.subskill_id or problem.get('subskill_id', f'{primitive_type}_subskill')
+        subject = submission.subject or 'language_arts'
+
+        # Build a review object matching the standard shape
+        review = {
+            "observation": {
+                "canvas_description": f"Lumina {primitive_type} primitive evaluation",
+                "selected_answer": submission.student_answer or "primitive_interaction",
+                "work_shown": f"Student completed {primitive_type} activity"
+            },
+            "analysis": {
+                "understanding": "Good understanding demonstrated" if is_correct else "Student needs additional practice",
+                "approach": f"Interactive {primitive_type} activity",
+                "accuracy": f"Score: {frontend_score}%",
+                "creativity": "Interactive primitive response"
+            },
+            "evaluation": {
+                "score": backend_score,
+                "justification": f"{primitive_type} evaluation — {frontend_score}% accuracy"
+            },
+            "feedback": {
+                "praise": "Excellent work!" if is_correct else "Good effort!",
+                "guidance": f"You scored {frontend_score}% on this {primitive_type} activity.",
+                "encouragement": "Keep up the great work!" if is_correct else "Keep practicing!",
+                "next_steps": "Continue to next activity" if is_correct else "Try this activity again"
+            },
+            "skill_id": skill_id,
+            "subject": subject,
+            "subskill_id": subskill_id,
+            "score": backend_score,
+            "correct": is_correct,
+            "accuracy_percentage": frontend_score,
+            "question_text": f"{primitive_type} activity",
+            "correct_answer_text": "N/A (interactive primitive)",
+            "your_answer_text": submission.student_answer or "primitive_interaction",
+            "metadata": {
+                "source": "lumina_primitive",
+                "primitive_type": primitive_type,
+                "metrics": metrics,
+                "duration_ms": primitive_response.get('duration_ms'),
+                "started_at": primitive_response.get('started_at'),
+                "completed_at": primitive_response.get('completed_at'),
+            }
+        }
+
+        # Update competency
+        competency_result = await self._update_competency(
+            student_id=student_id,
+            skill_id=skill_id,
+            subskill_id=subskill_id,
+            success=is_correct,
+            subject=subject,
+            evaluation={'score': backend_score, 'correct': is_correct}
+        )
+
+        # Save to CosmosDB
+        if self.cosmos_db:
+            await self._save_attempt_and_review(
+                submission, user_context, review,
+                {
+                    "primitive_type": primitive_type,
+                    "metrics": metrics,
+                    "student_work": primitive_response.get('student_work'),
+                }
+            )
+
+        logger.info(f"[LUMINA_PRIMITIVE] Submission processed — score: {backend_score}, correct: {is_correct}")
+
+        return SubmissionResult(
+            review=review,
+            competency=competency_result,
+            student_id=student_id,
+            user_id=firebase_uid,
+            points_earned=int(backend_score),
+            encouraging_message="Excellent work!" if is_correct else "Keep practicing!"
+        )
+
     # ============================================================================
     # LEGACY HANDLERS (for fallback only)
     # ============================================================================
