@@ -65,7 +65,8 @@ components/curriculum-designer/
 lib/curriculum-authoring/
 ├── api.ts                        # API client
 ├── hooks.ts                      # React Query hooks
-└── graphApi.ts                   # Graph cache API
+├── graphApi.ts                   # Graph cache API
+└── constants.ts                  # Shared constants (grade levels)
 
 types/
 └── curriculum-authoring.ts       # TypeScript types

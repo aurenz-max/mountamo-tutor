@@ -43,7 +43,7 @@ Subject  (e.g. "Language Arts — Kindergarten")
 
 | Table | Purpose |
 |-------|---------|
-| `curriculum_subjects` | Subject metadata |
+| `curriculum_subjects` | Subject metadata (name, grade level, description) |
 | `curriculum_units` | Unit structure |
 | `curriculum_skills` | Skill definitions |
 | `curriculum_subskills` | Subskill details with difficulty ranges |

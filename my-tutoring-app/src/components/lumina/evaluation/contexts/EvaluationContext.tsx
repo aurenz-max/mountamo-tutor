@@ -16,7 +16,7 @@ import type {
   EvaluationStatus,
   CompetencyUpdateSuggestion,
 } from '../types';
-import { submitEvaluationToBackend, submitBatchEvaluations } from '../api/evaluationApi';
+import { submitEvaluationToBackend, submitBatchEvaluations, submitCurriculumEvalEvent } from '../api/evaluationApi';
 
 // =============================================================================
 // Context Types
@@ -85,6 +85,12 @@ export interface EvaluationProviderProps {
 
   /** If true, skip backend submission and keep results local only */
   localOnly?: boolean;
+
+  /** Lesson ID for curriculum-driven mode */
+  lessonId?: string;
+
+  /** Lesson mode: curriculum routes eval events to the subskill tracking endpoint */
+  mode?: 'curriculum' | 'interest' | 'practice';
 }
 
 // =============================================================================
@@ -102,6 +108,8 @@ export function EvaluationProvider({
   persistToStorage = true,
   onCompetencyUpdate,
   localOnly = false,
+  lessonId,
+  mode,
 }: EvaluationProviderProps) {
   // Generate session ID if not provided
   const [sessionId] = useState(() => {
@@ -222,7 +230,17 @@ export function EvaluationProvider({
         )
       );
 
-      const response = await submitEvaluationToBackend(result, studentId);
+      // Route to appropriate endpoint based on mode
+      let response;
+      if (mode === 'curriculum' && lessonId) {
+        // Curriculum mode: send to eval-events endpoint with subskill context
+        const subskillIds = result.subskillId
+          ? [result.subskillId]
+          : (result as any).__subskillIds || [];
+        response = await submitCurriculumEvalEvent(result, lessonId, subskillIds, studentId);
+      } else {
+        response = await submitEvaluationToBackend(result, studentId);
+      }
 
       // Success - move to submitted
       setPendingSubmissions(prev =>
@@ -231,9 +249,10 @@ export function EvaluationProvider({
       setSubmittedResults(prev => [...prev, result]);
 
       // Handle competency updates from backend
-      if (response?.competencyUpdates && response.competencyUpdates.length > 0) {
-        setCompetencyUpdates(prev => [...prev, ...response.competencyUpdates]);
-        onCompetencyUpdate?.(response.competencyUpdates);
+      const updates = response?.competencyUpdates;
+      if (updates && updates.length > 0) {
+        setCompetencyUpdates(prev => [...prev, ...updates]);
+        onCompetencyUpdate?.(updates);
       }
     } catch (error) {
       console.error('[EvaluationContext] Submission failed:', error);
@@ -291,9 +310,10 @@ export function EvaluationProvider({
       setPendingSubmissions([]);
 
       // Handle competency updates
-      if (response?.competencyUpdates && response.competencyUpdates.length > 0) {
-        setCompetencyUpdates(prev => [...prev, ...response.competencyUpdates]);
-        onCompetencyUpdate?.(response.competencyUpdates);
+      const batchUpdates = response?.competencyUpdates;
+      if (batchUpdates && batchUpdates.length > 0) {
+        setCompetencyUpdates(prev => [...prev, ...batchUpdates]);
+        onCompetencyUpdate?.(batchUpdates);
       }
     } catch (error) {
       console.error('[EvaluationContext] Batch flush failed:', error);
