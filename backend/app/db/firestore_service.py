@@ -566,6 +566,89 @@ class FirestoreService:
             raise
 
     # ============================================================================
+    # CURRICULUM PUBLISHED METHODS (READ-ONLY)
+    # ============================================================================
+
+    async def get_published_curriculum(
+        self,
+        subject_id: str,
+        grade: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get published curriculum document for a subject.
+
+        Reads from curriculum_published/{grade}/subjects/{subject_id}.
+        If grade is provided, does a direct O(1) lookup.
+        Otherwise searches across all grades.
+
+        Returns:
+            Full curriculum document with hierarchy, subskill_index, and stats,
+            or None if not deployed yet.
+        """
+        try:
+            if grade:
+                # Direct O(1) lookup
+                doc_ref = self.client.collection('curriculum_published').document(grade).collection('subjects').document(subject_id)
+                doc = doc_ref.get()
+                if doc.exists:
+                    return doc.to_dict()
+                return None
+
+            # Search across all grades
+            for grade_doc in self.client.collection('curriculum_published').stream():
+                doc_ref = grade_doc.reference.collection('subjects').document(subject_id)
+                doc = doc_ref.get()
+                if doc.exists:
+                    return doc.to_dict()
+            return None
+
+        except Exception as e:
+            logger.error(f"Error getting published curriculum for {subject_id}: {str(e)}")
+            return None
+
+    async def get_all_published_subjects(self, grade: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Get all subjects that have published curriculum in Firestore.
+
+        If grade is provided, returns only subjects for that grade (O(1) subcollection read).
+        Otherwise returns all subjects across all grades.
+
+        Returns:
+            List of dicts with subject_id, subject_name, and grade for each deployed subject.
+        """
+        try:
+            subjects = []
+
+            if grade:
+                # O(1) grade-scoped lookup
+                docs = self.client.collection('curriculum_published').document(grade).collection('subjects').stream()
+                for doc in docs:
+                    doc_data = doc.to_dict()
+                    subjects.append({
+                        "subject_id": doc.id,
+                        "subject_name": doc_data.get("subject_name", doc.id),
+                        "grade": doc_data.get("grade", grade),
+                    })
+            else:
+                # All subjects across all grades
+                for grade_doc in self.client.collection('curriculum_published').stream():
+                    grade_id = grade_doc.id
+                    grade_subjects = grade_doc.reference.collection('subjects').stream()
+                    for doc in grade_subjects:
+                        doc_data = doc.to_dict()
+                        subjects.append({
+                            "subject_id": doc.id,
+                            "subject_name": doc_data.get("subject_name", doc.id),
+                            "grade": doc_data.get("grade", grade_id),
+                        })
+
+            return subjects
+
+        except Exception as e:
+            logger.error(f"Error listing published subjects: {str(e)}")
+            return []
+
+    # ============================================================================
     # BATCH OPERATIONS FOR MIGRATION
     # ============================================================================
 

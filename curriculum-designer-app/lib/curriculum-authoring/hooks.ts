@@ -396,6 +396,28 @@ export function useRollbackVersion() {
   });
 }
 
+// ==================== DEPLOYMENT HOOKS ====================
+
+export function useDeployCurriculum() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ subjectId, versionId }: { subjectId: string; versionId?: string }) =>
+      curriculumAuthoringAPI.deployCurriculum(subjectId, versionId),
+    onSuccess: (_, { subjectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['deployStatus', subjectId] });
+    },
+  });
+}
+
+export function useDeployStatus(subjectId: string) {
+  return useQuery({
+    queryKey: ['deployStatus', subjectId],
+    queryFn: () => curriculumAuthoringAPI.getDeployStatus(subjectId),
+    enabled: !!subjectId,
+  });
+}
+
 // ==================== PRIMITIVE HOOKS ====================
 
 export function usePrimitives() {

@@ -25,7 +25,7 @@ class AIAssistant:
     async def generate_unit(
         self,
         subject: str,
-        grade_level: str,
+        grade: str,
         topic_prompt: str,
         context: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -34,7 +34,7 @@ class AIAssistant:
         Returns: {unit: UnitCreate, skills: [SkillCreate], subskills: [SubskillCreate]}
         """
 
-        system_prompt = f"""You are an expert curriculum designer for {subject} at {grade_level} level.
+        system_prompt = f"""You are an expert curriculum designer for {subject} at grade {grade}.
 
 Generate a complete instructional unit based on the following topic: "{topic_prompt}"
 

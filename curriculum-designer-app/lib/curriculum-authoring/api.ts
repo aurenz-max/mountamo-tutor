@@ -15,7 +15,7 @@ import type {
   GenerateUnitRequest, GenerateSkillRequest,
   SuggestPrerequisitesRequest, ImproveDescriptionRequest,
   AIGeneratedUnit,
-  DraftSummary, PublishRequest, PublishResponse, Version,
+  DraftSummary, PublishRequest, PublishResponse, DeployResponse, DeployStatus, Version,
   ValidationResponse,
   ApiError
 } from '@/types/curriculum-authoring';
@@ -345,6 +345,20 @@ class CurriculumAuthoringAPI {
     return this.request<PublishResponse>(
       `/api/publishing/subjects/${subjectId}/rollback/${versionId}`,
       { method: 'POST' }
+    );
+  }
+
+  async deployCurriculum(subjectId: string, versionId?: string): Promise<DeployResponse> {
+    const params = versionId ? `?version_id=${versionId}` : '';
+    return this.request<DeployResponse>(
+      `/api/publishing/subjects/${subjectId}/deploy${params}`,
+      { method: 'POST' }
+    );
+  }
+
+  async getDeployStatus(subjectId: string): Promise<DeployStatus> {
+    return this.request<DeployStatus>(
+      `/api/publishing/subjects/${subjectId}/deploy/status`
     );
   }
 

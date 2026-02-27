@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { GRADE_CODES, GRADE_CODE_LIST } from '@/lib/curriculum-authoring/constants';
 import type { Subject, SubjectUpdate } from '@/types/curriculum-authoring';
 
 interface SubjectFormProps {
@@ -24,19 +26,23 @@ export function SubjectForm({ subject }: SubjectFormProps) {
     handleSubmit,
     formState: { errors, isDirty },
     reset,
+    setValue,
+    watch,
   } = useForm<SubjectUpdate>({
     defaultValues: {
       subject_name: subject.subject_name,
       description: subject.description || '',
-      grade_level: subject.grade_level || '',
+      grade: subject.grade || '',
     },
   });
+
+  const currentGrade = watch('grade');
 
   useEffect(() => {
     reset({
       subject_name: subject.subject_name,
       description: subject.description || '',
-      grade_level: subject.grade_level || '',
+      grade: subject.grade || '',
     });
   }, [subject, reset]);
 
@@ -66,12 +72,24 @@ export function SubjectForm({ subject }: SubjectFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="grade_level">Grade Level</Label>
-        <Input
-          id="grade_level"
-          placeholder="e.g., 1st Grade, K-2"
-          {...register('grade_level')}
-        />
+        <Label htmlFor="grade">Grade</Label>
+        <Select
+          value={currentGrade || ''}
+          onValueChange={(value) => {
+            setValue('grade', value, { shouldDirty: true });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a grade" />
+          </SelectTrigger>
+          <SelectContent>
+            {GRADE_CODE_LIST.map((code) => (
+              <SelectItem key={code} value={code}>
+                {GRADE_CODES[code]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

@@ -10,11 +10,12 @@ router = APIRouter()
 
 @router.get("/subjects")
 async def get_available_subjects(
+    grade: Optional[str] = None,
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
 ):
-    """List all available subjects from cloud storage"""
+    """List all available subjects, optionally filtered by grade code (e.g., K, 1, 2)"""
     try:
-        subjects = await curriculum_service.get_available_subjects()
+        subjects = await curriculum_service.get_available_subjects(grade=grade)
         return {"subjects": subjects}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

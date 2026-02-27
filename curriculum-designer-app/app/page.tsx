@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Plus, Save, GitBranch, Sparkles, Database } from 'lucide-react';
+import { GRADE_CODES, type GradeCode } from '@/lib/curriculum-authoring/constants';
 import type { SelectedEntity } from '@/types/curriculum-authoring';
 
 export default function CurriculumDesignerPage() {
@@ -158,11 +159,25 @@ export default function CurriculumDesignerPage() {
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">Select a subject...</option>
-            {subjects?.map((subject) => (
-              <option key={subject.subject_id} value={subject.subject_id}>
-                {subject.subject_name} {subject.is_draft ? '(Draft)' : ''}
-              </option>
-            ))}
+            {(() => {
+              // Group subjects by grade
+              const subjectList = subjects ?? [];
+              const byGrade = new Map<string, typeof subjectList>();
+              for (const subject of subjectList) {
+                const grade = subject.grade || '?';
+                if (!byGrade.has(grade)) byGrade.set(grade, []);
+                byGrade.get(grade)!.push(subject);
+              }
+              return Array.from(byGrade.entries()).map(([grade, gradeSubjects]) => (
+                <optgroup key={grade} label={GRADE_CODES[grade as GradeCode] || grade}>
+                  {gradeSubjects.map((subject) => (
+                    <option key={subject.subject_id} value={subject.subject_id}>
+                      {subject.subject_name} {subject.is_draft ? '(Draft)' : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              ));
+            })()}
           </select>
 
           <Button size="sm" variant="ghost">

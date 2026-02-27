@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useVersionHistory, useRollbackVersion } from '@/lib/curriculum-authoring/hooks';
+import { useVersionHistory, useRollbackVersion, useDeployCurriculum, useDeployStatus } from '@/lib/curriculum-authoring/hooks';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Loader2, RotateCcw, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, RotateCcw, CheckCircle, Clock, Upload } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { Version } from '@/types/curriculum-authoring';
 
@@ -25,6 +25,8 @@ interface VersionHistoryProps {
 export function VersionHistory({ subjectId }: VersionHistoryProps) {
   const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
   const [showRollbackDialog, setShowRollbackDialog] = useState(false);
+  const [showDeployDialog, setShowDeployDialog] = useState(false);
+  const [deploySuccess, setDeploySuccess] = useState<string | null>(null);
 
   const {
     data: versions,
@@ -32,7 +34,9 @@ export function VersionHistory({ subjectId }: VersionHistoryProps) {
     error,
   } = useVersionHistory(subjectId);
 
+  const { data: deployStatus } = useDeployStatus(subjectId);
   const { mutate: rollbackVersion, isPending: isRollingBack } = useRollbackVersion();
+  const { mutate: deployCurriculum, isPending: isDeploying } = useDeployCurriculum();
 
   const handleRollback = () => {
     if (!selectedVersion) return;
@@ -46,6 +50,21 @@ export function VersionHistory({ subjectId }: VersionHistoryProps) {
         onSuccess: () => {
           setShowRollbackDialog(false);
           setSelectedVersion(null);
+        },
+      }
+    );
+  };
+
+  const handleDeploy = () => {
+    deployCurriculum(
+      { subjectId },
+      {
+        onSuccess: (data) => {
+          setShowDeployDialog(false);
+          setDeploySuccess(
+            `Deployed v${data.version_number} — ${data.stats.total_units} units, ${data.stats.total_skills} skills, ${data.stats.total_subskills} subskills`
+          );
+          setTimeout(() => setDeploySuccess(null), 6000);
         },
       }
     );
@@ -67,8 +86,17 @@ export function VersionHistory({ subjectId }: VersionHistoryProps) {
     );
   }
 
+  const activeVersion = versions?.find((v) => v.is_active);
+
   return (
     <div className="space-y-6">
+      {deploySuccess && (
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription>{deploySuccess}</AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Version History</CardTitle>
@@ -107,6 +135,11 @@ export function VersionHistory({ subjectId }: VersionHistoryProps) {
                           Active
                         </Badge>
                       )}
+                      {version.is_active && deployStatus?.deployed && deployStatus.version_id === version.version_id && (
+                        <Badge variant="outline" className="text-xs text-blue-600 border-blue-300">
+                          Deployed
+                        </Badge>
+                      )}
                     </div>
 
                     <p className="text-sm text-gray-700 mb-2">
@@ -132,25 +165,90 @@ export function VersionHistory({ subjectId }: VersionHistoryProps) {
                     </div>
                   </div>
 
-                  {!version.is_active && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedVersion(version);
-                        setShowRollbackDialog(true);
-                      }}
-                    >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Rollback
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {version.is_active && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowDeployDialog(true)}
+                        className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Deploy
+                      </Button>
+                    )}
+                    {!version.is_active && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedVersion(version);
+                          setShowRollbackDialog(true);
+                        }}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Rollback
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Deploy Confirmation Dialog */}
+      <Dialog open={showDeployDialog} onOpenChange={setShowDeployDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deploy to Backend</DialogTitle>
+            <DialogDescription>
+              Push the active curriculum version to Firestore for the tutoring backend to use.
+            </DialogDescription>
+          </DialogHeader>
+
+          {activeVersion && (
+            <div className="space-y-2 rounded-lg border p-4">
+              <h3 className="font-semibold">
+                Version {activeVersion.version_number}
+              </h3>
+              <p className="text-sm text-gray-700">{activeVersion.description}</p>
+              {deployStatus?.deployed && (
+                <p className="text-xs text-gray-500">
+                  Currently deployed: v{deployStatus.version_number} ({deployStatus.deployed_at ? formatDistanceToNow(new Date(deployStatus.deployed_at), { addSuffix: true }) : 'unknown'})
+                </p>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeployDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeploy}
+              disabled={isDeploying}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isDeploying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deploying...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Deploy
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Rollback Confirmation Dialog */}
       <Dialog open={showRollbackDialog} onOpenChange={setShowRollbackDialog}>

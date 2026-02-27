@@ -36,14 +36,14 @@ class LLMLogger:
         self.current_run_dir: Optional[Path] = None
         self.run_metadata: Dict[str, Any] = {}
 
-    def start_generation_run(self, subskill_id: str, grade_level: str, subject: str = None,
+    def start_generation_run(self, subskill_id: str, grade: str, subject: str = None,
                             unit: str = None, skill: str = None) -> str:
         """
         Start a new generation run and create directory for logs.
 
         Args:
             subskill_id: ID of the subskill being generated
-            grade_level: Target grade level
+            grade: Canonical grade code (e.g., "K", "1")
             subject: Subject area (optional)
             unit: Unit within subject (optional)
             skill: Skill within unit (optional)
@@ -59,7 +59,7 @@ class LLMLogger:
         self.run_metadata = {
             "run_id": run_name,
             "subskill_id": subskill_id,
-            "grade_level": grade_level,
+            "grade": grade,
             "subject": subject,
             "unit": unit,
             "skill": skill,
@@ -308,7 +308,7 @@ def format_log_summary(run_dir: Path) -> str:
     lines = [
         f"Generation Run: {summary['run_id']}",
         f"Subskill: {summary['subskill_id']}",
-        f"Grade Level: {summary['grade_level']}",
+        f"Grade: {summary['grade']}",
         f"Status: {'✅ SUCCESS' if summary['success'] else '❌ FAILED'}",
         f"Duration: {summary.get('total_duration_seconds', 0):.2f}s",
         f"\nTier Logs ({len(summary['tier_logs'])}):"

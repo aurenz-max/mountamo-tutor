@@ -17,9 +17,23 @@ from app.models.curriculum import (
     CurriculumTree
 )
 from app.models.versioning import VersionCreate
+from app.models.grades import GRADE_CODES, GRADE_LABELS, validate_grade
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+# ==================== GRADE ENDPOINTS ====================
+
+@router.get("/grades")
+async def list_grades():
+    """List all valid grade codes with display labels"""
+    return {
+        "grades": [
+            {"code": code, "label": GRADE_LABELS[code]}
+            for code in GRADE_CODES
+        ]
+    }
 
 
 # ==================== SUBJECT ENDPOINTS ====================
@@ -60,6 +74,12 @@ async def create_subject(
     subject: SubjectCreate
 ):
     """Create a new subject"""
+    # Validate grade
+    try:
+        validate_grade(subject.grade)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     # Get or create active version (this will create version 1 if it doesn't exist)
     version_id = await version_control.get_or_create_active_version(
         subject.subject_id,

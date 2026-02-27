@@ -1,5 +1,5 @@
 """
-Google Firestore service for curriculum graph caching
+Google Firestore service for curriculum graph caching and curriculum deployment
 """
 
 import logging
@@ -15,12 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class CurriculumFirestore:
-    """Firestore service for curriculum graph storage and caching"""
+    """Firestore service for curriculum graph storage, caching, and deployment"""
 
     def __init__(self):
         """Initialize Firestore client and collections"""
         self.client: Optional[firestore.Client] = None
         self.curriculum_graphs = None
+        self.curriculum_published = None
 
     def initialize(self):
         """Initialize Firestore connection and create collection references"""
@@ -47,8 +48,9 @@ class CurriculumFirestore:
                 logger.info("📄 Using default Firebase credentials")
                 self.client = firestore.Client(project=settings.FIREBASE_PROJECT_ID)
 
-            # Collection references for graph caching
+            # Collection references
             self.curriculum_graphs = self.client.collection('curriculum_graphs')
+            self.curriculum_published = self.client.collection('curriculum_published')
             logger.info("✅ Firestore connected successfully")
 
             return True
@@ -341,6 +343,130 @@ class CurriculumFirestore:
 
         except Exception as e:
             logger.error(f"❌ Failed to delete specific graph documents: {e}")
+            raise
+
+    # ============================================================================
+    # CURRICULUM DEPLOYMENT OPERATIONS
+    # ============================================================================
+
+    async def deploy_curriculum(
+        self,
+        subject_id: str,
+        curriculum_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Deploy published curriculum to Firestore for backend consumption.
+
+        Writes to curriculum_published/{grade}/subjects/{subject_id}.
+        The grade subcollection allows O(1) grade-scoped lookups.
+        """
+        try:
+            grade = curriculum_data.get("grade", "K")
+            firestore_data = self._prepare_firestore_data(curriculum_data)
+
+            # Ensure grade document exists with metadata
+            grade_doc_ref = self.curriculum_published.document(grade)
+            grade_doc_ref.set({"grade": grade}, merge=True)
+
+            # Write subject under grade subcollection
+            doc_ref = grade_doc_ref.collection("subjects").document(subject_id)
+            doc_ref.set(firestore_data)
+
+            logger.info(f"✅ Deployed curriculum for {subject_id} (grade={grade}) to Firestore (curriculum_published/{grade}/subjects/{subject_id})")
+            return firestore_data
+
+        except Exception as e:
+            logger.error(f"❌ Failed to deploy curriculum for {subject_id}: {e}")
+            raise
+
+    async def get_deployment_status(
+        self,
+        subject_id: str,
+        grade: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get deployment status for a subject.
+
+        If grade is provided, does a direct O(1) lookup.
+        Otherwise searches across all grades.
+        """
+        try:
+            doc_data = None
+
+            if grade:
+                doc_ref = self.curriculum_published.document(grade).collection("subjects").document(subject_id)
+                doc = doc_ref.get()
+                if doc.exists:
+                    doc_data = doc.to_dict()
+            else:
+                # Search across all grades
+                for grade_doc in self.curriculum_published.stream():
+                    doc_ref = grade_doc.reference.collection("subjects").document(subject_id)
+                    doc = doc_ref.get()
+                    if doc.exists:
+                        doc_data = doc.to_dict()
+                        break
+
+            if doc_data:
+                return {
+                    "subject_id": subject_id,
+                    "grade": doc_data.get("grade"),
+                    "deployed": True,
+                    "version_id": doc_data.get("version_id"),
+                    "version_number": doc_data.get("version_number"),
+                    "deployed_at": doc_data.get("deployed_at"),
+                    "stats": doc_data.get("stats", {}),
+                }
+            else:
+                return {
+                    "subject_id": subject_id,
+                    "deployed": False,
+                }
+
+        except Exception as e:
+            logger.error(f"❌ Failed to get deployment status for {subject_id}: {e}")
+            raise
+
+    async def list_deployed_subjects(self, grade: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all subjects that have been deployed.
+
+        If grade is provided, lists only subjects for that grade (O(1)).
+        Otherwise lists all subjects across all grades.
+        """
+        try:
+            deployed = []
+
+            if grade:
+                # O(1) grade-scoped lookup
+                docs = self.curriculum_published.document(grade).collection("subjects").stream()
+                for doc in docs:
+                    doc_data = doc.to_dict()
+                    deployed.append({
+                        "subject_id": doc.id,
+                        "subject_name": doc_data.get("subject_name"),
+                        "grade": doc_data.get("grade", grade),
+                        "version_number": doc_data.get("version_number"),
+                        "deployed_at": doc_data.get("deployed_at"),
+                        "stats": doc_data.get("stats", {}),
+                    })
+            else:
+                # All subjects across all grades
+                for grade_doc in self.curriculum_published.stream():
+                    grade_id = grade_doc.id
+                    subjects = grade_doc.reference.collection("subjects").stream()
+                    for doc in subjects:
+                        doc_data = doc.to_dict()
+                        deployed.append({
+                            "subject_id": doc.id,
+                            "subject_name": doc_data.get("subject_name"),
+                            "grade": doc_data.get("grade", grade_id),
+                            "version_number": doc_data.get("version_number"),
+                            "deployed_at": doc_data.get("deployed_at"),
+                            "stats": doc_data.get("stats", {}),
+                        })
+
+            return deployed
+
+        except Exception as e:
+            logger.error(f"❌ Failed to list deployed subjects: {e}")
             raise
 
 

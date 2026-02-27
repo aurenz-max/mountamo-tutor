@@ -118,11 +118,13 @@ async def root():
         "docs": "/docs",
         "status": "operational",
         "features": [
-            "Subject / Unit / Skill / Subskill hierarchy",
+            "Grade-scoped Subject / Unit / Skill / Subskill hierarchy",
+            "Canonical grade codes (PK, K, 1-12)",
             "Prerequisite graph management",
             "AI-assisted curriculum scaffolding",
             "Lumina primitive assignment",
             "Version control and publishing",
+            "Firestore subcollection deployment (curriculum_published/{grade}/subjects/{id})",
             "Graph caching",
             "RESTful API"
         ],

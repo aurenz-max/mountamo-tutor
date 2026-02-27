@@ -51,6 +51,16 @@ async def publish_subject(
             # Log error but don't fail the publish operation
             logger.error(f"⚠️ Graph regeneration failed (non-critical): {e}")
 
+        # Auto-deploy to Firestore for backend consumption
+        try:
+            await curriculum_manager.deploy_curriculum_to_firestore(
+                subject_id=subject_id,
+                deployed_by="auto-publish"
+            )
+            logger.info(f"✅ Auto-deployed curriculum to Firestore for {subject_id}")
+        except Exception as e:
+            logger.error(f"⚠️ Auto-deploy to Firestore failed (non-critical): {e}")
+
         return result
 
     except ValueError as e:
@@ -141,3 +151,47 @@ async def get_flattened_curriculum_view(
     except Exception as e:
         logger.error(f"Error fetching flattened curriculum view: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch flattened view: {str(e)}")
+
+
+@router.post("/subjects/{subject_id}/deploy")
+async def deploy_curriculum(
+    subject_id: str,
+    version_id: Optional[str] = None
+):
+    """
+    Deploy published curriculum to Firestore for backend consumption.
+
+    Builds a hierarchical document from the published curriculum and writes
+    it to the curriculum_published Firestore collection. The backend tutoring
+    service reads from this collection instead of querying BigQuery.
+
+    - If version_id is not provided, deploys the active published version
+    - Includes a subskill_index for fast reverse lookups
+    - Includes pre-computed stats
+    - Idempotent: re-deploying overwrites the previous deployment
+    """
+    try:
+        result = await curriculum_manager.deploy_curriculum_to_firestore(
+            subject_id=subject_id,
+            version_id=version_id,
+            deployed_by="manual"
+        )
+        return result
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"❌ Deploy failed for {subject_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to deploy curriculum: {str(e)}")
+
+
+@router.get("/subjects/{subject_id}/deploy/status")
+async def get_deploy_status(subject_id: str):
+    """Get the deployment status for a subject"""
+    from app.db.firestore_graph_service import firestore_graph_service
+    try:
+        status = await firestore_graph_service.get_deployment_status(subject_id)
+        return status
+    except Exception as e:
+        logger.error(f"❌ Failed to get deploy status for {subject_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

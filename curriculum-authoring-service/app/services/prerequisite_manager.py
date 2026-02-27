@@ -320,7 +320,7 @@ class PrerequisiteManager:
 
         # Get subject info
         subject_query = f"""
-        SELECT subject_name, description, grade_level
+        SELECT subject_name, description, grade_level as grade
         FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}`
         WHERE subject_id = @subject_id
         LIMIT 1

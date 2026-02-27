@@ -147,8 +147,8 @@ function snapToValue(raw: number, numberType: string, zoomLevel: number, min: nu
 
 function getDefaultTickInterval(numberType: string, zoomLevel: number, range: number): number {
   if (numberType === 'integer') {
-    if (range <= 20) return 1;
-    if (range <= 50) return 5;
+    if (range <= 30) return 1;
+    if (range <= 100) return 5;
     return 10;
   }
   const precision = getSnapPrecision(numberType, zoomLevel);
@@ -156,6 +156,21 @@ function getDefaultTickInterval(numberType: string, zoomLevel: number, range: nu
   const maxTicks = 25;
   while (range / interval > maxTicks) interval *= 2;
   return interval;
+}
+
+/** Determines the interval at which tick labels are shown (coarser than tick marks). */
+function getLabelInterval(numberType: string, tickInterval: number, range: number): number {
+  if (numberType !== 'integer') return tickInterval;
+  if (tickInterval === 1) {
+    if (range <= 10) return 1;
+    if (range <= 20) return 2;
+    return 5;
+  }
+  if (tickInterval === 5) {
+    if (range <= 50) return 5;
+    return 10;
+  }
+  return tickInterval;
 }
 
 function challengeTypeToPhase(type: string): InteractionPhase {
@@ -286,11 +301,17 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   // Tick Marks
   // -------------------------------------------------------------------------
   const ticks = useMemo(() => {
-    const interval = customTickInterval || getDefaultTickInterval(activeNumberType, zoomLevel, visibleMax - visibleMin);
+    const range = visibleMax - visibleMin;
+    const interval = customTickInterval || getDefaultTickInterval(activeNumberType, zoomLevel, range);
+    const labelIv = getLabelInterval(activeNumberType, interval, range);
     const result: { value: number; isMajor: boolean }[] = [];
     const start = Math.ceil(visibleMin / interval) * interval;
     for (let v = start; v <= visibleMax + interval * 0.001; v += interval) {
-      result.push({ value: Math.round(v * 1000) / 1000, isMajor: Number.isInteger(Math.round(v * 1000) / 1000) });
+      const rounded = Math.round(v * 1000) / 1000;
+      const isMajor = activeNumberType === 'integer'
+        ? (labelIv <= interval || Math.round(rounded) % Math.round(labelIv) === 0)
+        : Number.isInteger(rounded);
+      result.push({ value: rounded, isMajor });
     }
     return result;
   }, [activeNumberType, zoomLevel, visibleMin, visibleMax, customTickInterval]);
@@ -730,12 +751,14 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
                 return (
                   <g key={i}>
                     <line x1={x} y1={LINE_Y - h / 2} x2={x} y2={LINE_Y + h / 2}
-                      stroke={tick.isMajor ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)'}
+                      stroke={tick.isMajor ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)'}
                       strokeWidth={tick.isMajor ? 1.5 : 1} />
-                    <text x={x} y={LINE_Y + h / 2 + 16} textAnchor="middle"
-                      fill="rgba(255,255,255,0.5)" fontSize={tick.isMajor ? 14 : 10} fontFamily="monospace">
-                      {formatValue(tick.value, activeNumberType)}
-                    </text>
+                    {tick.isMajor && (
+                      <text x={x} y={LINE_Y + h / 2 + 16} textAnchor="middle"
+                        fill="rgba(255,255,255,0.5)" fontSize={14} fontFamily="monospace">
+                        {formatValue(tick.value, activeNumberType)}
+                      </text>
+                    )}
                   </g>
                 );
               })}
@@ -902,19 +925,21 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
                   <line
                     x1={x} y1={LINE_Y - h / 2}
                     x2={x} y2={LINE_Y + h / 2}
-                    stroke={tick.isMajor ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)'}
+                    stroke={tick.isMajor ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)'}
                     strokeWidth={tick.isMajor ? 1.5 : 1}
                   />
-                  <text
-                    x={x} y={LINE_Y + h / 2 + 16}
-                    textAnchor="middle"
-                    fill="rgba(255,255,255,0.5)"
-                    fontSize={tick.isMajor ? (isK2 ? 16 : 12) : 10}
-                    fontFamily="monospace"
-                    fontWeight={tick.isMajor ? '600' : '400'}
-                  >
-                    {formatValue(tick.value, activeNumberType)}
-                  </text>
+                  {tick.isMajor && (
+                    <text
+                      x={x} y={LINE_Y + h / 2 + 16}
+                      textAnchor="middle"
+                      fill="rgba(255,255,255,0.5)"
+                      fontSize={isK2 ? 16 : 12}
+                      fontFamily="monospace"
+                      fontWeight="600"
+                    >
+                      {formatValue(tick.value, activeNumberType)}
+                    </text>
+                  )}
                 </g>
               );
             })}

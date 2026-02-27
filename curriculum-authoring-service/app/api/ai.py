@@ -15,7 +15,7 @@ router = APIRouter()
 class GenerateUnitRequest(BaseModel):
     """Request to generate a curriculum unit"""
     subject: str
-    grade_level: str
+    grade: str
     topic_prompt: str
     context: Optional[str] = None
 
@@ -50,7 +50,7 @@ async def generate_unit(
     try:
         result = await ai_assistant.generate_unit(
             subject=request.subject,
-            grade_level=request.grade_level,
+            grade=request.grade,
             topic_prompt=request.topic_prompt,
             context=request.context
         )

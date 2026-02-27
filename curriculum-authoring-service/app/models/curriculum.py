@@ -12,7 +12,7 @@ class SubjectBase(BaseModel):
     subject_id: str
     subject_name: str
     description: Optional[str] = None
-    grade_level: Optional[str] = None
+    grade: str
 
 
 class SubjectCreate(SubjectBase):
@@ -24,7 +24,7 @@ class SubjectUpdate(BaseModel):
     """Model for updating a subject"""
     subject_name: Optional[str] = None
     description: Optional[str] = None
-    grade_level: Optional[str] = None
+    grade: Optional[str] = None
 
 
 class Subject(SubjectBase):
@@ -205,7 +205,7 @@ class CurriculumTree(BaseModel):
     """Complete curriculum tree structure"""
     subject_id: str
     subject_name: str
-    grade_level: Optional[str] = None
+    grade: str
     version_id: str
     units: List[UnitNode] = []
 

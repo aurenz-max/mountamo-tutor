@@ -746,7 +746,7 @@ class DailyActivitiesService:
             curriculum_metadata = None
             if self.curriculum_service:
                 try:
-                    curriculum_metadata = await self.curriculum_service.get_subskill_metadata(planned_activity.subskill_id)
+                    curriculum_metadata = await self.curriculum_service.get_subskill_metadata(planned_activity.subskill_id, subject=planned_activity.subject)
                     if curriculum_metadata:
                         logger.info(f"📚 CURRICULUM_LOOKUP: Found metadata for {planned_activity.subskill_id}: unit={curriculum_metadata.get('unit_title')}")
                 except Exception as e:

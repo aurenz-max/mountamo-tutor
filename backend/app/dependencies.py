@@ -210,25 +210,31 @@ def get_bigquery_analytics_service() -> 'BigQueryAnalyticsService':
     return _bigquery_analytics_service
 
 async def get_curriculum_service() -> CurriculumService:
-    """Get or create CurriculumService singleton with BigQuery - CLEAN ASYNC"""
+    """Get or create CurriculumService singleton with Firestore + BigQuery"""
     global _curriculum_service
     if _curriculum_service is None:
-        logger.info("Initializing CurriculumService with BigQuery")
-        
-        # Get BigQuery service (required)
+        logger.info("Initializing CurriculumService with Firestore + BigQuery")
+
+        # Get BigQuery service (required for authored content)
         bigquery_service = get_bigquery_analytics_service()
-        
+
         # Get blob service (optional)
         blob_service = get_blob_storage_service()
-        
-        # Create curriculum service
-        _curriculum_service = CurriculumService(bigquery_service, blob_service)
-        
-        # Initialize - no asyncio.run() needed, we're already async!
+
+        # Get Firestore service (for curriculum hierarchy reads)
+        firestore_service = get_firestore_service()
+
+        # Create curriculum service with all backends
+        _curriculum_service = CurriculumService(
+            bigquery_service,
+            blob_service,
+            firestore_service=firestore_service
+        )
+
         await _curriculum_service.initialize()
-        
-        logger.info("✅ CurriculumService with BigQuery initialized successfully")
-    
+
+        logger.info("✅ CurriculumService initialized successfully")
+
     return _curriculum_service
 
 async def get_curriculum_mapping_service() -> CurriculumMappingService:

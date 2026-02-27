@@ -1,19 +1,26 @@
 /**
- * Standardized grade level options for curriculum subjects
+ * Canonical grade codes used across the curriculum system.
+ *
+ * Storage: always use the short code (e.g., "K", "3", "PK").
+ * Display: map to label at the UI layer only.
  */
-export const GRADE_LEVELS = [
-  { value: 'Pre-K', label: 'Pre-K' },
-  { value: 'Kindergarten', label: 'Kindergarten' },
-  { value: '1st Grade', label: '1st Grade' },
-  { value: '2nd Grade', label: '2nd Grade' },
-  { value: '3rd Grade', label: '3rd Grade' },
-  { value: '4th Grade', label: '4th Grade' },
-  { value: '5th Grade', label: '5th Grade' },
-  { value: '6th Grade', label: '6th Grade' },
-  { value: '7th Grade', label: '7th Grade' },
-  { value: '8th Grade', label: '8th Grade' },
-  { value: '9th Grade', label: '9th Grade' },
-  { value: '10th Grade', label: '10th Grade' },
-  { value: '11th Grade', label: '11th Grade' },
-  { value: '12th Grade', label: '12th Grade' },
-] as const;
+export const GRADE_CODES = {
+  PK: 'Pre-K',
+  K: 'Kindergarten',
+  '1': '1st Grade',
+  '2': '2nd Grade',
+  '3': '3rd Grade',
+  '4': '4th Grade',
+  '5': '5th Grade',
+  '6': '6th Grade',
+  '7': '7th Grade',
+  '8': '8th Grade',
+  '9': '9th Grade',
+  '10': '10th Grade',
+  '11': '11th Grade',
+  '12': '12th Grade',
+} as const;
+
+export type GradeCode = keyof typeof GRADE_CODES;
+
+export const GRADE_CODE_LIST = Object.keys(GRADE_CODES) as GradeCode[];

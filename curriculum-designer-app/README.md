@@ -8,14 +8,25 @@ A local-only admin tool for curriculum designers to build and manage the knowled
 
 ## Features
 
-- **Curriculum tree** — navigate and edit Subject / Unit / Skill / Subskill hierarchy
-- **Entity editor** — forms for creating and editing all curriculum entities
+- **Grade-scoped curriculum** — grade is a first-class dimension; subjects are organized by canonical grade codes (PK, K, 1-12)
+- **Curriculum tree** — navigate and edit Grade / Subject / Unit / Skill / Subskill hierarchy
+- **Entity editor** — forms for creating and editing all curriculum entities with grade dropdown
 - **Prerequisite management** — define learning paths and dependencies
 - **Graph visualization** — visualize the prerequisite graph
 - **AI generation** — create complete units with AI assistance
 - **Lumina primitive assignment** — link subskills to teaching primitives
 - **Draft/publish workflow** — review changes before publishing
 - **Version control** — full version history with rollback
+
+## Grade System
+
+Grade is a structural dimension of the curriculum. Subjects are scoped by grade, allowing multiple grades of the same subject to coexist (e.g., Kindergarten Mathematics and 1st Grade Mathematics).
+
+**Canonical grade codes**: `PK`, `K`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `10`, `11`, `12`
+
+**Firestore structure**: `curriculum_published/{grade}/subjects/{subject_id}`
+
+This enables O(1) grade-scoped lookups — querying "what subjects exist for Kindergarten?" reads only `curriculum_published/K/subjects/` without scanning other grades.
 
 ## Quick Start
 
@@ -66,7 +77,7 @@ lib/curriculum-authoring/
 ├── api.ts                        # API client
 ├── hooks.ts                      # React Query hooks
 ├── graphApi.ts                   # Graph cache API
-└── constants.ts                  # Shared constants (grade levels)
+└── constants.ts                  # Canonical grade codes and labels
 
 types/
 └── curriculum-authoring.ts       # TypeScript types
@@ -74,9 +85,9 @@ types/
 
 ## Usage
 
-1. **Select a subject** from the dropdown (or create one)
+1. **Select a subject** from the grade-grouped dropdown (or create one)
 2. **Navigate the tree** — click to select, chevrons to expand
-3. **Edit entities** in the right panel editor tab
+3. **Edit entities** in the right panel editor tab — grade uses a dropdown with canonical codes
 4. **Manage prerequisites** via the Prerequisites tab
 5. **AI Generate** — click the toolbar button to scaffold a unit from a topic
 6. **Publish** — review draft changes, then publish a new version

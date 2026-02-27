@@ -34,7 +34,11 @@ class CurriculumManager:
         where_clause = "WHERE is_active = true" if not include_drafts else ""
 
         query = f"""
-        SELECT *
+        SELECT
+            subject_id, subject_name, description,
+            grade_level as grade,
+            version_id, is_active, is_draft,
+            created_at, updated_at, created_by
         FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}`
         {where_clause}
         ORDER BY subject_name
@@ -63,7 +67,11 @@ class CurriculumManager:
         where_clause = " AND ".join(where_conditions)
 
         query = f"""
-        SELECT *
+        SELECT
+            subject_id, subject_name, description,
+            grade_level as grade,
+            version_id, is_active, is_draft,
+            created_at, updated_at, created_by
         FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}`
         WHERE {where_clause}
         LIMIT 1
@@ -82,11 +90,12 @@ class CurriculumManager:
         """Create a new subject using DML INSERT for consistency"""
         now = datetime.utcnow()
 
-        subject_data = {
+        # BigQuery column is grade_level; model field is grade
+        bq_data = {
             "subject_id": subject.subject_id,
             "subject_name": subject.subject_name,
             "description": subject.description,
-            "grade_level": subject.grade_level,
+            "grade_level": subject.grade,
             "version_id": version_id,
             "is_active": False,
             "is_draft": True,
@@ -98,8 +107,8 @@ class CurriculumManager:
         table_id = settings.get_table_id(settings.TABLE_SUBJECTS)
 
         # Build DML INSERT query
-        fields = ", ".join(subject_data.keys())
-        value_placeholders = ", ".join([f"@{key}" for key in subject_data.keys()])
+        fields = ", ".join(bq_data.keys())
+        value_placeholders = ", ".join([f"@{key}" for key in bq_data.keys()])
 
         insert_query = f"""
         INSERT INTO `{table_id}` ({fields})
@@ -109,12 +118,15 @@ class CurriculumManager:
         # Create BigQuery parameters with appropriate types
         parameters = []
         type_map = {'is_active': 'BOOL', 'is_draft': 'BOOL'}
-        for key, value in subject_data.items():
+        for key, value in bq_data.items():
             bq_type = type_map.get(key, 'STRING')
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
         await db.execute_query(insert_query, parameters)
-        return Subject(**subject_data)
+
+        # Return model with grade (not grade_level)
+        model_data = {**bq_data, "grade": bq_data.pop("grade_level")}
+        return Subject(**model_data)
 
     async def update_subject(self, subject_id: str, updates: SubjectUpdate, version_id: str) -> Optional[Subject]:
         """Update a subject using atomic DML MERGE"""
@@ -142,12 +154,17 @@ class CurriculumManager:
             "updated_at": now.isoformat()
         }
 
+        # Map model field 'grade' to BigQuery column 'grade_level'
+        bq_data = dict(subject_data)
+        if "grade" in bq_data:
+            bq_data["grade_level"] = bq_data.pop("grade")
+
         table_id = settings.get_table_id(settings.TABLE_SUBJECTS)
 
         # Build MERGE statement for atomic upsert
-        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in subject_data.keys()])
-        insert_fields = ", ".join(subject_data.keys())
-        insert_values = ", ".join([f"@{key}" for key in subject_data.keys()])
+        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in bq_data.keys()])
+        insert_fields = ", ".join(bq_data.keys())
+        insert_values = ", ".join([f"@{key}" for key in bq_data.keys()])
 
         merge_query = f"""
         MERGE `{table_id}` AS T
@@ -162,7 +179,7 @@ class CurriculumManager:
         # Create BigQuery parameters with appropriate types
         parameters = []
         type_map = {'is_active': 'BOOL', 'is_draft': 'BOOL'}
-        for key, value in subject_data.items():
+        for key, value in bq_data.items():
             bq_type = type_map.get(key, 'STRING')
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
@@ -680,7 +697,7 @@ class CurriculumManager:
         return CurriculumTree(
             subject_id=subject.subject_id,
             subject_name=subject.subject_name,
-            grade_level=subject.grade_level,
+            grade=subject.grade,
             version_id=subject.version_id,
             units=tree_units
         )
@@ -903,6 +920,162 @@ class CurriculumManager:
         except Exception as e:
             logger.error(f"❌ Failed to update subskill primitives: {e}")
             raise
+
+    # ==================== DEPLOYMENT TO FIRESTORE ====================
+
+    async def deploy_curriculum_to_firestore(
+        self,
+        subject_id: str,
+        version_id: Optional[str] = None,
+        deployed_by: str = "system"
+    ) -> Dict[str, Any]:
+        """
+        Build and deploy published curriculum to Firestore for backend consumption.
+
+        Reads the flattened curriculum view, restructures it into a hierarchical
+        document with subskill index and stats, then writes it to Firestore.
+
+        Args:
+            subject_id: The subject to deploy
+            version_id: Optional specific version (defaults to active)
+            deployed_by: Who triggered the deployment
+
+        Returns:
+            Deployment result with metadata
+        """
+        from app.db.firestore_graph_service import firestore_graph_service
+
+        # Get flattened data (published, active version)
+        flat_rows = await self.get_flattened_curriculum_view(subject_id, version_id)
+        if not flat_rows:
+            raise ValueError(f"No published curriculum found for subject {subject_id}")
+
+        # Build the deployment document
+        curriculum_doc = self._build_deployment_document(flat_rows, subject_id, deployed_by)
+
+        # Write to Firestore
+        result = await firestore_graph_service.deploy_curriculum(subject_id, curriculum_doc)
+
+        logger.info(
+            f"✅ Deployed {subject_id} to Firestore: "
+            f"{curriculum_doc['stats']['total_units']} units, "
+            f"{curriculum_doc['stats']['total_skills']} skills, "
+            f"{curriculum_doc['stats']['total_subskills']} subskills"
+        )
+
+        return {
+            "success": True,
+            "subject_id": subject_id,
+            "version_id": curriculum_doc["version_id"],
+            "version_number": curriculum_doc["version_number"],
+            "deployed_at": curriculum_doc["deployed_at"],
+            "stats": curriculum_doc["stats"],
+        }
+
+    def _build_deployment_document(
+        self,
+        flat_rows: List[FlattenedCurriculumRow],
+        subject_id: str,
+        deployed_by: str
+    ) -> Dict[str, Any]:
+        """
+        Convert flattened curriculum rows into the Firestore deployment document.
+
+        Produces:
+        - curriculum: hierarchical tree (units → skills → subskills)
+        - subskill_index: flat map of subskill_id → metadata for reverse lookups
+        - stats: pre-computed counts and difficulty ranges
+        """
+        first_row = flat_rows[0]
+
+        # Build hierarchical structure
+        units: List[Dict[str, Any]] = []
+        subskill_index: Dict[str, Dict[str, Any]] = {}
+        current_unit: Optional[Dict[str, Any]] = None
+        current_skill: Optional[Dict[str, Any]] = None
+
+        difficulty_values = []
+
+        for row in flat_rows:
+            # New unit?
+            if current_unit is None or current_unit["unit_id"] != row.unit_id:
+                current_unit = {
+                    "unit_id": row.unit_id,
+                    "unit_title": row.unit_title,
+                    "unit_order": row.unit_order,
+                    "skills": [],
+                }
+                units.append(current_unit)
+                current_skill = None  # reset skill on new unit
+
+            # New skill?
+            if current_skill is None or current_skill["skill_id"] != row.skill_id:
+                current_skill = {
+                    "skill_id": row.skill_id,
+                    "skill_description": row.skill_description,
+                    "skill_order": row.skill_order,
+                    "subskills": [],
+                }
+                current_unit["skills"].append(current_skill)
+
+            # Add subskill
+            current_skill["subskills"].append({
+                "subskill_id": row.subskill_id,
+                "subskill_description": row.subskill_description,
+                "subskill_order": row.subskill_order,
+                "difficulty_start": row.difficulty_start,
+                "difficulty_end": row.difficulty_end,
+                "target_difficulty": row.target_difficulty,
+            })
+
+            # Build reverse-lookup index
+            subskill_index[row.subskill_id] = {
+                "subject": row.subject,
+                "unit_id": row.unit_id,
+                "unit_title": row.unit_title,
+                "skill_id": row.skill_id,
+                "skill_description": row.skill_description,
+                "subskill_id": row.subskill_id,
+                "subskill_description": row.subskill_description,
+                "difficulty_start": row.difficulty_start,
+                "difficulty_end": row.difficulty_end,
+                "target_difficulty": row.target_difficulty,
+                "grade": row.grade,
+            }
+
+            # Collect difficulty values for stats
+            if row.target_difficulty is not None:
+                difficulty_values.append(row.target_difficulty)
+            if row.difficulty_start is not None:
+                difficulty_values.append(row.difficulty_start)
+            if row.difficulty_end is not None:
+                difficulty_values.append(row.difficulty_end)
+
+        # Compute stats
+        unique_skills = {row.skill_id for row in flat_rows}
+        target_diffs = [r.target_difficulty for r in flat_rows if r.target_difficulty is not None]
+
+        stats = {
+            "total_units": len(units),
+            "total_skills": len(unique_skills),
+            "total_subskills": len(subskill_index),
+            "avg_target_difficulty": round(sum(target_diffs) / len(target_diffs), 3) if target_diffs else None,
+            "min_difficulty": min(difficulty_values) if difficulty_values else None,
+            "max_difficulty": max(difficulty_values) if difficulty_values else None,
+        }
+
+        return {
+            "subject_id": subject_id,
+            "subject_name": first_row.subject,
+            "grade": first_row.grade,
+            "version_id": first_row.version_id,
+            "version_number": first_row.version_number,
+            "deployed_at": datetime.utcnow().isoformat(),
+            "deployed_by": deployed_by,
+            "curriculum": units,
+            "subskill_index": subskill_index,
+            "stats": stats,
+        }
 
 
 # Global instance

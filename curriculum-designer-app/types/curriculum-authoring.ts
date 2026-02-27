@@ -11,7 +11,7 @@ export interface SubjectBase {
   subject_id: string;
   subject_name: string;
   description?: string;
-  grade_level?: string;
+  grade: string;
 }
 
 export interface SubjectCreate extends SubjectBase {}
@@ -19,7 +19,7 @@ export interface SubjectCreate extends SubjectBase {}
 export interface SubjectUpdate {
   subject_name?: string;
   description?: string;
-  grade_level?: string;
+  grade: string;
 }
 
 export interface Subject extends SubjectBase {
@@ -164,7 +164,7 @@ export interface UnitNode {
 export interface CurriculumTree {
   subject_id: string;
   subject_name: string;
-  grade_level?: string;
+  grade: string;
   version_id: string;
   units: UnitNode[];
 }
@@ -236,7 +236,7 @@ export interface PrerequisiteGraph {
 
 export interface GenerateUnitRequest {
   subject: string;
-  grade_level: string;
+  grade: string;
   topic_prompt: string;
   context?: string;
 }
@@ -305,6 +305,35 @@ export interface PublishResponse {
   published_at: string;
   changes_count: number;
   message: string;
+}
+
+export interface DeployResponse {
+  success: boolean;
+  subject_id: string;
+  version_id: string;
+  version_number: number;
+  deployed_at: string;
+  stats: {
+    total_units: number;
+    total_skills: number;
+    total_subskills: number;
+    avg_target_difficulty: number | null;
+    min_difficulty: number | null;
+    max_difficulty: number | null;
+  };
+}
+
+export interface DeployStatus {
+  subject_id: string;
+  deployed: boolean;
+  version_id?: string;
+  version_number?: number;
+  deployed_at?: string;
+  stats?: {
+    total_units: number;
+    total_skills: number;
+    total_subskills: number;
+  };
 }
 
 export interface Version {

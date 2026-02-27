@@ -88,14 +88,14 @@ export function AIUnitGenerator({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="grade_level">Grade Level</Label>
+              <Label htmlFor="grade">Grade</Label>
               <Input
-                id="grade_level"
-                placeholder="e.g., 1st Grade"
-                {...register('grade_level', { required: 'Grade level is required' })}
+                id="grade"
+                placeholder="e.g., K, 1, 2"
+                {...register('grade', { required: 'Grade is required' })}
               />
-              {errors.grade_level && (
-                <p className="text-sm text-red-600">{errors.grade_level.message}</p>
+              {errors.grade && (
+                <p className="text-sm text-red-600">{errors.grade.message}</p>
               )}
             </div>
 

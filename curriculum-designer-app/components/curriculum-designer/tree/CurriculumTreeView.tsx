@@ -59,8 +59,8 @@ export function CurriculumTreeView({
       <div className="mb-4 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-3">
         <div className="flex-1">
           <h3 className="font-semibold text-blue-900">{tree.subject_name}</h3>
-          {tree.grade_level && (
-            <p className="text-xs text-blue-600">{tree.grade_level}</p>
+          {tree.grade && (
+            <p className="text-xs text-blue-600">{tree.grade}</p>
           )}
         </div>
         <div className="flex items-center gap-2">
