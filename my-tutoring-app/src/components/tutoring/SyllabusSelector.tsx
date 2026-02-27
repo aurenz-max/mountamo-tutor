@@ -190,8 +190,11 @@ const SyllabusSelector = ({ onSelect }) => {
       
       try {
         console.log('🔍 COMPONENT: Fetching subjects with authApi...');
-        const availableSubjects = await authApi.getSubjects();
-        console.log('✅ COMPONENT: Subjects received:', availableSubjects);
+        const rawSubjects = await authApi.getSubjects();
+        console.log('✅ COMPONENT: Subjects received:', rawSubjects);
+        // Normalize: backend now returns objects {subject_name, grade} instead of strings
+        const availableSubjects = (Array.isArray(rawSubjects) ? rawSubjects : [])
+          .map(s => typeof s === 'string' ? s : s.subject_name);
         setSubjects(availableSubjects);
       } catch (err) {
         console.error('❌ COMPONENT: Failed to fetch subjects:', err);
@@ -451,7 +454,10 @@ const SyllabusSelector = ({ onSelect }) => {
             setSelectedSubject('');
             setSyllabus(null);
             if (user) {
-              authApi.getSubjects().then(setSubjects).catch(err => {
+              authApi.getSubjects().then(raw => {
+                const names = (Array.isArray(raw) ? raw : []).map(s => typeof s === 'string' ? s : s.subject_name);
+                setSubjects(names);
+              }).catch(err => {
                 console.error('Retry failed:', err);
                 setError('Retry failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
               });

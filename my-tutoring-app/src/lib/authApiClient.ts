@@ -875,11 +875,13 @@ private async getAuthToken(): Promise<string> {
   }
 
   async getSubjects() {
-    return this.get('/api/competency/subjects');
+    const data = await this.get('/api/curriculum/subjects');
+    // Curriculum router wraps in {subjects: [...]}, unwrap for callers expecting an array
+    return data?.subjects ?? data;
   }
 
   async getSubjectCurriculum(subject: string) {
-    return this.get(`/api/competency/curriculum/${encodeURIComponent(subject)}`);
+    return this.get(`/api/curriculum/curriculum/${encodeURIComponent(subject)}`);
   }
 
   async getSkillCompetency(params: {

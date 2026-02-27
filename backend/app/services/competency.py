@@ -42,23 +42,23 @@ class CompetencyService:
     async def initialize(self) -> bool:
         """Initialize the competency service"""
         logger.info(f"🔍 COMPETENCY_SERVICE: === INITIALIZING SERVICE ===")
-        
+
         try:
-            # Initialize curriculum service if available
+            # Skip re-initialization if curriculum service is already initialized
             if self.curriculum_service:
-                logger.info(f"🔍 COMPETENCY_SERVICE: Initializing curriculum service...")
-                init_result = await self.curriculum_service.initialize()
-                logger.info(f"🔍 COMPETENCY_SERVICE: Curriculum service initialization result: {init_result}")
-                
-                if init_result:
-                    logger.info(f"✅ COMPETENCY_SERVICE: CompetencyService initialized successfully with curriculum service")
+                if self.curriculum_service._use_firestore or self.curriculum_service._use_bigquery:
+                    logger.info(f"✅ COMPETENCY_SERVICE: Curriculum service already initialized, skipping")
                 else:
-                    logger.warning(f"⚠️ COMPETENCY_SERVICE: Curriculum service initialization failed, but continuing")
+                    logger.info(f"🔍 COMPETENCY_SERVICE: Initializing curriculum service...")
+                    init_result = await self.curriculum_service.initialize()
+                    logger.info(f"🔍 COMPETENCY_SERVICE: Curriculum service initialization result: {init_result}")
+
+                logger.info(f"✅ COMPETENCY_SERVICE: CompetencyService initialized successfully with curriculum service")
             else:
                 logger.warning(f"⚠️ COMPETENCY_SERVICE: CompetencyService initialized without curriculum service")
-            
+
             return True
-            
+
         except Exception as e:
             logger.error(f"❌ COMPETENCY_SERVICE: Failed to initialize CompetencyService: {str(e)}")
             logger.error(f"❌ COMPETENCY_SERVICE: Exception type: {type(e)}")
@@ -66,7 +66,7 @@ class CompetencyService:
             logger.error(f"❌ COMPETENCY_SERVICE: Traceback: {traceback.format_exc()}")
             return False
 
-    async def get_available_subjects(self) -> List[str]:
+    async def get_available_subjects(self) -> List[Dict[str, Any]]:
         """Get list of all available subjects from curriculum storage"""
         logger.info(f"🔍 COMPETENCY_SERVICE: === GET_AVAILABLE_SUBJECTS ===")
         

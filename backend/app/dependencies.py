@@ -210,24 +210,16 @@ def get_bigquery_analytics_service() -> 'BigQueryAnalyticsService':
     return _bigquery_analytics_service
 
 async def get_curriculum_service() -> CurriculumService:
-    """Get or create CurriculumService singleton with Firestore + BigQuery"""
+    """Get or create CurriculumService singleton (Firestore-primary)."""
     global _curriculum_service
     if _curriculum_service is None:
-        logger.info("Initializing CurriculumService with Firestore + BigQuery")
+        logger.info("Initializing CurriculumService (Firestore-primary)")
 
-        # Get BigQuery service (required for authored content)
-        bigquery_service = get_bigquery_analytics_service()
-
-        # Get blob service (optional)
-        blob_service = get_blob_storage_service()
-
-        # Get Firestore service (for curriculum hierarchy reads)
+        # Get Firestore service (primary backend for curriculum)
         firestore_service = get_firestore_service()
 
-        # Create curriculum service with all backends
+        # Create curriculum service — Firestore only, no BigQuery needed
         _curriculum_service = CurriculumService(
-            bigquery_service,
-            blob_service,
             firestore_service=firestore_service
         )
 

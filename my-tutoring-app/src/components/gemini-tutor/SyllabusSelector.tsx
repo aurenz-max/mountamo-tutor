@@ -173,7 +173,10 @@ const SyllabusSelector = ({ onSelect }) => {
     const loadSubjects = async () => {
       setLoading(true);
       try {
-        const availableSubjects = await api.getSubjects();
+        const rawSubjects = await api.getSubjects();
+        // Normalize: backend now returns objects {subject_name, grade} instead of strings
+        const availableSubjects = (Array.isArray(rawSubjects) ? rawSubjects : [])
+          .map(s => typeof s === 'string' ? s : s.subject_name);
         setSubjects(availableSubjects);
       } catch (err) {
         setError('Failed to load subjects: ' + err.message);
@@ -382,7 +385,10 @@ const SyllabusSelector = ({ onSelect }) => {
             setError(null);
             setSelectedSubject('');
             setSyllabus(null);
-            api.getSubjects().then(setSubjects);
+            api.getSubjects().then(raw => {
+              const names = (Array.isArray(raw) ? raw : []).map(s => typeof s === 'string' ? s : s.subject_name);
+              setSubjects(names);
+            });
           }}
         >
           Retry

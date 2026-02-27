@@ -46,7 +46,10 @@ const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({ onSelect }) => 
     const loadSubjects = async () => {
       if (!user) return;
       try {
-        const availableSubjects = await authApi.getSubjects() as string[];
+        const rawSubjects = await authApi.getSubjects() as any[];
+        // Normalize: backend now returns objects {subject_name, grade} instead of strings
+        const availableSubjects = (Array.isArray(rawSubjects) ? rawSubjects : [])
+          .map(s => typeof s === 'string' ? s : s.subject_name);
         setSubjects(availableSubjects);
       } catch (err) {
         setError('Failed to load subjects.');

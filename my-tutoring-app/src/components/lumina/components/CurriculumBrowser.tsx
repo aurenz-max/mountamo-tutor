@@ -10,10 +10,16 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, BookOpen, RefreshCw } from 'lucide-react';
+import { ChevronRight, BookOpen, RefreshCw, GraduationCap } from 'lucide-react';
 import type { GradeLevel } from './GradeLevelSelector';
 
 // ── Types ──────────────────────────────────────────────────────────
+
+interface SubjectInfo {
+  subject_id?: string;
+  subject_name: string;
+  grade?: string;
+}
 
 interface CurriculumSubskill {
   id: string;
@@ -53,6 +59,26 @@ function mapGradeToLevel(grade: string | null | undefined): GradeLevel | undefin
     if (num >= 9 && num <= 12) return 'high-school';
   }
   return undefined;
+}
+
+function gradeSort(a: string, b: string): number {
+  const order = (g: string) => {
+    const l = g.toLowerCase().trim();
+    if (l.includes('pre')) return -1;
+    if (l === 'k' || l.includes('kindergarten')) return 0;
+    const n = parseInt(l);
+    return isNaN(n) ? 999 : n;
+  };
+  return order(a) - order(b);
+}
+
+function gradeLabel(grade: string): string {
+  const l = grade.toLowerCase().trim();
+  if (l.includes('pre')) return 'Pre-K';
+  if (l === 'k' || l.includes('kindergarten')) return 'Kindergarten';
+  const n = parseInt(l);
+  if (!isNaN(n)) return `Grade ${n}`;
+  return grade;
 }
 
 // ── Skill Row (inner drill-down) ────────────────────────────────────
@@ -108,7 +134,7 @@ const SkillRow: React.FC<SkillRowProps> = ({ skill, unit, subject, onSelect }) =
 
 export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({ onSelectTopic }) => {
   const { user } = useAuth();
-  const [subjects, setSubjects] = useState<string[]>([]);
+  const [subjects, setSubjects] = useState<SubjectInfo[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [curriculumData, setCurriculumData] = useState<CurriculumUnit[] | null>(null);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
@@ -125,8 +151,12 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({ onSelectTo
     setLoadingSubjects(true);
     setError(null);
     try {
-      const result = await authApi.getSubjects() as string[];
-      setSubjects(result);
+      const result = await authApi.getSubjects() as (string | SubjectInfo)[];
+      // Normalize: backend may return plain strings (legacy) or objects with subject_name/grade
+      const normalized: SubjectInfo[] = (Array.isArray(result) ? result : []).map(s =>
+        typeof s === 'string' ? { subject_name: s } : s
+      );
+      setSubjects(normalized);
       setSubjectsLoaded(true);
     } catch {
       setError('Failed to load subjects');
@@ -200,23 +230,50 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({ onSelectTo
         </div>
       )}
 
-      {subjectsLoaded && subjects.length > 0 && (
-        <div className="flex flex-wrap gap-2 justify-center mb-6">
-          {subjects.map(subject => (
-            <button
-              key={subject}
-              onClick={() => handleSubjectSelect(subject)}
-              className={`px-4 py-2 rounded-full border transition-all text-sm font-medium ${
-                selectedSubject === subject
-                  ? 'bg-blue-500/20 border-blue-500/50 text-blue-200'
-                  : 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              {subject}
-            </button>
-          ))}
-        </div>
-      )}
+      {subjectsLoaded && subjects.length > 0 && (() => {
+        // Group subjects by grade
+        const grouped = new Map<string, SubjectInfo[]>();
+        for (const s of subjects) {
+          const key = s.grade ?? '';
+          const list = grouped.get(key) ?? [];
+          list.push(s);
+          grouped.set(key, list);
+        }
+        const sortedGrades = Array.from(grouped.keys()).sort(gradeSort);
+
+        return (
+          <div className="space-y-4 mb-6">
+            {sortedGrades.map(grade => (
+              <div key={grade}>
+                {grade && (
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <GraduationCap className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm font-medium text-slate-300">
+                      {gradeLabel(grade)}
+                    </span>
+                    <div className="h-px flex-1 bg-slate-700/60" />
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {grouped.get(grade)!.map(subject => (
+                    <button
+                      key={`${subject.subject_name}-${grade}`}
+                      onClick={() => handleSubjectSelect(subject.subject_name)}
+                      className={`px-4 py-2 rounded-full border transition-all text-sm font-medium ${
+                        selectedSubject === subject.subject_name
+                          ? 'bg-blue-500/20 border-blue-500/50 text-blue-200'
+                          : 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {subject.subject_name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {subjectsLoaded && subjects.length === 0 && (
         <p className="text-center text-slate-500 text-sm">No curriculum available.</p>

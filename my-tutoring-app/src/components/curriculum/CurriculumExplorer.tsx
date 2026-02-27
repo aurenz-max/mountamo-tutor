@@ -135,8 +135,11 @@ const CurriculumExplorer = () => {
 
     try {
       setLoadingSubjects(true);
-      const subjects = await authApi.getSubjects();
-      console.log('✅ COMPONENT: Subjects received:', subjects);
+      const rawSubjects = await authApi.getSubjects();
+      console.log('✅ COMPONENT: Subjects received:', rawSubjects);
+      // Normalize: backend now returns objects {subject_name, grade} instead of strings
+      const subjects = (Array.isArray(rawSubjects) ? rawSubjects : [])
+        .map(s => typeof s === 'string' ? s : s.subject_name);
       setAvailableSubjects(subjects);
 
       if (subjects && subjects.length > 0) {

@@ -1,9 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from typing import Dict, Any, List, Optional
 
-# Import dependencies - you'll need to update this based on your dependency injection
-from app.dependencies import get_competency_service, get_curriculum_service
-from app.services.competency import CompetencyService
+from app.dependencies import get_curriculum_service
 from app.services.curriculum_service import CurriculumService
 
 router = APIRouter()
@@ -202,9 +200,7 @@ async def get_curriculum_stats(
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
 ):
     """Get curriculum statistics"""
-    result = await curriculum_service.get_curriculum_stats()
-    
-    if not result["success"]:
-        raise HTTPException(status_code=500, detail=result["error"])
-    
-    return result["stats"]
+    try:
+        return await curriculum_service.get_curriculum_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

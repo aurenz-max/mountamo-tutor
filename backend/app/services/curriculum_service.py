@@ -1,4 +1,4 @@
-# backend/app/services/curriculum_service.py - FIRESTORE-FIRST WITH BIGQUERY FALLBACK
+# backend/app/services/curriculum_service.py - FIRESTORE-PRIMARY CURRICULUM SERVICE
 
 import logging
 import pandas as pd
@@ -8,32 +8,32 @@ from datetime import datetime, timezone
 from io import BytesIO
 
 from app.db.blob_storage import BlobStorageService
-from app.services.bigquery_analytics import BigQueryAnalyticsService
 from app.core.config import settings
 
 if TYPE_CHECKING:
     from app.db.firestore_service import FirestoreService
+    from app.services.bigquery_analytics import BigQueryAnalyticsService
 
 logger = logging.getLogger(__name__)
 
 class CurriculumService:
     """
-    Curriculum service using Firestore for hierarchy reads, BigQuery for authored content.
+    Firestore-primary curriculum service.
 
-    Firestore (curriculum_published collection) serves:
+    Firestore (curriculum_published collection) is the primary backend for:
       - get_available_subjects, get_curriculum, get_subskill_types,
         get_subskill_metadata, get_curriculum_stats
 
-    BigQuery (analytics dataset) serves authored content:
+    BigQuery is optional and only used for authored content fallbacks:
       - get_detailed_objectives, get_subskill_foundations,
         get_reading_content_by_subskill, get_visual_snippets_by_subskill
 
-    All methods fall back to BigQuery if Firestore data is not available.
+    BigQuery fallbacks only fire if Firestore data is unavailable.
     """
 
     def __init__(
         self,
-        bigquery_service: BigQueryAnalyticsService,
+        bigquery_service: Optional['BigQueryAnalyticsService'] = None,
         blob_service: Optional[BlobStorageService] = None,
         firestore_service: Optional['FirestoreService'] = None
     ):
@@ -41,36 +41,56 @@ class CurriculumService:
         self.blob_service = blob_service
         self.firestore_service = firestore_service
         self._use_firestore = False
+        self._use_bigquery = False
 
         # Simple cache with TTL
         self._cache = {}
         self._cache_timestamps = {}
 
     async def initialize(self) -> bool:
-        """Initialize the curriculum service"""
+        """Initialize the curriculum service.
+
+        Firestore is the primary backend. BigQuery is optional and only
+        initialized if available (for authored content fallbacks).
+        """
         try:
-            # Check if Firestore has published curriculum
+            # Check if Firestore has published curriculum (primary)
             if self.firestore_service:
                 try:
                     subjects = await self.firestore_service.get_all_published_subjects()
                     if subjects:
                         self._use_firestore = True
-                        logger.info(f"✅ CURRICULUM_SERVICE: Firestore has {len(subjects)} published subjects — using Firestore for curriculum hierarchy")
+                        logger.info(f"✅ CURRICULUM_SERVICE: Firestore has {len(subjects)} published subjects — using Firestore as primary")
                     else:
-                        logger.info("ℹ️ CURRICULUM_SERVICE: No published curriculum in Firestore — will use BigQuery")
+                        logger.info("ℹ️ CURRICULUM_SERVICE: No published curriculum in Firestore")
                 except Exception as e:
-                    logger.warning(f"⚠️ CURRICULUM_SERVICE: Firestore check failed ({e}) — will use BigQuery")
+                    logger.warning(f"⚠️ CURRICULUM_SERVICE: Firestore check failed ({e})")
 
-            # Initialize BigQuery (still needed for authored content methods)
-            if not await self.bigquery_service.initialize():
-                raise Exception("BigQuery service initialization failed")
+            # Initialize BigQuery if available (optional, for authored content)
+            if self.bigquery_service:
+                try:
+                    if await self.bigquery_service.initialize():
+                        self._use_bigquery = True
+                        logger.info("✅ CURRICULUM_SERVICE: BigQuery available for authored content")
+                    else:
+                        logger.warning("⚠️ CURRICULUM_SERVICE: BigQuery initialization returned False")
+                except Exception as e:
+                    logger.warning(f"⚠️ CURRICULUM_SERVICE: BigQuery init failed ({e}) — authored content methods unavailable")
 
             # Initialize blob service (optional, for file management)
             if self.blob_service and not getattr(self.blob_service, '_initialized', False):
                 await self.blob_service.initialize()
 
-            mode = "Firestore + BigQuery" if self._use_firestore else "BigQuery only"
-            logger.info(f"✅ CURRICULUM_SERVICE: Initialized successfully ({mode})")
+            # At least one backend must be available
+            if not self._use_firestore and not self._use_bigquery:
+                raise Exception("Neither Firestore nor BigQuery is available — cannot serve curriculum")
+
+            mode_parts = []
+            if self._use_firestore:
+                mode_parts.append("Firestore (primary)")
+            if self._use_bigquery:
+                mode_parts.append("BigQuery (authored content)")
+            logger.info(f"✅ CURRICULUM_SERVICE: Initialized successfully ({' + '.join(mode_parts)})")
             return True
 
         except Exception as e:
@@ -96,16 +116,40 @@ class CurriculumService:
     # FIRESTORE-BACKED CURRICULUM HIERARCHY METHODS
     # ============================================================================
 
+    async def _resolve_subject_id(self, subject: str) -> str:
+        """Resolve a subject_name (e.g. 'Language Arts') to its Firestore subject_id ('LANGUAGE_ARTS').
+
+        Falls back to the original string if no mapping is found.
+        """
+        # If it already looks like a subject_id (all-caps with underscores), return as-is
+        if subject == subject.upper() and " " not in subject:
+            return subject
+
+        # Check cached subjects for the mapping
+        all_subjects = await self.get_available_subjects()
+        for subj in all_subjects:
+            if subj.get("subject_name", "").lower() == subject.lower():
+                return subj["subject_id"]
+
+        # Fallback: normalise to UPPER_SNAKE_CASE
+        return subject.upper().replace(" ", "_")
+
     async def _get_firestore_doc(self, subject: str) -> Optional[Dict[str, Any]]:
-        """Get a published curriculum doc from Firestore, using cache."""
-        cache_key = f"firestore_doc_{subject}"
+        """Get a published curriculum doc from Firestore, using cache.
+
+        Accepts either a subject_name ('Language Arts') or subject_id ('LANGUAGE_ARTS').
+        """
+        # Resolve to subject_id for Firestore lookup
+        subject_id = await self._resolve_subject_id(subject)
+
+        cache_key = f"firestore_doc_{subject_id}"
         if cache_key in self._cache and self._is_cache_valid(cache_key):
             return self._cache[cache_key]
 
         if not self.firestore_service:
             return None
 
-        doc = await self.firestore_service.get_published_curriculum(subject)
+        doc = await self.firestore_service.get_published_curriculum(subject_id)
         if doc:
             self._cache_set(cache_key, doc)
         return doc
@@ -131,6 +175,9 @@ class CurriculumService:
                 logger.warning(f"Firestore subject lookup failed, falling back to BigQuery: {e}")
 
         # BigQuery fallback
+        if not self._use_bigquery or not self.bigquery_service:
+            return []
+
         where_clauses = ["subject IS NOT NULL", "subject != ''"]
         if grade:
             where_clauses.append(f"grade = '{grade}'")
@@ -148,20 +195,27 @@ class CurriculumService:
         return subjects
 
     async def get_curriculum(self, subject: str) -> List[Dict]:
-        """Get hierarchical curriculum data for a subject"""
-        cache_key = f"curriculum_{subject.lower()}"
+        """Get hierarchical curriculum data for a subject.
+
+        Accepts either a subject_name ('Language Arts') or subject_id ('LANGUAGE_ARTS').
+        """
+        subject_id = await self._resolve_subject_id(subject)
+        cache_key = f"curriculum_{subject_id.lower()}"
         if cache_key in self._cache and self._is_cache_valid(cache_key):
             return self._cache[cache_key]
 
         # Try Firestore first
         if self._use_firestore:
-            doc = await self._get_firestore_doc(subject)
+            doc = await self._get_firestore_doc(subject_id)
             if doc and "curriculum" in doc:
                 structured = self._structure_firestore_curriculum(doc)
                 self._cache_set(cache_key, structured)
                 return structured
 
         # BigQuery fallback
+        if not self._use_bigquery or not self.bigquery_service:
+            return []
+
         query = f"""
         SELECT
             subject,
@@ -271,11 +325,15 @@ class CurriculumService:
         """Get list of all subskill IDs for a subject"""
         # Try Firestore first
         if self._use_firestore:
-            doc = await self._get_firestore_doc(subject)
+            subject_id = await self._resolve_subject_id(subject)
+            doc = await self._get_firestore_doc(subject_id)
             if doc and "subskill_index" in doc:
                 return sorted(doc["subskill_index"].keys())
 
         # BigQuery fallback
+        if not self._use_bigquery or not self.bigquery_service:
+            return []
+
         query = f"""
         SELECT DISTINCT subskill_id
         FROM `{self.bigquery_service.project_id}.{self.bigquery_service.dataset_id}.curriculum`
@@ -306,9 +364,10 @@ class CurriculumService:
             try:
                 if subject:
                     # Direct lookup — single document read
-                    doc = await self._get_firestore_doc(subject)
+                    resolved_id = await self._resolve_subject_id(subject)
+                    doc = await self._get_firestore_doc(resolved_id)
                     if not doc:
-                        doc = await self.firestore_service.get_published_curriculum(subject)
+                        doc = await self.firestore_service.get_published_curriculum(resolved_id)
                     if doc and "subskill_index" in doc and subskill_id in doc["subskill_index"]:
                         metadata = doc["subskill_index"][subskill_id]
                         self._cache_set(cache_key, metadata)
@@ -317,7 +376,7 @@ class CurriculumService:
                     # Fallback: scan all subjects
                     published = await self.firestore_service.get_all_published_subjects()
                     for subj in published:
-                        doc = await self._get_firestore_doc(subj["subject_name"])
+                        doc = await self._get_firestore_doc(subj["subject_id"])
                         if not doc:
                             doc = await self.firestore_service.get_published_curriculum(subj["subject_id"])
                         if doc and "subskill_index" in doc and subskill_id in doc["subskill_index"]:
@@ -328,6 +387,10 @@ class CurriculumService:
                 logger.warning(f"Firestore subskill_metadata lookup failed: {e}")
 
         # BigQuery fallback
+        if not self._use_bigquery or not self.bigquery_service:
+            logger.warning(f"No curriculum metadata found for subskill_id: {subskill_id} (BigQuery unavailable)")
+            return None
+
         query = f"""
         SELECT
             subject,
@@ -379,19 +442,24 @@ class CurriculumService:
             return None
 
     async def get_curriculum_stats(self, subject: Optional[str] = None) -> Dict[str, Any]:
-        """Get curriculum statistics"""
+        """Get curriculum statistics.
+
+        Returns a dict. When a single subject is given, returns stats for that subject.
+        Otherwise returns {"subjects": [...]}.
+        """
         # Try Firestore first
         if self._use_firestore and self.firestore_service:
             try:
                 if subject:
-                    doc = await self._get_firestore_doc(subject)
+                    subject_id = await self._resolve_subject_id(subject)
+                    doc = await self._get_firestore_doc(subject_id)
                     if doc and "stats" in doc:
                         return {**doc["stats"], "subject": doc.get("subject_name", subject)}
                 else:
                     published = await self.firestore_service.get_all_published_subjects()
                     all_stats = []
                     for subj in published:
-                        doc = await self._get_firestore_doc(subj["subject_name"])
+                        doc = await self._get_firestore_doc(subj["subject_id"])
                         if not doc:
                             doc = await self.firestore_service.get_published_curriculum(subj["subject_id"])
                         if doc and "stats" in doc:
@@ -402,6 +470,9 @@ class CurriculumService:
                 logger.warning(f"Firestore stats lookup failed: {e}")
 
         # BigQuery fallback
+        if not self._use_bigquery or not self.bigquery_service:
+            return {"subjects": []}
+
         where_clause = "WHERE subject = @subject" if subject else ""
 
         query = f"""
@@ -436,7 +507,14 @@ class CurriculumService:
     # ============================================================================
 
     async def get_detailed_objectives(self, subject: str, subskill_id: str) -> Dict[str, Any]:
-        """Get detailed objectives from BigQuery"""
+        """Get detailed objectives. Falls back to defaults if BigQuery is unavailable."""
+        if not self._use_bigquery or not self.bigquery_service:
+            return {
+                'ConceptGroup': f'{subject} Skills',
+                'DetailedObjective': f'Develop proficiency in {subskill_id}',
+                'SubskillDescription': f'Practice and master {subskill_id} concepts'
+            }
+
         try:
             query = f"""
             SELECT
@@ -477,7 +555,9 @@ class CurriculumService:
     async def health_check(self) -> Dict[str, Any]:
         """Check curriculum service health"""
         try:
-            bq_health = await self.bigquery_service.health_check()
+            bq_health = None
+            if self.bigquery_service:
+                bq_health = await self.bigquery_service.health_check()
 
             firestore_status = "not configured"
             if self.firestore_service:
@@ -487,11 +567,17 @@ class CurriculumService:
                 except Exception:
                     firestore_status = "unhealthy"
 
+            mode_parts = []
+            if self._use_firestore:
+                mode_parts.append("firestore")
+            if self._use_bigquery:
+                mode_parts.append("bigquery")
+
             return {
                 "status": "healthy",
-                "mode": "firestore+bigquery" if self._use_firestore else "bigquery",
+                "mode": "+".join(mode_parts) or "none",
                 "firestore_curriculum": firestore_status,
-                "bigquery_service": bq_health,
+                "bigquery_service": bq_health or "not configured",
                 "blob_storage_available": self.blob_service is not None,
                 "cache_size": len(self._cache),
                 "timestamp": datetime.now(timezone.utc).isoformat()
@@ -626,11 +712,15 @@ class CurriculumService:
         subskill_id: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Get authored foundational content for a subskill from BigQuery
+        Get authored foundational content for a subskill from BigQuery.
 
         Returns master_context, context_primitives, and approved_visual_schemas
-        from the curriculum_subskill_foundations table
+        from the curriculum_subskill_foundations table.
+        Returns None if BigQuery is unavailable.
         """
+        if not self._use_bigquery or not self.bigquery_service:
+            return None
+
         cache_key = f"subskill_foundations_{subskill_id}"
 
         if cache_key in self._cache and self._is_cache_valid(cache_key):
@@ -688,8 +778,12 @@ class CurriculumService:
         subskill_id: str
     ) -> List[Dict[str, Any]]:
         """
-        Get authored reading content sections for a subskill from BigQuery
+        Get authored reading content sections for a subskill from BigQuery.
+        Returns empty list if BigQuery is unavailable.
         """
+        if not self._use_bigquery or not self.bigquery_service:
+            return []
+
         cache_key = f"reading_content_{subskill_id}"
 
         if cache_key in self._cache and self._is_cache_valid(cache_key):
@@ -739,8 +833,12 @@ class CurriculumService:
         subskill_id: str
     ) -> Dict[str, str]:
         """
-        Get authored visual snippets for a subskill from BigQuery
+        Get authored visual snippets for a subskill from BigQuery.
+        Returns empty dict if BigQuery is unavailable.
         """
+        if not self._use_bigquery or not self.bigquery_service:
+            return {}
+
         cache_key = f"visual_snippets_{subskill_id}"
 
         if cache_key in self._cache and self._is_cache_valid(cache_key):

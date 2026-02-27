@@ -544,16 +544,17 @@ async getProblemReviews(
 
   // Get available subjects
   async getSubjects(): Promise<string[]> {
-    console.log('Fetching subjects from:', `${API_BASE_URL}/competency/subjects`);
+    console.log('Fetching subjects from:', `${API_BASE_URL}/curriculum/subjects`);
     try {
-      const response = await fetch(`${API_BASE_URL}/competency/subjects`);
+      const response = await fetch(`${API_BASE_URL}/curriculum/subjects`);
       if (!response.ok) {
         console.error('Subjects API error:', response.status, response.statusText);
         throw new Error('Failed to fetch subjects');
       }
       const data = await response.json();
       console.log('Subjects API response:', data);
-      return data;
+      // Curriculum router wraps in {subjects: [...]}, unwrap for callers expecting an array
+      return data?.subjects ?? data;
     } catch (error) {
       console.error('Subjects API error:', error);
       throw error;
@@ -570,7 +571,7 @@ async getProblemReviews(
   // Add to api.ts interface
 async getSubjectCurriculum(subject: string) {
   const response = await fetch(
-    `${API_BASE_URL}/competency/curriculum/${encodeURIComponent(subject)}`
+    `${API_BASE_URL}/curriculum/curriculum/${encodeURIComponent(subject)}`
   );
   if (!response.ok) throw new Error(`Failed to fetch curriculum for ${subject}`);
   return response.json();
