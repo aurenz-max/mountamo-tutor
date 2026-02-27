@@ -1049,7 +1049,7 @@ class BigQueryAnalyticsService:
                 bigquery.SchemaField("score", "FLOAT", mode="REQUIRED"),
                 bigquery.SchemaField("timestamp", "TIMESTAMP", mode="REQUIRED"),
                 bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="NULLABLE"),
-                bigquery.SchemaField("cosmos_id", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("doc_id", "STRING", mode="NULLABLE"),
             ],
             "curriculum": [
                 bigquery.SchemaField("subject", "STRING", mode="REQUIRED"),

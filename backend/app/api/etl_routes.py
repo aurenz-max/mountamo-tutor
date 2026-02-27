@@ -85,10 +85,10 @@ async def sync_attempts(
     background: bool = Query(False, description="Run sync in background"),
     service: BigQueryETLService = Depends(get_etl_service)
 ):
-    """Sync attempts data from Cosmos DB to BigQuery"""
-    
+    """Sync attempts data from Firestore to BigQuery"""
+
     if background:
-        background_tasks.add_task(service.sync_attempts_from_cosmos, incremental, limit)
+        background_tasks.add_task(service.sync_attempts_from_firestore, incremental, limit)
         return {
             "success": True,
             "message": "Attempts sync started in background",
@@ -96,7 +96,7 @@ async def sync_attempts(
         }
     
     try:
-        result = await service.sync_attempts_from_cosmos(incremental, limit)
+        result = await service.sync_attempts_from_firestore(incremental, limit)
         return result
     except Exception as e:
         logger.error(f"Error syncing attempts: {e}")
@@ -110,10 +110,10 @@ async def sync_reviews(
     background: bool = Query(False, description="Run sync in background"),
     service: BigQueryETLService = Depends(get_etl_service)
 ):
-    """Sync reviews data from Cosmos DB to BigQuery"""
-    
+    """Sync reviews data from Firestore to BigQuery"""
+
     if background:
-        background_tasks.add_task(service.sync_reviews_from_cosmos, incremental, limit)
+        background_tasks.add_task(service.sync_reviews_from_firestore, incremental, limit)
         return {
             "success": True,
             "message": "Reviews sync started in background",
@@ -121,7 +121,7 @@ async def sync_reviews(
         }
     
     try:
-        result = await service.sync_reviews_from_cosmos(incremental, limit)
+        result = await service.sync_reviews_from_firestore(incremental, limit)
         return result
     except Exception as e:
         logger.error(f"Error syncing reviews: {e}")

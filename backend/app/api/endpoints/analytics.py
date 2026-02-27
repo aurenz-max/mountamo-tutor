@@ -906,8 +906,8 @@ async def trigger_etl_sync(
         else:
             # Run incremental sync
             results = {}
-            results['attempts'] = await etl_service.sync_attempts_from_cosmos(incremental=True)
-            results['reviews'] = await etl_service.sync_reviews_from_cosmos(incremental=True)
+            results['attempts'] = await etl_service.sync_attempts_from_firestore(incremental=True)
+            results['reviews'] = await etl_service.sync_reviews_from_firestore(incremental=True)
             
             total_records = sum(r.get('records_processed', 0) for r in results.values())
             success_count = sum(1 for r in results.values() if r.get('success', False))

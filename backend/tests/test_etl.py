@@ -136,14 +136,14 @@ class ETLTestSuite:
         
         try:
             # Test attempts sync with limit
-            attempts_result = await self.etl_service.sync_attempts_from_cosmos(
+            attempts_result = await self.etl_service.sync_attempts_from_firestore(
                 incremental=False, 
                 limit=5
             )
             print(f"✅ Attempts sync: {attempts_result.get('records_processed', 0)} records")
             
             # Test reviews sync with limit
-            reviews_result = await self.etl_service.sync_reviews_from_cosmos(
+            reviews_result = await self.etl_service.sync_reviews_from_firestore(
                 incremental=False, 
                 limit=5
             )
@@ -218,13 +218,13 @@ class ETLTestSuite:
             await self.test_small_data_sync()
             
             # Then test incremental
-            incremental_attempts = await self.etl_service.sync_attempts_from_cosmos(
+            incremental_attempts = await self.etl_service.sync_attempts_from_firestore(
                 incremental=True, 
                 limit=3
             )
             print(f"✅ Incremental attempts sync: {incremental_attempts.get('records_processed', 0)} records")
             
-            incremental_reviews = await self.etl_service.sync_reviews_from_cosmos(
+            incremental_reviews = await self.etl_service.sync_reviews_from_firestore(
                 incremental=True, 
                 limit=3
             )

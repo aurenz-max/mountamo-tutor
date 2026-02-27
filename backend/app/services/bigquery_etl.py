@@ -15,15 +15,21 @@ import pandas as pd
 from io import BytesIO
 
 # Import your existing services
-from app.db.cosmos_db import CosmosDBService
+from app.db.firestore_service import FirestoreService
 from app.services.curriculum_service import CurriculumService
 from app.services.learning_paths import LearningPathsService
 from app.core.config import settings
 
+# Cosmos DB still used for assessments and user profiles (not yet migrated to Firestore)
+try:
+    from app.db.cosmos_db import CosmosDBService
+except ImportError:
+    CosmosDBService = None  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 class BigQueryETLService:
-    """Enhanced ETL service for syncing data from Cosmos DB and Blob Storage to BigQuery"""
+    """Enhanced ETL service for syncing data from Firestore and Blob Storage to BigQuery"""
     
     def __init__(self, project_id: Optional[str] = None, dataset_id: Optional[str] = None):
         # Use settings if not provided
@@ -42,7 +48,8 @@ class BigQueryETLService:
             raise
         
         # Initialize source services
-        self.cosmos_db = None
+        self.firestore_service = None
+        self.cosmos_db = None  # Still used for assessments/user_profiles (not yet migrated)
         self.curriculum_service = None
         self.learning_paths_service = None
         
@@ -87,8 +94,10 @@ class BigQueryETLService:
             logger.error(f"Error ensuring dataset exists: {e}")
     
     def _initialize_cosmos_service(self):
-        """Lazy initialization of Cosmos DB service"""
+        """Lazy initialization of Cosmos DB service (still used for assessments/user_profiles)"""
         if not self.cosmos_db:
+            if CosmosDBService is None:
+                raise ImportError("CosmosDBService not available - install azure-cosmos package")
             try:
                 self.cosmos_db = CosmosDBService()
                 logger.info("Cosmos DB service initialized")
@@ -96,6 +105,17 @@ class BigQueryETLService:
                 logger.error(f"Failed to initialize Cosmos DB service: {e}")
                 raise
         return self.cosmos_db
+
+    def _initialize_firestore_service(self):
+        """Lazy initialization of Firestore service"""
+        if not self.firestore_service:
+            try:
+                self.firestore_service = FirestoreService()
+                logger.info("Firestore service initialized")
+            except Exception as e:
+                logger.error(f"Failed to initialize Firestore service: {e}")
+                raise
+        return self.firestore_service
     
     def set_curriculum_service(self, curriculum_service: CurriculumService):
         """Inject curriculum service"""
@@ -111,7 +131,7 @@ class BigQueryETLService:
         """Test all connections before running ETL"""
         results = {
             "bigquery": False,
-            "cosmos_db": False,
+            "firestore": False,
             "curriculum_service": False,
             "learning_paths_service": False,
             "errors": []
@@ -128,20 +148,16 @@ class BigQueryETLService:
             results["errors"].append(f"BigQuery error: {e}")
             logger.error(f"❌ BigQuery connection failed: {e}")
         
-        # Test Cosmos DB
+        # Test Firestore
         try:
-            cosmos_db = self._initialize_cosmos_service()
-            # Test with a simple query
-            test_query = "SELECT TOP 1 * FROM c"
-            attempts_test = list(cosmos_db.attempts.query_items(
-                query=test_query,
-                enable_cross_partition_query=True
-            ))
-            results["cosmos_db"] = True
-            logger.info(f"✅ Cosmos DB connection successful (found {len(attempts_test)} test records)")
+            firestore_service = self._initialize_firestore_service()
+            # Test with a simple collection group query
+            test_docs = list(firestore_service.client.collection_group('attempts').limit(1).stream())
+            results["firestore"] = True
+            logger.info(f"✅ Firestore connection successful (found {len(test_docs)} test records)")
         except Exception as e:
-            results["errors"].append(f"Cosmos DB error: {e}")
-            logger.error(f"❌ Cosmos DB connection failed: {e}")
+            results["errors"].append(f"Firestore error: {e}")
+            logger.error(f"❌ Firestore connection failed: {e}")
         
         # Test curriculum service if available
         if self.curriculum_service:
@@ -165,47 +181,63 @@ class BigQueryETLService:
         
         return results
 
-    async def sync_attempts_from_cosmos(self, incremental: bool = True, limit: Optional[int] = None) -> Dict[str, Any]:
-        """Sync attempts data from Cosmos DB to BigQuery"""
-        
+    async def sync_attempts_from_firestore(self, incremental: bool = True, limit: Optional[int] = None) -> Dict[str, Any]:
+        """Sync attempts data from Firestore to BigQuery"""
+
         try:
-            logger.info("Starting attempts sync from Cosmos DB")
-            
-            # Initialize Cosmos DB service
-            cosmos_db = self._initialize_cosmos_service()
-            
-            # Fetch all data from Cosmos DB (ignore incremental for limited datasets)
-            attempts = await self._fetch_attempts_from_cosmos(cosmos_db, None, limit)
-            
+            logger.info("Starting attempts sync from Firestore")
+
+            # Initialize Firestore service
+            firestore_service = self._initialize_firestore_service()
+
+            # Determine since timestamp for incremental sync
+            since = None
+            if incremental:
+                try:
+                    last_sync_query = f"""
+                    SELECT MAX(sync_timestamp) as last_sync
+                    FROM `{self.project_id}.{self.dataset_id}.attempts`
+                    WHERE sync_timestamp IS NOT NULL
+                    """
+                    result = list(self.client.query(last_sync_query))
+                    if result and result[0]['last_sync']:
+                        since = result[0]['last_sync']
+                        logger.info(f"Incremental sync since: {since}")
+                except Exception:
+                    logger.info("No previous sync found, doing full sync")
+
+            # Fetch data from Firestore using collection_group query
+            attempts = await self._fetch_attempts_from_firestore(firestore_service, since, limit)
+
             if not attempts:
-                logger.info("No attempts found in Cosmos DB")
+                logger.info("No attempts found in Firestore")
                 return {"success": True, "records_processed": 0, "message": "No data"}
-            
-            logger.info(f"Fetched {len(attempts)} attempts from Cosmos DB")
-            
+
+            logger.info(f"Fetched {len(attempts)} attempts from Firestore")
+
             # Transform data for BigQuery
             transformed_attempts = self._transform_attempts_data(attempts)
-            
+
             if not transformed_attempts:
                 logger.warning("No valid attempts after transformation")
                 return {"success": True, "records_processed": 0, "message": "No valid data after transformation"}
-            
+
             # Ensure table exists
             await self._ensure_table_exists("attempts", self._get_attempts_schema())
-            
+
             # Load to BigQuery using MERGE to handle duplicates
             table_id = f"{self.project_id}.{self.dataset_id}.attempts"
             total_loaded = await self._load_data_to_bigquery(transformed_attempts, table_id, "attempts")
-            
+
             logger.info(f"Successfully synced {total_loaded} attempts to BigQuery")
-            
+
             return {
                 "success": True,
                 "records_processed": total_loaded,
                 "table": table_id,
                 "sync_type": "incremental" if incremental else "full"
             }
-            
+
         except Exception as e:
             logger.error(f"Error syncing attempts: {e}")
             return {
@@ -214,45 +246,61 @@ class BigQueryETLService:
                 "records_processed": 0
             }
 
-    async def sync_reviews_from_cosmos(self, incremental: bool = True, limit: Optional[int] = None) -> Dict[str, Any]:
-        """Sync reviews data from Cosmos DB to BigQuery"""
-        
+    async def sync_reviews_from_firestore(self, incremental: bool = True, limit: Optional[int] = None) -> Dict[str, Any]:
+        """Sync reviews data from Firestore to BigQuery"""
+
         try:
-            logger.info("Starting reviews sync from Cosmos DB")
-            
-            cosmos_db = self._initialize_cosmos_service()
-            
-            # Fetch all reviews from Cosmos DB
-            reviews = await self._fetch_reviews_from_cosmos(cosmos_db, None, limit)
-            
+            logger.info("Starting reviews sync from Firestore")
+
+            firestore_service = self._initialize_firestore_service()
+
+            # Determine since timestamp for incremental sync
+            since = None
+            if incremental:
+                try:
+                    last_sync_query = f"""
+                    SELECT MAX(sync_timestamp) as last_sync
+                    FROM `{self.project_id}.{self.dataset_id}.reviews`
+                    WHERE sync_timestamp IS NOT NULL
+                    """
+                    result = list(self.client.query(last_sync_query))
+                    if result and result[0]['last_sync']:
+                        since = result[0]['last_sync']
+                        logger.info(f"Incremental reviews sync since: {since}")
+                except Exception:
+                    logger.info("No previous sync found, doing full sync")
+
+            # Fetch reviews from Firestore using collection_group query
+            reviews = await self._fetch_reviews_from_firestore(firestore_service, since, limit)
+
             if not reviews:
-                logger.info("No reviews found in Cosmos DB")
+                logger.info("No reviews found in Firestore")
                 return {"success": True, "records_processed": 0, "message": "No data"}
-            
-            logger.info(f"Fetched {len(reviews)} reviews from Cosmos DB")
-            
+
+            logger.info(f"Fetched {len(reviews)} reviews from Firestore")
+
             # Transform data
             transformed_reviews = self._transform_reviews_data(reviews)
-            
+
             if not transformed_reviews:
                 logger.warning("No valid reviews after transformation")
                 return {"success": True, "records_processed": 0, "message": "No valid data after transformation"}
-            
+
             # Ensure table exists
             await self._ensure_table_exists("reviews", self._get_reviews_schema())
-            
-            # Load to BigQuery - reviews don't have MERGE logic yet, so use simple append
+
+            # Load to BigQuery using MERGE to handle duplicates
             table_id = f"{self.project_id}.{self.dataset_id}.reviews"
             total_loaded = await self._load_data_to_bigquery(transformed_reviews, table_id, "reviews")
-            
+
             logger.info(f"Successfully synced {total_loaded} reviews to BigQuery")
-            
+
             return {
                 "success": True,
                 "records_processed": total_loaded,
                 "table": table_id
             }
-            
+
         except Exception as e:
             logger.error(f"Error syncing reviews: {e}")
             return {"success": False, "error": str(e)}
@@ -567,8 +615,8 @@ class BigQueryETLService:
             if not connection_test["bigquery"]:
                 raise Exception("BigQuery connection failed - cannot proceed")
             
-            if not connection_test["cosmos_db"]:
-                raise Exception("Cosmos DB connection failed - cannot proceed")
+            if not connection_test["firestore"]:
+                raise Exception("Firestore connection failed - cannot proceed")
             
             # In test mode, limit records
             limit = 10 if test_mode else None
@@ -586,10 +634,10 @@ class BigQueryETLService:
                 results["learning_paths"] = {"success": False, "error": "Learning paths service not available"}
             
             # Sync attempts (full)
-            results["attempts"] = await self.sync_attempts_from_cosmos(incremental=False, limit=limit)
-            
+            results["attempts"] = await self.sync_attempts_from_firestore(incremental=False, limit=limit)
+
             # Sync reviews (full)
-            results["reviews"] = await self.sync_reviews_from_cosmos(incremental=False, limit=limit)
+            results["reviews"] = await self.sync_reviews_from_firestore(incremental=False, limit=limit)
 
             # Sync assessments (full)
             results["assessments"] = await self.sync_assessments_from_cosmos(incremental=False, limit=limit)
@@ -624,100 +672,116 @@ class BigQueryETLService:
                 "results": results
             }
 
-    async def _fetch_attempts_from_cosmos(self, cosmos_db: CosmosDBService, since: Optional[datetime] = None, limit: Optional[int] = None) -> List[Dict]:
-        """Fetch attempts data from Cosmos DB"""
-        
+    async def migrate_schema_cosmos_to_firestore(self) -> Dict[str, Any]:
+        """One-time migration: rename cosmos_id → doc_id and drop cosmos_ts in BigQuery tables.
+
+        Run this ONCE before switching to the Firestore ETL pipeline.
+        Rollback: BigQuery time-travel (FOR SYSTEM_TIME AS OF) provides 7-day recovery.
+        """
+        results = {}
+
         try:
-            if since:
-                # Incremental query
-                query = """
-                SELECT * FROM c 
-                WHERE c._ts > @since_timestamp
-                ORDER BY c._ts
-                """
-                parameters = [{"name": "@since_timestamp", "value": int(since.timestamp())}]
-            else:
-                # Full query
-                query = "SELECT * FROM c ORDER BY c._ts"
-                parameters = []
-            
-            # Add limit if specified
-            if limit:
-                query = query.replace("SELECT *", f"SELECT TOP {limit} *")
-            
-            attempts = []
-            try:
-                async for item in cosmos_db.attempts.query_items(
-                    query=query,
-                    parameters=parameters,
-                    enable_cross_partition_query=True
-                ):
-                    attempts.append(item)
-            except Exception as query_error:
-                # Fallback to synchronous iteration
-                logger.warning(f"Async iteration failed, falling back to sync: {query_error}")
-                for item in cosmos_db.attempts.query_items(
-                    query=query,
-                    parameters=parameters,
-                    enable_cross_partition_query=True
-                ):
-                    attempts.append(item)
-            
-            return attempts
-            
+            # Migrate attempts table
+            attempts_table = f"{self.project_id}.{self.dataset_id}.attempts"
+            attempts_query = f"""
+            CREATE OR REPLACE TABLE `{attempts_table}` AS
+            SELECT student_id, subject, skill_id, subskill_id, score, timestamp, sync_timestamp,
+                   cosmos_id AS doc_id
+            FROM `{attempts_table}`
+            """
+            logger.info("Migrating attempts table: cosmos_id → doc_id, dropping cosmos_ts")
+            job = self.client.query(attempts_query)
+            job.result()
+            results["attempts"] = {"success": True, "message": "Schema migrated"}
+            logger.info("✅ Attempts table migrated")
+
         except Exception as e:
-            logger.error(f"Error fetching attempts from Cosmos DB: {e}")
+            logger.error(f"❌ Attempts migration failed: {e}")
+            results["attempts"] = {"success": False, "error": str(e)}
+
+        try:
+            # Migrate reviews table
+            reviews_table = f"{self.project_id}.{self.dataset_id}.reviews"
+            reviews_query = f"""
+            CREATE OR REPLACE TABLE `{reviews_table}` AS
+            SELECT review_id, student_id, subject, skill_id, subskill_id, score, timestamp,
+                   problem_id, problem_type, problem_text, answer_text, correct_answer,
+                   feedback_praise, feedback_guidance, feedback_encouragement, feedback_next_steps,
+                   sync_timestamp, review_id AS doc_id
+            FROM `{reviews_table}`
+            """
+            logger.info("Migrating reviews table: adding doc_id, dropping cosmos_ts")
+            job = self.client.query(reviews_query)
+            job.result()
+            results["reviews"] = {"success": True, "message": "Schema migrated"}
+            logger.info("✅ Reviews table migrated")
+
+        except Exception as e:
+            logger.error(f"❌ Reviews migration failed: {e}")
+            results["reviews"] = {"success": False, "error": str(e)}
+
+        return results
+
+    async def _fetch_attempts_from_firestore(self, firestore_service: FirestoreService, since: Optional[datetime] = None, limit: Optional[int] = None) -> List[Dict]:
+        """Fetch attempts data from Firestore using collection_group query"""
+
+        try:
+            query = firestore_service.client.collection_group('attempts')
+
+            # Incremental: filter by timestamp
+            if since:
+                since_str = since.isoformat() if isinstance(since, datetime) else str(since)
+                query = query.where('timestamp', '>', since_str)
+
+            # Order by timestamp for consistent results
+            query = query.order_by('timestamp')
+
+            # Apply limit if specified
+            if limit:
+                query = query.limit(limit)
+
+            attempts = []
+            for doc in query.stream():
+                doc_data = doc.to_dict()
+                # Preserve the Firestore document ID for MERGE dedup
+                doc_data['_firestore_doc_id'] = doc.id
+                attempts.append(doc_data)
+
+            return attempts
+
+        except Exception as e:
+            logger.error(f"Error fetching attempts from Firestore: {e}")
             raise
 
-    async def _fetch_reviews_from_cosmos(self, cosmos_db: CosmosDBService, since: Optional[datetime] = None, limit: Optional[int] = None) -> List[Dict]:
-        """Fetch reviews data from Cosmos DB"""
-        
+    async def _fetch_reviews_from_firestore(self, firestore_service: FirestoreService, since: Optional[datetime] = None, limit: Optional[int] = None) -> List[Dict]:
+        """Fetch reviews data from Firestore using collection_group query"""
+
         try:
-            # Try to access reviews container
-            if hasattr(cosmos_db, 'reviews'):
-                reviews_container = cosmos_db.reviews
-            else:
-                # Fallback to manual container access
-                database = cosmos_db.client.get_database_client(cosmos_db.database_id)
-                reviews_container = database.get_container_client('reviews')
-            
+            query = firestore_service.client.collection_group('reviews')
+
+            # Incremental: filter by timestamp
             if since:
-                query = """
-                SELECT * FROM c 
-                WHERE c._ts > @since_timestamp
-                ORDER BY c._ts
-                """
-                parameters = [{"name": "@since_timestamp", "value": int(since.timestamp())}]
-            else:
-                query = "SELECT * FROM c ORDER BY c._ts"
-                parameters = []
-            
-            # Add limit if specified
+                since_str = since.isoformat() if isinstance(since, datetime) else str(since)
+                query = query.where('timestamp', '>', since_str)
+
+            # Order by timestamp for consistent results
+            query = query.order_by('timestamp')
+
+            # Apply limit if specified
             if limit:
-                query = query.replace("SELECT *", f"SELECT TOP {limit} *")
-            
+                query = query.limit(limit)
+
             reviews = []
-            try:
-                async for item in reviews_container.query_items(
-                    query=query,
-                    parameters=parameters,
-                    enable_cross_partition_query=True
-                ):
-                    reviews.append(item)
-            except Exception as query_error:
-                # Fallback to synchronous iteration
-                logger.warning(f"Async iteration failed, falling back to sync: {query_error}")
-                for item in reviews_container.query_items(
-                    query=query,
-                    parameters=parameters,
-                    enable_cross_partition_query=True
-                ):
-                    reviews.append(item)
-            
+            for doc in query.stream():
+                doc_data = doc.to_dict()
+                # Preserve the Firestore document ID for MERGE dedup
+                doc_data['_firestore_doc_id'] = doc.id
+                reviews.append(doc_data)
+
             return reviews
-            
+
         except Exception as e:
-            logger.error(f"Error fetching reviews from Cosmos DB: {e}")
+            logger.error(f"Error fetching reviews from Firestore: {e}")
             raise
 
     async def _fetch_user_profiles_from_cosmos(self, cosmos_db: CosmosDBService, since: Optional[datetime] = None, limit: Optional[int] = None) -> List[Dict]:
@@ -822,8 +886,7 @@ class BigQueryETLService:
                     'score': float(score),
                     'timestamp': timestamp.isoformat(),
                     'sync_timestamp': datetime.now().isoformat(),
-                    'cosmos_id': attempt.get('id', ''),
-                    'cosmos_ts': attempt.get('_ts', 0)
+                    'doc_id': attempt.get('id', '') or attempt.get('_firestore_doc_id', '')
                 }
                 
                 transformed.append(transformed_record)
@@ -934,7 +997,7 @@ class BigQueryETLService:
                     'feedback_next_steps': feedback_next_steps,
                     # Sync metadata
                     'sync_timestamp': datetime.now().isoformat(),
-                    'cosmos_ts': review.get('_ts', 0)
+                    'doc_id': review.get('id', '') or review.get('_firestore_doc_id', '')
                 }
                 
                 transformed.append(transformed_record)
@@ -1194,7 +1257,7 @@ class BigQueryETLService:
         return total_loaded
 
     async def _upsert_attempts_to_bigquery(self, data: List[Dict], table_id: str) -> int:
-        """Upsert attempts data to BigQuery to avoid duplicates based on cosmos_id"""
+        """Upsert attempts data to BigQuery to avoid duplicates based on doc_id"""
         
         if not data:
             return 0
@@ -1234,7 +1297,7 @@ class BigQueryETLService:
             merge_query = f"""
             MERGE `{table_id}` AS target
             USING `{temp_table_id}` AS source
-            ON target.cosmos_id = source.cosmos_id
+            ON target.doc_id = source.doc_id
             WHEN MATCHED AND source.sync_timestamp > target.sync_timestamp THEN
                 UPDATE SET
                     student_id = source.student_id,
@@ -1243,12 +1306,11 @@ class BigQueryETLService:
                     subskill_id = source.subskill_id,
                     score = source.score,
                     timestamp = source.timestamp,
-                    sync_timestamp = source.sync_timestamp,
-                    cosmos_ts = source.cosmos_ts
+                    sync_timestamp = source.sync_timestamp
             WHEN NOT MATCHED THEN
-                INSERT (student_id, subject, skill_id, subskill_id, score, timestamp, sync_timestamp, cosmos_id, cosmos_ts)
-                VALUES (source.student_id, source.subject, source.skill_id, source.subskill_id, 
-                       source.score, source.timestamp, source.sync_timestamp, source.cosmos_id, source.cosmos_ts)
+                INSERT (student_id, subject, skill_id, subskill_id, score, timestamp, sync_timestamp, doc_id)
+                VALUES (source.student_id, source.subject, source.skill_id, source.subskill_id,
+                       source.score, source.timestamp, source.sync_timestamp, source.doc_id)
             """
             
             # Execute merge
@@ -1268,7 +1330,7 @@ class BigQueryETLService:
                 logger.warning(f"Failed to cleanup temporary table: {cleanup_error}")
 
     async def _upsert_reviews_to_bigquery(self, data: List[Dict], table_id: str) -> int:
-        """Upsert reviews data to BigQuery to avoid duplicates based on cosmos_id"""
+        """Upsert reviews data to BigQuery to avoid duplicates based on doc_id"""
         
         if not data:
             return 0
@@ -1303,25 +1365,39 @@ class BigQueryETLService:
             
             logger.info(f"Loaded {total_loaded} records to temporary table")
             
-            # Now MERGE from temp table to main table - assuming reviews have cosmos_id like attempts
+            # MERGE from temp table to main table on doc_id
             merge_query = f"""
             MERGE `{table_id}` AS target
             USING `{temp_table_id}` AS source
-            ON target.cosmos_id = source.cosmos_id
+            ON target.doc_id = source.doc_id
             WHEN MATCHED AND source.sync_timestamp > target.sync_timestamp THEN
                 UPDATE SET
                     student_id = source.student_id,
                     subject = source.subject,
                     skill_id = source.skill_id,
                     subskill_id = source.subskill_id,
-                    content = source.content,
+                    score = source.score,
                     timestamp = source.timestamp,
-                    sync_timestamp = source.sync_timestamp,
-                    cosmos_ts = source.cosmos_ts
+                    problem_id = source.problem_id,
+                    problem_type = source.problem_type,
+                    problem_text = source.problem_text,
+                    answer_text = source.answer_text,
+                    correct_answer = source.correct_answer,
+                    feedback_praise = source.feedback_praise,
+                    feedback_guidance = source.feedback_guidance,
+                    feedback_encouragement = source.feedback_encouragement,
+                    feedback_next_steps = source.feedback_next_steps,
+                    sync_timestamp = source.sync_timestamp
             WHEN NOT MATCHED THEN
-                INSERT (student_id, subject, skill_id, subskill_id, content, timestamp, sync_timestamp, cosmos_id, cosmos_ts)
-                VALUES (source.student_id, source.subject, source.skill_id, source.subskill_id,
-                       source.content, source.timestamp, source.sync_timestamp, source.cosmos_id, source.cosmos_ts)
+                INSERT (review_id, student_id, subject, skill_id, subskill_id, score, timestamp,
+                        problem_id, problem_type, problem_text, answer_text, correct_answer,
+                        feedback_praise, feedback_guidance, feedback_encouragement, feedback_next_steps,
+                        sync_timestamp, doc_id)
+                VALUES (source.review_id, source.student_id, source.subject, source.skill_id, source.subskill_id,
+                        source.score, source.timestamp, source.problem_id, source.problem_type,
+                        source.problem_text, source.answer_text, source.correct_answer,
+                        source.feedback_praise, source.feedback_guidance, source.feedback_encouragement,
+                        source.feedback_next_steps, source.sync_timestamp, source.doc_id)
             """
             
             # Execute merge
@@ -1350,7 +1426,7 @@ class BigQueryETLService:
             existing_table = self.client.get_table(table_id)
 
             # For tables that may have schema updates, check if schema needs updating
-            if table_name in ["students", "reviews"]:
+            if table_name in ["students", "reviews", "attempts"]:
                 existing_fields = {field.name for field in existing_table.schema}
                 new_fields = {field.name for field in schema}
 
@@ -1824,8 +1900,7 @@ class BigQueryETLService:
             bigquery.SchemaField("score", "FLOAT", mode="REQUIRED"),
             bigquery.SchemaField("timestamp", "TIMESTAMP", mode="REQUIRED"),
             bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
-            bigquery.SchemaField("cosmos_id", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("cosmos_ts", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("doc_id", "STRING", mode="NULLABLE"),
         ]
 
     def _get_reviews_schema(self) -> List[bigquery.SchemaField]:
@@ -1852,7 +1927,7 @@ class BigQueryETLService:
             bigquery.SchemaField("feedback_next_steps", "STRING", mode="NULLABLE"),
             # Sync metadata
             bigquery.SchemaField("sync_timestamp", "TIMESTAMP", mode="REQUIRED"),
-            bigquery.SchemaField("cosmos_ts", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("doc_id", "STRING", mode="NULLABLE"),
         ]
 
     def _get_curriculum_schema(self) -> List[bigquery.SchemaField]:
@@ -2867,8 +2942,8 @@ async def scheduled_etl_handler(request):
         else:
             # Run incremental sync
             results = {}
-            results['attempts'] = await etl_service.sync_attempts_from_cosmos(incremental=True)
-            results['reviews'] = await etl_service.sync_reviews_from_cosmos(incremental=True)
+            results['attempts'] = await etl_service.sync_attempts_from_firestore(incremental=True)
+            results['reviews'] = await etl_service.sync_reviews_from_firestore(incremental=True)
             
             total_records = sum(r.get('records_processed', 0) for r in results.values())
             success_count = sum(1 for r in results.values() if r.get('success', False))
@@ -2905,8 +2980,8 @@ async def test_etl_service():
             logger.error("BigQuery connection failed - aborting test")
             return
         
-        if not connection_results['cosmos_db']:
-            logger.error("Cosmos DB connection failed - aborting test")
+        if not connection_results['firestore']:
+            logger.error("Firestore connection failed - aborting test")
             return
         
         # Run a small test sync
