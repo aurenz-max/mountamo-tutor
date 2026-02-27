@@ -30,7 +30,8 @@ async def get_learning_paths_overview():
             "student_specific": {
                 "/student/{student_id}/recommendations": "Get personalized learning recommendations",
                 "/student/{student_id}/unlocked-entities": "Get all unlocked skills/subskills",
-                "/student/{student_id}/prerequisite-check/{entity_id}": "Check prerequisite status"
+                "/student/{student_id}/prerequisite-check/{entity_id}": "Check prerequisite status",
+                "/student/{student_id}/recalculate-unlocks/{subject_id}": "Recalculate unlock state (live)"
             },
             "visualization": {
                 "/graph/visualization": "Get graph for frontend visualization",
@@ -297,6 +298,50 @@ async def check_prerequisite_status(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/student/{student_id}/recalculate-unlocks/{subject_id}")
+async def recalculate_unlocks(
+    student_id: int,
+    subject_id: str,
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service)
+):
+    """
+    Recalculate and cache unlock state for a student+subject.
+
+    Call this after competency updates for instant unlock propagation.
+    Returns the full unlock state plus any newly unlocked entities.
+
+    Response:
+    {
+        "student_id": int,
+        "subject_id": str,
+        "unlocked_entities": [str],
+        "entity_statuses": {entity_id: "LOCKED"|"UNLOCKED"|"IN_PROGRESS"|"MASTERED"},
+        "newly_unlocked": [str],
+        "last_computed": str
+    }
+    """
+    try:
+        logger.info(f"Recalculating unlocks for student {student_id}, subject {subject_id}")
+
+        result = await learning_paths_service.recalculate_unlocks(
+            student_id=student_id,
+            subject_id=subject_id
+        )
+
+        return {
+            "student_id": student_id,
+            "subject_id": subject_id,
+            **result
+        }
+
+    except ValueError as e:
+        logger.warning(f"Graph not found for recalculation: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error recalculating unlocks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== Visualization Endpoints ====================
 
 @router.get("/graph/visualization")
@@ -490,7 +535,7 @@ async def learning_paths_health_check(
     """
     Check learning paths service health
 
-    Tests BigQuery connectivity and query validation.
+    Tests Firestore connectivity and curriculum graph availability.
     """
     try:
         health = await learning_paths_service.health_check()

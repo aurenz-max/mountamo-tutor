@@ -73,6 +73,10 @@ class FirestoreService:
         """Get reference to students/{student_id}/competencies"""
         return self._student_doc(student_id).collection('competencies')
 
+    def _learning_paths_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/learning_paths"""
+        return self._student_doc(student_id).collection('learning_paths')
+
     async def _ensure_student_document(self, student_id: int, firebase_uid: Optional[str] = None):
         """Ensure the student document exists with minimal metadata (merge=True)"""
         try:
@@ -753,6 +757,116 @@ class FirestoreService:
         except Exception as e:
             logger.error(f"Error in batch write competencies: {str(e)}")
             return False
+
+    # ============================================================================
+    # LEARNING PATHS METHODS (per-student unlock state)
+    # ============================================================================
+
+    async def save_learning_path(
+        self,
+        student_id: int,
+        subject_id: str,
+        data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Save computed learning path (unlock state) for a student+subject.
+
+        Stored at: students/{student_id}/learning_paths/{subject_id}
+        """
+        try:
+            timestamp = datetime.now(timezone.utc).isoformat()
+            path_data = {
+                "subject_id": subject_id,
+                "unlocked_entities": data.get("unlocked_entities", []),
+                "entity_statuses": data.get("entity_statuses", {}),
+                "last_computed": timestamp,
+                "version_id": data.get("version_id"),
+            }
+
+            await self._ensure_student_document(student_id)
+            doc_ref = self._learning_paths_subcollection(student_id).document(subject_id)
+            doc_ref.set(path_data)
+
+            logger.info(f"Saved learning path for student {student_id}, subject {subject_id}")
+            return path_data
+
+        except Exception as e:
+            logger.error(f"Error saving learning path: {str(e)}")
+            raise
+
+    async def get_learning_path(
+        self,
+        student_id: int,
+        subject_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get cached learning path (unlock state) for a student+subject.
+
+        Returns None if not yet computed.
+        """
+        try:
+            doc_ref = self._learning_paths_subcollection(student_id).document(subject_id)
+            doc = doc_ref.get()
+
+            if doc.exists:
+                return doc.to_dict()
+            return None
+
+        except Exception as e:
+            logger.error(f"Error getting learning path: {str(e)}")
+            return None
+
+    async def get_student_proficiency_map(
+        self,
+        student_id: int,
+        subject: Optional[str] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Build a proficiency map from the competencies subcollection.
+
+        Replaces BigQuery get_student_proficiency_map for real-time lookups.
+
+        Returns:
+            {
+                "SUBSKILL-123": {
+                    "proficiency": 0.85,
+                    "attempt_count": 10,
+                    "last_updated": "2026-02-27T..."
+                }
+            }
+        """
+        try:
+            query = self._competencies_subcollection(student_id)
+
+            if subject:
+                query = query.where('subject', '==', subject)
+
+            docs = query.stream()
+            prof_map = {}
+
+            for doc in docs:
+                data = doc.to_dict()
+                entity_id = data.get("subskill_id")
+                if not entity_id:
+                    continue
+
+                # current_score is already normalized 0-10 from competency service
+                # Convert to 0.0-1.0 scale for learning paths
+                raw_score = float(data.get("current_score", 0))
+                proficiency = raw_score / 10.0 if raw_score > 1.0 else raw_score
+
+                prof_map[entity_id] = {
+                    "proficiency": proficiency,
+                    "attempt_count": int(data.get("total_attempts", 0)),
+                    "last_updated": data.get("last_updated"),
+                }
+
+            logger.info(f"Built proficiency map with {len(prof_map)} entries for student {student_id}")
+            return prof_map
+
+        except Exception as e:
+            logger.error(f"Error building proficiency map: {str(e)}")
+            return {}
 
     # ============================================================================
     # MONITORING AND VALIDATION
