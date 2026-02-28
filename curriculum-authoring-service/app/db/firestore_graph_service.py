@@ -413,6 +413,7 @@ class CurriculumFirestore:
                     "version_id": doc_data.get("version_id"),
                     "version_number": doc_data.get("version_number"),
                     "deployed_at": doc_data.get("deployed_at"),
+                    "deployed_by": doc_data.get("deployed_by"),
                     "stats": doc_data.get("stats", {}),
                 }
             else:

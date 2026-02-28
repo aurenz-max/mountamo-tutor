@@ -5,7 +5,8 @@
       "Bash(dir \"c:\\Users\\xbox3\\claude web tutor\\curriculum-authoring-service\\app\")",
       "Bash(dir:*)",
       "Bash(npx tsc:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(python -c \":*)"
     ],
     "deny": [],
     "ask": []

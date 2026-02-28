@@ -10,6 +10,7 @@ from google.cloud import bigquery
 
 from app.core.config import settings
 from app.core.database import db
+from app.db.firestore_curriculum_service import firestore_curriculum_sync
 from app.models.prerequisites import (
     Prerequisite, PrerequisiteCreate,
     EntityPrerequisites, PrerequisiteGraph,
@@ -60,6 +61,10 @@ class PrerequisiteManager:
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
         await db.execute_query(insert_query, parameters)
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_prerequisite(prerequisite_data)
+
         return Prerequisite(**prerequisite_data)
 
     async def delete_prerequisite(self, prerequisite_id: str) -> bool:
@@ -74,6 +79,10 @@ class PrerequisiteManager:
         try:
             await db.execute_query(query, parameters)
             logger.info(f"✅ Deleted prerequisite {prerequisite_id}")
+
+            # Dual-write: sync to Firestore
+            await firestore_curriculum_sync.delete_prerequisite(prerequisite_id)
+
             return True
         except Exception as e:
             logger.error(f"❌ Failed to delete prerequisite {prerequisite_id}: {e}")

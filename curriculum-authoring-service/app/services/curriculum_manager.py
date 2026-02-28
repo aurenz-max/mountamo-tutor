@@ -11,6 +11,7 @@ from google.cloud import bigquery
 
 from app.core.config import settings
 from app.core.database import db
+from app.db.firestore_curriculum_service import firestore_curriculum_sync
 from app.models.curriculum import (
     Subject, SubjectCreate, SubjectUpdate,
     Unit, UnitCreate, UnitUpdate,
@@ -126,6 +127,10 @@ class CurriculumManager:
 
         # Return model with grade (not grade_level)
         model_data = {**bq_data, "grade": bq_data.pop("grade_level")}
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_subject(model_data)
+
         return Subject(**model_data)
 
     async def update_subject(self, subject_id: str, updates: SubjectUpdate, version_id: str) -> Optional[Subject]:
@@ -184,6 +189,10 @@ class CurriculumManager:
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
         await db.execute_query(merge_query, parameters)
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_subject(subject_data)
+
         return Subject(**subject_data)
 
     # ==================== UNIT OPERATIONS ====================
@@ -252,6 +261,10 @@ class CurriculumManager:
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
         await db.execute_query(insert_query, parameters)
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_unit(unit_data)
+
         return Unit(**unit_data)
 
     async def update_unit(self, unit_id: str, updates: UnitUpdate, version_id: str) -> Optional[Unit]:
@@ -305,6 +318,10 @@ class CurriculumManager:
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
         await db.execute_query(merge_query, parameters)
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_unit(unit_data)
+
         return Unit(**unit_data)
 
     async def delete_unit(self, unit_id: str) -> bool:
@@ -319,6 +336,10 @@ class CurriculumManager:
         try:
             await db.execute_query(query, parameters)
             logger.info(f"✅ Deleted unit {unit_id}")
+
+            # Dual-write: sync to Firestore
+            await firestore_curriculum_sync.delete_unit(unit_id)
+
             return True
         except Exception as e:
             logger.error(f"❌ Failed to delete unit {unit_id}: {e}")
@@ -390,6 +411,10 @@ class CurriculumManager:
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
         await db.execute_query(insert_query, parameters)
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_skill(skill_data)
+
         return Skill(**skill_data)
 
     async def update_skill(self, skill_id: str, updates: SkillUpdate, version_id: str) -> Optional[Skill]:
@@ -443,6 +468,10 @@ class CurriculumManager:
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
         await db.execute_query(merge_query, parameters)
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_skill(skill_data)
+
         return Skill(**skill_data)
 
     async def delete_skill(self, skill_id: str) -> bool:
@@ -457,6 +486,10 @@ class CurriculumManager:
         try:
             await db.execute_query(query, parameters)
             logger.info(f"✅ Deleted skill {skill_id}")
+
+            # Dual-write: sync to Firestore
+            await firestore_curriculum_sync.delete_skill(skill_id)
+
             return True
         except Exception as e:
             logger.error(f"❌ Failed to delete skill {skill_id}: {e}")
@@ -534,6 +567,10 @@ class CurriculumManager:
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
         await db.execute_query(insert_query, parameters)
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_subskill(subskill_data)
+
         return Subskill(**subskill_data)
 
     async def update_subskill(self, subskill_id: str, updates: SubskillUpdate, version_id: str) -> Optional[Subskill]:
@@ -593,6 +630,10 @@ class CurriculumManager:
             parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
 
         await db.execute_query(merge_query, parameters)
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_subskill(subskill_data)
+
         return Subskill(**subskill_data)
 
     async def delete_subskill(self, subskill_id: str) -> bool:
@@ -607,6 +648,10 @@ class CurriculumManager:
         try:
             await db.execute_query(query, parameters)
             logger.info(f"✅ Deleted subskill {subskill_id}")
+
+            # Dual-write: sync to Firestore
+            await firestore_curriculum_sync.delete_subskill(subskill_id)
+
             return True
         except Exception as e:
             logger.error(f"❌ Failed to delete subskill {subskill_id}: {e}")
@@ -914,6 +959,11 @@ class CurriculumManager:
                 logger.info(f"✅ Successfully updated primitives for subskill {subskill_id}")
             else:
                 logger.info(f"✅ Removed all primitives from subskill {subskill_id}")
+
+            # Dual-write: sync to Firestore
+            await firestore_curriculum_sync.sync_subskill_primitives(
+                subskill_id, primitive_ids, version_id
+            )
 
             return True
 

@@ -11,6 +11,7 @@ from google.cloud import bigquery
 
 from app.core.config import settings
 from app.core.database import db
+from app.db.firestore_curriculum_service import firestore_curriculum_sync
 from app.models.versioning import (
     Version, VersionCreate,
     DraftSummary, DraftChange,
@@ -91,11 +92,16 @@ class VersionControl:
         await db.execute_query(insert_query, insert_params)
 
         # Return version data with ISO string timestamps for consistency
-        return Version(**{
+        version_obj = Version(**{
             **version_data,
             "created_at": now.isoformat(),
             "activated_at": None
         })
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_version(version_obj.dict())
+
+        return version_obj
 
     async def get_active_version(self, subject_id: str) -> Optional[Version]:
         """Get the currently active version for a subject"""
@@ -148,6 +154,19 @@ class VersionControl:
 
         await db.execute_query(insert_query, insert_params)
         logger.info(f"✅ Created initial active version for {subject_id}: {version_id}")
+
+        # Dual-write: sync to Firestore
+        await firestore_curriculum_sync.sync_version({
+            "version_id": version_id,
+            "subject_id": subject_id,
+            "version_number": 1,
+            "description": f"Initial {subject_id} curriculum",
+            "is_active": True,
+            "created_at": now.isoformat(),
+            "activated_at": now.isoformat(),
+            "created_by": user_id,
+            "change_summary": "Initial version",
+        })
 
         return version_id
 
@@ -376,142 +395,134 @@ class VersionControl:
 
         # Mark all draft records as published (is_draft = false)
         # AND update ALL records for this subject to the new version_id (including non-drafts)
-        tables = [
-            settings.TABLE_SUBJECTS,
-            settings.TABLE_UNITS,
-            settings.TABLE_SKILLS,
-            settings.TABLE_SUBSKILLS,
-            settings.TABLE_PREREQUISITES,
-            settings.TABLE_SUBSKILL_PRIMITIVES
+        #
+        # IMPORTANT: Use SELECT DISTINCT <primary_key> in USING subqueries to avoid
+        # BigQuery MERGE error "must match at most one source row for each target row"
+        # which occurs when JOINs through parent tables produce duplicate rows
+        # (e.g., from streaming buffer + DML coexistence).
+
+        parameters = [
+            bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
+            bigquery.ScalarQueryParameter("version_id", "STRING", new_version.version_id)
         ]
 
-        for table_name in tables:
-            # Use MERGE to avoid streaming buffer issues
-            # This updates ALL records for the subject to the new version_id
-            # ensuring the entire curriculum hierarchy has matching version_ids
+        # 1. Subjects - direct match on subject_id
+        await db.execute_query(f"""
+            MERGE `{settings.get_table_id(settings.TABLE_SUBJECTS)}` AS T
+            USING (
+                SELECT DISTINCT subject_id
+                FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}`
+                WHERE subject_id = @subject_id
+            ) AS S
+            ON T.subject_id = S.subject_id
+            WHEN MATCHED THEN
+              UPDATE SET T.is_draft = false, T.version_id = @version_id
+        """, parameters)
+        logger.info(f"✅ Updated subjects to version {new_version.version_id}")
 
-            if table_name == settings.TABLE_SUBJECTS:
-                # For subjects, update all records for this subject_id
-                merge_query = f"""
-                MERGE `{settings.get_table_id(table_name)}` AS T
-                USING (
-                    SELECT *
-                    FROM `{settings.get_table_id(table_name)}`
-                    WHERE subject_id = @subject_id
-                ) AS S
-                ON T.subject_id = S.subject_id
-                WHEN MATCHED THEN
-                  UPDATE SET T.is_draft = false, T.version_id = @version_id
-                """
-                parameters = [
-                    bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
-                    bigquery.ScalarQueryParameter("version_id", "STRING", new_version.version_id)
-                ]
-            elif table_name == settings.TABLE_UNITS:
-                # For units, update all units belonging to this subject
-                merge_query = f"""
-                MERGE `{settings.get_table_id(table_name)}` AS T
-                USING (
-                    SELECT *
-                    FROM `{settings.get_table_id(table_name)}`
-                    WHERE subject_id = @subject_id
-                ) AS S
-                ON T.unit_id = S.unit_id
-                WHEN MATCHED THEN
-                  UPDATE SET T.is_draft = false, T.version_id = @version_id
-                """
-                parameters = [
-                    bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
-                    bigquery.ScalarQueryParameter("version_id", "STRING", new_version.version_id)
-                ]
-            elif table_name == settings.TABLE_SKILLS:
-                # For skills, update all skills belonging to units of this subject
-                merge_query = f"""
-                MERGE `{settings.get_table_id(table_name)}` AS T
-                USING (
-                    SELECT sk.*
-                    FROM `{settings.get_table_id(table_name)}` sk
-                    JOIN `{settings.get_table_id(settings.TABLE_UNITS)}` u
-                      ON sk.unit_id = u.unit_id
-                    WHERE u.subject_id = @subject_id
-                ) AS S
-                ON T.skill_id = S.skill_id
-                WHEN MATCHED THEN
-                  UPDATE SET T.is_draft = false, T.version_id = @version_id
-                """
-                parameters = [
-                    bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
-                    bigquery.ScalarQueryParameter("version_id", "STRING", new_version.version_id)
-                ]
-            elif table_name == settings.TABLE_SUBSKILLS:
-                # For subskills, update all subskills belonging to skills of units of this subject
-                merge_query = f"""
-                MERGE `{settings.get_table_id(table_name)}` AS T
-                USING (
-                    SELECT sub.*
-                    FROM `{settings.get_table_id(table_name)}` sub
-                    JOIN `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
-                      ON sub.skill_id = sk.skill_id
-                    JOIN `{settings.get_table_id(settings.TABLE_UNITS)}` u
-                      ON sk.unit_id = u.unit_id
-                    WHERE u.subject_id = @subject_id
-                ) AS S
-                ON T.subskill_id = S.subskill_id
-                WHEN MATCHED THEN
-                  UPDATE SET T.is_draft = false, T.version_id = @version_id
-                """
-                parameters = [
-                    bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
-                    bigquery.ScalarQueryParameter("version_id", "STRING", new_version.version_id)
-                ]
-            elif table_name == settings.TABLE_PREREQUISITES:
-                # For prerequisites, update all prerequisites belonging to this subject
-                merge_query = f"""
-                MERGE `{settings.get_table_id(table_name)}` AS T
-                USING (
-                    SELECT p.*
-                    FROM `{settings.get_table_id(table_name)}` p
-                    WHERE p.subject_id = @subject_id
-                ) AS S
-                ON T.prerequisite_id = S.prerequisite_id
-                WHEN MATCHED THEN
-                  UPDATE SET T.is_draft = false, T.version_id = @version_id
-                """
-                parameters = [
-                    bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
-                    bigquery.ScalarQueryParameter("version_id", "STRING", new_version.version_id)
-                ]
-            elif table_name == settings.TABLE_SUBSKILL_PRIMITIVES:
-                # For subskill primitives, update all primitive associations for subskills of this subject
-                merge_query = f"""
-                MERGE `{settings.get_table_id(table_name)}` AS T
-                USING (
-                    SELECT sp.*
-                    FROM `{settings.get_table_id(table_name)}` sp
-                    JOIN `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` sub
-                      ON sp.subskill_id = sub.subskill_id
-                    JOIN `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
-                      ON sub.skill_id = sk.skill_id
-                    JOIN `{settings.get_table_id(settings.TABLE_UNITS)}` u
-                      ON sk.unit_id = u.unit_id
-                    WHERE u.subject_id = @subject_id
-                ) AS S
-                ON T.subskill_id = S.subskill_id AND T.primitive_id = S.primitive_id
-                WHEN MATCHED THEN
-                  UPDATE SET T.is_draft = false, T.version_id = @version_id
-                """
-                parameters = [
-                    bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
-                    bigquery.ScalarQueryParameter("version_id", "STRING", new_version.version_id)
-                ]
-            else:
-                # Fallback for any other tables
-                continue
+        # 2. Units - direct match on subject_id
+        await db.execute_query(f"""
+            MERGE `{settings.get_table_id(settings.TABLE_UNITS)}` AS T
+            USING (
+                SELECT DISTINCT unit_id
+                FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
+                WHERE subject_id = @subject_id
+            ) AS S
+            ON T.unit_id = S.unit_id
+            WHEN MATCHED THEN
+              UPDATE SET T.is_draft = false, T.version_id = @version_id
+        """, parameters)
+        logger.info(f"✅ Updated units to version {new_version.version_id}")
 
-            await db.execute_query(merge_query, parameters)
-            logger.info(f"✅ Updated {table_name} records to version {new_version.version_id}")
+        # 3. Skills - use IN subquery instead of JOIN to avoid duplicate rows
+        await db.execute_query(f"""
+            MERGE `{settings.get_table_id(settings.TABLE_SKILLS)}` AS T
+            USING (
+                SELECT DISTINCT skill_id
+                FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
+                WHERE unit_id IN (
+                    SELECT DISTINCT unit_id
+                    FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
+                    WHERE subject_id = @subject_id
+                )
+            ) AS S
+            ON T.skill_id = S.skill_id
+            WHEN MATCHED THEN
+              UPDATE SET T.is_draft = false, T.version_id = @version_id
+        """, parameters)
+        logger.info(f"✅ Updated skills to version {new_version.version_id}")
+
+        # 4. Subskills - use nested IN subqueries
+        await db.execute_query(f"""
+            MERGE `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` AS T
+            USING (
+                SELECT DISTINCT subskill_id
+                FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
+                WHERE skill_id IN (
+                    SELECT DISTINCT skill_id
+                    FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
+                    WHERE unit_id IN (
+                        SELECT DISTINCT unit_id
+                        FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
+                        WHERE subject_id = @subject_id
+                    )
+                )
+            ) AS S
+            ON T.subskill_id = S.subskill_id
+            WHEN MATCHED THEN
+              UPDATE SET T.is_draft = false, T.version_id = @version_id
+        """, parameters)
+        logger.info(f"✅ Updated subskills to version {new_version.version_id}")
+
+        # 5. Prerequisites - direct match on subject_id
+        await db.execute_query(f"""
+            MERGE `{settings.get_table_id(settings.TABLE_PREREQUISITES)}` AS T
+            USING (
+                SELECT DISTINCT prerequisite_id
+                FROM `{settings.get_table_id(settings.TABLE_PREREQUISITES)}`
+                WHERE subject_id = @subject_id
+            ) AS S
+            ON T.prerequisite_id = S.prerequisite_id
+            WHEN MATCHED THEN
+              UPDATE SET T.is_draft = false, T.version_id = @version_id
+        """, parameters)
+        logger.info(f"✅ Updated prerequisites to version {new_version.version_id}")
+
+        # 6. Subskill primitives - use nested IN subqueries
+        await db.execute_query(f"""
+            MERGE `{settings.get_table_id(settings.TABLE_SUBSKILL_PRIMITIVES)}` AS T
+            USING (
+                SELECT DISTINCT subskill_id, primitive_id
+                FROM `{settings.get_table_id(settings.TABLE_SUBSKILL_PRIMITIVES)}`
+                WHERE subskill_id IN (
+                    SELECT DISTINCT subskill_id
+                    FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
+                    WHERE skill_id IN (
+                        SELECT DISTINCT skill_id
+                        FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
+                        WHERE unit_id IN (
+                            SELECT DISTINCT unit_id
+                            FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
+                            WHERE subject_id = @subject_id
+                        )
+                    )
+                )
+            ) AS S
+            ON T.subskill_id = S.subskill_id AND T.primitive_id = S.primitive_id
+            WHEN MATCHED THEN
+              UPDATE SET T.is_draft = false, T.version_id = @version_id
+        """, parameters)
+        logger.info(f"✅ Updated subskill_primitives to version {new_version.version_id}")
 
         logger.info(f"✅ Published version {new_version.version_number} for subject {publish_request.subject_id}")
+
+        # Dual-write: sync the new version doc and all entity updates to Firestore
+        await firestore_curriculum_sync.sync_version(new_version.dict())
+        await firestore_curriculum_sync.sync_publish(
+            subject_id=publish_request.subject_id,
+            new_version_id=new_version.version_id,
+            old_version_id=active_version.version_id if active_version else None,
+        )
 
         return PublishResponse(
             success=True,
@@ -582,6 +593,12 @@ class VersionControl:
         await db.execute_query(rollback_query, parameters)
 
         logger.info(f"✅ Rolled back to version {target_version.version_number} for subject {subject_id}")
+
+        # Dual-write: sync rollback to Firestore
+        await firestore_curriculum_sync.sync_rollback(
+            subject_id=subject_id,
+            target_version_id=version_id,
+        )
 
         return PublishResponse(
             success=True,

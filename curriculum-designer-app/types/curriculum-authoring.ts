@@ -329,10 +329,15 @@ export interface DeployStatus {
   version_id?: string;
   version_number?: number;
   deployed_at?: string;
+  deployed_by?: string;
+  grade?: string;
   stats?: {
     total_units: number;
     total_skills: number;
     total_subskills: number;
+    avg_target_difficulty?: number | null;
+    min_difficulty?: number | null;
+    max_difficulty?: number | null;
   };
 }
 

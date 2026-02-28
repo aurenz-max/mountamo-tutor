@@ -61,6 +61,9 @@ class LearningPathsService:
         Returns:
             {"nodes": [...], "edges": [...], "version_id": ..., ...}
         """
+        # Normalize display name to Firestore subject_id
+        # e.g. "Language Arts" → "LANGUAGE_ARTS", "Mathematics" → "MATHEMATICS"
+        subject_id = subject_id.upper().replace(" ", "_")
         cache_key = f"{subject_id}:{version_type}"
 
         if cache_key not in self._graph_cache:

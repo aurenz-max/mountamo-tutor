@@ -18,8 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Link2, Trash2 } from 'lucide-react';
-import { useDeleteUnit, useDeleteSkill, useDeleteSubskill } from '@/lib/curriculum-authoring/hooks';
+import { Link2, Trash2, Check, PenLine } from 'lucide-react';
+import { useDeleteUnit, useDeleteSkill, useDeleteSubskill, useActiveVersion } from '@/lib/curriculum-authoring/hooks';
 import type { SelectedEntity } from '@/types/curriculum-authoring';
 
 interface EntityEditorProps {
@@ -35,6 +35,7 @@ export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityD
   const { mutate: deleteUnit, isPending: isDeletingUnit } = useDeleteUnit();
   const { mutate: deleteSkill, isPending: isDeletingSkill } = useDeleteSkill();
   const { mutate: deleteSubskill, isPending: isDeletingSubskill } = useDeleteSubskill();
+  const { data: activeVersion } = useActiveVersion(subjectId || '');
 
   const isDeleting = isDeletingUnit || isDeletingSkill || isDeletingSubskill;
   const getEntityTypeLabel = () => {
@@ -111,9 +112,20 @@ export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityD
               <Badge variant="outline" className="text-xs">
                 {getEntityTypeLabel()}
               </Badge>
-              {(entity.data as any).is_draft && (
-                <Badge variant="secondary" className="text-xs">
+              {entity.id !== 'new' && (entity.data as any).is_draft ? (
+                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                  <PenLine className="mr-1 h-3 w-3" />
                   Draft
+                </Badge>
+              ) : entity.id !== 'new' ? (
+                <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-300">
+                  <Check className="mr-1 h-3 w-3" />
+                  Published
+                </Badge>
+              ) : null}
+              {entity.id !== 'new' && (entity.data as any).version_id && activeVersion && (entity.data as any).version_id !== activeVersion.version_id && (
+                <Badge variant="secondary" className="text-xs bg-red-50 text-red-700 border-red-300">
+                  v{(entity.data as any).version_id?.slice(0, 8)}... (not active version)
                 </Badge>
               )}
             </div>

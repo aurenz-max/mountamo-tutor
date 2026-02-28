@@ -24,6 +24,8 @@ from .services.review import ReviewService
 
 from .services.daily_activities import DailyActivitiesService
 from .services.bigquery_analytics import BigQueryAnalyticsService
+from .services.review_engine import ReviewEngine
+from .services.planning_service import PlanningService
 
 from .db.cosmos_db import CosmosDBService
 from .db.firestore_service import FirestoreService
@@ -58,6 +60,8 @@ _learning_paths_service: Optional[LearningPathsService] = None
 _problem_optimizer: Optional[ProblemOptimizer] = None
 _review_service: Optional[ReviewService] = None
 _curriculum_mapping_service: Optional[CurriculumMappingService] = None
+_review_engine: Optional[ReviewEngine] = None
+_planning_service: Optional[PlanningService] = None
 
 
 # 🔥 UPDATED: Authentication dependency functions using service layer
@@ -259,7 +263,10 @@ async def get_competency_service() -> CompetencyService:
             _competency_service = CompetencyService(curriculum_service)
             _competency_service.cosmos_db = cosmos_db
             _competency_service.firestore_service = firestore_service
-            
+
+            # Inject review engine for completion factor model
+            _competency_service.review_engine = get_review_engine(firestore_service)
+
             # Initialize - clean and simple
             await _competency_service.initialize()
             logger.info("✅ CompetencyService initialized successfully")
@@ -405,6 +412,37 @@ async def get_learning_paths_service(
         logger.info("✅ LearningPathsService initialized successfully")
 
     return _learning_paths_service
+
+
+def get_review_engine(
+    firestore_service: FirestoreService = Depends(get_firestore_service)
+) -> ReviewEngine:
+    """Get or create ReviewEngine singleton."""
+    global _review_engine
+    if _review_engine is None:
+        logger.info("Initializing ReviewEngine")
+        _review_engine = ReviewEngine(firestore_service=firestore_service)
+        logger.info("✅ ReviewEngine initialized successfully")
+    return _review_engine
+
+
+async def get_planning_service(
+    firestore_service: FirestoreService = Depends(get_firestore_service),
+    curriculum_service: CurriculumService = Depends(get_curriculum_service),
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
+) -> PlanningService:
+    """Get or create PlanningService singleton (Firestore-native planner)."""
+    global _planning_service
+    if _planning_service is None:
+        logger.info("Initializing PlanningService")
+        _planning_service = PlanningService(
+            firestore_service=firestore_service,
+            curriculum_service=curriculum_service,
+            learning_paths_service=learning_paths_service,
+        )
+        logger.info("✅ PlanningService initialized successfully")
+    return _planning_service
+
 
 def get_daily_activities_service(
     analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service),

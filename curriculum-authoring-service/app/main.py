@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import db
 from app.db.firestore_graph_service import firestore_graph_service
+from app.db.firestore_curriculum_service import firestore_curriculum_sync
 from app.api import curriculum, prerequisites, publishing, ai, graph
 
 # Configure logging
@@ -35,6 +36,9 @@ async def lifespan(app: FastAPI):
 
         # Initialize Firestore for graph caching
         firestore_graph_service.initialize()
+
+        # Initialize Firestore curriculum dual-write sync
+        firestore_curriculum_sync.initialize()
 
         logger.info("✅ Service startup complete")
 

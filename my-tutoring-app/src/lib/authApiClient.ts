@@ -825,27 +825,28 @@ private async getAuthToken(): Promise<string> {
 }
 
   // ============================================================================
-  // DAILY PLAN ENDPOINTS
+  // PLANNING ENDPOINTS (Firestore-native weekly/daily planner)
   // ============================================================================
 
   /**
-   * Get daily plan for a student
+   * Get weekly pacing snapshot for a student (algorithmic, Firestore-native)
    */
-  async getDailyPlan(studentId: number, date?: string) {
-    const params = new URLSearchParams();
-    if (date) params.append('date', date);
-    const queryString = params.toString();
-    return this.get(`/api/daily-plan/${studentId}${queryString ? `?${queryString}` : ''}`);
+  async getWeeklyPlan(studentId: number) {
+    return this.get(`/api/weekly-planner/${studentId}`);
   }
 
   /**
-   * Get enhanced daily activities with transparency metadata
+   * Get daily session queue for a student (algorithmic, Firestore-native)
    */
-  async getDailyActivities(studentId: number, date?: string) {
-    const params = new URLSearchParams();
-    if (date) params.append('date', date);
-    const queryString = params.toString();
-    return this.get(`/api/daily-plan/${studentId}/activities${queryString ? `?${queryString}` : ''}`);
+  async getDailyPlan(studentId: number) {
+    return this.get(`/api/daily-activities/daily-plan/${studentId}`);
+  }
+
+  /**
+   * Get daily activities in flat format
+   */
+  async getDailyActivities(studentId: number) {
+    return this.get(`/api/daily-activities/daily-plan/${studentId}/activities`);
   }
 
   // ============================================================================

@@ -195,3 +195,251 @@ async def get_deploy_status(subject_id: str):
     except Exception as e:
         logger.error(f"❌ Failed to get deploy status for {subject_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/subjects/{subject_id}/deploy/diagnostics")
+async def get_deploy_diagnostics(subject_id: str):
+    """
+    Diagnose why units/skills/subskills might be missing from deployment.
+
+    Checks each level of the hierarchy independently to identify where
+    the INNER JOIN chain breaks (version_id mismatch, is_draft=true, etc).
+    """
+    from app.core.config import settings
+    from app.core.database import db
+    from google.cloud import bigquery
+
+    try:
+        # 1. Get the active version
+        active_version = await version_control.get_active_version(subject_id)
+        if not active_version:
+            return {"error": "No active version found", "subject_id": subject_id}
+
+        active_vid = active_version.version_id
+
+        # 2. Check subject record
+        subject_query = f"""
+        SELECT subject_id, version_id, is_draft, is_active,
+               (version_id = @active_vid) as version_matches
+        FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}`
+        WHERE subject_id = @subject_id
+        """
+        params = [
+            bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id),
+            bigquery.ScalarQueryParameter("active_vid", "STRING", active_vid),
+        ]
+        subject_rows = await db.execute_query(subject_query, params)
+
+        # 3. Check all units for this subject
+        units_query = f"""
+        SELECT unit_id, unit_title, unit_order, version_id, is_draft,
+               (version_id = @active_vid) as version_matches
+        FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
+        WHERE subject_id = @subject_id
+        ORDER BY unit_order
+        """
+        unit_rows = await db.execute_query(units_query, params)
+
+        # 4. Check skills for all units of this subject
+        skills_query = f"""
+        SELECT sk.skill_id, sk.skill_description, sk.unit_id, sk.version_id, sk.is_draft,
+               (sk.version_id = @active_vid) as version_matches,
+               u.unit_title
+        FROM `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
+        JOIN `{settings.get_table_id(settings.TABLE_UNITS)}` u ON sk.unit_id = u.unit_id
+        WHERE u.subject_id = @subject_id
+        ORDER BY u.unit_order, sk.skill_order
+        """
+        skill_rows = await db.execute_query(skills_query, params)
+
+        # 5. Check subskills
+        subskills_query = f"""
+        SELECT sub.subskill_id, sub.subskill_description, sub.skill_id, sub.version_id, sub.is_draft,
+               (sub.version_id = @active_vid) as version_matches,
+               u.unit_title, sk.skill_description
+        FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` sub
+        JOIN `{settings.get_table_id(settings.TABLE_SKILLS)}` sk ON sub.skill_id = sk.skill_id
+        JOIN `{settings.get_table_id(settings.TABLE_UNITS)}` u ON sk.unit_id = u.unit_id
+        WHERE u.subject_id = @subject_id
+        ORDER BY u.unit_order, sk.skill_order, sub.subskill_order
+        """
+        subskill_rows = await db.execute_query(subskills_query, params)
+
+        # Build diagnostic report
+        units_report = []
+        for u in unit_rows:
+            unit_id = u["unit_id"]
+            unit_skills = [s for s in skill_rows if s["unit_id"] == unit_id]
+            unit_subskills = [s for s in subskill_rows if s["unit_title"] == u["unit_title"]]
+
+            # Determine why this unit would be excluded from deploy
+            issues = []
+            if u["is_draft"]:
+                issues.append("unit is_draft=true")
+            if not u["version_matches"]:
+                issues.append(f"unit version_id mismatch ({u['version_id'][:8]}... != {active_vid[:8]}...)")
+            if not unit_skills:
+                issues.append("no skills found")
+            else:
+                draft_skills = [s for s in unit_skills if s["is_draft"]]
+                mismatched_skills = [s for s in unit_skills if not s["version_matches"]]
+                if draft_skills:
+                    issues.append(f"{len(draft_skills)}/{len(unit_skills)} skills are drafts")
+                if mismatched_skills:
+                    issues.append(f"{len(mismatched_skills)}/{len(unit_skills)} skills have version_id mismatch")
+
+            if not unit_subskills:
+                issues.append("no subskills found")
+            else:
+                draft_subs = [s for s in unit_subskills if s["is_draft"]]
+                mismatched_subs = [s for s in unit_subskills if not s["version_matches"]]
+                if draft_subs:
+                    issues.append(f"{len(draft_subs)}/{len(unit_subskills)} subskills are drafts")
+                if mismatched_subs:
+                    issues.append(f"{len(mismatched_subs)}/{len(unit_subskills)} subskills have version_id mismatch")
+
+            would_deploy = len(issues) == 0
+            units_report.append({
+                "unit_id": unit_id,
+                "unit_title": u["unit_title"],
+                "unit_order": u["unit_order"],
+                "version_id": u["version_id"],
+                "is_draft": u["is_draft"],
+                "version_matches": u["version_matches"],
+                "skill_count": len(unit_skills),
+                "subskill_count": len(unit_subskills),
+                "would_deploy": would_deploy,
+                "issues": issues if issues else None,
+            })
+
+        deployable = [u for u in units_report if u["would_deploy"]]
+        excluded = [u for u in units_report if not u["would_deploy"]]
+
+        return {
+            "subject_id": subject_id,
+            "active_version_id": active_vid,
+            "active_version_number": active_version.version_number,
+            "total_units": len(unit_rows),
+            "deployable_units": len(deployable),
+            "excluded_units": len(excluded),
+            "units": units_report,
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Diagnostics failed for {subject_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/subjects/{subject_id}/deploy/repair")
+async def repair_version_ids(subject_id: str):
+    """
+    Repair version_id mismatches across all entities for a subject.
+
+    Forces all units, skills, subskills, prerequisites, and subskill_primitives
+    to the active version_id using direct UPDATE (not MERGE through joins).
+    This bypasses the join-chain issue where duplicate rows cause MERGE failures.
+    """
+    from app.core.config import settings
+    from app.core.database import db
+    from google.cloud import bigquery
+
+    try:
+        active_version = await version_control.get_active_version(subject_id)
+        if not active_version:
+            raise HTTPException(status_code=404, detail="No active version found")
+
+        active_vid = active_version.version_id
+        results = {}
+
+        # 1. Fix subjects - direct update by subject_id
+        q = f"""
+        UPDATE `{settings.get_table_id(settings.TABLE_SUBJECTS)}`
+        SET version_id = @version_id, is_draft = false
+        WHERE subject_id = @subject_id AND version_id != @version_id
+        """
+        params = [
+            bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id),
+            bigquery.ScalarQueryParameter("version_id", "STRING", active_vid),
+        ]
+        await db.execute_query(q, params)
+        results["subjects"] = "updated"
+
+        # 2. Fix units - direct update by subject_id
+        q = f"""
+        UPDATE `{settings.get_table_id(settings.TABLE_UNITS)}`
+        SET version_id = @version_id, is_draft = false
+        WHERE subject_id = @subject_id AND version_id != @version_id
+        """
+        await db.execute_query(q, params)
+        results["units"] = "updated"
+
+        # 3. Fix skills - need to go through units, but use IN subquery instead of JOIN
+        q = f"""
+        UPDATE `{settings.get_table_id(settings.TABLE_SKILLS)}`
+        SET version_id = @version_id, is_draft = false
+        WHERE unit_id IN (
+            SELECT unit_id FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
+            WHERE subject_id = @subject_id
+        ) AND version_id != @version_id
+        """
+        await db.execute_query(q, params)
+        results["skills"] = "updated"
+
+        # 4. Fix subskills - through skills → units
+        q = f"""
+        UPDATE `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
+        SET version_id = @version_id, is_draft = false
+        WHERE skill_id IN (
+            SELECT sk.skill_id FROM `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
+            WHERE sk.unit_id IN (
+                SELECT unit_id FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
+                WHERE subject_id = @subject_id
+            )
+        ) AND version_id != @version_id
+        """
+        await db.execute_query(q, params)
+        results["subskills"] = "updated"
+
+        # 5. Fix prerequisites
+        q = f"""
+        UPDATE `{settings.get_table_id(settings.TABLE_PREREQUISITES)}`
+        SET version_id = @version_id, is_draft = false
+        WHERE subject_id = @subject_id AND version_id != @version_id
+        """
+        await db.execute_query(q, params)
+        results["prerequisites"] = "updated"
+
+        # 6. Fix subskill_primitives
+        q = f"""
+        UPDATE `{settings.get_table_id(settings.TABLE_SUBSKILL_PRIMITIVES)}`
+        SET version_id = @version_id, is_draft = false
+        WHERE subskill_id IN (
+            SELECT sub.subskill_id FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` sub
+            WHERE sub.skill_id IN (
+                SELECT sk.skill_id FROM `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
+                WHERE sk.unit_id IN (
+                    SELECT unit_id FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
+                    WHERE subject_id = @subject_id
+                )
+            )
+        ) AND version_id != @version_id
+        """
+        await db.execute_query(q, params)
+        results["subskill_primitives"] = "updated"
+
+        logger.info(f"✅ Repaired version_ids for {subject_id} to {active_vid}")
+
+        return {
+            "success": True,
+            "subject_id": subject_id,
+            "version_id": active_vid,
+            "version_number": active_version.version_number,
+            "tables_updated": results,
+            "message": f"All entities updated to version {active_version.version_number}. Run deploy to push to Firestore."
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Repair failed for {subject_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

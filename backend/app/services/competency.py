@@ -30,6 +30,7 @@ class CompetencyService:
         self._competencies = {}  # In-memory storage for competency calculations
         self.cosmos_db = None  # Will be set by dependency injection
         self.firestore_service = None  # Will be set by dependency injection
+        self.review_engine = None  # Will be set by dependency injection
         self.curriculum_service = curriculum_service
         
         # Competency calculation settings
@@ -403,9 +404,23 @@ class CompetencyService:
             else:
                 logger.error(f"🔍 COMPETENCY_SERVICE: Both competency database updates failed")
             
+            # --- Review engine hook: update skill lifecycle / completion factor ---
+            if self.review_engine:
+                try:
+                    await self.review_engine.process_session_result(
+                        student_id=student_id,
+                        skill_id=skill_id,
+                        subject=subject,
+                        score=score,
+                        skill_name=subskill_id,
+                    )
+                    logger.info(f"✅ COMPETENCY_SERVICE: Review engine processed session result")
+                except Exception as re_err:
+                    logger.error(f"⚠️ COMPETENCY_SERVICE: Review engine error (non-fatal): {re_err}")
+
             logger.info(f"✅ COMPETENCY_SERVICE: Competency update successful")
             return result
-                
+
         except Exception as e:
             logger.error(f"❌ COMPETENCY_SERVICE: Error updating competency: {str(e)}")
             logger.error(f"❌ COMPETENCY_SERVICE: Exception type: {type(e)}")

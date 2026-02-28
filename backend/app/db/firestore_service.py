@@ -869,6 +869,142 @@ class FirestoreService:
             return {}
 
     # ============================================================================
+    # SKILL STATUS METHODS (Review pipeline / Completion factor model)
+    # ============================================================================
+
+    def _skill_status_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/skill_status"""
+        return self._student_doc(student_id).collection('skill_status')
+
+    async def get_skill_status(
+        self,
+        student_id: int,
+        skill_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get a single skill's lifecycle status from the review pipeline."""
+        try:
+            doc_ref = self._skill_status_subcollection(student_id).document(skill_id)
+            doc = doc_ref.get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error getting skill status for {skill_id}: {e}")
+            return None
+
+    async def get_all_skill_statuses(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get all skill statuses for a student, optionally filtered."""
+        try:
+            query = self._skill_status_subcollection(student_id)
+            if subject:
+                query = query.where('subject', '==', subject)
+            if status:
+                query = query.where('status', '==', status)
+            return [doc.to_dict() for doc in query.stream()]
+        except Exception as e:
+            logger.error(f"Error getting skill statuses for student {student_id}: {e}")
+            return []
+
+    async def upsert_skill_status(
+        self,
+        student_id: int,
+        skill_id: str,
+        data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Create or update a skill's lifecycle status."""
+        try:
+            await self._ensure_student_document(student_id)
+            doc_ref = self._skill_status_subcollection(student_id).document(skill_id)
+            firestore_data = self._prepare_firestore_data(data)
+            doc_ref.set(firestore_data, merge=True)
+            logger.info(f"Upserted skill_status/{skill_id} for student {student_id}")
+            return firestore_data
+        except Exception as e:
+            logger.error(f"Error upserting skill status: {e}")
+            raise
+
+    async def get_skills_with_review_due(
+        self,
+        student_id: int,
+        before_date: str
+    ) -> List[Dict[str, Any]]:
+        """Get all skills whose next_review_date is on or before the given date."""
+        try:
+            query = (
+                self._skill_status_subcollection(student_id)
+                .where('status', '==', 'in_review')
+                .where('next_review_date', '<=', before_date)
+            )
+            return [doc.to_dict() for doc in query.stream()]
+        except Exception as e:
+            logger.error(f"Error getting skills with review due: {e}")
+            return []
+
+    # ============================================================================
+    # STUDENT PLANNING FIELDS (capacity, development patterns, aggregate metrics)
+    # ============================================================================
+
+    async def get_student_planning_fields(
+        self,
+        student_id: int
+    ) -> Dict[str, Any]:
+        """Get planning-specific fields from the student document."""
+        try:
+            doc = self._student_doc(student_id).get()
+            if not doc.exists:
+                return {}
+            data = doc.to_dict()
+            return {
+                "daily_session_capacity": data.get("daily_session_capacity", 25),
+                "development_patterns": data.get("development_patterns", {}),
+                "aggregate_metrics": data.get("aggregate_metrics", {}),
+            }
+        except Exception as e:
+            logger.error(f"Error getting planning fields for student {student_id}: {e}")
+            return {}
+
+    async def update_student_planning_fields(
+        self,
+        student_id: int,
+        data: Dict[str, Any]
+    ) -> None:
+        """Merge planning-specific fields onto the student document."""
+        try:
+            await self._ensure_student_document(student_id)
+            firestore_data = self._prepare_firestore_data(data)
+            self._student_doc(student_id).set(firestore_data, merge=True)
+            logger.info(f"Updated planning fields for student {student_id}")
+        except Exception as e:
+            logger.error(f"Error updating planning fields for student {student_id}: {e}")
+            raise
+
+    # ============================================================================
+    # SCHOOL YEAR CONFIG
+    # ============================================================================
+
+    async def get_school_year_config(self) -> Optional[Dict[str, Any]]:
+        """Get school year configuration from config/schoolYear."""
+        try:
+            doc = self.client.collection('config').document('schoolYear').get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error getting school year config: {e}")
+            return None
+
+    async def set_school_year_config(self, data: Dict[str, Any]) -> None:
+        """Set school year configuration at config/schoolYear."""
+        try:
+            firestore_data = self._prepare_firestore_data(data)
+            self.client.collection('config').document('schoolYear').set(firestore_data)
+            logger.info("School year config saved to Firestore")
+        except Exception as e:
+            logger.error(f"Error setting school year config: {e}")
+            raise
+
+    # ============================================================================
     # MONITORING AND VALIDATION
     # ============================================================================
 
