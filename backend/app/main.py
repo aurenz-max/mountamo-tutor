@@ -22,7 +22,8 @@ from .api.endpoints import (
     lumina_tutor,
     assessments,
     parent_portal,
-    weekly_planner)
+    weekly_planner,
+    velocity)
 
 from .api import etl_routes
 from .core.config import settings
@@ -209,8 +210,13 @@ app.include_router(
     dependencies=[Depends(get_user_context)]
 )
 
-
-
+# Velocity Router — Pipeline-Adjusted Mastery Progress (PRD Section 15)
+app.include_router(
+    velocity.router,
+    prefix="/api/velocity",
+    tags=["velocity"],
+    dependencies=[Depends(get_user_context)]
+)
 
 # ============================================================================
 # ROOT ENDPOINTS

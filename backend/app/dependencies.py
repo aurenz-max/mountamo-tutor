@@ -26,6 +26,7 @@ from .services.daily_activities import DailyActivitiesService
 from .services.bigquery_analytics import BigQueryAnalyticsService
 from .services.review_engine import ReviewEngine
 from .services.planning_service import PlanningService
+from .services.velocity_service import VelocityService
 
 from .db.cosmos_db import CosmosDBService
 from .db.firestore_service import FirestoreService
@@ -62,6 +63,7 @@ _review_service: Optional[ReviewService] = None
 _curriculum_mapping_service: Optional[CurriculumMappingService] = None
 _review_engine: Optional[ReviewEngine] = None
 _planning_service: Optional[PlanningService] = None
+_velocity_service: Optional[VelocityService] = None
 
 
 # 🔥 UPDATED: Authentication dependency functions using service layer
@@ -442,6 +444,22 @@ async def get_planning_service(
         )
         logger.info("✅ PlanningService initialized successfully")
     return _planning_service
+
+
+async def get_velocity_service(
+    firestore_service: FirestoreService = Depends(get_firestore_service),
+    curriculum_service: CurriculumService = Depends(get_curriculum_service),
+) -> VelocityService:
+    """Get or create VelocityService singleton (Firestore-native velocity calculator)."""
+    global _velocity_service
+    if _velocity_service is None:
+        logger.info("Initializing VelocityService")
+        _velocity_service = VelocityService(
+            firestore_service=firestore_service,
+            curriculum_service=curriculum_service,
+        )
+        logger.info("✅ VelocityService initialized successfully")
+    return _velocity_service
 
 
 def get_daily_activities_service(

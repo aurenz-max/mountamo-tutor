@@ -34,6 +34,13 @@ class SessionReason(str, Enum):
     NEXT_IN_SEQUENCE = "next_in_sequence"
 
 
+class SessionCategory(str, Enum):
+    """Which section of the interleaved queue a session belongs to (PRD §8)."""
+    TIGHT_LOOP = "tight_loop"        # recovery items served first
+    INTERLEAVED = "interleaved"      # new blocks + reviews mixed
+    TAIL = "tail"                    # lighter reviews in back 40%
+
+
 # ---------------------------------------------------------------------------
 # Review pipeline (PRD Section 3 / Firestore Section 6.2)
 # ---------------------------------------------------------------------------
@@ -120,6 +127,24 @@ class SchoolYearConfig(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Review checkpoint breakdown (pipeline cross-section)
+# ---------------------------------------------------------------------------
+
+class CheckpointBreakdown(BaseModel):
+    """Count of in-review skills at each checkpoint stage."""
+    checkpoint_2wk: int = 0   # sessions_completed == 1, awaiting 2-week review
+    checkpoint_4wk: int = 0   # sessions_completed == 2, awaiting 4-week review
+    checkpoint_6wk: int = 0   # sessions_completed == 3, awaiting 6-week review
+
+
+class ReviewsByCheckpoint(BaseModel):
+    """Projected reviews broken down by which checkpoint they represent."""
+    checkpoint_2wk: int = 0
+    checkpoint_4wk: int = 0
+    checkpoint_6wk: int = 0
+
+
+# ---------------------------------------------------------------------------
 # Weekly plan response (PRD Section 4.5)
 # ---------------------------------------------------------------------------
 
@@ -127,6 +152,7 @@ class SubjectWeeklyStats(BaseModel):
     total_skills: int = 0
     closed: int = 0
     in_review: int = 0
+    checkpoints: CheckpointBreakdown = Field(default_factory=CheckpointBreakdown)
     not_started: int = 0
     expected_by_now: float = 0.0
     behind_by: float = 0.0
@@ -161,6 +187,7 @@ class ReviewSessionItem(BaseModel):
     estimated_ultimate: int
     completion_factor: float
     days_overdue: int = 0
+    session_category: SessionCategory = SessionCategory.INTERLEAVED
     # Enrichment fields (resolved from curriculum)
     unit_title: Optional[str] = None
     skill_description: Optional[str] = None
@@ -176,6 +203,7 @@ class NewSkillSessionItem(BaseModel):
     reason: SessionReason
     priority: int
     prerequisites_met: bool = True
+    session_category: SessionCategory = SessionCategory.INTERLEAVED
     # Enrichment fields (resolved from curriculum)
     unit_title: Optional[str] = None
     skill_description: Optional[str] = None
@@ -198,3 +226,65 @@ class DailyPlanResponse(BaseModel):
     week_progress: Dict[str, SubjectWeekProgress] = Field(default_factory=dict)
     sessions: List[dict] = Field(default_factory=list)  # Union of review and new items
     warnings: List[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Monthly plan response (PRD Section 4.5)
+# ---------------------------------------------------------------------------
+
+class ConfidenceBand(BaseModel):
+    """Optimistic / best-estimate / pessimistic projections."""
+    optimistic: int = 0
+    bestEstimate: int = 0
+    pessimistic: int = 0
+
+
+class WeekProjection(BaseModel):
+    """One week of the forward simulation."""
+    week: int
+    weekOf: str  # YYYY-MM-DD (Monday of that week)
+    projectedReviewsDue: int = 0
+    projectedReviewsByCheckpoint: ReviewsByCheckpoint = Field(default_factory=ReviewsByCheckpoint)
+    projectedNewIntroductions: int = 0
+    projectedClosures: int = 0
+    projectedOpenInventory: int = 0
+    cumulativeMastered: ConfidenceBand = Field(default_factory=ConfidenceBand)
+
+
+class SubjectCurrentState(BaseModel):
+    total: int = 0
+    closed: int = 0
+    inReview: int = 0
+    checkpoints: CheckpointBreakdown = Field(default_factory=CheckpointBreakdown)
+    notStarted: int = 0
+
+
+class EndOfYearProjection(BaseModel):
+    closed: int = 0
+    remainingGap: int = 0
+
+
+class EndOfYearScenarios(BaseModel):
+    optimistic: EndOfYearProjection = Field(default_factory=EndOfYearProjection)
+    bestEstimate: EndOfYearProjection = Field(default_factory=EndOfYearProjection)
+    pessimistic: EndOfYearProjection = Field(default_factory=EndOfYearProjection)
+
+
+class MonthlyWarning(BaseModel):
+    type: str
+    week: int
+    message: str
+
+
+class SubjectMonthlyProjection(BaseModel):
+    currentState: SubjectCurrentState = Field(default_factory=SubjectCurrentState)
+    weekByWeek: List[WeekProjection] = Field(default_factory=list)
+    endOfYearProjection: EndOfYearScenarios = Field(default_factory=EndOfYearScenarios)
+    warnings: List[MonthlyWarning] = Field(default_factory=list)
+
+
+class MonthlyPlanResponse(BaseModel):
+    studentId: str
+    generatedAt: str  # ISO timestamp
+    schoolYear: Dict  # {fractionElapsed, weeksRemaining}
+    projections: Dict[str, SubjectMonthlyProjection] = Field(default_factory=dict)

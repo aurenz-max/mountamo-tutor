@@ -22,17 +22,28 @@ from ..db.firestore_service import FirestoreService
 from ..services.curriculum_service import CurriculumService
 from ..models.planning import (
     AggregateMetrics,
+    CheckpointBreakdown,
+    ConfidenceBand,
     DailyPlanResponse,
     DevelopmentPattern,
+    EndOfYearProjection,
+    EndOfYearScenarios,
+    MonthlyPlanResponse,
+    MonthlyWarning,
     NewSkillSessionItem,
+    ReviewsByCheckpoint,
     ReviewSessionItem,
     SchoolBreak,
     SchoolYearConfig,
+    SessionCategory,
     SessionReason,
     SkillLifecycleStatus,
+    SubjectCurrentState,
+    SubjectMonthlyProjection,
     SubjectWeekProgress,
     SubjectWeeklyStats,
     WeeklyPlanResponse,
+    WeekProjection,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,6 +143,9 @@ class PlanningService:
                 if s.get("status") not in ("closed", "not_started")
             )
 
+            # Checkpoint breakdown
+            checkpoints = self._checkpoint_counts(subj_skills)
+
             # Development pattern
             pattern = dev_patterns.get(subj, {})
             avg_ult = pattern.get("average_ultimate", DEFAULT_ULTIMATE) if isinstance(pattern, dict) else DEFAULT_ULTIMATE
@@ -140,6 +154,7 @@ class PlanningService:
                 total_skills=total_subskills,
                 closed=closed,
                 in_review=in_review,
+                checkpoints=checkpoints,
                 not_started=not_started,
                 expected_by_now=expected_by_now,
                 behind_by=behind_by,
@@ -168,6 +183,309 @@ class PlanningService:
             sustainable_new_per_day=round(sustainable, 1),
             subjects=subjects_stats,
             warnings=warnings,
+        )
+
+    # ====================================================================
+    # Monthly Planner — Forward Simulation (PRD Section 4)
+    # ====================================================================
+
+    async def get_monthly_plan(self, student_id: int) -> MonthlyPlanResponse:
+        """
+        Run a week-by-week forward simulation projecting where the student
+        will be at 4, 8, and 12+ weeks out.
+
+        Produces per-subject trajectories with optimistic / best-estimate /
+        pessimistic confidence bands and early-warning flags.
+        """
+        today = datetime.now(timezone.utc).date()
+
+        # 1. Load shared inputs (same sources as weekly planner)
+        config = await self._get_school_year_config()
+        year_start = date.fromisoformat(config.start_date)
+        year_end = date.fromisoformat(config.end_date)
+        total_days = (year_end - year_start).days or 1
+        fraction_elapsed = min(max((today - year_start).days / total_days, 0.0), 1.0)
+        weeks_remaining = self._school_weeks_remaining(today, year_end, config.breaks)
+
+        planning = await self.firestore.get_student_planning_fields(student_id)
+        capacity = planning.get("daily_session_capacity", DEFAULT_CAPACITY)
+        weekly_capacity = capacity * 5  # school days per week
+        dev_patterns = planning.get("development_patterns", {})
+
+        all_skills = await self.firestore.get_all_skill_statuses(student_id)
+
+        subjects_list = await self.curriculum.get_available_subjects()
+        subject_names: list[str] = []
+        for s in subjects_list:
+            if isinstance(s, dict):
+                subject_names.append(s.get("subject_name") or s.get("subject_id", ""))
+            else:
+                subject_names.append(str(s))
+
+        # 2. Build projections per subject
+        projections: dict[str, SubjectMonthlyProjection] = {}
+
+        for subj in subject_names:
+            curriculum_data = await self.curriculum.get_curriculum(subj)
+            total_subskills = self._count_subskills(curriculum_data)
+
+            subj_skills = [s for s in all_skills if s.get("subject") == subj]
+            closed = sum(1 for s in subj_skills if s.get("status") == "closed")
+            in_review = sum(1 for s in subj_skills if s.get("status") == "in_review")
+            learning = sum(1 for s in subj_skills if s.get("status") == "learning")
+            not_started = max(0, total_subskills - closed - in_review - learning)
+
+            checkpoints = self._checkpoint_counts(subj_skills)
+
+            current_state = SubjectCurrentState(
+                total=total_subskills,
+                closed=closed,
+                inReview=in_review,
+                checkpoints=checkpoints,
+                notStarted=not_started,
+            )
+
+            # Development pattern stats for confidence bands
+            pattern = dev_patterns.get(subj, {})
+            if isinstance(pattern, dict):
+                avg_ult = pattern.get("average_ultimate", float(DEFAULT_ULTIMATE))
+                skills_closed_count = pattern.get("skills_closed", 0)
+            else:
+                avg_ult = float(DEFAULT_ULTIMATE)
+                skills_closed_count = 0
+
+            # Credibility weighting (PRD): blend toward prior of 5.0
+            credibility = min(1.0, skills_closed_count / 10) if skills_closed_count > 0 else 0.0
+            effective_avg_ult = credibility * avg_ult + (1.0 - credibility) * 5.0
+
+            # Compute stddev of ultimates from closed skills for confidence bands
+            closed_skills = [s for s in subj_skills if s.get("status") == "closed"]
+            if len(closed_skills) >= 3:
+                ultimates = [s.get("estimated_ultimate", DEFAULT_ULTIMATE) for s in closed_skills]
+                mean_ult = sum(ultimates) / len(ultimates)
+                variance = sum((u - mean_ult) ** 2 for u in ultimates) / len(ultimates)
+                stddev_ult = math.sqrt(variance)
+            else:
+                stddev_ult = 1.0  # default uncertainty
+
+            # Optimistic / pessimistic average ultimates (75th/25th percentile)
+            # 0.675 is the z-score for the 75th percentile
+            opt_ult = max(2.0, effective_avg_ult - 0.675 * stddev_ult)
+            pess_ult = effective_avg_ult + 0.675 * stddev_ult
+
+            # Build known-review schedule from existing in_review skills
+            # Map: week_number -> {checkpoint_weeks: count}
+            known_reviews_by_week: dict[int, dict[int, int]] = {}
+            in_review_skills = [
+                s for s in subj_skills
+                if s.get("status") in ("in_review", "learning") and s.get("next_review_date")
+            ]
+            for s in in_review_skills:
+                try:
+                    review_date = date.fromisoformat(s["next_review_date"])
+                except (ValueError, TypeError):
+                    continue
+
+                # Determine which checkpoint this upcoming review represents
+                sc = s.get("sessions_completed", 0)
+                if sc <= 1:
+                    cp = 2   # next session is 2-wk checkpoint
+                elif sc == 2:
+                    cp = 4   # next session is 4-wk checkpoint
+                else:
+                    cp = 6   # next session is 6-wk checkpoint
+
+                if review_date <= today:
+                    week_num = 1  # overdue — due in week 1
+                else:
+                    delta_days = (review_date - today).days
+                    week_num = max(1, (delta_days // 7) + 1)
+
+                if week_num <= weeks_remaining:
+                    if week_num not in known_reviews_by_week:
+                        known_reviews_by_week[week_num] = {}
+                    by_cp = known_reviews_by_week[week_num]
+                    by_cp[cp] = by_cp.get(cp, 0) + 1
+
+            # Pacing target: how many new skills per week to finish on time
+            pacing_target = math.ceil(not_started / weeks_remaining) if weeks_remaining > 0 else not_started
+
+            # --- Pipeline delay model ---
+            # Skills need (ultimate - 1) review sessions at ~2-week intervals
+            # after initial mastery, so total weeks to close ≈ (ult - 1) * 2
+            weeks_to_close_best = max(2, round((effective_avg_ult - 1) * 2))
+            weeks_to_close_opt = max(2, round((opt_ult - 1) * 2))
+            weeks_to_close_pess = max(2, round((pess_ult - 1) * 2))
+
+            # Build existing closure pipeline: when will currently-open skills close?
+            # Each skill's remaining sessions * ~2 weeks per review interval
+            existing_closures_by_week: dict[int, int] = {}
+            for s in subj_skills:
+                if s.get("status") in ("in_review", "learning"):
+                    remaining_sessions = max(
+                        0,
+                        s.get("estimated_ultimate", DEFAULT_ULTIMATE)
+                        - s.get("sessions_completed", 0),
+                    )
+                    weeks_until_close = max(1, remaining_sessions * 2)
+                    if weeks_until_close <= weeks_remaining:
+                        existing_closures_by_week[weeks_until_close] = (
+                            existing_closures_by_week.get(weeks_until_close, 0) + 1
+                        )
+
+            # --- Forward simulation ---
+            week_by_week: list[WeekProjection] = []
+            warnings: list[MonthlyWarning] = []
+
+            # Float accumulators so small per-week differences compound
+            open_inventory = in_review + learning
+            cumulative_mastered_f = float(closed)
+            cumulative_mastered_opt_f = float(closed)
+            cumulative_mastered_pess_f = float(closed)
+
+            # Track new introductions for estimating future review load
+            new_introductions_by_week: list[int] = []
+
+            for w in range(1, weeks_remaining + 1):
+                week_monday = today + timedelta(days=(7 * (w - 1)) - today.weekday())
+                if week_monday < today:
+                    week_monday += timedelta(days=7)
+
+                # --- Reviews due this week (by checkpoint) ---
+                known_this_week = known_reviews_by_week.get(w, {})
+
+                # Estimated reviews from skills introduced in prior weeks
+                # New skills get reviews at +2wk, +4wk, +6wk from introduction
+                estimated_by_cp: dict[int, int] = {2: 0, 4: 0, 6: 0}
+                for intro_week_idx, intro_count in enumerate(new_introductions_by_week):
+                    if intro_count <= 0:
+                        continue
+                    weeks_since_intro = w - (intro_week_idx + 1)
+                    if weeks_since_intro == 2:
+                        estimated_by_cp[2] += intro_count
+                    elif weeks_since_intro == 4:
+                        estimated_by_cp[4] += intro_count
+                    elif weeks_since_intro == 6:
+                        estimated_by_cp[6] += intro_count
+
+                reviews_cp2 = known_this_week.get(2, 0) + estimated_by_cp[2]
+                reviews_cp4 = known_this_week.get(4, 0) + estimated_by_cp[4]
+                reviews_cp6 = known_this_week.get(6, 0) + estimated_by_cp[6]
+                projected_reviews_due = reviews_cp2 + reviews_cp4 + reviews_cp6
+
+                reviews_by_checkpoint = ReviewsByCheckpoint(
+                    checkpoint_2wk=reviews_cp2,
+                    checkpoint_4wk=reviews_cp4,
+                    checkpoint_6wk=reviews_cp6,
+                )
+
+                # --- Closures: pipeline delay model ---
+                # 1) Existing skills: close based on their remaining sessions
+                existing_closures = existing_closures_by_week.get(w, 0)
+
+                # 2) New introductions: close after pipeline delay
+                #    Skills intro'd in week X close in week X + weeks_to_close
+                new_closures_best = 0.0
+                new_closures_opt = 0.0
+                new_closures_pess = 0.0
+
+                source_best = w - weeks_to_close_best
+                if 1 <= source_best <= len(new_introductions_by_week):
+                    new_closures_best = float(new_introductions_by_week[source_best - 1])
+
+                source_opt = w - weeks_to_close_opt
+                if 1 <= source_opt <= len(new_introductions_by_week):
+                    new_closures_opt = float(new_introductions_by_week[source_opt - 1])
+
+                source_pess = w - weeks_to_close_pess
+                if 1 <= source_pess <= len(new_introductions_by_week):
+                    new_closures_pess = float(new_introductions_by_week[source_pess - 1])
+
+                closures_best_f = existing_closures + new_closures_best
+                closures_opt_f = existing_closures + new_closures_opt
+                closures_pess_f = existing_closures + new_closures_pess
+                closures_for_inventory = round(closures_best_f)
+
+                # --- New skill capacity ---
+                new_capacity = max(0, weekly_capacity - projected_reviews_due)
+                new_introductions = min(new_capacity, pacing_target, not_started)
+                not_started = max(0, not_started - new_introductions)
+
+                new_introductions_by_week.append(new_introductions)
+
+                # --- Running totals ---
+                open_inventory = max(0, open_inventory + new_introductions - closures_for_inventory)
+
+                cumulative_mastered_f += closures_best_f
+                cumulative_mastered_opt_f += closures_opt_f
+                cumulative_mastered_pess_f += closures_pess_f
+
+                week_by_week.append(WeekProjection(
+                    week=w,
+                    weekOf=week_monday.isoformat(),
+                    projectedReviewsDue=projected_reviews_due,
+                    projectedReviewsByCheckpoint=reviews_by_checkpoint,
+                    projectedNewIntroductions=new_introductions,
+                    projectedClosures=closures_for_inventory,
+                    projectedOpenInventory=open_inventory,
+                    cumulativeMastered=ConfidenceBand(
+                        optimistic=min(round(cumulative_mastered_opt_f), total_subskills),
+                        bestEstimate=min(round(cumulative_mastered_f), total_subskills),
+                        pessimistic=min(round(cumulative_mastered_pess_f), total_subskills),
+                    ),
+                ))
+
+                # --- Danger signals ---
+                if open_inventory > capacity * 5:
+                    week_label = week_monday.strftime("%B %d")
+                    warnings.append(MonthlyWarning(
+                        type="review_overload_projected",
+                        week=w,
+                        message=f"Review burden projected to exceed daily capacity in week of {week_label}",
+                    ))
+                if new_capacity <= 0:
+                    week_label = week_monday.strftime("%B %d")
+                    warnings.append(MonthlyWarning(
+                        type="zero_new_capacity_projected",
+                        week=w,
+                        message=f"No capacity for new skills projected in week of {week_label}",
+                    ))
+
+            # --- End of year projection ---
+            final_opt = min(round(cumulative_mastered_opt_f), total_subskills)
+            final_best = min(round(cumulative_mastered_f), total_subskills)
+            final_pess = min(round(cumulative_mastered_pess_f), total_subskills)
+
+            end_of_year = EndOfYearScenarios(
+                optimistic=EndOfYearProjection(
+                    closed=final_opt,
+                    remainingGap=max(0, total_subskills - final_opt),
+                ),
+                bestEstimate=EndOfYearProjection(
+                    closed=final_best,
+                    remainingGap=max(0, total_subskills - final_best),
+                ),
+                pessimistic=EndOfYearProjection(
+                    closed=final_pess,
+                    remainingGap=max(0, total_subskills - final_pess),
+                ),
+            )
+
+            projections[subj] = SubjectMonthlyProjection(
+                currentState=current_state,
+                weekByWeek=week_by_week,
+                endOfYearProjection=end_of_year,
+                warnings=warnings,
+            )
+
+        return MonthlyPlanResponse(
+            studentId=str(student_id),
+            generatedAt=datetime.now(timezone.utc).isoformat(),
+            schoolYear={
+                "fractionElapsed": round(fraction_elapsed, 3),
+                "weeksRemaining": weeks_remaining,
+            },
+            projections=projections,
         )
 
     # ====================================================================
@@ -312,48 +630,48 @@ class PlanningService:
                 f"LA keys sample: {la_sample}"
             )
 
-        # ---- Step 5: Merge and return ----
+        # ---- Step 5: Interleave and return (PRD §8) ----
+        interleaved = self._interleave_sessions(review_queue, new_skills, capacity)
+
         sessions: List[dict] = []
-        priority = 1
-
-        for r in review_queue:
-            sid = r.get("skill_id", "")
+        for item in interleaved:
+            sid = item.get("skill_id", "")
             meta = curriculum_lookup.get(sid, {})
-            sessions.append(
-                ReviewSessionItem(
-                    skill_id=sid,
-                    subject=r.get("subject", ""),
-                    skill_name=meta.get("subskill_description") or r.get("skill_name", sid),
-                    reason=SessionReason.TIGHT_LOOP_RECOVERY if r.get("in_tight_loop") else SessionReason.SCHEDULED_REVIEW,
-                    priority=priority,
-                    review_session=len(r.get("review_history", [])) + 1,
-                    estimated_ultimate=r.get("estimated_ultimate", DEFAULT_ULTIMATE),
-                    completion_factor=r.get("completion_factor", 0.0),
-                    days_overdue=r.get("days_overdue", 0),
-                    unit_title=meta.get("unit_title"),
-                    skill_description=meta.get("skill_description"),
-                    subskill_description=meta.get("subskill_description"),
-                ).model_dump()
-            )
-            priority += 1
+            category = SessionCategory(item.get("session_category", SessionCategory.INTERLEAVED.value))
 
-        for n in new_skills:
-            sid = n["skill_id"]
-            meta = curriculum_lookup.get(sid, {})
-            sessions.append(
-                NewSkillSessionItem(
-                    skill_id=sid,
-                    subject=n["subject"],
-                    skill_name=meta.get("subskill_description") or n["skill_name"],
-                    reason=SessionReason(n["reason"]),
-                    priority=priority,
-                    prerequisites_met=n.get("prerequisites_met", True),
-                    unit_title=meta.get("unit_title"),
-                    skill_description=meta.get("skill_description"),
-                    subskill_description=meta.get("subskill_description"),
-                ).model_dump()
-            )
-            priority += 1
+            if item.get("type") == "new":
+                sessions.append(
+                    NewSkillSessionItem(
+                        skill_id=sid,
+                        subject=item.get("subject", ""),
+                        skill_name=meta.get("subskill_description") or item.get("skill_name", sid),
+                        reason=SessionReason(item.get("reason", SessionReason.NEXT_IN_SEQUENCE.value)),
+                        priority=item["priority"],
+                        prerequisites_met=item.get("prerequisites_met", True),
+                        session_category=category,
+                        unit_title=meta.get("unit_title"),
+                        skill_description=meta.get("skill_description"),
+                        subskill_description=meta.get("subskill_description"),
+                    ).model_dump()
+                )
+            else:
+                sessions.append(
+                    ReviewSessionItem(
+                        skill_id=sid,
+                        subject=item.get("subject", ""),
+                        skill_name=meta.get("subskill_description") or item.get("skill_name", sid),
+                        reason=SessionReason.TIGHT_LOOP_RECOVERY if item.get("in_tight_loop") else SessionReason.SCHEDULED_REVIEW,
+                        priority=item["priority"],
+                        review_session=len(item.get("review_history", [])) + 1,
+                        estimated_ultimate=item.get("estimated_ultimate", DEFAULT_ULTIMATE),
+                        completion_factor=item.get("completion_factor", 0.0),
+                        days_overdue=item.get("days_overdue", 0),
+                        session_category=category,
+                        unit_title=meta.get("unit_title"),
+                        skill_description=meta.get("skill_description"),
+                        subskill_description=meta.get("subskill_description"),
+                    ).model_dump()
+                )
 
         # Week progress (simplified — count completed this week from skill_status)
         week_progress: Dict[str, SubjectWeekProgress] = {}
@@ -455,6 +773,27 @@ class PlanningService:
         return lookup
 
     @staticmethod
+    def _checkpoint_counts(skills: List[Dict]) -> CheckpointBreakdown:
+        """Count in-review/learning skills by checkpoint stage."""
+        c2 = c4 = c6 = 0
+        for s in skills:
+            if s.get("status") not in ("in_review", "learning"):
+                continue
+            sc = s.get("sessions_completed", 0)
+            if sc == 1:
+                c2 += 1
+            elif sc == 2:
+                c4 += 1
+            elif sc >= 3:
+                c6 += 1
+            # sc == 0: learning but not yet mastered — not in review pipeline
+        return CheckpointBreakdown(
+            checkpoint_2wk=c2,
+            checkpoint_4wk=c4,
+            checkpoint_6wk=c6,
+        )
+
+    @staticmethod
     def _count_subskills(curriculum_data: List[Dict]) -> int:
         """Count total subskills in a curriculum hierarchy."""
         count = 0
@@ -462,3 +801,165 @@ class PlanningService:
             for skill in unit.get("skills", []):
                 count += len(skill.get("subskills", []))
         return count
+
+    # ====================================================================
+    # Session Interleaving (PRD Section 8)
+    # ====================================================================
+
+    @staticmethod
+    def _alternate_subjects(reviews: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Reorder reviews so consecutive items differ in subject when possible.
+
+        Uses a greedy approach: at each step, pick the item from the subject
+        with the most remaining items that differs from the last-placed subject.
+        Falls back to same-subject when no alternative exists (PRD §8, Rule 4).
+        """
+        if len(reviews) <= 1:
+            return list(reviews)
+
+        from collections import defaultdict, deque
+
+        by_subject: Dict[str, deque] = defaultdict(deque)
+        for r in reviews:
+            by_subject[r.get("subject", "")].append(r)
+
+        result: List[Dict[str, Any]] = []
+        last_subject: Optional[str] = None
+
+        while any(len(q) > 0 for q in by_subject.values()):
+            # Sort candidates by queue length descending (avoid bunching)
+            candidates = sorted(
+                ((subj, q) for subj, q in by_subject.items() if len(q) > 0),
+                key=lambda x: -len(x[1]),
+            )
+
+            placed = False
+            # Prefer a subject different from the last one
+            for subj, q in candidates:
+                if subj != last_subject:
+                    result.append(q.popleft())
+                    last_subject = subj
+                    placed = True
+                    break
+
+            # If all remaining items are the same subject, take the next one
+            if not placed:
+                for subj, q in candidates:
+                    if len(q) > 0:
+                        result.append(q.popleft())
+                        last_subject = subj
+                        break
+
+        return result
+
+    def _interleave_sessions(
+        self,
+        review_queue: List[Dict[str, Any]],
+        new_skills: List[Dict[str, Any]],
+        capacity: int,
+    ) -> List[Dict[str, Any]]:
+        """
+        Build an interleaved session sequence per PRD Section 8.
+
+        Output order:
+          1. Tight-loop recovery items (served first while student is fresh)
+          2. Interleaved body: [new_block, review, review, new_block, ...]
+             - New skill blocks front-loaded in first 60% of total sessions
+             - Reviews subject-alternated
+          3. Tail: remaining reviews after the 60% boundary
+
+        Each returned item has 'session_category' and 'priority' set.
+        """
+        REVIEWS_PER_NEW_BLOCK = 2
+
+        # --- Partition reviews ---
+        tight_loops = [r for r in review_queue if r.get("in_tight_loop")]
+        scheduled = [r for r in review_queue if not r.get("in_tight_loop")]
+
+        # Tag types for downstream identification
+        for item in tight_loops:
+            item.setdefault("type", "review")
+        for item in scheduled:
+            item.setdefault("type", "review")
+        for item in new_skills:
+            item.setdefault("type", "new")
+
+        # --- Subject-alternate scheduled reviews ---
+        alternated = self._alternate_subjects(scheduled)
+
+        # --- Fatigue boundary (PRD §8.4) ---
+        total = len(tight_loops) + len(alternated) + len(new_skills)
+        front_boundary = math.ceil(total * 0.60) if total > 0 else 0
+
+        result: List[Dict[str, Any]] = []
+
+        # Phase 1: tight loops
+        for item in tight_loops:
+            item["session_category"] = SessionCategory.TIGHT_LOOP.value
+            result.append(item)
+
+        # Phase 2: interleaved body
+        rev_iter = iter(alternated)
+        new_iter = iter(new_skills)
+        rev_done = False
+        new_done = False
+
+        while not (rev_done and new_done):
+            past_boundary = len(result) >= front_boundary
+
+            # Place a new-skill block if within front 60%
+            if not new_done and not past_boundary:
+                try:
+                    n = next(new_iter)
+                    n["session_category"] = SessionCategory.INTERLEAVED.value
+                    result.append(n)
+                except StopIteration:
+                    new_done = True
+
+            # Place up to REVIEWS_PER_NEW_BLOCK reviews
+            placed = 0
+            while placed < REVIEWS_PER_NEW_BLOCK and not rev_done:
+                cat = (
+                    SessionCategory.TAIL.value
+                    if len(result) >= front_boundary
+                    else SessionCategory.INTERLEAVED.value
+                )
+                try:
+                    r = next(rev_iter)
+                    r["session_category"] = cat
+                    result.append(r)
+                    placed += 1
+                except StopIteration:
+                    rev_done = True
+                    break
+
+            # Drain remaining new skills if reviews exhausted
+            if rev_done and not new_done:
+                for n in new_iter:
+                    cat = (
+                        SessionCategory.TAIL.value
+                        if len(result) >= front_boundary
+                        else SessionCategory.INTERLEAVED.value
+                    )
+                    n["session_category"] = cat
+                    result.append(n)
+                new_done = True
+
+            # Drain remaining reviews if new skills exhausted
+            if new_done and not rev_done:
+                for r in rev_iter:
+                    cat = (
+                        SessionCategory.TAIL.value
+                        if len(result) >= front_boundary
+                        else SessionCategory.INTERLEAVED.value
+                    )
+                    r["session_category"] = cat
+                    result.append(r)
+                rev_done = True
+
+        # Assign sequential priority
+        for i, item in enumerate(result):
+            item["priority"] = i + 1
+
+        return result

@@ -843,6 +843,20 @@ private async getAuthToken(): Promise<string> {
   }
 
   /**
+   * Get monthly forward projection for a student (algorithmic, Firestore-native)
+   */
+  async getMonthlyPlan(studentId: number) {
+    return this.get(`/api/weekly-planner/${studentId}/monthly`);
+  }
+
+  /**
+   * Get pipeline-adjusted mastery velocity for a student (PRD Section 15)
+   */
+  async getVelocity(studentId: number) {
+    return this.get(`/api/velocity/${studentId}`);
+  }
+
+  /**
    * Get daily activities in flat format
    */
   async getDailyActivities(studentId: number) {

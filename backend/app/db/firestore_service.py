@@ -1005,6 +1005,62 @@ class FirestoreService:
             raise
 
     # ============================================================================
+    # VELOCITY HISTORY (PRD Section 15.10)
+    # ============================================================================
+
+    async def get_velocity_history(
+        self,
+        student_id: int,
+        limit: int = 9,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get recent weekly velocity snapshots for trend display.
+
+        Reads from students/{studentId}/velocityHistory, ordered by weekOf
+        descending, limited to the most recent `limit` entries.
+        Returns oldest-first for sparkline rendering.
+        """
+        try:
+            query = (
+                self._student_doc(student_id)
+                .collection("velocityHistory")
+                .order_by("weekOf", direction="DESCENDING")
+                .limit(limit)
+            )
+            docs = [doc.to_dict() for doc in query.stream()]
+            docs.reverse()  # oldest first for trend display
+            return docs
+        except Exception as e:
+            logger.error(f"Error getting velocity history for student {student_id}: {e}")
+            return []
+
+    async def save_velocity_snapshot(
+        self,
+        student_id: int,
+        week_id: str,
+        data: Dict[str, Any],
+    ) -> None:
+        """
+        Write a weekly velocity snapshot.
+
+        Stored at students/{studentId}/velocityHistory/{weekId}
+        where weekId is the Monday date (YYYY-MM-DD).
+        """
+        try:
+            await self._ensure_student_document(student_id)
+            firestore_data = self._prepare_firestore_data(data)
+            (
+                self._student_doc(student_id)
+                .collection("velocityHistory")
+                .document(week_id)
+                .set(firestore_data, merge=True)
+            )
+            logger.info(f"Saved velocity snapshot {week_id} for student {student_id}")
+        except Exception as e:
+            logger.error(f"Error saving velocity snapshot for student {student_id}: {e}")
+            raise
+
+    # ============================================================================
     # MONITORING AND VALIDATION
     # ============================================================================
 

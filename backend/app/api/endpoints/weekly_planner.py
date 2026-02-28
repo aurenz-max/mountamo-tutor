@@ -15,7 +15,7 @@ import logging
 from ...core.middleware import get_user_context
 from ...services.planning_service import PlanningService
 from ...dependencies import get_planning_service
-from ...models.planning import WeeklyPlanResponse
+from ...models.planning import MonthlyPlanResponse, WeeklyPlanResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -49,6 +49,39 @@ async def get_weekly_plan(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to compute weekly plan: {str(e)}",
+        )
+
+
+# ============================================================================
+# MONTHLY PLAN (forward projection model, PRD Section 4)
+# ============================================================================
+
+@router.get("/{student_id}/monthly", response_model=MonthlyPlanResponse)
+async def get_monthly_plan(
+    student_id: int,
+    user_context: dict = Depends(get_user_context),
+    service: PlanningService = Depends(get_planning_service),
+):
+    """
+    Get the monthly forward projection for a student.
+
+    Runs a week-by-week simulation projecting reviews due, new introductions,
+    closures, and open inventory over the remaining school year. Produces
+    optimistic / best-estimate / pessimistic confidence bands and early-warning
+    flags for review overload or zero new-skill capacity.
+
+    This is computed live from Firestore — not cached or stored.
+    """
+    try:
+        logger.info(f"GET /weekly-planner/{student_id}/monthly")
+        plan = await service.get_monthly_plan(student_id)
+        return plan
+
+    except Exception as e:
+        logger.error(f"Error computing monthly plan for student {student_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to compute monthly plan: {str(e)}",
         )
 
 
