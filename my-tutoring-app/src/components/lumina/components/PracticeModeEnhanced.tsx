@@ -21,9 +21,49 @@ import {
   WarmUpQuestion
 } from '../service/geminiClient-api';
 
+// Mastery gate constants (mirrors backend mastery_lifecycle.py)
+const MASTERY_PASS_THRESHOLD = 90; // percentage (backend uses 9.0/10 = 90%)
+const GATE_LABELS: Record<number, string> = {
+  0: 'Not Started',
+  1: 'Initial Mastery',
+  2: 'Retest 1',
+  3: 'Retest 2',
+  4: 'Durable Mastery',
+};
+// Spaced retest intervals in days (mirrors backend RETEST_INTERVALS)
+const GATE_NEXT_INTERVALS: Record<number, number> = {
+  1: 3,  // gate 1→2: 3 days
+  2: 7,  // gate 2→3: 7 days
+  3: 14, // gate 3→4: 14 days
+};
+const GATE_RETRY_INTERVALS: Record<number, number> = {
+  1: 3,
+  2: 3,
+  3: 7,
+};
+
+interface MasteryGateSessionResult {
+  passed: boolean;
+  scorePercent: number;
+  gateNumber: number;
+  gateName: string;
+  /** Days until next gate attempt (pass) or retry (fail) */
+  nextAttemptDays: number;
+}
+
 interface PracticeModeProps {
   onBack: () => void;
   onLearnMore?: (subject: Subject, gradeLevel: GradeLevel) => void;
+  /** Pre-set subject to skip the setup step (used when launching from planner) */
+  initialSubject?: Subject;
+  /** Skill context string for direct practice launch (e.g. "Addition within 20") */
+  initialSkillContext?: string;
+  /** Pre-set grade level (defaults to 'elementary') */
+  initialGradeLevel?: GradeLevel;
+  /** Mastery gate number (0-4) when launched from planner */
+  initialGateNumber?: number;
+  /** Called when a planner-launched session finishes with results */
+  onSessionComplete?: (result: MasteryGateSessionResult) => void;
 }
 
 type PracticeStep = 'setup' | 'quest-selection' | 'practicing' | 'results';
@@ -68,11 +108,23 @@ interface ManifestPreviewItem {
   isVisual: boolean;
 }
 
-export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore }) => {
+export const PracticeMode: React.FC<PracticeModeProps> = ({
+  onBack,
+  onLearnMore,
+  initialSubject,
+  initialSkillContext,
+  initialGradeLevel,
+  initialGateNumber,
+  onSessionComplete,
+}) => {
+  // Whether this is a planner-launched mastery gate session
+  const isMasteryGateSession = initialGateNumber !== undefined && initialGateNumber >= 0;
+  const gateName = isMasteryGateSession ? (GATE_LABELS[initialGateNumber] || `Gate ${initialGateNumber}`) : '';
+
   // Setup state
-  const [step, setStep] = useState<PracticeStep>('setup');
-  const [subject, setSubject] = useState<Subject | null>(null);
-  const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
+  const [step, setStep] = useState<PracticeStep>(initialSubject ? 'practicing' : 'setup');
+  const [subject, setSubject] = useState<Subject | null>(initialSubject ?? null);
+  const [gradeLevel, setGradeLevel] = useState<GradeLevel>(initialGradeLevel ?? 'elementary');
   const [problemCount, setProblemCount] = useState<number>(5);
 
   // Quest selection state
@@ -151,6 +203,16 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
     }
   }, [subject, gradeLevel, step]);
 
+  // Auto-launch practice when opened from the planner with a skill context
+  const hasAutoLaunched = useRef(false);
+  useEffect(() => {
+    if (initialSubject && initialSkillContext && !hasAutoLaunched.current) {
+      hasAutoLaunched.current = true;
+      handleStartPractice(undefined, initialSkillContext);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSubjectSelect = (newSubject: Subject) => {
     setSubject(newSubject);
     setStep('quest-selection');
@@ -162,7 +224,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
     await handleStartPractice(quest);
   };
 
-  const handleStartPractice = async (quest?: Quest) => {
+  const handleStartPractice = async (quest?: Quest, topicOverride?: string) => {
     if (!subject) {
       setError('Please select a subject');
       return;
@@ -178,9 +240,11 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
     readyCountRef.current = 0;
     setEvalSessionKey(prev => prev + 1);
 
-    const topicContext = quest
-      ? `${quest.title}: ${quest.description}. Focus on ${quest.focusArea}.`
-      : subject.replace('-', ' ');
+    const topicContext = topicOverride
+      ? topicOverride
+      : quest
+        ? `${quest.title}: ${quest.description}. Focus on ${quest.focusArea}.`
+        : subject.replace('-', ' ');
 
     try {
       // Use the streaming practice manifest system
@@ -283,11 +347,43 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
     });
   }, []);
 
+  // TODO: PracticeSessionSummaryCard may show 0% even when student answered correctly —
+  //    verify that PracticeManifestRenderer fires onItemComplete with success:true/score
+  //    and that the summary card reads itemResults correctly (likely a timing issue
+  //    between the callback chain and EvaluationContext).
+
+  // Mastery gate session result (computed when step transitions to 'results')
+  const [gateResult, setGateResult] = useState<MasteryGateSessionResult | null>(null);
+
   const handleNext = async () => {
     if (currentProblemIndex < totalItems - 1) {
       setCurrentProblemIndex(currentProblemIndex + 1);
     } else {
       setStep('results');
+
+      // Compute mastery gate result for planner-launched sessions
+      if (isMasteryGateSession) {
+        const completedResults = itemResults.filter(r => r.success !== undefined);
+        const correctCount = completedResults.filter(r => r.success).length;
+        const scorePercent = completedResults.length > 0
+          ? Math.round((correctCount / completedResults.length) * 100)
+          : 0;
+        const passed = scorePercent >= MASTERY_PASS_THRESHOLD;
+        const nextAttemptDays = passed
+          ? (GATE_NEXT_INTERVALS[initialGateNumber!] || 3)
+          : (GATE_RETRY_INTERVALS[initialGateNumber!] || 3);
+
+        const result: MasteryGateSessionResult = {
+          passed,
+          scorePercent,
+          gateNumber: initialGateNumber!,
+          gateName,
+          nextAttemptDays,
+        };
+        setGateResult(result);
+        onSessionComplete?.(result);
+      }
+
       // Generate AI assessment
       if (subject) {
         setIsGeneratingAssessment(true);
@@ -579,6 +675,29 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
       {/* Practice Step */}
       {step === 'practicing' && !isGenerating && totalItems > 0 && (
         <div className="max-w-5xl mx-auto animate-fade-in">
+          {/* Mastery Gate Banner (planner-launched sessions only) */}
+          {isMasteryGateSession && currentProblemIndex === 0 && (
+            <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-violet-900/30 to-indigo-900/30 border border-violet-500/30">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
+                  <span className="text-lg font-bold text-violet-300">{initialGateNumber}</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Mastery Gate {initialGateNumber}: {gateName}</h3>
+                  <p className="text-sm text-slate-400">{initialSkillContext}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                <svg className="w-4 h-4 text-violet-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm text-violet-200">
+                  Score <span className="font-bold text-white">{MASTERY_PASS_THRESHOLD}%+</span> to pass this gate
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Progress Bar */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
@@ -750,18 +869,77 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack, onLearnMore 
       {/* Results Step */}
       {step === 'results' && (
         <div className="max-w-5xl mx-auto animate-fade-in">
-          {/* Success Header */}
-          <div className="mb-12 text-center">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30 animate-bounce-in">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-              </svg>
+          {/* Header — Gate outcome (planner) or generic (quest) */}
+          {isMasteryGateSession && gateResult ? (
+            <div className="mb-12 text-center">
+              {/* Gate pass/fail icon */}
+              <div className={`w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center shadow-2xl animate-bounce-in ${
+                gateResult.passed
+                  ? 'bg-gradient-to-br from-emerald-400 to-green-500 shadow-green-500/30'
+                  : 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/30'
+              }`}>
+                {gateResult.passed ? (
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                )}
+              </div>
+
+              {/* Gate outcome title */}
+              <h2 className={`text-5xl font-bold mb-4 ${gateResult.passed ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {gateResult.passed ? 'Gate Passed!' : 'Gate Not Passed'}
+              </h2>
+
+              {/* Score */}
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="text-slate-400 text-lg">Your score:</span>
+                <span className={`text-3xl font-bold ${gateResult.scorePercent >= MASTERY_PASS_THRESHOLD ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {gateResult.scorePercent}%
+                </span>
+                <span className="text-slate-500 text-lg">/ {MASTERY_PASS_THRESHOLD}% needed</span>
+              </div>
+
+              {/* Gate info banner */}
+              <div className={`max-w-lg mx-auto p-4 rounded-xl border ${
+                gateResult.passed
+                  ? 'bg-emerald-900/20 border-emerald-500/30'
+                  : 'bg-amber-900/20 border-amber-500/30'
+              }`}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                    gateResult.passed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                  }`}>
+                    {gateResult.gateNumber}
+                  </div>
+                  <span className={`font-semibold ${gateResult.passed ? 'text-emerald-300' : 'text-amber-300'}`}>
+                    {gateResult.gateName}
+                  </span>
+                </div>
+                <p className={`text-sm ${gateResult.passed ? 'text-emerald-200/80' : 'text-amber-200/80'}`}>
+                  {gateResult.passed
+                    ? `Great work! Gate ${gateResult.gateNumber + 1} (${GATE_LABELS[gateResult.gateNumber + 1] || 'Next Gate'}) will be available in ${gateResult.nextAttemptDays} day${gateResult.nextAttemptDays !== 1 ? 's' : ''}.`
+                    : `You'll get another chance at this gate in ${gateResult.nextAttemptDays} day${gateResult.nextAttemptDays !== 1 ? 's' : ''}. Review the feedback below and keep practicing!`
+                  }
+                </p>
+              </div>
             </div>
-            <h2 className="text-5xl font-bold text-white mb-4">Quest Complete!</h2>
-            <p className="text-slate-400 text-xl">
-              You've completed {totalItems} questions
-            </p>
-          </div>
+          ) : (
+            <div className="mb-12 text-center">
+              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30 animate-bounce-in">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <h2 className="text-5xl font-bold text-white mb-4">Quest Complete!</h2>
+              <p className="text-slate-400 text-xl">
+                You&apos;ve completed {totalItems} questions
+              </p>
+            </div>
+          )}
 
           {/* Session Summary with per-item breakdown */}
           <div className="mb-10">

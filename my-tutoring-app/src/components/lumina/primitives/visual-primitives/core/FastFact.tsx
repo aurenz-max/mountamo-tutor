@@ -44,10 +44,10 @@ export interface FastFactChallenge {
   correctAnswer: string;
   /** Additional accepted answers (case-insensitive). */
   acceptableAnswers?: string[];
-  /** How the student responds. */
-  responseMode: 'choice' | 'type';
-  /** Answer options for choice mode. */
-  options?: string[];
+  /** How the student responds (always 'choice' — free-form deprecated). */
+  responseMode: 'choice';
+  /** Answer options (required — always multiple choice). */
+  options: string[];
   /** Per-challenge time override (seconds). */
   timeLimit?: number;
   /** Brief explanation shown after the correct answer is revealed. */
@@ -171,6 +171,11 @@ interface FastFactProps {
 }
 
 // ============================================================================
+// Start screen phases: 'waiting' -> 'counting' -> 'playing'
+// ============================================================================
+type GamePhase = 'waiting' | 'counting' | 'playing';
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -222,8 +227,9 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Local state
   // -------------------------------------------------------------------------
+  const [gamePhase, setGamePhase] = useState<GamePhase>('waiting');
+  const [countdown, setCountdown] = useState(3);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [typedAnswer, setTypedAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false);
@@ -243,7 +249,24 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `fast-fact-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const inputRef = useRef<HTMLInputElement>(null);
+
+  // -------------------------------------------------------------------------
+  // Start button & countdown
+  // -------------------------------------------------------------------------
+  const handleStart = useCallback(() => {
+    setGamePhase('counting');
+    setCountdown(3);
+  }, []);
+
+  useEffect(() => {
+    if (gamePhase !== 'counting') return;
+    if (countdown <= 0) {
+      setGamePhase('playing');
+      return;
+    }
+    const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [gamePhase, countdown]);
 
   // -------------------------------------------------------------------------
   // Current challenge
@@ -287,13 +310,13 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
     }
   }, []);
 
+  // Start timer only after playing
   useEffect(() => {
-    if (currentChallenge && !allChallengesComplete && !isCurrentChallengeComplete) {
+    if (gamePhase === 'playing' && currentChallenge && !allChallengesComplete && !isCurrentChallengeComplete) {
       startTimer(effectiveTimeLimit);
-      setTimeout(() => inputRef.current?.focus(), 100);
     }
     return () => stopTimer();
-  }, [currentChallengeIndex, currentChallenge, allChallengesComplete, isCurrentChallengeComplete, effectiveTimeLimit, startTimer, stopTimer]);
+  }, [gamePhase, currentChallengeIndex, currentChallenge, allChallengesComplete, isCurrentChallengeComplete, effectiveTimeLimit, startTimer, stopTimer]);
 
   // Handle time-up
   useEffect(() => {
@@ -338,7 +361,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
     challengeType: currentChallenge?.type ?? '',
     promptText: currentChallenge?.prompt.text ?? '',
     correctAnswer: currentChallenge?.correctAnswer ?? '',
-    responseMode: currentChallenge?.responseMode ?? 'choice',
+    responseMode: 'choice',
     difficulty: currentChallenge?.difficulty ?? 'easy',
     attemptNumber: currentAttempts + 1,
     streak,
@@ -445,7 +468,6 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
       } else {
         // More attempts available — restart timer, clear selection
         setSelectedAnswer(null);
-        setTypedAnswer('');
         startTimer(effectiveTimeLimit);
       }
 
@@ -478,18 +500,6 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
     setSelectedAnswer(value);
     processAnswer(value);
   }, [isCurrentChallengeComplete, allChallengesComplete, processAnswer]);
-
-  const handleTypedSubmit = useCallback(() => {
-    if (!typedAnswer.trim()) return;
-    processAnswer(typedAnswer.trim());
-  }, [typedAnswer, processAnswer]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleTypedSubmit();
-    }
-  }, [handleTypedSubmit]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -544,7 +554,6 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
 
     // Reset local state for next challenge
     setSelectedAnswer(null);
-    setTypedAnswer('');
     setFeedback('');
     setFeedbackType('');
     setShowCorrectAnswer(false);
@@ -623,30 +632,6 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
     </div>
   );
 
-  const renderTypedInput = () => (
-    <div className="flex items-center justify-center gap-2">
-      <input
-        ref={inputRef}
-        type="text"
-        value={typedAnswer}
-        onChange={(e) => setTypedAnswer(e.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={isCurrentChallengeComplete || allChallengesComplete}
-        className="w-48 h-12 px-4 text-lg text-center text-slate-100 bg-slate-800/50 border border-white/20 rounded-xl placeholder:text-slate-600 focus:outline-none focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/30"
-        autoComplete="off"
-        spellCheck={false}
-      />
-      <Button
-        variant="ghost"
-        className="h-12 bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300 px-6"
-        onClick={handleTypedSubmit}
-        disabled={!typedAnswer.trim() || isCurrentChallengeComplete || allChallengesComplete}
-      >
-        Submit
-      </Button>
-    </div>
-  );
-
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -672,8 +657,53 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Waiting — Start Button Screen */}
+        {gamePhase === 'waiting' && challenges.length > 0 && (
+          <div className="flex flex-col items-center justify-center py-12 space-y-6">
+            <div className="text-4xl font-bold text-slate-100 tracking-tight">
+              Ready to test your knowledge?
+            </div>
+            <p className="text-slate-400 text-sm">
+              {challenges.length} challenges &middot; {subject}
+            </p>
+            <Button
+              variant="ghost"
+              className="h-14 px-10 text-lg font-bold bg-emerald-500/10 border-2 border-emerald-400/40 hover:bg-emerald-500/20 hover:border-emerald-400/60 text-emerald-300 transition-all duration-200 hover:scale-105"
+              onClick={handleStart}
+            >
+              Start
+            </Button>
+            <p className="text-slate-600 text-xs">
+              Answer as fast and accurately as you can!
+            </p>
+          </div>
+        )}
+
+        {/* Counting — 3-2-1 Countdown */}
+        {gamePhase === 'counting' && (
+          <div className="flex flex-col items-center justify-center py-12 space-y-6">
+            <div className="relative flex items-center justify-center">
+              <svg width={140} height={140} viewBox="0 0 140 140">
+                <circle cx="70" cy="70" r="60" className="fill-none stroke-white/5" strokeWidth="6" />
+                <circle
+                  cx="70" cy="70" r="60"
+                  className="fill-none stroke-emerald-400"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 60}
+                  strokeDashoffset={2 * Math.PI * 60 * (1 - countdown / 3)}
+                  style={{ transition: 'stroke-dashoffset 1s linear', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+                />
+              </svg>
+              <span className="absolute text-6xl font-black text-emerald-400">
+                {countdown > 0 ? countdown : 'GO!'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Progress & Stats Bar */}
-        {challenges.length > 0 && !allChallengesComplete && (
+        {gamePhase === 'playing' && challenges.length > 0 && !allChallengesComplete && (
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-3">
               <span className="text-slate-500">
@@ -700,7 +730,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
         )}
 
         {/* Subtext instruction (if provided) */}
-        {currentChallenge && !allChallengesComplete && currentChallenge.prompt.subtext && (
+        {gamePhase === 'playing' && currentChallenge && !allChallengesComplete && currentChallenge.prompt.subtext && (
           <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
             <p className="text-slate-200 text-sm font-medium">
               {currentChallenge.prompt.subtext}
@@ -709,7 +739,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
         )}
 
         {/* Main Challenge Area */}
-        {currentChallenge && !allChallengesComplete && (
+        {gamePhase === 'playing' && currentChallenge && !allChallengesComplete && (
           <div className="relative">
             {/* Timer Arc */}
             {!isCurrentChallengeComplete && (
@@ -730,12 +760,9 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
               </span>
             </div>
 
-            {/* Answer Input */}
+            {/* Answer Choices (always multiple choice) */}
             <div className="mt-4">
-              {currentChallenge.responseMode === 'choice' && currentChallenge.options
-                ? renderChoiceButtons(currentChallenge.options)
-                : renderTypedInput()
-              }
+              {renderChoiceButtons(currentChallenge.options)}
             </div>
           </div>
         )}

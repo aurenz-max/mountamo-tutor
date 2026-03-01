@@ -95,7 +95,7 @@ async def get_daily_activities(
 # ACTIVITY COMPLETION
 #
 # Session completions are now handled via the existing competency update flow:
-#   POST /competency/update → CompetencyService → ReviewEngine hook
+#   POST /competency/update → CompetencyService → MasteryLifecycleEngine hook
 #
 # The endpoints below are kept for explicit plan-level completion tracking.
 # ============================================================================

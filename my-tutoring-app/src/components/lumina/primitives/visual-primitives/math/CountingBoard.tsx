@@ -153,12 +153,17 @@ function generateLinePositions(count: number): Array<{ x: number; y: number }> {
 
 function generateGroupPositions(count: number, groupSize: number): Array<{ x: number; y: number }> {
   const numGroups = Math.ceil(count / groupSize);
-  const groupSpacing = Math.min(
-    (WORKSPACE_WIDTH - 2 * OBJECT_PADDING) / Math.max(numGroups, 1),
-    160
-  );
-  const startX = (WORKSPACE_WIDTH - groupSpacing * (numGroups - 1)) / 2;
+  // Spread groups evenly across the full workspace width
+  const usableWidth = WORKSPACE_WIDTH - 2 * OBJECT_PADDING - OBJECT_SIZE;
+  const groupSpacing = numGroups > 1
+    ? usableWidth / (numGroups - 1)
+    : 0;
+  const startX = numGroups > 1
+    ? OBJECT_PADDING + OBJECT_SIZE / 2
+    : WORKSPACE_WIDTH / 2;
   const positions: Array<{ x: number; y: number }> = [];
+
+  const itemSpacing = OBJECT_SIZE + 6;
 
   for (let g = 0; g < numGroups; g++) {
     const groupCenterX = startX + g * groupSpacing;
@@ -168,11 +173,11 @@ function generateGroupPositions(count: number, groupSize: number): Array<{ x: nu
       const row = Math.floor(i / 3);
       const col = i % 3;
       const itemsInRow = Math.min(3, itemsInGroup - row * 3);
-      const rowStartX = groupCenterX - ((itemsInRow - 1) * (OBJECT_SIZE * 0.6)) / 2;
+      const rowStartX = groupCenterX - ((itemsInRow - 1) * itemSpacing) / 2;
 
       positions.push({
-        x: rowStartX + col * (OBJECT_SIZE * 0.6),
-        y: WORKSPACE_HEIGHT / 2 - 20 + row * (OBJECT_SIZE * 0.6),
+        x: rowStartX + col * itemSpacing,
+        y: WORKSPACE_HEIGHT / 2 - 20 + row * itemSpacing,
       });
     }
   }
@@ -762,19 +767,20 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               (() => {
                 const gs = challengeGroupSize;
                 const numGroups = Math.ceil(challengeCount / gs);
-                const groupSpacing = Math.min(
-                  (WORKSPACE_WIDTH - 2 * OBJECT_PADDING) / Math.max(numGroups, 1),
-                  160
-                );
-                const startX = (WORKSPACE_WIDTH - groupSpacing * (numGroups - 1)) / 2;
+                const usable = WORKSPACE_WIDTH - 2 * OBJECT_PADDING - OBJECT_SIZE;
+                const groupSpacing = numGroups > 1 ? usable / (numGroups - 1) : 0;
+                const startX = numGroups > 1
+                  ? OBJECT_PADDING + OBJECT_SIZE / 2
+                  : WORKSPACE_WIDTH / 2;
+                const itemSpacing = OBJECT_SIZE + 6;
 
                 return Array.from({ length: numGroups }, (_, g) => {
                   const itemsInGroup = Math.min(gs, challengeCount - g * gs);
                   const rows = Math.ceil(itemsInGroup / 3);
-                  const groupCenterY = WORKSPACE_HEIGHT / 2 - 20 + ((rows - 1) * (OBJECT_SIZE * 0.6)) / 2;
+                  const groupCenterY = WORKSPACE_HEIGHT / 2 - 20 + ((rows - 1) * itemSpacing) / 2;
                   const cols = Math.min(3, itemsInGroup);
-                  const rx = Math.max(((cols - 1) * (OBJECT_SIZE * 0.6)) / 2 + OBJECT_SIZE / 2 + 6, OBJECT_SIZE);
-                  const ry = Math.max(((rows - 1) * (OBJECT_SIZE * 0.6)) / 2 + OBJECT_SIZE / 2 + 6, OBJECT_SIZE);
+                  const rx = Math.max(((cols - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
+                  const ry = Math.max(((rows - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
 
                   return (
                     <ellipse
@@ -888,16 +894,27 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         {currentPhase === 'subitize' && !isCurrentChallengeComplete && (
           <div className="flex items-center justify-center gap-3">
             <span className="text-slate-300 text-sm">How many {objects.type} do you see?</span>
-            <input
-              type="number"
-              min={0}
-              max={30}
-              value={subitizeInput}
-              onChange={e => setSubitizeInput(e.target.value)}
-              className="w-16 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-orange-400/50"
-              autoFocus
-              onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
-            />
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+                onClick={() => setSubitizeInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1)))}
+                disabled={hasSubmittedEvaluation}
+              >
+                &minus;
+              </Button>
+              <span className="w-12 text-center text-2xl font-bold text-orange-300 tabular-nums select-none">
+                {parseInt(subitizeInput, 10) || 0}
+              </span>
+              <Button
+                variant="ghost"
+                className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+                onClick={() => setSubitizeInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1)))}
+                disabled={hasSubmittedEvaluation}
+              >
+                +
+              </Button>
+            </div>
           </div>
         )}
 
@@ -908,16 +925,27 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               There are <span className="text-blue-400 font-bold">{preCountedCount}</span> already counted.
               How many altogether?
             </span>
-            <input
-              type="number"
-              min={0}
-              max={30}
-              value={countOnInput}
-              onChange={e => setCountOnInput(e.target.value)}
-              className="w-16 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-orange-400/50"
-              autoFocus
-              onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
-            />
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+                onClick={() => setCountOnInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1)))}
+                disabled={hasSubmittedEvaluation}
+              >
+                &minus;
+              </Button>
+              <span className="w-12 text-center text-2xl font-bold text-blue-300 tabular-nums select-none">
+                {parseInt(countOnInput, 10) || 0}
+              </span>
+              <Button
+                variant="ghost"
+                className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+                onClick={() => setCountOnInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1)))}
+                disabled={hasSubmittedEvaluation}
+              >
+                +
+              </Button>
+            </div>
           </div>
         )}
 
@@ -941,7 +969,6 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                 className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
                 onClick={handleCheckAnswer}
                 disabled={
-                  (currentPhase === 'subitize' && !subitizeInput) ||
                   (currentPhase === 'count' && countedObjects.size === 0) ||
                   hasSubmittedEvaluation
                 }

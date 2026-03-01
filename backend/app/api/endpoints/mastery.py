@@ -201,6 +201,54 @@ async def _seed_subskill_to_gate(
 
 
 # ==========================================================================
+# Eval submission endpoint
+# ==========================================================================
+
+
+class EvalSubmission(BaseModel):
+    """A single practice or lesson evaluation result from the frontend."""
+    subskill_id: str = Field(..., description="Subskill being evaluated")
+    subject: str = Field(..., description="Subject name (e.g. 'mathematics')")
+    skill_id: str = Field(..., description="Parent skill identifier")
+    score: float = Field(..., ge=0, le=10, description="Score on 0-10 scale (9.0 = 90%)")
+    source: str = Field("practice", description="'lesson' or 'practice'")
+
+
+@router.post("/{student_id}/eval")
+async def submit_eval_result(
+    student_id: int,
+    body: EvalSubmission,
+    user_context: dict = Depends(get_user_context),
+    engine: MasteryLifecycleEngine = Depends(get_mastery_lifecycle_engine),
+):
+    """
+    Record a practice or lesson evaluation result and advance the mastery gate
+    if the student meets the threshold (score >= 9.0/10).
+
+    Called by the frontend after a student completes a mastery gate session.
+    """
+    try:
+        result = await engine.process_eval_result(
+            student_id=student_id,
+            subskill_id=body.subskill_id,
+            subject=body.subject,
+            skill_id=body.skill_id,
+            score=body.score,
+            source=body.source,
+        )
+        return {
+            "student_id": student_id,
+            "subskill_id": body.subskill_id,
+            "result": result,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing eval for student {student_id}, subskill {body.subskill_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==========================================================================
 # Fixed-path routes (MUST come before wildcard /{student_id}/{subskill_id})
 # ==========================================================================
 

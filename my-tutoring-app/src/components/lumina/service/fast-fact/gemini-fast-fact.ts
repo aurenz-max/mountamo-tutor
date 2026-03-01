@@ -78,13 +78,13 @@ const flatChallengeSchema: Schema = {
     },
     responseMode: {
       type: Type.STRING,
-      enum: ["choice", "type"],
-      description: "'choice' for multiple-choice buttons, 'type' for typed input",
+      enum: ["choice"],
+      description: "Always 'choice' — all challenges use multiple-choice buttons",
     },
     options: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: "Answer options for choice mode (3-4 items). Empty array for type mode",
+      description: "Answer options (3-4 items). Must include the correct answer. Required for every challenge",
     },
     timeLimit: {
       type: Type.NUMBER,
@@ -198,26 +198,24 @@ const fastFactSchema: Schema = {
  */
 function reconstructChallenge(flat: any, index: number): FastFactChallenge {
   const id = flat.id || `ff_${index + 1}`;
-  const hasOptions = Array.isArray(flat.options) && flat.options.length > 0;
+  const correctStr = String(flat.correctAnswer || '???');
 
-  // Determine responseMode
-  const responseMode: 'choice' | 'type' =
-    flat.responseMode === 'type' ? 'type'
-    : flat.responseMode === 'choice' ? 'choice'
-    : hasOptions ? 'choice' : 'type';
+  // Always choice mode — build options from whatever Gemini gave us
+  let options: string[] = Array.isArray(flat.options) && flat.options.length > 0
+    ? [...flat.options]
+    : [correctStr]; // fallback: at least include the correct answer
 
-  // Build options for choice mode
-  let options = responseMode === 'choice' && hasOptions ? [...flat.options] : undefined;
+  // Ensure correctAnswer is in options
+  const correctLower = correctStr.trim().toLowerCase();
+  const found = options.some((o: string) => String(o).trim().toLowerCase() === correctLower);
+  if (!found) {
+    const insertIdx = Math.floor(Math.random() * (options.length + 1));
+    options.splice(insertIdx, 0, correctStr);
+  }
 
-  // Ensure correctAnswer is in options for choice mode
-  if (responseMode === 'choice' && options) {
-    const correctLower = String(flat.correctAnswer).trim().toLowerCase();
-    const found = options.some((o: string) => String(o).trim().toLowerCase() === correctLower);
-    if (!found) {
-      // Insert correct answer at a random position
-      const insertIdx = Math.floor(Math.random() * (options.length + 1));
-      options.splice(insertIdx, 0, String(flat.correctAnswer));
-    }
+  // Ensure at least 3 options (pad with placeholders if Gemini failed)
+  while (options.length < 3) {
+    options.push(`Option ${options.length + 1}`);
   }
 
   // Build visual (only if type is not 'none')
@@ -246,11 +244,11 @@ function reconstructChallenge(flat: any, index: number): FastFactChallenge {
       subtext: flat.promptSubtext || undefined,
       visual,
     },
-    correctAnswer: String(flat.correctAnswer),
+    correctAnswer: correctStr,
     acceptableAnswers: Array.isArray(flat.acceptableAnswers) && flat.acceptableAnswers.length > 0
       ? flat.acceptableAnswers.map(String)
       : undefined,
-    responseMode,
+    responseMode: 'choice',
     options,
     timeLimit: typeof flat.timeLimit === 'number' ? Math.max(3, Math.min(15, flat.timeLimit)) : undefined,
     explanation: flat.explanation || undefined,
@@ -361,8 +359,8 @@ Create a Fast Fact fluency drill for "${topic}". Infer the subject area from the
 
 ## Challenge Design:
 - Each challenge must have a SINGLE clear correct answer.
-- For CHOICE mode: provide 3-4 options with plausible distractors. The correct answer MUST be one of the options.
-- For TYPE mode: keep answers short (1-2 words or a number).
+- ALL challenges use CHOICE mode (multiple choice). Provide 3-4 options with plausible distractors. The correct answer MUST be one of the options.
+- responseMode must always be "choice". Never use "type".
 - NEVER reveal answers in promptText, promptSubtext, or visual content.
 - Use emojis (visualType: "emoji") or large text (visualType: "text-large") where pedagogically helpful (math expressions, symbols, etc.).
 - Use visualType: "none" when no visual is needed.

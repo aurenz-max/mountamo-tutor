@@ -5,17 +5,13 @@ Velocity Service — Pipeline-Adjusted Mastery Progress Metric (PRD Section 15)
 Computes the single most important progress metric: "Is this student on track?"
 
 Key concepts:
-  - Earned mastery:  closed skills at 1.0 + in-review at completion_factor
+  - Earned mastery:  closed skills at 1.0 + in-pipeline at completion_pct
   - Pipeline-adjusted expected mastery: expectations based on how long each skill
-    has been in the review pipeline (not just calendar time)
+    has been in the pipeline (not just calendar time)
   - Velocity = earnedMastery / adjustedExpectedMastery
   - Decomposition: introduction / pass-through / closure velocities
 
-Data sources (all Firestore):
-  - students/{id}/skill_status    — review pipeline state
-  - students/{id}/velocityHistory — weekly snapshots for trend
-  - config/schoolYear             — year dates, breaks
-  - curriculum_published          — total skills per subject
+Data source: mastery_lifecycle subcollection (unified — PRD §2).
 """
 
 import logging
@@ -39,8 +35,8 @@ logger = logging.getLogger(__name__)
 
 class VelocityService:
     """
-    Stateless velocity calculator. Reads live Firestore state and computes
-    pipeline-adjusted mastery velocity on demand.
+    Stateless velocity calculator. Reads live Firestore mastery_lifecycle
+    state and computes pipeline-adjusted mastery velocity on demand.
     """
 
     def __init__(
@@ -79,8 +75,8 @@ class VelocityService:
             weeksRemaining=weeks_remaining,
         )
 
-        # 2. Load all skill statuses
-        all_skills = await self.firestore.get_all_skill_statuses(student_id)
+        # 2. Load all mastery lifecycles
+        all_lifecycles = await self.firestore.get_all_mastery_lifecycles(student_id)
 
         # 3. Get available subjects and their total skill counts
         subjects_list = await self.curriculum.get_available_subjects()
@@ -106,25 +102,25 @@ class VelocityService:
             if total_skills == 0:
                 continue
 
-            subj_skills = [s for s in all_skills if s.get("subject") == subj]
+            subj_lcs = [lc for lc in all_lifecycles if lc.get("subject") == subj]
 
             # Core calculations
-            earned = self._compute_earned_mastery(subj_skills)
-            closed = sum(1 for s in subj_skills if s.get("status") == "closed")
+            earned = self._compute_earned_mastery(subj_lcs)
+            closed = sum(1 for lc in subj_lcs if lc.get("current_gate", 0) >= 4)
             in_review_earned = round(earned - closed, 2)
             adjusted_expected = self._compute_adjusted_expected(
-                subj_skills, total_skills, fraction_elapsed, today
+                subj_lcs, total_skills, fraction_elapsed, today
             )
 
             velocity = round(earned / adjusted_expected, 3) if adjusted_expected > 0 else 1.0
 
             # Decomposition
             decomposition = self._compute_decomposition(
-                subj_skills, total_skills, fraction_elapsed, today
+                subj_lcs, total_skills, fraction_elapsed, today
             )
 
             # Primary driver
-            primary_driver = self._identify_primary_driver(decomposition, subj_skills, today)
+            primary_driver = self._identify_primary_driver(decomposition, subj_lcs, today)
 
             # Trend: extract historical values for this subject, append current
             trend = self._extract_subject_trend(history, subj)
@@ -166,29 +162,45 @@ class VelocityService:
         )
 
     # ====================================================================
+    # Gate-to-status helper
+    # ====================================================================
+
+    @staticmethod
+    def _derive_status(lc: Dict[str, Any]) -> str:
+        """Derive a planning status from mastery lifecycle gate value."""
+        gate = lc.get("current_gate", 0)
+        if gate >= 4:
+            return "closed"
+        elif gate >= 1:
+            return "in_review"
+        elif lc.get("lesson_eval_count", 0) > 0:
+            return "learning"
+        return "not_started"
+
+    # ====================================================================
     # Core calculations
     # ====================================================================
 
     @staticmethod
-    def _compute_earned_mastery(skills: List[Dict[str, Any]]) -> float:
+    def _compute_earned_mastery(lifecycles: List[Dict[str, Any]]) -> float:
         """
-        Earned mastery = Σ 1.0 (closed) + Σ completion_factor (in-review/learning).
+        Earned mastery = Σ 1.0 (closed) + Σ completion_pct (in-pipeline).
 
         Analogous to earned premium in insurance: credit for work done,
         including work in progress.
         """
         earned = 0.0
-        for s in skills:
-            status = s.get("status", "not_started")
-            if status == "closed":
+        for lc in lifecycles:
+            gate = lc.get("current_gate", 0)
+            if gate >= 4:
                 earned += 1.0
-            elif status in ("in_review", "learning"):
-                earned += s.get("completion_factor", 0.0)
+            elif gate >= 1 or lc.get("lesson_eval_count", 0) > 0:
+                earned += lc.get("completion_pct", 0.0)
         return earned
 
     @staticmethod
     def _compute_adjusted_expected(
-        skills: List[Dict[str, Any]],
+        lifecycles: List[Dict[str, Any]],
         total_skills: int,
         fraction_elapsed: float,
         today: date,
@@ -198,53 +210,56 @@ class VelocityService:
 
         For each introduced skill, the expected contribution depends on how
         long it has been in the pipeline:
-          >= 6 weeks → 1.0  (should be closed)
-          >= 4 weeks → 0.75 (3 of 4 sessions done)
-          >= 2 weeks → 0.50 (2 of 4 sessions done)
-          <  2 weeks → 0.25 (just entered pipeline)
+          >= 4 weeks → 1.0  (should be at Gate 4 / closed)
+          >= 2 weeks → 0.75 (should be at Gate 3)
+          >= 1 week  → 0.50 (should be at Gate 2)
+          <  1 week  → 0.25 (just entered pipeline)
 
-        Skills that should have been introduced but haven't been get added
-        at 0.5 expected contribution (mid-pipeline estimate).
+        Timeline based on mastery lifecycle intervals:
+          Gate 1→2: 3 days (~0.5 weeks)
+          Gate 2→3: 7 days (~1 week)
+          Gate 3→4: 14 days (~2 weeks)
+          Total pipeline: 24 days (~3.5 weeks)
         """
-        introduced = [s for s in skills if s.get("status") != "not_started"]
+        introduced = [
+            lc for lc in lifecycles
+            if lc.get("current_gate", 0) > 0 or lc.get("lesson_eval_count", 0) > 0
+        ]
         adjusted = 0.0
 
-        for s in introduced:
-            first_intro = s.get("first_introduced")
-            if not first_intro:
-                # Fallback: treat as recently introduced
+        for lc in introduced:
+            created = lc.get("created_at")
+            if not created:
                 adjusted += 0.25
                 continue
 
             try:
-                intro_date = date.fromisoformat(first_intro[:10])
+                intro_date = date.fromisoformat(created[:10])
             except (ValueError, TypeError):
                 adjusted += 0.25
                 continue
 
             weeks_in_pipeline = (today - intro_date).days / 7.0
 
-            if weeks_in_pipeline >= 6:
+            if weeks_in_pipeline >= 4:
                 adjusted += 1.0
-            elif weeks_in_pipeline >= 4:
-                adjusted += 0.75
             elif weeks_in_pipeline >= 2:
+                adjusted += 0.75
+            elif weeks_in_pipeline >= 1:
                 adjusted += 0.50
             else:
                 adjusted += 0.25
 
-        # Account for skills that should have been introduced by now but weren't
+        # Account for skills that should have been introduced by now
         expected_introduced = total_skills * fraction_elapsed
         shortfall = max(0.0, expected_introduced - len(introduced))
-        # Not-introduced skills contribute 0 to earned but we add their
-        # expected contribution at mid-pipeline (0.5) to keep the ratio fair
         adjusted += shortfall * 0.5
 
         return adjusted
 
     @staticmethod
     def _compute_decomposition(
-        skills: List[Dict[str, Any]],
+        lifecycles: List[Dict[str, Any]],
         total_skills: int,
         fraction_elapsed: float,
         today: date,
@@ -256,9 +271,15 @@ class VelocityService:
         Pass-through velocity: Are in-pipeline skills advancing?
         Closure velocity: Are mature skills actually closing?
         """
-        introduced = [s for s in skills if s.get("status") != "not_started"]
-        in_pipeline = [s for s in skills if s.get("status") in ("in_review", "learning")]
-        closed_skills = [s for s in skills if s.get("status") == "closed"]
+        introduced = [
+            lc for lc in lifecycles
+            if lc.get("current_gate", 0) > 0 or lc.get("lesson_eval_count", 0) > 0
+        ]
+        in_pipeline = [
+            lc for lc in lifecycles
+            if 1 <= lc.get("current_gate", 0) <= 3
+        ]
+        closed_lcs = [lc for lc in lifecycles if lc.get("current_gate", 0) >= 4]
 
         # --- Introduction velocity ---
         expected_introduced = total_skills * fraction_elapsed
@@ -270,52 +291,51 @@ class VelocityService:
 
         # --- Pass-through velocity ---
         if in_pipeline:
-            avg_cf = sum(s.get("completion_factor", 0.0) for s in in_pipeline) / len(in_pipeline)
-            # Expected CF for each in-pipeline skill based on its age
-            expected_cfs = []
-            for s in in_pipeline:
-                first_intro = s.get("first_introduced")
-                if not first_intro:
-                    expected_cfs.append(0.25)
+            avg_completion = sum(lc.get("completion_pct", 0.0) for lc in in_pipeline) / len(in_pipeline)
+            expected_completions = []
+            for lc in in_pipeline:
+                created = lc.get("created_at")
+                if not created:
+                    expected_completions.append(0.25)
                     continue
                 try:
-                    intro_date = date.fromisoformat(first_intro[:10])
+                    intro_date = date.fromisoformat(created[:10])
                 except (ValueError, TypeError):
-                    expected_cfs.append(0.25)
+                    expected_completions.append(0.25)
                     continue
 
                 weeks = (today - intro_date).days / 7.0
-                if weeks >= 6:
-                    expected_cfs.append(1.0)
-                elif weeks >= 4:
-                    expected_cfs.append(0.75)
+                if weeks >= 4:
+                    expected_completions.append(1.0)
                 elif weeks >= 2:
-                    expected_cfs.append(0.50)
+                    expected_completions.append(0.75)
+                elif weeks >= 1:
+                    expected_completions.append(0.50)
                 else:
-                    expected_cfs.append(0.25)
+                    expected_completions.append(0.25)
 
-            expected_avg_cf = sum(expected_cfs) / len(expected_cfs) if expected_cfs else 0.25
-            pass_through_velocity = avg_cf / expected_avg_cf if expected_avg_cf > 0 else 1.0
+            expected_avg = sum(expected_completions) / len(expected_completions) if expected_completions else 0.25
+            pass_through_velocity = avg_completion / expected_avg if expected_avg > 0 else 1.0
         else:
             pass_through_velocity = 1.0
 
         # --- Closure velocity ---
-        # Expected closures: skills introduced >= 6 weeks ago should be closed
-        mature_skills = []
-        for s in introduced:
-            first_intro = s.get("first_introduced")
-            if not first_intro:
+        # Expected closures: skills introduced >= 4 weeks ago should be closed
+        mature_lcs = []
+        for lc in introduced:
+            created = lc.get("created_at")
+            if not created:
                 continue
             try:
-                intro_date = date.fromisoformat(first_intro[:10])
+                intro_date = date.fromisoformat(created[:10])
             except (ValueError, TypeError):
                 continue
-            if (today - intro_date).days >= 42:  # 6 weeks
-                mature_skills.append(s)
+            if (today - intro_date).days >= 28:  # 4 weeks
+                mature_lcs.append(lc)
 
-        expected_closed = len(mature_skills)
+        expected_closed = len(mature_lcs)
         closure_velocity = (
-            len(closed_skills) / expected_closed
+            len(closed_lcs) / expected_closed
             if expected_closed > 0
             else 1.0
         )
@@ -329,7 +349,7 @@ class VelocityService:
     @staticmethod
     def _identify_primary_driver(
         decomposition: VelocityDecomposition,
-        skills: List[Dict[str, Any]],
+        lifecycles: List[Dict[str, Any]],
         today: date,
     ) -> PrimaryDriver:
         """
@@ -362,15 +382,16 @@ class VelocityService:
                 "review burden may be crowding out new skills"
             )
         elif worst_key == "pass_through":
-            tight_count = sum(
-                1 for s in skills
-                if s.get("in_tight_loop", False)
+            low_pass = sum(
+                1 for lc in lifecycles
+                if 1 <= lc.get("current_gate", 0) <= 3
+                and lc.get("blended_pass_rate", 1.0) < 0.7
             )
-            if tight_count > 0:
+            if low_pass > 0:
                 explanation = (
-                    f"{tight_count} skill{'s' if tight_count != 1 else ''} "
-                    f"in tight-loop recovery {'are' if tight_count != 1 else 'is'} "
-                    f"depressing pipeline throughput"
+                    f"{low_pass} skill{'s' if low_pass != 1 else ''} "
+                    f"with low pass rates {'are' if low_pass != 1 else 'is'} "
+                    f"slowing pipeline throughput"
                 )
             else:
                 explanation = (
@@ -419,8 +440,7 @@ class VelocityService:
         return trend
 
     # ====================================================================
-    # Shared helpers (same logic as PlanningService, kept here to avoid
-    # coupling the two services)
+    # Shared helpers
     # ====================================================================
 
     async def _get_school_year_config(self) -> SchoolYearConfig:

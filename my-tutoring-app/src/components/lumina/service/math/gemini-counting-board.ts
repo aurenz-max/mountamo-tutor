@@ -141,6 +141,18 @@ export const generateCountingBoard = async (
     challengeTypes?: string[];
   }
 ): Promise<CountingBoardData> => {
+  // Randomize starting parameters so Gemini doesn't always pick the same counts
+  const startCounts = [3, 4, 5, 6, 7, 8];
+  const randomStartCount = startCounts[Math.floor(Math.random() * startCounts.length)];
+  const arrangements = ['scattered', 'line', 'circle'];
+  const randomArrangement = arrangements[Math.floor(Math.random() * arrangements.length)];
+  const objectTypes = ['bears', 'apples', 'stars', 'blocks', 'fish', 'butterflies'];
+  const randomObject = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+  // Randomize count-on parameters: startFrom 3-7, total 2-5 more than startFrom
+  const countOnStart = 3 + Math.floor(Math.random() * 5);       // 3-7
+  const countOnExtra = 2 + Math.floor(Math.random() * 4);       // 2-5
+  const countOnTotal = countOnStart + countOnExtra;              // 5-12
+
   const prompt = `
 Create an educational counting board activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -168,8 +180,8 @@ GUIDELINES FOR GRADE LEVELS:
 CHALLENGE TYPES:
 - "count_all": Tap each object one by one. targetAnswer = count.
 - "subitize": Objects are always visible. Student looks and quickly recognizes how many without counting one by one, then types their answer. Best for small counts (1-5 for K, up to 10 for Grade 1).
-- "count_on": Some objects are pre-counted. Student counts the rest and gives total. Set startFrom.
-- "group_count": Objects in groups. Count by groups (2s, 5s, 10s). Use arrangement 'groups' with groupSize.
+- "count_on": Some objects are pre-counted. Student counts the rest and gives total. Set startFrom. For this session use startFrom=${countOnStart} and count=${countOnTotal} (so the student counts on ${countOnExtra} more).
+- "group_count": Objects in groups. Use arrangement 'groups' with groupSize of 2, 3, 4, or 5. Use only 2-3 groups total (so count = groupSize × numGroups, e.g. 3 groups of 4 = 12).
 - "compare": Two groups visible. "Which has more?" targetAnswer = count.
 
 ${config ? `
@@ -185,8 +197,7 @@ ${config.challengeTypes ? `- Challenge types: ${config.challengeTypes.join(', ')
 REQUIREMENTS:
 1. Generate 3-5 challenges that progress in difficulty
 2. IMPORTANT: Each challenge has its own count and arrangement — vary them!
-   Example progression: 3 in a line → 5 scattered → 4 in a circle → 10 in groups of 5
-3. Start with smaller counts and simpler arrangements, then increase
+3. Start the FIRST challenge with exactly ${randomStartCount} ${randomObject} in a ${randomArrangement} arrangement, then progress upward from there
 4. Use warm, encouraging instruction text for young children
 5. For Kindergarten: count_all and subitize only, counts 1-20 per challenge
 6. For Grade 1: include count_on and group_count, counts up to 30 per challenge
@@ -245,6 +256,18 @@ Return the complete counting board configuration.
     // Validate arrangement
     if (!validArrangements.includes(challenge.arrangement)) {
       challenge.arrangement = 'scattered';
+    }
+
+    // group_count: force 2-3 groups of 2-5 objects for reasonable layout
+    if (challenge.type === 'group_count') {
+      challenge.arrangement = 'groups';
+      const validGroupSizes = [2, 3, 4, 5];
+      const gs = validGroupSizes.includes(challenge.groupSize)
+        ? challenge.groupSize
+        : validGroupSizes[Math.floor(Math.random() * validGroupSizes.length)];
+      const numGroups = Math.random() < 0.5 ? 2 : 3;
+      challenge.groupSize = gs;
+      challenge.count = gs * numGroups;
     }
 
     // Validate count

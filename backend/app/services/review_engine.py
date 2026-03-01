@@ -1,6 +1,9 @@
 # backend/app/services/review_engine.py
+# DEPRECATED: Superseded by mastery_lifecycle_engine.py (PRD §2).
+# No active code paths call into this module.
+# Retained for reference only.
 """
-Review Engine — Completion Factor Model
+Review Engine — Completion Factor Model (DEPRECATED)
 
 Implements the actuarial chain-ladder–inspired review scheduling algorithm
 described in PRD Sections 3 and 7.

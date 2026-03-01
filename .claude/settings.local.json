@@ -24,8 +24,10 @@
       "Bash(which:*)",
       "Bash(python -m py_compile backend/app/models/planning.py)",
       "Bash(python -m py_compile backend/app/services/planning_service.py)",
-      "Bash(python -c \"from backend.app.models.mastery_lifecycle import MasteryLifecycle, MasteryGate, GateHistoryEntry, MASTERY_THRESHOLD, GATE_1_MIN_LESSON_EVALS, RETEST_INTERVALS; print\\(''Models OK''\\); ml = MasteryLifecycle\\(student_id=1, subskill_id=''TEST-001''\\); print\\(f''Default lifecycle: gate={ml.current_gate}, completion={ml.completion_pct}, lesson_evals={ml.lesson_eval_count}''\\)\")",
-      "Bash(python -c \"from backend.app.api.endpoints.mastery import router; print\\(f''Mastery router OK: {len\\(router.routes\\)} routes''\\); [print\\(f''  {r.methods} {r.path}''\\) for r in router.routes]\")"
+      "Bash(python -c \"from backend.app.api.endpoints.mastery import router; print\\(f''Mastery router OK: {len\\(router.routes\\)} routes''\\); [print\\(f''  {r.methods} {r.path}''\\) for r in router.routes]\")",
+      "Read",
+      "Bash(npx tsc*)",
+      "Bash(pip show pytest)"
     ],
     "deny": [],
     "ask": []

@@ -31,7 +31,6 @@ class CompetencyService:
         self._competencies = {}  # In-memory storage for competency calculations
         self.cosmos_db = None  # Will be set by dependency injection
         self.firestore_service = None  # Will be set by dependency injection
-        self.review_engine = None  # Will be set by dependency injection
         self.mastery_lifecycle_engine = None  # Will be set by dependency injection
         self.curriculum_service = curriculum_service
         
@@ -408,21 +407,7 @@ class CompetencyService:
             else:
                 logger.error(f"🔍 COMPETENCY_SERVICE: Both competency database updates failed")
             
-            # --- Review engine hook: update skill lifecycle / completion factor ---
-            if self.review_engine:
-                try:
-                    await self.review_engine.process_session_result(
-                        student_id=student_id,
-                        skill_id=skill_id,
-                        subject=subject,
-                        score=score,
-                        skill_name=subskill_id,
-                    )
-                    logger.info(f"✅ COMPETENCY_SERVICE: Review engine processed session result")
-                except Exception as re_err:
-                    logger.error(f"⚠️ COMPETENCY_SERVICE: Review engine error (non-fatal): {re_err}")
-
-            # --- Mastery lifecycle hook: 4-gate mastery model (PRD Sections 3, 8) ---
+            # --- Mastery lifecycle hook: 4-gate mastery model (PRD §2) ---
             if self.mastery_lifecycle_engine:
                 try:
                     await self.mastery_lifecycle_engine.process_eval_result(

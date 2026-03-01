@@ -220,6 +220,13 @@ ${config.counterColor ? `- Counter color: ${config.counterColor}` : ''}
 ${config.twoColorEnabled ? `- Two-color decomposition: enabled` : ''}
 ` : ''}
 
+CRITICAL — NUMERIC CONSISTENCY:
+The numbers in the instruction text MUST EXACTLY match the challenge's numeric fields. The UI displays counters based on the numeric fields, NOT the instruction text. If they disagree, students see a mismatch.
+- build: the number in instruction MUST equal targetCount (e.g., targetCount=5 → "Put 5 counters on the frame!")
+- subtract: instruction MUST mention startCount as the starting amount AND (startCount − targetCount) as the removal amount (e.g., startCount=8, targetCount=5 → "There are 8 counters. Take away 3.")
+- make_ten: instruction MUST mention targetCount as the number already on the frame (e.g., targetCount=6 → "There are 6 counters. How many more to make 10?")
+- add: instruction numbers MUST sum to targetCount
+
 REQUIREMENTS:
 1. Generate 3-5 challenges that progress in difficulty
 2. Start with easier challenges and build up
@@ -276,7 +283,7 @@ Return the complete ten frame configuration.
   );
 
   // Validate subtract challenges: ensure startCount is present and sensible
-  for (const ch of data.challenges as Array<{ type: string; startCount?: number; targetCount: number }>) {
+  for (const ch of data.challenges as Array<{ type: string; startCount?: number; targetCount: number; instruction: string }>) {
     if (ch.type === 'subtract') {
       const maxCount = data.mode === 'double' ? 20 : 10;
       if (ch.startCount == null || ch.startCount <= 0) {
@@ -289,6 +296,31 @@ Return the complete ten frame configuration.
       }
       // Clamp within frame capacity
       if (ch.startCount > maxCount) ch.startCount = maxCount;
+    }
+  }
+
+  // ── Instruction ↔ numeric field consistency ──
+  // The LLM may generate instruction text that mentions different numbers than
+  // the actual startCount / targetCount fields.  The UI displays counters based
+  // on the fields, so the instruction MUST match — otherwise students see a
+  // mismatch (e.g. "starts with 8" but only 7 counters on screen).
+  const wordNum = (text: string, n: number): boolean =>
+    new RegExp(`\\b${n}\\b`).test(text);
+
+  for (const ch of data.challenges as Array<{ type: string; startCount?: number; targetCount: number; instruction: string }>) {
+    if (ch.type === 'subtract' && ch.startCount != null) {
+      const removeCount = ch.startCount - ch.targetCount;
+      if (!wordNum(ch.instruction, ch.startCount) || !wordNum(ch.instruction, removeCount)) {
+        ch.instruction = `The frame starts with ${ch.startCount} counters. Take away ${removeCount}. How many are left?`;
+      }
+    } else if (ch.type === 'make_ten') {
+      if (!wordNum(ch.instruction, ch.targetCount)) {
+        ch.instruction = `There are ${ch.targetCount} counters on the frame. How many more do you need to make 10?`;
+      }
+    } else if (ch.type === 'build') {
+      if (!wordNum(ch.instruction, ch.targetCount)) {
+        ch.instruction = `Place ${ch.targetCount} counters on the ten frame!`;
+      }
     }
   }
 

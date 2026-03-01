@@ -3,12 +3,14 @@
 Planning Service — Algorithmic Weekly & Daily Planner
 
 Replaces the LLM-based WeeklyPlannerService with a pure Firestore-native,
-deterministic planning engine (PRD Sections 4 & 5).
+deterministic planning engine.
+
+Single data source: mastery_lifecycle subcollection (PRD §2).
 
 Data sources (all Firestore):
   - curriculum_published     — total skills per subject
-  - students/{id}/skill_status — review pipeline state
-  - students/{id}            — planning fields (capacity, dev patterns)
+  - students/{id}/mastery_lifecycle — unified lifecycle state
+  - students/{id}            — planning fields (capacity)
   - config/schoolYear        — year dates, breaks
   - curriculum_graphs        — prerequisite relationships (via LearningPathsService)
 """
@@ -16,28 +18,23 @@ Data sources (all Firestore):
 import logging
 import math
 from datetime import datetime, date, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..db.firestore_service import FirestoreService
 from ..services.curriculum_service import CurriculumService
 from ..models.planning import (
-    AggregateMetrics,
-    CheckpointBreakdown,
     ConfidenceBand,
     DailyPlanResponse,
-    DevelopmentPattern,
     EndOfYearProjection,
     EndOfYearScenarios,
     MonthlyPlanResponse,
     MonthlyWarning,
     NewSkillSessionItem,
-    ReviewsByCheckpoint,
     ReviewSessionItem,
     SchoolBreak,
     SchoolYearConfig,
     SessionCategory,
     SessionReason,
-    SkillLifecycleStatus,
     SubjectCurrentState,
     SubjectMonthlyProjection,
     SubjectWeekProgress,
@@ -49,13 +46,14 @@ from ..models.planning import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_CAPACITY = 25
-DEFAULT_ULTIMATE = 4
 
 
 class PlanningService:
     """
     Stateless planning engine.  Every call reads live Firestore state and
     computes the answer — no stored plans, no LLM, no BigQuery.
+
+    Reads exclusively from mastery_lifecycle subcollection (PRD §2).
     """
 
     def __init__(
@@ -70,7 +68,36 @@ class PlanningService:
         logger.info("PlanningService initialized")
 
     # ====================================================================
-    # Weekly Planner (PRD Section 4)
+    # Gate-to-status mapping (PRD §5.1)
+    # ====================================================================
+
+    @staticmethod
+    def _count_by_gate_status(
+        lifecycles: List[Dict[str, Any]], subject: str
+    ) -> Tuple[int, int, int, int, List[Dict[str, Any]]]:
+        """
+        Count closed / in_review / learning / not_started from mastery
+        lifecycle gate values for a given subject.
+
+        Gate mapping (PRD §5.1):
+          Gate 4          → closed
+          Gate 1, 2, 3    → in_review
+          Gate 0 + evals  → learning
+          No document     → not_started (handled by caller)
+
+        Returns: (closed, in_review, learning, total_subskills_in_subject, subj_lifecycles)
+        """
+        subj_lcs = [lc for lc in lifecycles if lc.get("subject") == subject]
+        closed = sum(1 for lc in subj_lcs if lc.get("current_gate", 0) >= 4)
+        in_review = sum(1 for lc in subj_lcs if 1 <= lc.get("current_gate", 0) <= 3)
+        learning = sum(
+            1 for lc in subj_lcs
+            if lc.get("current_gate", 0) == 0 and lc.get("lesson_eval_count", 0) > 0
+        )
+        return closed, in_review, learning, len(subj_lcs), subj_lcs
+
+    # ====================================================================
+    # Weekly Planner (PRD Section 5.4)
     # ====================================================================
 
     async def get_weekly_plan(self, student_id: int) -> WeeklyPlanResponse:
@@ -96,15 +123,12 @@ class PlanningService:
         # 2. Load student planning fields
         planning = await self.firestore.get_student_planning_fields(student_id)
         capacity = planning.get("daily_session_capacity", DEFAULT_CAPACITY)
-        dev_patterns = planning.get("development_patterns", {})
-        agg = planning.get("aggregate_metrics", {})
 
-        # 3. Load all skill statuses for this student
-        all_skills = await self.firestore.get_all_skill_statuses(student_id)
+        # 3. Load all mastery lifecycles for this student
+        all_lifecycles = await self.firestore.get_all_mastery_lifecycles(student_id)
 
         # 4. Load available subjects from curriculum
         subjects_list = await self.curriculum.get_available_subjects()
-        # subjects_list may be a list of strings or dicts
         subject_names: List[str] = []
         for s in subjects_list:
             if isinstance(s, dict):
@@ -115,18 +139,18 @@ class PlanningService:
         # 5. Compute per-subject stats
         subjects_stats: Dict[str, SubjectWeeklyStats] = {}
         warnings: List[str] = []
+        total_in_pipeline = 0
 
         for subj in subject_names:
             # Get total subskills from curriculum
             curriculum_data = await self.curriculum.get_curriculum(subj)
             total_subskills = self._count_subskills(curriculum_data)
 
-            # Count by status
-            subj_skills = [s for s in all_skills if s.get("subject") == subj]
-            closed = sum(1 for s in subj_skills if s.get("status") == "closed")
-            in_review = sum(1 for s in subj_skills if s.get("status") == "in_review")
-            learning = sum(1 for s in subj_skills if s.get("status") == "learning")
-            not_started = max(0, total_subskills - closed - in_review - learning)
+            # Count by gate status (PRD §5.1)
+            closed, in_review, learning_count, _, subj_lcs = self._count_by_gate_status(
+                all_lifecycles, subj
+            )
+            not_started = max(0, total_subskills - closed - in_review - learning_count)
 
             expected_by_now = round(total_subskills * fraction_elapsed, 1)
             behind_by = round(max(0, expected_by_now - closed - in_review), 1)
@@ -136,39 +160,35 @@ class PlanningService:
             else:
                 weekly_new_target = not_started
 
-            # Review reserve for this subject
+            # Review reserve: sum of estimated_remaining_attempts for in-pipeline skills
             review_reserve = sum(
-                max(0, s.get("estimated_ultimate", DEFAULT_ULTIMATE) - s.get("sessions_completed", 0))
-                for s in subj_skills
-                if s.get("status") not in ("closed", "not_started")
+                lc.get("estimated_remaining_attempts", 0)
+                for lc in subj_lcs
+                if 0 < lc.get("current_gate", 0) < 4
             )
 
-            # Checkpoint breakdown
-            checkpoints = self._checkpoint_counts(subj_skills)
-
-            # Development pattern
-            pattern = dev_patterns.get(subj, {})
-            avg_ult = pattern.get("average_ultimate", DEFAULT_ULTIMATE) if isinstance(pattern, dict) else DEFAULT_ULTIMATE
+            total_in_pipeline += in_review + learning_count
 
             stats = SubjectWeeklyStats(
                 total_skills=total_subskills,
                 closed=closed,
                 in_review=in_review,
-                checkpoints=checkpoints,
                 not_started=not_started,
+                learning=learning_count,
                 expected_by_now=expected_by_now,
                 behind_by=behind_by,
                 weekly_new_target=weekly_new_target,
                 review_reserve=review_reserve,
-                avg_ultimate=round(avg_ult, 1),
             )
             subjects_stats[subj] = stats
 
-            # Capacity overload warning (PRD 8.1)
+            # Capacity overload warning
             if behind_by > 0:
                 warnings.append(f"{subj}: {behind_by} skills behind expected pace")
 
-        sustainable = agg.get("sustainable_new_per_day", capacity)
+        # Estimate sustainable new per day from current pipeline load
+        estimated_daily_review_load = round(total_in_pipeline / 5.0, 1)
+        sustainable = max(0.0, capacity - estimated_daily_review_load)
 
         return WeeklyPlanResponse(
             student_id=str(student_id),
@@ -186,7 +206,7 @@ class PlanningService:
         )
 
     # ====================================================================
-    # Monthly Planner — Forward Simulation (PRD Section 4)
+    # Monthly Planner — Forward Simulation (PRD Section 5.5)
     # ====================================================================
 
     async def get_monthly_plan(self, student_id: int) -> MonthlyPlanResponse:
@@ -196,10 +216,15 @@ class PlanningService:
 
         Produces per-subject trajectories with optimistic / best-estimate /
         pessimistic confidence bands and early-warning flags.
+
+        Pipeline delay model (PRD §5.5):
+          Perfect:    4 weeks (ceil(24 days / 7))
+          Typical:    5 weeks (ceil(30 days / 7))
+          Pessimistic: 6 weeks (ceil(40 days / 7), 2+ failures)
         """
         today = datetime.now(timezone.utc).date()
 
-        # 1. Load shared inputs (same sources as weekly planner)
+        # 1. Load shared inputs
         config = await self._get_school_year_config()
         year_start = date.fromisoformat(config.start_date)
         year_end = date.fromisoformat(config.end_date)
@@ -210,9 +235,8 @@ class PlanningService:
         planning = await self.firestore.get_student_planning_fields(student_id)
         capacity = planning.get("daily_session_capacity", DEFAULT_CAPACITY)
         weekly_capacity = capacity * 5  # school days per week
-        dev_patterns = planning.get("development_patterns", {})
 
-        all_skills = await self.firestore.get_all_skill_statuses(student_id)
+        all_lifecycles = await self.firestore.get_all_mastery_lifecycles(student_id)
 
         subjects_list = await self.curriculum.get_available_subjects()
         subject_names: list[str] = []
@@ -229,105 +253,70 @@ class PlanningService:
             curriculum_data = await self.curriculum.get_curriculum(subj)
             total_subskills = self._count_subskills(curriculum_data)
 
-            subj_skills = [s for s in all_skills if s.get("subject") == subj]
-            closed = sum(1 for s in subj_skills if s.get("status") == "closed")
-            in_review = sum(1 for s in subj_skills if s.get("status") == "in_review")
-            learning = sum(1 for s in subj_skills if s.get("status") == "learning")
-            not_started = max(0, total_subskills - closed - in_review - learning)
-
-            checkpoints = self._checkpoint_counts(subj_skills)
+            closed, in_review, learning_count, _, subj_lcs = self._count_by_gate_status(
+                all_lifecycles, subj
+            )
+            not_started = max(0, total_subskills - closed - in_review - learning_count)
 
             current_state = SubjectCurrentState(
                 total=total_subskills,
                 closed=closed,
                 inReview=in_review,
-                checkpoints=checkpoints,
                 notStarted=not_started,
             )
 
-            # Development pattern stats for confidence bands
-            pattern = dev_patterns.get(subj, {})
-            if isinstance(pattern, dict):
-                avg_ult = pattern.get("average_ultimate", float(DEFAULT_ULTIMATE))
-                skills_closed_count = pattern.get("skills_closed", 0)
+            # Confidence bands from mastery lifecycle pass rates
+            closed_lcs = [lc for lc in subj_lcs if lc.get("current_gate", 0) >= 4]
+            if len(closed_lcs) >= 3:
+                pass_rates = [lc.get("blended_pass_rate", 0.8) for lc in closed_lcs]
+                mean_pr = sum(pass_rates) / len(pass_rates)
+                variance = sum((p - mean_pr) ** 2 for p in pass_rates) / len(pass_rates)
+                stddev_pr = math.sqrt(variance)
             else:
-                avg_ult = float(DEFAULT_ULTIMATE)
-                skills_closed_count = 0
+                mean_pr = 0.8
+                stddev_pr = 0.15
 
-            # Credibility weighting (PRD): blend toward prior of 5.0
-            credibility = min(1.0, skills_closed_count / 10) if skills_closed_count > 0 else 0.0
-            effective_avg_ult = credibility * avg_ult + (1.0 - credibility) * 5.0
+            # Pipeline delay model (PRD §5.5: mastery lifecycle intervals)
+            # Perfect: 24 days (3+7+14), Typical: 30 days, Pessimistic: 40 days
+            weeks_to_close_best = 4   # ceil(24/7)
+            weeks_to_close_opt = 4    # Optimistic path
+            weeks_to_close_pess = 6   # 2+ failures: ~40 days
 
-            # Compute stddev of ultimates from closed skills for confidence bands
-            closed_skills = [s for s in subj_skills if s.get("status") == "closed"]
-            if len(closed_skills) >= 3:
-                ultimates = [s.get("estimated_ultimate", DEFAULT_ULTIMATE) for s in closed_skills]
-                mean_ult = sum(ultimates) / len(ultimates)
-                variance = sum((u - mean_ult) ** 2 for u in ultimates) / len(ultimates)
-                stddev_ult = math.sqrt(variance)
-            else:
-                stddev_ult = 1.0  # default uncertainty
-
-            # Optimistic / pessimistic average ultimates (75th/25th percentile)
-            # 0.675 is the z-score for the 75th percentile
-            opt_ult = max(2.0, effective_avg_ult - 0.675 * stddev_ult)
-            pess_ult = effective_avg_ult + 0.675 * stddev_ult
-
-            # Build known-review schedule from existing in_review skills
-            # Map: week_number -> {checkpoint_weeks: count}
-            known_reviews_by_week: dict[int, dict[int, int]] = {}
-            in_review_skills = [
-                s for s in subj_skills
-                if s.get("status") in ("in_review", "learning") and s.get("next_review_date")
+            # Build known-review schedule from in-pipeline mastery lifecycles
+            known_reviews_by_week: dict[int, int] = {}
+            in_pipeline_lcs = [
+                lc for lc in subj_lcs
+                if 1 <= lc.get("current_gate", 0) <= 3 and lc.get("next_retest_eligible")
             ]
-            for s in in_review_skills:
+            for lc in in_pipeline_lcs:
                 try:
-                    review_date = date.fromisoformat(s["next_review_date"])
+                    retest_date = date.fromisoformat(lc["next_retest_eligible"][:10])
                 except (ValueError, TypeError):
                     continue
-
-                # Determine which checkpoint this upcoming review represents
-                sc = s.get("sessions_completed", 0)
-                if sc <= 1:
-                    cp = 2   # next session is 2-wk checkpoint
-                elif sc == 2:
-                    cp = 4   # next session is 4-wk checkpoint
+                if retest_date <= today:
+                    week_num = 1  # overdue
                 else:
-                    cp = 6   # next session is 6-wk checkpoint
-
-                if review_date <= today:
-                    week_num = 1  # overdue — due in week 1
-                else:
-                    delta_days = (review_date - today).days
+                    delta_days = (retest_date - today).days
                     week_num = max(1, (delta_days // 7) + 1)
-
                 if week_num <= weeks_remaining:
-                    if week_num not in known_reviews_by_week:
-                        known_reviews_by_week[week_num] = {}
-                    by_cp = known_reviews_by_week[week_num]
-                    by_cp[cp] = by_cp.get(cp, 0) + 1
+                    known_reviews_by_week[week_num] = known_reviews_by_week.get(week_num, 0) + 1
 
-            # Pacing target: how many new skills per week to finish on time
+            # Pacing target
             pacing_target = math.ceil(not_started / weeks_remaining) if weeks_remaining > 0 else not_started
 
-            # --- Pipeline delay model ---
-            # Skills need (ultimate - 1) review sessions at ~2-week intervals
-            # after initial mastery, so total weeks to close ≈ (ult - 1) * 2
-            weeks_to_close_best = max(2, round((effective_avg_ult - 1) * 2))
-            weeks_to_close_opt = max(2, round((opt_ult - 1) * 2))
-            weeks_to_close_pess = max(2, round((pess_ult - 1) * 2))
-
-            # Build existing closure pipeline: when will currently-open skills close?
-            # Each skill's remaining sessions * ~2 weeks per review interval
+            # Build existing closure pipeline from gate-based remaining intervals
             existing_closures_by_week: dict[int, int] = {}
-            for s in subj_skills:
-                if s.get("status") in ("in_review", "learning"):
-                    remaining_sessions = max(
-                        0,
-                        s.get("estimated_ultimate", DEFAULT_ULTIMATE)
-                        - s.get("sessions_completed", 0),
-                    )
-                    weeks_until_close = max(1, remaining_sessions * 2)
+            for lc in subj_lcs:
+                gate = lc.get("current_gate", 0)
+                if 1 <= gate <= 3:
+                    # Remaining days based on actual gate intervals
+                    if gate == 1:
+                        remaining_days = 3 + 7 + 14  # Gates 2, 3, 4
+                    elif gate == 2:
+                        remaining_days = 7 + 14  # Gates 3, 4
+                    else:  # gate == 3
+                        remaining_days = 14  # Gate 4 only
+                    weeks_until_close = max(1, math.ceil(remaining_days / 7))
                     if weeks_until_close <= weeks_remaining:
                         existing_closures_by_week[weeks_until_close] = (
                             existing_closures_by_week.get(weeks_until_close, 0) + 1
@@ -337,13 +326,11 @@ class PlanningService:
             week_by_week: list[WeekProjection] = []
             warnings: list[MonthlyWarning] = []
 
-            # Float accumulators so small per-week differences compound
-            open_inventory = in_review + learning
+            open_inventory = in_review + learning_count
             cumulative_mastered_f = float(closed)
             cumulative_mastered_opt_f = float(closed)
             cumulative_mastered_pess_f = float(closed)
 
-            # Track new introductions for estimating future review load
             new_introductions_by_week: list[int] = []
 
             for w in range(1, weeks_remaining + 1):
@@ -351,40 +338,24 @@ class PlanningService:
                 if week_monday < today:
                     week_monday += timedelta(days=7)
 
-                # --- Reviews due this week (by checkpoint) ---
-                known_this_week = known_reviews_by_week.get(w, {})
+                # --- Reviews due this week ---
+                known_this_week = known_reviews_by_week.get(w, 0)
 
                 # Estimated reviews from skills introduced in prior weeks
-                # New skills get reviews at +2wk, +4wk, +6wk from introduction
-                estimated_by_cp: dict[int, int] = {2: 0, 4: 0, 6: 0}
+                # Gate transitions at ~1wk (3d), ~2wk (7d), ~4wk (14d)
+                estimated_reviews = 0
                 for intro_week_idx, intro_count in enumerate(new_introductions_by_week):
                     if intro_count <= 0:
                         continue
                     weeks_since_intro = w - (intro_week_idx + 1)
-                    if weeks_since_intro == 2:
-                        estimated_by_cp[2] += intro_count
-                    elif weeks_since_intro == 4:
-                        estimated_by_cp[4] += intro_count
-                    elif weeks_since_intro == 6:
-                        estimated_by_cp[6] += intro_count
+                    if weeks_since_intro in (1, 2, 4):
+                        estimated_reviews += intro_count
 
-                reviews_cp2 = known_this_week.get(2, 0) + estimated_by_cp[2]
-                reviews_cp4 = known_this_week.get(4, 0) + estimated_by_cp[4]
-                reviews_cp6 = known_this_week.get(6, 0) + estimated_by_cp[6]
-                projected_reviews_due = reviews_cp2 + reviews_cp4 + reviews_cp6
-
-                reviews_by_checkpoint = ReviewsByCheckpoint(
-                    checkpoint_2wk=reviews_cp2,
-                    checkpoint_4wk=reviews_cp4,
-                    checkpoint_6wk=reviews_cp6,
-                )
+                projected_reviews_due = known_this_week + estimated_reviews
 
                 # --- Closures: pipeline delay model ---
-                # 1) Existing skills: close based on their remaining sessions
                 existing_closures = existing_closures_by_week.get(w, 0)
 
-                # 2) New introductions: close after pipeline delay
-                #    Skills intro'd in week X close in week X + weeks_to_close
                 new_closures_best = 0.0
                 new_closures_opt = 0.0
                 new_closures_pess = 0.0
@@ -424,7 +395,6 @@ class PlanningService:
                     week=w,
                     weekOf=week_monday.isoformat(),
                     projectedReviewsDue=projected_reviews_due,
-                    projectedReviewsByCheckpoint=reviews_by_checkpoint,
                     projectedNewIntroductions=new_introductions,
                     projectedClosures=closures_for_inventory,
                     projectedOpenInventory=open_inventory,
@@ -489,14 +459,14 @@ class PlanningService:
         )
 
     # ====================================================================
-    # Daily Planner (PRD Section 5)
+    # Daily Planner (PRD Section 5.2)
     # ====================================================================
 
     async def get_daily_plan(self, student_id: int) -> DailyPlanResponse:
         """
         Compute today's prioritised session queue.
 
-        Step 1: Build review queue (overdue reviews first).
+        Step 1: Build review queue from mastery retests due (single source).
         Step 2: Determine capacity for new skills.
         Step 3: Select new skills using knowledge graph / curriculum sequence.
         Step 4: Merge and return.
@@ -509,36 +479,9 @@ class PlanningService:
         planning = await self.firestore.get_student_planning_fields(student_id)
         capacity = planning.get("daily_session_capacity", DEFAULT_CAPACITY)
 
-        # ---- Step 1: Review queue ----
-        due_skills = await self.firestore.get_skills_with_review_due(student_id, today_str)
-
-        # Also include anything overdue (next_review_date < today) — the query already handles <= today
+        # ---- Step 1: Review queue (single source — PRD §5.2) ----
+        # All reviews come from mastery_lifecycle retests. No dual-source merge.
         review_queue: List[Dict[str, Any]] = []
-        for s in due_skills:
-            review_date = s.get("next_review_date", today_str)
-            try:
-                days_overdue = (today - date.fromisoformat(review_date)).days
-            except (ValueError, TypeError):
-                days_overdue = 0
-            days_overdue = max(days_overdue, 0)
-
-            review_queue.append({
-                **s,
-                "days_overdue": days_overdue,
-            })
-
-        # Sort: tight loop first, then most overdue, then by estimated_ultimate desc (more critical)
-        review_queue.sort(
-            key=lambda x: (
-                not x.get("in_tight_loop", False),  # tight loop first (False sorts after True)
-                -x.get("days_overdue", 0),
-                -x.get("estimated_ultimate", DEFAULT_ULTIMATE),
-            )
-        )
-
-        # ---- Step 1.5: Mastery retest queue (PRD §7.1) ----
-        # Mastery retests (4-gate model) have HIGHEST priority — above review_queue.
-        mastery_retests: List[Dict[str, Any]] = []
         try:
             mastery_due = await self.firestore.get_mastery_retests_due(
                 student_id, datetime.now(timezone.utc).isoformat()
@@ -553,31 +496,31 @@ class PlanningService:
                 except (ValueError, TypeError):
                     days_overdue = 0
 
-                mastery_retests.append({
+                review_queue.append({
                     "skill_id": ml.get("subskill_id", ""),
                     "subject": ml.get("subject", ""),
                     "skill_name": ml.get("subskill_id", ""),
                     "type": "review",
                     "reason": SessionReason.MASTERY_RETEST.value,
-                    "is_mastery_retest": True,
                     "mastery_gate": ml.get("current_gate", 0),
                     "completion_factor": ml.get("completion_pct", 0.0),
-                    "estimated_ultimate": 4,
                     "days_overdue": days_overdue,
-                    "review_history": [],
                 })
 
-            # Sort: most overdue first
-            mastery_retests.sort(key=lambda x: -x.get("days_overdue", 0))
-            if mastery_retests:
+            # Sort: most overdue first, then lowest gate first (PRD §5.2)
+            review_queue.sort(
+                key=lambda x: (
+                    -x.get("days_overdue", 0),
+                    x.get("mastery_gate", 0),
+                )
+            )
+
+            if review_queue:
                 logger.info(
-                    f"[DAILY_PLAN] {len(mastery_retests)} mastery retests due for student {student_id}"
+                    f"[DAILY_PLAN] {len(review_queue)} mastery retests due for student {student_id}"
                 )
         except Exception as e:
             logger.warning(f"[DAILY_PLAN] Failed to fetch mastery retests: {e}")
-
-        # Merge mastery retests at the front of the review queue (highest priority)
-        review_queue = mastery_retests + review_queue
 
         # ---- Step 2: Capacity allocation ----
         max_review_slots = math.floor(capacity * 0.85)
@@ -595,7 +538,7 @@ class PlanningService:
             # Allocate proportionally to weekly target deficit per subject
             subject_deficits = []
             for subj, stats in weekly_plan.subjects.items():
-                deficit = stats.weekly_new_target  # simplified: full weekly target as proxy
+                deficit = stats.weekly_new_target
                 if deficit > 0:
                     subject_deficits.append((subj, deficit))
 
@@ -622,30 +565,25 @@ class PlanningService:
                 if not unlocked:
                     continue
 
-                # Filter to not_started only
-                all_statuses = await self.firestore.get_all_skill_statuses(student_id, subject=subj)
-                tracked_ids = {s.get("skill_id") for s in all_statuses}
-
-                # Gate-blocking filter (PRD §7.1): only recommend subskills
-                # whose prerequisites are all at Gate 4 (fully mastered).
+                # Filter to not_started only (PRD §5.3)
                 mastery_lifecycles = await self.firestore.get_all_mastery_lifecycles(
                     student_id, subject=subj
                 )
-                mastery_by_id = {
+                lifecycle_by_id = {
                     lc.get("subskill_id"): lc for lc in mastery_lifecycles
                 }
 
-                not_started = [sid for sid in unlocked if sid not in tracked_ids]
+                not_started_ids = [
+                    sid for sid in unlocked
+                    if sid not in lifecycle_by_id
+                    or lifecycle_by_id[sid].get("current_gate", 0) == 0
+                ]
 
                 # Separate gate-eligible vs gate-blocked candidates
                 eligible = []
-                blocked_with_score = []  # (skill_id, prereq_completion_pct)
-                for sid in not_started:
-                    # A skill is gate-blocked if any of its prerequisites
-                    # (which are in the mastery_by_id map) haven't reached Gate 4.
-                    # Since learning_paths already filters by prerequisite mastery
-                    # for basic unlocking, we add the stricter Gate 4 check here.
-                    prereq_lc = mastery_by_id.get(sid)
+                blocked_with_score = []
+                for sid in not_started_ids:
+                    prereq_lc = lifecycle_by_id.get(sid)
                     if prereq_lc and prereq_lc.get("current_gate", 0) < 4:
                         blocked_with_score.append(
                             (sid, prereq_lc.get("completion_pct", 0.0))
@@ -681,7 +619,7 @@ class PlanningService:
                     new_skills.append({
                         "skill_id": skill_id,
                         "subject": subj,
-                        "skill_name": skill_id,  # best we have without extra lookup
+                        "skill_name": skill_id,
                         "type": "new",
                         "reason": reason,
                         "prerequisites_met": not is_bottleneck,
@@ -693,7 +631,6 @@ class PlanningService:
                     break
 
         # ---- Step 4: Enrich with curriculum names ----
-        # Collect all subjects that appear in sessions, build lookup per subject
         session_subjects = set()
         for r in review_queue:
             session_subjects.add(r.get("subject", ""))
@@ -707,7 +644,6 @@ class PlanningService:
         all_session_ids = [r.get("skill_id", "") for r in review_queue] + [n["skill_id"] for n in new_skills]
         unresolved = [sid for sid in all_session_ids if sid and sid not in curriculum_lookup]
         if unresolved:
-            # Per-subject breakdown of lookup keys
             from collections import Counter
             prefix_counts = Counter()
             la_sample = []
@@ -749,26 +685,15 @@ class PlanningService:
                     ).model_dump()
                 )
             else:
-                # Determine review reason: mastery retest > tight loop > scheduled
-                if item.get("is_mastery_retest"):
-                    reason = SessionReason.MASTERY_RETEST
-                elif item.get("in_tight_loop"):
-                    reason = SessionReason.TIGHT_LOOP_RECOVERY
-                else:
-                    reason = SessionReason.SCHEDULED_REVIEW
-
                 sessions.append(
                     ReviewSessionItem(
                         skill_id=sid,
                         subject=item.get("subject", ""),
                         skill_name=meta.get("subskill_description") or item.get("skill_name", sid),
-                        reason=reason,
+                        reason=SessionReason.MASTERY_RETEST,
                         priority=item["priority"],
-                        review_session=len(item.get("review_history", [])) + 1,
-                        estimated_ultimate=item.get("estimated_ultimate", DEFAULT_ULTIMATE),
                         completion_factor=item.get("completion_factor", 0.0),
                         days_overdue=item.get("days_overdue", 0),
-                        is_mastery_retest=item.get("is_mastery_retest", False),
                         mastery_gate=item.get("mastery_gate"),
                         session_category=category,
                         unit_title=meta.get("unit_title"),
@@ -777,12 +702,12 @@ class PlanningService:
                     ).model_dump()
                 )
 
-        # Week progress (simplified — count completed this week from skill_status)
+        # Week progress
         week_progress: Dict[str, SubjectWeekProgress] = {}
         for subj, stats in weekly_plan.subjects.items():
             week_progress[subj] = SubjectWeekProgress(
                 new_target=stats.weekly_new_target,
-                new_completed=0,  # TODO: track intra-week completions
+                new_completed=0,
                 reviews_completed=0,
             )
 
@@ -877,27 +802,6 @@ class PlanningService:
         return lookup
 
     @staticmethod
-    def _checkpoint_counts(skills: List[Dict]) -> CheckpointBreakdown:
-        """Count in-review/learning skills by checkpoint stage."""
-        c2 = c4 = c6 = 0
-        for s in skills:
-            if s.get("status") not in ("in_review", "learning"):
-                continue
-            sc = s.get("sessions_completed", 0)
-            if sc == 1:
-                c2 += 1
-            elif sc == 2:
-                c4 += 1
-            elif sc >= 3:
-                c6 += 1
-            # sc == 0: learning but not yet mastered — not in review pipeline
-        return CheckpointBreakdown(
-            checkpoint_2wk=c2,
-            checkpoint_4wk=c4,
-            checkpoint_6wk=c6,
-        )
-
-    @staticmethod
     def _count_subskills(curriculum_data: List[Dict]) -> int:
         """Count total subskills in a curriculum hierarchy."""
         count = 0
@@ -932,14 +836,12 @@ class PlanningService:
         last_subject: Optional[str] = None
 
         while any(len(q) > 0 for q in by_subject.values()):
-            # Sort candidates by queue length descending (avoid bunching)
             candidates = sorted(
                 ((subj, q) for subj, q in by_subject.items() if len(q) > 0),
                 key=lambda x: -len(x[1]),
             )
 
             placed = False
-            # Prefer a subject different from the last one
             for subj, q in candidates:
                 if subj != last_subject:
                     result.append(q.popleft())
@@ -947,7 +849,6 @@ class PlanningService:
                     placed = True
                     break
 
-            # If all remaining items are the same subject, take the next one
             if not placed:
                 for subj, q in candidates:
                     if len(q) > 0:
@@ -967,7 +868,7 @@ class PlanningService:
         Build an interleaved session sequence per PRD Section 8.
 
         Output order:
-          1. Tight-loop recovery items (served first while student is fresh)
+          1. Most-overdue mastery retests first (student is fresh)
           2. Interleaved body: [new_block, review, review, new_block, ...]
              - New skill blocks front-loaded in first 60% of total sessions
              - Reviews subject-alternated
@@ -977,33 +878,22 @@ class PlanningService:
         """
         REVIEWS_PER_NEW_BLOCK = 2
 
-        # --- Partition reviews ---
-        tight_loops = [r for r in review_queue if r.get("in_tight_loop")]
-        scheduled = [r for r in review_queue if not r.get("in_tight_loop")]
-
         # Tag types for downstream identification
-        for item in tight_loops:
-            item.setdefault("type", "review")
-        for item in scheduled:
+        for item in review_queue:
             item.setdefault("type", "review")
         for item in new_skills:
             item.setdefault("type", "new")
 
-        # --- Subject-alternate scheduled reviews ---
-        alternated = self._alternate_subjects(scheduled)
+        # Subject-alternate reviews
+        alternated = self._alternate_subjects(review_queue)
 
-        # --- Fatigue boundary (PRD §8.4) ---
-        total = len(tight_loops) + len(alternated) + len(new_skills)
+        # Fatigue boundary (PRD §8.4)
+        total = len(alternated) + len(new_skills)
         front_boundary = math.ceil(total * 0.60) if total > 0 else 0
 
         result: List[Dict[str, Any]] = []
 
-        # Phase 1: tight loops
-        for item in tight_loops:
-            item["session_category"] = SessionCategory.TIGHT_LOOP.value
-            result.append(item)
-
-        # Phase 2: interleaved body
+        # Interleaved body
         rev_iter = iter(alternated)
         new_iter = iter(new_skills)
         rev_done = False

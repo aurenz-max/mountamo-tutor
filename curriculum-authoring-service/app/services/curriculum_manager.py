@@ -812,7 +812,7 @@ class CurriculumManager:
             AND u.is_draft = false
             AND sk.is_draft = false
             AND sub.is_draft = false
-        ORDER BY u.unit_order, sk.skill_order, sub.subskill_order
+        ORDER BY u.unit_order, sk.skill_order, sk.skill_id, sub.subskill_order
         """
 
         parameters = [

@@ -327,7 +327,18 @@ class VersionControl:
         if not draft_summary.can_publish:
             raise ValueError(f"Cannot publish due to validation errors: {draft_summary.validation_errors}")
 
-        # Step 1: Deactivate current active version FIRST (before creating new one)
+        # Step 1: Fetch the currently active version (if any) before deactivating
+        active_version_query = f"""
+        SELECT version_id
+        FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
+        WHERE subject_id = @subject_id AND is_active = true
+        LIMIT 1
+        """
+        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id)]
+        active_version_results = await db.execute_query(active_version_query, parameters)
+        old_version_id = active_version_results[0]["version_id"] if active_version_results else None
+
+        # Deactivate current active version FIRST (before creating new one)
         # This avoids streaming buffer issues since old versions are not in the buffer
         deactivate_query = f"""
         MERGE `{settings.get_table_id(settings.TABLE_VERSIONS)}` AS T
@@ -341,7 +352,6 @@ class VersionControl:
           UPDATE SET T.is_active = false
         """
 
-        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id)]
         await db.execute_query(deactivate_query, parameters)
 
         # Step 2: Create new version with is_active=True using DML INSERT
@@ -521,7 +531,7 @@ class VersionControl:
         await firestore_curriculum_sync.sync_publish(
             subject_id=publish_request.subject_id,
             new_version_id=new_version.version_id,
-            old_version_id=active_version.version_id if active_version else None,
+            old_version_id=old_version_id,
         )
 
         return PublishResponse(

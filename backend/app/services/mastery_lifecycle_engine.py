@@ -6,7 +6,6 @@ This is a pure algorithmic service — no LLM or external API calls.
 
 Entry point:  process_eval_result()
 Called from:   CompetencyService.update_competency_from_problem() as a hook
-               (runs alongside the existing ReviewEngine)
 
 Gate transitions:
   Gate 0 → 1:  source="lesson", lesson_eval_count >= 3, score >= 9.0

@@ -873,7 +873,7 @@ class FirestoreService:
     # ============================================================================
 
     def _skill_status_subcollection(self, student_id: int):
-        """Get reference to students/{student_id}/skill_status"""
+        """DEPRECATED: Use mastery_lifecycle methods instead. Will be removed."""
         return self._student_doc(student_id).collection('skill_status')
 
     async def get_skill_status(
@@ -881,7 +881,7 @@ class FirestoreService:
         student_id: int,
         skill_id: str
     ) -> Optional[Dict[str, Any]]:
-        """Get a single skill's lifecycle status from the review pipeline."""
+        """DEPRECATED: Use get_mastery_lifecycle() instead. Will be removed."""
         try:
             doc_ref = self._skill_status_subcollection(student_id).document(skill_id)
             doc = doc_ref.get()
@@ -896,7 +896,7 @@ class FirestoreService:
         subject: Optional[str] = None,
         status: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        """Get all skill statuses for a student, optionally filtered."""
+        """DEPRECATED: Use get_all_mastery_lifecycles() instead. Will be removed."""
         try:
             query = self._skill_status_subcollection(student_id)
             if subject:
@@ -914,7 +914,7 @@ class FirestoreService:
         skill_id: str,
         data: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Create or update a skill's lifecycle status."""
+        """DEPRECATED: Use upsert_mastery_lifecycle() instead. Will be removed."""
         try:
             await self._ensure_student_document(student_id)
             doc_ref = self._skill_status_subcollection(student_id).document(skill_id)
@@ -931,7 +931,7 @@ class FirestoreService:
         student_id: int,
         before_date: str
     ) -> List[Dict[str, Any]]:
-        """Get all skills whose next_review_date is on or before the given date."""
+        """DEPRECATED: Use get_mastery_retests_due() instead. Will be removed."""
         try:
             query = (
                 self._skill_status_subcollection(student_id)

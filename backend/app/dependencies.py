@@ -24,7 +24,6 @@ from .services.review import ReviewService
 
 from .services.daily_activities import DailyActivitiesService
 from .services.bigquery_analytics import BigQueryAnalyticsService
-from .services.review_engine import ReviewEngine
 from .services.mastery_lifecycle_engine import MasteryLifecycleEngine
 from .services.planning_service import PlanningService
 from .services.velocity_service import VelocityService
@@ -62,7 +61,6 @@ _learning_paths_service: Optional[LearningPathsService] = None
 _problem_optimizer: Optional[ProblemOptimizer] = None
 _review_service: Optional[ReviewService] = None
 _curriculum_mapping_service: Optional[CurriculumMappingService] = None
-_review_engine: Optional[ReviewEngine] = None
 _mastery_lifecycle_engine: Optional[MasteryLifecycleEngine] = None
 _planning_service: Optional[PlanningService] = None
 _velocity_service: Optional[VelocityService] = None
@@ -268,10 +266,7 @@ async def get_competency_service() -> CompetencyService:
             _competency_service.cosmos_db = cosmos_db
             _competency_service.firestore_service = firestore_service
 
-            # Inject review engine for completion factor model
-            _competency_service.review_engine = get_review_engine(firestore_service)
-
-            # Inject mastery lifecycle engine for 4-gate model (PRD Sections 3, 8)
+            # Inject mastery lifecycle engine for 4-gate model (PRD §2)
             _competency_service.mastery_lifecycle_engine = get_mastery_lifecycle_engine(firestore_service)
 
             # Initialize - clean and simple
@@ -419,18 +414,6 @@ async def get_learning_paths_service(
         logger.info("✅ LearningPathsService initialized successfully")
 
     return _learning_paths_service
-
-
-def get_review_engine(
-    firestore_service: FirestoreService = Depends(get_firestore_service)
-) -> ReviewEngine:
-    """Get or create ReviewEngine singleton."""
-    global _review_engine
-    if _review_engine is None:
-        logger.info("Initializing ReviewEngine")
-        _review_engine = ReviewEngine(firestore_service=firestore_service)
-        logger.info("✅ ReviewEngine initialized successfully")
-    return _review_engine
 
 
 def get_mastery_lifecycle_engine(
