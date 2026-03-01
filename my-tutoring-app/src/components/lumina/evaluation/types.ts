@@ -61,6 +61,9 @@ export interface PrimitiveEvaluationResult<TMetrics extends PrimitiveMetrics = P
   // Lesson context for curriculum mapping
   lessonContext?: LessonContext;
 
+  // Eval source tagging (PRD 6.1): "lesson" for lesson-mode evals, "practice" for practice-mode
+  source?: 'lesson' | 'practice';
+
   // Student work artifact (serializable state for replay)
   studentWork?: unknown;
 }

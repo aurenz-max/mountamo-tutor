@@ -536,6 +536,49 @@ class PlanningService:
             )
         )
 
+        # ---- Step 1.5: Mastery retest queue (PRD §7.1) ----
+        # Mastery retests (4-gate model) have HIGHEST priority — above review_queue.
+        mastery_retests: List[Dict[str, Any]] = []
+        try:
+            mastery_due = await self.firestore.get_mastery_retests_due(
+                student_id, datetime.now(timezone.utc).isoformat()
+            )
+            for ml in mastery_due:
+                retest_eligible = ml.get("next_retest_eligible", "")
+                try:
+                    days_overdue = max(
+                        0,
+                        (today - date.fromisoformat(retest_eligible[:10])).days,
+                    )
+                except (ValueError, TypeError):
+                    days_overdue = 0
+
+                mastery_retests.append({
+                    "skill_id": ml.get("subskill_id", ""),
+                    "subject": ml.get("subject", ""),
+                    "skill_name": ml.get("subskill_id", ""),
+                    "type": "review",
+                    "reason": SessionReason.MASTERY_RETEST.value,
+                    "is_mastery_retest": True,
+                    "mastery_gate": ml.get("current_gate", 0),
+                    "completion_factor": ml.get("completion_pct", 0.0),
+                    "estimated_ultimate": 4,
+                    "days_overdue": days_overdue,
+                    "review_history": [],
+                })
+
+            # Sort: most overdue first
+            mastery_retests.sort(key=lambda x: -x.get("days_overdue", 0))
+            if mastery_retests:
+                logger.info(
+                    f"[DAILY_PLAN] {len(mastery_retests)} mastery retests due for student {student_id}"
+                )
+        except Exception as e:
+            logger.warning(f"[DAILY_PLAN] Failed to fetch mastery retests: {e}")
+
+        # Merge mastery retests at the front of the review queue (highest priority)
+        review_queue = mastery_retests + review_queue
+
         # ---- Step 2: Capacity allocation ----
         max_review_slots = math.floor(capacity * 0.85)
         actual_review_slots = min(len(review_queue), max_review_slots)
@@ -544,7 +587,7 @@ class PlanningService:
         # Trim review queue to allocated slots
         review_queue = review_queue[:actual_review_slots]
 
-        # ---- Step 3: Select new skills ----
+        # ---- Step 3: Select new skills (with gate-blocking — PRD §7.1) ----
         weekly_plan = await self.get_weekly_plan(student_id)
         new_skills: List[Dict[str, Any]] = []
 
@@ -583,16 +626,66 @@ class PlanningService:
                 all_statuses = await self.firestore.get_all_skill_statuses(student_id, subject=subj)
                 tracked_ids = {s.get("skill_id") for s in all_statuses}
 
-                candidates = [sid for sid in unlocked if sid not in tracked_ids][:slots_for_subj]
+                # Gate-blocking filter (PRD §7.1): only recommend subskills
+                # whose prerequisites are all at Gate 4 (fully mastered).
+                mastery_lifecycles = await self.firestore.get_all_mastery_lifecycles(
+                    student_id, subject=subj
+                )
+                mastery_by_id = {
+                    lc.get("subskill_id"): lc for lc in mastery_lifecycles
+                }
+
+                not_started = [sid for sid in unlocked if sid not in tracked_ids]
+
+                # Separate gate-eligible vs gate-blocked candidates
+                eligible = []
+                blocked_with_score = []  # (skill_id, prereq_completion_pct)
+                for sid in not_started:
+                    # A skill is gate-blocked if any of its prerequisites
+                    # (which are in the mastery_by_id map) haven't reached Gate 4.
+                    # Since learning_paths already filters by prerequisite mastery
+                    # for basic unlocking, we add the stricter Gate 4 check here.
+                    prereq_lc = mastery_by_id.get(sid)
+                    if prereq_lc and prereq_lc.get("current_gate", 0) < 4:
+                        blocked_with_score.append(
+                            (sid, prereq_lc.get("completion_pct", 0.0))
+                        )
+                    else:
+                        eligible.append(sid)
+
+                candidates = eligible[:slots_for_subj]
+
+                # Dependency bottleneck (PRD §7.2): if no eligible candidates
+                # but there are blocked ones, pick the one closest to complete.
+                if not candidates and blocked_with_score:
+                    blocked_with_score.sort(key=lambda x: -x[1])
+                    bottleneck_id = blocked_with_score[0][0]
+                    candidates = [bottleneck_id]
+                    logger.info(
+                        f"[DAILY_PLAN] Dependency bottleneck for {subj}: "
+                        f"advancing {bottleneck_id} (prereq completion "
+                        f"{blocked_with_score[0][1]:.2f})"
+                    )
 
                 for skill_id in candidates:
+                    is_bottleneck = skill_id in [b[0] for b in blocked_with_score]
+                    reason = (
+                        SessionReason.BOTTLENECK_ADVANCE.value
+                        if is_bottleneck
+                        else (
+                            SessionReason.BEHIND_PACE.value
+                            if weekly_plan.subjects[subj].behind_by > 0
+                            else SessionReason.NEXT_IN_SEQUENCE.value
+                        )
+                    )
                     new_skills.append({
                         "skill_id": skill_id,
                         "subject": subj,
                         "skill_name": skill_id,  # best we have without extra lookup
                         "type": "new",
-                        "reason": SessionReason.BEHIND_PACE.value if weekly_plan.subjects[subj].behind_by > 0 else SessionReason.NEXT_IN_SEQUENCE.value,
-                        "prerequisites_met": True,
+                        "reason": reason,
+                        "prerequisites_met": not is_bottleneck,
+                        "bottleneck": is_bottleneck,
                     })
                     allocated += 1
 
@@ -648,6 +741,7 @@ class PlanningService:
                         reason=SessionReason(item.get("reason", SessionReason.NEXT_IN_SEQUENCE.value)),
                         priority=item["priority"],
                         prerequisites_met=item.get("prerequisites_met", True),
+                        bottleneck=item.get("bottleneck", False),
                         session_category=category,
                         unit_title=meta.get("unit_title"),
                         skill_description=meta.get("skill_description"),
@@ -655,17 +749,27 @@ class PlanningService:
                     ).model_dump()
                 )
             else:
+                # Determine review reason: mastery retest > tight loop > scheduled
+                if item.get("is_mastery_retest"):
+                    reason = SessionReason.MASTERY_RETEST
+                elif item.get("in_tight_loop"):
+                    reason = SessionReason.TIGHT_LOOP_RECOVERY
+                else:
+                    reason = SessionReason.SCHEDULED_REVIEW
+
                 sessions.append(
                     ReviewSessionItem(
                         skill_id=sid,
                         subject=item.get("subject", ""),
                         skill_name=meta.get("subskill_description") or item.get("skill_name", sid),
-                        reason=SessionReason.TIGHT_LOOP_RECOVERY if item.get("in_tight_loop") else SessionReason.SCHEDULED_REVIEW,
+                        reason=reason,
                         priority=item["priority"],
                         review_session=len(item.get("review_history", [])) + 1,
                         estimated_ultimate=item.get("estimated_ultimate", DEFAULT_ULTIMATE),
                         completion_factor=item.get("completion_factor", 0.0),
                         days_overdue=item.get("days_overdue", 0),
+                        is_mastery_retest=item.get("is_mastery_retest", False),
+                        mastery_gate=item.get("mastery_gate"),
                         session_category=category,
                         unit_title=meta.get("unit_title"),
                         skill_description=meta.get("skill_description"),

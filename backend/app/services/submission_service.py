@@ -60,6 +60,12 @@ class SubmissionService:
         else:
             logger.info(f"📝 [SUBMISSION_SERVICE] This is a standard problem submission")
 
+        # Resolve eval source: explicit field > lesson_context presence > "practice"
+        eval_source = submission.source
+        if not eval_source:
+            eval_source = "lesson" if submission.lesson_context else "practice"
+        logger.info(f"🏷️ [SUBMISSION_SERVICE] Eval source: {eval_source}")
+
         try:
             # FAST PATH: Lumina primitives are pre-evaluated on the frontend
             if submission.problem.get('problem_type') == 'lumina_primitive':
@@ -105,7 +111,8 @@ class SubmissionService:
                 subskill_id=submission.subskill_id or standard_question.metadata.get('subskill_id', 'default_subskill'),
                 success=evaluation.is_correct,
                 subject=submission.subject or standard_question.metadata.get('subject', 'math'),
-                evaluation={'score': evaluation.score, 'correct': evaluation.is_correct}
+                evaluation={'score': evaluation.score, 'correct': evaluation.is_correct},
+                source=eval_source,
             )
 
             # STEP 5.5: MISCONCEPTION-DRIVEN PRACTICE ENGINE
@@ -317,6 +324,11 @@ class SubmissionService:
         firebase_uid = user_context["firebase_uid"]
         student_id = user_context["student_id"]
 
+        # Resolve eval source (PRD 6.1)
+        eval_source = submission.source
+        if not eval_source:
+            eval_source = "lesson" if submission.lesson_context else "practice"
+
         primitive_response = submission.primitive_response or {}
         problem = submission.problem
 
@@ -417,6 +429,7 @@ class SubmissionService:
             "your_answer_text": submission.student_answer or "primitive_interaction",
             "metadata": {
                 "source": "lumina_primitive",
+                "eval_source": eval_source,  # PRD 6.1: lesson | practice
                 "primitive_type": primitive_type,
                 "metrics": metrics,
                 "duration_ms": primitive_response.get('duration_ms'),
@@ -432,7 +445,8 @@ class SubmissionService:
             subskill_id=subskill_id,
             success=is_correct,
             subject=subject,
-            evaluation={'score': backend_score, 'correct': is_correct}
+            evaluation={'score': backend_score, 'correct': is_correct},
+            source=eval_source,
         )
 
         # Save to CosmosDB
@@ -544,13 +558,14 @@ class SubmissionService:
         return review.get('evaluation', 0) if isinstance(review.get('evaluation'), (int, float)) else 0
     
     async def _update_competency(
-        self, 
-        student_id: int, 
-        skill_id: str, 
-        subskill_id: str, 
+        self,
+        student_id: int,
+        skill_id: str,
+        subskill_id: str,
         success: bool,
         subject: str = "math",
-        evaluation: Dict[str, Any] = None
+        evaluation: Dict[str, Any] = None,
+        source: str = "practice",
     ) -> dict:
         """Update student competency and return result"""
         try:
@@ -560,13 +575,14 @@ class SubmissionService:
                     "score": 10 if success else 3,
                     "correct": success
                 }
-            
+
             return await self.competency_service.update_competency_from_problem(
                 student_id=student_id,
                 subject=subject,
                 skill_id=skill_id,
                 subskill_id=subskill_id,
-                evaluation=evaluation
+                evaluation=evaluation,
+                source=source,
             )
         except Exception as e:
             logger.error(f"Error updating competency: {str(e)}")
@@ -587,6 +603,11 @@ class SubmissionService:
             # Extract score from review
             score = self._extract_score(review)
 
+            # Resolve eval source (PRD 6.1)
+            eval_source = submission.source
+            if not eval_source:
+                eval_source = "lesson" if submission.lesson_context else "practice"
+
             # Use resolved values from review (curriculum mapping may have
             # corrected them), falling back to raw submission values.
             resolved_subject = review.get('subject') or submission.subject
@@ -603,6 +624,7 @@ class SubmissionService:
                 analysis=f"Problem attempt: Score {score}",
                 feedback=review.get('feedback', {}).get('guidance', ''),
                 firebase_uid=firebase_uid,
+                additional_data={"source": eval_source},
             )
 
             # Common kwargs for save_problem_review

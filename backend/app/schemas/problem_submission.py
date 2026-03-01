@@ -6,7 +6,7 @@ Used by the SubmissionService to validate submission data and return structured 
 """
 
 from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Literal, Optional
 
 
 class LessonContext(BaseModel):
@@ -33,6 +33,7 @@ class ProblemSubmission(BaseModel):
     canvas_used: bool = True
     primitive_response: Optional[Dict[str, Any]] = None  # For interactive problems
     lesson_context: Optional[LessonContext] = None  # For curriculum mapping
+    source: Optional[Literal["lesson", "practice"]] = None  # Eval source tagging (PRD 6.1)
 
 
 class SubmissionResult(BaseModel):

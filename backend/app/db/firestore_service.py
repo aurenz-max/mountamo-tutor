@@ -944,6 +944,139 @@ class FirestoreService:
             return []
 
     # ============================================================================
+    # MASTERY LIFECYCLE METHODS (4-gate mastery model — PRD Sections 3, 6.2)
+    # ============================================================================
+
+    def _mastery_lifecycle_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/mastery_lifecycle"""
+        return self._student_doc(student_id).collection('mastery_lifecycle')
+
+    async def get_mastery_lifecycle(
+        self,
+        student_id: int,
+        subskill_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get a single subskill's mastery lifecycle document."""
+        try:
+            doc_ref = self._mastery_lifecycle_subcollection(student_id).document(subskill_id)
+            doc = doc_ref.get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error getting mastery lifecycle for {subskill_id}: {e}")
+            return None
+
+    async def upsert_mastery_lifecycle(
+        self,
+        student_id: int,
+        subskill_id: str,
+        data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Create or update a subskill's mastery lifecycle document."""
+        try:
+            await self._ensure_student_document(student_id)
+            doc_ref = self._mastery_lifecycle_subcollection(student_id).document(subskill_id)
+            firestore_data = self._prepare_firestore_data(data)
+            doc_ref.set(firestore_data, merge=True)
+            logger.info(f"Upserted mastery_lifecycle/{subskill_id} for student {student_id}")
+            return firestore_data
+        except Exception as e:
+            logger.error(f"Error upserting mastery lifecycle: {e}")
+            raise
+
+    async def get_mastery_retests_due(
+        self,
+        student_id: int,
+        before_date: str
+    ) -> List[Dict[str, Any]]:
+        """Get subskills whose mastery retest is due (next_retest_eligible <= before_date).
+
+        Firestore compound queries with range filters on multiple fields require
+        composite indexes.  We filter on next_retest_eligible in-query (single
+        range filter) and apply the gate filter client-side to avoid index issues.
+        """
+        try:
+            query = (
+                self._mastery_lifecycle_subcollection(student_id)
+                .where('next_retest_eligible', '<=', before_date)
+            )
+            results = []
+            for doc in query.stream():
+                data = doc.to_dict()
+                gate = data.get('current_gate', 0)
+                if 1 <= gate < 4:
+                    results.append(data)
+            return results
+        except Exception as e:
+            logger.error(f"Error getting mastery retests due: {e}")
+            return []
+
+    async def get_all_mastery_lifecycles(
+        self,
+        student_id: int,
+        subject: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get all mastery lifecycle docs for a student, optionally filtered by subject."""
+        try:
+            query = self._mastery_lifecycle_subcollection(student_id)
+            if subject:
+                query = query.where('subject', '==', subject)
+            return [doc.to_dict() for doc in query.stream()]
+        except Exception as e:
+            logger.error(f"Error getting mastery lifecycles for student {student_id}: {e}")
+            return []
+
+    async def update_global_practice_pass_rate(
+        self,
+        student_id: int,
+        passes: int,
+        fails: int
+    ) -> None:
+        """Update the student-level global practice pass rate (PRD 6.4)."""
+        try:
+            await self._ensure_student_document(student_id)
+            total = passes + fails
+            pass_rate = passes / total if total > 0 else 0.0
+            self._student_doc(student_id).set({
+                "global_practice_passes": passes,
+                "global_practice_fails": fails,
+                "global_practice_pass_rate": round(pass_rate, 4),
+            }, merge=True)
+            logger.info(
+                f"Updated global practice pass rate for student {student_id}: "
+                f"{passes}/{total} = {pass_rate:.4f}"
+            )
+        except Exception as e:
+            logger.error(f"Error updating global practice pass rate: {e}")
+            raise
+
+    async def get_global_practice_pass_rate(
+        self,
+        student_id: int
+    ) -> Dict[str, Any]:
+        """Get the student-level global practice pass rate (PRD 6.4)."""
+        try:
+            doc = self._student_doc(student_id).get()
+            if not doc.exists:
+                return {
+                    "global_practice_passes": 0,
+                    "global_practice_fails": 0,
+                    "global_practice_pass_rate": 0.8,  # default prior
+                }
+            data = doc.to_dict()
+            return {
+                "global_practice_passes": data.get("global_practice_passes", 0),
+                "global_practice_fails": data.get("global_practice_fails", 0),
+                "global_practice_pass_rate": data.get("global_practice_pass_rate", 0.8),
+            }
+        except Exception as e:
+            logger.error(f"Error getting global practice pass rate: {e}")
+            return {
+                "global_practice_passes": 0,
+                "global_practice_fails": 0,
+                "global_practice_pass_rate": 0.8,
+            }
+
+    # ============================================================================
     # STUDENT PLANNING FIELDS (capacity, development patterns, aggregate metrics)
     # ============================================================================
 

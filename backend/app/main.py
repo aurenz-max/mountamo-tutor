@@ -23,7 +23,8 @@ from .api.endpoints import (
     assessments,
     parent_portal,
     weekly_planner,
-    velocity)
+    velocity,
+    mastery)
 
 from .api import etl_routes
 from .core.config import settings
@@ -215,6 +216,14 @@ app.include_router(
     velocity.router,
     prefix="/api/velocity",
     tags=["velocity"],
+    dependencies=[Depends(get_user_context)]
+)
+
+# Mastery Lifecycle Router — 4-gate mastery model (PRD Section 6.2)
+app.include_router(
+    mastery.router,
+    prefix="/api/mastery",
+    tags=["mastery-lifecycle"],
     dependencies=[Depends(get_user_context)]
 )
 

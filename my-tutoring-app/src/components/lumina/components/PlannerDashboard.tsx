@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/authApiClient';
@@ -189,6 +189,61 @@ interface VelocityData {
     trend: number[];
   };
   subjects: Record<string, SubjectVelocity>;
+}
+
+// Mastery lifecycle types (PRD Section 6.2)
+interface SubskillMasteryEntry {
+  subskill_id: string;
+  skill_id: string;
+  current_gate: number;
+  completion_pct: number;
+  passes: number;
+  fails: number;
+}
+
+interface SubjectMasterySummary {
+  total: number;
+  fully_mastered: number;
+  average_completion_pct: number;
+  by_gate: Record<string, number>;
+  subskills: SubskillMasteryEntry[];
+}
+
+interface MasterySummary {
+  student_id: number;
+  total_subskills: number;
+  by_gate: Record<string, number>;
+  average_completion_pct: number;
+  fully_mastered: number;
+  global_practice_pass_rate: number;
+  by_subject: Record<string, SubjectMasterySummary>;
+  queried_at: string;
+}
+
+interface SubskillForecast {
+  subskill_id: string;
+  skill_id: string;
+  subject: string;
+  current_gate?: number;
+  completion_pct?: number;
+  estimated_remaining_attempts?: number;
+  estimated_days: number;
+  status: 'mastered' | 'in_progress';
+}
+
+interface UnitForecast {
+  subject: string;
+  max_eta_days: number;
+  subskill_count: number;
+  mastered_count: number;
+}
+
+interface MasteryForecast {
+  student_id: number;
+  subskill_forecasts: SubskillForecast[];
+  by_unit: Record<string, UnitForecast>;
+  by_subject: Record<string, { estimated_days: number }>;
+  queried_at: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -859,6 +914,557 @@ const SubjectVelocityCard: React.FC<{ name: string; data: SubjectVelocity }> = (
 };
 
 // ---------------------------------------------------------------------------
+// Sub-components — Mastery Lifecycle (PRD Section 6.2)
+// ---------------------------------------------------------------------------
+
+const GATE_LABELS = ['Not Started', 'Initial Mastery', 'Retest 1', 'Retest 2', 'Durable Mastery'];
+const GATE_COLORS = [
+  'bg-slate-600',
+  'bg-amber-500',
+  'bg-blue-500',
+  'bg-cyan-500',
+  'bg-emerald-500',
+];
+
+const GateProgressDots: React.FC<{ gate: number }> = ({ gate }) => (
+  <div className="flex items-center gap-1">
+    {[0, 1, 2, 3, 4].map((g) => (
+      <div
+        key={g}
+        className={`w-2.5 h-2.5 rounded-full transition-colors ${
+          g <= gate ? GATE_COLORS[g] : 'bg-slate-700 border border-slate-600'
+        }`}
+        title={`Gate ${g}: ${GATE_LABELS[g]}`}
+      />
+    ))}
+    <span className="ml-1.5 text-[10px] text-slate-500 font-mono">{gate}/4</span>
+  </div>
+);
+
+const GateDistributionBar: React.FC<{ byGate: Record<string, number>; total: number }> = ({ byGate, total }) => {
+  if (total === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="h-3 rounded-full overflow-hidden flex">
+        {[4, 3, 2, 1, 0].map((g) => {
+          const count = byGate[String(g)] || 0;
+          if (count === 0) return null;
+          const pct = (count / total) * 100;
+          return (
+            <div
+              key={g}
+              className={`h-full ${GATE_COLORS[g]} transition-all duration-500`}
+              style={{ width: `${pct}%` }}
+              title={`Gate ${g} (${GATE_LABELS[g]}): ${count}`}
+            />
+          );
+        })}
+      </div>
+      <div className="flex justify-between text-[9px] text-slate-500">
+        {[0, 1, 2, 3, 4].map((g) => (
+          <span key={g} className="flex items-center gap-0.5">
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${GATE_COLORS[g]}`} />
+            {byGate[String(g)] || 0}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const SubskillMasteryRow: React.FC<{ entry: SubskillMasteryEntry; forecast?: SubskillForecast }> = ({ entry, forecast }) => {
+  const completionPct = Math.round(entry.completion_pct * 100);
+  const total = entry.passes + entry.fails;
+  const passRate = total > 0 ? Math.round((entry.passes / total) * 100) : 0;
+
+  return (
+    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-800/30 border border-white/5 hover:border-white/10 transition-colors">
+      <GateProgressDots gate={entry.current_gate} />
+
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-slate-200 truncate">{entry.subskill_id}</div>
+        <div className="text-[10px] text-slate-500">{entry.skill_id}</div>
+      </div>
+
+      {/* Completion bar */}
+      <div className="w-24 flex-shrink-0">
+        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all duration-500"
+            style={{ width: `${completionPct}%` }}
+          />
+        </div>
+        <div className="text-[10px] text-slate-400 text-right mt-0.5 font-mono">{completionPct}%</div>
+      </div>
+
+      {/* Pass/fail stats */}
+      <div className="text-right flex-shrink-0 hidden sm:block w-16">
+        <div className="text-xs text-slate-400 font-mono">{entry.passes}P/{entry.fails}F</div>
+        <div className="text-[10px] text-slate-500">{passRate}% pass</div>
+      </div>
+
+      {/* ETA */}
+      {forecast && forecast.status === 'in_progress' && (
+        <div className="text-right flex-shrink-0 hidden md:block w-16">
+          <div className="text-xs text-amber-400 font-mono">{forecast.estimated_days}d</div>
+          <div className="text-[10px] text-slate-500">{forecast.estimated_remaining_attempts} left</div>
+        </div>
+      )}
+      {forecast && forecast.status === 'mastered' && (
+        <div className="text-right flex-shrink-0 hidden md:block w-16">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            Mastered
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SubjectMasteryCard: React.FC<{
+  name: string;
+  summary: SubjectMasterySummary;
+  forecasts: SubskillForecast[];
+  subjectEta?: { estimated_days: number };
+}> = ({ name, summary, forecasts, subjectEta }) => {
+  const completionPct = Math.round(summary.average_completion_pct * 100);
+  const [expanded, setExpanded] = useState(false);
+
+  const forecastMap = new Map(forecasts.map(f => [f.subskill_id, f]));
+  const displaySubskills = expanded ? summary.subskills : summary.subskills.slice(0, 5);
+
+  return (
+    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg font-semibold text-slate-100 capitalize flex items-center justify-between">
+          {name}
+          <div className="flex items-center gap-2">
+            {subjectEta && (
+              <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                ~{Math.round(subjectEta.estimated_days)}d remaining
+              </span>
+            )}
+            <span className={`text-xs font-normal px-2 py-0.5 rounded-full ${
+              summary.fully_mastered === summary.total
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+            }`}>
+              {summary.fully_mastered}/{summary.total} mastered
+            </span>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Completion bar */}
+        <div>
+          <div className="flex justify-between text-xs text-slate-400 mb-1">
+            <span>Actuarial completion factor</span>
+            <span className="font-mono">{completionPct}%</span>
+          </div>
+          <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-500"
+              style={{ width: `${completionPct}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Gate distribution */}
+        <GateDistributionBar byGate={summary.by_gate} total={summary.total} />
+
+        {/* Subskill rows */}
+        <div className="space-y-1.5">
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider">
+            Subskills ({summary.subskills.length})
+          </div>
+          {displaySubskills.map((entry) => (
+            <SubskillMasteryRow
+              key={entry.subskill_id}
+              entry={entry}
+              forecast={forecastMap.get(entry.subskill_id)}
+            />
+          ))}
+          {summary.subskills.length > 5 && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="w-full text-center text-[10px] text-cyan-400 hover:text-cyan-300 transition-colors py-1"
+            >
+              {expanded ? 'Show less' : `Show all ${summary.subskills.length} subskills`}
+            </button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const UnitForecastRow: React.FC<{ unitId: string; data: UnitForecast }> = ({ unitId, data }) => {
+  const masteredPct = data.subskill_count > 0
+    ? Math.round((data.mastered_count / data.subskill_count) * 100)
+    : 0;
+
+  return (
+    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-800/30 border border-white/5">
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-slate-200 truncate">{unitId}</div>
+        <div className="text-[10px] text-slate-500 capitalize">{data.subject}</div>
+      </div>
+      <div className="w-20 flex-shrink-0">
+        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400"
+            style={{ width: `${masteredPct}%` }}
+          />
+        </div>
+        <div className="text-[10px] text-slate-400 text-right mt-0.5">
+          {data.mastered_count}/{data.subskill_count}
+        </div>
+      </div>
+      <div className="text-right flex-shrink-0 w-16">
+        {data.max_eta_days > 0 ? (
+          <div className="text-xs text-amber-400 font-mono">{Math.round(data.max_eta_days)}d</div>
+        ) : (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            Done
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Sub-component — Mastery Seed Panel (curriculum picker)
+// ---------------------------------------------------------------------------
+
+interface CurrSubskill {
+  id: string;
+  description: string;
+}
+
+interface CurrSkill {
+  id: string;
+  description: string;
+  subskills: CurrSubskill[];
+}
+
+interface CurrUnit {
+  id: string;
+  title: string;
+  skills: CurrSkill[];
+}
+
+interface SeedQueueItem {
+  subject: string;
+  skill_id: string;
+  subskill_id: string;
+  subskill_label: string;
+  target_gate: number;
+}
+
+const MasterySeedPanel: React.FC<{
+  studentId: string;
+  loading: boolean;
+  onSeeded: () => void;
+  onError: (msg: string) => void;
+  onLoadingChange: (loading: boolean) => void;
+}> = ({ studentId, loading, onSeeded, onError, onLoadingChange }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [curriculum, setCurriculum] = useState<CurrUnit[]>([]);
+  const [loadingCurr, setLoadingCurr] = useState(false);
+  const [expandedSkills, setExpandedSkills] = useState<Set<string>>(new Set());
+  const [seedQueue, setSeedQueue] = useState<SeedQueueItem[]>([]);
+  const [defaultGate, setDefaultGate] = useState(2);
+  const [seeding, setSeeding] = useState(false);
+  const currCache = useRef<Map<string, CurrUnit[]>>(new Map());
+
+  const loadSubjects = useCallback(async () => {
+    try {
+      const result = await authApi.getSubjects() as (string | { subject_name: string })[];
+      const names = (Array.isArray(result) ? result : []).map(s =>
+        typeof s === 'string' ? s : s.subject_name
+      );
+      setSubjects(names);
+    } catch {
+      onError('Failed to load subjects');
+    }
+  }, [onError]);
+
+  const loadCurriculum = useCallback(async (subject: string) => {
+    const cached = currCache.current.get(subject);
+    if (cached) {
+      setCurriculum(cached);
+      return;
+    }
+    setLoadingCurr(true);
+    try {
+      const data = await authApi.getSubjectCurriculum(subject) as { curriculum: CurrUnit[] };
+      currCache.current.set(subject, data.curriculum);
+      setCurriculum(data.curriculum);
+    } catch {
+      onError(`Failed to load ${subject} curriculum`);
+    } finally {
+      setLoadingCurr(false);
+    }
+  }, [onError]);
+
+  const handleExpand = async () => {
+    setExpanded(!expanded);
+    if (!expanded && subjects.length === 0) {
+      await loadSubjects();
+    }
+  };
+
+  const handleSubjectClick = async (subject: string) => {
+    if (subject === selectedSubject) {
+      setSelectedSubject(null);
+      setCurriculum([]);
+      return;
+    }
+    setSelectedSubject(subject);
+    setExpandedSkills(new Set());
+    await loadCurriculum(subject);
+  };
+
+  const toggleSkill = (skillId: string) => {
+    setExpandedSkills(prev => {
+      const next = new Set(prev);
+      if (next.has(skillId)) next.delete(skillId);
+      else next.add(skillId);
+      return next;
+    });
+  };
+
+  const addToQueue = (subject: string, skill: CurrSkill, sub: CurrSubskill) => {
+    if (seedQueue.some(q => q.subskill_id === sub.id)) return; // no duplicates
+    setSeedQueue(prev => [...prev, {
+      subject,
+      skill_id: skill.id,
+      subskill_id: sub.id,
+      subskill_label: sub.description,
+      target_gate: defaultGate,
+    }]);
+  };
+
+  const removeFromQueue = (subskillId: string) => {
+    setSeedQueue(prev => prev.filter(q => q.subskill_id !== subskillId));
+  };
+
+  const updateQueueGate = (subskillId: string, gate: number) => {
+    setSeedQueue(prev => prev.map(q =>
+      q.subskill_id === subskillId ? { ...q, target_gate: gate } : q
+    ));
+  };
+
+  const seedSelected = async () => {
+    if (seedQueue.length === 0) return;
+    setSeeding(true);
+    onLoadingChange(true);
+    try {
+      await authApi.post(`/api/mastery/debug/seed/${studentId}`, {
+        subskills: seedQueue.map(q => ({
+          subject: q.subject,
+          skill_id: q.skill_id,
+          subskill_id: q.subskill_id,
+          target_gate: q.target_gate,
+        })),
+      });
+      setSeedQueue([]);
+      onSeeded();
+    } catch (e: any) {
+      onError(`Seed error: ${e.message}`);
+    } finally {
+      setSeeding(false);
+      onLoadingChange(false);
+    }
+  };
+
+  const queuedIds = new Set(seedQueue.map(q => q.subskill_id));
+
+  return (
+    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+      <CardHeader className="pb-2">
+        <button
+          onClick={handleExpand}
+          className="w-full flex items-center justify-between"
+        >
+          <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+            Custom Seed — Curriculum Picker
+          </CardTitle>
+          <span className={`text-slate-500 text-xs transition-transform ${expanded ? 'rotate-180' : ''}`}>
+            ▼
+          </span>
+        </button>
+      </CardHeader>
+
+      {expanded && (
+        <CardContent className="space-y-4">
+          {/* Default gate selector */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-400">Default target gate:</span>
+            <div className="flex gap-1">
+              {[0, 1, 2, 3, 4].map(g => (
+                <button
+                  key={g}
+                  onClick={() => setDefaultGate(g)}
+                  className={`w-7 h-7 rounded text-xs font-mono transition-colors ${
+                    defaultGate === g
+                      ? `${GATE_COLORS[g]} text-white`
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-slate-500">{GATE_LABELS[defaultGate]}</span>
+          </div>
+
+          {/* Subject pills */}
+          {subjects.length === 0 ? (
+            <div className="text-center">
+              <span className="text-xs text-slate-500">Loading subjects...</span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {subjects.map(subj => (
+                <button
+                  key={subj}
+                  onClick={() => handleSubjectClick(subj)}
+                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                    selectedSubject === subj
+                      ? 'bg-violet-500/20 border-violet-500/50 text-violet-200'
+                      : 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10'
+                  }`}
+                >
+                  {subj}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Curriculum tree */}
+          {loadingCurr && (
+            <div className="text-center py-4">
+              <span className="text-xs text-slate-400 animate-pulse">Loading curriculum...</span>
+            </div>
+          )}
+
+          {!loadingCurr && curriculum.length > 0 && (
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {curriculum.map(unit => (
+                <div key={unit.id} className="space-y-1">
+                  <div className="text-xs font-semibold text-slate-300 px-2 py-1 bg-white/5 rounded">
+                    {unit.title}
+                  </div>
+                  {unit.skills.map(skill => (
+                    <div key={skill.id} className="ml-2">
+                      <button
+                        onClick={() => toggleSkill(skill.id)}
+                        className="w-full text-left px-2 py-1.5 text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-colors"
+                      >
+                        <span className={`transition-transform ${expandedSkills.has(skill.id) ? 'rotate-90' : ''}`}>
+                          ▸
+                        </span>
+                        <span className="flex-1 truncate">{skill.description}</span>
+                        <span className="text-slate-600 text-[10px]">{skill.subskills.length}</span>
+                      </button>
+                      {expandedSkills.has(skill.id) && (
+                        <div className="ml-4 space-y-0.5">
+                          {skill.subskills.map(sub => {
+                            const queued = queuedIds.has(sub.id);
+                            return (
+                              <button
+                                key={sub.id}
+                                onClick={() => !queued && selectedSubject && addToQueue(selectedSubject, skill, sub)}
+                                disabled={queued}
+                                className={`w-full text-left px-2 py-1 rounded text-[11px] flex items-center gap-2 transition-all ${
+                                  queued
+                                    ? 'bg-violet-500/10 text-violet-300 border border-violet-500/20'
+                                    : 'text-slate-400 hover:bg-violet-500/10 hover:text-violet-200'
+                                }`}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${queued ? 'bg-violet-400' : 'bg-slate-600'}`} />
+                                <span className="flex-1 truncate">{sub.description}</span>
+                                {queued && <span className="text-[9px] text-violet-400">added</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Seed queue */}
+          {seedQueue.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-white/5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider">
+                  Seed Queue ({seedQueue.length} subskills)
+                </span>
+                <button
+                  onClick={() => setSeedQueue([])}
+                  className="text-[10px] text-red-400 hover:text-red-300 transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {seedQueue.map(item => (
+                  <div key={item.subskill_id} className="flex items-center gap-2 p-1.5 rounded bg-slate-800/30 border border-white/5">
+                    <span className="flex-1 text-[11px] text-slate-300 truncate" title={item.subskill_id}>
+                      {item.subskill_label}
+                    </span>
+                    <span className="text-[9px] text-slate-500 capitalize flex-shrink-0">{item.subject}</span>
+                    {/* Per-item gate selector */}
+                    <div className="flex gap-0.5 flex-shrink-0">
+                      {[0, 1, 2, 3, 4].map(g => (
+                        <button
+                          key={g}
+                          onClick={() => updateQueueGate(item.subskill_id, g)}
+                          className={`w-5 h-5 rounded text-[9px] font-mono transition-colors ${
+                            item.target_gate === g
+                              ? `${GATE_COLORS[g]} text-white`
+                              : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+                          }`}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => removeFromQueue(item.subskill_id)}
+                      className="text-red-400 hover:text-red-300 text-xs flex-shrink-0 px-1"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <Button
+                variant="ghost"
+                className="w-full bg-violet-500/10 border border-violet-500/30 hover:bg-violet-500/20 text-violet-300"
+                onClick={seedSelected}
+                disabled={seeding || loading || seedQueue.length === 0}
+              >
+                {seeding ? 'Seeding...' : `Seed ${seedQueue.length} Subskills`}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      )}
+    </Card>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Main Dashboard
 // ---------------------------------------------------------------------------
 
@@ -872,10 +1478,12 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
   const [dailyPlan, setDailyPlan] = useState<DailyPlan | null>(null);
   const [monthlyPlan, setMonthlyPlan] = useState<MonthlyPlan | null>(null);
   const [velocityData, setVelocityData] = useState<VelocityData | null>(null);
-  const [loading, setLoading] = useState<'idle' | 'weekly' | 'daily' | 'monthly' | 'velocity' | 'all'>('idle');
+  const [masterySummary, setMasterySummary] = useState<MasterySummary | null>(null);
+  const [masteryForecast, setMasteryForecast] = useState<MasteryForecast | null>(null);
+  const [loading, setLoading] = useState<'idle' | 'weekly' | 'daily' | 'monthly' | 'velocity' | 'mastery' | 'all'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
-  const [activeTab, setActiveTab] = useState<'weekly' | 'daily' | 'monthly' | 'velocity'>('weekly');
+  const [activeTab, setActiveTab] = useState<'weekly' | 'daily' | 'monthly' | 'velocity' | 'mastery'>('weekly');
 
   const fetchWeeklyPlan = async () => {
     setLoading('weekly');
@@ -929,15 +1537,53 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
     }
   };
 
+  const fetchMastery = async () => {
+    setLoading('mastery');
+    setError(null);
+    try {
+      const [summary, forecast] = await Promise.all([
+        authApi.get<MasterySummary>(`/api/mastery/${studentId}/summary`),
+        authApi.get<MasteryForecast>(`/api/mastery/${studentId}/forecast`),
+      ]);
+      setMasterySummary(summary);
+      setMasteryForecast(forecast);
+    } catch (e: any) {
+      setError(`Mastery error: ${e.message}`);
+    } finally {
+      setLoading('idle');
+    }
+  };
+
+  const seedMasteryData = async () => {
+    setLoading('mastery');
+    setError(null);
+    try {
+      await authApi.post(`/api/mastery/debug/seed/${studentId}`, {});
+      // Re-fetch after seeding
+      const [summary, forecast] = await Promise.all([
+        authApi.get<MasterySummary>(`/api/mastery/${studentId}/summary`),
+        authApi.get<MasteryForecast>(`/api/mastery/${studentId}/forecast`),
+      ]);
+      setMasterySummary(summary);
+      setMasteryForecast(forecast);
+    } catch (e: any) {
+      setError(`Seed error: ${e.message}`);
+    } finally {
+      setLoading('idle');
+    }
+  };
+
   const fetchAll = async () => {
     setLoading('all');
     setError(null);
     try {
-      const [weekly, daily, monthly, velocity] = await Promise.allSettled([
+      const [weekly, daily, monthly, velocity, mSummary, mForecast] = await Promise.allSettled([
         authApi.get<WeeklyPlan>(`/api/weekly-planner/${studentId}`),
         authApi.get<DailyPlan>(`/api/daily-activities/daily-plan/${studentId}`),
         authApi.get<MonthlyPlan>(`/api/weekly-planner/${studentId}/monthly`),
         authApi.get<VelocityData>(`/api/velocity/${studentId}`),
+        authApi.get<MasterySummary>(`/api/mastery/${studentId}/summary`),
+        authApi.get<MasteryForecast>(`/api/mastery/${studentId}/forecast`),
       ]);
 
       const errors: string[] = [];
@@ -952,6 +1598,12 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
 
       if (velocity.status === 'fulfilled') setVelocityData(velocity.value);
       else errors.push(`Velocity: ${velocity.reason?.message}`);
+
+      if (mSummary.status === 'fulfilled') setMasterySummary(mSummary.value);
+      else errors.push(`Mastery Summary: ${mSummary.reason?.message}`);
+
+      if (mForecast.status === 'fulfilled') setMasteryForecast(mForecast.value);
+      else errors.push(`Mastery Forecast: ${mForecast.reason?.message}`);
 
       if (errors.length > 0) setError(errors.join('\n'));
     } finally {
@@ -1030,6 +1682,14 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
             </Button>
             <Button
               variant="ghost"
+              className="bg-violet-500/10 border border-violet-500/30 hover:bg-violet-500/20 text-violet-300"
+              onClick={fetchMastery}
+              disabled={loading !== 'idle' || !studentId}
+            >
+              {loading === 'mastery' ? 'Loading...' : 'Fetch Mastery'}
+            </Button>
+            <Button
+              variant="ghost"
               className="bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 text-purple-300"
               onClick={fetchAll}
               disabled={loading !== 'idle' || !studentId}
@@ -1097,6 +1757,16 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
           }`}
         >
           Velocity {velocityData && '(loaded)'}
+        </button>
+        <button
+          onClick={() => setActiveTab('mastery')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'mastery'
+              ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          Mastery {masterySummary && '(loaded)'}
         </button>
       </div>
 
@@ -1564,6 +2234,219 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
               <CardContent>
                 <pre className="text-xs text-slate-300 overflow-auto max-h-96 font-mono bg-slate-950/50 p-4 rounded-lg">
                   {JSON.stringify(velocityData, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* MASTERY TAB (PRD Section 6.2 — 4-Gate Lifecycle)                */}
+      {/* ================================================================ */}
+      {activeTab === 'mastery' && (
+        <div className="space-y-6 animate-fade-in">
+          {!masterySummary && loading !== 'mastery' && loading !== 'all' && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardContent className="py-12 text-center space-y-4">
+                <p className="text-slate-500">Enter a student ID and click &quot;Fetch Mastery&quot; to load the 4-gate mastery lifecycle.</p>
+                <div className="flex justify-center gap-3">
+                  <Button
+                    variant="ghost"
+                    className="bg-violet-500/10 border border-violet-500/30 hover:bg-violet-500/20 text-violet-300"
+                    onClick={fetchMastery}
+                    disabled={loading !== 'idle' || !studentId}
+                  >
+                    Fetch Mastery
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-300"
+                    onClick={seedMasteryData}
+                    disabled={loading !== 'idle' || !studentId}
+                  >
+                    Seed Demo Data
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Curriculum seed picker — always visible when no data loaded */}
+          {!masterySummary && loading !== 'mastery' && loading !== 'all' && (
+            <MasterySeedPanel
+              studentId={studentId}
+              loading={loading !== 'idle'}
+              onSeeded={fetchMastery}
+              onError={(msg) => setError(msg)}
+              onLoadingChange={(isLoading) => setLoading(isLoading ? 'mastery' : 'idle')}
+            />
+          )}
+
+          {(loading === 'mastery' || loading === 'all') && !masterySummary && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardContent className="py-12 text-center">
+                <div className="animate-pulse text-slate-400">Loading mastery lifecycle data...</div>
+              </CardContent>
+            </Card>
+          )}
+
+          {masterySummary && (
+            <>
+              {/* Overview card */}
+              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+                    Mastery Lifecycle Overview
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    className="bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-300 text-xs h-7 px-3"
+                    onClick={seedMasteryData}
+                    disabled={loading !== 'idle'}
+                  >
+                    {loading === 'mastery' ? 'Seeding...' : 'Seed Demo Data'}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                    <div className="text-center p-3 rounded-lg bg-white/5">
+                      <div className="text-2xl font-bold text-white">{masterySummary.total_subskills}</div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Subskills Tracked</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                      <div className="text-2xl font-bold text-emerald-400">{masterySummary.fully_mastered}</div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Fully Mastered</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                      <div className="text-2xl font-bold text-cyan-400">
+                        {Math.round(masterySummary.average_completion_pct * 100)}%
+                      </div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Avg Completion</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                      <div className="text-2xl font-bold text-blue-400">
+                        {Math.round(masterySummary.global_practice_pass_rate * 100)}%
+                      </div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Global Pass Rate</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                      <div className="text-2xl font-bold text-amber-400">
+                        {Object.keys(masterySummary.by_subject).length}
+                      </div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Subjects</div>
+                    </div>
+                  </div>
+
+                  {/* Overall gate distribution */}
+                  <div className="p-3 rounded-lg bg-slate-800/30 border border-white/5">
+                    <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Gate Distribution (All Subjects)</div>
+                    <GateDistributionBar byGate={masterySummary.by_gate} total={masterySummary.total_subskills} />
+                  </div>
+
+                  {/* Gate legend */}
+                  <div className="flex flex-wrap gap-3 mt-3 justify-center">
+                    {GATE_LABELS.map((label, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <div className={`w-2.5 h-2.5 rounded-full ${GATE_COLORS[i]}`} />
+                        <span className="text-[10px] text-slate-500">G{i}: {label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 text-xs text-slate-500 text-right">
+                    Queried: {masterySummary.queried_at ? new Date(masterySummary.queried_at).toLocaleString() : '—'}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Curriculum-based seed picker */}
+              <MasterySeedPanel
+                studentId={studentId}
+                loading={loading !== 'idle'}
+                onSeeded={fetchMastery}
+                onError={(msg) => setError(msg)}
+                onLoadingChange={(isLoading) => setLoading(isLoading ? 'mastery' : 'idle')}
+              />
+
+              {/* Forecast summary by subject */}
+              {masteryForecast && Object.keys(masteryForecast.by_subject).length > 0 && (
+                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+                      Subject ETAs (Workload Forecast)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {Object.entries(masteryForecast.by_subject).map(([subj, data]) => (
+                        <div key={subj} className="text-center p-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 capitalize">{subj}</div>
+                          <div className="text-2xl font-bold text-amber-400 font-mono">
+                            {Math.round(data.estimated_days)}d
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-1">estimated remaining</div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Unit-level forecast */}
+              {masteryForecast && Object.keys(masteryForecast.by_unit).length > 0 && (
+                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+                      Unit Forecasts ({Object.keys(masteryForecast.by_unit).length} units)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1.5">
+                      {Object.entries(masteryForecast.by_unit).map(([unitId, data]) => (
+                        <UnitForecastRow key={unitId} unitId={unitId} data={data} />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Per-subject mastery cards */}
+              <div className="space-y-6">
+                {Object.entries(masterySummary.by_subject).map(([name, summary]) => (
+                  <SubjectMasteryCard
+                    key={name}
+                    name={name}
+                    summary={summary}
+                    forecasts={masteryForecast?.subskill_forecasts.filter(f => f.subject === name) || []}
+                    subjectEta={masteryForecast?.by_subject[name]}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Raw JSON */}
+          {showRawJson && masterySummary && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-slate-400">Mastery Summary — Raw JSON</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="text-xs text-slate-300 overflow-auto max-h-96 font-mono bg-slate-950/50 p-4 rounded-lg">
+                  {JSON.stringify(masterySummary, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
+          {showRawJson && masteryForecast && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-slate-400">Mastery Forecast — Raw JSON</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="text-xs text-slate-300 overflow-auto max-h-96 font-mono bg-slate-950/50 p-4 rounded-lg">
+                  {JSON.stringify(masteryForecast, null, 2)}
                 </pre>
               </CardContent>
             </Card>

@@ -78,6 +78,7 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
     primitive_type?: string;
     objective_text?: string;
   };
+  source?: 'lesson' | 'practice';
 } {
   return {
     // When lesson context is present the backend resolves the subject
@@ -114,6 +115,8 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
           objective_text: result.lessonContext.objectiveText,
         }
       : undefined,
+    // Eval source tagging (PRD 6.1): explicit from result, or derived from lessonContext
+    source: result.source ?? (result.lessonContext ? 'lesson' : 'practice'),
   };
 }
 

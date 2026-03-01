@@ -30,8 +30,10 @@ class SessionReason(str, Enum):
     """Why a session appears in the daily plan."""
     TIGHT_LOOP_RECOVERY = "tight_loop_recovery"
     SCHEDULED_REVIEW = "scheduled_review"
+    MASTERY_RETEST = "mastery_retest"  # 4-gate mastery retest (PRD §3)
     BEHIND_PACE = "behind_pace"
     NEXT_IN_SEQUENCE = "next_in_sequence"
+    BOTTLENECK_ADVANCE = "bottleneck_advance"  # Dependency bottleneck (PRD §7.2)
 
 
 class SessionCategory(str, Enum):
@@ -187,6 +189,8 @@ class ReviewSessionItem(BaseModel):
     estimated_ultimate: int
     completion_factor: float
     days_overdue: int = 0
+    is_mastery_retest: bool = False  # True for 4-gate mastery retests (PRD §3)
+    mastery_gate: Optional[int] = None  # Current gate (1-3) if mastery retest
     session_category: SessionCategory = SessionCategory.INTERLEAVED
     # Enrichment fields (resolved from curriculum)
     unit_title: Optional[str] = None
@@ -203,6 +207,7 @@ class NewSkillSessionItem(BaseModel):
     reason: SessionReason
     priority: int
     prerequisites_met: bool = True
+    bottleneck: bool = False  # True when prerequisite gate < 4 (PRD §7.2)
     session_category: SessionCategory = SessionCategory.INTERLEAVED
     # Enrichment fields (resolved from curriculum)
     unit_title: Optional[str] = None

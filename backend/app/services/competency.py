@@ -2,6 +2,7 @@
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+import asyncio
 import math
 import random
 import logging
@@ -31,6 +32,7 @@ class CompetencyService:
         self.cosmos_db = None  # Will be set by dependency injection
         self.firestore_service = None  # Will be set by dependency injection
         self.review_engine = None  # Will be set by dependency injection
+        self.mastery_lifecycle_engine = None  # Will be set by dependency injection
         self.curriculum_service = curriculum_service
         
         # Competency calculation settings
@@ -211,11 +213,12 @@ class CompetencyService:
         subject: str,
         skill_id: str,
         subskill_id: str,
-        evaluation: Dict[str, Any]
+        evaluation: Dict[str, Any],
+        source: str = "practice",
     ) -> Dict[str, Any]:
         """Update competency based on problem evaluation"""
         logger.info(f"🔍 COMPETENCY_SERVICE: === UPDATE_COMPETENCY_FROM_PROBLEM ===")
-        logger.info(f"🔍 COMPETENCY_SERVICE: Student: {student_id}, Subject: {subject}, Skill: {skill_id}, Subskill: {subskill_id}")
+        logger.info(f"🔍 COMPETENCY_SERVICE: Student: {student_id}, Subject: {subject}, Skill: {skill_id}, Subskill: {subskill_id}, Source: {source}")
         
         try:
             # Check if cosmos_db is available
@@ -305,8 +308,8 @@ class CompetencyService:
                 logger.info(f"🔍 COMPETENCY_SERVICE: Successfully saved attempt to CosmosDB")
             except Exception as e:
                 logger.error(f"🔍 COMPETENCY_SERVICE: Failed to save attempt to CosmosDB: {str(e)}")
-            
-            # Save to Firestore
+
+            # Save to Firestore (includes eval source tag — PRD 6.1)
             if self.firestore_service:
                 try:
                     await self.firestore_service.save_attempt(
@@ -316,10 +319,11 @@ class CompetencyService:
                         subskill_id=subskill_id,
                         score=score,
                         analysis=analysis,
-                        feedback=feedback
+                        feedback=feedback,
+                        additional_data={"source": source},
                     )
                     firestore_success = True
-                    logger.info(f"🔍 COMPETENCY_SERVICE: Successfully saved attempt to Firestore")
+                    logger.info(f"🔍 COMPETENCY_SERVICE: Successfully saved attempt to Firestore (source={source})")
                 except Exception as e:
                     logger.error(f"🔍 COMPETENCY_SERVICE: Failed to save attempt to Firestore: {str(e)}")
             
@@ -417,6 +421,28 @@ class CompetencyService:
                     logger.info(f"✅ COMPETENCY_SERVICE: Review engine processed session result")
                 except Exception as re_err:
                     logger.error(f"⚠️ COMPETENCY_SERVICE: Review engine error (non-fatal): {re_err}")
+
+            # --- Mastery lifecycle hook: 4-gate mastery model (PRD Sections 3, 8) ---
+            if self.mastery_lifecycle_engine:
+                try:
+                    await self.mastery_lifecycle_engine.process_eval_result(
+                        student_id=student_id,
+                        subskill_id=subskill_id,
+                        subject=subject,
+                        skill_id=skill_id,
+                        score=score,
+                        source=source,
+                    )
+                    logger.info(f"✅ COMPETENCY_SERVICE: Mastery lifecycle engine processed eval")
+
+                    # Update global practice pass rate (fire-and-forget — acceptable
+                    # to lag by one event, avoids O(n) scan on the hot path)
+                    if source == "practice":
+                        asyncio.create_task(
+                            self.mastery_lifecycle_engine.update_global_pass_rate(student_id)
+                        )
+                except Exception as ml_err:
+                    logger.error(f"⚠️ COMPETENCY_SERVICE: Mastery lifecycle engine error (non-fatal): {ml_err}")
 
             logger.info(f"✅ COMPETENCY_SERVICE: Competency update successful")
             return result
