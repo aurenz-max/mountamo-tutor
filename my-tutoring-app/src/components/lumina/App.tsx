@@ -46,6 +46,7 @@ import { EvaluationProvider, useEvaluationContext } from './evaluation';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 import { CurriculumBrowser, type CurriculumContext } from './components/CurriculumBrowser';
+import { LessonGroupTray, assignBloomPhase, type SelectedSubskill, type BloomPhase } from './components/LessonGroupBuilder';
 
 // Simple evaluation results indicator
 const EvaluationResultsIndicator: React.FC = () => {
@@ -236,6 +237,11 @@ export default function App() {
   // Curriculum context (set when lesson initiated from CurriculumBrowser)
   const [curriculumContext, setCurriculumContext] = useState<CurriculumContext | null>(null);
 
+  // Lesson Group Builder State
+  const [lessonGroupMode, setLessonGroupMode] = useState(false);
+  const [selectedSubskills, setSelectedSubskills] = useState<SelectedSubskill[]>([]);
+  const [lessonGroupTrayCollapsed, setLessonGroupTrayCollapsed] = useState(false);
+
   // Sample data for each visual primitive
   const visualPrimitiveExamples = [
     {
@@ -354,7 +360,10 @@ export default function App() {
     }
   ];
 
-  const startExhibit = useCallback(async (topicOverride?: string) => {
+  const startExhibit = useCallback(async (
+    topicOverride?: string,
+    preBuiltObjectives?: Array<{ id: string; text: string; verb: string; icon: string }>
+  ) => {
     const searchTopic = topicOverride || topic;
     if (!searchTopic.trim()) return;
 
@@ -369,11 +378,24 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      // CURATOR-BRIEF-FIRST ARCHITECTURE
-      // STEP 1: Generate curator brief with learning objectives
-      setLoadingMessage('🎯 Defining learning objectives...');
-      const generatedBrief = await generateIntroBriefing(searchTopic, gradeLevel);
-      console.log('📚 Curator brief generated with objectives:', generatedBrief.objectives);
+      let objectives: Array<{ id: string; text: string; verb: string; icon: string }>;
+      let generatedBrief: Awaited<ReturnType<typeof generateIntroBriefing>> | null = null;
+
+      // Always generate the full curator brief (hook, big idea, mindset, etc.)
+      setLoadingMessage('🎯 Generating lesson introduction...');
+      generatedBrief = await generateIntroBriefing(searchTopic, gradeLevel);
+      console.log('📚 Curator brief generated:', generatedBrief);
+
+      if (preBuiltObjectives) {
+        // Lesson Group Builder path — replace Gemini's objectives with user's selections,
+        // but keep all the other brief content (hook, big idea, mindset, roadmap, etc.)
+        objectives = preBuiltObjectives;
+        generatedBrief = { ...generatedBrief, objectives: preBuiltObjectives as typeof generatedBrief.objectives };
+        console.log('📚 Overriding objectives with lesson group selections:', objectives);
+      } else {
+        // Standard path — use objectives as generated
+        objectives = generatedBrief.objectives;
+      }
 
       // Store curator brief in state to display objectives
       setCuratorBrief(generatedBrief);
@@ -400,7 +422,7 @@ export default function App() {
       const manifest = await generateExhibitManifestWithObjectivesStreaming(
         searchTopic,
         gradeLevel,
-        generatedBrief.objectives,
+        objectives,
         manifestCallbacks
       );
       console.log('🗺️ Manifest generated based on learning objectives');
@@ -475,7 +497,7 @@ export default function App() {
         simulateProgress();
       }, 1000);
 
-      // Build the actual data
+      // Build the actual data — generatedBrief is always populated at this point
       const data = await buildCompleteExhibitFromManifest(manifest, generatedBrief);
       buildComplete = true;
 
@@ -519,6 +541,77 @@ export default function App() {
     setTopic(topicString);
     startExhibit(topicString);
   }, [startExhibit]);
+
+  // Handle lesson group subskill toggle from CurriculumBrowser
+  const handleToggleSubskill = useCallback((subskill: SelectedSubskill) => {
+    setSelectedSubskills(prev => {
+      const existing = prev.find(s => s.id === subskill.id);
+      if (existing) {
+        // Remove
+        return prev.filter(s => s.id !== subskill.id);
+      }
+      // Add with auto-detected Bloom's phase
+      const withBloom: SelectedSubskill = {
+        ...subskill,
+        bloomPhase: assignBloomPhase(subskill.description, prev.length),
+      };
+      return [...prev, withBloom];
+    });
+  }, []);
+
+  // Handle Bloom's phase update for a subskill in the tray
+  const handleUpdateBloom = useCallback((id: string, phase: BloomPhase) => {
+    setSelectedSubskills(prev =>
+      prev.map(s => s.id === id ? { ...s, bloomPhase: phase } : s)
+    );
+  }, []);
+
+  // Launch a grouped lesson from selected subskills
+  const handleLaunchGroupLesson = useCallback(() => {
+    if (selectedSubskills.length < 2) return;
+
+    // Build objectives from selected subskills
+    const objectives = selectedSubskills.map((s, i) => ({
+      id: `obj${i + 1}`,
+      text: s.description,
+      verb: s.bloomPhase as string,
+      icon: s.bloomPhase === 'identify' ? 'search' : s.bloomPhase === 'explain' ? 'message' : 'pencil',
+    }));
+
+    // Build topic string from the group
+    const subjects = new Set(selectedSubskills.map(s => s.subject));
+    const units = new Set(selectedSubskills.map(s => s.unitTitle));
+    const subjectStr = Array.from(subjects).join(', ');
+    const unitStr = Array.from(units).join(' & ');
+    // Keep topic short — subskill descriptions live in the objectives, not the title
+    const topicStr = units.size === 1 ? `${subjectStr}: ${unitStr}` : subjectStr;
+
+    // Set grade from first subskill
+    const firstGrade = selectedSubskills[0].grade;
+    if (firstGrade) {
+      const g = firstGrade.toLowerCase().trim();
+      const mapped: GradeLevel | undefined =
+        g.includes('pre') ? 'preschool' :
+        g === 'k' || g.includes('kindergarten') ? 'kindergarten' :
+        !isNaN(parseInt(g)) && parseInt(g) <= 5 ? 'elementary' :
+        !isNaN(parseInt(g)) && parseInt(g) <= 8 ? 'middle-school' :
+        !isNaN(parseInt(g)) && parseInt(g) <= 12 ? 'high-school' : undefined;
+      if (mapped) setGradeLevel(mapped);
+    }
+
+    // Set curriculum context from first subskill
+    setCurriculumContext({
+      subject: selectedSubskills[0].subject,
+      skillId: selectedSubskills[0].skillId,
+      subskillId: selectedSubskills[0].id,
+    });
+
+    setTopic(topicStr);
+    setLessonGroupMode(false);
+
+    // Launch exhibit with pre-built objectives
+    startExhibit(topicStr, objectives);
+  }, [selectedSubskills, startExhibit]);
 
   // Handle transition from practice to learning exhibit
   const handleLearnMoreFromPractice = useCallback((subject: string, practiceLevelGrade: GradeLevel) => {
@@ -747,8 +840,47 @@ export default function App() {
 
                 {/* Curriculum Browser */}
                 <div className="pt-8 max-w-5xl mx-auto">
-                  <CurriculumBrowser onSelectTopic={handleCurriculumSelect} />
+                  {/* Build Lesson toggle */}
+                  <div className="flex justify-end mb-2">
+                    <button
+                      onClick={() => {
+                        setLessonGroupMode(prev => !prev);
+                        if (lessonGroupMode) {
+                          setSelectedSubskills([]);
+                        }
+                      }}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
+                        lessonGroupMode
+                          ? 'bg-blue-500/20 border-blue-500/50 text-blue-200'
+                          : 'bg-white/5 border-white/20 text-slate-400 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      {lessonGroupMode ? 'Exit Build Mode' : 'Build Lesson'}
+                    </button>
+                  </div>
+                  <CurriculumBrowser
+                    onSelectTopic={handleCurriculumSelect}
+                    selectionMode={lessonGroupMode}
+                    selectedIds={new Set(selectedSubskills.map(s => s.id))}
+                    onToggleSubskill={handleToggleSubskill}
+                  />
                 </div>
+
+                {/* Lesson Group Tray (floating bottom panel) */}
+                {selectedSubskills.length > 0 && (
+                  <LessonGroupTray
+                    subskills={selectedSubskills}
+                    onRemove={(id) => setSelectedSubskills(prev => prev.filter(s => s.id !== id))}
+                    onUpdateBloom={handleUpdateBloom}
+                    onLaunch={handleLaunchGroupLesson}
+                    onClear={() => setSelectedSubskills([])}
+                    collapsed={lessonGroupTrayCollapsed}
+                    onToggleCollapse={() => setLessonGroupTrayCollapsed(prev => !prev)}
+                  />
+                )}
 
                 {/* Main Actions Section */}
                 <div className="pt-8 max-w-2xl mx-auto">

@@ -10,8 +10,10 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronRight, BookOpen, RefreshCw, GraduationCap } from 'lucide-react';
 import type { GradeLevel } from './GradeLevelSelector';
+import type { SelectedSubskill } from './LessonGroupBuilder/types';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -50,6 +52,12 @@ export interface CurriculumContext {
 
 interface CurriculumBrowserProps {
   onSelectTopic: (topic: string, gradeLevel?: GradeLevel, curriculumContext?: CurriculumContext) => void;
+  /** When true, show checkboxes for multi-select lesson building */
+  selectionMode?: boolean;
+  /** Set of currently selected subskill IDs */
+  selectedIds?: Set<string>;
+  /** Called when a subskill checkbox is toggled */
+  onToggleSubskill?: (subskill: SelectedSubskill) => void;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -95,9 +103,15 @@ interface SkillRowProps {
   unit: CurriculumUnit;
   subject: string;
   onSelect: (topic: string, grade?: GradeLevel, curriculumContext?: CurriculumContext) => void;
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSubskill?: (subskill: SelectedSubskill) => void;
 }
 
-const SkillRow: React.FC<SkillRowProps> = ({ skill, unit, subject, onSelect }) => {
+const SkillRow: React.FC<SkillRowProps> = ({
+  skill, unit, subject, onSelect,
+  selectionMode, selectedIds, onToggleSubskill,
+}) => {
   const [expanded, setExpanded] = useState(false);
 
   const handleSubskillClick = (subskill: CurriculumSubskill) => {
@@ -110,6 +124,24 @@ const SkillRow: React.FC<SkillRowProps> = ({ skill, unit, subject, onSelect }) =
     });
   };
 
+  const handleCheckboxToggle = (subskill: CurriculumSubskill) => {
+    onToggleSubskill?.({
+      id: subskill.id,
+      description: subskill.description,
+      skillId: skill.id,
+      skillDescription: skill.description,
+      unitTitle: unit.title,
+      subject,
+      grade: unit.grade ?? undefined,
+      bloomPhase: 'identify', // placeholder — App.tsx assigns real phase via bloomUtils
+    });
+  };
+
+  // Count selected subskills within this skill
+  const selectedCount = selectionMode
+    ? skill.subskills.filter(s => selectedIds?.has(s.id)).length
+    : 0;
+
   return (
     <div>
       <button
@@ -117,24 +149,65 @@ const SkillRow: React.FC<SkillRowProps> = ({ skill, unit, subject, onSelect }) =
         className="w-full text-left px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all flex justify-between items-center gap-3"
       >
         <span className="text-slate-200 text-sm flex-1">{skill.description}</span>
+        {selectionMode && selectedCount > 0 && (
+          <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-[10px]">
+            {selectedCount} selected
+          </Badge>
+        )}
         <span className="text-xs text-slate-500 whitespace-nowrap">{skill.subskills.length} topics</span>
         <ChevronRight className={`w-4 h-4 text-slate-500 transition-transform flex-shrink-0 ${expanded ? 'rotate-90' : ''}`} />
       </button>
       {expanded && (
         <div className="ml-4 mt-2 space-y-1">
-          {skill.subskills.map(subskill => (
-            <button
-              key={subskill.id}
-              onClick={() => handleSubskillClick(subskill)}
-              className="w-full text-left px-4 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-blue-500/10 hover:text-blue-200 border border-transparent hover:border-blue-500/20 transition-all flex items-center gap-2 group"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400/50 group-hover:bg-blue-400 transition-colors flex-shrink-0" />
-              <span className="flex-1">{subskill.description}</span>
-              <svg className="w-4 h-4 text-slate-600 group-hover:text-blue-400 transition-all opacity-0 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </button>
-          ))}
+          {skill.subskills.map(subskill => {
+            const isSelected = selectionMode && selectedIds?.has(subskill.id);
+
+            return (
+              <div
+                key={subskill.id}
+                className={`flex items-center gap-2 rounded-lg transition-all ${
+                  isSelected
+                    ? 'bg-blue-500/10 border border-blue-500/20'
+                    : 'border border-transparent hover:border-blue-500/20'
+                }`}
+              >
+                {/* Checkbox (selection mode only) */}
+                {selectionMode && (
+                  <div className="pl-3 flex items-center">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => handleCheckboxToggle(subskill)}
+                      className="border-slate-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                    />
+                  </div>
+                )}
+
+                {/* Subskill button */}
+                <button
+                  onClick={() => {
+                    if (selectionMode) {
+                      handleCheckboxToggle(subskill);
+                    } else {
+                      handleSubskillClick(subskill);
+                    }
+                  }}
+                  className={`flex-1 text-left px-4 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-blue-500/10 hover:text-blue-200 transition-all flex items-center gap-2 group ${
+                    selectionMode ? 'pl-1' : ''
+                  }`}
+                >
+                  {!selectionMode && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400/50 group-hover:bg-blue-400 transition-colors flex-shrink-0" />
+                  )}
+                  <span className="flex-1">{subskill.description}</span>
+                  {!selectionMode && (
+                    <svg className="w-4 h-4 text-slate-600 group-hover:text-blue-400 transition-all opacity-0 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -143,7 +216,12 @@ const SkillRow: React.FC<SkillRowProps> = ({ skill, unit, subject, onSelect }) =
 
 // ── Main Component ──────────────────────────────────────────────────
 
-export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({ onSelectTopic }) => {
+export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
+  onSelectTopic,
+  selectionMode,
+  selectedIds,
+  onToggleSubskill,
+}) => {
   const { user } = useAuth();
   const [subjects, setSubjects] = useState<SubjectInfo[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -218,6 +296,15 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({ onSelectTo
         <span className="text-slate-500 text-xs font-mono uppercase tracking-widest">Browse Curriculum</span>
         <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700" />
       </div>
+
+      {/* Selection mode indicator */}
+      {selectionMode && (
+        <div className="flex items-center justify-center gap-2 mb-4 px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+          <span className="text-xs text-blue-300">
+            Select 2-5 subskills to build a grouped lesson
+          </span>
+        </div>
+      )}
 
       {/* Subject pills */}
       {!subjectsLoaded && !loadingSubjects && (
@@ -350,6 +437,9 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({ onSelectTo
                       unit={unit}
                       subject={selectedSubject}
                       onSelect={onSelectTopic}
+                      selectionMode={selectionMode}
+                      selectedIds={selectedIds}
+                      onToggleSubskill={onToggleSubskill}
                     />
                   ))}
                 </div>
