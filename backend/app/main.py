@@ -24,7 +24,8 @@ from .api.endpoints import (
     parent_portal,
     weekly_planner,
     velocity,
-    mastery)
+    mastery,
+    skill_progress)
 
 from .api import etl_routes
 from .core.config import settings
@@ -224,6 +225,14 @@ app.include_router(
     mastery.router,
     prefix="/api/mastery",
     tags=["mastery-lifecycle"],
+    dependencies=[Depends(get_user_context)]
+)
+
+# Skill Progress Router — 3-layer prerequisite projection panel
+app.include_router(
+    skill_progress.router,
+    prefix="/api/skill-progress",
+    tags=["skill-progress"],
     dependencies=[Depends(get_user_context)]
 )
 

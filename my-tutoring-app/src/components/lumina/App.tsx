@@ -41,6 +41,7 @@ import { SpotlightCard } from './components/SpotlightCard';
 import { ExhibitProvider } from './contexts/ExhibitContext';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { EvaluationProvider, useEvaluationContext } from './evaluation';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
@@ -228,6 +229,9 @@ export default function App() {
 
   // Planner Dashboard State
   const [showPlannerDashboard, setShowPlannerDashboard] = useState(false);
+
+  // Analytics Dashboard State
+  const [showAnalyticsDashboard, setShowAnalyticsDashboard] = useState(false);
 
   // Sample data for each visual primitive
   const visualPrimitiveExamples = [
@@ -647,13 +651,18 @@ export default function App() {
                    ← Exit Planner
                 </button>
             )}
+            {showAnalyticsDashboard && (
+                <button onClick={() => setShowAnalyticsDashboard(false)} className="hover:text-white transition-colors">
+                   ← Exit Analytics
+                </button>
+            )}
         </div>
       </header>
 
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
         
         {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showAstronomyPrimitivesTester && !showPhysicsPrimitivesTester && !showFeatureExhibitTester && !showBiologyPrimitivesTester && !showChemistryPrimitivesTester && !showLanguageArtsTester && !showLuminaTutorTester && !showPracticeMode && !showScratchPad && !showPlannerDashboard && (
+        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showAstronomyPrimitivesTester && !showPhysicsPrimitivesTester && !showFeatureExhibitTester && !showBiologyPrimitivesTester && !showChemistryPrimitivesTester && !showLanguageArtsTester && !showLuminaTutorTester && !showPracticeMode && !showScratchPad && !showPlannerDashboard && !showAnalyticsDashboard && (
           <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
              <div className="space-y-6 max-w-2xl">
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
@@ -813,6 +822,30 @@ export default function App() {
                           </p>
                         </div>
                         <svg className="w-5 h-5 text-slate-600 group-hover:text-cyan-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                      </div>
+                    </SpotlightCard>
+
+                    {/* Analytics Dashboard Button */}
+                    <SpotlightCard
+                      color="139, 92, 246"
+                      onClick={() => setShowAnalyticsDashboard(true)}
+                      className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20"
+                    >
+                      <div className="p-6 flex items-start gap-4">
+                        <div className="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                          <span className="text-2xl">📊</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-purple-200 transition-colors">
+                            Analytics Dashboard
+                          </h3>
+                          <p className="text-slate-400 text-sm leading-relaxed">
+                            Real-time performance metrics, velocity, score trends &amp; engagement
+                          </p>
+                        </div>
+                        <svg className="w-5 h-5 text-slate-600 group-hover:text-purple-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                         </svg>
                       </div>
@@ -1217,6 +1250,13 @@ export default function App() {
         {gameState === GameState.IDLE && showPlannerDashboard && (
           <div className="flex-1 animate-fade-in">
             <PlannerDashboard onBack={() => setShowPlannerDashboard(false)} />
+          </div>
+        )}
+
+        {/* ANALYTICS DASHBOARD STATE */}
+        {gameState === GameState.IDLE && showAnalyticsDashboard && (
+          <div className="flex-1 animate-fade-in">
+            <AnalyticsDashboard onBack={() => setShowAnalyticsDashboard(false)} />
           </div>
         )}
 

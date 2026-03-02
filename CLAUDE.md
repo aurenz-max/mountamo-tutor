@@ -32,6 +32,24 @@ This project uses a Lumina design system with glass card styling built on shadcn
 
 See `my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md` for complete guidelines.
 
+## Planning & Mastery System (backend)
+
+The planning engine is a tightly coupled set of services built on a **4-gate mastery lifecycle** model. All state lives in Firestore — no LLM, no BigQuery, no stored plans. See `backend/docs/PLANNING_ARCHITECTURE.md` for the full architecture.
+
+**Gate model:** Gate 0 (not started) → 1 (initial mastery, 3 lesson evals >= 9.0) → 2 (+3d retest) → 3 (+7d retest) → 4 (+14d retest, closed/mastered). Failed retests reset to a shorter interval. Completion % uses actuarial credibility blending (subskill pass rate + global rate, weighted by Z = attempts / 10).
+
+**Key services:**
+- `MasteryLifecycleEngine` — processes eval results, manages gate transitions. Entry: `process_eval_result()`. Called as hook from `CompetencyService.update_competency_from_problem()`.
+- `PlanningService` — stateless planner reading live Firestore. Produces weekly pacing, monthly forward simulation, and daily session queues.
+
+**Daily plan flow:** reviews first (85% cap, sorted by overdue + lowest gate), then new skills from `LearningPathsService` prerequisites, proportional to weekly deficit per subject. Sessions interleaved: new blocks in front 60%, reviews subject-alternated, tail 40% for lighter reviews.
+
+**Monthly projection:** pipeline delay model (4/5/6 week closure lags for optimistic/best/pessimistic), 3 lesson sessions per new intro, reviews at weeks +1/+2/+4 after introduction. Produces per-subject confidence bands and early-warning flags.
+
+**Key files:** `planning_service.py`, `mastery_lifecycle_engine.py`, `models/planning.py`, `models/mastery_lifecycle.py`, `endpoints/weekly_planner.py`, `endpoints/daily_activities.py`, `endpoints/mastery.py`.
+
+**PRD references:** §2 (lifecycle subcollection), §3 (gate transitions), §4 (completion factor), §5 (planning), §7 (gate blocking/prerequisites), §8 (session interleaving).
+
 ## Development Commands
 
 ### Frontend (Next.js)
@@ -53,12 +71,13 @@ This is a full-stack educational platform with an AI-powered tutoring system:
 - **FastAPI** server providing REST APIs and WebSocket connections
 - **Core Services**:
   - `CompetencyService` - Student progress tracking and skill assessment
+  - `MasteryLifecycleEngine` - 4-gate mastery lifecycle, gate transitions, completion factor
+  - `PlanningService` - Stateless weekly/daily/monthly planner (Firestore-native, no LLM)
   - `TutoringService` - Real-time WebSocket tutoring sessions with audio
   - `ProblemService` - Adaptive problem generation based on competency
-  - `LearningPathsService` - Skill progression recommendations via decision trees
+  - `LearningPathsService` - Skill progression and prerequisite graph (decision trees)
   - `EducationService` - Educational content management and delivery
   - `BigQueryAnalyticsService` - Analytics using BigQuery for scalable data processing
-  - `DailyActivitiesService` - Personalized daily learning plans
 - **AI Integration**: Gemini AI for tutoring conversations, problem generation, and Gemini Live for real-time audio interaction
 - **Audio Processing**: Azure Speech Service for TTS, real-time audio streaming via WebSocket
 - **Database**: BigQuery for analytics (replaced PostgreSQL), CosmosDB for session storage
@@ -67,10 +86,11 @@ This is a full-stack educational platform with an AI-powered tutoring system:
 - **Analytics**: `/analytics/*` - BigQuery-powered analytics with caching, student progress metrics, competency analysis
 - **Competency**: `/competency/*` - Student skill tracking, progress updates, curriculum structure
 - **Curriculum**: `/curriculum/*` - Educational content structure and problem types
-- **Daily Activities**: `/daily-activities/*` - Personalized daily learning plans using BigQuery recommendations
-- **Education**: `/education/*` - Core educational content delivery and management
-- **Learning Paths**: `/learning-paths/*` - Skill progression recommendations via decision trees
-- **Packages**: `/packages/*` - Content package management and delivery
+- **Daily Activities**: `/daily-activities/*` - Algorithmic daily session queue (Firestore-native)
+- **Weekly Planner**: `/weekly-planner/*` - Pacing snapshots and monthly forward projections
+- **Mastery**: `/mastery/*` - Mastery lifecycle CRUD, eval processing, summaries, forecasts
+- **Learning Paths**: `/learning-paths/*` - Prerequisite graph and skill unlock logic
+
 
 ### Frontend (`/my-tutoring-app`)
 - **Next.js 14** with React and TypeScript
@@ -91,10 +111,6 @@ This is a full-stack educational platform with an AI-powered tutoring system:
 - `DailyBriefingComponent.tsx` - Daily learning plan presentation
 - `ActivityCard.tsx` - Individual learning activity components
 
-#### Packages (`/src/components/packages/`)
-- Content package management system for educational materials
-- Integration with backend package endpoints
-- Support for filtering, searching, and organizing learning content
 
 #### Practice (`/src/components/practice/`)
 - `ProblemSet.tsx` - Interactive problem solving interface
@@ -112,7 +128,7 @@ This is a full-stack educational platform with an AI-powered tutoring system:
 ### Key Integration Points
 - **WebSocket Tutoring**: Bidirectional real-time communication between frontend and backend
 - **Audio Pipeline**: Browser → MediaRecorder → WebSocket → Azure Speech/Gemini → Audio playback
-- **Competency System**: Session performance updates student skill assessments via BigQuery
+- **Mastery Pipeline**: CompetencyService → MasteryLifecycleEngine → Firestore lifecycle docs → PlanningService reads on-demand
 - **BigQuery Analytics**: Replaces PostgreSQL for scalable analytics and reporting
 - **Package System**: Content delivery system for structured learning materials
 

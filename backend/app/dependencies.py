@@ -27,6 +27,7 @@ from .services.bigquery_analytics import BigQueryAnalyticsService
 from .services.mastery_lifecycle_engine import MasteryLifecycleEngine
 from .services.planning_service import PlanningService
 from .services.velocity_service import VelocityService
+from .services.firestore_analytics import FirestoreAnalyticsService
 
 from .db.cosmos_db import CosmosDBService
 from .db.firestore_service import FirestoreService
@@ -64,6 +65,7 @@ _curriculum_mapping_service: Optional[CurriculumMappingService] = None
 _mastery_lifecycle_engine: Optional[MasteryLifecycleEngine] = None
 _planning_service: Optional[PlanningService] = None
 _velocity_service: Optional[VelocityService] = None
+_firestore_analytics_service: Optional[FirestoreAnalyticsService] = None
 
 
 # 🔥 UPDATED: Authentication dependency functions using service layer
@@ -460,6 +462,24 @@ async def get_velocity_service(
         )
         logger.info("✅ VelocityService initialized successfully")
     return _velocity_service
+
+
+async def get_firestore_analytics_service(
+    firestore_service: FirestoreService = Depends(get_firestore_service),
+    curriculum_service: CurriculumService = Depends(get_curriculum_service),
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
+) -> FirestoreAnalyticsService:
+    """Get or create FirestoreAnalyticsService singleton (real-time analytics)."""
+    global _firestore_analytics_service
+    if _firestore_analytics_service is None:
+        logger.info("Initializing FirestoreAnalyticsService")
+        _firestore_analytics_service = FirestoreAnalyticsService(
+            firestore_service=firestore_service,
+            curriculum_service=curriculum_service,
+            learning_paths_service=learning_paths_service,
+        )
+        logger.info("✅ FirestoreAnalyticsService initialized successfully")
+    return _firestore_analytics_service
 
 
 def get_daily_activities_service(

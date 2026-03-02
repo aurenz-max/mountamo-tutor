@@ -231,9 +231,9 @@ sendText(
   { silent: true }
 );
 
-// ✅ Pronunciation — just say the sound, no commentary
+// ✅ Pronunciation — embed in a short sentence so the AI always speaks
 sendText(
-  `[PRONOUNCE] Say the word "${word}" clearly. Just the word, nothing else.`,
+  `[PRONOUNCE_SOUND] The word is "${word}". ${word}.`,
   { silent: true }
 );
 ```
@@ -243,8 +243,8 @@ sendText(
 PhonicsBlender defines these pedagogical moments:
 
 ```typescript
-// 1. Pronunciation (listen/blend phases) — AI says the sound, nothing else
-sendText(`[PRONOUNCE] Say the sound ${phoneme.sound} clearly. Just the sound, nothing else.`, { silent: true });
+// 1. Pronunciation (listen/blend phases) — embed sound in a short sentence
+sendText(`[PRONOUNCE_SOUND] This sound is ${phoneme.sound}. ${phoneme.sound}.`, { silent: true });
 
 // 2. Build correct — celebrate and guide to blend phase
 sendText(
@@ -281,7 +281,7 @@ sendText(
 
 2. **Include context** — give the AI the student's answer, the correct answer, attempt count, etc. The more context, the better the pedagogical response.
 
-3. **Include brief instructions** — tell the AI what *kind* of response you want ("Celebrate briefly", "Give a hint without the answer", "Just the word, nothing else"). Keep the AI on-task.
+3. **Include brief instructions** — tell the AI what *kind* of response you want ("Celebrate briefly", "Give a hint without the answer"). Keep the AI on-task. **Never use "just the sound, nothing else"** — Gemini often goes silent when told to say nothing beyond a single phoneme. Instead, embed the sound in a short carrier sentence (e.g., `"This sound is /d/. /d/."``).
 
 4. **Keep instructions short** — "Congratulate briefly (one sentence)" is better than a paragraph. The AI's system prompt already has the scaffolding strategy and tone.
 

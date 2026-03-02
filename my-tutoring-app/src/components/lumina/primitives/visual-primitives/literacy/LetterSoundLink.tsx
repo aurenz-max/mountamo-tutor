@@ -292,7 +292,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       // For hear-see mode, ask AI to pronounce the sound on correct
       if (currentChallenge.mode === 'see-hear') {
         sendText(
-          `[PRONOUNCE_SOUND] Say only the sound ${currentChallenge.targetSound}. Just the sound, nothing else.`,
+          `[PRONOUNCE_SOUND] This sound is ${currentChallenge.targetSound}. ${currentChallenge.targetSound}.`,
           { silent: true },
         );
       }

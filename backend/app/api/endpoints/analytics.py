@@ -15,6 +15,8 @@ from ...models.user_profiles import ActivityLog  # FIXED: Import ActivityLog mod
 from ...services.bigquery_analytics import BigQueryAnalyticsService
 from ...services.bigquery_etl import BigQueryETLService
 from ...services.ai_recommendations import AIRecommendationService
+from ...services.firestore_analytics import FirestoreAnalyticsService
+from ...dependencies import get_firestore_analytics_service
 from ...core.config import settings
 
 router = APIRouter()
@@ -70,6 +72,14 @@ class SubskillModel(BaseModel):
     recommended_next: Optional[str]
     attempt_count: int
     individual_attempts: List[Dict]
+    # Mastery lifecycle fields
+    current_gate: int = 0
+    completion_pct: float = 0.0
+    passes: int = 0
+    fails: int = 0
+    lesson_eval_count: int = 0
+    next_retest_eligible: Optional[str] = None
+    estimated_remaining_attempts: int = 0
 
 class SkillModel(BaseModel):
     skill_id: str
@@ -393,12 +403,12 @@ async def get_student_metrics(
     end_date: Optional[datetime] = None,
     background_tasks: BackgroundTasks = BackgroundTasks(),
     user_context: dict = Depends(get_user_context),
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
     """Get comprehensive hierarchical metrics for a student"""
-    
+
     user_id = user_context["user_id"]
-    
+
     # Validate user can access this student's data
     if user_context["student_id"] != student_id:
         if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
@@ -406,25 +416,25 @@ async def get_student_metrics(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied to student {student_id} analytics"
             )
-    
+
     # Check cache first (15 minute TTL)
-    cache_key = get_cache_key("metrics", student_id=student_id, 
+    cache_key = get_cache_key("metrics", student_id=student_id,
                              subject=subject, start_date=start_date, end_date=end_date)
-    
+
     cached_result = get_from_cache(cache_key, ttl_minutes=15)
-    if cached_result:        
+    if cached_result:
         cached_result["cached"] = True
         cached_result["user_id"] = user_id
         return MetricsResponse(**cached_result)
-    
+
     try:
         logger.info(f"User {user_context['email']} generating metrics for student {student_id}")
-        
-        # Fetch from BigQuery
+
+        # Fetch from Firestore (real-time)
         metrics = await analytics_service.get_hierarchical_metrics(
             student_id, subject, start_date, end_date
         )
-        
+
         result = MetricsResponse(
             student_id=student_id,
             subject=subject,
@@ -434,17 +444,17 @@ async def get_student_metrics(
             user_id=user_id,
             cached=False
         )
-        
+
         # Cache the result
         set_cache(cache_key, result.dict())
-                
+
         return result
-        
+
     except Exception as e:
-        # Log analytics errors        
+        # Log analytics errors
         logger.error(f"Analytics error for user {user_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving metrics: {str(e)}"
         )
 
@@ -461,12 +471,12 @@ async def get_student_metrics_timeseries(
     include_hierarchy: bool = Query(False),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     user_context: dict = Depends(get_user_context),
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
     """Get metrics over time for a student"""
-    
+
     user_id = user_context["user_id"]
-    
+
     # Validate access
     if user_context["student_id"] != student_id:
         if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
@@ -474,28 +484,28 @@ async def get_student_metrics_timeseries(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied to student {student_id} analytics"
             )
-    
+
     # Check cache (10 minute TTL)
     cache_key = get_cache_key("timeseries", student_id=student_id, subject=subject,
-                             interval=interval, level=level, start_date=start_date, 
+                             interval=interval, level=level, start_date=start_date,
                              end_date=end_date, unit_id=unit_id, skill_id=skill_id,
                              include_hierarchy=include_hierarchy)
-    
+
     cached_result = get_from_cache(cache_key, ttl_minutes=10)
-    if cached_result:        
+    if cached_result:
         cached_result["cached"] = True
         cached_result["user_id"] = user_id
         return TimeseriesResponse(**cached_result)
-    
+
     try:
         logger.info(f"User {user_context['email']} generating timeseries for student {student_id}")
-        
-        # Fetch from BigQuery
+
+        # Fetch from Firestore (real-time)
         timeseries = await analytics_service.get_timeseries_metrics(
-            student_id, subject, interval, level, start_date, end_date, 
+            student_id, subject, interval, level, start_date, end_date,
             unit_id, skill_id, include_hierarchy
         )
-        
+
         result = TimeseriesResponse(
             student_id=student_id,
             subject=subject,
@@ -509,16 +519,16 @@ async def get_student_metrics_timeseries(
             user_id=user_id,
             cached=False
         )
-        
+
         # Cache the result
         set_cache(cache_key, result.dict())
-        
+
         return result
-        
-    except Exception as e:        
+
+    except Exception as e:
         logger.error(f"Timeseries error for user {user_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving timeseries: {str(e)}"
         )
 
@@ -648,18 +658,24 @@ async def get_ai_recommendations(
             detail=f"Error generating AI recommendations: {str(e)}"
         )
 
-@router.get("/student/{student_id}/velocity-metrics", response_model=VelocityMetricsResponse)
+@router.get("/student/{student_id}/velocity-metrics", response_model=VelocityMetricsResponse,
+             deprecated=True)
 async def get_student_velocity_metrics(
     student_id: int,
     subject: Optional[str] = None,
     background_tasks: BackgroundTasks = BackgroundTasks(),
     user_context: dict = Depends(get_user_context),
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
-    """Get velocity metrics for a student"""
-    
+    """DEPRECATED: Use GET /api/velocity/{student_id} instead.
+
+    This endpoint returns a simplified velocity model. The /api/velocity/ endpoint
+    provides pipeline-adjusted mastery velocity with decomposition, trend sparklines,
+    and school year progress.
+    """
+
     user_id = user_context["user_id"]
-    
+
     # Validate access
     if user_context["student_id"] != student_id:
         if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
@@ -667,23 +683,22 @@ async def get_student_velocity_metrics(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied to student {student_id} velocity analytics"
             )
-    
+
     # Check cache (15 minute TTL for velocity metrics)
     cache_key = get_cache_key("velocity_metrics", student_id=student_id, subject=subject)
-    
+
     cached_result = get_from_cache(cache_key, ttl_minutes=15)
-    if cached_result:        
+    if cached_result:
         cached_result["cached"] = True
         return VelocityMetricsResponse(**cached_result)
-    
+
     try:
         logger.info(f"User {user_context['email']} retrieving velocity metrics for student {student_id}")
-        
-        # Fetch from BigQuery
+
+        # Fetch from Firestore (real-time)
         velocity_data = await analytics_service.get_velocity_metrics(student_id, subject)
-        
+
         if not velocity_data:
-            # Return empty response for students with no velocity data
             result = VelocityMetricsResponse(
                 student_id=student_id,
                 student_name="Unknown",
@@ -693,45 +708,51 @@ async def get_student_velocity_metrics(
                 cached=False
             )
         else:
-            # Transform the data to match response model
             metrics = []
             latest_update = None
             student_name = velocity_data[0].get('student_name', 'Unknown')
-            
+
             for row in velocity_data:
+                last_updated_val = row.get('last_updated')
+                if isinstance(last_updated_val, str):
+                    last_updated_str = last_updated_val
+                elif hasattr(last_updated_val, 'isoformat'):
+                    last_updated_str = last_updated_val.isoformat()
+                else:
+                    last_updated_str = datetime.utcnow().isoformat()
+
                 metric = VelocityMetric(
                     subject=row['subject'],
                     actual_progress=int(row['actual_progress']),
                     expected_progress=float(row['expected_progress']),
-                    total_subskills=int(row['total_subskills_in_subject']),
+                    total_subskills=int(row.get('total_subskills_in_subject', row.get('total_subskills', 0))),
                     velocity_percentage=float(row['velocity_percentage']),
                     days_ahead_behind=float(row['days_ahead_behind']),
                     velocity_status=row['velocity_status'],
-                    last_updated=row['last_updated'].isoformat() if row['last_updated'] else datetime.utcnow().isoformat()
+                    last_updated=last_updated_str
                 )
                 metrics.append(metric)
-                
-                # Track the most recent update
-                if row['last_updated']:
-                    if latest_update is None or row['last_updated'] > latest_update:
-                        latest_update = row['last_updated']
-            
+
+                if last_updated_val:
+                    if latest_update is None or last_updated_str > (latest_update if isinstance(latest_update, str) else latest_update.isoformat()):
+                        latest_update = last_updated_str
+
             result = VelocityMetricsResponse(
                 student_id=student_id,
                 student_name=student_name,
                 subject=subject,
                 metrics=metrics,
-                last_updated=latest_update.isoformat() if latest_update else datetime.utcnow().isoformat(),
+                last_updated=latest_update if latest_update else datetime.utcnow().isoformat(),
                 cached=False
             )
-        
+
         # Cache the result
         set_cache(cache_key, result.dict())
-        
+
         logger.info(f"Velocity metrics retrieved: {len(result.metrics)} subjects for student {student_id}")
         return result
-        
-    except Exception as e:        
+
+    except Exception as e:
         logger.error(f"Velocity metrics error for user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -746,7 +767,7 @@ async def get_score_distribution(
     end_date: Optional[datetime] = None,
     background_tasks: BackgroundTasks = BackgroundTasks(),
     user_context: dict = Depends(get_user_context),
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
     """Get score distribution histograms across subject, units, and skills"""
 
@@ -777,7 +798,7 @@ async def get_score_distribution(
     try:
         logger.info(f"User {user_context['email']} retrieving score distribution for student {student_id}, subject {subject}")
 
-        # Fetch from BigQuery
+        # Fetch from Firestore (real-time)
         distribution_data = await analytics_service.get_score_distribution(
             student_id=student_id,
             subject=subject,
@@ -815,7 +836,7 @@ async def get_score_trends(
     subjects: Optional[str] = Query(None, description="Comma-separated list of subjects to filter"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     user_context: dict = Depends(get_user_context),
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
     """Get score trends over time at subject level"""
 
@@ -852,7 +873,7 @@ async def get_score_trends(
     try:
         logger.info(f"User {user_context['email']} retrieving score trends for student {student_id}, granularity {granularity}")
 
-        # Fetch from BigQuery
+        # Fetch from Firestore (real-time)
         trends_data = await analytics_service.get_score_trends(
             student_id=student_id,
             granularity=granularity,
@@ -1026,7 +1047,7 @@ async def get_detailed_recent_activity(
     include_reviews: bool = Query(True, description="Include reviews and problem context"),
     limit: int = Query(100, ge=1, le=500, description="Maximum number of activities"),
     user_context: dict = Depends(get_user_context),
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
     """Get detailed recent activity with reviews and problem context"""
     
@@ -1057,7 +1078,7 @@ async def get_detailed_recent_activity(
     try:
         logger.info(f"User {user_context['email']} retrieving detailed recent activity for student {student_id}")
         
-        # Fetch from BigQuery
+        # Fetch from Firestore (real-time)
         activities = await analytics_service.get_detailed_recent_activity(
             student_id=student_id,
             hours=hours,
@@ -1096,7 +1117,7 @@ async def get_mistake_patterns(
     days: int = Query(30, ge=1, le=365, description="Days to analyze for patterns"),
     min_feedback_length: int = Query(20, ge=10, le=100, description="Minimum feedback length to consider"),
     user_context: dict = Depends(get_user_context),
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
     """Analyze mistake patterns from reviews feedback data"""
     
@@ -1126,7 +1147,7 @@ async def get_mistake_patterns(
     try:
         logger.info(f"User {user_context['email']} analyzing mistake patterns for student {student_id}")
         
-        # Fetch from BigQuery
+        # Fetch from Firestore (real-time)
         patterns = await analytics_service.get_mistake_patterns(
             student_id=student_id,
             subject=subject,
@@ -1153,7 +1174,7 @@ async def get_engagement_metrics(
     subject: Optional[str] = Query(None, description="Filter by subject"),
     days: int = Query(7, ge=1, le=90, description="Days to analyze for engagement"),
     user_context: dict = Depends(get_user_context),
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service)
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
     """Get engagement metrics from reviews and attempts data"""
     
@@ -1182,7 +1203,7 @@ async def get_engagement_metrics(
     try:
         logger.info(f"User {user_context['email']} retrieving engagement metrics for student {student_id}")
         
-        # Fetch from BigQuery
+        # Fetch from Firestore (real-time)
         engagement = await analytics_service.get_engagement_metrics(
             student_id=student_id,
             subject=subject,
@@ -1424,33 +1445,37 @@ async def get_assessment_details(
 @router.get("/health")
 async def analytics_health_check(
     user_context: dict = Depends(get_user_context),
-    analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service),
+    firestore_analytics: FirestoreAnalyticsService = Depends(get_firestore_analytics_service),
+    bq_analytics_service: BigQueryAnalyticsService = Depends(get_bigquery_analytics_service),
     etl_service: BigQueryETLService = Depends(get_bigquery_etl_service),
     ai_service: AIRecommendationService = Depends(get_ai_recommendation_service)
 ):
     """Health check with user context"""
     user_id = user_context["user_id"]
-    
+
     try:
-        # Check analytics service
-        analytics_health = await analytics_service.health_check()
-        
-        # Check ETL status
+        # Check Firestore analytics service (primary for 8 endpoints)
+        fs_analytics_health = await firestore_analytics.health_check()
+
+        # Check BQ analytics service (still used for assessments)
+        bq_analytics_health = await bq_analytics_service.health_check()
+
+        # Check ETL status (still used for assessment data)
         etl_status = await etl_service.get_sync_status()
-        
+
         # Check AI service
         ai_health = await ai_service.health_check()
-        
-        # Overall health
+
+        # Overall health — Firestore analytics is the primary concern now
         overall_healthy = (
-            analytics_health.get('status') == 'healthy' and
-            ai_health.get('status') == 'healthy' and
-            all(table.get('exists', False) for table in etl_status.get('tables', {}).values())
+            fs_analytics_health.get('status') == 'healthy' and
+            ai_health.get('status') == 'healthy'
         )
-        
+
         return {
             "status": "healthy" if overall_healthy else "unhealthy",
-            "analytics_service": analytics_health,
+            "firestore_analytics_service": fs_analytics_health,
+            "bigquery_analytics_service": bq_analytics_health,
             "ai_recommendation_service": ai_health,
             "etl_status": etl_status,
             "cache_entries": len(analytics_cache),
@@ -1459,7 +1484,7 @@ async def analytics_health_check(
                 "email": user_context.get("email"),
                 "student_id": user_context.get("student_id")
             },
-            "version": "6.0.0",  # Updated version with enhanced analytics
+            "version": "7.0.0",  # Firestore analytics migration
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:

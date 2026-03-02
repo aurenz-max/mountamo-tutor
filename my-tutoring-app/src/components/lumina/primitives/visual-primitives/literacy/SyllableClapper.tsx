@@ -184,7 +184,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     if (currentIndex === 0) return; // First challenge handled by ACTIVITY_START
 
     sendText(
-      `[PRONOUNCE_WORD] Say the word "${currentChallenge.word}" clearly and naturally. Just the word, nothing else.`,
+      `[PRONOUNCE_SOUND] The word is "${currentChallenge.word}". ${currentChallenge.word}.`,
       { silent: true },
     );
   }, [currentIndex, currentChallenge, isConnected, sendText]);

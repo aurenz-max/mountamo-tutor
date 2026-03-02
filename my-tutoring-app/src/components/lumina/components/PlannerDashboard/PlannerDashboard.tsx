@@ -19,6 +19,8 @@ import { SubjectProjectionCard, MonthlyWarningRow } from './MonthlyComponents';
 import { VelocityGauge, TrendSparkline, SubjectVelocityCard, getVelocityColor } from './VelocityComponents';
 import { GATE_LABELS, GATE_COLORS, GateDistributionBar, SubjectMasteryCard, UnitForecastRow } from './MasteryComponents';
 import { MasterySeedPanel } from './MasterySeedPanel';
+import type { SkillProgressResponse } from '@/lib/skillProgressApi';
+import { CraftingCard, AlmostReadyList, ProgressOverview } from '@/components/dashboard/skill-progress';
 
 // ---------------------------------------------------------------------------
 // Main Dashboard
@@ -36,10 +38,11 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
   const [velocityData, setVelocityData] = useState<VelocityData | null>(null);
   const [masterySummary, setMasterySummary] = useState<MasterySummary | null>(null);
   const [masteryForecast, setMasteryForecast] = useState<MasteryForecast | null>(null);
-  const [loading, setLoading] = useState<'idle' | 'weekly' | 'daily' | 'monthly' | 'velocity' | 'mastery' | 'all'>('idle');
+  const [skillProgress, setSkillProgress] = useState<SkillProgressResponse | null>(null);
+  const [loading, setLoading] = useState<'idle' | 'weekly' | 'daily' | 'monthly' | 'velocity' | 'mastery' | 'progress' | 'all'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
-  const [activeTab, setActiveTab] = useState<'weekly' | 'daily' | 'monthly' | 'velocity' | 'mastery'>('weekly');
+  const [activeTab, setActiveTab] = useState<'weekly' | 'daily' | 'monthly' | 'velocity' | 'mastery' | 'progress'>('weekly');
 
   // Active practice session — when set, renders PracticeModeEnhanced instead of dashboard
   const [activeSession, setActiveSession] = useState<{ session: SessionItem; gate: number } | null>(null);
@@ -170,17 +173,31 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
     }
   };
 
+  const fetchProgress = async () => {
+    setLoading('progress');
+    setError(null);
+    try {
+      const data = await authApi.get<SkillProgressResponse>(`/api/skill-progress/${studentId}`);
+      setSkillProgress(data);
+    } catch (e: any) {
+      setError(`Skill progress error: ${e.message}`);
+    } finally {
+      setLoading('idle');
+    }
+  };
+
   const fetchAll = async () => {
     setLoading('all');
     setError(null);
     try {
-      const [weekly, daily, monthly, velocity, mSummary, mForecast] = await Promise.allSettled([
+      const [weekly, daily, monthly, velocity, mSummary, mForecast, progress] = await Promise.allSettled([
         authApi.get<WeeklyPlan>(`/api/weekly-planner/${studentId}`),
         authApi.get<DailyPlan>(`/api/daily-activities/daily-plan/${studentId}`),
         authApi.get<MonthlyPlan>(`/api/weekly-planner/${studentId}/monthly`),
         authApi.get<VelocityData>(`/api/velocity/${studentId}`),
         authApi.get<MasterySummary>(`/api/mastery/${studentId}/summary`),
         authApi.get<MasteryForecast>(`/api/mastery/${studentId}/forecast`),
+        authApi.get<SkillProgressResponse>(`/api/skill-progress/${studentId}`),
       ]);
 
       const errors: string[] = [];
@@ -201,6 +218,9 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
 
       if (mForecast.status === 'fulfilled') setMasteryForecast(mForecast.value);
       else errors.push(`Mastery Forecast: ${mForecast.reason?.message}`);
+
+      if (progress.status === 'fulfilled') setSkillProgress(progress.value);
+      else errors.push(`Skill Progress: ${progress.reason?.message}`);
 
       if (errors.length > 0) setError(errors.join('\n'));
     } finally {
@@ -322,6 +342,14 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
             </Button>
             <Button
               variant="ghost"
+              className="bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300"
+              onClick={fetchProgress}
+              disabled={loading !== 'idle' || !studentId}
+            >
+              {loading === 'progress' ? 'Loading...' : 'Fetch Progress'}
+            </Button>
+            <Button
+              variant="ghost"
               className="bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 text-purple-300"
               onClick={fetchAll}
               disabled={loading !== 'idle' || !studentId}
@@ -399,6 +427,16 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
           }`}
         >
           Mastery {masterySummary && '(loaded)'}
+        </button>
+        <button
+          onClick={() => setActiveTab('progress')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'progress'
+              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          Skill Progress {skillProgress && '(loaded)'}
         </button>
       </div>
 
@@ -1077,6 +1115,83 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
               <CardContent>
                 <pre className="text-xs text-slate-300 overflow-auto max-h-96 font-mono bg-slate-950/50 p-4 rounded-lg">
                   {JSON.stringify(masteryForecast, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* SKILL PROGRESS TAB — 3-Layer Crafting Projection                */}
+      {/* ================================================================ */}
+      {activeTab === 'progress' && (
+        <div className="space-y-6 animate-fade-in">
+          {!skillProgress && loading !== 'progress' && loading !== 'all' && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardContent className="py-12 text-center">
+                <p className="text-slate-500">Enter a student ID and click &quot;Fetch Progress&quot; to load the skill progress panel.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {(loading === 'progress' || loading === 'all') && !skillProgress && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardContent className="py-12 text-center">
+                <div className="animate-pulse text-slate-400">Computing prerequisite readiness...</div>
+              </CardContent>
+            </Card>
+          )}
+
+          {skillProgress && (
+            <>
+              {/* Layer 1: Crafting Now */}
+              {skillProgress.crafting_now.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                    Working Toward
+                  </h3>
+                  {skillProgress.crafting_now.map((item) => (
+                    <CraftingCard key={item.skill_id} item={item} />
+                  ))}
+                </div>
+              )}
+
+              {/* Layer 2: Almost Ready */}
+              {skillProgress.almost_ready.length > 0 && (
+                <AlmostReadyList items={skillProgress.almost_ready} />
+              )}
+
+              {/* Layer 3: Progress Overview */}
+              {Object.keys(skillProgress.progress_overview).length > 0 && (
+                <ProgressOverview subjects={skillProgress.progress_overview} />
+              )}
+
+              {skillProgress.crafting_now.length === 0 &&
+                skillProgress.almost_ready.length === 0 &&
+                Object.keys(skillProgress.progress_overview).length === 0 && (
+                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                  <CardContent className="py-12 text-center">
+                    <p className="text-slate-500">No skill progress data available. Seed mastery data first to see prerequisites.</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="text-xs text-slate-500 text-right">
+                Generated: {new Date(skillProgress.generated_at).toLocaleString()}
+              </div>
+            </>
+          )}
+
+          {/* Raw JSON */}
+          {showRawJson && skillProgress && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-slate-400">Skill Progress — Raw JSON</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="text-xs text-slate-300 overflow-auto max-h-96 font-mono bg-slate-950/50 p-4 rounded-lg">
+                  {JSON.stringify(skillProgress, null, 2)}
                 </pre>
               </CardContent>
             </Card>

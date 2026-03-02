@@ -72,6 +72,14 @@ export interface SubskillData {
     timestamp: string;
     score: string;
   }>;
+  // Mastery lifecycle fields
+  current_gate?: number;
+  completion_pct?: number;
+  passes?: number;
+  fails?: number;
+  lesson_eval_count?: number;
+  next_retest_eligible?: string | null;
+  estimated_remaining_attempts?: number;
 }
 
 export interface TimeSeriesMetrics {
@@ -170,6 +178,57 @@ export interface VelocityMetricsResponse {
   last_updated: string;
   generated_at: string;
   cached?: boolean;
+}
+
+// Score Trends types
+export interface TrendPeriod {
+  period_key: string;
+  period_label: string;
+  start_date: string;
+  end_date: string;
+  avg_score: number;
+  avg_score_pct: number;
+  total_reviews: number;
+  score_sum: number;
+}
+
+export interface SubjectTrend {
+  subject: string;
+  periods: TrendPeriod[];
+}
+
+export interface ScoreTrendsResponse {
+  student_id: number;
+  granularity: string;
+  date_range: { start_date: string; end_date: string };
+  trends: SubjectTrend[];
+  cached?: boolean;
+  generated_at?: string;
+}
+
+// Engagement Metrics types
+export interface DailyBreakdown {
+  date: string;
+  attempts: number;
+  avg_score: number;
+  subjects: string[];
+}
+
+export interface EngagementSummary {
+  total_active_days: number;
+  avg_daily_attempts: number;
+  streak_current: number;
+  streak_longest: number;
+  total_attempts: number;
+}
+
+export interface EngagementMetricsResponse {
+  student_id: number;
+  subject_filter: string | null;
+  days_analyzed: number;
+  summary: EngagementSummary;
+  daily_breakdown: DailyBreakdown[];
+  generated_at?: string;
 }
 
 // UPDATED API OBJECT - Now uses authApiClient for authentication
@@ -295,11 +354,54 @@ export const analyticsApi = {
     
     // Use authApiClient with authentication
     return authApi.get<VelocityMetricsResponse>(endpoint);
+  },
+
+  // Get score trends over time
+  async getScoreTrends(
+    studentId: number,
+    options: {
+      granularity: 'weekly' | 'monthly';
+      lookbackWeeks?: number;
+      lookbackMonths?: number;
+      subjects?: string;
+    }
+  ): Promise<ScoreTrendsResponse> {
+    const { granularity, lookbackWeeks, lookbackMonths, subjects } = options;
+
+    const params = new URLSearchParams();
+    params.append('granularity', granularity);
+    if (lookbackWeeks) params.append('lookback_weeks', lookbackWeeks.toString());
+    if (lookbackMonths) params.append('lookback_months', lookbackMonths.toString());
+    if (subjects) params.append('subjects', subjects);
+
+    const endpoint = `/api/analytics/student/${studentId}/score-trends?${params.toString()}`;
+    return authApi.get<ScoreTrendsResponse>(endpoint);
+  },
+
+  // Get engagement metrics (streaks, active days, daily breakdown)
+  async getEngagementMetrics(
+    studentId: number,
+    options: {
+      subject?: string;
+      days?: number;
+    } = {}
+  ): Promise<EngagementMetricsResponse> {
+    const { subject, days } = options;
+
+    const params = new URLSearchParams();
+    if (subject) params.append('subject', subject);
+    if (days) params.append('days', days.toString());
+
+    const queryString = params.toString();
+    const endpoint = `/api/analytics/student/${studentId}/engagement-metrics${queryString ? `?${queryString}` : ''}`;
+    return authApi.get<EngagementMetricsResponse>(endpoint);
   }
 };
 
 // For backward compatibility, also export individual functions
 export const getStudentMetrics = analyticsApi.getStudentMetrics;
-export const getTimeSeriesMetrics = analyticsApi.getTimeSeriesMetrics;  
+export const getTimeSeriesMetrics = analyticsApi.getTimeSeriesMetrics;
 export const getRecommendations = analyticsApi.getRecommendations;
 export const getVelocityMetrics = analyticsApi.getVelocityMetrics;
+export const getScoreTrends = analyticsApi.getScoreTrends;
+export const getEngagementMetrics = analyticsApi.getEngagementMetrics;

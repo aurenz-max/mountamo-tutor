@@ -42,6 +42,13 @@ from ..models.planning import (
     WeeklyPlanResponse,
     WeekProjection,
 )
+from ..models.skill_progress import (
+    AlmostReadyItem,
+    CraftingNowItem,
+    PrerequisiteStatus,
+    SkillProgressResponse,
+    SubjectProgressSummary,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -217,10 +224,15 @@ class PlanningService:
         Produces per-subject trajectories with optimistic / best-estimate /
         pessimistic confidence bands and early-warning flags.
 
-        Pipeline delay model (PRD §5.5):
-          Perfect:    4 weeks (ceil(24 days / 7))
-          Typical:    5 weeks (ceil(30 days / 7))
-          Pessimistic: 6 weeks (ceil(40 days / 7), 2+ failures)
+        Pipeline delay model (PRD §5.5, mastery lifecycle intervals 3d/7d/14d):
+          Optimistic:    4 weeks (ceil(24 days / 7), perfect — no failures)
+          Best estimate: 5 weeks (ceil(30 days / 7), typical — ~1 failure)
+          Pessimistic:   6 weeks (ceil(40 days / 7), struggling — 2+ failures)
+
+        Capacity model (PRD §3.2):
+          Each new introduction costs 3 lesson eval sessions.
+          Each retest costs 1 session.
+          Total daily load for N new/day: 3N (lessons) + 3N (retests) = 6N
         """
         today = datetime.now(timezone.utc).date()
 
@@ -276,11 +288,14 @@ class PlanningService:
                 mean_pr = 0.8
                 stddev_pr = 0.15
 
-            # Pipeline delay model (PRD §5.5: mastery lifecycle intervals)
-            # Perfect: 24 days (3+7+14), Typical: 30 days, Pessimistic: 40 days
-            weeks_to_close_best = 4   # ceil(24/7)
-            weeks_to_close_opt = 4    # Optimistic path
-            weeks_to_close_pess = 6   # 2+ failures: ~40 days
+            # Pipeline delay model (PRD §5.5: mastery lifecycle intervals 3d/7d/14d)
+            # Perfect: 24 days (3+7+14), Typical: ~30 days (~1 fail), Struggling: ~40 days (2+ fails)
+            weeks_to_close_opt = 4    # ceil(24/7) — perfect, no failures
+            weeks_to_close_best = 5   # ceil(30/7) — typical, ~1 failure
+            weeks_to_close_pess = 6   # ceil(40/7) — struggling, 2+ failures
+
+            # Lesson sessions per new introduction (PRD §3.2)
+            sessions_per_intro = 3
 
             # Build known-review schedule from in-pipeline mastery lifecycles
             known_reviews_by_week: dict[int, int] = {}
@@ -341,8 +356,9 @@ class PlanningService:
                 # --- Reviews due this week ---
                 known_this_week = known_reviews_by_week.get(w, 0)
 
-                # Estimated reviews from skills introduced in prior weeks
-                # Gate transitions at ~1wk (3d), ~2wk (7d), ~4wk (14d)
+                # Estimated reviews from skills introduced in prior weeks.
+                # Mastery lifecycle retests (PRD §2.1): 1 session each at
+                #   week +1 (Gate 1→2, 3d), +2 (Gate 2→3, 7d), +4 (Gate 3→4, 14d)
                 estimated_reviews = 0
                 for intro_week_idx, intro_count in enumerate(new_introductions_by_week):
                     if intro_count <= 0:
@@ -356,30 +372,31 @@ class PlanningService:
                 # --- Closures: pipeline delay model ---
                 existing_closures = existing_closures_by_week.get(w, 0)
 
-                new_closures_best = 0.0
                 new_closures_opt = 0.0
+                new_closures_best = 0.0
                 new_closures_pess = 0.0
 
-                source_best = w - weeks_to_close_best
-                if 1 <= source_best <= len(new_introductions_by_week):
-                    new_closures_best = float(new_introductions_by_week[source_best - 1])
-
-                source_opt = w - weeks_to_close_opt
+                source_opt = w - weeks_to_close_opt  # 4-week optimistic pipeline
                 if 1 <= source_opt <= len(new_introductions_by_week):
                     new_closures_opt = float(new_introductions_by_week[source_opt - 1])
 
-                source_pess = w - weeks_to_close_pess
+                source_best = w - weeks_to_close_best  # 5-week typical pipeline
+                if 1 <= source_best <= len(new_introductions_by_week):
+                    new_closures_best = float(new_introductions_by_week[source_best - 1])
+
+                source_pess = w - weeks_to_close_pess  # 6-week struggling pipeline
                 if 1 <= source_pess <= len(new_introductions_by_week):
                     new_closures_pess = float(new_introductions_by_week[source_pess - 1])
 
-                closures_best_f = existing_closures + new_closures_best
                 closures_opt_f = existing_closures + new_closures_opt
+                closures_best_f = existing_closures + new_closures_best
                 closures_pess_f = existing_closures + new_closures_pess
                 closures_for_inventory = round(closures_best_f)
 
-                # --- New skill capacity ---
-                new_capacity = max(0, weekly_capacity - projected_reviews_due)
-                new_introductions = min(new_capacity, pacing_target, not_started)
+                # --- New skill capacity (PRD §3.2: each intro = 3 lesson sessions) ---
+                session_budget = max(0, weekly_capacity - projected_reviews_due)
+                max_intros_from_budget = session_budget // sessions_per_intro
+                new_introductions = min(max_intros_from_budget, pacing_target, not_started)
                 not_started = max(0, not_started - new_introductions)
 
                 new_introductions_by_week.append(new_introductions)
@@ -413,7 +430,7 @@ class PlanningService:
                         week=w,
                         message=f"Review burden projected to exceed daily capacity in week of {week_label}",
                     ))
-                if new_capacity <= 0:
+                if max_intros_from_budget <= 0:
                     week_label = week_monday.strftime("%B %d")
                     warnings.append(MonthlyWarning(
                         type="zero_new_capacity_projected",
@@ -957,3 +974,211 @@ class PlanningService:
             item["priority"] = i + 1
 
         return result
+
+    # ====================================================================
+    # Skill Progress Panel — 3-Layer "Crafting" Projection
+    # ====================================================================
+
+    async def get_skill_progress(self, student_id: int) -> SkillProgressResponse:
+        """
+        Compute the 3-layer skill progress panel (WoW crafting metaphor).
+
+        Layer 1 "Crafting Now":  LOCKED skills whose prerequisites are IN_PROGRESS.
+                                 These are "recipes being crafted" — the student is
+                                 actively gathering materials (working on prereqs).
+        Layer 2 "Almost Ready":  UNLOCKED skills the student hasn't started yet.
+                                 These are "recipes ready to craft" — all materials
+                                 gathered, just needs to begin.
+        Layer 3 "Progress Overview": Per-subject mastery summary bars.
+
+        All reads are from Firestore via cached services — no LLM, no BigQuery.
+        """
+        now = datetime.now(timezone.utc).isoformat()
+
+        # ── 1. Load shared data ──────────────────────────────────────
+        all_lifecycles = await self.firestore.get_all_mastery_lifecycles(student_id)
+        lifecycle_map: Dict[str, Dict[str, Any]] = {
+            lc.get("subskill_id", ""): lc for lc in all_lifecycles if lc.get("subskill_id")
+        }
+
+        subjects_list = await self.curriculum.get_available_subjects()
+        subject_names: List[str] = []
+        for s in subjects_list:
+            if isinstance(s, dict):
+                subject_names.append(s.get("subject_name") or s.get("subject_id", ""))
+            else:
+                subject_names.append(str(s))
+
+        # ── 2. Layer 3: Progress Overview + build description lookup ──
+        progress_overview: Dict[str, SubjectProgressSummary] = {}
+        # Map entity IDs to human-readable descriptions from curriculum
+        desc_lookup: Dict[str, str] = {}
+
+        for subj in subject_names:
+            try:
+                curriculum_data = await self.curriculum.get_curriculum(subj)
+            except Exception:
+                continue
+
+            # Build description lookup from curriculum hierarchy
+            for unit in curriculum_data:
+                for skill in unit.get("skills", []):
+                    sid = skill.get("id", "")
+                    if sid:
+                        desc_lookup[sid] = skill.get("description", sid)
+                    for subskill in skill.get("subskills", []):
+                        ssid = subskill.get("id", "")
+                        if ssid:
+                            desc_lookup[ssid] = subskill.get("description", ssid)
+
+            total_subskills = self._count_subskills(curriculum_data)
+            closed, in_review, learning_count, _, _ = self._count_by_gate_status(
+                all_lifecycles, subj
+            )
+            not_started = max(0, total_subskills - closed - in_review - learning_count)
+
+            progress_overview[subj] = SubjectProgressSummary(
+                total=total_subskills,
+                mastered=closed,
+                in_progress=in_review + learning_count,
+                not_started=not_started,
+            )
+
+        # ── 3. Layers 1 & 2: Graph-based crafting view ──────────────
+        crafting_candidates: List[CraftingNowItem] = []
+        almost_ready_candidates: List[AlmostReadyItem] = []
+
+        if self.learning_paths:
+            for subj in subject_names:
+                try:
+                    student_graph = await self.learning_paths.get_student_graph(
+                        student_id, subj
+                    )
+                except Exception as e:
+                    logger.debug(f"No graph for {subj}: {e}")
+                    continue
+
+                nodes = student_graph.get("nodes", [])
+                edges = student_graph.get("edges", [])
+
+                # Build lookups
+                node_map: Dict[str, Dict[str, Any]] = {
+                    n["id"]: n for n in nodes
+                }
+                # prereqs_by_target: target_id → [(source_id, threshold)]
+                prereqs_by_target: Dict[str, List[tuple]] = {}
+                for edge in edges:
+                    target = edge.get("target", "")
+                    source = edge.get("source", "")
+                    threshold = edge.get("threshold", 0.8)
+                    prereqs_by_target.setdefault(target, []).append(
+                        (source, threshold)
+                    )
+
+                # ── Layer 1: "Crafting Now" ──────────────────────────
+                # Find LOCKED nodes whose prerequisites include at least
+                # one IN_PROGRESS or MASTERED node. These are the "recipes"
+                # the student is actively working toward.
+                for node in nodes:
+                    if node.get("status") != "LOCKED":
+                        continue
+
+                    skill_id = node["id"]
+                    prereq_edges = prereqs_by_target.get(skill_id, [])
+                    if not prereq_edges:
+                        continue
+
+                    prereq_statuses: List[PrerequisiteStatus] = []
+                    met_count = 0
+                    active_prereq_count = 0  # prereqs that are IN_PROGRESS or MASTERED
+
+                    for source_id, threshold in prereq_edges:
+                        source_node = node_map.get(source_id, {})
+                        source_prof = source_node.get("student_proficiency", 0.0)
+                        source_status = source_node.get("status", "LOCKED")
+                        is_met = source_prof >= threshold or source_status == "MASTERED"
+
+                        if source_status in ("IN_PROGRESS", "MASTERED"):
+                            active_prereq_count += 1
+
+                        # Enrich with mastery gate from lifecycle
+                        lc = lifecycle_map.get(source_id, {})
+                        current_gate = lc.get("current_gate", 0)
+                        completion_pct = lc.get("completion_pct", 0.0)
+
+                        # For in-progress prereqs with no lifecycle completion_pct,
+                        # derive progress from gate or proficiency
+                        if completion_pct == 0.0 and source_status == "IN_PROGRESS":
+                            if current_gate > 0:
+                                completion_pct = current_gate / 4.0
+                            elif source_prof > 0 and threshold > 0:
+                                completion_pct = min(source_prof / threshold, 0.99)
+
+                        prereq_statuses.append(PrerequisiteStatus(
+                            subskill_id=source_id,
+                            name=desc_lookup.get(source_id, source_node.get("description", source_id)),
+                            current_gate=current_gate,
+                            target_gate=4,
+                            completion_pct=round(completion_pct, 2),
+                            met=is_met,
+                        ))
+                        if is_met:
+                            met_count += 1
+
+                    # Include if at least one prereq is being worked on
+                    if active_prereq_count > 0:
+                        readiness = met_count / len(prereq_edges)
+                        crafting_candidates.append(CraftingNowItem(
+                            skill_id=skill_id,
+                            skill_name=desc_lookup.get(skill_id, node.get("description", skill_id)),
+                            subject=subj,
+                            prerequisites=prereq_statuses,
+                            overall_readiness=round(readiness, 2),
+                        ))
+
+                # ── Layer 2: "Almost Ready" (ready to start) ─────────
+                # UNLOCKED nodes the student hasn't begun yet.
+                # These are "recipes you have all materials for."
+                for node in nodes:
+                    status = node.get("status", "LOCKED")
+                    if status != "UNLOCKED":
+                        continue
+
+                    node_id = node["id"]
+                    lc = lifecycle_map.get(node_id, {})
+                    gate = lc.get("current_gate", 0)
+                    eval_count = lc.get("lesson_eval_count", 0)
+
+                    # Skip if already started (has evals or gate > 0)
+                    if gate > 0 or eval_count > 0:
+                        continue
+
+                    almost_ready_candidates.append(AlmostReadyItem(
+                        skill_id=node_id,
+                        skill_name=desc_lookup.get(node_id, node.get("description", node_id)),
+                        subject=subj,
+                        blockers=[],  # No blockers — fully unlocked
+                        readiness=1.0,
+                    ))
+
+        # Sort crafting candidates: most active prereqs first, then readiness
+        crafting_candidates.sort(
+            key=lambda c: (
+                # Count prereqs that are in-progress (not met but being worked on)
+                sum(1 for p in c.prerequisites if not p.met and p.completion_pct > 0),
+                c.overall_readiness,
+            ),
+            reverse=True,
+        )
+        crafting_now = crafting_candidates[:3]
+
+        # Limit almost-ready to 5
+        almost_ready = almost_ready_candidates[:5]
+
+        return SkillProgressResponse(
+            student_id=str(student_id),
+            crafting_now=crafting_now,
+            almost_ready=almost_ready,
+            progress_overview=progress_overview,
+            generated_at=now,
+        )

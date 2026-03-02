@@ -217,6 +217,37 @@ class FirestoreService:
             logger.error(f"Error getting student attempts from Firestore: {str(e)}")
             return []
 
+    async def get_student_attempts_date_range(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        limit: int = 1000
+    ) -> List[Dict[str, Any]]:
+        """Get student attempts filtered by date range (ISO string comparison)."""
+        try:
+            query = self._attempts_subcollection(student_id)
+
+            if subject:
+                query = query.where('subject', '==', subject)
+            if start_date:
+                query = query.where('timestamp', '>=', start_date)
+            if end_date:
+                query = query.where('timestamp', '<=', end_date)
+
+            query = query.order_by('timestamp', direction=firestore.Query.DESCENDING).limit(limit)
+
+            docs = query.stream()
+            results = [doc.to_dict() for doc in docs]
+
+            logger.info(f"Retrieved {len(results)} attempts (date range) for student {student_id}")
+            return results
+
+        except Exception as e:
+            logger.error(f"Error getting attempts by date range from Firestore: {str(e)}")
+            return []
+
     # ============================================================================
     # REVIEWS METHODS
     # ============================================================================
@@ -307,9 +338,57 @@ class FirestoreService:
             logger.error(f"Error getting reviews from Firestore: {str(e)}")
             return []
 
+    async def get_problem_reviews_date_range(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        limit: int = 1000
+    ) -> List[Dict[str, Any]]:
+        """Get problem reviews filtered by date range (ISO string comparison)."""
+        try:
+            query = self._reviews_subcollection(student_id)
+
+            if subject:
+                query = query.where('subject', '==', subject)
+            if start_date:
+                query = query.where('timestamp', '>=', start_date)
+            if end_date:
+                query = query.where('timestamp', '<=', end_date)
+
+            query = query.order_by('timestamp', direction=firestore.Query.DESCENDING).limit(limit)
+
+            docs = query.stream()
+            results = [doc.to_dict() for doc in docs]
+
+            logger.info(f"Retrieved {len(results)} reviews (date range) for student {student_id}")
+            return results
+
+        except Exception as e:
+            logger.error(f"Error getting reviews by date range from Firestore: {str(e)}")
+            return []
+
     # ============================================================================
     # COMPETENCIES METHODS
     # ============================================================================
+
+    async def get_all_competencies(
+        self,
+        student_id: int,
+        subject: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get all competency docs for a student, optionally filtered by subject."""
+        try:
+            query = self._competencies_subcollection(student_id)
+            if subject:
+                query = query.where('subject', '==', subject)
+            results = [doc.to_dict() for doc in query.stream()]
+            logger.info(f"Retrieved {len(results)} competencies for student {student_id}")
+            return results
+        except Exception as e:
+            logger.error(f"Error getting all competencies from Firestore: {str(e)}")
+            return []
 
     async def update_competency(
         self,

@@ -217,7 +217,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     setTappedWordIds(prev => new Set(Array.from(prev).concat(wordId)));
     setActiveWordId(wordId);
     // Pronounce the word via AI
-    sendText(`[PRONOUNCE] Say the word "${wordText}" clearly. Just the word, nothing else.`, { silent: true });
+    sendText(`[PRONOUNCE_SOUND] The word is "${wordText}". ${wordText}.`, { silent: true });
     // Show "playing" state briefly
     setTimeout(() => {
       if (activeWordId === wordId) setActiveWordId(null);
