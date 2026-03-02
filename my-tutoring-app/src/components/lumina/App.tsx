@@ -45,7 +45,7 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { EvaluationProvider, useEvaluationContext } from './evaluation';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
-import { CurriculumBrowser } from './components/CurriculumBrowser';
+import { CurriculumBrowser, type CurriculumContext } from './components/CurriculumBrowser';
 
 // Simple evaluation results indicator
 const EvaluationResultsIndicator: React.FC = () => {
@@ -232,6 +232,9 @@ export default function App() {
 
   // Analytics Dashboard State
   const [showAnalyticsDashboard, setShowAnalyticsDashboard] = useState(false);
+
+  // Curriculum context (set when lesson initiated from CurriculumBrowser)
+  const [curriculumContext, setCurriculumContext] = useState<CurriculumContext | null>(null);
 
   // Sample data for each visual primitive
   const visualPrimitiveExamples = [
@@ -508,10 +511,11 @@ export default function App() {
   };
 
   // Handle curriculum browser selection
-  const handleCurriculumSelect = useCallback((topicString: string, grade?: GradeLevel) => {
+  const handleCurriculumSelect = useCallback((topicString: string, grade?: GradeLevel, curriculum?: CurriculumContext) => {
     if (grade) {
       setGradeLevel(grade);
     }
+    setCurriculumContext(curriculum ?? null);
     setTopic(topicString);
     startExhibit(topicString);
   }, [startExhibit]);
@@ -538,6 +542,7 @@ export default function App() {
   const reset = () => {
     setGameState(GameState.IDLE);
     setTopic('');
+    setCurriculumContext(null);
     setExhibitData(null);
     setShowManifestViewer(false);
     setManifest(null);
@@ -1403,6 +1408,9 @@ export default function App() {
                 exhibitId={exhibitData.topic || 'unknown'}
                 topic={exhibitData.topic}
                 gradeLevel={gradeLevel}
+                curriculumSubject={curriculumContext?.subject}
+                curriculumSkillId={curriculumContext?.skillId}
+                curriculumSubskillId={curriculumContext?.subskillId}
                 localOnly={false}
                 onCompetencyUpdate={(updates) => {
                     console.log('Competency updates:', updates);

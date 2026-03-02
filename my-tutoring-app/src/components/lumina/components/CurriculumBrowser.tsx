@@ -41,8 +41,15 @@ interface CurriculumUnit {
   skills: CurriculumSkill[];
 }
 
+/** Structured curriculum IDs passed when a lesson is initiated from a known curriculum entry. */
+export interface CurriculumContext {
+  subject: string;
+  skillId: string;
+  subskillId: string;
+}
+
 interface CurriculumBrowserProps {
-  onSelectTopic: (topic: string, gradeLevel?: GradeLevel) => void;
+  onSelectTopic: (topic: string, gradeLevel?: GradeLevel, curriculumContext?: CurriculumContext) => void;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -87,7 +94,7 @@ interface SkillRowProps {
   skill: CurriculumSkill;
   unit: CurriculumUnit;
   subject: string;
-  onSelect: (topic: string, grade?: GradeLevel) => void;
+  onSelect: (topic: string, grade?: GradeLevel, curriculumContext?: CurriculumContext) => void;
 }
 
 const SkillRow: React.FC<SkillRowProps> = ({ skill, unit, subject, onSelect }) => {
@@ -96,7 +103,11 @@ const SkillRow: React.FC<SkillRowProps> = ({ skill, unit, subject, onSelect }) =
   const handleSubskillClick = (subskill: CurriculumSubskill) => {
     const topic = `${subject}: ${skill.description} - ${subskill.description}`;
     const grade = mapGradeToLevel(unit.grade);
-    onSelect(topic, grade);
+    onSelect(topic, grade, {
+      subject,
+      skillId: skill.id,
+      subskillId: subskill.id,
+    });
   };
 
   return (

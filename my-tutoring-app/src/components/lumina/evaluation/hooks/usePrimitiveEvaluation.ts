@@ -206,6 +206,10 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - new Date(startedAt).getTime();
 
+    // Use curriculum IDs from context as fallbacks when the component doesn't provide them
+    const resolvedSkillId = skillId || evaluationContext?.curriculumSkillId;
+    const resolvedSubskillId = subskillId || evaluationContext?.curriculumSubskillId;
+
     // Build lesson context from EvaluationContext + component-level props
     const lessonContext = (evaluationContext?.topic || componentIntent)
       ? {
@@ -214,6 +218,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
           componentIntent,
           primitiveType: primitiveType as string,
           objectiveText,
+          curriculumSubject: evaluationContext?.curriculumSubject,
         }
       : undefined;
 
@@ -228,8 +233,8 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       score: Math.max(0, Math.min(100, score)), // Clamp to 0-100
       partialCredit: partialCredit !== undefined ? Math.max(0, Math.min(100, partialCredit)) : undefined,
       metrics,
-      skillId,
-      subskillId,
+      skillId: resolvedSkillId,
+      subskillId: resolvedSubskillId,
       objectiveId,
       exhibitId,
       lessonContext,

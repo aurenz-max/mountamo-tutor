@@ -23,6 +23,9 @@ export interface LessonContext {
   componentIntent?: string;
   primitiveType?: string;
   objectiveText?: string;
+  /** When the lesson was initiated from a specific curriculum entry, this is the
+   *  real subject (e.g. "Reading") so the backend can skip AI curriculum mapping. */
+  curriculumSubject?: string;
 }
 
 // =============================================================================

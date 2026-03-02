@@ -77,22 +77,30 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
     component_intent?: string;
     primitive_type?: string;
     objective_text?: string;
+    curriculum_subject?: string;
   };
   source?: 'lesson' | 'practice';
 } {
+  // When curriculum IDs were provided from CurriculumBrowser, use the real
+  // subject directly so the backend skips AI curriculum mapping.
+  const hasCurriculumSubject = !!result.lessonContext?.curriculumSubject;
+  const resolvedSubject = hasCurriculumSubject
+    ? result.lessonContext!.curriculumSubject!
+    : result.lessonContext?.topic ? 'auto' : 'language_arts';
+  const resolvedSkillId = result.skillId || `${result.primitiveType}_skill`;
+  const resolvedSubskillId = result.subskillId || `${result.primitiveType}_subskill`;
+
   return {
-    // When lesson context is present the backend resolves the subject
-    // via curriculum mapping; otherwise fall back to language_arts.
-    subject: result.lessonContext?.topic ? 'auto' : 'language_arts',
+    subject: resolvedSubject,
     problem: {
       problem_type: 'lumina_primitive',
       id: result.attemptId,
       primitive_type: result.primitiveType,
-      skill_id: result.skillId || `${result.primitiveType}_skill`,
-      subskill_id: result.subskillId || `${result.primitiveType}_subskill`,
+      skill_id: resolvedSkillId,
+      subskill_id: resolvedSubskillId,
     },
-    skill_id: result.skillId || `${result.primitiveType}_skill`,
-    subskill_id: result.subskillId || `${result.primitiveType}_subskill`,
+    skill_id: resolvedSkillId,
+    subskill_id: resolvedSubskillId,
     student_answer: `${result.primitiveType} — ${result.score}%`,
     canvas_used: false,
     primitive_response: {
@@ -113,6 +121,7 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
           component_intent: result.lessonContext.componentIntent,
           primitive_type: result.lessonContext.primitiveType,
           objective_text: result.lessonContext.objectiveText,
+          curriculum_subject: result.lessonContext.curriculumSubject,
         }
       : undefined,
     // Eval source tagging (PRD 6.1): explicit from result, or derived from lessonContext

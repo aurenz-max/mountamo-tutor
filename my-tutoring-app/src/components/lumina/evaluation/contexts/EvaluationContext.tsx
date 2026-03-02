@@ -32,6 +32,11 @@ export interface EvaluationContextType {
   topic?: string;
   gradeLevel?: string;
 
+  // Direct curriculum IDs (when lesson initiated from CurriculumBrowser)
+  curriculumSubject?: string;
+  curriculumSkillId?: string;
+  curriculumSubskillId?: string;
+
   // Submission
   submitEvaluation: (result: PrimitiveEvaluationResult) => Promise<void>;
 
@@ -78,6 +83,15 @@ export interface EvaluationProviderProps {
   /** Grade level for curriculum mapping */
   gradeLevel?: string;
 
+  /** Direct curriculum subject (e.g. "Reading") — skips AI mapping when set */
+  curriculumSubject?: string;
+
+  /** Direct curriculum skill ID (e.g. "RF.K.2") */
+  curriculumSkillId?: string;
+
+  /** Direct curriculum subskill ID (e.g. "RF.K.2.C") */
+  curriculumSubskillId?: string;
+
   /** Maximum retries for failed submissions */
   maxRetries?: number;
 
@@ -108,6 +122,9 @@ export function EvaluationProvider({
   studentId,
   topic,
   gradeLevel,
+  curriculumSubject,
+  curriculumSkillId,
+  curriculumSubskillId,
   maxRetries = 3,
   retryDelay = 2000,
   autoFlushInterval = 30000, // 30 seconds
@@ -442,6 +459,9 @@ export function EvaluationProvider({
     studentId,
     topic,
     gradeLevel,
+    curriculumSubject,
+    curriculumSkillId,
+    curriculumSubskillId,
     submitEvaluation,
     pendingSubmissions,
     submittedResults,
