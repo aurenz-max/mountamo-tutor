@@ -1,18 +1,12 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { GenerativeBackground } from './primitives/GenerativeBackground';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { LiveAssistant } from './service/LiveAssistant';
-import {
-  generateExhibitManifest,
-  generateIntroBriefing,
-  generateExhibitManifestWithObjectivesStreaming,
-  buildCompleteExhibitFromManifest,
-  type ManifestProgressCallback
-} from './service/geminiClient-api';
 import { GameState, ExhibitData, ExhibitManifest } from './types';
-import { GradeLevelSelector, GradeLevel } from './components/GradeLevelSelector';
+import { useExhibitSession } from './hooks/useExhibitSession';
+import type { GradeLevel } from './components/GradeLevelSelector';
 import { ManifestViewer } from './components/ManifestViewer';
 import { ObjectivesViewer } from './components/ObjectivesViewer';
 import { ComponentViewer } from './components/ComponentViewer';
@@ -36,7 +30,6 @@ import ChemistryPrimitivesTester from './components/ChemistryPrimitivesTester';
 import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
 import { PracticeMode } from './components/PracticeModeEnhanced';
-import { SpotlightCard } from './components/SpotlightCard';
 import { ExhibitProvider } from './contexts/ExhibitContext';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
@@ -44,8 +37,8 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { EvaluationProvider, useEvaluationContext } from './evaluation';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
-import { CurriculumBrowser, type CurriculumContext } from './components/CurriculumBrowser';
-import { LessonGroupTray, assignBloomPhase, type SelectedSubskill, type BloomPhase } from './components/LessonGroupBuilder';
+import type { CurriculumContext } from './components/CurriculumBrowser';
+import { IdleScreen } from './components/IdleScreen';
 
 // Simple evaluation results indicator
 const EvaluationResultsIndicator: React.FC = () => {
@@ -112,29 +105,29 @@ const EvaluationResultsIndicator: React.FC = () => {
 // Bootstraps the lesson-mode AI session when the exhibit mounts.
 // Must be rendered inside LuminaAIProvider + ExhibitProvider.
 const LessonAIBootstrap: React.FC<{
-  exhibitData: ExhibitData;
+  exhibit: ExhibitData;
   gradeLevel: string;
-}> = ({ exhibitData, gradeLevel }) => {
+}> = ({ exhibit, gradeLevel }) => {
   const aiContext = useLuminaAIContext();
   const hasBootstrappedRef = React.useRef(false);
 
   React.useEffect(() => {
     if (hasBootstrappedRef.current) return;
 
-    const orderedComponents = exhibitData.orderedComponents || [];
+    const orderedComponents = exhibit.orderedComponents || [];
     if (orderedComponents.length === 0) return;
 
     const first = orderedComponents[0];
     const info: LessonConnectionInfo = {
-      exhibit_id: exhibitData.topic || 'unknown',
-      topic: exhibitData.topic || 'Learning Activity',
+      exhibit_id: exhibit.topic || 'unknown',
+      topic: exhibit.topic || 'Learning Activity',
       grade_level: gradeLevel,
       firstPrimitive: {
         primitive_type: first.componentId,
         instance_id: first.instanceId,
         primitive_data: first.data || {},
-        exhibit_id: exhibitData.topic || 'unknown',
-        topic: exhibitData.topic,
+        exhibit_id: exhibit.topic || 'unknown',
+        topic: exhibit.topic,
         grade_level: gradeLevel,
       },
     };
@@ -153,95 +146,45 @@ const LessonAIBootstrap: React.FC<{
 };
 
 export default function App() {
-  const [gameState, setGameState] = useState<GameState>(GameState.IDLE);
+  // Core lesson pipeline (brief → manifest → exhibit)
+  const { phase, brief, exhibit, progress, generate, reset: resetSession } = useExhibitSession();
+
   const [topic, setTopic] = useState('');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
-  const [exhibitData, setExhibitData] = useState<ExhibitData | null>(null);
-  const [loadingMessage, setLoadingMessage] = useState('');
-  const [thinkingMessages, setThinkingMessages] = useState<string[]>([]);
-  const [componentStatuses, setComponentStatuses] = useState<Array<{
-    id: string;
-    name: string;
-    status: 'pending' | 'building' | 'completed';
-    index: number;
-    total: number;
-    title?: string;
-    intent?: string;
-    objectiveId?: string;
-    objectiveText?: string;
-    objectiveVerb?: string;
-  }>>([]);
 
-  // Manifest Viewer State
-  const [showManifestViewer, setShowManifestViewer] = useState(false);
+  // Single panel state replaces 17 individual booleans
+  const [activePanel, setActivePanel] = useState<string | null>(null);
+
+  // Manifest Viewer State (dev tools)
   const [manifest, setManifest] = useState<ExhibitManifest | null>(null);
   const [isGeneratingManifest, setIsGeneratingManifest] = useState(false);
 
-  // Curator Brief State (for displaying objectives during generation)
-  const [curatorBrief, setCuratorBrief] = useState<any>(null);
+  // Auto-scroll when generation starts
+  useEffect(() => {
+    if (phase === GameState.GENERATING) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [phase]);
+
+  // Error handling
+  useEffect(() => {
+    if (phase === GameState.ERROR) {
+      alert("Failed to generate exhibit. Please try a different topic or check API key.");
+      resetSession();
+    }
+  }, [phase, resetSession]);
 
   // Drawer State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<string | null>(null);
 
   // Visual Primitives Testing State
-  const [showVisualTester, setShowVisualTester] = useState(false);
   const [currentVisualIndex, setCurrentVisualIndex] = useState(0);
-
-  // Knowledge Check Testing State
-  const [showKnowledgeCheckTester, setShowKnowledgeCheckTester] = useState(false);
-
-  // Media Player Testing State
-  const [showMediaPlayerTester, setShowMediaPlayerTester] = useState(false);
-
-  // Math Primitives Testing State
-  const [showMathPrimitivesTester, setShowMathPrimitivesTester] = useState(false);
-
-  // Engineering Primitives Testing State
-  const [showEngineeringPrimitivesTester, setShowEngineeringPrimitivesTester] = useState(false);
-
-  // Astronomy Primitives Testing State
-  const [showAstronomyPrimitivesTester, setShowAstronomyPrimitivesTester] = useState(false);
-
-  // Physics Primitives Testing State
-  const [showPhysicsPrimitivesTester, setShowPhysicsPrimitivesTester] = useState(false);
-
-  // Feature Exhibit Testing State
-  const [showFeatureExhibitTester, setShowFeatureExhibitTester] = useState(false);
-
-  // Biology Primitives Testing State
-  const [showBiologyPrimitivesTester, setShowBiologyPrimitivesTester] = useState(false);
-
-  // Chemistry Primitives Testing State
-  const [showChemistryPrimitivesTester, setShowChemistryPrimitivesTester] = useState(false);
-
-  // Language Arts Primitives Testing State
-  const [showLanguageArtsTester, setShowLanguageArtsTester] = useState(false);
-
-  // Lumina Tutor Testing State
-  const [showLuminaTutorTester, setShowLuminaTutorTester] = useState(false);
-
-  // Practice Mode State
-  const [showPracticeMode, setShowPracticeMode] = useState(false);
-
-  // Scratch Pad State
-  const [showScratchPad, setShowScratchPad] = useState(false);
-
-  // Planner Dashboard State
-  const [showPlannerDashboard, setShowPlannerDashboard] = useState(false);
-
-  // Analytics Dashboard State
-  const [showAnalyticsDashboard, setShowAnalyticsDashboard] = useState(false);
 
   // Curriculum context (set when lesson initiated from CurriculumBrowser)
   const [curriculumContext, setCurriculumContext] = useState<CurriculumContext | null>(null);
 
-  // Lesson Group Builder State
-  const [lessonGroupMode, setLessonGroupMode] = useState(false);
-  const [selectedSubskills, setSelectedSubskills] = useState<SelectedSubskill[]>([]);
-  const [lessonGroupTrayCollapsed, setLessonGroupTrayCollapsed] = useState(false);
-
-  // Sample data for each visual primitive
+  // Sample data for visual primitives tester
   const visualPrimitiveExamples = [
     {
       name: 'Object Collection',
@@ -359,178 +302,6 @@ export default function App() {
     }
   ];
 
-  const startExhibit = useCallback(async (
-    topicOverride?: string,
-    preBuiltObjectives?: Array<{ id: string; text: string; verb: string; icon: string }>
-  ) => {
-    const searchTopic = topicOverride || topic;
-    if (!searchTopic.trim()) return;
-
-    if (topicOverride) setTopic(topicOverride);
-
-    setGameState(GameState.GENERATING);
-    setLoadingMessage(`Curating exhibit: ${searchTopic.substring(0, 30)}...`);
-    setThinkingMessages([]); // Clear previous thinking messages
-    setComponentStatuses([]); // Clear previous component statuses
-    setCuratorBrief(null); // Clear previous curator brief
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    try {
-      let objectives: Array<{ id: string; text: string; verb: string; icon: string }>;
-      let generatedBrief: Awaited<ReturnType<typeof generateIntroBriefing>> | null = null;
-
-      // Always generate the full curator brief (hook, big idea, mindset, etc.)
-      setLoadingMessage('🎯 Generating lesson introduction...');
-      generatedBrief = await generateIntroBriefing(searchTopic, gradeLevel);
-      console.log('📚 Curator brief generated:', generatedBrief);
-
-      if (preBuiltObjectives) {
-        // Lesson Group Builder path — replace Gemini's objectives with user's selections,
-        // but keep all the other brief content (hook, big idea, mindset, roadmap, etc.)
-        objectives = preBuiltObjectives;
-        generatedBrief = { ...generatedBrief, objectives: preBuiltObjectives as typeof generatedBrief.objectives };
-        console.log('📚 Overriding objectives with lesson group selections:', objectives);
-      } else {
-        // Standard path — use objectives as generated
-        objectives = generatedBrief.objectives;
-      }
-
-      // Store curator brief in state to display objectives
-      setCuratorBrief(generatedBrief);
-
-      // STEP 2: Use learning objectives to guide manifest generation WITH STREAMING
-      setLoadingMessage('📋 Generating exhibit blueprint...');
-
-      // Define streaming callbacks for real-time progress
-      const manifestCallbacks: ManifestProgressCallback = {
-        onProgress: (message: string) => {
-          console.log('🔄 Manifest Progress:', message);
-          setLoadingMessage(message);
-        },
-        onThinking: (thought: string) => {
-          console.log('🧠 AI Thinking:', thought);
-          setThinkingMessages(prev => [...prev.slice(-4), thought]); // Keep last 5 thoughts
-        },
-        onPartialManifest: (partial) => {
-          console.log('📦 Partial Manifest:', partial);
-          // Could show partial progress in UI
-        }
-      };
-
-      const manifest = await generateExhibitManifestWithObjectivesStreaming(
-        searchTopic,
-        gradeLevel,
-        objectives,
-        manifestCallbacks
-      );
-      console.log('🗺️ Manifest generated based on learning objectives');
-
-      // STEP 3: Build complete exhibit from manifest
-      setLoadingMessage('🎨 Building components in parallel...');
-      setThinkingMessages([]); // Clear thinking messages for next phase
-
-      // Initialize component statuses from manifest with rich metadata
-      const totalComponents = manifest.layout?.length || 0;
-      const initialStatuses = (manifest.layout || []).map((item, index) => ({
-        id: item.instanceId,
-        name: item.componentId,
-        status: 'pending' as const,
-        index: index + 1,
-        total: totalComponents,
-        // Learning-specific metadata
-        title: item.title,
-        intent: item.intent,
-        objectiveId: item.config?.objectiveId,
-        objectiveText: item.config?.objectiveText,
-        objectiveVerb: item.config?.objectiveVerb,
-      }));
-      setComponentStatuses(initialStatuses);
-
-      // Simulate realistic component building progress
-      // Components are built in parallel, so we'll randomize completion times
-      let buildComplete = false;
-      const activeTimeouts: NodeJS.Timeout[] = [];
-
-      const simulateProgress = () => {
-        // Mark 1-3 random pending components as building
-        setComponentStatuses(prev => {
-          const pending = prev.filter(c => c.status === 'pending');
-          if (pending.length === 0) return prev;
-
-          const toBuild = Math.min(3, pending.length);
-          const selected = pending.slice(0, toBuild);
-
-          return prev.map(c =>
-            selected.find(s => s.id === c.id)
-              ? { ...c, status: 'building' as const }
-              : c
-          );
-        });
-
-        // After random delay, mark building as completed
-        const timeout = setTimeout(() => {
-          setComponentStatuses(prev => {
-            const updated = prev.map(c =>
-              c.status === 'building'
-                ? { ...c, status: 'completed' as const }
-                : c
-            );
-
-            // Check if all are completed and build is done
-            const allCompleted = updated.every(c => c.status === 'completed');
-            if (allCompleted && buildComplete) {
-              // Clean up any remaining intervals/timeouts
-              activeTimeouts.forEach(t => clearTimeout(t));
-            }
-
-            return updated;
-          });
-        }, 800 + Math.random() * 1200);
-
-        activeTimeouts.push(timeout);
-      };
-
-      // Start simulation with faster initial pace
-      const interval = setInterval(() => {
-        simulateProgress();
-      }, 1000);
-
-      // Build the actual data — generatedBrief is always populated at this point
-      const data = await buildCompleteExhibitFromManifest(manifest, generatedBrief);
-      buildComplete = true;
-
-      // Don't force completion - let simulation finish naturally
-      // Just clear the interval so no new components start building
-      clearInterval(interval);
-
-      // If there are still pending components, complete them after a short delay
-      setTimeout(() => {
-        setComponentStatuses(prev => {
-          const stillPending = prev.some(c => c.status !== 'completed');
-          if (stillPending) {
-            return prev.map(c => ({ ...c, status: 'completed' as const }));
-          }
-          return prev;
-        });
-        activeTimeouts.forEach(t => clearTimeout(t));
-      }, 2500); // Give simulation 2.5s to finish naturally
-
-      setExhibitData(data);
-      setGameState(GameState.PLAYING);
-    } catch (error) {
-      console.error(error);
-      setGameState(GameState.ERROR);
-      alert("Failed to generate exhibit. Please try a different topic or check API key.");
-      setGameState(GameState.IDLE);
-    }
-  }, [topic, gradeLevel]);
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    startExhibit();
-  };
-
   // Handle curriculum browser selection
   const handleCurriculumSelect = useCallback((topicString: string, grade?: GradeLevel, curriculum?: CurriculumContext) => {
     if (grade) {
@@ -538,86 +309,27 @@ export default function App() {
     }
     setCurriculumContext(curriculum ?? null);
     setTopic(topicString);
-    startExhibit(topicString);
-  }, [startExhibit]);
+    generate({ topic: topicString, gradeLevel: grade || gradeLevel });
+  }, [generate, gradeLevel]);
 
-  // Handle lesson group subskill toggle from CurriculumBrowser
-  const handleToggleSubskill = useCallback((subskill: SelectedSubskill) => {
-    setSelectedSubskills(prev => {
-      const existing = prev.find(s => s.id === subskill.id);
-      if (existing) {
-        // Remove
-        return prev.filter(s => s.id !== subskill.id);
-      }
-      // Add with auto-detected Bloom's phase
-      const withBloom: SelectedSubskill = {
-        ...subskill,
-        bloomPhase: assignBloomPhase(subskill.description, prev.length),
-      };
-      return [...prev, withBloom];
-    });
-  }, []);
-
-  // Handle Bloom's phase update for a subskill in the tray
-  const handleUpdateBloom = useCallback((id: string, phase: BloomPhase) => {
-    setSelectedSubskills(prev =>
-      prev.map(s => s.id === id ? { ...s, bloomPhase: phase } : s)
-    );
-  }, []);
-
-  // Launch a grouped lesson from selected subskills
-  const handleLaunchGroupLesson = useCallback(() => {
-    if (selectedSubskills.length < 2) return;
-
-    // Build objectives from selected subskills
-    const objectives = selectedSubskills.map((s, i) => ({
-      id: `obj${i + 1}`,
-      text: s.description,
-      verb: s.bloomPhase as string,
-      icon: s.bloomPhase === 'identify' ? 'search' : s.bloomPhase === 'explain' ? 'message' : 'pencil',
-    }));
-
-    // Build topic string from the group
-    const subjects = new Set(selectedSubskills.map(s => s.subject));
-    const units = new Set(selectedSubskills.map(s => s.unitTitle));
-    const subjectStr = Array.from(subjects).join(', ');
-    const unitStr = Array.from(units).join(' & ');
-    // Keep topic short — subskill descriptions live in the objectives, not the title
-    const topicStr = units.size === 1 ? `${subjectStr}: ${unitStr}` : subjectStr;
-
-    // Set grade from first subskill
-    const firstGrade = selectedSubskills[0].grade;
-    if (firstGrade) {
-      const g = firstGrade.toLowerCase().trim();
-      const mapped: GradeLevel | undefined =
-        g.includes('pre') ? 'preschool' :
-        g === 'k' || g.includes('kindergarten') ? 'kindergarten' :
-        !isNaN(parseInt(g)) && parseInt(g) <= 5 ? 'elementary' :
-        !isNaN(parseInt(g)) && parseInt(g) <= 8 ? 'middle-school' :
-        !isNaN(parseInt(g)) && parseInt(g) <= 12 ? 'high-school' : undefined;
-      if (mapped) setGradeLevel(mapped);
-    }
-
-    // Set curriculum context from first subskill
-    setCurriculumContext({
-      subject: selectedSubskills[0].subject,
-      skillId: selectedSubskills[0].skillId,
-      subskillId: selectedSubskills[0].id,
-    });
-
-    setTopic(topicStr);
-    setLessonGroupMode(false);
-
-    // Launch exhibit with pre-built objectives
-    startExhibit(topicStr, objectives);
-  }, [selectedSubskills, startExhibit]);
+  // Handle lesson group launch from IdleScreen
+  const handleLaunchGroupLesson = useCallback((params: {
+    topic: string;
+    gradeLevel: GradeLevel;
+    preBuiltObjectives: Array<{ id: string; text: string; verb: string; icon: string }>;
+    curriculum: CurriculumContext;
+  }) => {
+    setTopic(params.topic);
+    setGradeLevel(params.gradeLevel);
+    setCurriculumContext(params.curriculum);
+    generate({ topic: params.topic, gradeLevel: params.gradeLevel, preBuiltObjectives: params.preBuiltObjectives });
+  }, [generate]);
 
   // Handle transition from practice to learning exhibit
   const handleLearnMoreFromPractice = useCallback((subject: string, practiceLevelGrade: GradeLevel) => {
-    setShowPracticeMode(false);
+    setActivePanel(null);
     setGradeLevel(practiceLevelGrade);
 
-    // Map subject to a topic string for exhibit generation
     const subjectTopicMap: Record<string, string> = {
       'mathematics': 'Mathematics',
       'science': 'Science',
@@ -628,17 +340,15 @@ export default function App() {
     };
 
     const exhibitTopic = subjectTopicMap[subject] || subject;
-    startExhibit(exhibitTopic);
-  }, [startExhibit]);
+    generate({ topic: exhibitTopic, gradeLevel: practiceLevelGrade });
+  }, [generate]);
 
   const reset = () => {
-    setGameState(GameState.IDLE);
+    resetSession();
     setTopic('');
     setCurriculumContext(null);
-    setExhibitData(null);
-    setShowManifestViewer(false);
+    setActivePanel(null);
     setManifest(null);
-    setCuratorBrief(null);
   };
 
   const handleDetailItemClick = (item: string) => {
@@ -649,18 +359,18 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden selection:bg-blue-500/30">
-      
+
       {/* Detail Drawer for Table Items & Feature Terms */}
-      <DetailDrawer 
-        isOpen={isDrawerOpen} 
-        onClose={() => setIsDrawerOpen(false)} 
-        contextTopic={exhibitData?.topic || ''}
+      <DetailDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        contextTopic={exhibit?.topic || ''}
         itemName={selectedDetailItem}
       />
 
       {/* Dynamic Background */}
-      <GenerativeBackground 
-        color={exhibitData?.cards[0]?.themeColor || '#475569'} 
+      <GenerativeBackground
+        color={exhibit?.cards[0]?.themeColor || '#475569'}
         intensity={0.3}
       />
 
@@ -673,602 +383,37 @@ export default function App() {
              <span className="text-xl font-bold tracking-tight text-white">Lumina <span className="text-slate-500 font-light">Exhibits</span></span>
         </div>
         <div className="flex gap-4 text-xs md:text-sm font-mono text-slate-400">
-            {gameState === GameState.PLAYING && (
+            {phase === GameState.PLAYING && (
                 <button onClick={reset} className="hover:text-white transition-colors">
                    ← New Topic
                 </button>
             )}
-            {showVisualTester && (
-                <button onClick={() => setShowVisualTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showKnowledgeCheckTester && (
-                <button onClick={() => setShowKnowledgeCheckTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showMediaPlayerTester && (
-                <button onClick={() => setShowMediaPlayerTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showMathPrimitivesTester && (
-                <button onClick={() => setShowMathPrimitivesTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showEngineeringPrimitivesTester && (
-                <button onClick={() => setShowEngineeringPrimitivesTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showPhysicsPrimitivesTester && (
-                <button onClick={() => setShowPhysicsPrimitivesTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showFeatureExhibitTester && (
-                <button onClick={() => setShowFeatureExhibitTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showBiologyPrimitivesTester && (
-                <button onClick={() => setShowBiologyPrimitivesTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showChemistryPrimitivesTester && (
-                <button onClick={() => setShowChemistryPrimitivesTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showLuminaTutorTester && (
-                <button onClick={() => setShowLuminaTutorTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showLanguageArtsTester && (
-                <button onClick={() => setShowLanguageArtsTester(false)} className="hover:text-white transition-colors">
-                   ← Exit Tester
-                </button>
-            )}
-            {showPracticeMode && (
-                <button onClick={() => setShowPracticeMode(false)} className="hover:text-white transition-colors">
-                   ← Exit Practice
-                </button>
-            )}
-            {showScratchPad && (
-                <button onClick={() => setShowScratchPad(false)} className="hover:text-white transition-colors">
-                   ← Exit Scratch Pad
-                </button>
-            )}
-            {showPlannerDashboard && (
-                <button onClick={() => setShowPlannerDashboard(false)} className="hover:text-white transition-colors">
-                   ← Exit Planner
-                </button>
-            )}
-            {showAnalyticsDashboard && (
-                <button onClick={() => setShowAnalyticsDashboard(false)} className="hover:text-white transition-colors">
-                   ← Exit Analytics
+            {activePanel && (
+                <button onClick={() => setActivePanel(null)} className="hover:text-white transition-colors">
+                   ← Back
                 </button>
             )}
         </div>
       </header>
 
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
-        
-        {/* IDLE STATE */}
-        {gameState === GameState.IDLE && !showManifestViewer && !showVisualTester && !showKnowledgeCheckTester && !showMediaPlayerTester && !showMathPrimitivesTester && !showEngineeringPrimitivesTester && !showAstronomyPrimitivesTester && !showPhysicsPrimitivesTester && !showFeatureExhibitTester && !showBiologyPrimitivesTester && !showChemistryPrimitivesTester && !showLanguageArtsTester && !showLuminaTutorTester && !showPracticeMode && !showScratchPad && !showPlannerDashboard && !showAnalyticsDashboard && (
-          <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
-             <div className="space-y-6 max-w-2xl">
-                <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-500">
-                    What will you learn?
-                </h1>
-                <p className="text-slate-400 text-xl md:text-2xl font-light leading-relaxed">
-                    Enter any topic to generate an interactive museum exhibit.
-                </p>
 
-                {/* Grade Level Selector */}
-                <div className="max-w-md mx-auto mt-8">
-                  <label className="block text-sm font-medium text-slate-400 mb-2 text-center">
-                    Learning Level
-                  </label>
-                  <GradeLevelSelector
-                    value={gradeLevel}
-                    onChange={setGradeLevel}
-                  />
-                </div>
-
-                <form onSubmit={handleFormSubmit} className="relative group max-w-lg mx-auto mt-8">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-30 group-hover:opacity-60 transition duration-1000"></div>
-                    <div className="relative flex items-center">
-                        <input
-                            type="text"
-                            value={topic}
-                            onChange={(e) => setTopic(e.target.value)}
-                            placeholder="e.g. Quantum Mechanics, The Roman Empire, Jazz..."
-                            className="w-full px-8 py-5 bg-slate-900 text-white rounded-full border border-slate-700 focus:border-blue-400/50 focus:outline-none text-lg shadow-2xl transition-all"
-                            autoFocus
-                        />
-                        <button
-                            type="submit"
-                            className="absolute right-2 p-3 bg-white text-slate-900 rounded-full hover:bg-blue-50 transition-transform active:scale-95 disabled:opacity-50"
-                            disabled={!topic}
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                        </button>
-                    </div>
-                </form>
-
-                {/* Suggested Topics - Card Style */}
-                <div className="pt-8 max-w-5xl mx-auto">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>
-                        <span className="text-slate-500 text-xs font-mono uppercase tracking-widest">Popular Topics</span>
-                        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[
-                            { topic: 'Industrial Revolution', icon: '⚙️', color: '250, 204, 21', description: 'Explore the transformation of manufacturing and society' },
-                            { topic: 'Botany', icon: '🌿', color: '74, 222, 128', description: 'Discover the science of plants and their ecosystems' },
-                            { topic: 'Cubism', icon: '🎨', color: '192, 132, 252', description: 'Learn about geometric abstraction in modern art' },
-                            { topic: 'Black Holes', icon: '🌌', color: '56, 189, 248', description: 'Journey into the mysteries of spacetime' }
-                        ].map(({ topic: suggestion, icon, color, description }) => (
-                            <SpotlightCard
-                                key={suggestion}
-                                color={color}
-                                onClick={() => { setTopic(suggestion); startExhibit(suggestion); }}
-                                className="bg-slate-900/40"
-                            >
-                                <div className="p-5 flex flex-col items-center text-center gap-3">
-                                    <div className="text-4xl">{icon}</div>
-                                    <div>
-                                        <h4 className="text-lg font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">
-                                            {suggestion}
-                                        </h4>
-                                        <p className="text-xs text-slate-400 leading-relaxed">
-                                            {description}
-                                        </p>
-                                    </div>
-                                </div>
-                            </SpotlightCard>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Curriculum Browser */}
-                <div className="pt-8 max-w-5xl mx-auto">
-                  {/* Build Lesson toggle */}
-                  <div className="flex justify-end mb-2">
-                    <button
-                      onClick={() => {
-                        setLessonGroupMode(prev => !prev);
-                        if (lessonGroupMode) {
-                          setSelectedSubskills([]);
-                        }
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
-                        lessonGroupMode
-                          ? 'bg-blue-500/20 border-blue-500/50 text-blue-200'
-                          : 'bg-white/5 border-white/20 text-slate-400 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                      {lessonGroupMode ? 'Exit Build Mode' : 'Build Lesson'}
-                    </button>
-                  </div>
-                  <CurriculumBrowser
-                    onSelectTopic={handleCurriculumSelect}
-                    selectionMode={lessonGroupMode}
-                    selectedIds={new Set(selectedSubskills.map(s => s.id))}
-                    onToggleSubskill={handleToggleSubskill}
-                  />
-                </div>
-
-                {/* Lesson Group Tray (floating bottom panel) */}
-                {selectedSubskills.length > 0 && (
-                  <LessonGroupTray
-                    subskills={selectedSubskills}
-                    onRemove={(id) => setSelectedSubskills(prev => prev.filter(s => s.id !== id))}
-                    onUpdateBloom={handleUpdateBloom}
-                    onLaunch={handleLaunchGroupLesson}
-                    onClear={() => setSelectedSubskills([])}
-                    collapsed={lessonGroupTrayCollapsed}
-                    onToggleCollapse={() => setLessonGroupTrayCollapsed(prev => !prev)}
-                  />
-                )}
-
-                {/* Main Actions Section */}
-                <div className="pt-8 max-w-2xl mx-auto">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>
-                    <span className="text-slate-500 text-xs font-mono uppercase tracking-widest">Quick Start</span>
-                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
-                  </div>
-
-                  {/* Quick Start Cards Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    {/* Practice Mode Button */}
-                    <SpotlightCard
-                      color="74, 222, 128"
-                      onClick={() => setShowPracticeMode(true)}
-                      className="bg-gradient-to-br from-green-900/20 to-emerald-900/20"
-                    >
-                      <div className="p-6 flex items-start gap-4">
-                        <div className="w-14 h-14 bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                          <span className="text-2xl">🎯</span>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-green-200 transition-colors">
-                            Practice Session
-                          </h3>
-                          <p className="text-slate-400 text-sm leading-relaxed">
-                            Auto-generated questions tailored to your subject and grade level
-                          </p>
-                        </div>
-                        <svg className="w-5 h-5 text-slate-600 group-hover:text-green-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                      </div>
-                    </SpotlightCard>
-
-                    {/* Scratch Pad Button */}
-                    <SpotlightCard
-                      color="168, 85, 247"
-                      onClick={() => setShowScratchPad(true)}
-                      className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20"
-                    >
-                      <div className="p-6 flex items-start gap-4">
-                        <div className="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                          <span className="text-2xl">✏️</span>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-purple-200 transition-colors">
-                            Scratch Pad
-                          </h3>
-                          <p className="text-slate-400 text-sm leading-relaxed">
-                            AI-powered whiteboard with real-time feedback on your work
-                          </p>
-                        </div>
-                        <svg className="w-5 h-5 text-slate-600 group-hover:text-purple-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                      </div>
-                    </SpotlightCard>
-
-                    {/* Planner Dashboard Button */}
-                    <SpotlightCard
-                      color="56, 189, 248"
-                      onClick={() => setShowPlannerDashboard(true)}
-                      className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20"
-                    >
-                      <div className="p-6 flex items-start gap-4">
-                        <div className="w-14 h-14 bg-cyan-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                          <span className="text-2xl">📅</span>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-cyan-200 transition-colors">
-                            Planner Dashboard
-                          </h3>
-                          <p className="text-slate-400 text-sm leading-relaxed">
-                            Weekly pacing &amp; daily session queue from the Firestore planning engine
-                          </p>
-                        </div>
-                        <svg className="w-5 h-5 text-slate-600 group-hover:text-cyan-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                      </div>
-                    </SpotlightCard>
-
-                    {/* Analytics Dashboard Button */}
-                    <SpotlightCard
-                      color="139, 92, 246"
-                      onClick={() => setShowAnalyticsDashboard(true)}
-                      className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20"
-                    >
-                      <div className="p-6 flex items-start gap-4">
-                        <div className="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                          <span className="text-2xl">📊</span>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-purple-200 transition-colors">
-                            Analytics Dashboard
-                          </h3>
-                          <p className="text-slate-400 text-sm leading-relaxed">
-                            Real-time performance metrics, velocity, score trends &amp; engagement
-                          </p>
-                        </div>
-                        <svg className="w-5 h-5 text-slate-600 group-hover:text-purple-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                      </div>
-                    </SpotlightCard>
-                  </div>
-
-                  {/* Developer Tools Section */}
-                  <div className="pt-6">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>
-                      <span className="text-slate-500 text-xs font-mono uppercase tracking-widest">Developer Tools</span>
-                      <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {/* Media Player Tester */}
-                      <SpotlightCard
-                        color="139, 92, 246"
-                        onClick={() => setShowMediaPlayerTester(true)}
-                        className="bg-gradient-to-br from-purple-900/20 to-violet-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">🎬</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-purple-200 transition-colors">
-                              Media Player Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Test audio-visual lesson generation with AI narration and images
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-purple-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Knowledge Check Tester */}
-                      <SpotlightCard
-                        color="59, 130, 246"
-                        onClick={() => setShowKnowledgeCheckTester(true)}
-                        className="bg-gradient-to-br from-blue-900/20 to-cyan-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">📝</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">
-                              Knowledge Check Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Test AI-generated assessment problems across multiple formats
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-blue-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Math Primitives Tester */}
-                      <SpotlightCard
-                        color="236, 72, 153"
-                        onClick={() => setShowMathPrimitivesTester(true)}
-                        className="bg-gradient-to-br from-pink-900/20 to-rose-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">🧮</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-pink-200 transition-colors">
-                              Math Primitives Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Test and configure visual math components like fraction bars and place value charts
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-pink-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Engineering Primitives Tester */}
-                      <SpotlightCard
-                        color="249, 115, 22"
-                        onClick={() => setShowEngineeringPrimitivesTester(true)}
-                        className="bg-gradient-to-br from-orange-900/20 to-red-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">⚙️</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-orange-200 transition-colors">
-                              Engineering Primitives Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Test lever labs, pulley systems, and other simple machine components
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-orange-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Astronomy Primitives Tester */}
-                      <SpotlightCard
-                        color="59, 130, 246"
-                        onClick={() => setShowAstronomyPrimitivesTester(true)}
-                        className="bg-gradient-to-br from-blue-900/20 to-indigo-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">🪐</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">
-                              Astronomy Primitives Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Explore the solar system with interactive astronomy visualizations
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-blue-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Physics Primitives Tester */}
-                      <SpotlightCard
-                        color="99, 102, 241"
-                        onClick={() => setShowPhysicsPrimitivesTester(true)}
-                        className="bg-gradient-to-br from-indigo-900/20 to-violet-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">⚛️</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-indigo-200 transition-colors">
-                              Physics Primitives Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Visualize motion, forces, and energy with interactive physics diagrams
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-indigo-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Feature Exhibit Tester */}
-                      <SpotlightCard
-                        color="14, 165, 233"
-                        onClick={() => setShowFeatureExhibitTester(true)}
-                        className="bg-gradient-to-br from-sky-900/20 to-blue-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-sky-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">📰</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-sky-200 transition-colors">
-                              Feature Exhibit Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Test deep-dive editorial content with 3-phase comprehension evaluation
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-sky-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Biology Primitives Tester */}
-                      <SpotlightCard
-                        color="34, 197, 94"
-                        onClick={() => setShowBiologyPrimitivesTester(true)}
-                        className="bg-gradient-to-br from-green-900/20 to-emerald-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">🧬</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-green-200 transition-colors">
-                              Biology Primitives Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Test organism cards and species profiles with detailed biological information
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-green-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Chemistry Primitives Tester */}
-                      <SpotlightCard
-                        color="16, 185, 129"
-                        onClick={() => setShowChemistryPrimitivesTester(true)}
-                        className="bg-gradient-to-br from-emerald-900/20 to-teal-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">🧪</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-emerald-200 transition-colors">
-                              Chemistry Primitives Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Test reaction labs, equation balancers, pH explorers, and other chemistry components
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-emerald-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Language Arts Primitives Tester */}
-                      <SpotlightCard
-                        color="244, 114, 182"
-                        onClick={() => setShowLanguageArtsTester(true)}
-                        className="bg-gradient-to-br from-pink-900/20 to-fuchsia-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">📚</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-pink-200 transition-colors">
-                              Language Arts Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Test K-6 ELA primitives: paragraph architect, story map, sentence builder, listen & respond
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-pink-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-
-                      {/* Lumina Tutor Tester */}
-                      <SpotlightCard
-                        color="129, 140, 248"
-                        onClick={() => setShowLuminaTutorTester(true)}
-                        className="bg-gradient-to-br from-indigo-900/20 to-violet-900/20"
-                      >
-                        <div className="p-6 flex items-start gap-4">
-                          <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <span className="text-2xl">🤖</span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-indigo-200 transition-colors">
-                              Lumina Tutor Tester
-                            </h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                              Test AI tutoring scaffolding: inspect catalog metadata, verify WebSocket connection, test hints
-                            </p>
-                          </div>
-                          <svg className="w-5 h-5 text-slate-600 group-hover:text-indigo-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                          </svg>
-                        </div>
-                      </SpotlightCard>
-                    </div>
-                  </div>
-                </div>
-             </div>
-          </div>
+        {/* IDLE STATE — Home Screen */}
+        {phase === GameState.IDLE && activePanel === null && (
+          <IdleScreen
+            topic={topic}
+            onTopicChange={setTopic}
+            gradeLevel={gradeLevel}
+            onGradeLevelChange={setGradeLevel}
+            onGenerate={generate}
+            onCurriculumSelect={handleCurriculumSelect}
+            onLaunchGroupLesson={handleLaunchGroupLesson}
+            onNavigate={setActivePanel}
+          />
         )}
 
         {/* MANIFEST VIEWER STATE */}
-        {gameState === GameState.IDLE && showManifestViewer && (
+        {phase === GameState.IDLE && activePanel === 'manifest-viewer' && (
           <div className="flex-1 animate-fade-in">
             <div className="mb-8 text-center">
               <button
@@ -1286,123 +431,122 @@ export default function App() {
         )}
 
         {/* KNOWLEDGE CHECK TESTER STATE */}
-        {gameState === GameState.IDLE && showKnowledgeCheckTester && (
+        {phase === GameState.IDLE && activePanel === 'knowledge-check-tester' && (
           <div className="flex-1 animate-fade-in">
-            <KnowledgeCheckTester onBack={() => setShowKnowledgeCheckTester(false)} />
+            <KnowledgeCheckTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* MEDIA PLAYER TESTER STATE */}
-        {gameState === GameState.IDLE && showMediaPlayerTester && (
+        {phase === GameState.IDLE && activePanel === 'media-player-tester' && (
           <div className="flex-1 animate-fade-in">
-            <MediaPlayerTester onBack={() => setShowMediaPlayerTester(false)} />
+            <MediaPlayerTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* MATH PRIMITIVES TESTER STATE */}
-        {gameState === GameState.IDLE && showMathPrimitivesTester && (
+        {phase === GameState.IDLE && activePanel === 'math-primitives-tester' && (
           <div className="flex-1 animate-fade-in">
-            <MathPrimitivesTester onBack={() => setShowMathPrimitivesTester(false)} />
+            <MathPrimitivesTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* ENGINEERING PRIMITIVES TESTER STATE */}
-        {gameState === GameState.IDLE && showEngineeringPrimitivesTester && (
+        {phase === GameState.IDLE && activePanel === 'engineering-primitives-tester' && (
           <div className="flex-1 animate-fade-in">
-            <EngineeringPrimitivesTester onBack={() => setShowEngineeringPrimitivesTester(false)} />
+            <EngineeringPrimitivesTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* ASTRONOMY PRIMITIVES TESTER STATE */}
-        {gameState === GameState.IDLE && showAstronomyPrimitivesTester && (
+        {phase === GameState.IDLE && activePanel === 'astronomy-primitives-tester' && (
           <div className="flex-1 animate-fade-in">
-            <AstronomyPrimitivesTester onBack={() => setShowAstronomyPrimitivesTester(false)} />
+            <AstronomyPrimitivesTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* PHYSICS PRIMITIVES TESTER STATE */}
-        {gameState === GameState.IDLE && showPhysicsPrimitivesTester && (
+        {phase === GameState.IDLE && activePanel === 'physics-primitives-tester' && (
           <div className="flex-1 animate-fade-in">
-            <PhysicsPrimitivesTester onBack={() => setShowPhysicsPrimitivesTester(false)} />
+            <PhysicsPrimitivesTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* FEATURE EXHIBIT TESTER STATE */}
-        {gameState === GameState.IDLE && showFeatureExhibitTester && (
+        {phase === GameState.IDLE && activePanel === 'feature-exhibit-tester' && (
           <div className="flex-1 animate-fade-in">
-            <FeatureExhibitTester onBack={() => setShowFeatureExhibitTester(false)} />
+            <FeatureExhibitTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* BIOLOGY PRIMITIVES TESTER STATE */}
-        {gameState === GameState.IDLE && showBiologyPrimitivesTester && (
+        {phase === GameState.IDLE && activePanel === 'biology-primitives-tester' && (
           <div className="flex-1 animate-fade-in">
-            <BiologyPrimitivesTester onBack={() => setShowBiologyPrimitivesTester(false)} />
+            <BiologyPrimitivesTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* CHEMISTRY PRIMITIVES TESTER STATE */}
-        {gameState === GameState.IDLE && showChemistryPrimitivesTester && (
+        {phase === GameState.IDLE && activePanel === 'chemistry-primitives-tester' && (
           <div className="flex-1 animate-fade-in">
-            <ChemistryPrimitivesTester onBack={() => setShowChemistryPrimitivesTester(false)} />
+            <ChemistryPrimitivesTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* LANGUAGE ARTS PRIMITIVES TESTER STATE */}
-        {gameState === GameState.IDLE && showLanguageArtsTester && (
+        {phase === GameState.IDLE && activePanel === 'language-arts-tester' && (
           <div className="flex-1 animate-fade-in">
-            <LanguageArtsPrimitivesTester onBack={() => setShowLanguageArtsTester(false)} />
+            <LanguageArtsPrimitivesTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* LUMINA TUTOR TESTER STATE */}
-        {gameState === GameState.IDLE && showLuminaTutorTester && (
+        {phase === GameState.IDLE && activePanel === 'lumina-tutor-tester' && (
           <div className="flex-1 animate-fade-in">
-            <LuminaTutorTester onBack={() => setShowLuminaTutorTester(false)} />
+            <LuminaTutorTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* PRACTICE MODE STATE */}
-        {gameState === GameState.IDLE && showPracticeMode && (
+        {phase === GameState.IDLE && activePanel === 'practice-mode' && (
           <div className="flex-1 animate-fade-in">
             <PracticeMode
-              onBack={() => setShowPracticeMode(false)}
+              onBack={() => setActivePanel(null)}
               onLearnMore={handleLearnMoreFromPractice}
             />
           </div>
         )}
 
         {/* SCRATCH PAD STATE */}
-        {gameState === GameState.IDLE && showScratchPad && (
+        {phase === GameState.IDLE && activePanel === 'scratch-pad' && (
           <div className="flex-1 animate-fade-in">
             <ScratchPad
-              onBack={() => setShowScratchPad(false)}
+              onBack={() => setActivePanel(null)}
               gradeLevel={gradeLevel}
             />
           </div>
         )}
 
         {/* PLANNER DASHBOARD STATE */}
-        {gameState === GameState.IDLE && showPlannerDashboard && (
+        {phase === GameState.IDLE && activePanel === 'planner-dashboard' && (
           <div className="flex-1 animate-fade-in">
-            <PlannerDashboard onBack={() => setShowPlannerDashboard(false)} />
+            <PlannerDashboard onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* ANALYTICS DASHBOARD STATE */}
-        {gameState === GameState.IDLE && showAnalyticsDashboard && (
+        {phase === GameState.IDLE && activePanel === 'analytics-dashboard' && (
           <div className="flex-1 animate-fade-in">
-            <AnalyticsDashboard onBack={() => setShowAnalyticsDashboard(false)} />
+            <AnalyticsDashboard onBack={() => setActivePanel(null)} />
           </div>
         )}
 
         {/* VISUAL PRIMITIVES TESTER STATE */}
-        {gameState === GameState.IDLE && showVisualTester && (
+        {phase === GameState.IDLE && activePanel === 'visual-tester' && (
           <div className="flex-1 animate-fade-in">
-            {/* Header with back button */}
             <div className="mb-8 text-center">
               <button
-                onClick={() => setShowVisualTester(false)}
+                onClick={() => setActivePanel(null)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-full border border-slate-600 transition-all"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1412,13 +556,11 @@ export default function App() {
               </button>
             </div>
 
-            {/* Title */}
             <div className="text-center mb-8">
               <h2 className="text-4xl font-bold text-white mb-2">Visual Primitives Gallery</h2>
               <p className="text-slate-400">Preview all early learning visual components</p>
             </div>
 
-            {/* Navigation Controls */}
             <div className="flex items-center justify-center gap-4 mb-8">
               <button
                 onClick={() => setCurrentVisualIndex(Math.max(0, currentVisualIndex - 1))}
@@ -1450,7 +592,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Quick Jump Buttons */}
             <div className="flex flex-wrap justify-center gap-2 mb-8 max-w-4xl mx-auto">
               {visualPrimitiveExamples.map((example, index) => (
                 <button
@@ -1467,7 +608,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Current Visual Component Display */}
             <div className="max-w-5xl mx-auto">
               {visualPrimitiveExamples[currentVisualIndex].component}
             </div>
@@ -1475,14 +615,14 @@ export default function App() {
         )}
 
         {/* GENERATING STATE */}
-        {gameState === GameState.GENERATING && (
+        {phase === GameState.GENERATING && (
             <div className="flex-1 flex flex-col justify-center items-center text-center">
                 <div className="relative w-32 h-32 mb-8">
                     <div className="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
                     <div className="absolute inset-0 border-t-4 border-blue-500 rounded-full animate-spin shadow-[0_0_30px_rgba(59,130,246,0.5)]"></div>
                     <div className="absolute inset-4 border-t-4 border-purple-500 rounded-full animate-spin direction-reverse shadow-[0_0_30px_rgba(168,85,247,0.5)]" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
                 </div>
-                <h3 className="text-2xl font-bold text-white animate-pulse">{loadingMessage}</h3>
+                <h3 className="text-2xl font-bold text-white animate-pulse">{progress.message}</h3>
                 <p className="text-slate-500 mt-2 font-mono text-sm">Generative AI is curating...</p>
                 <div className="mt-4 px-4 py-2 bg-slate-800/50 rounded-full border border-slate-700">
                   <span className="text-xs text-slate-400">
@@ -1491,24 +631,24 @@ export default function App() {
                 </div>
 
                 {/* Objectives Display - Show after curator brief is generated */}
-                {curatorBrief && curatorBrief.objectives && (
+                {brief && brief.objectives && (
                   <div className="mt-12 w-full px-4">
                     <ObjectivesViewer
-                      objectives={curatorBrief.objectives}
-                      topic={curatorBrief.topic}
+                      objectives={brief.objectives}
+                      topic={brief.topic}
                     />
                   </div>
                 )}
 
                 {/* Component Build Progress */}
-                {componentStatuses.length > 0 && (
+                {progress.componentStatuses.length > 0 && (
                   <div className="mt-8 w-full px-4">
-                    <ComponentViewer components={componentStatuses} />
+                    <ComponentViewer components={progress.componentStatuses} />
                   </div>
                 )}
 
                 {/* AI Thinking Display */}
-                {thinkingMessages.length > 0 && (
+                {progress.thoughts.length > 0 && (
                   <div className="mt-8 max-w-2xl w-full px-4">
                     <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
                       <div className="flex items-center gap-2 mb-4">
@@ -1516,7 +656,7 @@ export default function App() {
                         <span className="text-xs font-bold uppercase tracking-widest text-slate-400">AI Thinking</span>
                       </div>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {thinkingMessages.map((thought, index) => (
+                        {progress.thoughts.map((thought, index) => (
                           <div
                             key={index}
                             className="text-sm text-slate-300 bg-slate-900/40 rounded-lg p-3 animate-fade-in"
@@ -1533,11 +673,11 @@ export default function App() {
         )}
 
         {/* EXHIBIT STATE */}
-        {gameState === GameState.PLAYING && exhibitData && (
+        {phase === GameState.PLAYING && exhibit && (
             <EvaluationProvider
                 sessionId={`exhibit-${Date.now()}`}
-                exhibitId={exhibitData.topic || 'unknown'}
-                topic={exhibitData.topic}
+                exhibitId={exhibit.topic || 'unknown'}
+                topic={exhibit.topic}
                 gradeLevel={gradeLevel}
                 curriculumSubject={curriculumContext?.subject}
                 curriculumSkillId={curriculumContext?.skillId}
@@ -1548,20 +688,20 @@ export default function App() {
                 }}
             >
                 <ExhibitProvider
-                    objectives={exhibitData.introBriefing?.objectives || []}
-                    manifestItems={exhibitData.manifest?.layout || []}
+                    objectives={exhibit.introBriefing?.objectives || []}
+                    manifestItems={exhibit.manifest?.layout || []}
                 >
                 <LuminaAIProvider>
-                    <LessonAIBootstrap exhibitData={exhibitData} gradeLevel={gradeLevel} />
+                    <LessonAIBootstrap exhibit={exhibit} gradeLevel={gradeLevel} />
                     <div className="w-full animate-fade-in-up">
                     {/* Title Section */}
                     <div className="mb-8 text-center">
-                        <h2 className="text-5xl font-bold text-white tracking-tight">{exhibitData.topic}</h2>
+                        <h2 className="text-5xl font-bold text-white tracking-tight">{exhibit.topic}</h2>
                     </div>
 
                 {/* Manifest-Ordered Components - Renders all components in the order defined by the manifest */}
                 <ManifestOrderRenderer
-                    orderedComponents={exhibitData.orderedComponents || []}
+                    orderedComponents={exhibit.orderedComponents || []}
                     onDetailItemClick={handleDetailItemClick}
                     onTermClick={handleDetailItemClick}
                 />
@@ -1570,19 +710,19 @@ export default function App() {
                 <EvaluationResultsIndicator />
 
                 {/* Related Topics */}
-                {exhibitData.relatedTopics && exhibitData.relatedTopics.length > 0 && (
+                {exhibit.relatedTopics && exhibit.relatedTopics.length > 0 && (
                     <div className="mt-24 mb-12 max-w-5xl mx-auto">
                         <div className="flex items-center gap-4 mb-8">
                             <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>
                             <span className="text-slate-400 text-sm font-mono uppercase tracking-widest">Related Exhibits</span>
                             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {exhibitData.relatedTopics.map((item, i) => (
+                            {exhibit.relatedTopics.map((item, i) => (
                                 <button
                                     key={i}
-                                    onClick={() => startExhibit(item.topic)}
+                                    onClick={() => generate({ topic: item.topic, gradeLevel })}
                                     className="group relative p-6 flex flex-col h-full rounded-2xl bg-gradient-to-b from-slate-800/50 to-slate-900/50 border border-white/5 hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2 overflow-hidden text-left"
                                 >
                                     <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/5 transition-colors duration-500"></div>
@@ -1618,9 +758,9 @@ export default function App() {
       </main>
 
       {/* Voice Curator - Available during exhibit viewing */}
-      {gameState === GameState.PLAYING && exhibitData && (
+      {phase === GameState.PLAYING && exhibit && (
         <LiveAssistant
-            exhibitData={exhibitData}
+            exhibitData={exhibit}
         />
       )}
     </div>

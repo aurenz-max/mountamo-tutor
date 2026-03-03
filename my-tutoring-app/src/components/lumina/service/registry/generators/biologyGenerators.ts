@@ -431,33 +431,50 @@ registerGenerator('bio-compare-contrast', async (item, topic, gradeContext) => {
 
   const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
 
-  // Determine mode: default to 'side-by-side' for viewing, use config.mode if specified
-  const mode = config.mode || 'side-by-side';
+  // Determine mode from config, then fall back to intent inference.
+  // The manifest generator knows about modes but doesn't always set config.mode,
+  // so we check if the intent mentions venn/interactive as a reliable signal.
+  const intentLower = (item.intent || '').toLowerCase();
+  const mode: 'side-by-side' | 'venn-interactive' = config.mode ||
+    (intentLower.includes('venn') || intentLower.includes('drag') ? 'venn-interactive' : 'side-by-side');
 
   // Check if images should be generated
   const generateImages = config.generateImages === true;
 
-  // If topic contains "vs" or "versus", use the topic-based generator
-  if (topic.match(/\s+(?:vs\.?|versus)\s+/i)) {
+  // Check for "vs" pattern in topic first, then fall back to item.title.
+  // The exhibit-level topic ("Photosynthesis") rarely contains "vs"; the
+  // component-level title ("Photosynthesis vs. Respiration") usually does.
+  const vsPattern = /\s+(?:vs\.?|versus)\s+/i;
+  const vsSource = [topic, item.title].find(s => s && vsPattern.test(s));
+
+  if (vsSource) {
     if (generateImages) {
       return {
         type: 'bio-compare-contrast',
         instanceId: item.instanceId,
-        data: await generateCompareContrastWithImagesFromTopic(topic, gradeBand, mode),
+        data: await generateCompareContrastWithImagesFromTopic(vsSource, gradeBand, mode),
       };
     } else {
       const { generateCompareContrastFromTopic } = await import('../../biology/gemini-compare-contrast');
       return {
         type: 'bio-compare-contrast',
         instanceId: item.instanceId,
-        data: await generateCompareContrastFromTopic(topic, gradeBand, mode),
+        data: await generateCompareContrastFromTopic(vsSource, gradeBand, mode),
       };
     }
   }
 
   // Otherwise, expect entityA and entityB in config
-  const entityA = config.entityA || 'Frog';
-  const entityB = config.entityB || 'Toad';
+  const entityA = config.entityA;
+  const entityB = config.entityB;
+
+  if (!entityA || !entityB) {
+    throw new Error(
+      `bio-compare-contrast: cannot determine what to compare. ` +
+      `Provide entityA/entityB in config, or use a "vs" pattern in the component title. ` +
+      `Got topic="${topic}", title="${item.title}".`
+    );
+  }
 
   if (generateImages) {
     return {

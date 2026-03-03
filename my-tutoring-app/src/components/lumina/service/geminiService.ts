@@ -149,7 +149,8 @@ export const generateComponentContent = async (
  */
 export const buildCompleteExhibitFromManifest = async (
   manifest: any,
-  curatorBrief: any
+  curatorBrief: any,
+  onComponentComplete?: (instanceId: string, componentId: string, index: number, total: number) => void
 ): Promise<any> => {
   console.log('🎯 Building exhibit from pre-generated manifest and curator brief');
   console.log(`📋 Manifest has ${manifest.layout.length} components`);
@@ -167,6 +168,7 @@ export const buildCompleteExhibitFromManifest = async (
       console.log(`  ⚙️ [${index + 1}/${componentsToGenerate.length}] Generating: ${item.componentId} (${item.instanceId})`);
       const content = await generateComponentContent(item, manifest.topic, manifest.gradeLevel);
       console.log(`  ✅ [${index + 1}/${componentsToGenerate.length}] Completed: ${item.componentId}`);
+      onComponentComplete?.(item.instanceId, item.componentId, index + 1, componentsToGenerate.length);
       // Return with original index to maintain order
       return { ...content, _originalIndex: index };
     } catch (error) {

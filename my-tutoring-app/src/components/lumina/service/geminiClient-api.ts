@@ -188,6 +188,95 @@ export const buildCompleteExhibitFromManifest = async (
   return callAPI('buildCompleteExhibitFromManifest', { manifest, curatorBrief });
 };
 
+/**
+ * Progress callback for exhibit build streaming
+ */
+export interface BuildProgressCallback {
+  onComponentComplete?: (event: {
+    instanceId: string;
+    componentId: string;
+    index: number;
+    total: number;
+  }) => void;
+}
+
+/**
+ * Streaming version of buildCompleteExhibitFromManifest.
+ * Streams per-component completion events as each finishes on the server,
+ * then returns the final assembled exhibit.
+ */
+export const buildCompleteExhibitFromManifestStreaming = async (
+  manifest: ExhibitManifest,
+  curatorBrief: IntroBriefingData,
+  callbacks?: BuildProgressCallback
+): Promise<ExhibitData> => {
+  const response = await fetch('/api/lumina/build-stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ manifest, curatorBrief }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Build streaming failed');
+  }
+
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+
+  if (!reader) {
+    throw new Error('No response body reader available');
+  }
+
+  let buffer = '';
+  let finalExhibit: ExhibitData | null = null;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        try {
+          const event = JSON.parse(line);
+
+          switch (event.type) {
+            case 'component-complete':
+              callbacks?.onComponentComplete?.(event);
+              break;
+            case 'exhibit-complete':
+              finalExhibit = event.exhibit;
+              break;
+            case 'error':
+              throw new Error(event.error);
+          }
+        } catch (parseError) {
+          // Re-throw stream errors (from the 'error' case); only swallow JSON parse failures
+          if (!(parseError instanceof SyntaxError)) {
+            throw parseError;
+          }
+          console.error('Failed to parse build stream event:', line, parseError);
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!finalExhibit) {
+    throw new Error('No exhibit received from build stream');
+  }
+
+  return finalExhibit;
+};
+
 // ============================================
 // CURATOR BRIEF & INTRO
 // ============================================
