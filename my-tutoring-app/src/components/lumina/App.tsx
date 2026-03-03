@@ -2,7 +2,6 @@
 
 import React, { useState, useCallback } from 'react';
 import { GenerativeBackground } from './primitives/GenerativeBackground';
-import { CuratorBrief } from './primitives/CuratorBrief';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { LiveAssistant } from './service/LiveAssistant';
 import {
@@ -1556,13 +1555,8 @@ export default function App() {
                     <LessonAIBootstrap exhibitData={exhibitData} gradeLevel={gradeLevel} />
                     <div className="w-full animate-fade-in-up">
                     {/* Title Section */}
-                    <div className="mb-12 text-center space-y-4">
+                    <div className="mb-8 text-center">
                         <h2 className="text-5xl font-bold text-white tracking-tight">{exhibitData.topic}</h2>
-                        <div className="max-w-4xl mx-auto">
-                            <CuratorBrief
-                                data={exhibitData.introBriefing || exhibitData.intro}
-                            />
-                        </div>
                     </div>
 
                 {/* Manifest-Ordered Components - Renders all components in the order defined by the manifest */}

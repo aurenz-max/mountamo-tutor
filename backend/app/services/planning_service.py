@@ -49,6 +49,7 @@ from ..models.skill_progress import (
     SkillProgressResponse,
     SubjectProgressSummary,
 )
+from ..models.lesson_plan import DailySessionPlan  # PRD Daily Learning Experience
 
 logger = logging.getLogger(__name__)
 
@@ -745,6 +746,132 @@ class PlanningService:
             sessions=sessions,
             warnings=warnings,
         )
+
+    # ====================================================================
+    # Structured Session Plan — PRD Daily Learning Experience §3
+    # ====================================================================
+
+    async def get_daily_session_plan(self, student_id: int) -> "DailySessionPlan":
+        """
+        Build today's structured session plan using lesson groups and a
+        time-based capacity model.
+
+        Unlike get_daily_plan() (item-count model), this method:
+          - Fills a minute budget (default 75 min) instead of a slot count
+          - Groups related subskills into 2–5 subskill lesson blocks
+          - Returns a DailySessionPlan with 4–5 ordered LessonBlocks
+          - Caps review time at 50% of budget (PRD §3.3)
+
+        PRD §3 Planning Engine flow:
+          1. Collect due mastery retests + unlocked new subskills
+          2. Enrich with curriculum metadata (unit, skill, subskill names)
+          3. Group into LessonBlocks by domain + Bloom's taxonomy
+          4. Fill time budget in priority order
+          5. Shape session for cognitive variety
+        """
+        from ..services.lesson_group_service import LessonGroupService
+        from ..models.lesson_plan import DEFAULT_DAILY_BUDGET_MINUTES, DailySessionPlan
+
+        planning = await self.firestore.get_student_planning_fields(student_id)
+        budget_minutes = planning.get("daily_budget_minutes", DEFAULT_DAILY_BUDGET_MINUTES)
+
+        all_candidates: List[Dict[str, Any]] = []
+
+        # --- Step 1a: Due mastery retests (reviews) ---
+        try:
+            mastery_due = await self.firestore.get_mastery_retests_due(
+                student_id, datetime.now(timezone.utc).isoformat()
+            )
+            for ml in mastery_due:
+                all_candidates.append({
+                    "skill_id":          ml.get("subskill_id", ""),
+                    "subject":           ml.get("subject", ""),
+                    "type":              "review",
+                    "mastery_gate":      ml.get("current_gate", 0),
+                    "completion_factor": ml.get("completion_pct", 0.0),
+                    "days_overdue":      self._compute_days_overdue(ml),
+                })
+        except Exception as e:
+            logger.warning(f"[SESSION_PLAN] Mastery retests error: {e}")
+
+        # --- Step 1b: Unlocked new subskills (per subject) ---
+        if self.learning_paths:
+            weekly_plan = await self.get_weekly_plan(student_id)
+            for subj in weekly_plan.subjects:
+                try:
+                    unlocked = await self.learning_paths.get_unlocked_entities(
+                        student_id=student_id, entity_type="subskill", subject=subj
+                    )
+                except Exception as e:
+                    logger.warning(f"[SESSION_PLAN] Unlocked entities error for {subj}: {e}")
+                    continue
+
+                lifecycles = await self.firestore.get_all_mastery_lifecycles(
+                    student_id, subject=subj
+                )
+                lc_by_id = {lc.get("subskill_id"): lc for lc in lifecycles}
+
+                added = 0
+                for sid in unlocked:
+                    lc   = lc_by_id.get(sid)
+                    gate = lc.get("current_gate", 0) if lc else 0
+                    if gate < 4:
+                        all_candidates.append({
+                            "skill_id":     sid,
+                            "subject":      subj,
+                            "type":         "new",
+                            "mastery_gate": gate,
+                        })
+                        added += 1
+                        if added >= 20:   # cap per subject; time budget handles final selection
+                            break
+
+        # Empty state
+        if not all_candidates:
+            today = datetime.now(timezone.utc).date()
+            day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            return DailySessionPlan(
+                student_id=str(student_id),
+                date=today.isoformat(),
+                day_of_week=day_names[today.weekday()],
+                budget_minutes=budget_minutes,
+                warnings=["No skills due or available for today."],
+            )
+
+        # --- Step 2: Enrich with curriculum metadata ---
+        session_subjects = {c.get("subject", "") for c in all_candidates}
+        session_subjects.discard("")
+        curriculum_lookup = await self._build_curriculum_lookup(session_subjects)
+
+        enriched: List[Dict[str, Any]] = []
+        for c in all_candidates:
+            sid  = c.get("skill_id", "")
+            meta = curriculum_lookup.get(sid, {})
+            enriched.append({
+                **c,
+                "unit_title":           meta.get("unit_title"),
+                "skill_description":    meta.get("skill_description"),
+                "subskill_description": meta.get("subskill_description"),
+            })
+
+        # --- Step 3: Group into lesson blocks ---
+        candidate_blocks = LessonGroupService.group_subskills_into_blocks(enriched)
+
+        # --- Step 4–5: Fill budget and shape session ---
+        return LessonGroupService.build_session_plan(
+            student_id=student_id,
+            candidate_blocks=candidate_blocks,
+            budget_minutes=budget_minutes,
+        )
+
+    def _compute_days_overdue(self, ml: Dict[str, Any]) -> int:
+        """Days elapsed since a mastery lifecycle retest was due."""
+        today = datetime.now(timezone.utc).date()
+        retest_eligible = ml.get("next_retest_eligible", "")
+        try:
+            return max(0, (today - date.fromisoformat(retest_eligible[:10])).days)
+        except (ValueError, TypeError):
+            return 0
 
     # ====================================================================
     # Helpers

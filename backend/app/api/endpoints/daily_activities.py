@@ -17,6 +17,7 @@ from ...core.middleware import get_user_context
 from ...services.planning_service import PlanningService
 from ...dependencies import get_planning_service
 from ...models.planning import DailyPlanResponse
+from ...models.lesson_plan import DailySessionPlan
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -89,6 +90,39 @@ async def get_daily_activities(
     except Exception as e:
         logger.error(f"Error getting activities for student {student_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# STRUCTURED SESSION PLAN — PRD Daily Learning Experience §3
+# ============================================================================
+
+@router.get("/daily-plan/{student_id}/session", response_model=DailySessionPlan)
+async def get_daily_session_plan(
+    student_id: int,
+    user_context: dict = Depends(get_user_context),
+    service: PlanningService = Depends(get_planning_service),
+):
+    """
+    Get today's structured session plan as 4–5 lesson blocks.
+
+    Unlike /daily-plan (flat skill list), this endpoint:
+      - Fills a 75-minute time budget (configurable)
+      - Groups related subskills into Bloom's-ordered lesson blocks
+      - Returns an ordered sequence ready for the session runner
+
+    PRD §3.3 — Queue assembly with review cap (50% of budget for reviews).
+    PRD §3.4 — Session shape: interleaved subjects, front-loaded new content.
+    """
+    try:
+        logger.info(f"GET /daily-activities/daily-plan/{student_id}/session")
+        plan = await service.get_daily_session_plan(student_id)
+        return plan
+    except Exception as e:
+        logger.error(f"Error building session plan for student {student_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to build session plan: {str(e)}",
+        )
 
 
 # ============================================================================

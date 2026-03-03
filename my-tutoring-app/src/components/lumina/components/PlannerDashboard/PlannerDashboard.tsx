@@ -15,6 +15,7 @@ import type {
 
 import { SubjectCard } from './SubjectCard';
 import { SessionRow, SectionDivider, WeekProgressBar } from './SessionRow';
+import { DailyLessonPlan } from '@/components/lumina/DailyLessonPlan';
 import { SubjectProjectionCard, MonthlyWarningRow } from './MonthlyComponents';
 import { VelocityGauge, TrendSparkline, SubjectVelocityCard, getVelocityColor } from './VelocityComponents';
 import { GATE_LABELS, GATE_COLORS, GateDistributionBar, SubjectMasteryCard, UnitForecastRow } from './MasteryComponents';
@@ -42,7 +43,7 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
   const [loading, setLoading] = useState<'idle' | 'weekly' | 'daily' | 'monthly' | 'velocity' | 'mastery' | 'progress' | 'all'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
-  const [activeTab, setActiveTab] = useState<'weekly' | 'daily' | 'monthly' | 'velocity' | 'mastery' | 'progress'>('weekly');
+  const [activeTab, setActiveTab] = useState<'weekly' | 'daily' | 'session' | 'monthly' | 'velocity' | 'mastery' | 'progress'>('session');
 
   // Active practice session — when set, renders PracticeModeEnhanced instead of dashboard
   const [activeSession, setActiveSession] = useState<{ session: SessionItem; gate: number } | null>(null);
@@ -389,6 +390,16 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
           Weekly Plan {weeklyPlan && '(loaded)'}
         </button>
         <button
+          onClick={() => setActiveTab('session')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'session'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          Today&apos;s Blocks
+        </button>
+        <button
           onClick={() => setActiveTab('daily')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'daily'
@@ -679,6 +690,15 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* SESSION TAB — Today's grouped lesson blocks                       */}
+      {/* ================================================================ */}
+      {activeTab === 'session' && (
+        <div className="animate-fade-in">
+          <DailyLessonPlan studentId={studentId} />
         </div>
       )}
 

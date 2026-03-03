@@ -1,4 +1,5 @@
 import React from 'react';
+import { CuratorBrief } from '../primitives/CuratorBrief';
 import { ConceptCard } from '../primitives/ConceptCard';
 import { GenerativeTable } from '../primitives/GenerativeTable';
 import { KnowledgeCheck } from '../primitives/KnowledgeCheck';
@@ -207,8 +208,9 @@ export interface PrimitiveConfig {
  */
 export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'curator-brief': {
-    component: () => null, // Handled separately in App.tsx
+    component: CuratorBrief,
     allowMultiple: false,
+    containerClassName: 'max-w-4xl mx-auto mb-20',
   },
 
   'concept-card-grid': {

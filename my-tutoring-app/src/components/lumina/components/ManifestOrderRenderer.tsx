@@ -131,11 +131,6 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
         // Get objectives for this component
         const objectives = getObjectivesForComponent(instanceId);
 
-        // Skip curator-brief - it's rendered in the title section of App.tsx
-        if (componentId === 'curator-brief') {
-          return null;
-        }
-
         // Get the primitive configuration from registry
         const config = getPrimitive(componentId);
 
