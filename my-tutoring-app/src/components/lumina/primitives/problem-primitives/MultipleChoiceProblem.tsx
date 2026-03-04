@@ -174,10 +174,10 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
               variant="ghost"
               className={buttonClasses}
             >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between w-full min-w-0 gap-3">
+                <div className="flex items-start gap-4 min-w-0">
                   <Badge
-                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold border
+                    className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full text-sm font-bold border
                       ${isSelected || (isSubmitted && isCorrectOption)
                         ? 'bg-white text-slate-900 border-white'
                         : 'bg-black/30 text-slate-400 border-white/10'}
@@ -185,7 +185,7 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
                   >
                     {option.id}
                   </Badge>
-                  <span className="text-lg text-slate-200 font-light group-hover:text-white transition-colors">
+                  <span className="text-lg text-slate-200 font-light group-hover:text-white transition-colors whitespace-normal break-words">
                     {option.text}
                   </span>
                 </div>

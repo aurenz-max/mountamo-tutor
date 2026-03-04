@@ -408,7 +408,8 @@ class CompetencyService:
                 logger.error(f"🔍 COMPETENCY_SERVICE: Both competency database updates failed")
             
             # --- Mastery lifecycle hook: 4-gate mastery model (PRD §2) ---
-            if self.mastery_lifecycle_engine:
+            # Skip for diagnostic source — diagnostic seeds mastery in bulk at completion
+            if self.mastery_lifecycle_engine and source != "diagnostic":
                 try:
                     await self.mastery_lifecycle_engine.process_eval_result(
                         student_id=student_id,

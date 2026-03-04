@@ -33,7 +33,7 @@ class ProblemSubmission(BaseModel):
     canvas_used: bool = True
     primitive_response: Optional[Dict[str, Any]] = None  # For interactive problems
     lesson_context: Optional[LessonContext] = None  # For curriculum mapping
-    source: Optional[Literal["lesson", "practice"]] = None  # Eval source tagging (PRD 6.1)
+    source: Optional[Literal["lesson", "practice", "diagnostic"]] = None  # Eval source tagging (PRD 6.1)
 
 
 class SubmissionResult(BaseModel):

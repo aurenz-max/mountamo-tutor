@@ -2,6 +2,11 @@
 
 import React, { useState } from 'react';
 import { SequencingActivityProblemData } from '../../types';
+import {
+  usePrimitiveEvaluation,
+  type SequencingActivityMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../evaluation';
 
 interface SequencingActivityProblemProps {
   data: SequencingActivityProblemData;
@@ -14,6 +19,31 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
   });
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Destructure evaluation props (injected by KnowledgeCheck/ProblemRenderer)
+  const {
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data as any;
+
+  // Initialize evaluation hook
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<SequencingActivityMetrics>({
+    primitiveType: 'knowledge-check',
+    instanceId: instanceId || `sequencing-${data.id}-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
   const handleDragStart = (index: number) => {
     if (isSubmitted) return;
@@ -37,7 +67,42 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
   };
 
   const handleSubmit = () => {
+    if (hasSubmittedEvaluation) return;
+
     setIsSubmitted(true);
+
+    const correctlyPlaced = orderedItems.filter((item, i) => data.items[i] === item).length;
+    const totalItems = data.items.length;
+    const sequenceAccuracy = totalItems > 0 ? Math.round((correctlyPlaced / totalItems) * 100) : 0;
+    const isCorrectOrder = correctlyPlaced === totalItems;
+
+    const metrics: SequencingActivityMetrics = {
+      type: 'sequencing-activity',
+      totalItems,
+      correctlyPlaced,
+      sequenceAccuracy,
+      studentSequence: orderedItems,
+      correctSequence: data.items,
+    };
+
+    submitEvaluation(
+      isCorrectOrder,
+      sequenceAccuracy,
+      metrics,
+      {
+        studentWork: {
+          orderedItems,
+          instruction: data.instruction,
+        },
+      }
+    );
+  };
+
+  const handleReset = () => {
+    setOrderedItems([...data.items].sort(() => Math.random() - 0.5));
+    setDraggedIndex(null);
+    setIsSubmitted(false);
+    resetEvaluationAttempt();
   };
 
   const isCorrectOrder = JSON.stringify(orderedItems) === JSON.stringify(data.items);
@@ -111,26 +176,34 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
             Verify Order
           </button>
         ) : (
-          <div className="w-full animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-            <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${isCorrectOrder ? 'text-emerald-400' : 'text-slate-300'}`}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {isCorrectOrder ?
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                }
-              </svg>
-              <span>{isCorrectOrder ? 'Perfect Order!' : 'Review the Sequence'}</span>
-            </div>
-            <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-              {data.rationale}
-            </p>
-            {data.teachingNote && (
-              <div className="mt-3 pt-3 border-t border-white/5">
-                <p className="text-sm text-slate-400 italic">
-                  💡 {data.teachingNote}
-                </p>
+          <div className="w-full space-y-4">
+            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
+              <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${isCorrectOrder ? 'text-emerald-400' : 'text-slate-300'}`}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {isCorrectOrder ?
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  }
+                </svg>
+                <span>{isCorrectOrder ? 'Perfect Order!' : 'Review the Sequence'}</span>
               </div>
-            )}
+              <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
+                {data.rationale}
+              </p>
+              {data.teachingNote && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <p className="text-sm text-slate-400 italic">
+                    💡 {data.teachingNote}
+                  </p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleReset}
+              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+            >
+              Try Again
+            </button>
           </div>
         )}
       </div>

@@ -25,7 +25,8 @@ from .api.endpoints import (
     weekly_planner,
     velocity,
     mastery,
-    skill_progress)
+    skill_progress,
+    diagnostic)
 
 from .api import etl_routes
 from .core.config import settings
@@ -225,6 +226,14 @@ app.include_router(
     mastery.router,
     prefix="/api/mastery",
     tags=["mastery-lifecycle"],
+    dependencies=[Depends(get_user_context)]
+)
+
+# Diagnostic Placement Router — adaptive diagnostic assessment engine
+app.include_router(
+    diagnostic.router,
+    prefix="/api/diagnostic",
+    tags=["diagnostic"],
     dependencies=[Depends(get_user_context)]
 )
 

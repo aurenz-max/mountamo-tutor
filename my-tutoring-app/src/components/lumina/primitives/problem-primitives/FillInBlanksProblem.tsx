@@ -2,6 +2,11 @@
 
 import React, { useState } from 'react';
 import { FillInBlanksProblemData } from '../../types';
+import {
+  usePrimitiveEvaluation,
+  type FillInBlanksMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../evaluation';
 
 interface FillInBlanksProblemProps {
   data: FillInBlanksProblemData;
@@ -10,9 +15,34 @@ interface FillInBlanksProblemProps {
 export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }) => {
   const [selectedWords, setSelectedWords] = useState<{ [blankId: string]: string }>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [availableWords, setAvailableWords] = useState<string[]>(
+  const [availableWords] = useState<string[]>(
     [...data.wordBank].sort(() => Math.random() - 0.5) // Shuffle word bank
   );
+
+  // Destructure evaluation props (injected by KnowledgeCheck/ProblemRenderer)
+  const {
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data as any;
+
+  // Initialize evaluation hook
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<FillInBlanksMetrics>({
+    primitiveType: 'knowledge-check',
+    instanceId: instanceId || `fill-in-blanks-${data.id}-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
   const handleWordSelect = (blankId: string, word: string) => {
     if (isSubmitted) return;
@@ -41,11 +71,6 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
     }
   };
 
-  const handleSubmit = () => {
-    const allFilled = data.blanks.every(blank => selectedWords[blank.id]);
-    if (allFilled) setIsSubmitted(true);
-  };
-
   const checkAnswer = (blankId: string): boolean | null => {
     if (!isSubmitted) return null;
     const blank = data.blanks.find(b => b.id === blankId);
@@ -55,6 +80,59 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
     return blank.caseSensitive
       ? selectedWord === blank.correctAnswer
       : selectedWord.toLowerCase() === blank.correctAnswer.toLowerCase();
+  };
+
+  const handleSubmit = () => {
+    const allFilled = data.blanks.every(blank => selectedWords[blank.id]);
+    if (!allFilled || hasSubmittedEvaluation) return;
+
+    setIsSubmitted(true);
+
+    // Build per-blank results
+    const blankResults = data.blanks.map(blank => {
+      const selectedWord = selectedWords[blank.id] || '';
+      const isCorrect = blank.caseSensitive
+        ? selectedWord === blank.correctAnswer
+        : selectedWord.toLowerCase() === blank.correctAnswer.toLowerCase();
+      return {
+        blankId: blank.id,
+        selectedAnswer: selectedWord,
+        correctAnswer: blank.correctAnswer,
+        isCorrect,
+      };
+    });
+
+    const correctBlanks = blankResults.filter(r => r.isCorrect).length;
+    const totalBlanks = data.blanks.length;
+    const accuracy = totalBlanks > 0 ? Math.round((correctBlanks / totalBlanks) * 100) : 0;
+    const allCorrect = correctBlanks === totalBlanks;
+
+    const metrics: FillInBlanksMetrics = {
+      type: 'fill-in-blanks',
+      totalBlanks,
+      correctBlanks,
+      incorrectBlanks: totalBlanks - correctBlanks,
+      accuracy,
+      blankResults,
+    };
+
+    submitEvaluation(
+      allCorrect,
+      accuracy,
+      metrics,
+      {
+        studentWork: {
+          selectedWords,
+          textWithBlanks: data.textWithBlanks,
+        },
+      }
+    );
+  };
+
+  const handleReset = () => {
+    setSelectedWords({});
+    setIsSubmitted(false);
+    resetEvaluationAttempt();
   };
 
   const isWordUsed = (word: string): boolean => {
@@ -208,26 +286,34 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
             Check Answers
           </button>
         ) : (
-          <div className="w-full animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-            <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${allCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {allCorrect ?
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                }
-              </svg>
-              <span>{allCorrect ? 'Perfect!' : 'Review Your Answers'}</span>
-            </div>
-            <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-              {data.rationale}
-            </p>
-            {data.teachingNote && (
-              <div className="mt-3 pt-3 border-t border-white/5">
-                <p className="text-sm text-slate-400 italic">
-                  💡 {data.teachingNote}
-                </p>
+          <div className="w-full space-y-4">
+            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
+              <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${allCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {allCorrect ?
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  }
+                </svg>
+                <span>{allCorrect ? 'Perfect!' : 'Review Your Answers'}</span>
               </div>
-            )}
+              <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
+                {data.rationale}
+              </p>
+              {data.teachingNote && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <p className="text-sm text-slate-400 italic">
+                    💡 {data.teachingNote}
+                  </p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleReset}
+              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+            >
+              Try Again
+            </button>
           </div>
         )}
       </div>

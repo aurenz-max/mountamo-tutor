@@ -1156,6 +1156,88 @@ class FirestoreService:
             }
 
     # ============================================================================
+    # DIAGNOSTIC SESSION METHODS
+    # ============================================================================
+
+    async def save_diagnostic_session(
+        self,
+        session_id: str,
+        data: Dict[str, Any],
+    ) -> None:
+        """Save or update a diagnostic session document."""
+        try:
+            doc_ref = self.client.collection('diagnostic_sessions').document(session_id)
+            firestore_data = self._prepare_firestore_data(data)
+            doc_ref.set(firestore_data, merge=True)
+            logger.info(f"Saved diagnostic session {session_id}")
+        except Exception as e:
+            logger.error(f"Error saving diagnostic session {session_id}: {e}")
+            raise
+
+    async def get_diagnostic_session(
+        self,
+        session_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Get a diagnostic session by ID."""
+        try:
+            doc_ref = self.client.collection('diagnostic_sessions').document(session_id)
+            doc = doc_ref.get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error getting diagnostic session {session_id}: {e}")
+            return None
+
+    async def get_student_diagnostic_sessions(
+        self,
+        student_id: int,
+    ) -> List[Dict[str, Any]]:
+        """Get all diagnostic sessions for a student."""
+        try:
+            query = (
+                self.client.collection('diagnostic_sessions')
+                .where('student_id', '==', student_id)
+            )
+            return [doc.to_dict() for doc in query.stream()]
+        except Exception as e:
+            logger.error(f"Error getting diagnostic sessions for student {student_id}: {e}")
+            return []
+
+    async def batch_write_mastery_lifecycles(
+        self,
+        student_id: int,
+        lifecycles: List[Dict[str, Any]],
+    ) -> bool:
+        """Batch write mastery lifecycle documents for a student.
+
+        Used by diagnostic seeding to write many lifecycle docs at once.
+        Chunks at 400 per batch (Firestore limit is 500).
+        """
+        try:
+            await self._ensure_student_document(student_id)
+            subcol = self._mastery_lifecycle_subcollection(student_id)
+
+            for i in range(0, len(lifecycles), 400):
+                chunk = lifecycles[i:i + 400]
+                batch = self.client.batch()
+                for lc in chunk:
+                    subskill_id = lc.get("subskill_id", "")
+                    if not subskill_id:
+                        continue
+                    doc_ref = subcol.document(subskill_id)
+                    firestore_data = self._prepare_firestore_data(lc)
+                    batch.set(doc_ref, firestore_data, merge=True)
+                batch.commit()
+
+            logger.info(
+                f"Batch wrote {len(lifecycles)} mastery lifecycles "
+                f"for student {student_id}"
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error in batch write mastery lifecycles: {e}")
+            return False
+
+    # ============================================================================
     # STUDENT PLANNING FIELDS (capacity, development patterns, aggregate metrics)
     # ============================================================================
 

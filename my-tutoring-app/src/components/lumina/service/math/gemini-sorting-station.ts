@@ -349,26 +349,24 @@ Return the complete sorting station configuration.
       }
     }
 
-    // Validate two-attributes challenges: strip "size" from rules (not visually
-    // distinguishable via emoji) and ensure the rule has at least 2 keys.
+    // Validate two-attributes challenges: ensure the rule has at least 2 keys.
+    // Note: we no longer strip "size" from rules because language/semantic challenges
+    // (e.g. Parts of Speech) legitimately use "size" as a semantic attribute.
+    // The prompt already discourages visual-size usage for emoji-based challenges.
     if (challenge.type === 'two-attributes' && Array.isArray(challenge.categories)) {
       for (const cat of challenge.categories) {
         if (cat.rule && typeof cat.rule === 'object') {
-          // Remove size — emojis can't show it
-          delete cat.rule.size;
-          // If rule now has fewer than 2 keys, fall back to color+type
           const keys = Object.keys(cat.rule);
           if (keys.length < 2) {
             // Derive a sensible two-key rule from the objects' attributes
             const attrKeys = new Set<string>();
             for (const obj of challenge.objects) {
               for (const k of Object.keys(obj.attributes)) {
-                if (k !== 'size') attrKeys.add(k);
+                attrKeys.add(k);
               }
             }
             const available = Array.from(attrKeys);
-            if (available.length >= 2 && keys.length < 2) {
-              // Pick first two non-size attribute keys and use the first object's values
+            if (available.length >= 2) {
               const first = challenge.objects[0];
               if (first) {
                 cat.rule = {};

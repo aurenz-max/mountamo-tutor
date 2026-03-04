@@ -88,7 +88,7 @@ const flatChallengeSchema: Schema = {
     },
     timeLimit: {
       type: Type.NUMBER,
-      description: "Seconds allowed for this challenge (3-15)",
+      description: "Seconds allowed for this challenge (5-20). Younger learners need more time to read and respond",
     },
     explanation: {
       type: Type.STRING,
@@ -157,11 +157,11 @@ const fastFactSchema: Schema = {
     },
     defaultTimeLimit: {
       type: Type.NUMBER,
-      description: "Default seconds per challenge when challenge.timeLimit is absent (3-15)",
+      description: "Default seconds per challenge when challenge.timeLimit is absent (6-20). Scale up for younger learners",
     },
     targetResponseTime: {
       type: Type.NUMBER,
-      description: "Seconds — answers within this count as 'fast' (2-10)",
+      description: "Seconds — answers within this count as 'fast' (4-12). Scale up for younger learners",
     },
     showStreakCounter: {
       type: Type.BOOLEAN,
@@ -250,7 +250,7 @@ function reconstructChallenge(flat: any, index: number): FastFactChallenge {
       : undefined,
     responseMode: 'choice',
     options,
-    timeLimit: typeof flat.timeLimit === 'number' ? Math.max(3, Math.min(15, flat.timeLimit)) : undefined,
+    timeLimit: typeof flat.timeLimit === 'number' ? Math.max(5, Math.min(20, flat.timeLimit)) : undefined,
     explanation: flat.explanation || undefined,
     difficulty: ['easy', 'medium', 'hard'].includes(flat.difficulty) ? flat.difficulty : undefined,
   };
@@ -308,9 +308,9 @@ function validateFastFactData(raw: any): FastFactData {
     subject: raw.subject || 'General',
     challenges,
     defaultTimeLimit: typeof raw.defaultTimeLimit === 'number'
-      ? clamp(raw.defaultTimeLimit, 3, 15) : 5,
+      ? clamp(raw.defaultTimeLimit, 6, 20) : 10,
     targetResponseTime: typeof raw.targetResponseTime === 'number'
-      ? clamp(raw.targetResponseTime, 2, 10) : 3,
+      ? clamp(raw.targetResponseTime, 4, 12) : 6,
     phaseConfig,
     showStreakCounter: raw.showStreakCounter !== false,
     showAccuracy: raw.showAccuracy !== false,
@@ -366,9 +366,11 @@ Create a Fast Fact fluency drill for "${topic}". Infer the subject area from the
 - Use visualType: "none" when no visual is needed.
 
 ## Time & Difficulty:
-- Adjust difficulty and timeLimit for the grade level.
-- Easy challenges: 5-8 seconds. Medium: 4-6 seconds. Hard: 3-5 seconds.
-- targetResponseTime should be 3s for speed drills, 5-8s for harder recall tasks.
+- Adjust difficulty and timeLimit for the grade level. Young learners need MORE time to read, process, and respond.
+- For K-2 / Preschool / Kindergarten: Easy 12-15s, Medium 10-12s, Hard 8-10s. defaultTimeLimit 12. targetResponseTime 8.
+- For grades 3-5 / Elementary: Easy 10-12s, Medium 8-10s, Hard 6-8s. defaultTimeLimit 10. targetResponseTime 6.
+- For grades 6-8 / Middle School: Easy 8-10s, Medium 6-8s, Hard 5-7s. defaultTimeLimit 8. targetResponseTime 5.
+- For grades 9+ / High School and above: Easy 6-8s, Medium 5-7s, Hard 4-6s. defaultTimeLimit 6. targetResponseTime 4.
 - defaultTimeLimit is the fallback when a challenge has no specific timeLimit.
 
 ## Critical Rules:

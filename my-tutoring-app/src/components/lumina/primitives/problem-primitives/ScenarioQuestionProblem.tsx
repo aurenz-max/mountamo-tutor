@@ -2,6 +2,11 @@
 
 import React, { useState } from 'react';
 import { ScenarioQuestionProblemData } from '../../types';
+import {
+  usePrimitiveEvaluation,
+  type ShortAnswerMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../evaluation';
 
 interface ScenarioQuestionProblemProps {
   data: ScenarioQuestionProblemData;
@@ -11,8 +16,64 @@ export const ScenarioQuestionProblem: React.FC<ScenarioQuestionProblemProps> = (
   const [userAnswer, setUserAnswer] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Destructure evaluation props (injected by KnowledgeCheck/ProblemRenderer)
+  const {
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data as any;
+
+  // Initialize evaluation hook — uses short-answer metrics since it's a free-form text response
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<ShortAnswerMetrics>({
+    primitiveType: 'knowledge-check',
+    instanceId: instanceId || `scenario-${data.id}-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
   const handleSubmit = () => {
-    if (userAnswer.trim()) setIsSubmitted(true);
+    if (!userAnswer.trim() || hasSubmittedEvaluation) return;
+
+    setIsSubmitted(true);
+
+    const wordCount = userAnswer.trim().split(/\s+/).length;
+
+    // Scenario questions are submitted for AI evaluation on the backend
+    const metrics: ShortAnswerMetrics = {
+      type: 'short-answer',
+      studentResponse: userAnswer.trim(),
+      wordCount,
+    };
+
+    submitEvaluation(
+      true, // Submitted successfully (AI scores on backend)
+      50,   // Neutral score — backend AI will override
+      metrics,
+      {
+        studentWork: {
+          answer: userAnswer.trim(),
+          scenario: data.scenario,
+          question: data.scenarioQuestion,
+          modelAnswer: data.scenarioAnswer,
+        },
+      }
+    );
+  };
+
+  const handleReset = () => {
+    setUserAnswer('');
+    setIsSubmitted(false);
+    resetEvaluationAttempt();
   };
 
   return (
@@ -53,9 +114,9 @@ export const ScenarioQuestionProblem: React.FC<ScenarioQuestionProblemProps> = (
             Submit Answer
           </button>
         ) : (
-          <div className="w-full animate-fade-in space-y-6">
+          <div className="w-full space-y-6">
             {/* User's Answer */}
-            <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
+            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
               <div className="flex items-center gap-3 mb-3 font-bold uppercase tracking-wider text-blue-400 text-sm">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
@@ -92,6 +153,13 @@ export const ScenarioQuestionProblem: React.FC<ScenarioQuestionProblemProps> = (
                 </p>
               </div>
             )}
+
+            <button
+              onClick={handleReset}
+              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+            >
+              Try Again
+            </button>
           </div>
         )}
       </div>

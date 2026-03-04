@@ -54,6 +54,15 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
   // Lesson completion state
   const [lessonComplete, setLessonComplete] = useState(false);
 
+  // Submit evaluation via useEffect so all state (segmentCorrect, segmentAttempts, etc.)
+  // is current — avoids stale closure when called from setTimeout in handleAnswerSubmit
+  useEffect(() => {
+    if (lessonComplete && !hasSubmittedEvaluation) {
+      submitFinalEvaluation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonComplete]);
+
   const currentSegment = data.segments[currentIndex];
 
   // Refs to prevent duplicate AI triggers
@@ -292,7 +301,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
           { silent: true }
         );
       }
-      submitFinalEvaluation();
       setLessonComplete(true);
     } else {
       const nextIndex = currentSegmentIndex + 1;

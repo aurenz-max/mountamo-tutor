@@ -9,6 +9,9 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SentenceBuilderMetrics } from '../../../evaluation/types';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -84,6 +87,20 @@ const PHASE_LABELS: Record<LearningPhase, { label: string; description: string }
   apply: { label: 'Apply', description: 'Create your own sentence' },
 };
 
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  explore:  { label: 'Explore',  icon: '\uD83D\uDD0D', accentColor: 'blue' },
+  practice: { label: 'Practice', icon: '\u270F\uFE0F',  accentColor: 'amber' },
+  apply:    { label: 'Apply',    icon: '\uD83D\uDE80', accentColor: 'emerald' },
+};
+
+// ============================================================================
+// Unified challenge type — one entry per phase × original challenge
+// ============================================================================
+
+type UnifiedChallenge = SentenceBuilderData['challenges'][number] & {
+  phase: LearningPhase;
+};
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -103,12 +120,60 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     onEvaluationSubmit,
   } = data;
 
-  // Phase and challenge state
-  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [completedChallenges, setCompletedChallenges] = useState<Set<string>>(new Set());
+  // ── Build unified challenges array (explore + practice + apply) ──
+  const unifiedChallenges = useMemo((): UnifiedChallenge[] => [
+    ...challenges.map((ch) => ({ ...ch, id: `explore-${ch.id}`, phase: 'explore' as LearningPhase })),
+    ...challenges.map((ch) => ({ ...ch, id: `practice-${ch.id}`, phase: 'practice' as LearningPhase })),
+    ...challenges.map((ch) => ({ ...ch, id: `apply-${ch.id}`, phase: 'apply' as LearningPhase })),
+  ], [challenges]);
 
-  // Tile placement state
+  // ── Challenge progress (replaces manual index/attempts/results state) ──
+  const {
+    currentIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges: unifiedChallenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
+  // ── Phase results (for PhaseSummaryPanel) ──
+  const phaseResults = usePhaseResults({
+    challenges: unifiedChallenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.phase,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
+  // ── Derived state ──
+  const currentChallenge = unifiedChallenges[currentIndex] ?? null;
+  const currentPhase: LearningPhase = currentChallenge?.phase ?? 'explore';
+  const withinPhaseIndex = challenges.length > 0 ? currentIndex % challenges.length : 0;
+
+  const phaseCompletions = useMemo(() => ({
+    explore: challenges.length > 0 && currentIndex >= challenges.length,
+    practice: challenges.length > 0 && currentIndex >= challenges.length * 2,
+    apply: allChallengesComplete,
+  }), [currentIndex, challenges.length, allChallengesComplete]);
+
+  // Explore phase: which tile index to hide (cycles with within-phase index)
+  const exploreMissingIndex = useMemo(() => {
+    if (currentPhase !== 'explore' || !currentChallenge) return 0;
+    const arrangementLength = currentChallenge.validArrangements[0]?.length || 3;
+    return withinPhaseIndex % arrangementLength;
+  }, [currentPhase, currentChallenge, withinPhaseIndex]);
+
+  // Current challenge already completed?
+  const currentChallengeCompleted = currentChallenge
+    ? challengeResults.some(r => r.challengeId === currentChallenge.id && r.correct)
+    : false;
+
+  // ── Tile placement state ──
   const [placedTileIds, setPlacedTileIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string>('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
@@ -116,22 +181,15 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
   const [isCelebrating, setIsCelebrating] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
-  // Explore phase state - which tile to hide
-  const [exploreMissingIndex, setExploreMissingIndex] = useState(0);
-
-  // Tracking metrics
-  const [attemptsPerChallenge, setAttemptsPerChallenge] = useState<Record<string, number>>({});
+  // Hints tracking (still per-challenge, keyed by unified ID)
   const [hintsUsedPerChallenge, setHintsUsedPerChallenge] = useState<Record<string, number>>({});
-  const [phaseCompletions, setPhaseCompletions] = useState({
-    explore: false,
-    practice: false,
-    apply: false,
-  });
 
-  // Evaluation hook
+  // ── Evaluation hook ──
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<SentenceBuilderMetrics>({
     primitiveType: 'sentence-builder',
     instanceId: instanceId || `sentence-builder-${Date.now()}`,
@@ -142,10 +200,14 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // Current challenge
-  const currentChallenge = challenges[currentChallengeIndex];
+  // ── Local overall score (fallback for PhaseSummaryPanel) ──
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || unifiedChallenges.length === 0) return 0;
+    const correct = challengeResults.filter(r => r.correct).length;
+    return Math.round((correct / unifiedChallenges.length) * 100);
+  }, [allChallengesComplete, unifiedChallenges, challengeResults]);
 
-  // For explore phase: build the correct arrangement and hide one tile
+  // ── Explore phase: correct arrangement for current challenge ──
   const exploreCorrectArrangement = useMemo(() => {
     if (!currentChallenge || currentChallenge.validArrangements.length === 0) return [];
     return currentChallenge.validArrangements[0];
@@ -155,19 +217,15 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
   const availableTiles = useMemo(() => {
     if (!currentChallenge) return [];
     if (currentPhase === 'explore') {
-      // In explore mode, show tiles that are NOT part of the "already placed" correct arrangement
-      // except the missing one -- the missing tile goes in the bank
       const missingTileId = exploreCorrectArrangement[exploreMissingIndex];
       return currentChallenge.tiles.filter(t => t.id === missingTileId);
     }
-    // In practice/apply, filter out tiles that are already placed
     return currentChallenge.tiles.filter(t => !placedTileIds.includes(t.id));
   }, [currentChallenge, currentPhase, placedTileIds, exploreCorrectArrangement, exploreMissingIndex]);
 
   // Shuffled tiles for the word bank
   const shuffledBankTiles = useMemo(() => {
     if (currentPhase === 'explore') return availableTiles;
-    // Shuffle available tiles for practice/apply
     const shuffled = [...availableTiles];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -175,15 +233,14 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     }
     return shuffled;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPhase, currentChallengeIndex, availableTiles.length]);
+  }, [currentPhase, currentIndex, availableTiles.length]);
 
   // Frame slots for explore phase
   const exploreFrameSlots = useMemo(() => {
     if (currentPhase !== 'explore' || !currentChallenge) return [];
     return exploreCorrectArrangement.map((tileId, index) => {
       if (index === exploreMissingIndex) {
-        // This is the missing slot
-        const placedId = placedTileIds[0]; // Only one tile can be placed in explore
+        const placedId = placedTileIds[0];
         if (placedId) {
           const tile = currentChallenge.tiles.find(t => t.id === placedId);
           return { isEmpty: false, tile, isTarget: true };
@@ -195,12 +252,11 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     });
   }, [currentPhase, currentChallenge, exploreCorrectArrangement, exploreMissingIndex, placedTileIds]);
 
-  // Add tile to sentence frame
+  // ── Handlers ──
+
   const handleAddTile = useCallback((tileId: string) => {
     if (hasSubmittedEvaluation) return;
-
     if (currentPhase === 'explore') {
-      // In explore mode, only one tile can be placed
       setPlacedTileIds([tileId]);
     } else {
       setPlacedTileIds(prev => [...prev, tileId]);
@@ -209,7 +265,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     setFeedbackType('');
   }, [currentPhase, hasSubmittedEvaluation]);
 
-  // Remove tile from sentence frame
   const handleRemoveTile = useCallback((tileId: string) => {
     if (hasSubmittedEvaluation) return;
     setPlacedTileIds(prev => prev.filter(id => id !== tileId));
@@ -217,31 +272,23 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     setFeedbackType('');
   }, [hasSubmittedEvaluation]);
 
-  // Clear all placed tiles
   const handleClearAll = useCallback(() => {
     setPlacedTileIds([]);
     setFeedback('');
     setFeedbackType('');
   }, []);
 
-  // Check the answer
   const handleCheck = useCallback(() => {
     if (!currentChallenge) return;
 
-    const challengeId = currentChallenge.id;
-    setAttemptsPerChallenge(prev => ({
-      ...prev,
-      [challengeId]: (prev[challengeId] || 0) + 1,
-    }));
+    incrementAttempts();
 
     let isCorrect = false;
 
     if (currentPhase === 'explore') {
-      // In explore, check if the placed tile matches the missing tile
       const missingTileId = exploreCorrectArrangement[exploreMissingIndex];
       isCorrect = placedTileIds.length === 1 && placedTileIds[0] === missingTileId;
     } else {
-      // In practice/apply, check against valid arrangements
       isCorrect = currentChallenge.validArrangements.some(
         arrangement =>
           arrangement.length === placedTileIds.length &&
@@ -255,17 +302,20 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
       setIsCelebrating(true);
       setTimeout(() => setIsCelebrating(false), 1500);
 
-      // Mark challenge as completed
-      setCompletedChallenges(prev => new Set(Array.from(prev).concat(challengeId)));
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts: currentAttempts + 1,
+        hintsUsed: hintsUsedPerChallenge[currentChallenge.id] || 0,
+      });
     } else {
       setFeedback('Not quite right. Try rearranging the tiles!');
       setFeedbackType('error');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
     }
-  }, [currentChallenge, currentPhase, placedTileIds, exploreCorrectArrangement, exploreMissingIndex]);
+  }, [currentChallenge, currentPhase, placedTileIds, exploreCorrectArrangement, exploreMissingIndex, incrementAttempts, recordResult, currentAttempts, hintsUsedPerChallenge]);
 
-  // Use hint
   const handleHint = useCallback(() => {
     if (!currentChallenge) return;
     setShowHint(true);
@@ -275,72 +325,32 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     }));
   }, [currentChallenge]);
 
-  // Move to next challenge or phase
-  const handleNext = useCallback(() => {
-    setPlacedTileIds([]);
-    setFeedback('');
-    setFeedbackType('');
-    setShowHint(false);
-    setIsShaking(false);
-    setIsCelebrating(false);
-
-    if (currentPhase === 'explore') {
-      // In explore, we cycle through challenges showing different missing tiles
-      if (currentChallengeIndex < challenges.length - 1) {
-        setCurrentChallengeIndex(prev => prev + 1);
-        setExploreMissingIndex(prev => (prev + 1) % Math.max(1, challenges[currentChallengeIndex + 1]?.validArrangements[0]?.length || 3));
-      } else {
-        // Move to practice phase
-        setPhaseCompletions(prev => ({ ...prev, explore: true }));
-        setCurrentPhase('practice');
-        setCurrentChallengeIndex(0);
-      }
-    } else if (currentPhase === 'practice') {
-      if (currentChallengeIndex < challenges.length - 1) {
-        setCurrentChallengeIndex(prev => prev + 1);
-      } else {
-        // Move to apply phase
-        setPhaseCompletions(prev => ({ ...prev, practice: true }));
-        setCurrentPhase('apply');
-        setCurrentChallengeIndex(0);
-      }
-    } else {
-      // Apply phase - last challenge
-      if (currentChallengeIndex < challenges.length - 1) {
-        setCurrentChallengeIndex(prev => prev + 1);
-      } else {
-        // All done - submit evaluation
-        setPhaseCompletions(prev => ({ ...prev, apply: true }));
-        submitFinalEvaluation();
-      }
-    }
-  }, [currentPhase, currentChallengeIndex, challenges]);
-
   // Submit final evaluation
   const submitFinalEvaluation = useCallback(() => {
     if (hasSubmittedEvaluation) return;
 
-    const totalAttempts = Object.values(attemptsPerChallenge).reduce((sum, v) => sum + v, 0);
-    const completedCount = completedChallenges.size;
-    const accuracy = challenges.length > 0 ? (completedCount / challenges.length) * 100 : 0;
+    const totalAttempts = challengeResults.reduce((sum, r) => sum + r.attempts, 0);
+    const completedCount = challengeResults.filter(r => r.correct).length;
+    const accuracy = unifiedChallenges.length > 0 ? (completedCount / unifiedChallenges.length) * 100 : 0;
     const score = Math.round(Math.max(0, Math.min(100, accuracy)));
+    const totalHintsUsed = Object.values(hintsUsedPerChallenge).reduce((s, v) => s + v, 0);
 
     const metrics: SentenceBuilderMetrics = {
       type: 'sentence-builder',
       sentenceType,
       gradeLevel: data.gradeLevel || '2',
-      totalChallenges: challenges.length,
+      totalChallenges: unifiedChallenges.length,
       challengesCompleted: completedCount,
-      explorePhaseCompleted: phaseCompletions.explore,
-      practicePhaseCompleted: phaseCompletions.practice,
+      explorePhaseCompleted: true,
+      practicePhaseCompleted: true,
       applyPhaseCompleted: true,
       totalAttempts,
-      totalHintsUsed: challenges.reduce((sum, ch) => sum + (hintsUsedPerChallenge[ch.id] || 0), 0),
-      averageAttemptsPerChallenge: challenges.length > 0 ? totalAttempts / challenges.length : 0,
-      challengeResults: challenges.map(ch => ({
+      totalHintsUsed,
+      averageAttemptsPerChallenge: unifiedChallenges.length > 0 ? totalAttempts / unifiedChallenges.length : 0,
+      challengeResults: unifiedChallenges.map(ch => ({
         challengeId: ch.id,
-        completed: completedChallenges.has(ch.id),
-        attempts: attemptsPerChallenge[ch.id] || 0,
+        completed: challengeResults.some(r => r.challengeId === ch.id && r.correct),
+        attempts: challengeResults.find(r => r.challengeId === ch.id)?.attempts || 0,
         hintsUsed: hintsUsedPerChallenge[ch.id] || 0,
       })),
       accuracy: Math.round(accuracy),
@@ -352,27 +362,40 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
       metrics,
       {
         placedTileIds,
-        completedChallenges: Array.from(completedChallenges),
-        phaseCompletions,
+        phaseCompletions: { explore: true, practice: true, apply: true },
       }
     );
   }, [
     hasSubmittedEvaluation,
-    attemptsPerChallenge,
-    challenges,
-    completedChallenges,
+    challengeResults,
+    unifiedChallenges,
     sentenceType,
-    phaseCompletions,
+    data.gradeLevel,
+    hintsUsedPerChallenge,
     placedTileIds,
     submitEvaluation,
   ]);
 
-  // Determine if current challenge is completed
-  const currentChallengeCompleted = currentChallenge
-    ? completedChallenges.has(currentChallenge.id)
-    : false;
+  // Move to next challenge or finish
+  const handleNext = useCallback(() => {
+    setPlacedTileIds([]);
+    setFeedback('');
+    setFeedbackType('');
+    setShowHint(false);
+    setIsShaking(false);
+    setIsCelebrating(false);
 
-  // Render a tile
+    if (!advanceProgress()) {
+      // All challenges done — submit evaluation
+      submitFinalEvaluation();
+      return;
+    }
+    // advanceProgress() already incremented index and reset attempts.
+    // Domain-specific state already cleared above.
+  }, [advanceProgress, submitFinalEvaluation]);
+
+  // ── Render helpers ──
+
   const renderTile = (
     tile: { id: string; text: string; role: TileRole },
     onClick: () => void,
@@ -396,7 +419,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     );
   };
 
-  // Phase progress indicator
   const renderPhaseProgress = () => {
     const phases: LearningPhase[] = ['explore', 'practice', 'apply'];
     return (
@@ -438,7 +460,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     );
   };
 
-  // Render role legend
   const renderRoleLegend = () => {
     const roles: TileRole[] = ['subject', 'predicate', 'object', 'modifier', 'conjunction', 'punctuation'];
     const usedRoles = new Set(currentChallenge?.tiles.map(t => t.role) || []);
@@ -459,10 +480,8 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     );
   };
 
-  // Render the sentence frame (where tiles are placed)
   const renderSentenceFrame = () => {
     if (currentPhase === 'explore') {
-      // Explore mode: show the correct arrangement with one missing slot
       return (
         <div
           className={`
@@ -473,7 +492,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
         >
           {exploreFrameSlots.map((slot, index) => {
             if (slot.isEmpty) {
-              // This is the missing slot - show placeholder or placed tile
               return (
                 <div
                   key={`slot-${index}`}
@@ -484,7 +502,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
               );
             }
             if (slot.isTarget && slot.tile) {
-              // Placed tile in the missing slot
               return renderTile(
                 slot.tile as { id: string; text: string; role: TileRole },
                 () => handleRemoveTile(slot.tile!.id),
@@ -492,7 +509,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
               );
             }
             if (slot.tile) {
-              // Pre-filled tile (not removable)
               return (
                 <div
                   key={slot.tile.id}
@@ -508,7 +524,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
       );
     }
 
-    // Practice/Apply mode: show placed tiles and empty slots
     const totalSlots = currentChallenge
       ? currentChallenge.validArrangements[0]?.length || currentChallenge.tiles.length
       : 0;
@@ -543,7 +558,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     );
   };
 
-  // Render the word bank (tiles to pick from)
   const renderWordBank = () => {
     const tiles = currentPhase === 'explore' ? availableTiles : shuffledBankTiles;
     if (tiles.length === 0 && currentPhase !== 'explore') {
@@ -567,7 +581,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     );
   };
 
-  // Render feedback banner
   const renderFeedback = () => {
     if (!feedback) return null;
     return (
@@ -587,6 +600,8 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     );
   };
 
+  // ── Early return ──
+
   if (!currentChallenge) {
     return (
       <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
@@ -596,6 +611,8 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
       </Card>
     );
   }
+
+  // ── Main render ──
 
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
@@ -631,10 +648,10 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
         {/* Phase Progress */}
         {renderPhaseProgress()}
 
-        {/* Challenge Counter */}
+        {/* Challenge Counter (within current phase) */}
         <div className="flex items-center justify-between text-sm">
           <span className="text-slate-400">
-            Challenge {currentChallengeIndex + 1} of {challenges.length}
+            Challenge {withinPhaseIndex + 1} of {challenges.length}
           </span>
           {currentChallenge.hint && (
             <Button
@@ -712,7 +729,7 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
               onClick={handleNext}
               className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 ml-auto"
             >
-              {currentPhase === 'apply' && currentChallengeIndex === challenges.length - 1
+              {currentPhase === 'apply' && withinPhaseIndex === challenges.length - 1
                 ? hasSubmittedEvaluation
                   ? 'Complete!'
                   : 'Finish'
@@ -721,22 +738,16 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
           )}
         </div>
 
-        {/* Final Results */}
-        {hasSubmittedEvaluation && (
-          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center space-y-2">
-            <p className="text-emerald-300 font-semibold text-lg">Session Complete!</p>
-            <p className="text-slate-400 text-sm">
-              You completed {completedChallenges.size} challenges across all three phases.
-            </p>
-            <div className="flex justify-center gap-4 text-xs text-slate-500">
-              <span>
-                Attempts: {Object.values(attemptsPerChallenge).reduce((s, v) => s + v, 0)}
-              </span>
-              <span>
-                Hints: {Object.values(hintsUsedPerChallenge).reduce((s, v) => s + v, 0)}
-              </span>
-            </div>
-          </div>
+        {/* Phase Summary Panel (replaces manual "Session Complete" UI) */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="Session Complete!"
+            celebrationMessage={`You completed all ${unifiedChallenges.length} challenges across three phases!`}
+            className="mt-4"
+          />
         )}
       </CardContent>
     </Card>

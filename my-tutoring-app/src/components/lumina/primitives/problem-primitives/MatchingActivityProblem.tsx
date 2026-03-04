@@ -1,16 +1,58 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MatchingActivityProblemData } from '../../types';
+import {
+  usePrimitiveEvaluation,
+  type MatchingActivityMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../evaluation';
+
+/** Fisher-Yates shuffle (returns new array) */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 interface MatchingActivityProblemProps {
   data: MatchingActivityProblemData;
 }
 
 export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = ({ data }) => {
+  const shuffledLeftItems = useMemo(() => shuffle(data.leftItems), [data.leftItems]);
+  const shuffledRightItems = useMemo(() => shuffle(data.rightItems), [data.rightItems]);
   const [matches, setMatches] = useState<{ [leftId: string]: string[] }>({});
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Destructure evaluation props (injected by KnowledgeCheck/ProblemRenderer)
+  const {
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data as any;
+
+  // Initialize evaluation hook
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<MatchingActivityMetrics>({
+    primitiveType: 'knowledge-check',
+    instanceId: instanceId || `matching-${data.id}-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
   const handleLeftClick = (leftId: string) => {
     if (isSubmitted) return;
@@ -33,10 +75,6 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
     });
   };
 
-  const handleSubmit = () => {
-    if (Object.keys(matches).length > 0) setIsSubmitted(true);
-  };
-
   const checkMatch = (leftId: string): boolean | null => {
     if (!isSubmitted) return null;
     const correctMapping = data.mappings.find(m => m.leftId === leftId);
@@ -49,6 +87,61 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
       userRightIds.length === correctRightIds.length &&
       userRightIds.every(id => correctRightIds.includes(id))
     );
+  };
+
+  const handleSubmit = () => {
+    if (Object.keys(matches).length === 0 || hasSubmittedEvaluation) return;
+
+    setIsSubmitted(true);
+
+    // Build per-pair match results
+    const matchResults = data.mappings.map(mapping => {
+      const userRightIds = matches[mapping.leftId] || [];
+      const isCorrect =
+        userRightIds.length === mapping.rightIds.length &&
+        userRightIds.every(id => mapping.rightIds.includes(id));
+      return {
+        itemId: mapping.leftId,
+        selectedMatchId: userRightIds.join(','),
+        correctMatchId: mapping.rightIds.join(','),
+        isCorrect,
+      };
+    });
+
+    const correctPairs = matchResults.filter(r => r.isCorrect).length;
+    const totalPairs = data.mappings.length;
+    const accuracy = totalPairs > 0 ? Math.round((correctPairs / totalPairs) * 100) : 0;
+    const allCorrect = correctPairs === totalPairs;
+
+    const metrics: MatchingActivityMetrics = {
+      type: 'matching-activity',
+      totalPairs,
+      correctPairs,
+      incorrectPairs: totalPairs - correctPairs,
+      accuracy,
+      matchResults,
+    };
+
+    submitEvaluation(
+      allCorrect,
+      accuracy,
+      metrics,
+      {
+        studentWork: {
+          matches,
+          prompt: data.prompt,
+          leftItems: data.leftItems,
+          rightItems: data.rightItems,
+        },
+      }
+    );
+  };
+
+  const handleReset = () => {
+    setMatches({});
+    setSelectedLeft(null);
+    setIsSubmitted(false);
+    resetEvaluationAttempt();
   };
 
   const isRightMatched = (rightId: string): boolean => {
@@ -72,7 +165,7 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Left Column */}
         <div className="space-y-3">
-          {data.leftItems.map((item) => {
+          {shuffledLeftItems.map((item) => {
             const isSelected = selectedLeft === item.id;
             const isCorrect = checkMatch(item.id);
             const hasMatches = (matches[item.id] || []).length > 0;
@@ -117,7 +210,7 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
 
         {/* Right Column */}
         <div className="space-y-3">
-          {data.rightItems.map((item) => {
+          {shuffledRightItems.map((item) => {
             const isMatchedToSelected = selectedLeft && (matches[selectedLeft] || []).includes(item.id);
             const isMatched = isRightMatched(item.id);
 
@@ -157,26 +250,34 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
             Verify Matches
           </button>
         ) : (
-          <div className="w-full animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-            <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${allCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {allCorrect ?
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                }
-              </svg>
-              <span>{allCorrect ? 'All Correct!' : 'Review Your Matches'}</span>
-            </div>
-            <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-              {data.rationale}
-            </p>
-            {data.teachingNote && (
-              <div className="mt-3 pt-3 border-t border-white/5">
-                <p className="text-sm text-slate-400 italic">
-                  💡 {data.teachingNote}
-                </p>
+          <div className="w-full space-y-4">
+            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
+              <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${allCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {allCorrect ?
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  }
+                </svg>
+                <span>{allCorrect ? 'All Correct!' : 'Review Your Matches'}</span>
               </div>
-            )}
+              <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
+                {data.rationale}
+              </p>
+              {data.teachingNote && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <p className="text-sm text-slate-400 italic">
+                    💡 {data.teachingNote}
+                  </p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleReset}
+              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+            >
+              Try Again
+            </button>
           </div>
         )}
       </div>

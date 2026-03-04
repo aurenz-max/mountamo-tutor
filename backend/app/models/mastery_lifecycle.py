@@ -45,8 +45,8 @@ class GateHistoryEntry(BaseModel):
     timestamp: str = Field(..., description="ISO-8601 timestamp")
     score: float = Field(..., ge=0, le=10, description="Score on 0-10 scale")
     passed: bool = Field(..., description="Whether the score met the 9.0 threshold")
-    source: Literal["lesson", "practice"] = Field(
-        ..., description="Eval source: lesson-mode or practice-mode"
+    source: Literal["lesson", "practice", "diagnostic"] = Field(
+        ..., description="Eval source: lesson-mode, practice-mode, or diagnostic-mode"
     )
 
 

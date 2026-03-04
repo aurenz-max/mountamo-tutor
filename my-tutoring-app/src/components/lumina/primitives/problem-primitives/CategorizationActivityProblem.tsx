@@ -2,6 +2,11 @@
 
 import React, { useState } from 'react';
 import { CategorizationActivityProblemData } from '../../types';
+import {
+  usePrimitiveEvaluation,
+  type CategorizationActivityMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../evaluation';
 
 interface CategorizationActivityProblemProps {
   data: CategorizationActivityProblemData;
@@ -11,6 +16,31 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
   const [itemCategories, setItemCategories] = useState<{ [itemText: string]: string }>({});
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Destructure evaluation props (injected by KnowledgeCheck/ProblemRenderer)
+  const {
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data as any;
+
+  // Initialize evaluation hook
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    resetAttempt: resetEvaluationAttempt,
+  } = usePrimitiveEvaluation<CategorizationActivityMetrics>({
+    primitiveType: 'knowledge-check',
+    instanceId: instanceId || `categorization-${data.id}-${Date.now()}`,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
   const handleDragStart = (itemText: string) => {
     if (isSubmitted) return;
@@ -23,17 +53,75 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
     setDraggedItem(null);
   };
 
-  const handleSubmit = () => {
-    if (data.categorizationItems.every(item => itemCategories[item.itemText])) {
-      setIsSubmitted(true);
-    }
-  };
-
   const checkItemCategory = (itemText: string): boolean | null => {
     if (!isSubmitted) return null;
     const item = data.categorizationItems.find(i => i.itemText === itemText);
     if (!item) return null;
     return itemCategories[itemText] === item.correctCategory;
+  };
+
+  const handleSubmit = () => {
+    const allPlaced = data.categorizationItems.every(item => itemCategories[item.itemText]);
+    if (!allPlaced || hasSubmittedEvaluation) return;
+
+    setIsSubmitted(true);
+
+    // Build per-category results
+    const categoryResults = data.categories.map(category => {
+      const itemsPlaced = data.categorizationItems
+        .filter(item => itemCategories[item.itemText] === category)
+        .map(item => item.itemText);
+      const correctItems = data.categorizationItems
+        .filter(item => item.correctCategory === category)
+        .map(item => item.itemText);
+      const correctInCategory = itemsPlaced.filter(itemText =>
+        data.categorizationItems.find(i => i.itemText === itemText)?.correctCategory === category
+      ).length;
+      const precision = itemsPlaced.length > 0 ? Math.round((correctInCategory / itemsPlaced.length) * 100) : 0;
+
+      return {
+        categoryId: category,
+        categoryName: category,
+        itemsPlaced,
+        correctItems,
+        precision,
+      };
+    });
+
+    const correctlyCategorized = data.categorizationItems.filter(
+      item => itemCategories[item.itemText] === item.correctCategory
+    ).length;
+    const totalItems = data.categorizationItems.length;
+    const accuracy = totalItems > 0 ? Math.round((correctlyCategorized / totalItems) * 100) : 0;
+    const allCorrect = correctlyCategorized === totalItems;
+
+    const metrics: CategorizationActivityMetrics = {
+      type: 'categorization-activity',
+      totalItems,
+      correctlyCategorized,
+      accuracy,
+      categoryResults,
+    };
+
+    submitEvaluation(
+      allCorrect,
+      accuracy,
+      metrics,
+      {
+        studentWork: {
+          itemCategories,
+          instruction: data.instruction,
+          categories: data.categories,
+        },
+      }
+    );
+  };
+
+  const handleReset = () => {
+    setItemCategories({});
+    setDraggedItem(null);
+    setIsSubmitted(false);
+    resetEvaluationAttempt();
   };
 
   const getUncategorizedItems = () => {
@@ -135,26 +223,34 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
             Verify Categories
           </button>
         ) : (
-          <div className="w-full animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-            <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${allCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {allCorrect ?
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                }
-              </svg>
-              <span>{allCorrect ? 'All Correct!' : 'Review Your Categories'}</span>
-            </div>
-            <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-              {data.rationale}
-            </p>
-            {data.teachingNote && (
-              <div className="mt-3 pt-3 border-t border-white/5">
-                <p className="text-sm text-slate-400 italic">
-                  💡 {data.teachingNote}
-                </p>
+          <div className="w-full space-y-4">
+            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
+              <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${allCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {allCorrect ?
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  }
+                </svg>
+                <span>{allCorrect ? 'All Correct!' : 'Review Your Categories'}</span>
               </div>
-            )}
+              <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
+                {data.rationale}
+              </p>
+              {data.teachingNote && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <p className="text-sm text-slate-400 italic">
+                    💡 {data.teachingNote}
+                  </p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleReset}
+              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+            >
+              Try Again
+            </button>
           </div>
         )}
       </div>

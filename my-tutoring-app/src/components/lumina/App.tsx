@@ -39,6 +39,10 @@ import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 import type { CurriculumContext } from './components/CurriculumBrowser';
 import { IdleScreen } from './components/IdleScreen';
+import { DailyLessonPlan } from './DailyLessonPlan';
+import type { DailySessionPlan, LessonBlock } from '@/lib/sessionPlanAPI';
+import ExhibitCompleteFooter from './components/ExhibitCompleteFooter';
+import SessionBreakScreen from './components/SessionBreakScreen';
 
 // Simple evaluation results indicator
 const EvaluationResultsIndicator: React.FC = () => {
@@ -183,6 +187,27 @@ export default function App() {
 
   // Curriculum context (set when lesson initiated from CurriculumBrowser)
   const [curriculumContext, setCurriculumContext] = useState<CurriculumContext | null>(null);
+
+  // Daily session driver state
+  const [sessionStats, setSessionStats] = useState<{ total: number; completed: number } | null>(null);
+  // Panel to return to after an exhibit launched from a session block
+  const [sessionReturn, setSessionReturn] = useState<string | null>(null);
+  // Completed block IDs — lifted out of DailyLessonPlan to persist across remounts
+  const [sessionCompletedBlocks, setSessionCompletedBlocks] = useState<Set<string>>(new Set());
+  // Block currently being exhibited (for header tracker)
+  const [sessionCurrentBlock, setSessionCurrentBlock] = useState<LessonBlock | null>(null);
+  // Count of evaluation results received during current exhibit block
+  const [sessionEvalCount, setSessionEvalCount] = useState(0);
+  // Per-block results: block_id → { evalCount, scoreSum } (for showing results on completed blocks)
+  const [sessionBlockResults, setSessionBlockResults] = useState<
+    Record<string, { evalCount: number; scoreSum: number }>
+  >({});
+  // Full session plan — lifted to App to prevent re-fetch from clobbering block IDs
+  const [sessionPlan, setSessionPlan] = useState<DailySessionPlan | null>(null);
+  // Convenience: block list derived from plan
+  const sessionBlocks = sessionPlan?.blocks ?? [];
+  // Session sub-phase: null = normal, 'break' = showing break/transition screen
+  const [sessionPhase, setSessionPhase] = useState<'break' | null>(null);
 
   // Sample data for visual primitives tester
   const visualPrimitiveExamples = [
@@ -347,9 +372,97 @@ export default function App() {
     resetSession();
     setTopic('');
     setCurriculumContext(null);
-    setActivePanel(null);
     setManifest(null);
+    setSessionPhase(null);
+    const returnPanel = sessionReturn;
+    setSessionReturn(null);
+    setSessionCurrentBlock(null);
+    setSessionEvalCount(0);
+    if (!returnPanel) {
+      setSessionStats(null);
+      setSessionCompletedBlocks(new Set());
+      setSessionPlan(null);
+      setSessionBlockResults({});
+    }
+    setActivePanel(returnPanel);
   };
+
+  // Clear session state when leaving the daily-session panel via ← Back
+  const handleBackFromPanel = useCallback(() => {
+    if (activePanel === 'daily-session') {
+      setSessionStats(null);
+      setSessionCompletedBlocks(new Set());
+      setSessionPlan(null);
+      setSessionBlockResults({});
+      setSessionCurrentBlock(null);
+      setSessionEvalCount(0);
+      setSessionPhase(null);
+    }
+    setActivePanel(null);
+  }, [activePanel]);
+
+  const handleBlockStart = useCallback((block: LessonBlock) => {
+    setSessionCompletedBlocks(prev => new Set(Array.from(prev).concat(block.block_id)));
+    setSessionStats(prev => prev ? { ...prev, completed: prev.completed + 1 } : prev);
+    setSessionCurrentBlock(block);
+    setSessionEvalCount(0);
+    setSessionReturn('daily-session');
+
+    // Set curriculum context from block data so EvaluationProvider passes real
+    // subskill IDs to the backend instead of falling back to primitive-type defaults.
+    // Uses the first subskill; per-primitive attribution (DL-010) is a later enhancement.
+    const firstSubskill = block.subskills[0];
+    if (firstSubskill) {
+      const subskillId = firstSubskill.subskill_id;
+      // Derive parent skill_id: "RF.K.2.C" → "RF.K.2"
+      const lastDot = subskillId.lastIndexOf('.');
+      const skillId = lastDot > 0 ? subskillId.substring(0, lastDot) : subskillId;
+      setCurriculumContext({ subject: block.subject, skillId, subskillId });
+    } else {
+      setCurriculumContext(null);
+    }
+
+    generate({ topic: `${block.subject}: ${block.title}`, gradeLevel });
+    // TODO (backend integration): POST session block start to record attempt
+    // authApi.post(`/api/daily-activities/daily-plan/1/session/start-block`, {
+    //   block_id: block.block_id, lesson_group_id: block.lesson_group_id,
+    // });
+  }, [generate, gradeLevel]);
+
+  // Derived: next block in session (for break screen preview)
+  const currentBlockIndex = sessionCurrentBlock
+    ? sessionBlocks.findIndex(b => b.block_id === sessionCurrentBlock.block_id)
+    : -1;
+  const nextSessionBlock = currentBlockIndex >= 0 && currentBlockIndex < sessionBlocks.length - 1
+    ? sessionBlocks[currentBlockIndex + 1]
+    : null;
+
+  // Transition from exhibit completion → break screen
+  const handleExhibitComplete = useCallback(() => {
+    resetSession();
+    setTopic('');
+    setCurriculumContext(null);
+    setManifest(null);
+    setSessionPhase('break');
+    // Session tracking state preserved: sessionReturn, sessionCurrentBlock, sessionEvalCount, sessionStats, sessionCompletedBlocks
+  }, [resetSession]);
+
+  // Break screen → start next block
+  const handleBreakContinue = useCallback(() => {
+    setSessionPhase(null);
+    if (nextSessionBlock) {
+      handleBlockStart(nextSessionBlock);
+    }
+  }, [nextSessionBlock, handleBlockStart]);
+
+  // Break screen → finish session (last block)
+  const handleSessionFinish = useCallback(() => {
+    setSessionPhase(null);
+    setSessionReturn(null);
+    setSessionCurrentBlock(null);
+    setSessionEvalCount(0);
+    setActivePanel('daily-session');
+  }, []);
 
   const handleDetailItemClick = (item: string) => {
       setSelectedDetailItem(item);
@@ -382,14 +495,63 @@ export default function App() {
              </div>
              <span className="text-xl font-bold tracking-tight text-white">Lumina <span className="text-slate-500 font-light">Exhibits</span></span>
         </div>
-        <div className="flex gap-4 text-xs md:text-sm font-mono text-slate-400">
+        <div className="flex items-center gap-4 text-xs md:text-sm font-mono text-slate-400">
+            {/* Session progress dots — shown while viewing the session panel (IDLE) */}
+            {phase === GameState.IDLE && activePanel === 'daily-session' && sessionStats && sessionStats.total > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: sessionStats.total }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-full transition-all duration-300 ${
+                        i < sessionStats.completed
+                          ? 'w-2 h-2 bg-cyan-400'
+                          : i === sessionStats.completed
+                          ? 'w-2.5 h-2.5 bg-cyan-400/60 animate-pulse'
+                          : 'w-2 h-2 bg-white/15'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-slate-400">
+                  {sessionStats.completed}/{sessionStats.total}
+                </span>
+              </div>
+            )}
+            {/* Exhibit tracker — shown during an exhibit launched from a session block */}
+            {phase === GameState.PLAYING && sessionReturn === 'daily-session' && sessionCurrentBlock && (
+              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                {sessionStats && sessionStats.total > 0 && (
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: sessionStats.total }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`rounded-full transition-all duration-300 ${
+                          i < sessionStats.completed
+                            ? 'w-2 h-2 bg-cyan-400'
+                            : i === sessionStats.completed - 1
+                            ? 'w-2.5 h-2.5 bg-cyan-400/50 animate-pulse'
+                            : 'w-2 h-2 bg-white/15'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+                <span className="text-xs text-slate-300 font-medium max-w-[160px] truncate">
+                  {sessionCurrentBlock.title}
+                </span>
+                {sessionEvalCount > 0 && (
+                  <span className="text-xs font-semibold text-emerald-400">{sessionEvalCount} ✓</span>
+                )}
+              </div>
+            )}
             {phase === GameState.PLAYING && (
                 <button onClick={reset} className="hover:text-white transition-colors">
-                   ← New Topic
+                   {sessionReturn ? '← Return to Session' : '← New Topic'}
                 </button>
             )}
             {activePanel && (
-                <button onClick={() => setActivePanel(null)} className="hover:text-white transition-colors">
+                <button onClick={handleBackFromPanel} className="hover:text-white transition-colors">
                    ← Back
                 </button>
             )}
@@ -531,6 +693,44 @@ export default function App() {
         {phase === GameState.IDLE && activePanel === 'planner-dashboard' && (
           <div className="flex-1 animate-fade-in">
             <PlannerDashboard onBack={() => setActivePanel(null)} />
+          </div>
+        )}
+
+        {/* SESSION BREAK SCREEN — between blocks */}
+        {phase === GameState.IDLE && sessionPhase === 'break' && sessionCurrentBlock && (
+          <SessionBreakScreen
+            completedBlock={sessionCurrentBlock}
+            nextBlock={nextSessionBlock}
+            stats={sessionStats}
+            blocks={sessionBlocks}
+            completedBlockIds={sessionCompletedBlocks}
+            evalCount={sessionEvalCount}
+            onContinue={handleBreakContinue}
+            onFinish={handleSessionFinish}
+          />
+        )}
+
+        {/* DAILY SESSION DRIVER STATE */}
+        {phase === GameState.IDLE && activePanel === 'daily-session' && !sessionPhase && (
+          <div className="flex-1 animate-fade-in max-w-4xl mx-auto w-full pt-2">
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold text-white mb-1">Today's Session</h2>
+              <p className="text-slate-500 text-base">Complete your blocks in order. Each block takes 5–18 minutes.</p>
+            </div>
+            <DailyLessonPlan
+              studentId="1"
+              completedBlockIds={sessionCompletedBlocks}
+              blockResults={sessionBlockResults}
+              initialPlan={sessionPlan}
+              onPlanLoaded={(plan: DailySessionPlan) => {
+                // Only initialize on first load — don't clobber progress on remount re-fetch
+                if (!sessionPlan) {
+                  setSessionStats({ total: plan.blocks.length, completed: 0 });
+                  setSessionPlan(plan);
+                }
+              }}
+              onBlockStart={handleBlockStart}
+            />
           </div>
         )}
 
@@ -685,6 +885,25 @@ export default function App() {
                 localOnly={false}
                 onCompetencyUpdate={(updates) => {
                     console.log('Competency updates:', updates);
+                    if (sessionReturn) {
+                      // Increment eval count for header tracker
+                      setSessionEvalCount(prev => prev + 1);
+                      // Accumulate score for block results display
+                      if (sessionCurrentBlock && updates.length > 0) {
+                        const avgScore = updates.reduce((sum, u) => sum + u.averageScore, 0) / updates.length;
+                        setSessionBlockResults(prev => {
+                          const blockId = sessionCurrentBlock!.block_id;
+                          const existing = prev[blockId] ?? { evalCount: 0, scoreSum: 0 };
+                          return {
+                            ...prev,
+                            [blockId]: {
+                              evalCount: existing.evalCount + 1,
+                              scoreSum: existing.scoreSum + avgScore,
+                            },
+                          };
+                        });
+                      }
+                    }
                 }}
             >
                 <ExhibitProvider
@@ -709,8 +928,17 @@ export default function App() {
                 {/* Evaluation Results Indicator */}
                 <EvaluationResultsIndicator />
 
-                {/* Related Topics */}
-                {exhibit.relatedTopics && exhibit.relatedTopics.length > 0 && (
+                {/* Exhibit Complete Footer — shown during daily session mode */}
+                {sessionReturn === 'daily-session' && sessionCurrentBlock && (
+                  <ExhibitCompleteFooter
+                    block={sessionCurrentBlock}
+                    evalCount={sessionEvalCount}
+                    onContinue={handleExhibitComplete}
+                  />
+                )}
+
+                {/* Related Topics — hidden during daily session mode (footer replaces it) */}
+                {!sessionReturn && exhibit.relatedTopics && exhibit.relatedTopics.length > 0 && (
                     <div className="mt-24 mb-12 max-w-5xl mx-auto">
                         <div className="flex items-center gap-4 mb-8">
                             <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>

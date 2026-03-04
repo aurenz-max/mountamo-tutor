@@ -151,6 +151,40 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
           </div>
         </form>
 
+        {/* START DAY HERO */}
+        <div className="pt-8 max-w-2xl mx-auto w-full">
+          <SpotlightCard
+            color="34, 211, 238"
+            onClick={() => onNavigate('daily-session')}
+            className="bg-gradient-to-br from-cyan-900/20 to-violet-900/20"
+          >
+            <div className="p-6 flex items-center gap-5">
+              <div className="relative flex-shrink-0">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/30 to-violet-500/30 border border-cyan-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <span className="text-3xl">⚡</span>
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-900 animate-pulse" />
+              </div>
+              <div className="flex-1 text-left">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-xl font-bold text-white group-hover:text-cyan-200 transition-colors">
+                    Start Today's Session
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-semibold uppercase tracking-wider">
+                    Ready
+                  </span>
+                </div>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Your personalized daily plan — lessons grouped by topic, ordered by Bloom's taxonomy
+                </p>
+              </div>
+              <svg className="w-5 h-5 text-slate-600 group-hover:text-cyan-400 transition-all group-hover:translate-x-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+              </svg>
+            </div>
+          </SpotlightCard>
+        </div>
+
         {/* Suggested Topics - Card Style */}
         <div className="pt-8 max-w-5xl mx-auto">
           <div className="flex items-center gap-4 mb-6">
@@ -161,8 +195,8 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { topic: 'Industrial Revolution', icon: '⚙️', color: '250, 204, 21', description: 'Explore the transformation of manufacturing and society' },
-              { topic: 'Botany', icon: '🌿', color: '74, 222, 128', description: 'Discover the science of plants and their ecosystems' },
-              { topic: 'Cubism', icon: '🎨', color: '192, 132, 252', description: 'Learn about geometric abstraction in modern art' },
+              { topic: 'Dinosaurs', icon: '🦕', color: '74, 222, 128', description: 'Explore the ancient reptiles that ruled the Earth' },
+              { topic: 'Trash Trucks', icon: '🚛', color: '192, 132, 252', description: 'Learn how garbage trucks work and keep cities clean' },
               { topic: 'Black Holes', icon: '🌌', color: '56, 189, 248', description: 'Journey into the mysteries of spacetime' }
             ].map(({ topic: suggestion, icon, color, description }) => (
               <SpotlightCard

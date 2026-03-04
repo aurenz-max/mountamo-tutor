@@ -28,6 +28,7 @@ from .services.mastery_lifecycle_engine import MasteryLifecycleEngine
 from .services.planning_service import PlanningService
 from .services.velocity_service import VelocityService
 from .services.firestore_analytics import FirestoreAnalyticsService
+from .services.diagnostic_service import DiagnosticService
 
 from .db.cosmos_db import CosmosDBService
 from .db.firestore_service import FirestoreService
@@ -66,6 +67,7 @@ _mastery_lifecycle_engine: Optional[MasteryLifecycleEngine] = None
 _planning_service: Optional[PlanningService] = None
 _velocity_service: Optional[VelocityService] = None
 _firestore_analytics_service: Optional[FirestoreAnalyticsService] = None
+_diagnostic_service: Optional[DiagnosticService] = None
 
 
 # 🔥 UPDATED: Authentication dependency functions using service layer
@@ -446,6 +448,24 @@ async def get_planning_service(
         )
         logger.info("✅ PlanningService initialized successfully")
     return _planning_service
+
+
+async def get_diagnostic_service(
+    firestore_service: FirestoreService = Depends(get_firestore_service),
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
+    mastery_lifecycle_engine: MasteryLifecycleEngine = Depends(get_mastery_lifecycle_engine),
+) -> DiagnosticService:
+    """Get or create DiagnosticService singleton."""
+    global _diagnostic_service
+    if _diagnostic_service is None:
+        logger.info("Initializing DiagnosticService")
+        _diagnostic_service = DiagnosticService(
+            firestore_service=firestore_service,
+            learning_paths_service=learning_paths_service,
+            mastery_lifecycle_engine=mastery_lifecycle_engine,
+        )
+        logger.info("✅ DiagnosticService initialized successfully")
+    return _diagnostic_service
 
 
 async def get_velocity_service(

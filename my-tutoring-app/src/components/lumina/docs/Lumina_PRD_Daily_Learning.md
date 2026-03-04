@@ -1,7 +1,11 @@
 # Lumina PRD: Daily Learning Experience
 
 **Covers: Session Runner, Lesson Architecture, Capacity Model, Planning Engine**
-**Version 1.0 | March 2026**
+**Version 1.2 | March 2026**
+
+> **What's new in v1.2:** Session transitions (DL-007) and break screens (DL-008) shipped. Curriculum context wiring delivers real subskill IDs to Firestore (no more primitive-type fallbacks). Block completion state persists across component remounts. Per-block eval results shown on completed blocks. See §9.1 for full status.
+>
+> **v1.1 (prior):** Added §9 implementation status, §10 Backend Session Integration spec. Frontend session driver and backend planning API shipped.
 
 ---
 
@@ -692,3 +696,239 @@ After sufficient telemetry (Phase 3 timeline), analyze co-mastery patterns:
 | Introduction rate | 3% | ≥ 20% | ≥ 40% |
 | Session completion rate | N/A | ≥ 60% | ≥ 80% |
 | Primitive time calibration coverage | 0% | N/A | ≥ 50% of primitive types |
+
+---
+
+## 9. Phase 1 Implementation Status
+
+Status as of v1.2 (March 2026). Covers backend planning API, lesson group engine, frontend session driver, break/transition screens, curriculum context wiring, and block result tracking.
+
+### 9.1 P0 Requirements Status
+
+| Req ID | Requirement | Status | Notes |
+|---|---|---|---|
+| DL-001 | Lesson group data model | ✅ Shipped | `LessonBlock`, `BlockSubskill`, `BloomPhase`, `DailySessionPlan` models in `backend/app/models/lesson_plan.py` and `my-tutoring-app/src/lib/sessionPlanAPI.ts` |
+| DL-002 | Automated grouping engine | ✅ Shipped | `LessonGroupService` in `backend/app/services/lesson_group_service.py` — rule-based grouping by curriculum domain + Bloom's taxonomy (Identify → Explain → Apply) |
+| DL-003 | Lesson generator: multi-subskill input | 🔄 Partial | Generator accepts topic string from block title; does not yet receive full lesson group manifest with per-subskill Bloom's mapping |
+| DL-004 | Time-based capacity model | ✅ Shipped | 75-min daily budget with configurable per-block estimates. Planner fills by minute budget in `PlanningService.get_daily_session_plan()` |
+| DL-005 | Queue assembly with review cap | ✅ Shipped | 50% review cap, reviews sorted by overdue + lowest gate, new skills proportional to weekly deficit per subject |
+| DL-006 | Session runner: core flow | ✅ Shipped | `DailyLessonPlan.tsx` with block cards, `App.tsx` daily-session panel, `handleBlockStart` → exhibit → break → next block flow |
+| DL-007 | Session runner: transitions | ✅ Shipped | `ExhibitCompleteFooter` at bottom of exhibit → `SessionBreakScreen` with progress recap, 60s countdown timer, next block preview → auto-chains to next block. Between-phase transitions within a block not yet implemented (single-exhibit-per-block) |
+| DL-008 | Session runner: breaks | ✅ Shipped | `SessionBreakScreen` with configurable 60s countdown, progress dots, next-block learning objective preview. Timer does not auto-advance; student clicks "I'm Ready". Last block shows "Finish Session" with celebration |
+| DL-009 | Session telemetry capture | 🔄 Partial | Eval results flow through `onCompetencyUpdate` with real curriculum subskill IDs (via `curriculumContext` from block data). Per-block `{ evalCount, scoreSum }` tracked in `sessionBlockResults`. Full telemetry schema not yet persisted per session |
+| DL-010 | Per-subskill scoring within lessons | 🔄 Partial | `handleBlockStart` sets `curriculumContext` from the block's first subskill — real `subskill_id` and derived `skill_id` reach Firestore via EvaluationProvider. Per-primitive subskill attribution (multiple subskills within one exhibit) not yet implemented |
+| DL-011 | Celebration: micro + session | ✅ Shipped | `ExhibitCompleteFooter` shows block celebration at exhibit bottom. `SessionBreakScreen` shows progress + celebration for last block. `DailyLessonPlan` shows session-complete card |
+
+### 9.2 Shipped Components
+
+**Backend:**
+| Component | File | Description |
+|---|---|---|
+| Lesson plan models | `backend/app/models/lesson_plan.py` | Pydantic models: `BlockSubskill`, `BloomPhase`, `LessonBlock`, `DailySessionPlan` |
+| Lesson group service | `backend/app/services/lesson_group_service.py` | `classify_bloom()`, `group_subskills_into_blocks()`, `build_session_plan()` |
+| Planning service integration | `backend/app/services/planning_service.py` | `get_daily_session_plan()` method — reads daily queue, groups into lesson blocks |
+| Session endpoint | `backend/app/api/endpoints/daily_activities.py` | `GET /daily-plan/{student_id}/session` — returns `DailySessionPlan` |
+
+**Frontend:**
+| Component | File | Description |
+|---|---|---|
+| Session plan API | `my-tutoring-app/src/lib/sessionPlanAPI.ts` | TypeScript types + `fetchDailySessionPlan()` API call |
+| Daily lesson plan UI | `my-tutoring-app/src/components/lumina/DailyLessonPlan.tsx` | Block cards with Bloom phase pills, progress tracking, per-block eval results, session completion. Accepts `initialPlan` prop to avoid re-fetch ID clobbering |
+| Idle screen CTA | `my-tutoring-app/src/components/lumina/components/IdleScreen.tsx` | "Start Today's Session" hero card |
+| Exhibit complete footer | `my-tutoring-app/src/components/lumina/components/ExhibitCompleteFooter.tsx` | "Block Complete" section at bottom of exhibit with celebration message and "Continue" CTA |
+| Session break screen | `my-tutoring-app/src/components/lumina/components/SessionBreakScreen.tsx` | Full-screen transition: progress dots, 60s countdown timer ring, next block preview (subject, Bloom phases, subskills, estimated time), "I'm Ready" / "Finish Session" CTA |
+| Session driver (App.tsx) | `my-tutoring-app/src/components/lumina/App.tsx` | Session state management (`sessionPlan`, `sessionCompletedBlocks`, `sessionBlockResults`, `sessionPhase`), header tracking, curriculum context from block data, block→exhibit→break→next-block flow |
+
+### 9.3 Key Architecture Decisions (v1.2)
+
+**Plan stability**: `DailySessionPlan` is fetched once and lifted to `sessionPlan` state in `App.tsx`. Passed as `initialPlan` to `DailyLessonPlan` on remount to prevent re-fetch from generating new block IDs that mismatch `sessionCompletedBlocks`.
+
+**Curriculum context wiring**: `handleBlockStart` extracts `{ subject, skillId, subskillId }` from the lesson block's first subskill and sets `curriculumContext`. EvaluationProvider passes these to `usePrimitiveEvaluation`, which resolves them into the evaluation result. The backend receives real curriculum IDs (e.g., `"RI.K.5"`) instead of primitive-type fallbacks (e.g., `"fast-fact_subskill"`).
+
+**Break screen state**: Uses `sessionPhase: 'break' | null` to overlay the break screen during `GameState.IDLE`. Does not add a new `GameState` enum value — the break is a session-driver concern contained in `App.tsx`. Header "← Return to Session" still works as an escape hatch that bypasses the break.
+
+**Block results accumulation**: `onCompetencyUpdate` aggregates `averageScore` from each `CompetencyUpdateSuggestion` into `sessionBlockResults[blockId]`. Completed blocks display "X answered · avg Y%" in `DailyLessonPlan`.
+
+---
+
+## 10. Backend Session Integration
+
+This section defines the API endpoints and data model needed to persist session progress server-side, closing the loop between the frontend session driver and the mastery lifecycle engine.
+
+### 10.1 Problem Statement
+
+Currently the session driver tracks progress entirely in React state (`sessionCompletedBlocks`, `sessionEvalCount`). This means:
+- Progress is lost on page refresh
+- Mastery lifecycle engine has no visibility into session-level completion
+- No telemetry for session analytics (duration, completion rate, blocks attempted)
+
+### 10.2 Session Record Schema (Firestore)
+
+```
+Collection: students/{studentId}/sessions/{sessionId}
+
+{
+  session_id: string,              // auto-generated
+  student_id: string,
+  plan_date: string,               // ISO date, e.g. "2026-03-03"
+  started_at: Timestamp,
+  completed_at: Timestamp | null,
+  status: "in_progress" | "completed" | "abandoned",
+
+  // Budget tracking
+  total_budget_min: number,        // from DailySessionPlan
+  elapsed_min: number,             // wall-clock time in session
+
+  // Block tracking
+  blocks: [
+    {
+      block_id: string,
+      block_type: "new" | "review" | "retest",
+      title: string,
+      subject: string,
+      started_at: Timestamp,
+      completed_at: Timestamp | null,
+      status: "pending" | "in_progress" | "completed" | "skipped",
+
+      // Subskill-level results
+      subskills: [
+        {
+          subskill_id: string,
+          bloom_phase: "identify" | "explain" | "apply",
+          eval_score: number | null,      // 0.0–10.0
+          eval_count: number,             // primitives evaluated
+          time_spent_sec: number
+        }
+      ]
+    }
+  ],
+
+  // Session-level aggregates
+  blocks_completed: number,
+  blocks_total: number,
+  total_evals: number,
+  avg_score: number | null
+}
+```
+
+### 10.3 API Endpoints
+
+Three new endpoints under the existing `/daily-activities` router:
+
+#### `POST /daily-plan/{student_id}/session/start`
+
+Creates a new session record when the student clicks "Start Today's Session".
+
+**Request body:**
+```json
+{
+  "plan_date": "2026-03-03",
+  "blocks": [
+    {
+      "block_id": "new-math-1",
+      "block_type": "new",
+      "title": "Addition Within 20",
+      "subject": "Math",
+      "subskill_ids": ["math.add.within20.identify", "math.add.within20.explain"]
+    }
+  ],
+  "total_budget_min": 75
+}
+```
+
+**Response:** `{ "session_id": "abc123" }`
+
+**Side effects:** Writes session record to Firestore with `status: "in_progress"`.
+
+#### `POST /daily-plan/{student_id}/session/{session_id}/block-complete`
+
+Records completion of a single block within the session. Called when the student returns from an exhibit.
+
+**Request body:**
+```json
+{
+  "block_id": "new-math-1",
+  "eval_results": [
+    {
+      "subskill_id": "math.add.within20.identify",
+      "bloom_phase": "identify",
+      "eval_score": 8.5,
+      "eval_count": 3,
+      "time_spent_sec": 180
+    }
+  ]
+}
+```
+
+**Response:** `{ "blocks_completed": 1, "blocks_total": 3 }`
+
+**Side effects:**
+1. Updates block status to `"completed"` in session record
+2. Increments `blocks_completed` counter
+3. Calls `MasteryLifecycleEngine.process_eval_result()` for each subskill eval — this triggers gate transitions (gate 0→1 after 3 evals ≥ 9.0, retest pass/fail at gates 2/3/4)
+4. Updates `avg_score` running aggregate
+
+#### `POST /daily-plan/{student_id}/session/{session_id}/complete`
+
+Marks the full session as completed. Called when all blocks are done or the student ends early.
+
+**Request body:**
+```json
+{
+  "status": "completed",
+  "elapsed_min": 52
+}
+```
+
+**Response:** `{ "session_id": "abc123", "status": "completed", "summary": { ... } }`
+
+**Side effects:**
+1. Sets `completed_at` timestamp and `status`
+2. Computes final session aggregates (`total_evals`, `avg_score`)
+3. Writes session summary for dashboard display
+
+### 10.4 Mastery Lifecycle Integration
+
+The key integration point is in the `block-complete` endpoint. For each subskill evaluation in the completed block:
+
+```
+block-complete request
+  → for each subskill eval:
+      → CompetencyService.update_competency_from_problem()
+        → MasteryLifecycleEngine.process_eval_result()
+          → gate transition logic (§3 of this PRD)
+          → Firestore lifecycle doc update
+```
+
+This reuses the existing mastery pipeline — no new gate logic needed. The session layer adds:
+- **Block-level attribution**: Which evaluations came from which lesson block
+- **Session-level context**: Elapsed time, block ordering, completion rate
+- **Bloom's phase tracking**: Whether the student succeeded at Identify vs Explain vs Apply for each subskill
+
+### 10.5 Frontend Integration Points
+
+The `DailyLessonPlan.tsx` and `App.tsx` have TODO comments marking where these API calls should be wired. The session flow now goes through `ExhibitCompleteFooter` → `SessionBreakScreen` → next block:
+
+| Trigger | API Call | Location |
+|---|---|---|
+| "Start Today's Session" clicked | `POST .../session/start` | `DailyLessonPlan.tsx` onPlanLoaded or explicit start handler |
+| Student clicks "Continue" on ExhibitCompleteFooter | `POST .../session/{id}/block-complete` | `App.tsx` `handleExhibitComplete` (fires `resetSession()` + sets `sessionPhase='break'`) |
+| Student clicks "I'm Ready" on break screen | (next block starts) | `App.tsx` `handleBreakContinue` → `handleBlockStart(nextBlock)` |
+| Student clicks "Finish Session" on break screen | `POST .../session/{id}/complete` | `App.tsx` `handleSessionFinish` |
+| Student navigates away early (← Back) | `POST .../session/{id}/complete` with `status: "abandoned"` | `App.tsx` `handleBackFromPanel` |
+
+### 10.6 Implementation Priority
+
+**Shipped (v1.2):**
+- ✅ Curriculum context wiring — real subskill IDs reach Firestore via `curriculumContext` set in `handleBlockStart`
+- ✅ Per-block eval result tracking — `sessionBlockResults` accumulates scores from `onCompetencyUpdate`
+- ✅ Session transitions (DL-007) — `ExhibitCompleteFooter` + `SessionBreakScreen` chain between blocks
+- ✅ Break prompts (DL-008) — 60s countdown, progress recap, next-block preview
+- ✅ Celebrations (DL-011) — block-level, break-screen, and session-complete celebrations
+
+**Remaining backend integration:**
+1. **Session persistence endpoints** — `POST .../session/start`, `block-complete`, `complete` (§10.3). Enables cross-device resume and session analytics
+2. **Per-subskill scoring within blocks** (DL-010) — requires manifest generator to tag primitives with specific subskill IDs. Currently all evals in a block map to the first subskill
+3. **Full session telemetry** (DL-009) — timing per block, cognitive load metrics, ordering data
+4. **Between-phase transitions** — Bloom's-level cues within a single block (DL-007 remainder). Requires multi-exhibit-per-block architecture
+5. **Exhibit pre-loading** — Start `generate()` for next block during break screen to eliminate wait time
