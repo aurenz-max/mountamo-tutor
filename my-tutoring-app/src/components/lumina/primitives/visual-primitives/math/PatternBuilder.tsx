@@ -642,6 +642,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
 
         const metrics: PatternBuilderMetrics = {
           type: 'pattern-builder',
+          evalMode: challenges[0]?.type ?? 'default',
           extensionsCorrect: extendResults.filter(r => r.correct).length,
           extensionsTotal: extendResults.length,
           coreIdentifiedCorrectly,

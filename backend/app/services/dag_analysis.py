@@ -327,6 +327,7 @@ class DAGAnalysisEngine:
                 subskill_id=best.node_id,
                 subject=node_data.get("subject", ""),
                 skill_id=node_data.get("skill_id", ""),
+                skill_description=node_data.get("skill_description", ""),
                 description=node_data.get("description", "")
                     or node_data.get("label", ""),
                 items_needed=DEFAULT_PROBE_ITEMS,
@@ -511,6 +512,7 @@ class DAGAnalysisEngine:
                 subskill_id=m.node_id,
                 subject=node_data.get("subject", ""),
                 skill_id=node_data.get("skill_id", ""),
+                skill_description=node_data.get("skill_description", ""),
                 description=node_data.get("description", "")
                     or node_data.get("label", ""),
                 items_needed=DEFAULT_PROBE_ITEMS,

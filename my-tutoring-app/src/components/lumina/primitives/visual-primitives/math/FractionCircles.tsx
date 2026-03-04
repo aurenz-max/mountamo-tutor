@@ -462,6 +462,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
 
         const metrics: FractionCirclesMetrics = {
           type: 'fraction-circles',
+          evalMode: 'default',
           totalChallenges: challenges.length,
           correctCount,
           accuracy: overallPct,

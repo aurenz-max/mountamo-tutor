@@ -772,43 +772,109 @@ The existing `PlanningService.get_daily_plan()` reads `mastery_lifecycle` docs f
 - Gate 0 skills appear as new-skill candidates when their prerequisites are met
 - The knowledge frontier is automatically wider, giving the planner more scheduling options
 
+### What Was Built — Frontend Diagnostic Session (March 2026)
+
+The frontend diagnostic session UI covers **DP-003** and **DP-004** from the requirements. It is a standalone component (`DiagnosticSession`) that reuses the existing practice manifest pipeline (`generatePracticeManifestAndHydrateStreaming`) and `PracticeManifestRenderer` for item rendering.
+
+**Design principle**: No "test" framing — presented as "Skills Explorer" adventure. Per-item feedback is preserved (normal primitives), but no cumulative scores or pass/fail per probe are shown.
+
+#### 11.8 New Files — Frontend
+
+| File | Purpose |
+|------|---------|
+| `my-tutoring-app/src/components/lumina/diagnostic/types.ts` | TypeScript types mirroring backend models: `ProbeRequest`, `CreateSessionResponse`, `ProbeResultResponse`, `CompletionResponse`, `KnowledgeProfileResponse`, `DiagnosticPhase` union, `ProbeProgress` |
+| `my-tutoring-app/src/components/lumina/diagnostic/diagnosticApi.ts` | API client wrapping 5 backend endpoints via `authApi` |
+| `my-tutoring-app/src/components/lumina/diagnostic/useDiagnosticSession.ts` | Core state machine hook: `welcome → generating → probing → transition → (loop or completing → profile)`. Pre-generates next probe's items while student works on current. localStorage pause/resume support. |
+| `my-tutoring-app/src/components/lumina/diagnostic/ProbeActivity.tsx` | Renders one probe's items via `PracticeManifestRenderer`. Soft subject header, "Activity N" counter, Next/Done button. |
+| `my-tutoring-app/src/components/lumina/diagnostic/DiagnosticProfileCard.tsx` | Knowledge profile completion screen with per-subject mastery cards, frontier skills, and "Start Learning!" CTA |
+| `my-tutoring-app/src/components/lumina/diagnostic/DiagnosticSession.tsx` | Main orchestrator rendering all phases (welcome, generating, probing, transition, completing, profile, error). Wraps in `LuminaAIProvider` + `EvaluationProvider`. |
+| `my-tutoring-app/src/components/lumina/diagnostic/index.ts` | Barrel export |
+
+#### 11.9 Modified Files — Frontend
+
+| File | Change |
+|------|--------|
+| `my-tutoring-app/src/components/lumina/App.tsx` | Added `DiagnosticSession` panel block in IDLE phase, imported component |
+| `my-tutoring-app/src/components/lumina/components/IdleScreen.tsx` | Added "Skills Explorer" SpotlightCard button (amber/gold gradient) with `onNavigate('diagnostic')` |
+
+#### 11.10 Score Bridge
+
+```typescript
+// PracticeItemResult.success (boolean) → backend score (0-1 float)
+function aggregateProbeScore(results: PracticeItemResult[]): number {
+  if (results.length === 0) return 0;
+  return results.filter(r => r.success).length / results.length;
+}
+// Backend pass threshold: 0.75 (3 of 4 correct = pass)
+```
+
+#### 11.11 Session Flow
+
+```
+User clicks "Skills Explorer" on IdleScreen
+  → DiagnosticSession mounts (welcome phase)
+  → User clicks "Let's Go!"
+  → POST /api/diagnostic/sessions → { session_id, probes: [P1..P5] }
+  → Generate items for P1 (generatePracticeManifestAndHydrateStreaming)
+  → Pre-generate items for P2 in background
+  → Student works through P1's 3-5 items via PracticeManifestRenderer
+  → Aggregate score: correctCount/total (0-1)
+  → POST /probe-result { subskill_id, score, items_completed }
+  → Response: { status: "continue", probes: [P6, P7], coverage_pct: 23% }
+  → Transition screen ("Nice work! Let's try some math!")
+  → Repeat with next probe...
+  → When status === "complete":
+  → POST /complete → { knowledge_profile, seeded_count, frontier_skills }
+  → Show DiagnosticProfileCard with results
+  → "Start Learning!" → back to dashboard (planner reads seeded mastery docs)
+```
+
+### What Was Built — Item-Level Curriculum IDs (March 2026)
+
+Fixed the evaluation pipeline's subskill ID reliability problem. When Gemini generates practice items, the items now carry canonical curriculum IDs from their originating source (diagnostic probe, daily planner, curriculum browser) instead of relying on session-level context that could be missing or wrong.
+
+See `my-tutoring-app/src/components/lumina/docs/EVALUATION_PIPELINE_ARCHITECTURE.md` for the full data flow trace and root cause analysis.
+
+#### 11.12 Changes
+
+| File | Change |
+|------|--------|
+| `my-tutoring-app/src/components/lumina/types.ts` | Added `CurriculumIds` interface (`subject`, `skillId`, `subskillId`, `source`) and optional `curriculumIds` field on `HydratedPracticeItem` |
+| `my-tutoring-app/src/components/lumina/diagnostic/useDiagnosticSession.ts` | In `beginProbe()`, stamps each generated item with probe's canonical IDs (source: `'diagnostic'`) |
+| `my-tutoring-app/src/components/lumina/components/PracticeManifestRenderer.tsx` | Passes `item.curriculumIds?.skillId` and `subskillId` to both visual primitives and KnowledgeCheck, threading into `usePrimitiveEvaluation` |
+| `my-tutoring-app/src/components/lumina/diagnostic/DiagnosticSession.tsx` | Passes `currentProbe` IDs to `EvaluationProvider` as `curriculumSubject`/`curriculumSkillId`/`curriculumSubskillId` fallback |
+
+**Resolution order** (3-layer fallback):
+1. Item-level: `item.curriculumIds?.subskillId` → passed as prop to primitive → `usePrimitiveEvaluation.skillId`
+2. Context-level: `EvaluationProvider.curriculumSubskillId` → `usePrimitiveEvaluation` fallback
+3. Backend last resort: `CurriculumMappingService` AI guess (only for paths without canonical IDs, e.g., practice mode)
+
 ---
 
 ## 12. Next Steps
 
-### Immediate (to make the backend fully testable end-to-end)
+### Immediate
 
 1. **Integration test with real curriculum graph** — Create a test that starts a diagnostic session against the actual MATHEMATICS curriculum graph, simulates probe results, verifies inference propagation, completes the session, and checks that mastery lifecycle docs were written correctly to Firestore.
 
-2. **Run `npx tsc --noEmit` / Python syntax check** — The DAG analysis engine has 34 passing unit tests. The service and endpoint layers need integration testing against Firestore (or a mock).
-
-### Frontend (DP-003, DP-004 — not yet started)
-
-3. **Diagnostic session UX component** — A new Lumina flow that:
-   - Calls `POST /api/diagnostic/sessions` to start
-   - Presents probe items using existing primitives in "assessment mode" (reduced scaffolding, no teaching, no pass/fail feedback)
-   - Submits each item via `POST /api/problems/submit` with `source: "diagnostic"`
-   - After all items for a probe, calls `POST /api/diagnostic/sessions/{id}/probe-result` with the aggregated score
-   - Shows encouraging transitions between probes ("Nice work! Let's try another!")
-   - Displays progress ("You've done 8 activities! Almost there!")
-   - On completion, calls `POST /api/diagnostic/sessions/{id}/complete`
-
-4. **Assessment primitive modes** — Configure existing primitives (FastFact, KnowledgeCheck, etc.) for diagnostic mode: score-only, no teaching scaffolding, 3-5 items per probe.
-
-5. **Parent real-time view** — Poll `GET /api/diagnostic/sessions/{id}/knowledge-profile` during the diagnostic to show parents a live view of skills being assessed and preliminary profile.
+2. **End-to-end manual test** — Start a diagnostic session via Skills Explorer, work through probes, verify probe results submit correctly with real subskill IDs, verify completion shows knowledge profile, verify mastery lifecycle docs appear in Firestore with correct IDs.
 
 ### P1 Features (DP-009 through DP-015)
 
-6. **Verification sessions** — The backend already seeds `inferred_mastered` skills at Gate 2 with a 3-day retest. The planner will schedule these automatically. Consider adding a `placement_inferred` tag to distinguish verification retests from regular retests in the daily plan UI.
+3. **Parent real-time view** — Poll `GET /api/diagnostic/sessions/{id}/knowledge-profile` during the diagnostic to show parents a live view of skills being assessed and preliminary profile.
 
-7. **Embedded review-through-teaching** — Requires changes to the lesson generator to accept `embeddable_reviews` context. The planner would classify due reviews as embeddable/adjacent/standalone and pass embeddable prereqs to the generator. This is a separate workstream from the diagnostic engine itself.
+4. **Verification sessions** — The backend already seeds `inferred_mastered` skills at Gate 2 with a 3-day retest. The planner will schedule these automatically. Consider adding a `placement_inferred` tag to distinguish verification retests from regular retests in the daily plan UI.
 
-8. **Parent knowledge map view** — The `/knowledge-profile` endpoint already returns per-subject summaries with frontier skills. Build a frontend component that visualizes "Already Knows / Ready to Learn / Coming Later" (PRD §5.1).
+5. **Embedded review-through-teaching** — Requires changes to the lesson generator to accept `embeddable_reviews` context. The planner would classify due reviews as embeddable/adjacent/standalone and pass embeddable prereqs to the generator. This is a separate workstream from the diagnostic engine itself.
+
+6. **Parent knowledge map view** — The `/knowledge-profile` endpoint already returns per-subject summaries with frontier skills. Build a frontend component that visualizes "Already Knows / Ready to Learn / Coming Later" (PRD §5.1).
+
+7. **Practice mode curriculum IDs** — Wire practice mode quest generation to the curriculum graph so generated items carry canonical IDs. Currently practice mode has no canonical source — this is the last path relying on the AI fallback.
 
 ### P2 Features (DP-016 through DP-020)
 
-9. **Re-diagnostic** — The session infrastructure supports this naturally. A re-diagnostic would load the existing knowledge profile, mark previously-classified skills, and only probe UNKNOWN + low-confidence skills. The backend would need a `POST /api/diagnostic/sessions` variant that accepts an existing profile to seed from.
+8. **Re-diagnostic** — The session infrastructure supports this naturally. A re-diagnostic would load the existing knowledge profile, mark previously-classified skills, and only probe UNKNOWN + low-confidence skills. The backend would need a `POST /api/diagnostic/sessions` variant that accepts an existing profile to seed from.
 
-10. **Living profile updates** — Hook into mastery lifecycle events (skill closure, failure) to update the knowledge profile in real-time. Currently the profile is a snapshot from the diagnostic session; making it live requires a listener or periodic recomputation.
+9. **Living profile updates** — Hook into mastery lifecycle events (skill closure, failure) to update the knowledge profile in real-time. Currently the profile is a snapshot from the diagnostic session; making it live requires a listener or periodic recomputation.
 
-11. **Solvency engine integration** — The weekly planner already uses mastery lifecycle state. After diagnostic seeding, `total_skills - closed - in_review` automatically decreases, improving the solvency ratio. No code change needed — the planner's existing math handles this. Consider adding a "placement-credited" count to the weekly plan response for visibility.
+10. **Solvency engine integration** — The weekly planner already uses mastery lifecycle state. After diagnostic seeding, `total_skills - closed - in_review` automatically decreases, improving the solvency ratio. No code change needed — the planner's existing math handles this. Consider adding a "placement-credited" count to the weekly plan response for visibility.

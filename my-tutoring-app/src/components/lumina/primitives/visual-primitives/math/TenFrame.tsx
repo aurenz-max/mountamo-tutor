@@ -526,6 +526,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
         const metrics: TenFrameMetrics = {
           type: 'ten-frame',
+          evalMode: challenges[0]?.type ?? 'default',
           challengesCompleted: totalCorrect,
           challengesTotal: challenges.length,
           subitizeAccuracy,

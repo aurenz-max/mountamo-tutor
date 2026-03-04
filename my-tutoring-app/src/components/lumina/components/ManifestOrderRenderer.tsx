@@ -164,13 +164,13 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
           additionalProps.instanceId = instanceId;
           additionalProps.exhibitId = evaluationContext?.exhibitId;
 
-          // Extract skillId from manifest config if available
-          if (manifestItem?.config?.skillId) {
-            additionalProps.skillId = manifestItem.config.skillId;
-          }
-          if (manifestItem?.config?.subskillId) {
-            additionalProps.subskillId = manifestItem.config.subskillId;
-          }
+          // Curriculum ID resolution: prefer authoritative EvaluationContext IDs
+          // (set from CurriculumBrowser or daily session planner) over manifest
+          // config IDs (which are Gemini-generated and may be hallucinated).
+          additionalProps.skillId =
+            evaluationContext?.curriculumSkillId || manifestItem?.config?.skillId;
+          additionalProps.subskillId =
+            evaluationContext?.curriculumSubskillId || manifestItem?.config?.subskillId;
 
           // Use first objective ID and text if available
           if (objectives.length > 0) {

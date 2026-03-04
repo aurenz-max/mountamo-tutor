@@ -344,6 +344,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
         const totalRegroups = challengeResults.reduce((s, r) => s + r.regroupsUsed, 0);
         const metrics: BaseTenBlocksMetrics = {
           type: 'base-ten-blocks',
+          evalMode: 'default',
           representationAccuracy: accuracy,
           regroupingCorrect: totalRegroups > 0,
           regroupCount: totalRegroups,

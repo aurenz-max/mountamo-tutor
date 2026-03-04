@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CategorizationActivityProblemData } from '../../types';
 import {
   usePrimitiveEvaluation,
@@ -13,6 +13,16 @@ interface CategorizationActivityProblemProps {
 }
 
 export const CategorizationActivityProblem: React.FC<CategorizationActivityProblemProps> = ({ data }) => {
+  // Shuffle items once so sequential category ordering from Gemini doesn't reveal answers
+  const shuffledItems = useMemo(() => {
+    const items = [...data.categorizationItems];
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+    return items;
+  }, [data.categorizationItems]);
+
   const [itemCategories, setItemCategories] = useState<{ [itemText: string]: string }>({});
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -125,11 +135,11 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
   };
 
   const getUncategorizedItems = () => {
-    return data.categorizationItems.filter(item => !itemCategories[item.itemText]);
+    return shuffledItems.filter(item => !itemCategories[item.itemText]);
   };
 
   const getItemsInCategory = (category: string) => {
-    return data.categorizationItems.filter(item => itemCategories[item.itemText] === category);
+    return shuffledItems.filter(item => itemCategories[item.itemText] === category);
   };
 
   const allCorrect = isSubmitted && data.categorizationItems.every(item => checkItemCategory(item.itemText));

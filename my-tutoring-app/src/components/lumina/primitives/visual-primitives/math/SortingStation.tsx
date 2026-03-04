@@ -307,6 +307,17 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     setSelectedObjectId(null);
   }, [hasSubmittedEvaluation, selectedObjectId]);
 
+  const handleRemoveFromBin = useCallback((objId: string) => {
+    if (hasSubmittedEvaluation) return;
+    setBinAssignments(prev => {
+      const next = new Map(prev);
+      next.delete(objId);
+      return next;
+    });
+    setFeedback('');
+    setFeedbackType('');
+  }, [hasSubmittedEvaluation]);
+
   const handleAttributeSelect = useCallback((attr: string) => {
     setSelectedAttribute(attr);
     setBinAssignments(new Map());
@@ -639,14 +650,14 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                     <button
                       key={obj.id}
                       onClick={() => handleObjectClick(obj.id)}
-                      className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl transition-all duration-150 ${
+                      className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all duration-150 ${
                         selectedObjectId === obj.id
                           ? 'bg-orange-500/20 border-2 border-orange-400 scale-110 shadow-lg shadow-orange-500/20'
                           : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-105'
                       }`}
-                      title={obj.label}
                     >
-                      {obj.emoji}
+                      <span className="text-2xl">{obj.emoji}</span>
+                      <span className="text-[11px] text-slate-400 leading-tight text-center break-words max-w-[80px]">{obj.label}</span>
                     </button>
                   ))}
                 </div>
@@ -686,9 +697,16 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-1 justify-center min-h-[32px]">
+                    <div className="flex flex-wrap gap-1.5 justify-center min-h-[32px]">
                       {itemsInBin.map(obj => (
-                        <span key={obj.id} className="text-xl transition-all duration-200">{obj.emoji}</span>
+                        <button
+                          key={obj.id}
+                          onClick={(e) => { e.stopPropagation(); handleRemoveFromBin(obj.id); }}
+                          className="flex flex-col items-center gap-0.5 rounded-lg px-1.5 py-1 bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-105 transition-all duration-150 cursor-pointer"
+                        >
+                          <span className="text-lg">{obj.emoji}</span>
+                          <span className="text-[9px] text-slate-400 leading-tight text-center break-words max-w-[72px]">{obj.label}</span>
+                        </button>
                       ))}
                     </div>
                   </button>
@@ -708,15 +726,15 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         const items = autoSortedBins.get(idx) || [];
         return (
           <div key={cat.label} className={`rounded-xl p-3 border ${color.bg} ${color.border}`}>
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2">
               <span className={`text-sm font-medium ${color.text}`}>{cat.label}</span>
-              <Badge className={`${color.bg} ${color.border} ${color.text} text-xs`}>
-                {items.length}
-              </Badge>
             </div>
-            <div className="flex flex-wrap gap-1 justify-center">
+            <div className="flex flex-wrap gap-1.5 justify-center">
               {items.map(obj => (
-                <span key={obj.id} className="text-xl">{obj.emoji}</span>
+                <div key={obj.id} className="flex flex-col items-center gap-0.5 rounded-lg px-1.5 py-1 bg-white/5 border border-white/10">
+                  <span className="text-lg">{obj.emoji}</span>
+                  <span className="text-[9px] text-slate-400 leading-tight text-center break-words max-w-[72px]">{obj.label}</span>
+                </div>
               ))}
             </div>
           </div>
@@ -778,19 +796,19 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
               <button
                 key={obj.id}
                 onClick={() => handleObjectClick(obj.id)}
-                className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-all duration-150 ${
+                className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all duration-150 ${
                   selectedObjects.has(obj.id)
                     ? 'bg-emerald-500/20 border-2 border-emerald-400 scale-110 shadow-lg shadow-emerald-500/20'
                     : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-105'
                 }`}
-                title={obj.label}
               >
                 <span className="text-2xl">{obj.emoji}</span>
-                <div className="flex flex-wrap gap-0.5 justify-center max-w-[72px]">
+                <span className="text-[11px] text-slate-300 leading-tight text-center break-words max-w-[80px]">{obj.label}</span>
+                <div className="flex flex-wrap gap-0.5 justify-center max-w-[80px]">
                   {Object.entries(obj.attributes).map(([key, value]) => (
                     <span
                       key={key}
-                      className="text-[10px] leading-tight px-1 rounded bg-white/5 text-slate-400"
+                      className="text-[9px] leading-tight px-1 rounded bg-white/5 text-slate-500"
                     >
                       {value}
                     </span>
@@ -820,14 +838,14 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
               <button
                 key={obj.id}
                 onClick={() => handleObjectClick(obj.id)}
-                className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl transition-all duration-150 ${
+                className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all duration-150 ${
                   selectedOddOne === obj.id
                     ? 'bg-amber-500/20 border-2 border-amber-400 scale-110 shadow-lg shadow-amber-500/20'
                     : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-105'
                 }`}
-                title={obj.label}
               >
-                {obj.emoji}
+                <span className="text-2xl">{obj.emoji}</span>
+                <span className="text-[11px] text-slate-400 leading-tight text-center break-words max-w-[80px]">{obj.label}</span>
               </button>
             ))}
           </div>

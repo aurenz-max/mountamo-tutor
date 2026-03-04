@@ -91,6 +91,9 @@ export const PracticeManifestRenderer: React.FC<PracticeManifestRendererProps> =
       instanceId: manifestItem.instanceId,
       onEvaluationSubmit: handleVisualEvaluation,
       allowInteraction: true,
+      // Item-level curriculum IDs for evaluation pipeline
+      skillId: item.curriculumIds?.skillId,
+      subskillId: item.curriculumIds?.subskillId,
     };
 
     // Visual primitives contain their own title, description, and challenge
@@ -110,6 +113,9 @@ export const PracticeManifestRenderer: React.FC<PracticeManifestRendererProps> =
           problems: [problemData],
           instanceId: manifestItem.instanceId,
           onEvaluationSubmit: handleStandardEvaluation,
+          // Item-level curriculum IDs for evaluation pipeline
+          skillId: item.curriculumIds?.skillId,
+          subskillId: item.curriculumIds?.subskillId,
         }}
       />
     );

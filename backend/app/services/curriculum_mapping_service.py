@@ -94,13 +94,24 @@ class CurriculumMappingService:
 
         # 2. Load curriculum hierarchy
         try:
-            subjects = [subject_hint] if subject_hint else await self.curriculum_service.get_available_subjects()
-            curriculum_summary = await self._build_curriculum_summary(subjects)
+            if subject_hint:
+                subject_names = [subject_hint]
+            else:
+                # get_available_subjects() returns List[Dict] with subject_id/subject_name —
+                # extract the subject_id (e.g. "SCIENCE") which get_curriculum() accepts.
+                subject_dicts = await self.curriculum_service.get_available_subjects()
+                subject_names = [
+                    s.get("subject_id") or s.get("subject_name", "")
+                    for s in subject_dicts
+                    if isinstance(s, dict)
+                ]
+                logger.info(f"[CURRICULUM_MAPPING] Resolved {len(subject_names)} subjects: {subject_names}")
+            curriculum_summary = await self._build_curriculum_summary(subject_names)
         except Exception as e:
             logger.warning(f"[CURRICULUM_MAPPING] Failed to load curriculum: {e}")
             return self._fallback(primitive_type)
 
-        if not curriculum_summary:
+        if not curriculum_summary or curriculum_summary == "[]":
             logger.warning("[CURRICULUM_MAPPING] Empty curriculum — falling back")
             return self._fallback(primitive_type)
 

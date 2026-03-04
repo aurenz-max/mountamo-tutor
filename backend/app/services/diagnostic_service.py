@@ -103,12 +103,27 @@ class DiagnosticService:
                 graph = graph_data.get("graph", {})
                 nodes = graph.get("nodes", [])
                 edges = graph.get("edges", [])
+                # Build a lookup of skill descriptions from skill-level nodes
+                skill_desc_map: Dict[str, str] = {}
+                for n in nodes:
+                    ntype = n.get("type", n.get("entity_type", ""))
+                    if ntype == "skill":
+                        skill_desc_map[n["id"]] = (
+                            n.get("description", "") or n.get("label", "")
+                        )
+
                 # Filter to subskills only (we probe at subskill level)
                 subskill_nodes = [
                     n for n in nodes
                     if n.get("type") == "subskill"
                     or n.get("entity_type") == "subskill"
                 ]
+                # Enrich subskill nodes with parent skill description
+                for n in subskill_nodes:
+                    sid = n.get("skill_id", "")
+                    if sid and sid in skill_desc_map:
+                        n["skill_description"] = skill_desc_map[sid]
+
                 # Filter edges to only include subskill-to-subskill
                 subskill_ids = {n["id"] for n in subskill_nodes}
                 subskill_edges = [
@@ -147,6 +162,8 @@ class DiagnosticService:
                 subskill_id=nid,
                 subject=node.get("subject", ""),
                 skill_id=node.get("skill_id", ""),
+                skill_description=node.get("skill_description", ""),
+                description=node.get("description", "") or node.get("label", ""),
                 status=DiagnosticStatus.UNKNOWN,
             )
 
@@ -284,7 +301,8 @@ class DiagnosticService:
                     "id": sid,
                     "subject": cls.subject,
                     "skill_id": cls.skill_id,
-                    "description": "",
+                    "skill_description": cls.skill_description,
+                    "description": cls.description,
                     "type": "subskill",
                 }
                 for sid, cls in classifications.items()

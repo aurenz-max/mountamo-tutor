@@ -1238,6 +1238,97 @@ class FirestoreService:
             return False
 
     # ============================================================================
+    # ITEM CALIBRATION & STUDENT ABILITY (IRT Difficulty Calibration PRD §5–6)
+    # ============================================================================
+
+    def _item_calibration_collection(self):
+        """Get reference to item_calibration/ (top-level, shared across students)."""
+        return self.client.collection('item_calibration')
+
+    def _ability_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/ability"""
+        return self._student_doc(student_id).collection('ability')
+
+    async def get_item_calibration(
+        self, item_key: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get a single item calibration document."""
+        try:
+            doc_ref = self._item_calibration_collection().document(item_key)
+            doc = doc_ref.get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error getting item calibration for {item_key}: {e}")
+            return None
+
+    async def upsert_item_calibration(
+        self, item_key: str, data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Create or update an item calibration document."""
+        try:
+            doc_ref = self._item_calibration_collection().document(item_key)
+            firestore_data = self._prepare_firestore_data(data)
+            doc_ref.set(firestore_data, merge=True)
+            logger.info(f"Upserted item_calibration/{item_key}")
+            return firestore_data
+        except Exception as e:
+            logger.error(f"Error upserting item calibration: {e}")
+            raise
+
+    async def get_all_item_calibrations(
+        self, primitive_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get all item calibration docs, optionally filtered by primitive_type."""
+        try:
+            query = self._item_calibration_collection()
+            if primitive_type:
+                query = query.where('primitive_type', '==', primitive_type)
+            return [doc.to_dict() for doc in query.stream()]
+        except Exception as e:
+            logger.error(f"Error getting item calibrations: {e}")
+            return []
+
+    async def get_student_ability(
+        self, student_id: int, skill_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get a single student ability document."""
+        try:
+            doc_ref = self._ability_subcollection(student_id).document(skill_id)
+            doc = doc_ref.get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error getting student ability for {skill_id}: {e}")
+            return None
+
+    async def upsert_student_ability(
+        self, student_id: int, skill_id: str, data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Create or update a student ability document."""
+        try:
+            await self._ensure_student_document(student_id)
+            doc_ref = self._ability_subcollection(student_id).document(skill_id)
+            firestore_data = self._prepare_firestore_data(data)
+            doc_ref.set(firestore_data, merge=True)
+            logger.info(f"Upserted ability/{skill_id} for student {student_id}")
+            return firestore_data
+        except Exception as e:
+            logger.error(f"Error upserting student ability: {e}")
+            raise
+
+    async def get_all_student_abilities(
+        self, student_id: int
+    ) -> List[Dict[str, Any]]:
+        """Get all ability documents for a student."""
+        try:
+            return [
+                doc.to_dict()
+                for doc in self._ability_subcollection(student_id).stream()
+            ]
+        except Exception as e:
+            logger.error(f"Error getting student abilities: {e}")
+            return []
+
+    # ============================================================================
     # STUDENT PLANNING FIELDS (capacity, development patterns, aggregate metrics)
     # ============================================================================
 

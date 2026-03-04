@@ -603,6 +603,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
         const metrics: NumberLineMetrics = {
           type: 'number-line',
+          evalMode: interactionMode ?? 'default',
           targetValue: lastTarget,
           placedValue: lastPlaced,
           error: Math.abs(lastPlaced - lastTarget),

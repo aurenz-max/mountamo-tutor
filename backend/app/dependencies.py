@@ -25,6 +25,7 @@ from .services.review import ReviewService
 from .services.daily_activities import DailyActivitiesService
 from .services.bigquery_analytics import BigQueryAnalyticsService
 from .services.mastery_lifecycle_engine import MasteryLifecycleEngine
+from .services.calibration_engine import CalibrationEngine
 from .services.planning_service import PlanningService
 from .services.velocity_service import VelocityService
 from .services.firestore_analytics import FirestoreAnalyticsService
@@ -64,6 +65,7 @@ _problem_optimizer: Optional[ProblemOptimizer] = None
 _review_service: Optional[ReviewService] = None
 _curriculum_mapping_service: Optional[CurriculumMappingService] = None
 _mastery_lifecycle_engine: Optional[MasteryLifecycleEngine] = None
+_calibration_engine: Optional[CalibrationEngine] = None
 _planning_service: Optional[PlanningService] = None
 _velocity_service: Optional[VelocityService] = None
 _firestore_analytics_service: Optional[FirestoreAnalyticsService] = None
@@ -273,6 +275,9 @@ async def get_competency_service() -> CompetencyService:
             # Inject mastery lifecycle engine for 4-gate model (PRD §2)
             _competency_service.mastery_lifecycle_engine = get_mastery_lifecycle_engine(firestore_service)
 
+            # Inject calibration engine for IRT item β / student θ (Difficulty PRD §5–6)
+            _competency_service.calibration_engine = get_calibration_engine(firestore_service)
+
             # Initialize - clean and simple
             await _competency_service.initialize()
             logger.info("✅ CompetencyService initialized successfully")
@@ -430,6 +435,18 @@ def get_mastery_lifecycle_engine(
         _mastery_lifecycle_engine = MasteryLifecycleEngine(firestore_service=firestore_service)
         logger.info("✅ MasteryLifecycleEngine initialized successfully")
     return _mastery_lifecycle_engine
+
+
+def get_calibration_engine(
+    firestore_service: FirestoreService = Depends(get_firestore_service)
+) -> CalibrationEngine:
+    """Get or create CalibrationEngine singleton."""
+    global _calibration_engine
+    if _calibration_engine is None:
+        logger.info("Initializing CalibrationEngine")
+        _calibration_engine = CalibrationEngine(firestore_service=firestore_service)
+        logger.info("✅ CalibrationEngine initialized successfully")
+    return _calibration_engine
 
 
 async def get_planning_service(

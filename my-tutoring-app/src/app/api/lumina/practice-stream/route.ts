@@ -5,7 +5,7 @@ import { hydratePracticeManifest } from '@/components/lumina/service/manifest/pr
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { topic, gradeLevel, problemCount } = body;
+    const { topic, gradeLevel, problemCount, enforceDiversity } = body;
 
     const encoder = new TextEncoder();
     const stream = new TransformStream();
@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
               await sendEvent({ type: 'thinking', thought });
             },
           },
+          { enforceDiversity: !!enforceDiversity },
         );
 
         await sendEvent({

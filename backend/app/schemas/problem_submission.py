@@ -20,6 +20,11 @@ class LessonContext(BaseModel):
     component_intent: Optional[str] = None
     primitive_type: Optional[str] = None
     objective_text: Optional[str] = None
+    curriculum_subject: Optional[str] = None
+    # Provenance of the skill/subskill IDs on this submission.
+    # "curriculum" / "planner" / "diagnostic" = authoritative IDs from the curriculum graph.
+    # "free-form" = no curriculum IDs available — backend should use CurriculumMappingService.
+    id_source: Optional[Literal["curriculum", "planner", "diagnostic", "free-form"]] = None
 
 
 class ProblemSubmission(BaseModel):

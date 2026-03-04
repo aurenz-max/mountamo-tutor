@@ -227,6 +227,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
     const metrics: AreaModelMetrics = {
       type: 'area-model',
+      evalMode: 'default',
       targetProduct: totalProduct,
       studentProduct: studentSumNum,
       correctFinalAnswer: sumIsCorrect,

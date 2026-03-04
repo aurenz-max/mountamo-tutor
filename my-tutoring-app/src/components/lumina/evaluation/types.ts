@@ -17,6 +17,8 @@ import type { PlacedPiece } from '../primitives/visual-primitives/engineering/To
  * backend can resolve generic primitives (e.g. compare-contrast) to specific
  * curriculum subskills.
  */
+export type IdSource = 'curriculum' | 'planner' | 'diagnostic' | 'free-form';
+
 export interface LessonContext {
   topic?: string;
   gradeLevel?: string;
@@ -26,6 +28,10 @@ export interface LessonContext {
   /** When the lesson was initiated from a specific curriculum entry, this is the
    *  real subject (e.g. "Reading") so the backend can skip AI curriculum mapping. */
   curriculumSubject?: string;
+  /** Provenance of the skill/subskill IDs on this submission.
+   *  "curriculum" / "planner" / "diagnostic" = authoritative IDs from the curriculum graph.
+   *  "free-form" = no curriculum IDs available — backend should use CurriculumMappingService. */
+  idSource?: IdSource;
 }
 
 // =============================================================================
@@ -81,6 +87,11 @@ export interface PrimitiveEvaluationResult<TMetrics extends PrimitiveMetrics = P
  */
 export interface BasePrimitiveMetrics {
   type: string;
+
+  // Evaluation mode for IRT difficulty calibration (e.g., 'subitize', 'plot', 'build').
+  // Multi-phase primitives set this to the challenge type; single-mode primitives
+  // can omit (defaults to 'default' on the backend).
+  evalMode?: string;
 
   // AI assistance metadata (optional - only present if AI was enabled)
   aiAssistance?: {

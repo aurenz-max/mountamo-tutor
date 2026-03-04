@@ -383,11 +383,12 @@ export const generatePracticeManifestAndHydrateStreaming = async (
   gradeLevel: string,
   problemCount: number,
   callbacks?: PracticeStreamCallbacks,
+  options?: { enforceDiversity?: boolean },
 ): Promise<HydratedPracticeItem[]> => {
   const response = await fetch('/api/lumina/practice-stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic, gradeLevel, problemCount }),
+    body: JSON.stringify({ topic, gradeLevel, problemCount, enforceDiversity: options?.enforceDiversity }),
   });
 
   if (!response.ok) {

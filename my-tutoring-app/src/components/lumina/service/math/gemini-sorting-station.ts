@@ -349,33 +349,81 @@ Return the complete sorting station configuration.
       }
     }
 
-    // Validate two-attributes challenges: ensure the rule has at least 2 keys.
-    // Note: we no longer strip "size" from rules because language/semantic challenges
-    // (e.g. Parts of Speech) legitimately use "size" as a semantic attribute.
-    // The prompt already discourages visual-size usage for emoji-based challenges.
+    // Validate two-attributes challenges
     if (challenge.type === 'two-attributes' && Array.isArray(challenge.categories)) {
+      // Collect the set of attribute keys that actually exist on objects
+      const objectAttrKeys = new Set<string>();
+      for (const obj of challenge.objects) {
+        for (const k of Object.keys(obj.attributes)) {
+          if (obj.attributes[k]) objectAttrKeys.add(k); // skip empty values
+        }
+      }
+      const availableKeys = Array.from(objectAttrKeys);
+
       for (const cat of challenge.categories) {
-        if (cat.rule && typeof cat.rule === 'object') {
-          const keys = Object.keys(cat.rule);
-          if (keys.length < 2) {
-            // Derive a sensible two-key rule from the objects' attributes
-            const attrKeys = new Set<string>();
-            for (const obj of challenge.objects) {
-              for (const k of Object.keys(obj.attributes)) {
-                attrKeys.add(k);
-              }
-            }
-            const available = Array.from(attrKeys);
-            if (available.length >= 2) {
-              const first = challenge.objects[0];
-              if (first) {
-                cat.rule = {};
-                cat.rule[available[0]] = first.attributes[available[0]] || '';
-                cat.rule[available[1]] = first.attributes[available[1]] || '';
-                cat.label = `${cat.rule[available[0]]} ${cat.rule[available[1]]}`.trim();
-              }
+        if (!cat.rule || typeof cat.rule !== 'object') {
+          cat.rule = {};
+        }
+
+        // Strip "size" from rules (already stripped from objects above)
+        delete cat.rule.size;
+
+        // Remove rule keys that don't exist on any object or have empty values
+        for (const key of Object.keys(cat.rule)) {
+          if (!objectAttrKeys.has(key) || !cat.rule[key]) {
+            delete cat.rule[key];
+          }
+        }
+
+        // If rule has fewer than 2 valid keys, rebuild from object attributes
+        if (Object.keys(cat.rule).length < 2 && availableKeys.length >= 2) {
+          // Find an object that produces a non-trivial split (some match, some don't)
+          let bestRule: Record<string, string> | null = null;
+          for (const obj of challenge.objects) {
+            const candidateRule: Record<string, string> = {};
+            candidateRule[availableKeys[0]] = obj.attributes[availableKeys[0]] || '';
+            candidateRule[availableKeys[1]] = obj.attributes[availableKeys[1]] || '';
+            // Skip if either value is empty
+            if (!candidateRule[availableKeys[0]] || !candidateRule[availableKeys[1]]) continue;
+            const matchCount = challenge.objects.filter((o: { attributes: Record<string, string> }) =>
+              Object.entries(candidateRule).every(([k, v]) => o.attributes[k] === v)
+            ).length;
+            // Good split: some match, some don't
+            if (matchCount > 0 && matchCount < challenge.objects.length) {
+              bestRule = candidateRule;
+              break;
             }
           }
+          if (bestRule) {
+            cat.rule = bestRule;
+            cat.label = `${bestRule[availableKeys[0]]} ${bestRule[availableKeys[1]]}`.trim();
+          }
+        }
+      }
+
+      // Final safety: verify that the first category rule matches at least 1 (but not all) objects
+      const cats = challenge.categories;
+      if (cats.length > 0) {
+        const rule = cats[0].rule;
+        const ruleKeys = Object.keys(rule);
+        const matchCount = challenge.objects.filter((o: { attributes: Record<string, string> }) =>
+          ruleKeys.length >= 2 && ruleKeys.every(k => o.attributes[k] === rule[k])
+        ).length;
+        if (matchCount === 0 || matchCount === challenge.objects.length) {
+          // Unsolvable or trivial — downgrade to sort-by-one so it's still usable
+          challenge.type = 'sort-by-one';
+          const firstKey = availableKeys[0] || 'type';
+          challenge.sortingAttribute = firstKey;
+          const values = new Set(
+            challenge.objects.map((o: { attributes: Record<string, string> }) => o.attributes[firstKey]).filter(Boolean)
+          );
+          challenge.categories = Array.from(values).map((val: unknown) => {
+            const v = String(val);
+            return {
+              label: v.charAt(0).toUpperCase() + v.slice(1),
+              rule: { [firstKey]: v },
+            };
+          });
         }
       }
     }

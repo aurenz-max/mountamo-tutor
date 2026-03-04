@@ -5,6 +5,7 @@ import type { ComponentId } from '../../types';
 import type {
   PrimitiveEvaluationResult,
   PrimitiveMetrics,
+  IdSource,
 } from '../types';
 import { useEvaluationContext } from '../contexts/EvaluationContext';
 
@@ -210,17 +211,28 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     const resolvedSkillId = skillId || evaluationContext?.curriculumSkillId;
     const resolvedSubskillId = subskillId || evaluationContext?.curriculumSubskillId;
 
-    // Build lesson context from EvaluationContext + component-level props
-    const lessonContext = (evaluationContext?.topic || componentIntent)
-      ? {
-          topic: evaluationContext?.topic,
-          gradeLevel: evaluationContext?.gradeLevel,
-          componentIntent,
-          primitiveType: primitiveType as string,
-          objectiveText,
-          curriculumSubject: evaluationContext?.curriculumSubject,
-        }
-      : undefined;
+    // Determine provenance of the IDs so the backend knows whether to trust them
+    // or route to CurriculumMappingService.
+    let idSource: IdSource | undefined;
+    if (resolvedSkillId && resolvedSubskillId) {
+      // We have IDs — they came from either the component prop or the provider context
+      idSource = skillId ? 'curriculum' : 'planner';
+    } else {
+      // No curriculum IDs available — explicitly mark as free-form
+      idSource = 'free-form';
+    }
+
+    // Build lesson context from EvaluationContext + component-level props.
+    // Always include it so the backend has topic/grade for curriculum mapping.
+    const lessonContext = {
+      topic: evaluationContext?.topic,
+      gradeLevel: evaluationContext?.gradeLevel,
+      componentIntent,
+      primitiveType: primitiveType as string,
+      objectiveText,
+      curriculumSubject: evaluationContext?.curriculumSubject,
+      idSource,
+    };
 
     const result: PrimitiveEvaluationResult<TMetrics> = {
       primitiveType,

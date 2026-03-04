@@ -587,6 +587,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
         const metrics: CountingBoardMetrics = {
           type: 'counting-board',
+          evalMode: challenges[0]?.type ?? 'default',
           countingAccuracy,
           oneToOneCorrespondence: oneToOneAll,
           subitizeAccuracy,

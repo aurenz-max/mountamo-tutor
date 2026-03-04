@@ -436,6 +436,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
           Math.max(50, 100 - (guessAttempts * 10)),
           {
             type: 'function-machine',
+            evalMode: phase ?? 'default',
             functionRule: rule,
             ruleDiscovered: true,
             inputsExplored: processedPairs.map(p => p.input),

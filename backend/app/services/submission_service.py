@@ -346,33 +346,49 @@ class SubmissionService:
         logger.info(f"[LUMINA_PRIMITIVE] Metrics type: {metrics.get('type', 'unknown')}")
 
         # Resolve skill_id/subskill_id/subject — prefer explicit values from
-        # the frontend, but use curriculum mapping when they look like defaults.
-        skill_id = submission.skill_id or problem.get('skill_id', f'{primitive_type}_skill')
-        subskill_id = submission.subskill_id or problem.get('subskill_id', f'{primitive_type}_subskill')
-        subject = submission.subject or 'language_arts'
+        # the frontend, but use curriculum mapping when they're absent or free-form.
+        ctx = submission.lesson_context
+        id_source = (ctx.id_source if ctx else None) or None
 
-        # Curriculum mapping: if IDs look like fallbacks, subject is 'auto', or
-        # the subject doesn't match the skill_id (e.g. language_arts default with
-        # a math-* skill), ask the CurriculumMappingService to resolve proper IDs.
+        skill_id = submission.skill_id or problem.get('skill_id', 'free-form')
+        subskill_id = submission.subskill_id or problem.get('subskill_id', 'free-form')
+        subject = submission.subject or 'auto'
+
+        # Determine whether we need curriculum mapping:
+        # 1. Explicit free-form from frontend (id_source == 'free-form')
+        # 2. Legacy fallback patterns (_skill/_subskill suffixes, subject 'auto')
+        # 3. Subject/skill mismatch
+        _is_free_form = id_source == 'free-form' or skill_id == 'free-form' or subskill_id == 'free-form'
         _subject_skill_mismatch = (
             subject == 'language_arts'
             and skill_id.startswith('math-')
         )
-        is_fallback = (
-            skill_id.endswith('_skill')
+        needs_mapping = (
+            _is_free_form
+            or skill_id.endswith('_skill')
             or subskill_id.endswith('_subskill')
             or subject == 'auto'
             or _subject_skill_mismatch
         )
-        if is_fallback and self.curriculum_mapping_service:
+
+        if _is_free_form:
+            logger.info(f"[LUMINA_PRIMITIVE] Free-form submission — routing to CurriculumMappingService")
+        elif needs_mapping:
+            logger.info(f"[LUMINA_PRIMITIVE] Legacy fallback IDs detected — routing to CurriculumMappingService")
+
+        if needs_mapping and self.curriculum_mapping_service:
             try:
-                ctx = submission.lesson_context
+                # Use curriculum_subject from lesson_context as a hint when available
+                subject_hint = (
+                    (ctx.curriculum_subject if ctx else None)
+                    or (subject if subject not in ('auto', 'language_arts', 'free-form') else None)
+                )
                 mapping = await self.curriculum_mapping_service.resolve_mapping(
                     topic=(ctx.topic if ctx else '') or '',
                     component_intent=(ctx.component_intent if ctx else '') or '',
                     grade_level=(ctx.grade_level if ctx else '') or '',
                     primitive_type=(ctx.primitive_type if ctx else None) or primitive_type,
-                    subject_hint=subject if subject not in ('auto', 'language_arts') else None,
+                    subject_hint=subject_hint,
                 )
                 if mapping.confidence >= 0.3:
                     skill_id = mapping.skill_id
@@ -391,9 +407,13 @@ class SubmissionService:
             except Exception as e:
                 logger.warning(f"[LUMINA_PRIMITIVE] Curriculum mapping failed, using fallbacks: {e}")
 
-        # Ensure subject is never 'auto' when reaching competency update
-        if subject == 'auto':
-            subject = 'language_arts'
+        # Ensure subject/skill/subskill are never sentinel values when reaching competency update
+        if subject in ('auto', 'free-form'):
+            subject = 'general'
+        if skill_id == 'free-form':
+            skill_id = f'{primitive_type}_skill'
+        if subskill_id == 'free-form':
+            subskill_id = f'{primitive_type}_subskill'
 
         # Build a review object matching the standard shape
         review = {
@@ -438,7 +458,10 @@ class SubmissionService:
             }
         }
 
-        # Update competency
+        # Extract eval_mode from primitive_response for IRT calibration engine
+        eval_mode = primitive_response.get('eval_mode') or metrics.get('evalMode') or 'default'
+
+        # Update competency (threads primitive_type + eval_mode to calibration hook)
         competency_result = await self._update_competency(
             student_id=student_id,
             skill_id=skill_id,
@@ -447,6 +470,8 @@ class SubmissionService:
             subject=subject,
             evaluation={'score': backend_score, 'correct': is_correct},
             source=eval_source,
+            primitive_type=primitive_type,
+            eval_mode=eval_mode,
         )
 
         # Save to CosmosDB
@@ -460,7 +485,7 @@ class SubmissionService:
                 }
             )
 
-        logger.info(f"[LUMINA_PRIMITIVE] Submission processed — score: {backend_score}, correct: {is_correct}")
+        logger.info(f"[LUMINA_PRIMITIVE] Submission processed — score: {backend_score}, correct: {is_correct}, eval_mode: {eval_mode}")
 
         return SubmissionResult(
             review=review,
@@ -566,6 +591,8 @@ class SubmissionService:
         subject: str = "math",
         evaluation: Dict[str, Any] = None,
         source: str = "practice",
+        primitive_type: Optional[str] = None,
+        eval_mode: Optional[str] = None,
     ) -> dict:
         """Update student competency and return result"""
         try:
@@ -583,6 +610,8 @@ class SubmissionService:
                 subskill_id=subskill_id,
                 evaluation=evaluation,
                 source=source,
+                primitive_type=primitive_type,
+                eval_mode=eval_mode,
             )
         except Exception as e:
             logger.error(f"Error updating competency: {str(e)}")

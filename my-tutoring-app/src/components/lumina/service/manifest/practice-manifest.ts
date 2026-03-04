@@ -124,11 +124,17 @@ const practiceManifestSchema: Schema = {
  * Generate a practice manifest that pairs problems with visual primitives.
  * Supports optional progress callbacks for streaming UI updates.
  */
+export interface PracticeManifestOptions {
+  /** When true, forces every item to use a different visual primitive or problem type. Duplicate primitives are converted to standard problems. */
+  enforceDiversity?: boolean;
+}
+
 export const generatePracticeManifest = async (
   topic: string,
   gradeLevel: string,
   problemCount: number,
   callbacks?: PracticeManifestProgressCallback,
+  options?: PracticeManifestOptions,
 ): Promise<PracticeManifest> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const visualCatalog = buildPracticeVisualCatalogContext();
@@ -160,7 +166,14 @@ For each problem, decide:
 - Vary difficulty (some easy, some medium, some hard)
 - Math topics: aim for 60-80% visual primitives
 - Non-math topics: use standard problems mostly (0-20% visual)
-- Mix different visual primitives when possible
+- Mix different visual primitives when possible${options?.enforceDiversity ? `
+
+## DIVERSITY REQUIREMENT (MANDATORY)
+This is a diagnostic assessment — each item must test a DIFFERENT facet of the skill.
+- NEVER use the same visual primitive componentId more than once.
+- NEVER use the same standard problem type more than once.
+- If only one visual primitive fits, use it once and make the other items standard problems of DIFFERENT types.
+- Each item should probe a distinct angle: e.g. one conceptual, one procedural, one applied.` : ''}
 
 ## EXAMPLE (Fractions for Elementary)
 
@@ -259,6 +272,50 @@ Return ONLY valid JSON matching the schema.`;
   }
 
   const manifest = JSON.parse(jsonStr) as PracticeManifest;
+
+  // Post-manifest diversity enforcement: convert duplicate visual primitives
+  // to standard problems so every item tests a different facet.
+  // NOTE: only visual primitives are deduplicated — duplicate standard problem
+  // types (e.g. 2x multiple_choice) are fine and pedagogically valuable.
+  if (options?.enforceDiversity) {
+    const seenVisuals = new Set<string>();
+    const fallbackTypes = ['multiple_choice', 'true_false', 'fill_in_blanks', 'short_answer'];
+    let fallbackIdx = 0;
+
+    for (const item of manifest.items) {
+      if (item.visualPrimitive) {
+        const cid = item.visualPrimitive.componentId;
+        if (seenVisuals.has(cid)) {
+          const fallback = fallbackTypes[fallbackIdx % fallbackTypes.length];
+          fallbackIdx++;
+          console.log(`🔄 [Diversity] Swapping duplicate visual "${cid}" → standard "${fallback}" for ${item.instanceId}`);
+          item.standardProblem = {
+            problemType: fallback as any,
+            generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
+          };
+          item.visualPrimitive = null;
+        } else {
+          seenVisuals.add(cid);
+        }
+      }
+    }
+  }
+
+  // Safety net: items with neither visualPrimitive nor standardProblem get
+  // converted to a standard problem so the hydrator can always generate content.
+  const orphanFallbackTypes = ['multiple_choice', 'true_false', 'fill_in_blanks'];
+  let orphanIdx = 0;
+  for (const item of manifest.items) {
+    if (!item.visualPrimitive && !item.standardProblem) {
+      const fallback = orphanFallbackTypes[orphanIdx % orphanFallbackTypes.length];
+      orphanIdx++;
+      console.log(`⚠️ [Manifest] Item ${item.instanceId} has neither visual nor standard — assigning ${fallback}`);
+      item.standardProblem = {
+        problemType: fallback as any,
+        generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
+      };
+    }
+  }
 
   const visualCount = manifest.items.filter(i => i.visualPrimitive).length;
   const standardCount = manifest.items.filter(i => i.standardProblem).length;

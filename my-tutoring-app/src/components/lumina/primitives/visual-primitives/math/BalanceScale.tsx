@@ -360,6 +360,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
         const eq = formatEquation(initialLeft, initialRight);
         const metrics: BalanceScaleMetrics = {
           type: 'balance-scale',
+          evalMode: 'default',
           targetEquation: eq,
           solutionFound: true,
           solutionValue: activeVariableValue,
@@ -398,6 +399,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
         const avgSteps = challengeResults.reduce((s, r) => s + r.steps, 0) / Math.max(challengeResults.length, 1);
         const metrics: BalanceScaleMetrics = {
           type: 'balance-scale',
+          evalMode: 'default',
           targetEquation: formatEquation(initialLeft, initialRight),
           solutionFound: true,
           solutionValue: activeVariableValue,

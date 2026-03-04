@@ -32,6 +32,7 @@ class CompetencyService:
         self.cosmos_db = None  # Will be set by dependency injection
         self.firestore_service = None  # Will be set by dependency injection
         self.mastery_lifecycle_engine = None  # Will be set by dependency injection
+        self.calibration_engine = None  # Will be set by dependency injection
         self.curriculum_service = curriculum_service
         
         # Competency calculation settings
@@ -214,6 +215,8 @@ class CompetencyService:
         subskill_id: str,
         evaluation: Dict[str, Any],
         source: str = "practice",
+        primitive_type: Optional[str] = None,
+        eval_mode: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Update competency based on problem evaluation"""
         logger.info(f"🔍 COMPETENCY_SERVICE: === UPDATE_COMPETENCY_FROM_PROBLEM ===")
@@ -429,6 +432,24 @@ class CompetencyService:
                         )
                 except Exception as ml_err:
                     logger.error(f"⚠️ COMPETENCY_SERVICE: Mastery lifecycle engine error (non-fatal): {ml_err}")
+
+            # --- Calibration engine hook: IRT item β / student θ (Difficulty PRD §5–6) ---
+            # Only fires for Lumina primitives (primitive_type is not None).
+            # Skip for diagnostic source (same as mastery lifecycle).
+            if self.calibration_engine and source != "diagnostic" and primitive_type:
+                try:
+                    await self.calibration_engine.process_submission(
+                        student_id=student_id,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id,
+                        primitive_type=primitive_type,
+                        eval_mode=eval_mode or "default",
+                        score=score,
+                        source=source,
+                    )
+                    logger.info(f"✅ COMPETENCY_SERVICE: Calibration engine processed submission")
+                except Exception as cal_err:
+                    logger.error(f"⚠️ COMPETENCY_SERVICE: Calibration engine error (non-fatal): {cal_err}")
 
             logger.info(f"✅ COMPETENCY_SERVICE: Competency update successful")
             return result

@@ -69,6 +69,7 @@ class ProbeRequest(BaseModel):
     subskill_id: str
     subject: str
     skill_id: str = ""
+    skill_description: str = ""
     description: str = ""
     items_needed: int = Field(
         default=3, ge=1, le=5,
@@ -87,6 +88,8 @@ class SubskillClassification(BaseModel):
     subskill_id: str
     subject: str = ""
     skill_id: str = ""
+    skill_description: str = ""
+    description: str = ""
     status: DiagnosticStatus = DiagnosticStatus.UNKNOWN
     score: Optional[float] = Field(
         default=None,

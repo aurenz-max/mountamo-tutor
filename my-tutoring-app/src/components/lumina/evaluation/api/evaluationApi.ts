@@ -78,17 +78,26 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
     primitive_type?: string;
     objective_text?: string;
     curriculum_subject?: string;
+    id_source?: string;
   };
   source?: 'lesson' | 'practice';
 } {
-  // When curriculum IDs were provided from CurriculumBrowser, use the real
-  // subject directly so the backend skips AI curriculum mapping.
-  const hasCurriculumSubject = !!result.lessonContext?.curriculumSubject;
-  const resolvedSubject = hasCurriculumSubject
-    ? result.lessonContext!.curriculumSubject!
-    : result.lessonContext?.topic ? 'auto' : 'language_arts';
-  const resolvedSkillId = result.skillId || `${result.primitiveType}_skill`;
-  const resolvedSubskillId = result.subskillId || `${result.primitiveType}_subskill`;
+  const idSource = result.lessonContext?.idSource;
+  const hasRealIds = !!result.skillId && !!result.subskillId && idSource !== 'free-form';
+
+  // Subject resolution:
+  // - Authoritative IDs with curriculum subject → use it directly
+  // - Free-form (no canonical IDs) → 'auto' triggers CurriculumMappingService
+  // - No context at all → 'auto' (safer than guessing 'language_arts')
+  const resolvedSubject = hasRealIds && result.lessonContext?.curriculumSubject
+    ? result.lessonContext.curriculumSubject
+    : 'auto';
+
+  // Skill/subskill resolution:
+  // - With real IDs → send them
+  // - Free-form → send 'free-form' sentinel (not fake _skill/_subskill patterns)
+  const resolvedSkillId = hasRealIds ? result.skillId! : 'free-form';
+  const resolvedSubskillId = hasRealIds ? result.subskillId! : 'free-form';
 
   return {
     subject: resolvedSubject,
@@ -108,22 +117,22 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
       success: result.success,
       score: result.score,
       metrics: result.metrics,
+      eval_mode: result.metrics?.evalMode || 'default',
       duration_ms: result.durationMs,
       started_at: result.startedAt,
       completed_at: result.completedAt,
       student_work: result.studentWork,
     },
-    // Lesson context for backend curriculum mapping
-    lesson_context: result.lessonContext
-      ? {
-          topic: result.lessonContext.topic,
-          grade_level: result.lessonContext.gradeLevel,
-          component_intent: result.lessonContext.componentIntent,
-          primitive_type: result.lessonContext.primitiveType,
-          objective_text: result.lessonContext.objectiveText,
-          curriculum_subject: result.lessonContext.curriculumSubject,
-        }
-      : undefined,
+    // Lesson context — always include for curriculum mapping (even free-form needs topic/grade)
+    lesson_context: {
+      topic: result.lessonContext?.topic,
+      grade_level: result.lessonContext?.gradeLevel,
+      component_intent: result.lessonContext?.componentIntent,
+      primitive_type: result.lessonContext?.primitiveType || (result.primitiveType as string),
+      objective_text: result.lessonContext?.objectiveText,
+      curriculum_subject: result.lessonContext?.curriculumSubject,
+      id_source: idSource || (hasRealIds ? 'curriculum' : 'free-form'),
+    },
     // Eval source tagging (PRD 6.1): explicit from result, or derived from lessonContext
     source: result.source ?? (result.lessonContext ? 'lesson' : 'practice'),
   };

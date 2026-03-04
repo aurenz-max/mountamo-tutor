@@ -1430,12 +1430,25 @@ export interface PracticeManifest {
 }
 
 /**
+ * Canonical curriculum IDs stamped onto items at creation time.
+ * Ensures the evaluation pipeline always has authoritative IDs
+ * instead of falling back to AI-guessed or placeholder values.
+ */
+export interface CurriculumIds {
+  subject: string;
+  skillId: string;
+  subskillId: string;
+  source: 'curriculum' | 'planner' | 'diagnostic' | 'inferred' | 'free-form';
+}
+
+/**
  * A hydrated practice item with generated content ready for rendering.
  */
 export interface HydratedPracticeItem {
   manifestItem: PracticeManifestItem;
   visualData?: any;
   problemData?: ProblemData;
+  curriculumIds?: CurriculumIds;
 }
 
 /**

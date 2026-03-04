@@ -347,6 +347,54 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
               </div>
             </SpotlightCard>
 
+            {/* Skills Explorer (Diagnostic Placement) Button */}
+            <SpotlightCard
+              color="250, 204, 21"
+              onClick={() => onNavigate('diagnostic')}
+              className="bg-gradient-to-br from-amber-900/20 to-yellow-900/20"
+            >
+              <div className="p-6 flex items-start gap-4">
+                <div className="w-14 h-14 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <span className="text-2xl">🧭</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-white mb-1 group-hover:text-amber-200 transition-colors">
+                    Skills Explorer
+                  </h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Discover what you already know and build a personalized learning path
+                  </p>
+                </div>
+                <svg className="w-5 h-5 text-slate-600 group-hover:text-amber-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                </svg>
+              </div>
+            </SpotlightCard>
+
+            {/* Learning Map Button */}
+            <SpotlightCard
+              color="20, 184, 166"
+              onClick={() => onNavigate('knowledge-map')}
+              className="bg-gradient-to-br from-teal-900/20 to-emerald-900/20"
+            >
+              <div className="p-6 flex items-start gap-4">
+                <div className="w-14 h-14 bg-teal-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <span className="text-2xl">{'\u{1F5FA}\u{FE0F}'}</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-white mb-1 group-hover:text-teal-200 transition-colors">
+                    Learning Map
+                  </h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    See what you already know and what&apos;s ready to learn next
+                  </p>
+                </div>
+                <svg className="w-5 h-5 text-slate-600 group-hover:text-teal-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                </svg>
+              </div>
+            </SpotlightCard>
+
             {/* Analytics Dashboard Button */}
             <SpotlightCard
               color="139, 92, 246"
