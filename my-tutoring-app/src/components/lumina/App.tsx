@@ -29,7 +29,7 @@ import BiologyPrimitivesTester from './components/BiologyPrimitivesTester';
 import ChemistryPrimitivesTester from './components/ChemistryPrimitivesTester';
 import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
-import { PracticeMode } from './components/PracticeModeEnhanced';
+import { PulseSession } from './pulse/PulseSession';
 import { ExhibitProvider } from './contexts/ExhibitContext';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
@@ -351,24 +351,6 @@ export default function App() {
     generate({ topic: params.topic, gradeLevel: params.gradeLevel, preBuiltObjectives: params.preBuiltObjectives });
   }, [generate]);
 
-  // Handle transition from practice to learning exhibit
-  const handleLearnMoreFromPractice = useCallback((subject: string, practiceLevelGrade: GradeLevel) => {
-    setActivePanel(null);
-    setGradeLevel(practiceLevelGrade);
-
-    const subjectTopicMap: Record<string, string> = {
-      'mathematics': 'Mathematics',
-      'science': 'Science',
-      'language-arts': 'Language Arts',
-      'social-studies': 'Social Studies',
-      'reading': 'Reading',
-      'writing': 'Writing'
-    };
-
-    const exhibitTopic = subjectTopicMap[subject] || subject;
-    generate({ topic: exhibitTopic, gradeLevel: practiceLevelGrade });
-  }, [generate]);
-
   const reset = () => {
     resetSession();
     setTopic('');
@@ -673,9 +655,9 @@ export default function App() {
         {/* PRACTICE MODE STATE */}
         {phase === GameState.IDLE && activePanel === 'practice-mode' && (
           <div className="flex-1 animate-fade-in">
-            <PracticeMode
+            <PulseSession
               onBack={() => setActivePanel(null)}
-              onLearnMore={handleLearnMoreFromPractice}
+              gradeLevel={gradeLevel}
             />
           </div>
         )}

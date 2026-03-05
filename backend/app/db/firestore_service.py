@@ -1446,6 +1446,56 @@ class FirestoreService:
             raise
 
     # ============================================================================
+    # PULSE SESSION METHODS (Adaptive Learning Loop — Lumina Pulse PRD)
+    # ============================================================================
+
+    async def save_pulse_session(
+        self,
+        session_id: str,
+        data: Dict[str, Any],
+    ) -> None:
+        """Save or update a Pulse session document."""
+        try:
+            doc_ref = self.client.collection('pulse_sessions').document(session_id)
+            firestore_data = self._prepare_firestore_data(data)
+            doc_ref.set(firestore_data, merge=True)
+            logger.info(f"Saved pulse session {session_id}")
+        except Exception as e:
+            logger.error(f"Error saving pulse session {session_id}: {e}")
+            raise
+
+    async def get_pulse_session(
+        self,
+        session_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Get a Pulse session by ID."""
+        try:
+            doc_ref = self.client.collection('pulse_sessions').document(session_id)
+            doc = doc_ref.get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error getting pulse session {session_id}: {e}")
+            return None
+
+    async def get_student_pulse_sessions(
+        self,
+        student_id: int,
+        status: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get all Pulse sessions for a student, optionally filtered by status."""
+        try:
+            query = (
+                self.client.collection('pulse_sessions')
+                .where('student_id', '==', student_id)
+            )
+            if status:
+                query = query.where('status', '==', status)
+            return [doc.to_dict() for doc in query.stream()]
+        except Exception as e:
+            logger.error(f"Error getting pulse sessions for student {student_id}: {e}")
+            return []
+
+    # ============================================================================
     # MONITORING AND VALIDATION
     # ============================================================================
 

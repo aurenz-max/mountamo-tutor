@@ -2,14 +2,18 @@
 Diagnostic Placement API Endpoints
 
 Exposes the adaptive diagnostic placement engine via REST:
+  GET  /sessions                        — List student's diagnostic sessions
+  GET  /sessions/latest-profile         — Latest completed knowledge profile
   POST /sessions                        — Create session, get initial probes
   POST /sessions/{id}/probe-result      — Record result, get next probes
-  GET  /sessions/{id}                   — Get session state (resume / parent view)
+  GET  /sessions/{id}                   — Get enriched session state (resume)
   POST /sessions/{id}/complete          — Finalize and seed mastery lifecycle
   GET  /sessions/{id}/knowledge-profile — Get knowledge profile summary
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Depends, Query, status
 from datetime import datetime
 import logging
 
@@ -23,6 +27,67 @@ from ...models.diagnostic import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+# ============================================================================
+# LIST SESSIONS (must be before /{session_id} routes)
+# ============================================================================
+
+@router.get("/sessions/latest-profile")
+async def get_latest_profile(
+    user_context: dict = Depends(get_user_context),
+    service: DiagnosticService = Depends(get_diagnostic_service),
+):
+    """
+    Get the knowledge profile from the student's most recent completed
+    diagnostic session. Returns 404 if no completed diagnostic exists.
+    """
+    student_id = user_context["student_id"]
+    try:
+        profile = await service.get_latest_profile(student_id)
+        if profile is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No completed diagnostic session found",
+            )
+        return profile
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting latest profile: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.get("/sessions")
+async def list_diagnostic_sessions(
+    state: Optional[str] = Query(
+        default=None,
+        description='Filter by state: "in_progress", "completed", or "abandoned"',
+    ),
+    user_context: dict = Depends(get_user_context),
+    service: DiagnosticService = Depends(get_diagnostic_service),
+):
+    """
+    List all diagnostic sessions for the authenticated student.
+
+    Optional query parameter `state` filters by session state.
+    Results are sorted by created_at descending (most recent first).
+    """
+    student_id = user_context["student_id"]
+    try:
+        sessions = await service.list_sessions(student_id, state=state)
+        return sessions
+
+    except Exception as e:
+        logger.error(f"Error listing diagnostic sessions: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
 
 # ============================================================================
@@ -51,14 +116,16 @@ async def create_diagnostic_session(
         }
     """
     student_id = user_context["student_id"]
+    grade_level = user_context.get("grade_level")
     try:
         logger.info(
             f"POST /diagnostic/sessions — student {student_id}, "
-            f"subjects={body.subjects}"
+            f"grade={grade_level}, subjects={body.subjects}"
         )
         result = await service.create_session(
             student_id=student_id,
             subjects=body.subjects,
+            grade_level=grade_level,
         )
         return result
 
@@ -134,13 +201,16 @@ async def get_diagnostic_session(
     service: DiagnosticService = Depends(get_diagnostic_service),
 ):
     """
-    Get diagnostic session state.
+    Get enriched diagnostic session state.
 
-    Used for resuming an interrupted session or displaying the parent
-    real-time view during the diagnostic.
+    For in_progress sessions: includes computed next probes for resume.
+    For completed sessions: includes the knowledge profile.
+
+    Used for resuming an interrupted session, displaying the parent
+    real-time view, or checking session state.
     """
     try:
-        session = await service.get_session(session_id)
+        session = await service.get_session_enriched(session_id)
         return session
 
     except ValueError as e:

@@ -7,7 +7,7 @@
 | Version | 1.2          |
 | Date    | March 2026   |
 | Author  | Chris        |
-| Status  | Phase 1 Complete |
+| Status  | Phase 2 Complete |
 
 ---
 
@@ -496,7 +496,7 @@ students/{student_id}/
 | Phase | Milestone | Deliverables | Status |
 |-------|-----------|-------------|--------|
 | Phase 1 | Foundation | Problem-type registry (50+ primitives), calibration models, CalibrationEngine with inline 1PL IRT β/θ updates, Firestore schema, submission pipeline hook, frontend evalMode threading. EL stored but not displayed. | **COMPLETE** |
-| Phase 2 | Display & Diagnostic Integration | EL trajectory chart in student dashboard. Progress Display Service with contextual messaging (§6.4). Seed StudentAbility prior from diagnostic placement θ instead of default 3.0. Admin view of item calibration convergence. | Next |
+| Phase 2 | Display & Diagnostic Integration | EL trajectory chart in student dashboard. Progress Display Service with contextual messaging (§6.4). Seed StudentAbility prior from diagnostic placement θ instead of default 3.0. Admin view of item calibration convergence. | **COMPLETE** |
 | Phase 3 | Assembly & Leapfrog | Session Assembly Engine: compose sessions using calibrated β values with core/stretch/confidence bands (§7). Leapfrog detection: flag `leapfrog_eligible` when θ >> gate ceiling (§10.3). Parent-facing leapfrog recommendations. | Planned |
 | Phase 4 | Calibration Maturity | Cross-skill leapfrog via prerequisite inference using `dag_analysis.py` (§10.4). Monitoring dashboard for β convergence and leapfrog accuracy. Configurable full-credibility threshold per subject. | Planned |
 | Phase 5 | Flywheel & Migration | Option A migration: EL feeds gate decisions (§6.5.3). Cross-student item calibration (pooled batch aggregation). Difficulty slider (§8). A/B testing framework for assembly strategies. | Planned |

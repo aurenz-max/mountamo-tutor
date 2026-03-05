@@ -25,7 +25,9 @@ import UserPreferencesModule from './UserPreferencesModule';
 import DailyBriefingComponent from './DailyBriefingComponent';
 import { AICoachToggleButton } from '@/components/layout/GlobalAICoachToggle'; // Import the global toggle
 import VelocityMetricsCard from '@/components/analytics/VelocityMetricsCard';
+import ELTrajectoryCard from '@/components/analytics/ELTrajectoryCard';
 import { useVelocityMetrics } from '@/hooks/useVelocityMetrics';
+import { useStudentAbilities } from '@/hooks/useStudentAbilities';
 import { LevelBadge } from '@/components/engagement/LevelBadge';
 import { XPProgressBar } from '@/components/engagement/XPProgressBar';
 
@@ -51,6 +53,13 @@ const EnhancedLearningDashboard: React.FC = () => {
     error: velocityError, 
     refetch: refetchVelocity 
   } = useVelocityMetrics(studentId);
+
+  // Fetch EL trajectory data (Difficulty Calibration Phase 2)
+  const {
+    data: abilitiesData,
+    loading: abilitiesLoading,
+    error: abilitiesError,
+  } = useStudentAbilities(studentId);
 
   // Handle activity selection from recommendations
   const handleActivitySelect = async (subskillId: string, subject: string) => {
@@ -312,12 +321,19 @@ const EnhancedLearningDashboard: React.FC = () => {
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="mt-6">
           {/* Velocity Metrics Card */}
-          <VelocityMetricsCard 
+          <VelocityMetricsCard
             data={velocityData}
             loading={velocityLoading}
             error={velocityError}
             studentId={studentId}
             onActivitySelect={handleActivitySelect}
+          />
+
+          {/* EL Trajectory — Earned Level over time per skill */}
+          <ELTrajectoryCard
+            abilities={abilitiesData?.abilities ?? []}
+            loading={abilitiesLoading}
+            error={abilitiesError}
           />
 
           <Card>

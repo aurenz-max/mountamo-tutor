@@ -30,6 +30,8 @@ from .services.planning_service import PlanningService
 from .services.velocity_service import VelocityService
 from .services.firestore_analytics import FirestoreAnalyticsService
 from .services.diagnostic_service import DiagnosticService
+from .services.progress_display_service import ProgressDisplayService
+from .services.pulse_engine import PulseEngine
 
 from .db.cosmos_db import CosmosDBService
 from .db.firestore_service import FirestoreService
@@ -70,6 +72,8 @@ _planning_service: Optional[PlanningService] = None
 _velocity_service: Optional[VelocityService] = None
 _firestore_analytics_service: Optional[FirestoreAnalyticsService] = None
 _diagnostic_service: Optional[DiagnosticService] = None
+_progress_display_service: Optional[ProgressDisplayService] = None
+_pulse_engine: Optional[PulseEngine] = None
 
 
 # 🔥 UPDATED: Authentication dependency functions using service layer
@@ -467,10 +471,25 @@ async def get_planning_service(
     return _planning_service
 
 
+def get_progress_display_service(
+    firestore_service: FirestoreService = Depends(get_firestore_service),
+) -> ProgressDisplayService:
+    """Get or create ProgressDisplayService singleton."""
+    global _progress_display_service
+    if _progress_display_service is None:
+        logger.info("Initializing ProgressDisplayService")
+        _progress_display_service = ProgressDisplayService(
+            firestore_service=firestore_service,
+        )
+        logger.info("✅ ProgressDisplayService initialized successfully")
+    return _progress_display_service
+
+
 async def get_diagnostic_service(
     firestore_service: FirestoreService = Depends(get_firestore_service),
     learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
     mastery_lifecycle_engine: MasteryLifecycleEngine = Depends(get_mastery_lifecycle_engine),
+    calibration_engine: CalibrationEngine = Depends(get_calibration_engine),
 ) -> DiagnosticService:
     """Get or create DiagnosticService singleton."""
     global _diagnostic_service
@@ -480,9 +499,30 @@ async def get_diagnostic_service(
             firestore_service=firestore_service,
             learning_paths_service=learning_paths_service,
             mastery_lifecycle_engine=mastery_lifecycle_engine,
+            calibration_engine=calibration_engine,
         )
         logger.info("✅ DiagnosticService initialized successfully")
     return _diagnostic_service
+
+
+async def get_pulse_engine(
+    firestore_service: FirestoreService = Depends(get_firestore_service),
+    calibration_engine: CalibrationEngine = Depends(get_calibration_engine),
+    mastery_lifecycle_engine: MasteryLifecycleEngine = Depends(get_mastery_lifecycle_engine),
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
+) -> PulseEngine:
+    """Get or create PulseEngine singleton."""
+    global _pulse_engine
+    if _pulse_engine is None:
+        logger.info("Initializing PulseEngine")
+        _pulse_engine = PulseEngine(
+            firestore_service=firestore_service,
+            calibration_engine=calibration_engine,
+            mastery_lifecycle_engine=mastery_lifecycle_engine,
+            learning_paths_service=learning_paths_service,
+        )
+        logger.info("PulseEngine initialized successfully")
+    return _pulse_engine
 
 
 async def get_velocity_service(

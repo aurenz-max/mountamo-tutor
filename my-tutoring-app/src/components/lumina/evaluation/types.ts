@@ -2531,32 +2531,12 @@ export interface CountingBoardMetrics extends BasePrimitiveMetrics {
 export interface MeasurementToolsMetrics extends BasePrimitiveMetrics {
   type: 'measurement-tools';
 
-  // Measurement accuracy
-  measurementsCorrect: number;
-  measurementsTotal: number;
-
-  // Estimation accuracy (average % accuracy, 100 = perfect)
-  estimationAccuracy: number;
-
-  // Tool selection
-  toolSelectionCorrect: number;
-  toolSelectionTotal: number;
-
-  // Unit selection
-  unitSelectionCorrect: number;
-  unitSelectionTotal: number;
-
-  // Conversion
-  conversionCorrect: number;
-  conversionTotal: number;
-
-  // Precision achieved
-  precisionAchieved: 'whole' | 'half' | 'quarter' | 'tenth';
-
-  // Types explored
-  measurementTypesExplored: string[];
-
-  // Attempts
+  estimateCorrect: number;
+  estimateTotal: number;
+  readCorrect: number;
+  readTotal: number;
+  convertCorrect: number;
+  convertTotal: number;
   attemptsCount: number;
 }
 

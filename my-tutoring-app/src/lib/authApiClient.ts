@@ -864,6 +864,34 @@ private async getAuthToken(): Promise<string> {
   }
 
   // ============================================================================
+  // CALIBRATION / EL TRAJECTORY ENDPOINTS (Difficulty Calibration Phase 2)
+  // ============================================================================
+
+  /**
+   * Get all skill abilities for a student with contextual messages
+   */
+  async getStudentAbilities(studentId: number) {
+    return this.get(`/api/calibration/${studentId}/abilities`);
+  }
+
+  /**
+   * Get single skill ability with trajectory
+   */
+  async getSkillAbility(studentId: number, skillId: string) {
+    return this.get(`/api/calibration/${studentId}/abilities/${encodeURIComponent(skillId)}`);
+  }
+
+  /**
+   * Get all item calibration documents (admin)
+   */
+  async getItemCalibrations(primitiveType?: string) {
+    const params = new URLSearchParams();
+    if (primitiveType) params.append('primitive_type', primitiveType);
+    const qs = params.toString();
+    return this.get(`/api/calibration/items${qs ? `?${qs}` : ''}`);
+  }
+
+  // ============================================================================
   // LEGACY ANALYTICS METHODS (for backwards compatibility)
   // ============================================================================
 

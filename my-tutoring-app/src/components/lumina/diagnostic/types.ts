@@ -91,6 +91,39 @@ export interface CompletionResponse {
   knowledge_profile: KnowledgeProfileResponse;
 }
 
+/** Lightweight session list item from GET /sessions */
+export interface DiagnosticSessionSummary {
+  session_id: string;
+  student_id: number;
+  state: string;
+  subjects: string[];
+  total_nodes: number;
+  classified_count: number;
+  probed_count: number;
+  coverage_pct: number;
+  created_at: string;
+  completed_at: string | null;
+}
+
+/** Enriched session response from GET /sessions/{id} */
+export interface EnrichedSessionResponse {
+  session_id: string;
+  student_id: number;
+  state: string;
+  subjects: string[];
+  total_nodes: number;
+  classified_count: number;
+  probed_count: number;
+  coverage_pct: number;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  /** Next probes for in_progress sessions */
+  probes: ProbeRequest[];
+  /** Knowledge profile for completed sessions */
+  knowledge_profile: KnowledgeProfileResponse | null;
+}
+
 // ---------------------------------------------------------------------------
 // Frontend-only types
 // ---------------------------------------------------------------------------

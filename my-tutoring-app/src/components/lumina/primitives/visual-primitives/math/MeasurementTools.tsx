@@ -4,68 +4,49 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
+import {
+  usePrimitiveEvaluation,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
 import type { MeasurementToolsMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import CalculatorInput from '../../input-primitives/CalculatorInput';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
 // =============================================================================
 
-export type ToolType = 'ruler' | 'tape_measure' | 'scale' | 'balance' | 'measuring_cup' | 'thermometer';
+export type ToolType = 'ruler' | 'scale' | 'measuring_cup' | 'thermometer';
 export type MeasurementType = 'length' | 'weight' | 'capacity' | 'temperature';
-export type MeasurementUnit = 'cm' | 'm' | 'in' | 'ft' | 'g' | 'kg' | 'lb' | 'mL' | 'L' | 'cup' | '°C' | '°F';
-export type Precision = 'whole' | 'half' | 'quarter' | 'tenth';
-export type ChallengeType = 'measure' | 'estimate' | 'compare' | 'convert' | 'choose_tool' | 'choose_unit';
-export type ObjectCategory = 'school' | 'kitchen' | 'nature' | 'sports' | 'animals';
-export type Phase = 'explore' | 'estimate' | 'precision' | 'convert';
+export type ChallengeType = 'estimate' | 'read' | 'convert';
+export type Precision = 'whole' | 'half' | 'quarter';
 
 export interface MeasurementChallenge {
   id: string;
   type: ChallengeType;
-  instruction: string;
-  targetAnswer: number | string;
-  acceptableRange?: { min: number; max: number };
+  objectName: string;
+  objectEmoji: string;
+  value: number;
+  targetAnswer: number;
+  targetUnit: string;
+  acceptableMin?: number;
+  acceptableMax?: number;
   hint: string;
-  narration: string;
-}
-
-export interface ObjectToMeasure {
-  name: string;
-  actualValue: number;
-  imagePrompt: string;
-  category: ObjectCategory;
-}
-
-export interface ConversionEntry {
-  from: string;
-  to: string;
-  factor: number;
-  description: string;
+  instruction: string;
 }
 
 export interface MeasurementToolsData {
   primitiveType?: string;
   toolType: ToolType;
   measurementType: MeasurementType;
-  unit: {
-    primary: MeasurementUnit;
-    secondary?: MeasurementUnit | null;
-    precision: Precision;
-  };
-  objectToMeasure: ObjectToMeasure;
-  challenges: MeasurementChallenge[];
-  nonStandardUnits?: {
-    enabled: boolean;
-    unitName: string;
-    unitLength: number;
-  };
-  conversionReference?: {
-    enabled: boolean;
-    conversions: ConversionEntry[];
-  };
-  imagePrompt?: string | null;
+  unit: string;
+  precision: Precision;
   gradeBand: '1-2' | '3-5';
+  challenges: MeasurementChallenge[];
+  conversionFact?: string;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -82,23 +63,19 @@ interface MeasurementToolsProps {
 }
 
 // =============================================================================
-// Tool Icons & Display Helpers
+// Constants & Helpers
 // =============================================================================
 
 const TOOL_ICONS: Record<ToolType, string> = {
   ruler: '📏',
-  tape_measure: '📐',
   scale: '⚖️',
-  balance: '⚖️',
   measuring_cup: '🧪',
   thermometer: '🌡️',
 };
 
 const TOOL_LABELS: Record<ToolType, string> = {
   ruler: 'Ruler',
-  tape_measure: 'Tape Measure',
   scale: 'Scale',
-  balance: 'Balance',
   measuring_cup: 'Measuring Cup',
   thermometer: 'Thermometer',
 };
@@ -110,74 +87,161 @@ const MEASUREMENT_TYPE_COLORS: Record<MeasurementType, string> = {
   temperature: 'text-red-300',
 };
 
-const PHASE_LABELS: Record<Phase, string> = {
-  explore: 'Explore',
-  estimate: 'Estimate',
-  precision: 'Precision',
-  convert: 'Convert',
+const PHASE_CONFIG: Record<string, PhaseConfig> = {
+  estimate: { label: 'Estimate', icon: '🤔', accentColor: 'amber' },
+  read: { label: 'Measure', icon: '📏', accentColor: 'blue' },
+  convert: { label: 'Convert', icon: '🔄', accentColor: 'purple' },
 };
-
-function getUnitLabel(unit: MeasurementUnit): string {
-  const labels: Record<MeasurementUnit, string> = {
-    cm: 'cm', m: 'm', in: 'in', ft: 'ft',
-    g: 'g', kg: 'kg', lb: 'lb',
-    mL: 'mL', L: 'L', cup: 'cups',
-    '°C': '°C', '°F': '°F',
-  };
-  return labels[unit] || unit;
-}
 
 function getPrecisionStep(precision: Precision): number {
   switch (precision) {
     case 'whole': return 1;
     case 'half': return 0.5;
     case 'quarter': return 0.25;
-    case 'tenth': return 0.1;
   }
 }
 
+function computeMaxScale(value: number, toolType: ToolType): number {
+  if (toolType === 'thermometer') {
+    return Math.ceil(value * 1.3 / 10) * 10;
+  }
+  // For ruler/scale/cup: round up to a nice number with ~25% headroom
+  const headroom = value * 1.25;
+  if (headroom <= 10) return Math.ceil(headroom);
+  if (headroom <= 50) return Math.ceil(headroom / 5) * 5;
+  return Math.ceil(headroom / 10) * 10;
+}
+
+function computeMinScale(toolType: ToolType, unit: string): number {
+  if (toolType === 'thermometer') {
+    return unit === '°F' ? 0 : -10;
+  }
+  return 0;
+}
+
 // =============================================================================
-// Tool Visualization Components
+// Tool Visualization Components (all read-only)
 // =============================================================================
 
-const RulerVisualization: React.FC<{
+interface ToolVisualizationProps {
   value: number;
-  maxValue: number;
-  unit: MeasurementUnit;
+  maxScale: number;
+  minScale: number;
+  unit: string;
   precision: Precision;
-  onValueChange: (v: number) => void;
-  disabled: boolean;
-}> = ({ value, maxValue, unit, precision, onValueChange, disabled }) => {
+  objectEmoji: string;
+  objectName: string;
+}
+
+const RulerVisualization: React.FC<ToolVisualizationProps> = ({
+  value, maxScale, unit, precision, objectEmoji, objectName,
+}) => {
   const step = getPrecisionStep(precision);
-  const ticks = Math.ceil(maxValue / step);
-  const displayMax = Math.min(ticks, 60);
+  const tickCount = Math.round(maxScale / step);
+  const barWidthPercent = (value / maxScale) * 100;
 
   return (
-    <div className="relative">
-      {/* Ruler body */}
-      <div className="bg-amber-100/10 border border-amber-500/30 rounded-lg p-4 relative overflow-hidden">
-        {/* Tick marks */}
-        <div className="flex items-end h-16 relative mb-2">
-          {Array.from({ length: displayMax + 1 }, (_, i) => {
+    <div className="bg-slate-800/50 border border-blue-500/20 rounded-lg p-4">
+      {/* Object bar sitting on ruler */}
+      <div className="relative mb-1 h-10">
+        <div
+          className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500/30 to-blue-400/50 rounded border border-blue-400/40 flex items-center justify-center overflow-hidden"
+          style={{ width: `${barWidthPercent}%`, minWidth: '40px' }}
+        >
+          <span className="text-sm text-blue-100 truncate px-2">
+            {objectEmoji} {objectName}
+          </span>
+        </div>
+      </div>
+
+      {/* Ruler tick marks */}
+      <div className="relative h-12 border-t border-slate-400/60">
+        {Array.from({ length: tickCount + 1 }, (_, i) => {
+          const tickValue = i * step;
+          if (tickValue > maxScale) return null;
+          const isWhole = Math.abs(tickValue - Math.round(tickValue)) < 0.001;
+          const isHalf = Math.abs((tickValue * 2) - Math.round(tickValue * 2)) < 0.001 && !isWhole;
+          const posPercent = (tickValue / maxScale) * 100;
+
+          return (
+            <div
+              key={i}
+              className="absolute top-0"
+              style={{ left: `${posPercent}%` }}
+            >
+              <div
+                className={`w-px ${
+                  isWhole ? 'h-6 bg-slate-300' : isHalf ? 'h-4 bg-slate-500' : 'h-2 bg-slate-600'
+                }`}
+              />
+              {isWhole && (
+                <span className="absolute top-7 text-[10px] text-slate-400 -translate-x-1/2 select-none">
+                  {Math.round(tickValue)}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Unit label */}
+      <div className="text-right mt-1">
+        <span className="text-xs text-slate-500">{unit}</span>
+      </div>
+    </div>
+  );
+};
+
+const ScaleVisualization: React.FC<ToolVisualizationProps> = ({
+  value, maxScale, unit, precision, objectEmoji, objectName,
+}) => {
+  const step = getPrecisionStep(precision);
+  const fillPercent = Math.min((value / maxScale) * 100, 100);
+  const totalTicks = Math.round(maxScale / step);
+
+  // Only show labels at reasonable intervals
+  const labelInterval = maxScale <= 20 ? 1 : maxScale <= 100 ? 5 : 10;
+
+  return (
+    <div className="bg-slate-800/50 border border-amber-500/20 rounded-lg p-4">
+      <div className="flex items-end gap-6">
+        {/* Vertical gauge */}
+        <div className="relative flex-shrink-0" style={{ width: '60px', height: '200px' }}>
+          {/* Background bar */}
+          <div className="absolute inset-0 bg-slate-700/50 rounded border border-slate-600/50" />
+
+          {/* Fill bar */}
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-amber-500/40 to-amber-400/60 rounded-b transition-all"
+            style={{ height: `${fillPercent}%` }}
+          />
+
+          {/* Indicator line at value */}
+          <div
+            className="absolute left-0 right-0 h-0.5 bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.5)]"
+            style={{ bottom: `${fillPercent}%` }}
+          >
+            <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-amber-400 rotate-45" />
+          </div>
+
+          {/* Tick marks */}
+          {Array.from({ length: totalTicks + 1 }, (_, i) => {
             const tickValue = i * step;
-            const isWhole = tickValue % 1 === 0;
-            const isHalf = tickValue % 0.5 === 0 && !isWhole;
-            const isFilled = tickValue <= value;
+            if (tickValue > maxScale) return null;
+            const isWhole = Math.abs(tickValue - Math.round(tickValue)) < 0.001;
+            const showLabel = isWhole && (tickValue % labelInterval === 0);
+            const posPercent = (tickValue / maxScale) * 100;
 
             return (
               <div
                 key={i}
-                className="flex-1 flex flex-col items-center cursor-pointer"
-                onClick={() => !disabled && onValueChange(tickValue)}
+                className="absolute left-0 flex items-center"
+                style={{ bottom: `${posPercent}%` }}
               >
-                <div
-                  className={`w-px transition-all ${
-                    isWhole ? 'h-10' : isHalf ? 'h-6' : 'h-3'
-                  } ${isFilled ? 'bg-blue-400' : 'bg-slate-500'}`}
-                />
-                {isWhole && tickValue <= maxValue && (
-                  <span className={`text-[9px] mt-1 ${isFilled ? 'text-blue-300' : 'text-slate-500'}`}>
-                    {tickValue}
+                <div className={`${isWhole ? 'w-3 bg-slate-400' : 'w-1.5 bg-slate-600'} h-px`} />
+                {showLabel && (
+                  <span className="absolute -left-7 text-[9px] text-slate-400 select-none">
+                    {Math.round(tickValue)}
                   </span>
                 )}
               </div>
@@ -185,209 +249,158 @@ const RulerVisualization: React.FC<{
           })}
         </div>
 
-        {/* Slider control */}
-        <input
-          type="range"
-          min={0}
-          max={maxValue}
-          step={step}
-          value={value}
-          onChange={(e) => !disabled && onValueChange(parseFloat(e.target.value))}
-          disabled={disabled}
-          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-        />
-
-        {/* Current value display */}
-        <div className="text-center mt-2">
-          <span className="text-2xl font-bold text-blue-300">{value}</span>
-          <span className="text-sm text-slate-400 ml-1">{getUnitLabel(unit)}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ScaleVisualization: React.FC<{
-  value: number;
-  maxValue: number;
-  unit: MeasurementUnit;
-  precision: Precision;
-  onValueChange: (v: number) => void;
-  disabled: boolean;
-  objectName: string;
-}> = ({ value, maxValue, unit, precision, onValueChange, disabled, objectName }) => {
-  const step = getPrecisionStep(precision);
-
-  return (
-    <div className="relative">
-      <div className="bg-slate-800/50 border border-amber-500/30 rounded-lg p-4">
-        {/* Scale platform */}
-        <div className="flex items-center justify-center mb-4">
-          <div className="w-32 h-20 bg-slate-700/50 rounded-lg border border-slate-600 flex items-center justify-center relative">
-            <span className="text-2xl">📦</span>
-            <span className="absolute -bottom-5 text-xs text-slate-400">{objectName}</span>
+        {/* Object display + unit */}
+        <div className="flex-1 flex flex-col items-center justify-center pb-4">
+          {/* Platform */}
+          <div className="w-28 h-20 bg-slate-700/30 rounded-lg border border-slate-600/50 flex flex-col items-center justify-center mb-2">
+            <span className="text-3xl">{objectEmoji}</span>
+            <span className="text-xs text-slate-400 mt-1 truncate max-w-[100px]">{objectName}</span>
           </div>
+          <span className="text-xs text-slate-500">{unit}</span>
         </div>
-
-        {/* Digital display */}
-        <div className="bg-black/40 rounded-lg p-3 text-center mb-3 border border-slate-600">
-          <span className="text-3xl font-mono font-bold text-green-400">{value.toFixed(precision === 'tenth' ? 1 : 0)}</span>
-          <span className="text-sm text-green-300 ml-1">{getUnitLabel(unit)}</span>
-        </div>
-
-        {/* Weight slider */}
-        <input
-          type="range"
-          min={0}
-          max={maxValue}
-          step={step}
-          value={value}
-          onChange={(e) => !disabled && onValueChange(parseFloat(e.target.value))}
-          disabled={disabled}
-          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-        />
       </div>
     </div>
   );
 };
 
-const MeasuringCupVisualization: React.FC<{
-  value: number;
-  maxValue: number;
-  unit: MeasurementUnit;
-  precision: Precision;
-  onValueChange: (v: number) => void;
-  disabled: boolean;
-}> = ({ value, maxValue, unit, precision, onValueChange, disabled }) => {
+const MeasuringCupVisualization: React.FC<ToolVisualizationProps> = ({
+  value, maxScale, unit, precision, objectEmoji, objectName,
+}) => {
   const step = getPrecisionStep(precision);
-  const fillPercent = Math.min((value / maxValue) * 100, 100);
+  const fillPercent = Math.min((value / maxScale) * 100, 100);
+  const totalTicks = Math.round(maxScale / step);
+  const labelInterval = maxScale <= 10 ? 1 : maxScale <= 50 ? 5 : 10;
 
   return (
-    <div className="relative">
-      <div className="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-4">
-        {/* Cup visualization */}
-        <div className="flex justify-center mb-4">
-          <div className="w-24 h-40 bg-slate-700/30 border-2 border-cyan-500/40 rounded-b-lg relative overflow-hidden">
+    <div className="bg-slate-800/50 border border-cyan-500/20 rounded-lg p-4">
+      <div className="flex justify-center">
+        <div className="relative" style={{ width: '120px', height: '200px' }}>
+          {/* Cup outline — wider at top, narrower at bottom */}
+          <div
+            className="absolute inset-0 border-2 border-cyan-500/30 rounded-b-lg bg-slate-800/30"
+            style={{
+              clipPath: 'polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%)',
+            }}
+          >
             {/* Liquid fill */}
             <div
-              className="absolute bottom-0 left-0 right-0 bg-cyan-500/30 transition-all duration-300"
+              className="absolute bottom-0 left-0 right-0 bg-cyan-500/25 transition-all duration-500"
               style={{ height: `${fillPercent}%` }}
             >
-              <div className="absolute top-0 left-0 right-0 h-1 bg-cyan-400/60" />
+              {/* Meniscus / surface line */}
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-cyan-400/50" />
             </div>
+          </div>
 
-            {/* Measurement lines */}
-            {Array.from({ length: 5 }, (_, i) => (
+          {/* Graduation marks on right side */}
+          {Array.from({ length: totalTicks + 1 }, (_, i) => {
+            const tickValue = i * step;
+            if (tickValue > maxScale || tickValue === 0) return null;
+            const isWhole = Math.abs(tickValue - Math.round(tickValue)) < 0.001;
+            const showLabel = isWhole && (tickValue % labelInterval === 0);
+            const posPercent = (tickValue / maxScale) * 100;
+
+            return (
               <div
                 key={i}
-                className="absolute left-0 right-0 flex items-center"
-                style={{ bottom: `${((i + 1) / 5) * 100}%` }}
+                className="absolute flex items-center"
+                style={{ bottom: `${posPercent}%`, right: '-28px' }}
               >
-                <div className="w-3 h-px bg-slate-400" />
-                <span className="text-[8px] text-slate-500 ml-1">
-                  {Math.round((maxValue / 5) * (i + 1))}
-                </span>
+                <div className={`${isWhole ? 'w-3 bg-cyan-400/60' : 'w-1.5 bg-cyan-600/40'} h-px`} />
+                {showLabel && (
+                  <span className="ml-1 text-[9px] text-slate-400 select-none">
+                    {Math.round(tickValue)}
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Value display */}
-        <div className="text-center mb-3">
-          <span className="text-2xl font-bold text-cyan-300">{value}</span>
-          <span className="text-sm text-slate-400 ml-1">{getUnitLabel(unit)}</span>
-        </div>
-
-        {/* Fill slider */}
-        <input
-          type="range"
-          min={0}
-          max={maxValue}
-          step={step}
-          value={value}
-          onChange={(e) => !disabled && onValueChange(parseFloat(e.target.value))}
-          disabled={disabled}
-          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-        />
+      {/* Object + unit label */}
+      <div className="text-center mt-3">
+        <span className="text-lg mr-1">{objectEmoji}</span>
+        <span className="text-sm text-slate-300">{objectName}</span>
+        <span className="text-xs text-slate-500 ml-2">({unit})</span>
       </div>
     </div>
   );
 };
 
-const ThermometerVisualization: React.FC<{
-  value: number;
-  minValue: number;
-  maxValue: number;
-  unit: MeasurementUnit;
-  precision: Precision;
-  onValueChange: (v: number) => void;
-  disabled: boolean;
-}> = ({ value, minValue, maxValue, unit, precision, onValueChange, disabled }) => {
+const ThermometerVisualization: React.FC<ToolVisualizationProps> = ({
+  value, maxScale, minScale, unit, precision,
+}) => {
   const step = getPrecisionStep(precision);
-  const range = maxValue - minValue;
-  const fillPercent = Math.min(((value - minValue) / range) * 100, 100);
+  const range = maxScale - minScale;
+  const fillPercent = Math.min(Math.max(((value - minScale) / range) * 100, 0), 100);
+  const totalTicks = Math.round(range / step);
+  const labelInterval = range <= 20 ? 2 : range <= 100 ? 10 : 20;
 
   const getTemperatureColor = (v: number): string => {
     if (unit === '°C') {
-      if (v <= 0) return 'bg-blue-500/40';
-      if (v <= 20) return 'bg-green-500/40';
-      if (v <= 35) return 'bg-yellow-500/40';
-      return 'bg-red-500/40';
+      if (v <= 0) return 'from-blue-600/50 to-blue-500/60';
+      if (v <= 20) return 'from-green-600/50 to-green-500/60';
+      if (v <= 35) return 'from-yellow-600/50 to-yellow-500/60';
+      return 'from-red-600/50 to-red-500/60';
     }
-    if (v <= 32) return 'bg-blue-500/40';
-    if (v <= 68) return 'bg-green-500/40';
-    if (v <= 95) return 'bg-yellow-500/40';
-    return 'bg-red-500/40';
+    // °F
+    if (v <= 32) return 'from-blue-600/50 to-blue-500/60';
+    if (v <= 68) return 'from-green-600/50 to-green-500/60';
+    if (v <= 95) return 'from-yellow-600/50 to-yellow-500/60';
+    return 'from-red-600/50 to-red-500/60';
   };
 
   return (
-    <div className="relative">
-      <div className="bg-slate-800/50 border border-red-500/30 rounded-lg p-4">
-        {/* Thermometer */}
-        <div className="flex justify-center mb-4">
-          <div className="relative">
-            {/* Tube */}
-            <div className="w-6 h-36 bg-slate-700/30 border-2 border-red-500/40 rounded-t-full relative overflow-hidden mx-auto">
-              <div
-                className={`absolute bottom-0 left-0 right-0 transition-all duration-500 ${getTemperatureColor(value)}`}
-                style={{ height: `${fillPercent}%` }}
-              />
-              {/* Tick marks */}
-              {Array.from({ length: 5 }, (_, i) => (
-                <div
-                  key={i}
-                  className="absolute left-full flex items-center ml-1"
-                  style={{ bottom: `${((i + 1) / 5) * 100}%` }}
-                >
-                  <div className="w-2 h-px bg-slate-400" />
-                  <span className="text-[8px] text-slate-500 ml-1">
-                    {Math.round(minValue + (range / 5) * (i + 1))}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {/* Bulb */}
-            <div className={`w-10 h-10 rounded-full border-2 border-red-500/40 mx-auto -mt-1 ${getTemperatureColor(value)}`} />
+    <div className="bg-slate-800/50 border border-red-500/20 rounded-lg p-4">
+      <div className="flex justify-center">
+        <div className="relative" style={{ width: '80px', height: '220px' }}>
+          {/* Tube */}
+          <div className="absolute left-1/2 -translate-x-1/2 w-6 rounded-t-full bg-slate-700/30 border-2 border-red-500/30"
+            style={{ top: 0, bottom: '24px' }}
+          >
+            {/* Mercury fill */}
+            <div
+              className={`absolute bottom-0 left-0 right-0 rounded-t-full bg-gradient-to-t transition-all duration-500 ${getTemperatureColor(value)}`}
+              style={{ height: `${fillPercent}%` }}
+            />
           </div>
-        </div>
 
-        {/* Temperature display */}
-        <div className="text-center mb-3">
-          <span className="text-2xl font-bold text-red-300">{value}</span>
-          <span className="text-sm text-slate-400 ml-1">{getUnitLabel(unit)}</span>
-        </div>
+          {/* Bulb */}
+          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full border-2 border-red-500/30 bg-gradient-to-t ${getTemperatureColor(value)}`} />
 
-        {/* Temperature slider */}
-        <input
-          type="range"
-          min={minValue}
-          max={maxValue}
-          step={step}
-          value={value}
-          onChange={(e) => !disabled && onValueChange(parseFloat(e.target.value))}
-          disabled={disabled}
-          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-500"
-        />
+          {/* Scale marks on right side */}
+          {Array.from({ length: totalTicks + 1 }, (_, i) => {
+            const tickValue = minScale + i * step;
+            if (tickValue > maxScale) return null;
+            const isWhole = Math.abs(tickValue - Math.round(tickValue)) < 0.001;
+            const showLabel = isWhole && (Math.round(tickValue) % labelInterval === 0);
+            const posPercent = ((tickValue - minScale) / range) * 100;
+            // Map posPercent to the tube's height region (bottom 24px is the bulb)
+            const tubeHeight = 196; // 220 - 24
+            const bottomOffset = 24 + (posPercent / 100) * tubeHeight;
+
+            return (
+              <div
+                key={i}
+                className="absolute flex items-center"
+                style={{ bottom: `${bottomOffset}px`, right: '0px' }}
+              >
+                <div className={`${isWhole ? 'w-3 bg-slate-400' : 'w-1.5 bg-slate-600'} h-px`} />
+                {showLabel && (
+                  <span className="ml-1 text-[9px] text-slate-400 select-none whitespace-nowrap">
+                    {Math.round(tickValue)}°
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Unit label */}
+      <div className="text-center mt-2">
+        <span className="text-xs text-slate-500">{unit}</span>
       </div>
     </div>
   );
@@ -402,11 +415,10 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     toolType,
     measurementType,
     unit,
-    objectToMeasure,
-    challenges,
-    nonStandardUnits,
-    conversionReference,
+    precision,
     gradeBand,
+    challenges,
+    conversionFact,
     instanceId,
     skillId,
     subskillId,
@@ -415,69 +427,35 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     onEvaluationSubmit,
   } = data;
 
-  // Phase management
-  const [currentPhase, setCurrentPhase] = useState<Phase>('explore');
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-
-  // Measurement state
-  const [measurementValue, setMeasurementValue] = useState(0);
-  const [estimateValue, setEstimateValue] = useState('');
-  const [conversionAnswer, setConversionAnswer] = useState('');
-  const [selectedTool, setSelectedTool] = useState<ToolType | null>(null);
-  const [selectedUnit, setSelectedUnit] = useState<MeasurementUnit | null>(null);
-
-  // Feedback state
-  const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
-  const [showHint, setShowHint] = useState(false);
-  const [showConversionRef, setShowConversionRef] = useState(false);
-
-  // Tracking state
-  const [measurementsCorrect, setMeasurementsCorrect] = useState(0);
-  const [measurementsTotal, setMeasurementsTotal] = useState(0);
-  const [estimateErrors, setEstimateErrors] = useState<number[]>([]);
-  const [toolSelectionsCorrect, setToolSelectionsCorrect] = useState(0);
-  const [toolSelectionsTotal, setToolSelectionsTotal] = useState(0);
-  const [unitSelectionsCorrect, setUnitSelectionsCorrect] = useState(0);
-  const [unitSelectionsTotal, setUnitSelectionsTotal] = useState(0);
-  const [conversionsCorrect, setConversionsCorrect] = useState(0);
-  const [conversionsTotal, setConversionsTotal] = useState(0);
-  const [attemptsCount, setAttemptsCount] = useState(0);
-  const [measurementTypesExplored, setMeasurementTypesExplored] = useState<Set<MeasurementType>>(new Set());
-  const hasSentPhaseIntro = useRef<Set<Phase>>(new Set());
-
-  // Derived values
-  const currentChallenge = challenges[currentChallengeIndex] || null;
   const resolvedInstanceId = instanceId || `measurement-tools-${Date.now()}`;
-  const maxMeasurementValue = objectToMeasure.actualValue * 2;
-  const minTempValue = unit.primary === '°C' ? -20 : -4;
-  const maxTempValue = unit.primary === '°C' ? 120 : 248;
 
-  // AI Tutoring
-  const aiPrimitiveData = useMemo(() => ({
-    toolType,
-    measurementType,
-    objectName: objectToMeasure.name,
-    actualValue: objectToMeasure.actualValue,
-    unit: unit.primary,
-    currentPhase,
-    measurementValue,
-    estimateValue,
-    challengeType: currentChallenge?.type,
-    attemptNumber: attemptsCount,
-    gradeBand,
-  }), [toolType, measurementType, objectToMeasure, unit.primary, currentPhase, measurementValue, estimateValue, currentChallenge, attemptsCount, gradeBand]);
-
-  const { sendText } = useLuminaAI({
-    primitiveType: 'measurement-tools',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '1-2' ? '1st Grade' : '3rd Grade',
+  // ── Shared hooks ──────────────────────────────────────────────
+  const {
+    currentIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete,
+    recordResult,
+    incrementAttempts,
+    advance,
+    reset,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
   });
 
-  // Evaluation
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_CONFIG,
+  });
+
   const {
     submitResult,
     hasSubmitted,
+    elapsedMs,
     resetAttempt,
   } = usePrimitiveEvaluation<MeasurementToolsMetrics>({
     primitiveType: 'measurement-tools',
@@ -489,205 +467,197 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // Track measurement type explored
-  useEffect(() => {
-    setMeasurementTypesExplored(prev => new Set(prev).add(measurementType));
-  }, [measurementType]);
+  // ── Local state ───────────────────────────────────────────────
+  const [answerInput, setAnswerInput] = useState('');
+  const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
+  const [showHint, setShowHint] = useState(false);
+  const hasIntroducedRef = useRef(false);
 
-  // Send phase introduction
-  useEffect(() => {
-    if (!hasSentPhaseIntro.current.has(currentPhase)) {
-      hasSentPhaseIntro.current.add(currentPhase);
-      const phaseMessages: Record<Phase, string> = {
-        explore: `[PHASE_START] Student is starting the Explore phase. They can freely measure the ${objectToMeasure.name} using the ${TOOL_LABELS[toolType]}. Introduce the tool and encourage them to try measuring.`,
-        estimate: `[PHASE_START] Student is starting the Estimate phase. They need to estimate the measurement of the ${objectToMeasure.name} before using the tool. Ask them to make their best guess.`,
-        precision: `[PHASE_START] Student is starting the Precision phase. They need to read measurements to the nearest ${unit.precision}-unit. Encourage careful reading of the ${TOOL_LABELS[toolType]}.`,
-        convert: `[PHASE_START] Student is starting the Convert phase. They need to convert measurements between ${unit.primary} and ${unit.secondary || 'another unit'}. Remind them of the conversion relationship.`,
-      };
-      sendText(phaseMessages[currentPhase], { silent: true });
-    }
-  }, [currentPhase, objectToMeasure.name, toolType, unit, sendText]);
+  const currentChallenge = challenges[currentIndex] ?? null;
 
-  // Check answer
+  // ── AI Tutoring ───────────────────────────────────────────────
+  const aiPrimitiveData = useMemo(() => ({
+    toolType,
+    measurementType,
+    unit,
+    precision,
+    gradeBand,
+    currentChallengeIndex: currentIndex,
+    totalChallenges: challenges.length,
+    challengeType: currentChallenge?.type,
+    instruction: currentChallenge?.instruction,
+    objectName: currentChallenge?.objectName,
+    currentAttempts,
+  }), [toolType, measurementType, unit, precision, gradeBand, currentIndex, challenges.length, currentChallenge, currentAttempts]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'measurement-tools',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand === '1-2' ? '1st Grade' : '3rd Grade',
+  });
+
+  // Activity introduction
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Measurement activity using ${TOOL_LABELS[toolType]}. ` +
+      `${challenges.length} challenges about ${measurementType} in ${unit}. ` +
+      `First challenge: "${currentChallenge.instruction}". Introduce warmly and read the first instruction.`,
+      { silent: true },
+    );
+  }, [isConnected, currentChallenge, toolType, challenges.length, measurementType, unit, sendText]);
+
+  // ── Answer checking ───────────────────────────────────────────
   const checkAnswer = useCallback(() => {
     if (!currentChallenge) return;
 
-    setAttemptsCount(prev => prev + 1);
-    let isCorrect = false;
-    const challengeType = currentChallenge.type;
-
-    if (challengeType === 'measure' || challengeType === 'estimate') {
-      const studentAnswer = challengeType === 'estimate' ? parseFloat(estimateValue) : measurementValue;
-      const target = typeof currentChallenge.targetAnswer === 'number'
-        ? currentChallenge.targetAnswer
-        : parseFloat(currentChallenge.targetAnswer as string);
-
-      if (currentChallenge.acceptableRange) {
-        isCorrect = studentAnswer >= currentChallenge.acceptableRange.min && studentAnswer <= currentChallenge.acceptableRange.max;
-      } else {
-        const tolerance = getPrecisionStep(unit.precision);
-        isCorrect = Math.abs(studentAnswer - target) <= tolerance;
-      }
-
-      if (challengeType === 'measure') {
-        setMeasurementsTotal(prev => prev + 1);
-        if (isCorrect) setMeasurementsCorrect(prev => prev + 1);
-      } else {
-        const error = Math.abs(((studentAnswer - target) / target) * 100);
-        setEstimateErrors(prev => [...prev, error]);
-      }
-    } else if (challengeType === 'choose_tool') {
-      isCorrect = selectedTool === currentChallenge.targetAnswer;
-      setToolSelectionsTotal(prev => prev + 1);
-      if (isCorrect) setToolSelectionsCorrect(prev => prev + 1);
-    } else if (challengeType === 'choose_unit') {
-      isCorrect = selectedUnit === currentChallenge.targetAnswer;
-      setUnitSelectionsTotal(prev => prev + 1);
-      if (isCorrect) setUnitSelectionsCorrect(prev => prev + 1);
-    } else if (challengeType === 'convert') {
-      const studentConversion = parseFloat(conversionAnswer);
-      const target = typeof currentChallenge.targetAnswer === 'number'
-        ? currentChallenge.targetAnswer
-        : parseFloat(currentChallenge.targetAnswer as string);
-      const tolerance = getPrecisionStep(unit.precision);
-      isCorrect = Math.abs(studentConversion - target) <= tolerance;
-      setConversionsTotal(prev => prev + 1);
-      if (isCorrect) setConversionsCorrect(prev => prev + 1);
-    } else if (challengeType === 'compare') {
-      const studentAnswer = measurementValue;
-      isCorrect = studentAnswer === currentChallenge.targetAnswer;
-      setMeasurementsTotal(prev => prev + 1);
-      if (isCorrect) setMeasurementsCorrect(prev => prev + 1);
+    const studentNum = parseFloat(answerInput);
+    if (isNaN(studentNum)) {
+      setFeedback({ message: 'Please enter a number!', correct: false });
+      return;
     }
 
-    setFeedback({ message: isCorrect ? 'Correct!' : 'Not quite — try again!', correct: isCorrect });
+    incrementAttempts();
+    let isCorrect = false;
 
-    // AI tutoring triggers
+    switch (currentChallenge.type) {
+      case 'estimate': {
+        const min = currentChallenge.acceptableMin ?? currentChallenge.targetAnswer * 0.75;
+        const max = currentChallenge.acceptableMax ?? currentChallenge.targetAnswer * 1.25;
+        isCorrect = studentNum >= min && studentNum <= max;
+        break;
+      }
+      case 'read': {
+        const tolerance = getPrecisionStep(precision) / 2;
+        isCorrect = Math.abs(studentNum - currentChallenge.targetAnswer) <= tolerance;
+        break;
+      }
+      case 'convert': {
+        const convTolerance = Math.max(getPrecisionStep(precision), currentChallenge.targetAnswer * 0.02);
+        isCorrect = Math.abs(studentNum - currentChallenge.targetAnswer) <= convTolerance;
+        break;
+      }
+    }
+
+    // Record result
+    recordResult({
+      challengeId: currentChallenge.id,
+      correct: isCorrect,
+      attempts: currentAttempts + 1,
+      score: isCorrect ? 100 : 0,
+      challengeType: currentChallenge.type,
+      studentAnswer: studentNum,
+      targetAnswer: currentChallenge.targetAnswer,
+    });
+
+    setFeedback({
+      message: isCorrect ? 'Correct!' : 'Not quite — try again!',
+      correct: isCorrect,
+    });
+
+    // AI tutoring trigger
     if (isCorrect) {
       sendText(
-        `[ANSWER_CORRECT] Student correctly answered the ${challengeType} challenge: "${currentChallenge.instruction}". ` +
-        `Attempt ${attemptsCount + 1}. Congratulate briefly and encourage them to continue.`,
-        { silent: true }
+        `[ANSWER_CORRECT] Student answered ${studentNum} for "${currentChallenge.instruction}". ` +
+        `Correct answer: ${currentChallenge.targetAnswer} ${currentChallenge.targetUnit}. ` +
+        `Attempts: ${currentAttempts + 1}. Congratulate briefly.`,
+        { silent: true },
       );
     } else {
       sendText(
-        `[ANSWER_INCORRECT] Student's answer was wrong for: "${currentChallenge.instruction}". ` +
-        `Challenge type: ${challengeType}. Attempt ${attemptsCount + 1}. ` +
+        `[ANSWER_INCORRECT] Student answered ${studentNum} for "${currentChallenge.instruction}". ` +
+        `Challenge type: ${currentChallenge.type}. Attempt: ${currentAttempts + 1}. ` +
         `Give a brief hint without revealing the answer.`,
-        { silent: true }
+        { silent: true },
       );
     }
 
     if (isCorrect) {
-      // Move to next challenge or phase
       setTimeout(() => {
         setFeedback(null);
+        setAnswerInput('');
         setShowHint(false);
-
-        if (currentChallengeIndex < challenges.length - 1) {
-          setCurrentChallengeIndex(prev => prev + 1);
-          setMeasurementValue(0);
-          setEstimateValue('');
-          setConversionAnswer('');
-          setSelectedTool(null);
-          setSelectedUnit(null);
-
-          const nextChallenge = challenges[currentChallengeIndex + 1];
-          sendText(
-            `[NEXT_CHALLENGE] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: ` +
-            `"${nextChallenge.instruction}". Briefly introduce this challenge.`,
-            { silent: true }
-          );
-        } else {
-          // All challenges complete
-          handleComplete();
+        const advanced = advance();
+        if (advanced) {
+          const nextCh = challenges[currentIndex + 1];
+          if (nextCh) {
+            sendText(
+              `[NEXT_ITEM] Challenge ${currentIndex + 2} of ${challenges.length}: ` +
+              `"${nextCh.instruction}". Introduce briefly.`,
+              { silent: true },
+            );
+          }
         }
-      }, 1500);
+        // If not advanced, isComplete becomes true → triggers evaluation submit
+      }, 1200);
     }
-  }, [currentChallenge, measurementValue, estimateValue, conversionAnswer, selectedTool, selectedUnit, unit, attemptsCount, currentChallengeIndex, challenges, sendText]);
+  }, [currentChallenge, answerInput, currentAttempts, precision, incrementAttempts, recordResult, advance, currentIndex, challenges, sendText]);
 
-  // Handle completion
-  const handleComplete = useCallback(() => {
-    const avgEstimationError = estimateErrors.length > 0
-      ? estimateErrors.reduce((a, b) => a + b, 0) / estimateErrors.length
-      : 0;
+  // ── Evaluation submission on completion ────────────────────────
+  useEffect(() => {
+    if (!isComplete || hasSubmitted) return;
 
-    const totalCorrect = measurementsCorrect + toolSelectionsCorrect + unitSelectionsCorrect + conversionsCorrect;
-    const totalAttempted = measurementsTotal + toolSelectionsTotal + unitSelectionsTotal + conversionsTotal;
-    const score = totalAttempted > 0 ? (totalCorrect / totalAttempted) * 100 : 0;
-    const success = score >= 70;
+    const byType = (t: ChallengeType) =>
+      challengeResults.filter((r) => {
+        const ch = challenges.find((c) => c.id === r.challengeId);
+        return ch?.type === t;
+      });
+
+    const estResults = byType('estimate');
+    const readResults = byType('read');
+    const convResults = byType('convert');
+
+    const totalCorrect = challengeResults.filter((r) => r.correct).length;
+    const score = Math.round((totalCorrect / challenges.length) * 100);
 
     const metrics: MeasurementToolsMetrics = {
       type: 'measurement-tools',
-      measurementsCorrect,
-      measurementsTotal,
-      estimationAccuracy: Math.max(0, 100 - avgEstimationError),
-      toolSelectionCorrect: toolSelectionsCorrect,
-      toolSelectionTotal: toolSelectionsTotal,
-      unitSelectionCorrect: unitSelectionsCorrect,
-      unitSelectionTotal: unitSelectionsTotal,
-      conversionCorrect: conversionsCorrect,
-      conversionTotal: conversionsTotal,
-      precisionAchieved: unit.precision,
-      measurementTypesExplored: Array.from(measurementTypesExplored),
-      attemptsCount,
+      estimateCorrect: estResults.filter((r) => r.correct).length,
+      estimateTotal: estResults.length,
+      readCorrect: readResults.filter((r) => r.correct).length,
+      readTotal: readResults.length,
+      convertCorrect: convResults.filter((r) => r.correct).length,
+      convertTotal: convResults.length,
+      attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
     };
 
-    submitResult(success, score, metrics, {
-      studentWork: {
-        toolType,
-        objectMeasured: objectToMeasure.name,
-        challengesCompleted: challenges.length,
-        phaseReached: currentPhase,
-      },
+    submitResult(totalCorrect === challenges.length, score, metrics, {
+      challengeResults,
     });
 
+    // AI celebration
+    const phaseScoreStr = phaseResults
+      .map((p) => `${p.label} ${p.score}%`)
+      .join(', ');
     sendText(
-      `[SESSION_COMPLETE] Student completed all ${challenges.length} challenges! ` +
-      `Score: ${Math.round(score)}%. Measurements: ${measurementsCorrect}/${measurementsTotal}. ` +
-      `Celebrate their achievement and summarize what they learned about ${measurementType} measurement.`,
-      { silent: true }
+      `[ALL_COMPLETE] Student finished all ${challenges.length} measurement challenges! ` +
+      `Score: ${score}%. Phase scores: ${phaseScoreStr}. ` +
+      `Celebrate and give encouraging phase-specific feedback.`,
+      { silent: true },
     );
-  }, [measurementsCorrect, measurementsTotal, estimateErrors, toolSelectionsCorrect, toolSelectionsTotal, unitSelectionsCorrect, unitSelectionsTotal, conversionsCorrect, conversionsTotal, unit.precision, measurementTypesExplored, attemptsCount, submitResult, challenges, currentPhase, toolType, objectToMeasure, measurementType, sendText]);
+  }, [isComplete, hasSubmitted, challengeResults, challenges, submitResult, phaseResults, sendText]);
 
-  // Handle reset
+  // ── Reset handler ─────────────────────────────────────────────
   const handleReset = () => {
-    setCurrentChallengeIndex(0);
-    setMeasurementValue(0);
-    setEstimateValue('');
-    setConversionAnswer('');
-    setSelectedTool(null);
-    setSelectedUnit(null);
+    reset();
+    resetAttempt();
+    setAnswerInput('');
     setFeedback(null);
     setShowHint(false);
-    setMeasurementsCorrect(0);
-    setMeasurementsTotal(0);
-    setEstimateErrors([]);
-    setToolSelectionsCorrect(0);
-    setToolSelectionsTotal(0);
-    setUnitSelectionsCorrect(0);
-    setUnitSelectionsTotal(0);
-    setConversionsCorrect(0);
-    setConversionsTotal(0);
-    setAttemptsCount(0);
-    hasSentPhaseIntro.current.clear();
-    resetAttempt();
+    hasIntroducedRef.current = false;
   };
 
-  // Phase navigation
-  const advancePhase = () => {
-    const phases: Phase[] = ['explore', 'estimate', 'precision', 'convert'];
-    const currentIndex = phases.indexOf(currentPhase);
-    if (currentIndex < phases.length - 1) {
-      setCurrentPhase(phases[currentIndex + 1]);
-    }
-  };
+  // ── Computed values for current challenge ─────────────────────
+  const maxScale = currentChallenge ? computeMaxScale(currentChallenge.value, toolType) : 10;
+  const minScale = computeMinScale(toolType, unit);
 
-  // Tool selector for choose_tool challenges
-  const toolOptions: ToolType[] = ['ruler', 'scale', 'measuring_cup', 'thermometer'];
-
-  // Unit selector for choose_unit challenges
-  const unitOptions: MeasurementUnit[] = ['cm', 'm', 'g', 'kg', 'mL', 'L', '°C', '°F'];
+  // ── Determine which phases exist ──────────────────────────────
+  const challengeTypes = useMemo(
+    () => Array.from(new Set(challenges.map((c) => c.type))),
+    [challenges],
+  );
 
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
@@ -700,7 +670,9 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                 Measurement Tools
               </CardTitle>
               <p className="text-sm text-slate-400 mt-0.5">
-                Measure the {objectToMeasure.name} using {TOOL_LABELS[toolType]}
+                {currentChallenge
+                  ? `Measure with ${TOOL_LABELS[toolType]}`
+                  : 'Complete!'}
               </p>
             </div>
           </div>
@@ -714,26 +686,33 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
           </div>
         </div>
 
-        {/* Phase Progress Indicator */}
+        {/* Phase progress indicator */}
         <div className="flex items-center gap-1 mt-4">
-          {(['explore', 'estimate', 'precision', 'convert'] as Phase[]).map((phase, i) => {
-            const phases: Phase[] = ['explore', 'estimate', 'precision', 'convert'];
-            const currentIdx = phases.indexOf(currentPhase);
-            const isActive = phase === currentPhase;
-            const isComplete = i < currentIdx;
+          {challengeTypes.map((type, i) => {
+            const config = PHASE_CONFIG[type];
+            // Determine if this phase is active, complete, or upcoming
+            const phaseChallenges = challenges.filter((c) => c.type === type);
+            const phaseComplete = phaseChallenges.every((c) =>
+              challengeResults.some((r) => r.challengeId === c.id && r.correct),
+            );
+            const phaseActive = !phaseComplete && currentChallenge?.type === type;
 
             return (
-              <React.Fragment key={phase}>
-                {i > 0 && <div className={`h-px flex-1 ${isComplete ? 'bg-emerald-500' : 'bg-slate-700'}`} />}
+              <React.Fragment key={type}>
+                {i > 0 && (
+                  <div className={`h-px flex-1 ${phaseComplete ? 'bg-emerald-500' : 'bg-slate-700'}`} />
+                )}
                 <div
                   className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-all ${
-                    isActive ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                    : isComplete ? 'bg-emerald-500/20 text-emerald-300'
-                    : 'bg-slate-800/50 text-slate-500'
+                    phaseActive
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                      : phaseComplete
+                        ? 'bg-emerald-500/20 text-emerald-300'
+                        : 'bg-slate-800/50 text-slate-500'
                   }`}
                 >
-                  {isComplete ? '✓' : `${i + 1}`}
-                  <span className="hidden sm:inline">{PHASE_LABELS[phase]}</span>
+                  {phaseComplete ? '✓' : config?.icon || '•'}
+                  <span className="hidden sm:inline">{config?.label || type}</span>
                 </div>
               </React.Fragment>
             );
@@ -742,224 +721,173 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       </CardHeader>
 
       <CardContent className="space-y-5">
-        {/* Object Display */}
-        <div className="bg-black/20 rounded-lg p-4 text-center">
-          <div className="text-4xl mb-2">📦</div>
-          <p className="text-slate-200 font-medium">{objectToMeasure.name}</p>
-          <p className="text-xs text-slate-500 mt-1">Category: {objectToMeasure.category}</p>
-          {nonStandardUnits?.enabled && (
-            <p className="text-xs text-amber-300 mt-1">
-              Measuring with: {nonStandardUnits.unitName}
-            </p>
-          )}
-        </div>
-
-        {/* Challenge Instructions */}
-        {currentChallenge && (
-          <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-            <p className="text-purple-200 text-sm font-medium">
-              Challenge {currentChallengeIndex + 1} of {challenges.length}
-            </p>
-            <p className="text-slate-200 mt-1">{currentChallenge.instruction}</p>
-          </div>
+        {/* Results panel (when complete) */}
+        {isComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={Math.round(
+              phaseResults.reduce((s, p) => s + p.score, 0) / phaseResults.length,
+            )}
+            durationMs={elapsedMs}
+            heading="Measurement Complete!"
+            celebrationMessage="Great job measuring!"
+            className="mb-4"
+          />
         )}
 
-        {/* Tool Visualization */}
-        {currentChallenge?.type === 'measure' || currentChallenge?.type === 'compare' || currentPhase === 'explore' ? (
-          <div>
-            {(toolType === 'ruler' || toolType === 'tape_measure') && (
-              <RulerVisualization
-                value={measurementValue}
-                maxValue={maxMeasurementValue}
-                unit={nonStandardUnits?.enabled ? 'cm' : unit.primary}
-                precision={unit.precision}
-                onValueChange={setMeasurementValue}
-                disabled={hasSubmitted}
-              />
-            )}
-            {(toolType === 'scale' || toolType === 'balance') && (
-              <ScaleVisualization
-                value={measurementValue}
-                maxValue={maxMeasurementValue}
-                unit={unit.primary}
-                precision={unit.precision}
-                onValueChange={setMeasurementValue}
-                disabled={hasSubmitted}
-                objectName={objectToMeasure.name}
-              />
-            )}
-            {toolType === 'measuring_cup' && (
-              <MeasuringCupVisualization
-                value={measurementValue}
-                maxValue={maxMeasurementValue}
-                unit={unit.primary}
-                precision={unit.precision}
-                onValueChange={setMeasurementValue}
-                disabled={hasSubmitted}
-              />
-            )}
-            {toolType === 'thermometer' && (
-              <ThermometerVisualization
-                value={measurementValue}
-                minValue={minTempValue}
-                maxValue={maxTempValue}
-                unit={unit.primary}
-                precision={unit.precision}
-                onValueChange={setMeasurementValue}
-                disabled={hasSubmitted}
-              />
-            )}
-          </div>
-        ) : null}
+        {/* Current challenge */}
+        {currentChallenge && !isComplete && (
+          <>
+            {/* Challenge instruction */}
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
+              <p className="text-purple-200 text-sm font-medium">
+                Challenge {currentIndex + 1} of {challenges.length}
+              </p>
+              <p className="text-slate-200 mt-1">{currentChallenge.instruction}</p>
+            </div>
 
-        {/* Estimate Input */}
-        {currentChallenge?.type === 'estimate' && (
-          <div className="bg-black/20 rounded-lg p-4">
-            <label className="text-sm text-slate-300 mb-2 block">
-              Your estimate ({getUnitLabel(unit.primary)}):
-            </label>
-            <input
-              type="number"
-              value={estimateValue}
-              onChange={(e) => setEstimateValue(e.target.value)}
-              placeholder={`Estimate in ${getUnitLabel(unit.primary)}`}
-              disabled={hasSubmitted}
-              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-              step={getPrecisionStep(unit.precision)}
-            />
-          </div>
-        )}
-
-        {/* Tool Selection */}
-        {currentChallenge?.type === 'choose_tool' && (
-          <div className="grid grid-cols-2 gap-2">
-            {toolOptions.map(tool => (
-              <Button
-                key={tool}
-                variant="ghost"
-                className={`bg-white/5 border hover:bg-white/10 ${
-                  selectedTool === tool ? 'border-purple-500 bg-purple-500/20' : 'border-white/20'
-                }`}
-                onClick={() => setSelectedTool(tool)}
-                disabled={hasSubmitted}
-              >
-                <span className="mr-2">{TOOL_ICONS[tool]}</span>
-                {TOOL_LABELS[tool]}
-              </Button>
-            ))}
-          </div>
-        )}
-
-        {/* Unit Selection */}
-        {currentChallenge?.type === 'choose_unit' && (
-          <div className="grid grid-cols-4 gap-2">
-            {unitOptions.map(u => (
-              <Button
-                key={u}
-                variant="ghost"
-                className={`bg-white/5 border hover:bg-white/10 ${
-                  selectedUnit === u ? 'border-purple-500 bg-purple-500/20' : 'border-white/20'
-                }`}
-                onClick={() => setSelectedUnit(u)}
-                disabled={hasSubmitted}
-              >
-                {getUnitLabel(u)}
-              </Button>
-            ))}
-          </div>
-        )}
-
-        {/* Conversion Input */}
-        {currentChallenge?.type === 'convert' && (
-          <div className="bg-black/20 rounded-lg p-4 space-y-3">
-            <label className="text-sm text-slate-300 block">
-              Convert your answer:
-            </label>
-            <input
-              type="number"
-              value={conversionAnswer}
-              onChange={(e) => setConversionAnswer(e.target.value)}
-              placeholder={`Enter value in ${unit.secondary ? getUnitLabel(unit.secondary) : 'target unit'}`}
-              disabled={hasSubmitted}
-              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none"
-              step={getPrecisionStep(unit.precision)}
-            />
-
-            {/* Conversion Reference Toggle */}
-            {conversionReference?.enabled && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-xs"
-                onClick={() => setShowConversionRef(!showConversionRef)}
-              >
-                {showConversionRef ? 'Hide' : 'Show'} Conversion Reference
-              </Button>
-            )}
-
-            {showConversionRef && conversionReference?.conversions && (
-              <div className="bg-slate-800/50 rounded-lg p-3 space-y-1">
-                {conversionReference.conversions.map((conv, i) => (
-                  <p key={i} className="text-xs text-slate-300">
-                    1 {conv.from} = {conv.factor} {conv.to} — {conv.description}
-                  </p>
-                ))}
+            {/* ── Estimate: show object, no tool ── */}
+            {currentChallenge.type === 'estimate' && (
+              <div className="bg-black/20 rounded-lg p-6 text-center">
+                <span className="text-5xl">{currentChallenge.objectEmoji}</span>
+                <p className="text-slate-200 font-medium mt-3">{currentChallenge.objectName}</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Estimate in {currentChallenge.targetUnit}
+                </p>
               </div>
             )}
-          </div>
-        )}
 
-        {/* Feedback */}
-        {feedback && (
-          <div className={`rounded-lg p-3 border ${
-            feedback.correct
-              ? 'bg-emerald-500/10 border-emerald-500/30'
-              : 'bg-red-500/10 border-red-500/30'
-          }`}>
-            <p className={`text-sm font-medium ${
-              feedback.correct ? 'text-emerald-300' : 'text-red-300'
-            }`}>
-              {feedback.message}
-            </p>
-          </div>
-        )}
+            {/* ── Read: show read-only tool visualization ── */}
+            {currentChallenge.type === 'read' && (
+              <>
+                {toolType === 'ruler' && (
+                  <RulerVisualization
+                    value={currentChallenge.value}
+                    maxScale={maxScale}
+                    minScale={0}
+                    unit={unit}
+                    precision={precision}
+                    objectEmoji={currentChallenge.objectEmoji}
+                    objectName={currentChallenge.objectName}
+                  />
+                )}
+                {toolType === 'scale' && (
+                  <ScaleVisualization
+                    value={currentChallenge.value}
+                    maxScale={maxScale}
+                    minScale={0}
+                    unit={unit}
+                    precision={precision}
+                    objectEmoji={currentChallenge.objectEmoji}
+                    objectName={currentChallenge.objectName}
+                  />
+                )}
+                {toolType === 'measuring_cup' && (
+                  <MeasuringCupVisualization
+                    value={currentChallenge.value}
+                    maxScale={maxScale}
+                    minScale={0}
+                    unit={unit}
+                    precision={precision}
+                    objectEmoji={currentChallenge.objectEmoji}
+                    objectName={currentChallenge.objectName}
+                  />
+                )}
+                {toolType === 'thermometer' && (
+                  <ThermometerVisualization
+                    value={currentChallenge.value}
+                    maxScale={maxScale}
+                    minScale={minScale}
+                    unit={unit}
+                    precision={precision}
+                    objectEmoji={currentChallenge.objectEmoji}
+                    objectName={currentChallenge.objectName}
+                  />
+                )}
+              </>
+            )}
 
-        {/* Hint */}
-        {showHint && currentChallenge && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-            <p className="text-amber-200 text-sm">{currentChallenge.hint}</p>
-          </div>
-        )}
+            {/* ── Convert: show stated measurement + conversion fact ── */}
+            {currentChallenge.type === 'convert' && (
+              <div className="bg-black/20 rounded-lg p-4 space-y-3">
+                <div className="text-center">
+                  <span className="text-3xl">{currentChallenge.objectEmoji}</span>
+                  <p className="text-slate-200 mt-2">
+                    The {currentChallenge.objectName} measures{' '}
+                    <span className="text-purple-300 font-bold">
+                      {currentChallenge.value} {unit}
+                    </span>
+                  </p>
+                </div>
+                {conversionFact && (
+                  <div className="bg-slate-700/30 rounded p-2 text-center">
+                    <p className="text-xs text-slate-400">Conversion reference:</p>
+                    <p className="text-sm text-slate-200">{conversionFact}</p>
+                  </div>
+                )}
+                <p className="text-center text-sm text-slate-400">
+                  Answer in {currentChallenge.targetUnit}
+                </p>
+              </div>
+            )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 flex-wrap">
-          {!hasSubmitted && currentChallenge && (
-            <>
-              <Button
-                onClick={checkAnswer}
-                variant="ghost"
-                className="bg-purple-500/20 border border-purple-500/40 hover:bg-purple-500/30 text-purple-200"
+            {/* Answer input */}
+            <CalculatorInput
+              label={`Your answer (${currentChallenge.targetUnit})`}
+              value={answerInput}
+              onChange={setAnswerInput}
+              onSubmit={checkAnswer}
+              placeholder="?"
+              disabled={hasSubmitted}
+              showSubmitButton={true}
+              allowDecimal={precision !== 'whole'}
+              allowNegative={toolType === 'thermometer'}
+            />
+
+            {/* Feedback */}
+            {feedback && (
+              <div
+                className={`rounded-lg p-3 border ${
+                  feedback.correct
+                    ? 'bg-emerald-500/10 border-emerald-500/30'
+                    : 'bg-red-500/10 border-red-500/30'
+                }`}
               >
-                Check Answer
-              </Button>
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-                onClick={() => setShowHint(true)}
-              >
-                Need a Hint?
-              </Button>
-              {currentPhase !== 'convert' && (
+                <p
+                  className={`text-sm font-medium ${
+                    feedback.correct ? 'text-emerald-300' : 'text-red-300'
+                  }`}
+                >
+                  {feedback.message}
+                </p>
+              </div>
+            )}
+
+            {/* Hint */}
+            {showHint && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                <p className="text-amber-200 text-sm">{currentChallenge.hint}</p>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-2 flex-wrap">
+              {!feedback?.correct && currentAttempts >= 2 && !showHint && (
                 <Button
                   variant="ghost"
                   className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-                  onClick={advancePhase}
+                  onClick={() => setShowHint(true)}
                 >
-                  Skip to Next Phase
+                  Need a Hint?
                 </Button>
               )}
-            </>
-          )}
-          {hasSubmitted && (
+            </div>
+          </>
+        )}
+
+        {/* Reset button after completion */}
+        {isComplete && (
+          <div className="flex justify-center">
             <Button
               onClick={handleReset}
               variant="ghost"
@@ -967,30 +895,8 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
             >
               Try Again
             </Button>
-          )}
-        </div>
-
-        {/* Progress Summary */}
-        <div className="bg-black/20 rounded-lg p-3">
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <div className="text-lg font-bold text-slate-100">{measurementsCorrect}/{measurementsTotal}</div>
-              <div className="text-xs text-slate-500">Measurements</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-slate-100">
-                {estimateErrors.length > 0
-                  ? `${Math.round(100 - estimateErrors.reduce((a, b) => a + b, 0) / estimateErrors.length)}%`
-                  : '—'}
-              </div>
-              <div className="text-xs text-slate-500">Est. Accuracy</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-slate-100">{conversionsCorrect}/{conversionsTotal}</div>
-              <div className="text-xs text-slate-500">Conversions</div>
-            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

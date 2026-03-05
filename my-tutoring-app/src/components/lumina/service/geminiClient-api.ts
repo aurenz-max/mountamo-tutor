@@ -15,6 +15,7 @@ import {
   ManifestItemConfig,
   PracticeManifest,
   HydratedPracticeItem,
+  SessionBrief,
 } from '../types';
 
 /**
@@ -370,6 +371,7 @@ export const generateWarmUpQuestion = async (
 export interface PracticeStreamCallbacks {
   onProgress?: (message: string) => void;
   onManifestReady?: (preview: { instanceId: string; problemText: string; difficulty: string; isVisual: boolean }[]) => void;
+  onSessionBrief?: (brief: SessionBrief) => void;
   onItemReady?: (item: HydratedPracticeItem, index: number, total: number) => void;
 }
 
@@ -427,6 +429,9 @@ export const generatePracticeManifestAndHydrateStreaming = async (
               break;
             case 'manifest':
               callbacks?.onManifestReady?.(event.items);
+              if (event.sessionBrief) {
+                callbacks?.onSessionBrief?.(event.sessionBrief);
+              }
               break;
             case 'item':
               callbacks?.onItemReady?.(event.item, event.index, event.total);

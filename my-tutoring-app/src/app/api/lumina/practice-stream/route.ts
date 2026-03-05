@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
         await sendEvent({
           type: 'manifest',
           itemCount: manifest.items.length,
+          sessionBrief: manifest.sessionBrief || null,
           items: manifest.items.map(item => ({
             instanceId: item.instanceId,
             problemText: item.problemText,

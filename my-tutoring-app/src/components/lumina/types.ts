@@ -1420,12 +1420,23 @@ export interface PracticeManifestItem {
 }
 
 /**
+ * Student-facing brief generated alongside the practice manifest.
+ * Frames the upcoming activities with an engaging title, hook, and relevance.
+ */
+export interface SessionBrief {
+  title: string;
+  hook: string;
+  whyItMatters: string;
+}
+
+/**
  * Complete practice manifest returned by Gemini.
  */
 export interface PracticeManifest {
   topic: string;
   gradeLevel: string;
   problemCount: number;
+  sessionBrief?: SessionBrief;
   items: PracticeManifestItem[];
 }
 

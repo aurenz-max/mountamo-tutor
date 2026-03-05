@@ -9,14 +9,19 @@ Manages the full diagnostic placement flow:
 
 Uses DAGAnalysisEngine for all pure algorithm work.
 Persists session state to Firestore at diagnostic_sessions/{session_id}.
+
+Graph data (edges, node metrics) is loaded on-demand from curriculum_graphs
+via LearningPathsService and cached in-memory per subject combination —
+NOT stored in the session document.
 """
 
 from __future__ import annotations
 
 import logging
 import uuid
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, FrozenSet, List, Optional
 
 from ..db.firestore_service import FirestoreService
 from ..models.diagnostic import (
@@ -24,15 +29,25 @@ from ..models.diagnostic import (
     DIAGNOSTIC_COVERAGE_TARGET,
     DIAGNOSTIC_GATE_MAP,
     DIAGNOSTIC_PASS_THRESHOLD,
+    GRADE_TO_CURRICULUM_MAP,
     CompletionResponse,
     DiagnosticSession,
+    DiagnosticSessionSummary,
     DiagnosticSessionState,
     DiagnosticStatus,
+    EnrichedSessionResponse,
     KnowledgeProfileResponse,
+    NodeMetrics,
     ProbeRequest,
     ProbeResultResponse,
     SubjectSummary,
     SubskillClassification,
+)
+from ..models.calibration import (
+    DEFAULT_STUDENT_THETA,
+    DEFAULT_THETA_SIGMA,
+    StudentAbility,
+    ThetaHistoryEntry,
 )
 from ..models.mastery_lifecycle import GateHistoryEntry, MasteryLifecycle
 from ..services.dag_analysis import DAGAnalysisEngine
@@ -40,6 +55,22 @@ from ..services.learning_paths import LearningPathsService
 from ..services.mastery_lifecycle_engine import MasteryLifecycleEngine
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Internal graph bundle (never stored in Firestore)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _GraphBundle:
+    """Pre-computed diagnostic graph data for a set of subjects.
+
+    Cached in-memory on DiagnosticService, keyed by frozenset(subjects).
+    Recomputed on server restart from curriculum_graphs (sub-millisecond).
+    """
+    all_nodes: List[Dict] = field(default_factory=list)
+    all_edges: List[Dict] = field(default_factory=list)
+    metrics: Dict[str, NodeMetrics] = field(default_factory=dict)
 
 
 class DiagnosticService:
@@ -55,54 +86,42 @@ class DiagnosticService:
         firestore_service: FirestoreService,
         learning_paths_service: LearningPathsService,
         mastery_lifecycle_engine: MasteryLifecycleEngine,
+        calibration_engine: Optional[Any] = None,
     ):
         self.firestore = firestore_service
         self.learning_paths = learning_paths_service
         self.mastery_engine = mastery_lifecycle_engine
+        self.calibration_engine = calibration_engine  # For θ prior seeding (Phase 2)
+        # In-memory cache: frozenset(subjects) → pre-computed graph bundle
+        self._graph_bundles: Dict[FrozenSet[str], _GraphBundle] = {}
 
     # ------------------------------------------------------------------
-    # Session creation
+    # Graph bundle (cached in-memory, never stored in Firestore)
     # ------------------------------------------------------------------
 
-    async def create_session(
-        self,
-        student_id: int,
-        subjects: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+    async def _get_graph_bundle(self, subjects: List[str]) -> _GraphBundle:
         """
-        Create a new diagnostic session.
+        Load curriculum graphs for the given subjects, filter to subskills,
+        and compute topological metrics.
 
-        1. Load DAGs for requested subjects
-        2. Merge all subskill nodes + edges
-        3. Compute topological metrics
-        4. Select initial probe points (midpoints of longest chains)
-        5. Persist session to Firestore
-        6. Return session_id + initial probes
-
-        Args:
-            student_id: The student being assessed
-            subjects: List of subject IDs (e.g., ["MATHEMATICS", "LANGUAGE_ARTS"]).
-                      None = all available subjects.
+        Results are cached in-memory keyed by frozenset(subjects).
+        On server restart the cache rebuilds from curriculum_graphs
+        (already cached in LearningPathsService).
         """
-        session_id = f"diag_{uuid.uuid4().hex[:12]}"
-        logger.info(
-            f"Creating diagnostic session {session_id} for student {student_id}"
-        )
+        cache_key = frozenset(subjects)
+        if cache_key in self._graph_bundles:
+            return self._graph_bundles[cache_key]
 
-        # Resolve subjects
-        if not subjects:
-            subjects = await self.learning_paths._get_available_subjects()
-        logger.info(f"Diagnostic subjects: {subjects}")
-
-        # Load and merge graphs
         all_nodes: List[Dict] = []
         all_edges: List[Dict] = []
+
         for subject in subjects:
             try:
                 graph_data = await self.learning_paths._get_graph(subject)
                 graph = graph_data.get("graph", {})
                 nodes = graph.get("nodes", [])
                 edges = graph.get("edges", [])
+
                 # Build a lookup of skill descriptions from skill-level nodes
                 skill_desc_map: Dict[str, str] = {}
                 for n in nodes:
@@ -141,7 +160,9 @@ class DiagnosticService:
                 continue
 
         if not all_nodes:
-            raise ValueError("No curriculum subskills found for the requested subjects")
+            raise ValueError(
+                "No curriculum subskills found for the requested subjects"
+            )
 
         # Topological sort + metrics
         topo_order = DAGAnalysisEngine.topological_sort(all_nodes, all_edges)
@@ -149,14 +170,71 @@ class DiagnosticService:
             all_nodes, all_edges, topo_order,
         )
 
+        bundle = _GraphBundle(
+            all_nodes=all_nodes,
+            all_edges=all_edges,
+            metrics=metrics,
+        )
+        self._graph_bundles[cache_key] = bundle
+        logger.info(
+            f"Built graph bundle for {subjects}: "
+            f"{len(all_nodes)} nodes, {len(all_edges)} edges"
+        )
+        return bundle
+
+    # ------------------------------------------------------------------
+    # Session creation
+    # ------------------------------------------------------------------
+
+    async def create_session(
+        self,
+        student_id: int,
+        subjects: Optional[List[str]] = None,
+        grade_level: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a new diagnostic session.
+
+        1. Resolve subjects (grade-scoped if grade_level provided)
+        2. Load graph bundle (cached) with subskill nodes, edges, metrics
+        3. Select initial probe points (midpoints of longest chains)
+        4. Persist lightweight session to Firestore (no graph data)
+        5. Return session_id + initial probes
+
+        Args:
+            student_id: The student being assessed
+            subjects: List of subject IDs (e.g., ["MATHEMATICS", "LANGUAGE_ARTS"]).
+                      None = all available subjects for the student's grade.
+            grade_level: Student's grade code (e.g., "K", "1st"). Used to scope
+                         subject resolution when subjects is None.
+        """
+        session_id = f"diag_{uuid.uuid4().hex[:12]}"
+        logger.info(
+            f"Creating diagnostic session {session_id} for student {student_id} "
+            f"(grade={grade_level})"
+        )
+
+        # Resolve subjects — grade-scoped when possible
+        if not subjects:
+            curriculum_grade = GRADE_TO_CURRICULUM_MAP.get(
+                grade_level, ""
+            ) if grade_level else None
+            subjects = await self.learning_paths._get_available_subjects(
+                grade=curriculum_grade,
+            )
+        logger.info(f"Diagnostic subjects: {subjects}")
+
+        # Load graph bundle (cached in-memory)
+        bundle = await self._get_graph_bundle(subjects)
+
         # Select initial probes
         initial_probes = DAGAnalysisEngine.select_initial_probes(
-            metrics, all_nodes, all_edges, max_probes=5,
+            bundle.metrics, bundle.all_nodes, bundle.all_edges, max_probes=5,
         )
 
         # Initialize classifications (all UNKNOWN)
         classifications: Dict[str, SubskillClassification] = {}
-        for node in all_nodes:
+        for node in bundle.all_nodes:
             nid = node["id"]
             classifications[nid] = SubskillClassification(
                 subskill_id=nid,
@@ -167,20 +245,19 @@ class DiagnosticService:
                 status=DiagnosticStatus.UNKNOWN,
             )
 
-        # Build session
+        # Build session — no cached_edges or node_metrics
         session = DiagnosticSession(
             session_id=session_id,
             student_id=student_id,
             subjects=subjects,
+            grade_level=grade_level,
             classifications={
                 k: v.model_dump() for k, v in classifications.items()
             },
-            total_nodes=len(all_nodes),
+            total_nodes=len(bundle.all_nodes),
             classified_count=0,
             probed_count=0,
             coverage_pct=0.0,
-            cached_edges=all_edges,
-            node_metrics={k: v.model_dump() for k, v in metrics.items()},
         )
 
         # Persist
@@ -190,14 +267,15 @@ class DiagnosticService:
 
         logger.info(
             f"Diagnostic session {session_id} created: "
-            f"{len(all_nodes)} subskills, {len(initial_probes)} initial probes"
+            f"{len(bundle.all_nodes)} subskills, "
+            f"{len(initial_probes)} initial probes"
         )
 
         return {
             "session_id": session_id,
             "student_id": student_id,
             "subjects": subjects,
-            "total_nodes": len(all_nodes),
+            "total_nodes": len(bundle.all_nodes),
             "probes": [p.model_dump() for p in initial_probes],
         }
 
@@ -234,12 +312,11 @@ class DiagnosticService:
         for sid, cls_data in session_data.get("classifications", {}).items():
             classifications[sid] = SubskillClassification(**cls_data)
 
-        edges = session_data.get("cached_edges", [])
-        node_metrics_raw = session_data.get("node_metrics", {})
-        metrics = {
-            k: _metrics_from_dict(v)
-            for k, v in node_metrics_raw.items()
-        }
+        # Load graph data from in-memory cache (not from session document)
+        subjects = session_data.get("subjects", [])
+        bundle = await self._get_graph_bundle(subjects)
+        edges = bundle.all_edges
+        metrics = bundle.metrics
 
         # Classify the probed node
         passed = score >= DIAGNOSTIC_PASS_THRESHOLD
@@ -353,6 +430,140 @@ class DiagnosticService:
             raise ValueError(f"Diagnostic session {session_id} not found")
         return session_data
 
+    async def get_session_enriched(
+        self, session_id: str,
+    ) -> EnrichedSessionResponse:
+        """
+        Load session and attach computed fields for frontend resume/display.
+
+        - For in_progress sessions: computes and attaches next probes
+        - For completed sessions: attaches the knowledge profile
+        """
+        session_data = await self.get_session(session_id)
+        state = session_data.get("state", "in_progress")
+
+        response = EnrichedSessionResponse(
+            session_id=session_data.get("session_id", session_id),
+            student_id=session_data.get("student_id", 0),
+            state=state,
+            subjects=session_data.get("subjects", []),
+            total_nodes=session_data.get("total_nodes", 0),
+            classified_count=session_data.get("classified_count", 0),
+            probed_count=session_data.get("probed_count", 0),
+            coverage_pct=session_data.get("coverage_pct", 0.0),
+            created_at=session_data.get("created_at", ""),
+            updated_at=session_data.get("updated_at", ""),
+            completed_at=session_data.get("completed_at"),
+        )
+
+        if state == DiagnosticSessionState.IN_PROGRESS:
+            response.probes = await self._compute_resume_probes(session_data)
+        elif state == DiagnosticSessionState.COMPLETED:
+            response.knowledge_profile = await self.get_knowledge_profile(
+                session_id,
+            )
+
+        return response
+
+    async def _compute_resume_probes(
+        self, session_data: Dict[str, Any],
+    ) -> List[ProbeRequest]:
+        """Compute next probes from current session state (for resume)."""
+        classifications = {
+            sid: SubskillClassification(**cls_data)
+            for sid, cls_data in session_data.get("classifications", {}).items()
+        }
+
+        # Load graph data from in-memory cache
+        subjects = session_data.get("subjects", [])
+        bundle = await self._get_graph_bundle(subjects)
+        edges = bundle.all_edges
+        metrics = bundle.metrics
+
+        nodes = [
+            {
+                "id": sid,
+                "subject": cls.subject,
+                "skill_id": cls.skill_id,
+                "skill_description": cls.skill_description,
+                "description": cls.description,
+                "type": "subskill",
+            }
+            for sid, cls in classifications.items()
+        ]
+
+        probe_history = session_data.get("probe_history", [])
+        if probe_history:
+            last = probe_history[-1]
+            probes = DAGAnalysisEngine.select_next_probes(
+                metrics, nodes, edges, classifications,
+                last_probed_id=last["subskill_id"],
+                last_passed=last.get("passed", False),
+                max_probes=5,
+            )
+        else:
+            probes = DAGAnalysisEngine.select_initial_probes(
+                metrics, nodes, edges, max_probes=5,
+            )
+
+        return probes
+
+    # ------------------------------------------------------------------
+    # Session listing
+    # ------------------------------------------------------------------
+
+    async def list_sessions(
+        self,
+        student_id: int,
+        state: Optional[str] = None,
+    ) -> List[DiagnosticSessionSummary]:
+        """
+        List diagnostic sessions for a student, optionally filtered by state.
+
+        Returns lightweight summaries sorted by created_at desc.
+        """
+        sessions = await self.firestore.get_student_diagnostic_sessions(
+            student_id,
+        )
+
+        if state:
+            sessions = [s for s in sessions if s.get("state") == state]
+
+        # Sort by created_at descending
+        sessions.sort(
+            key=lambda s: s.get("created_at", ""),
+            reverse=True,
+        )
+
+        return [
+            DiagnosticSessionSummary(
+                session_id=s.get("session_id", ""),
+                student_id=s.get("student_id", 0),
+                state=s.get("state", "unknown"),
+                subjects=s.get("subjects", []),
+                total_nodes=s.get("total_nodes", 0),
+                classified_count=s.get("classified_count", 0),
+                probed_count=s.get("probed_count", 0),
+                coverage_pct=s.get("coverage_pct", 0.0),
+                created_at=s.get("created_at", ""),
+                completed_at=s.get("completed_at"),
+            )
+            for s in sessions
+        ]
+
+    async def get_latest_profile(
+        self, student_id: int,
+    ) -> Optional[KnowledgeProfileResponse]:
+        """
+        Get the knowledge profile from the most recent completed diagnostic.
+
+        Returns None if no completed sessions exist.
+        """
+        completed = await self.list_sessions(student_id, state="completed")
+        if not completed:
+            return None
+        return await self.get_knowledge_profile(completed[0].session_id)
+
     # ------------------------------------------------------------------
     # Knowledge profile
     # ------------------------------------------------------------------
@@ -369,7 +580,11 @@ class DiagnosticService:
             sid: SubskillClassification(**cls_data)
             for sid, cls_data in session_data.get("classifications", {}).items()
         }
-        edges = session_data.get("cached_edges", [])
+
+        # Load edges from in-memory graph cache
+        subjects = session_data.get("subjects", [])
+        bundle = await self._get_graph_bundle(subjects)
+        edges = bundle.all_edges
 
         # Per-subject summary
         by_subject: Dict[str, SubjectSummary] = {}
@@ -603,6 +818,55 @@ class DiagnosticService:
         except Exception as e:
             logger.warning(f"Failed to update global pass rate: {e}")
 
+        # --- Seed StudentAbility priors from diagnostic (Phase 2) ---
+        ability_seeded = 0
+        if self.calibration_engine:
+            for subskill_id, cls in classifications.items():
+                if cls.status == DiagnosticStatus.UNKNOWN:
+                    continue
+                try:
+                    diag_theta = self._diagnostic_score_to_theta(
+                        cls.score or 0.0, cls.status,
+                    )
+                    # Lower sigma for mastered = higher confidence in prior
+                    diag_sigma = (
+                        1.0
+                        if cls.status in (
+                            DiagnosticStatus.PROBED_MASTERED,
+                            DiagnosticStatus.INFERRED_MASTERED,
+                        )
+                        else DEFAULT_THETA_SIGMA
+                    )
+                    ability = StudentAbility(
+                        student_id=student_id,
+                        skill_id=subskill_id,
+                        theta=diag_theta,
+                        sigma=diag_sigma,
+                        earned_level=round(diag_theta, 1),
+                        total_items_seen=0,
+                        prior_source="diagnostic",
+                        theta_history=[
+                            ThetaHistoryEntry(
+                                theta=diag_theta,
+                                earned_level=round(diag_theta, 1),
+                                timestamp=now_iso,
+                                score=(cls.score or 0.0) * 10,
+                            ),
+                        ],
+                    )
+                    await self.firestore.upsert_student_ability(
+                        student_id, subskill_id, ability.model_dump(),
+                    )
+                    ability_seeded += 1
+                except Exception as ab_err:
+                    logger.warning(
+                        f"Failed to seed ability for {subskill_id}: {ab_err}"
+                    )
+            logger.info(
+                f"Seeded {ability_seeded} StudentAbility docs "
+                f"(diagnostic priors) for student {student_id}"
+            )
+
         logger.info(
             f"Seeded {seeded_count} mastery lifecycles for student {student_id} "
             f"({len(frontier_skills)} frontier skills)"
@@ -613,17 +877,28 @@ class DiagnosticService:
             "frontier_skills": frontier_skills,
         }
 
+    # ------------------------------------------------------------------
+    # Diagnostic score → theta mapping (Phase 2)
+    # ------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+    @staticmethod
+    def _diagnostic_score_to_theta(
+        score: float, status: DiagnosticStatus,
+    ) -> float:
+        """
+        Map diagnostic placement result to an initial θ prior.
 
-def _metrics_from_dict(d: Dict[str, Any]):
-    """Reconstruct NodeMetrics from a dict (stored in Firestore)."""
-    from ..models.diagnostic import NodeMetrics
-    return NodeMetrics(
-        node_id=d.get("node_id", ""),
-        depth=d.get("depth", 0),
-        height=d.get("height", 0),
-        chain_length=d.get("chain_length", 0),
-    )
+        - PROBED_MASTERED:       score (0-1) → θ 7.5–9.5
+        - INFERRED_MASTERED:     no direct score → θ 7.0
+        - PROBED_NOT_MASTERED:   score (0-1) → θ 1.0–5.0
+        - INFERRED_NOT_MASTERED: default → θ 3.0
+        """
+        if status == DiagnosticStatus.PROBED_MASTERED:
+            return round(min(9.5, max(7.5, score * 10)), 2)
+        elif status == DiagnosticStatus.INFERRED_MASTERED:
+            return 7.0
+        elif status == DiagnosticStatus.PROBED_NOT_MASTERED:
+            return round(min(5.0, max(1.0, score * 10)), 2)
+        else:
+            return DEFAULT_STUDENT_THETA
+

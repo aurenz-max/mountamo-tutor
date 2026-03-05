@@ -1,12 +1,14 @@
 /**
  * Diagnostic Placement Engine — API Client
  *
- * Wraps the 5 backend diagnostic endpoints using the existing authApi singleton.
+ * Wraps the backend diagnostic endpoints using the existing authApi singleton.
  */
 
 import { authApi } from '@/lib/authApiClient';
 import type {
   CreateSessionResponse,
+  DiagnosticSessionSummary,
+  EnrichedSessionResponse,
   ProbeResultResponse,
   CompletionResponse,
   KnowledgeProfileResponse,
@@ -15,6 +17,16 @@ import type {
 const BASE = '/api/diagnostic';
 
 export const diagnosticApi = {
+  /** GET /api/diagnostic/sessions — List student's diagnostic sessions */
+  listSessions: (state?: string): Promise<DiagnosticSessionSummary[]> =>
+    authApi.get<DiagnosticSessionSummary[]>(
+      `${BASE}/sessions${state ? `?state=${encodeURIComponent(state)}` : ''}`,
+    ),
+
+  /** GET /api/diagnostic/sessions/latest-profile — Latest completed profile */
+  getLatestProfile: (): Promise<KnowledgeProfileResponse> =>
+    authApi.get<KnowledgeProfileResponse>(`${BASE}/sessions/latest-profile`),
+
   /** POST /api/diagnostic/sessions — Create a new diagnostic session */
   createSession: (subjects?: string[]): Promise<CreateSessionResponse> =>
     authApi.post<CreateSessionResponse>(`${BASE}/sessions`, {
@@ -37,9 +49,9 @@ export const diagnosticApi = {
       },
     ),
 
-  /** GET /api/diagnostic/sessions/{id} — Get full session state (for resume) */
-  getSession: (sessionId: string): Promise<Record<string, unknown>> =>
-    authApi.get<Record<string, unknown>>(`${BASE}/sessions/${sessionId}`),
+  /** GET /api/diagnostic/sessions/{id} — Get enriched session state */
+  getSession: (sessionId: string): Promise<EnrichedSessionResponse> =>
+    authApi.get<EnrichedSessionResponse>(`${BASE}/sessions/${sessionId}`),
 
   /** POST /api/diagnostic/sessions/{id}/complete — Finalize and seed mastery */
   completeSession: (sessionId: string): Promise<CompletionResponse> =>

@@ -3,171 +3,69 @@ import { MeasurementToolsData } from "../../primitives/visual-primitives/math/Me
 import { ai } from "../geminiClient";
 
 /**
- * Schema definition for Measurement Tools Data
- *
- * This schema defines the structure for measurement activities,
- * including tool selection, estimation, precision reading,
- * and unit conversion for grades 1-5.
+ * Simplified schema for Measurement Tools.
+ * 2 types only (outer object + challenge array item) to stay within Gemini's
+ * reliable JSON generation limits.
  */
 const measurementToolsSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     toolType: {
       type: Type.STRING,
-      description: "Tool type: 'ruler', 'tape_measure', 'scale', 'balance', 'measuring_cup', 'thermometer'"
+      description: "One of: 'ruler', 'scale', 'measuring_cup', 'thermometer'",
     },
     measurementType: {
       type: Type.STRING,
-      description: "Measurement type: 'length', 'weight', 'capacity', 'temperature'"
+      description: "One of: 'length', 'weight', 'capacity', 'temperature'",
     },
     unit: {
-      type: Type.OBJECT,
-      properties: {
-        primary: {
-          type: Type.STRING,
-          description: "Primary unit: 'cm', 'm', 'in', 'ft', 'g', 'kg', 'lb', 'mL', 'L', 'cup', '°C', '°F'"
-        },
-        secondary: {
-          type: Type.STRING,
-          description: "Secondary unit for conversion (e.g., if primary is 'cm', secondary might be 'm'). Null if no conversion."
-        },
-        precision: {
-          type: Type.STRING,
-          description: "Precision: 'whole', 'half', 'quarter', 'tenth'"
-        }
-      },
-      required: ["primary", "precision"]
+      type: Type.STRING,
+      description: "Primary unit shown on the tool: 'cm', 'm', 'in', 'ft', 'g', 'kg', 'lb', 'mL', 'L', 'cup', '°C', '°F'",
     },
-    objectToMeasure: {
-      type: Type.OBJECT,
-      properties: {
-        name: {
-          type: Type.STRING,
-          description: "Name of the object to measure (e.g., 'Pencil', 'Watermelon', 'Glass of Water')"
-        },
-        actualValue: {
-          type: Type.NUMBER,
-          description: "The true measurement value of the object"
-        },
-        imagePrompt: {
-          type: Type.STRING,
-          description: "Description for AI image generation of the object"
-        },
-        category: {
-          type: Type.STRING,
-          description: "Category: 'school', 'kitchen', 'nature', 'sports', 'animals'"
-        }
-      },
-      required: ["name", "actualValue", "imagePrompt", "category"]
+    precision: {
+      type: Type.STRING,
+      description: "Tick mark precision: 'whole', 'half', or 'quarter'",
+    },
+    gradeBand: {
+      type: Type.STRING,
+      description: "'1-2' or '3-5'",
+    },
+    conversionFact: {
+      type: Type.STRING,
+      description: "Conversion fact for convert challenges, e.g. '1 inch = 2.54 cm'. Empty string if no conversion challenges.",
     },
     challenges: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique challenge ID (e.g., 'c1', 'c2')"
-          },
-          type: {
-            type: Type.STRING,
-            description: "Challenge type: 'measure', 'estimate', 'compare', 'convert', 'choose_tool', 'choose_unit'"
-          },
-          instruction: {
-            type: Type.STRING,
-            description: "Student-facing instruction, warm and encouraging"
-          },
-          targetAnswer: {
-            type: Type.NUMBER,
-            description: "The correct answer (numeric value)"
-          },
-          acceptableRange: {
-            type: Type.OBJECT,
-            properties: {
-              min: { type: Type.NUMBER, description: "Minimum acceptable answer" },
-              max: { type: Type.NUMBER, description: "Maximum acceptable answer" }
-            },
-            required: ["min", "max"]
-          },
-          hint: {
-            type: Type.STRING,
-            description: "Hint text shown after incorrect attempts"
-          },
-          narration: {
-            type: Type.STRING,
-            description: "AI narration for this challenge"
-          }
+          id: { type: Type.STRING, description: "Unique ID, e.g. 'c1', 'c2'" },
+          type: { type: Type.STRING, description: "One of: 'estimate', 'read', 'convert'" },
+          objectName: { type: Type.STRING, description: "Object name, e.g. 'Pencil'" },
+          objectEmoji: { type: Type.STRING, description: "Single emoji for the object, e.g. '✏️'" },
+          value: { type: Type.NUMBER, description: "The actual measurement value displayed on the tool" },
+          targetAnswer: { type: Type.NUMBER, description: "Correct answer the student must enter" },
+          targetUnit: { type: Type.STRING, description: "Unit the student answers in" },
+          acceptableMin: { type: Type.NUMBER, description: "Min acceptable answer (for estimate challenges only)" },
+          acceptableMax: { type: Type.NUMBER, description: "Max acceptable answer (for estimate challenges only)" },
+          hint: { type: Type.STRING, description: "Hint shown after wrong attempts" },
+          instruction: { type: Type.STRING, description: "Student-facing instruction, warm and encouraging" },
         },
-        required: ["id", "type", "instruction", "targetAnswer", "hint", "narration"]
+        required: ["id", "type", "objectName", "objectEmoji", "value", "targetAnswer", "targetUnit", "hint", "instruction"],
       },
-      description: "Array of 3-5 progressive measurement challenges"
+      description: "Array of 4-6 progressive measurement challenges",
     },
-    nonStandardUnits: {
-      type: Type.OBJECT,
-      properties: {
-        enabled: {
-          type: Type.BOOLEAN,
-          description: "Whether to use non-standard units (for grade 1)"
-        },
-        unitName: {
-          type: Type.STRING,
-          description: "Name of non-standard unit (e.g., 'paper clips', 'hand spans')"
-        },
-        unitLength: {
-          type: Type.NUMBER,
-          description: "Length of one non-standard unit in cm"
-        }
-      },
-      required: ["enabled", "unitName", "unitLength"]
-    },
-    conversionReference: {
-      type: Type.OBJECT,
-      properties: {
-        enabled: {
-          type: Type.BOOLEAN,
-          description: "Whether to show conversion reference"
-        },
-        conversions: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              from: { type: Type.STRING, description: "Source unit" },
-              to: { type: Type.STRING, description: "Target unit" },
-              factor: { type: Type.NUMBER, description: "Conversion factor" },
-              description: { type: Type.STRING, description: "Description of conversion" }
-            },
-            required: ["from", "to", "factor", "description"]
-          }
-        }
-      },
-      required: ["enabled"]
-    },
-    imagePrompt: {
-      type: Type.STRING,
-      description: "Image prompt for the measurement context illustration"
-    },
-    gradeBand: {
-      type: Type.STRING,
-      description: "Grade band: '1-2' or '3-5'"
-    }
   },
-  required: ["toolType", "measurementType", "unit", "objectToMeasure", "challenges", "gradeBand"]
+  required: ["toolType", "measurementType", "unit", "precision", "gradeBand", "challenges"],
 };
 
 /**
- * Generate measurement tools data for interactive measurement activities
+ * Generate measurement tools data for interactive measurement activities.
  *
- * Grade-aware content:
- * - Grades 1-2: Non-standard units, compare longer/shorter/heavier/lighter,
- *   standard units (inches/cm, pounds/kg), estimate then measure
- * - Grades 3-5: Units within a system (cm→m, g→kg, mL→L), half/quarter precision,
- *   convert within metric/customary, multi-step problems, choose appropriate unit
- *
- * @param topic - The math topic or concept
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns MeasurementToolsData with complete configuration
+ * Three challenge types:
+ * - estimate: Student sees object name/emoji (no tool) and guesses measurement
+ * - read: Student sees a read-only tool visualization and reads the value
+ * - convert: Student converts a given measurement to another unit
  */
 export const generateMeasurementTools = async (
   topic: string,
@@ -176,79 +74,82 @@ export const generateMeasurementTools = async (
     toolType?: string;
     measurementType?: string;
     unit?: string;
-    objectCategory?: string;
     gradeBand?: '1-2' | '3-5';
-    challengeTypes?: string[];
-    includeConversion?: boolean;
-    useNonStandard?: boolean;
-  }
+  },
 ): Promise<MeasurementToolsData> => {
   const prompt = `
 Create an educational measurement activity for teaching "${topic}" to ${gradeLevel} students.
 
-CONTEXT:
-- Students use virtual measurement tools (rulers, scales, measuring cups, thermometers) to measure objects
-- Key skills: choosing tools, estimating, reading instruments, unit conversion
-- Students estimate FIRST, then measure to check their estimate
+THE STUDENT EXPERIENCE:
+- Students see objects displayed on READ-ONLY measurement tools (ruler, scale, measuring cup, thermometer)
+- They must READ the value from the tool visualization and type their answer
+- They do NOT drag sliders — they visually read the instrument like in real life
 
-GUIDELINES FOR GRADE LEVELS:
+THREE CHALLENGE TYPES:
 
-Grades 1-2 (gradeBand "1-2"):
-- Grade 1: Non-standard units (paper clips, hand spans), compare longer/shorter, heavier/lighter
-- Grade 2: Standard units (inches/cm for length, pounds/kg for weight), estimate then measure
-- Use simple, fun objects kids can relate to (pencils, apples, books, toys)
-- Focus on measure and estimate challenges, maybe one compare
-- Precision: "whole" only
-- Set nonStandardUnits.enabled = true for grade 1 content
-- No conversion challenges
+1. "estimate" — Student sees the object emoji and name but NO measurement tool.
+   They guess the measurement based on experience.
+   - targetAnswer = the actual measurement value
+   - acceptableMin = targetAnswer * 0.75 (allow 25% margin)
+   - acceptableMax = targetAnswer * 1.25
+   - targetUnit = the primary unit
 
-Grades 3-5 (gradeBand "3-5"):
-- Grade 3: Units within a system (cm→m, g→kg, mL→L), half-inch/half-cm precision
-- Grade 4: Larger/smaller units, convert within metric, two-step problems
-- Grade 5: Convert within customary system, choose most appropriate unit, multi-step
-- Use more varied objects (kitchen ingredients, sports equipment, science materials)
-- Include estimate, measure, convert, choose_tool, and choose_unit challenges
-- Precision: "half" or "quarter" for grades 3-4, up to "tenth" for grade 5
-- Set conversionReference.enabled = true with relevant conversion facts
+2. "read" — Student sees the object displayed ON the measurement tool.
+   For a ruler: a colored bar sits on the ruler from 0 to the value.
+   For a scale: a gauge shows the weight.
+   For a cup: liquid fills to the value.
+   For a thermometer: mercury rises to the value.
+   - targetAnswer = value (they must read the exact value from the tool)
+   - targetUnit = the primary unit
+   - Do NOT set acceptableMin/acceptableMax
 
-TOOL TYPE GUIDELINES:
-- ruler/tape_measure → length measurements (cm, m, in, ft)
-- scale/balance → weight measurements (g, kg, lb)
-- measuring_cup → capacity measurements (mL, L, cup)
-- thermometer → temperature measurements (°C, °F)
+3. "convert" — Student is given the measurement in one unit and converts to another.
+   - value = the known measurement
+   - targetAnswer = the mathematically correct converted value
+   - targetUnit = the TARGET unit (different from the primary unit)
+   - Do NOT set acceptableMin/acceptableMax
 
-CHALLENGE TYPES:
-- "measure": Use the tool to find the measurement. targetAnswer = actualValue.
-- "estimate": Look at the object and guess its measurement. acceptableRange = ±20%.
-- "compare": Which is longer/heavier/more? targetAnswer = count of larger.
-- "convert": Given a measurement in one unit, convert to another. targetAnswer = converted value.
-- "choose_tool": Which tool would you use to measure this? targetAnswer = tool name string as number (use ruler=1, scale=2, measuring_cup=3, thermometer=4).
-- "choose_unit": Which unit is most appropriate? targetAnswer = unit identifier as number.
+TOOL & UNIT MAPPING:
+- ruler → length → cm, m, in, ft
+- scale → weight → g, kg, lb
+- measuring_cup → capacity → mL, L, cup
+- thermometer → temperature → °C, °F
+
+GRADE GUIDELINES:
+- Grades 1-2 (gradeBand "1-2"):
+  - precision: "whole" only
+  - Simple objects kids know (pencils, books, apples, toys)
+  - 4-5 challenges: 1-2 estimate, 2-3 read, NO convert
+  - Values should be small whole numbers (1-30 for cm/in, 1-10 for kg)
+  - conversionFact: empty string
+
+- Grades 3-5 (gradeBand "3-5"):
+  - precision: "half" or "quarter"
+  - More varied objects (kitchen items, sports gear, science materials)
+  - 4-6 challenges: 1-2 estimate, 2-3 read, 1 convert
+  - Values can include halves/quarters matching the precision
+  - conversionFact: provide the conversion fact (e.g., "1 inch = 2.54 cm")
+
+CRITICAL RULES:
+1. value MUST be a multiple of the precision step:
+   - whole: 1, 2, 3, 5, 8, 12 (integers only)
+   - half: 1.5, 3.0, 7.5 (multiples of 0.5)
+   - quarter: 2.25, 5.75, 8.5 (multiples of 0.25)
+2. For "read" challenges, targetAnswer MUST equal value exactly
+3. For "estimate" challenges, always set acceptableMin and acceptableMax
+4. For "convert" challenges, targetAnswer must be mathematically correct
+5. Each challenge should use a different object (different objectName and objectEmoji)
+6. Order: estimate challenges first, then read challenges, then convert
+7. Use warm, encouraging instruction text appropriate for the grade level
+8. Hints should guide without revealing the answer
 
 ${config ? `
-CONFIGURATION HINTS:
+CONFIGURATION:
 ${config.toolType ? `- Tool type: ${config.toolType}` : ''}
 ${config.measurementType ? `- Measurement type: ${config.measurementType}` : ''}
 ${config.unit ? `- Unit: ${config.unit}` : ''}
-${config.objectCategory ? `- Object category: ${config.objectCategory}` : ''}
 ${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.challengeTypes ? `- Challenge types: ${config.challengeTypes.join(', ')}` : ''}
-${config.includeConversion !== undefined ? `- Include conversion: ${config.includeConversion}` : ''}
-${config.useNonStandard !== undefined ? `- Use non-standard units: ${config.useNonStandard}` : ''}
 ` : ''}
-
-REQUIREMENTS:
-1. Generate 3-5 challenges that progress in difficulty
-2. Start with easier challenges (estimate, simple measure) and build to harder (convert, choose_tool)
-3. Use warm, encouraging instruction text
-4. Object's actualValue must be a realistic measurement for the object
-5. For estimate challenges, set acceptableRange to ±15-25% of actualValue
-6. For convert challenges, targetAnswer must be mathematically correct
-7. Include meaningful hints that guide without giving the answer
-8. Include narration text the AI tutor can use
-9. Tool type must match measurement type (ruler→length, scale→weight, etc.)
-10. If unit.secondary is set, include at least one conversion challenge
-11. Choose a fun, relatable object appropriate for the grade level
 
 Return the complete measurement tools configuration.
 `;
@@ -258,7 +159,7 @@ Return the complete measurement tools configuration.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: measurementToolsSchema
+      responseSchema: measurementToolsSchema,
     },
   });
 
@@ -268,98 +169,122 @@ Return the complete measurement tools configuration.
     throw new Error('No valid measurement tools data returned from Gemini API');
   }
 
-  // Validation: ensure toolType is valid
-  const validToolTypes = ['ruler', 'tape_measure', 'scale', 'balance', 'measuring_cup', 'thermometer'];
+  // ── Validation & sanitization ──────────────────────────────────
+
+  // Tool type
+  const validToolTypes = ['ruler', 'scale', 'measuring_cup', 'thermometer'];
   if (!validToolTypes.includes(data.toolType)) {
     data.toolType = 'ruler';
   }
 
-  // Validation: ensure measurementType is valid
+  // Measurement type
   const validMeasurementTypes = ['length', 'weight', 'capacity', 'temperature'];
   if (!validMeasurementTypes.includes(data.measurementType)) {
     data.measurementType = 'length';
   }
 
-  // Validation: ensure tool matches measurement type
+  // Tool ↔ measurement type consistency
   const toolToType: Record<string, string> = {
-    ruler: 'length', tape_measure: 'length',
-    scale: 'weight', balance: 'weight',
-    measuring_cup: 'capacity',
-    thermometer: 'temperature',
+    ruler: 'length', scale: 'weight', measuring_cup: 'capacity', thermometer: 'temperature',
   };
   if (toolToType[data.toolType] !== data.measurementType) {
-    // Fix the mismatch: adjust tool to match measurement type
     const typeToTool: Record<string, string> = {
       length: 'ruler', weight: 'scale', capacity: 'measuring_cup', temperature: 'thermometer',
     };
     data.toolType = typeToTool[data.measurementType] || 'ruler';
   }
 
-  // Validation: ensure gradeBand is valid
+  // Grade band
   if (data.gradeBand !== '1-2' && data.gradeBand !== '3-5') {
     data.gradeBand = gradeLevel.toLowerCase().includes('kinder') || gradeLevel.includes('1') || gradeLevel.includes('2')
       ? '1-2' : '3-5';
   }
 
-  // Validation: ensure precision is valid
-  const validPrecisions = ['whole', 'half', 'quarter', 'tenth'];
-  if (!validPrecisions.includes(data.unit?.precision)) {
-    data.unit = { ...data.unit, precision: data.gradeBand === '1-2' ? 'whole' : 'half' };
+  // Precision
+  const validPrecisions = ['whole', 'half', 'quarter'];
+  if (!validPrecisions.includes(data.precision)) {
+    data.precision = data.gradeBand === '1-2' ? 'whole' : 'half';
   }
 
-  // Ensure valid unit
+  // Unit
   const validUnits = ['cm', 'm', 'in', 'ft', 'g', 'kg', 'lb', 'mL', 'L', 'cup', '°C', '°F'];
-  if (!validUnits.includes(data.unit?.primary)) {
+  if (!validUnits.includes(data.unit)) {
     const defaultUnits: Record<string, string> = {
       length: 'cm', weight: 'g', capacity: 'mL', temperature: '°C',
     };
-    data.unit = { ...data.unit, primary: defaultUnits[data.measurementType] || 'cm' };
+    data.unit = defaultUnits[data.measurementType] || 'cm';
   }
 
-  // Ensure challenges have valid types
-  const validChallengeTypes = ['measure', 'estimate', 'compare', 'convert', 'choose_tool', 'choose_unit'];
+  // Precision step for value alignment
+  const precisionStep = data.precision === 'whole' ? 1 : data.precision === 'half' ? 0.5 : 0.25;
+
+  // Challenge validation
+  const validChallengeTypes = ['estimate', 'read', 'convert'];
   data.challenges = (data.challenges || []).filter(
-    (c: { type: string }) => validChallengeTypes.includes(c.type)
+    (c: { type: string }) => validChallengeTypes.includes(c.type),
   );
 
-  // Ensure at least one challenge
-  if (data.challenges.length === 0) {
-    data.challenges = [{
-      id: 'c1',
-      type: 'measure',
-      instruction: `Can you measure the ${data.objectToMeasure?.name || 'object'}?`,
-      targetAnswer: data.objectToMeasure?.actualValue || 10,
-      hint: 'Read the measurement tool carefully!',
-      narration: "Let's measure this together! Use the tool to find the value.",
-    }];
+  // Ensure at least 3 challenges
+  if (data.challenges.length < 3) {
+    data.challenges = [
+      {
+        id: 'c1', type: 'estimate', objectName: 'Pencil', objectEmoji: '✏️',
+        value: 15, targetAnswer: 15, targetUnit: data.unit,
+        acceptableMin: 11, acceptableMax: 19,
+        hint: 'Think about objects you know — how long is your hand?',
+        instruction: 'How long do you think this pencil is?',
+      },
+      {
+        id: 'c2', type: 'read', objectName: 'Eraser', objectEmoji: '🧹',
+        value: 5, targetAnswer: 5, targetUnit: data.unit,
+        hint: 'Look carefully where the object ends on the ruler!',
+        instruction: 'Read the measurement tool to find the exact length of this eraser.',
+      },
+      {
+        id: 'c3', type: 'read', objectName: 'Crayon', objectEmoji: '🖍️',
+        value: 9, targetAnswer: 9, targetUnit: data.unit,
+        hint: 'Find the number on the ruler where the crayon ends.',
+        instruction: 'Use the ruler to measure this crayon. What is its length?',
+      },
+    ];
   }
 
-  // Ensure actualValue is positive
-  if (!data.objectToMeasure?.actualValue || data.objectToMeasure.actualValue <= 0) {
-    data.objectToMeasure = { ...data.objectToMeasure, actualValue: 10 };
+  // Sanitize each challenge
+  for (const ch of data.challenges) {
+    // Ensure value aligns with precision
+    ch.value = Math.round(ch.value / precisionStep) * precisionStep;
+    if (ch.value <= 0) ch.value = precisionStep;
+
+    // For read challenges, targetAnswer must match value
+    if (ch.type === 'read') {
+      ch.targetAnswer = ch.value;
+    }
+
+    // For estimate challenges, ensure acceptable range exists
+    if (ch.type === 'estimate') {
+      if (ch.acceptableMin == null) ch.acceptableMin = ch.targetAnswer * 0.75;
+      if (ch.acceptableMax == null) ch.acceptableMax = ch.targetAnswer * 1.25;
+    }
+
+    // Ensure targetUnit exists
+    if (!ch.targetUnit) {
+      ch.targetUnit = data.unit;
+    }
+
+    // Ensure emoji exists
+    if (!ch.objectEmoji) ch.objectEmoji = '📦';
   }
 
-  // Ensure valid object category
-  const validCategories = ['school', 'kitchen', 'nature', 'sports', 'animals'];
-  if (!validCategories.includes(data.objectToMeasure?.category)) {
-    data.objectToMeasure = { ...data.objectToMeasure, category: 'school' };
-  }
-
-  // Set nonStandardUnits defaults
-  if (!data.nonStandardUnits) {
-    data.nonStandardUnits = { enabled: false, unitName: 'paper clips', unitLength: 3 };
-  }
-
-  // Set conversionReference defaults
-  if (!data.conversionReference) {
-    data.conversionReference = { enabled: false, conversions: [] };
+  // Ensure conversionFact is a string
+  if (typeof data.conversionFact !== 'string') {
+    data.conversionFact = '';
   }
 
   // Apply explicit config overrides
   if (config) {
-    if (config.toolType !== undefined) data.toolType = config.toolType;
-    if (config.measurementType !== undefined) data.measurementType = config.measurementType;
-    if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
+    if (config.toolType && validToolTypes.includes(config.toolType)) data.toolType = config.toolType;
+    if (config.measurementType && validMeasurementTypes.includes(config.measurementType)) data.measurementType = config.measurementType;
+    if (config.gradeBand) data.gradeBand = config.gradeBand;
   }
 
   return data;

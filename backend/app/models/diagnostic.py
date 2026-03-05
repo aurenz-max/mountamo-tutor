@@ -156,14 +156,10 @@ class DiagnosticSession(BaseModel):
     # Probe history (ordered list of probe results)
     probe_history: List[Dict] = Field(default_factory=list)
 
-    # Cached graph data (edges needed for inference on subsequent probes)
-    # Stored as flat list so we don't re-fetch from Firestore each probe
-    cached_edges: List[Dict] = Field(default_factory=list)
-
-    # Node metrics (computed once at session creation)
-    node_metrics: Dict[str, Dict] = Field(
-        default_factory=dict,
-        description="subskill_id → NodeMetrics.model_dump()",
+    # Grade level at session creation (e.g., "K", "1st", "2nd")
+    grade_level: Optional[str] = Field(
+        default=None,
+        description="Student's grade level at session creation time",
     )
 
     # Timestamps
@@ -230,6 +226,44 @@ class CompletionResponse(BaseModel):
     knowledge_profile: KnowledgeProfileResponse
 
 
+class DiagnosticSessionSummary(BaseModel):
+    """Lightweight session list item (strips classifications/metrics/edges)."""
+    session_id: str
+    student_id: int
+    state: str
+    subjects: List[str] = Field(default_factory=list)
+    total_nodes: int = 0
+    classified_count: int = 0
+    probed_count: int = 0
+    coverage_pct: float = 0.0
+    created_at: str = ""
+    completed_at: Optional[str] = None
+
+
+class EnrichedSessionResponse(BaseModel):
+    """GET /sessions/{id} response — session state + computed fields for resume."""
+    session_id: str
+    student_id: int
+    state: str
+    subjects: List[str] = Field(default_factory=list)
+    total_nodes: int = 0
+    classified_count: int = 0
+    probed_count: int = 0
+    coverage_pct: float = 0.0
+    created_at: str = ""
+    updated_at: str = ""
+    completed_at: Optional[str] = None
+    # Computed fields (populated by the service layer)
+    probes: List[ProbeRequest] = Field(
+        default_factory=list,
+        description="Next probes for in_progress sessions",
+    )
+    knowledge_profile: Optional[KnowledgeProfileResponse] = Field(
+        default=None,
+        description="Profile for completed sessions",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -259,4 +293,9 @@ DIAGNOSTIC_COMPLETION_MAP: Dict[DiagnosticStatus, float] = {
     DiagnosticStatus.PROBED_NOT_MASTERED: 0.0,
     DiagnosticStatus.INFERRED_NOT_MASTERED: 0.0,
     DiagnosticStatus.UNKNOWN: 0.0,
+}
+
+# Maps user profile grade codes → curriculum_published document IDs.
+GRADE_TO_CURRICULUM_MAP: Dict[str, str] = {
+    "K": "Kindergarten",
 }

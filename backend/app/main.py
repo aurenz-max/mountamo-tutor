@@ -26,7 +26,9 @@ from .api.endpoints import (
     velocity,
     mastery,
     skill_progress,
-    diagnostic)
+    diagnostic,
+    calibration,
+    pulse)
 
 from .api import etl_routes
 from .core.config import settings
@@ -242,6 +244,22 @@ app.include_router(
     skill_progress.router,
     prefix="/api/skill-progress",
     tags=["skill-progress"],
+    dependencies=[Depends(get_user_context)]
+)
+
+# Calibration Display Router — EL trajectory and item calibration (Difficulty PRD Phase 2)
+app.include_router(
+    calibration.router,
+    prefix="/api/calibration",
+    tags=["calibration"],
+    dependencies=[Depends(get_user_context)]
+)
+
+# Pulse Router — adaptive learning loop (Lumina Pulse PRD)
+app.include_router(
+    pulse.router,
+    prefix="/api/pulse",
+    tags=["pulse"],
     dependencies=[Depends(get_user_context)]
 )
 

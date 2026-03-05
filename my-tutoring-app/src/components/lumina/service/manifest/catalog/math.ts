@@ -971,31 +971,29 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'measurement-tools',
-    description: 'Virtual measurement instruments (ruler, tape measure, scale, balance, measuring cup, thermometer) for teaching length, weight, capacity, and temperature measurement. Students choose tools, estimate first, then measure real-world objects. Supports non-standard units (paper clips, hand spans) for grade 1, standard units for grades 2-5, and unit conversion for grades 3-5. Progressive phases: Explore → Estimate → Precision → Convert. ESSENTIAL for grades 1-5 measurement and data standards.',
-    constraints: 'Requires a tool type matching the measurement type (ruler→length, scale→weight, etc.). Best for grades 1-5. Grades 1-2 use whole-number precision and simple objects. Grades 3-5 add half/quarter precision and conversion challenges.',
+    description: 'Read-only measurement tool visualizations (ruler, scale, measuring cup, thermometer) for teaching length, weight, capacity, and temperature measurement. Students see objects displayed on instruments and type their readings. Three phases: Estimate (guess before measuring), Measure (read the tool), Convert (unit conversion for grades 3-5). Grades 1-2 use whole-number precision; grades 3-5 add half/quarter precision and conversion. ESSENTIAL for grades 1-5 measurement and data standards.',
+    constraints: 'Requires a tool type matching the measurement type (ruler→length, scale→weight, measuring_cup→capacity, thermometer→temperature). Best for grades 1-5. Grades 1-2 use whole-number precision and simple objects. Grades 3-5 add half/quarter precision and conversion challenges.',
     tutoring: {
-      taskDescription: 'Measure the {{objectName}} using a {{toolType}}. Measurement type: {{measurementType}}. Unit: {{unit}}. Phase: {{currentPhase}}. Actual value: {{actualValue}} {{unit}}.',
-      contextKeys: ['toolType', 'measurementType', 'objectName', 'actualValue', 'unit', 'currentPhase', 'measurementValue', 'estimateValue', 'challengeType', 'attemptNumber', 'gradeBand'],
+      taskDescription: 'Measurement activity using {{toolType}}. Challenge: "{{instruction}}". Object: {{objectName}}. Type: {{challengeType}}. Unit: {{unit}}. Attempt: {{currentAttempts}}.',
+      contextKeys: ['toolType', 'measurementType', 'unit', 'precision', 'gradeBand', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'objectName', 'currentAttempts'],
       scaffoldingLevels: {
-        level1: '"What tool would you use to measure this? Look at the {{toolType}} — what do the markings mean?"',
-        level2: '"Look carefully at where the measurement lines up. Read at the nearest {{precision}} mark. Is your answer close to the markings?"',
-        level3: '"The {{objectName}} measures {{actualValue}} {{unit}}. To convert: there are {{conversionFactor}} {{secondaryUnit}} in 1 {{primaryUnit}}. So multiply or divide to convert."',
+        level1: '"Look carefully at the {{toolType}}. Where does the object end? What number is closest to that mark?"',
+        level2: '"Count the marks between the numbers. Each small mark is one {{precision}} unit. Now find where the object lines up."',
+        level3: '"The object ends right at the mark showing {{value}}. Read the number there — that is your measurement in {{unit}}."',
       },
       commonStruggles: [
-        { pattern: 'Choosing wrong tool', response: '"Would you use a ruler or a scale to find how heavy something is? Think about what you are measuring: length, weight, or how much liquid."' },
-        { pattern: 'Not starting from zero on ruler', response: '"Make sure the object starts at the 0 mark on the ruler. Line it up carefully!"' },
-        { pattern: 'Reading between marks incorrectly', response: '"Look at where the measurement falls between two marks. Is it closer to the lower mark or the higher one?"' },
-        { pattern: 'Confusing units within a system', response: '"Remember: 100 centimeters = 1 meter. Centi means one hundred! So 150 cm = 1.5 meters."' },
+        { pattern: 'Reading between marks incorrectly', response: '"Look at where the measurement falls between two marks. Is it closer to the lower mark or the higher one? Count the small marks to find the exact value."' },
         { pattern: 'Estimation far from actual', response: '"Compare to something you know. A pencil is about 19 cm. Is this object longer or shorter than a pencil?"' },
+        { pattern: 'Confusing units in conversion', response: '"Use the conversion reference. If 1 inch = 2.54 cm, then multiply your inches by 2.54 to get centimeters."' },
+        { pattern: 'Misreading scale graduation', response: '"First check what each mark represents. If there are 4 small marks between 0 and 1, each mark is a quarter (0.25)."' },
       ],
       aiDirectives: [
         {
           title: 'PHASE-AWARE MEASUREMENT COACHING',
           instruction:
-            'In Explore phase, let students freely use the tool — celebrate curiosity. '
-            + 'In Estimate phase, ask them to compare to known objects before measuring. '
-            + 'In Precision phase, teach reading between marks: "Is it exactly on a line or between two lines?" '
-            + 'In Convert phase, reference the conversion chart and guide step-by-step multiplication/division.',
+            'In Estimate phase, ask students to compare to known objects before revealing the tool. '
+            + 'In Measure phase, teach reading marks: "Count the small lines between numbers — each one is one step." '
+            + 'In Convert phase, reference the conversion fact and guide step-by-step multiplication/division.',
         },
         {
           title: 'ESTIMATION CELEBRATION',

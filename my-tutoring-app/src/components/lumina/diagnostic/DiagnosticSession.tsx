@@ -115,6 +115,7 @@ export const DiagnosticSession: React.FC<DiagnosticSessionProps> = ({
     error,
     streamingMessage,
     hasResumableSession,
+    currentBrief,
   } = session;
 
   // Bump eval key when phase transitions to probing (new probe)
@@ -232,6 +233,7 @@ export const DiagnosticSession: React.FC<DiagnosticSessionProps> = ({
                 probe={currentProbe}
                 hydratedItems={hydratedItems}
                 probesCompleted={progress.probesCompleted}
+                brief={currentBrief}
                 onStart={session.confirmProbeStart}
               />
             )}
@@ -471,7 +473,7 @@ function WelcomeScreen({
 // ---------------------------------------------------------------------------
 
 import type { ProbeRequest } from './types';
-import type { HydratedPracticeItem } from '../types';
+import type { HydratedPracticeItem, SessionBrief } from '../types';
 
 /** Map visual primitive componentId → friendly icon */
 const ACTIVITY_TYPE_ICONS: Record<string, string> = {
@@ -522,11 +524,13 @@ function ProbeIntroCard({
   probe,
   hydratedItems,
   probesCompleted,
+  brief,
   onStart,
 }: {
   probe: ProbeRequest;
   hydratedItems: HydratedPracticeItem[];
   probesCompleted: number;
+  brief: SessionBrief | null;
   onStart: () => void;
 }) {
   const subjectKey = probe.subject.toLowerCase();
@@ -535,136 +539,204 @@ function ProbeIntroCard({
   const subjectIcon = SUBJECT_ICONS[subjectKey] || '📝';
   const spotlightColor =
     SUBJECT_SPOTLIGHT[subjectKey] || '120, 119, 198';
-  const gradientClass =
-    SUBJECT_COLORS[subjectKey] || 'from-slate-500/30 to-slate-600/30';
 
-  // Use backend-provided descriptions, fall back to humanized slugs
+  // Use AI-generated brief when available, fall back to probe metadata
   const humanize = (slug: string) =>
     slug.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-  const skillLabel = probe.skill_description || humanize(probe.skill_id);
-  const subskillLabel = probe.description || humanize(probe.subskill_id);
+  const title = brief?.title || probe.skill_description || humanize(probe.skill_id);
+  const hookText = brief?.hook || null;
+  const whyText = brief?.whyItMatters || null;
+
+  const visualCount = hydratedItems.filter(i => i.manifestItem.visualPrimitive).length;
+  const standardCount = hydratedItems.length - visualCount;
 
   return (
-    <div className="w-full max-w-5xl mx-auto animate-fade-in">
-      {/* Header */}
-      <div className="mb-8 text-center">
-        <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-full border border-white/10 backdrop-blur-sm mb-4">
-          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: `rgb(${spotlightColor})` }} />
-          <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
-            {probesCompleted === 0 ? 'First Exploration' : 'Next Exploration'}
-          </span>
-          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: `rgb(${spotlightColor})`, animationDelay: '0.2s' }} />
-        </div>
+    <div className="w-full max-w-4xl mx-auto animate-fade-in">
+      {/* ── Outer glass shell (CuratorBrief pattern) ── */}
+      <div className="glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
+        {/* Ambient background glow — subject-colored */}
+        <div
+          className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[150px] opacity-15"
+          style={{ background: `radial-gradient(circle, rgb(${spotlightColor}), transparent)` }}
+        />
+        <div
+          className="absolute bottom-0 left-0 w-[300px] h-[300px] rounded-full blur-[120px] opacity-10"
+          style={{ background: `radial-gradient(circle, rgb(${spotlightColor}), transparent)` }}
+        />
 
-        {/* Breadcrumb: Subject → Skill → Subskill */}
-        <div className="flex items-center justify-center gap-1.5 text-sm mb-3 flex-wrap">
-          <div
-            className={`w-5 h-5 rounded bg-gradient-to-br ${gradientClass} flex items-center justify-center flex-shrink-0`}
-          >
-            <span className="text-[10px]">{subjectIcon}</span>
+        <div className="relative z-10">
+          {/* ── Header card (nested glass panel) ── */}
+          <div className="glass-panel rounded-2xl border border-white/10 p-8 relative overflow-hidden group hover:border-white/20 transition-colors shadow-xl mb-8">
+            <div
+              className="absolute top-0 right-0 w-96 h-96 rounded-full blur-[120px] opacity-20"
+              style={{ backgroundColor: `rgb(${spotlightColor})` }}
+            />
+
+            <div className="relative z-10">
+              {/* Subject + exploration badge row */}
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-[10px] font-mono uppercase tracking-widest border px-2.5 py-1 rounded flex items-center gap-1.5"
+                  style={{
+                    color: `rgb(${spotlightColor})`,
+                    borderColor: `rgba(${spotlightColor}, 0.3)`,
+                    backgroundColor: `rgba(${spotlightColor}, 0.1)`,
+                  }}
+                >
+                  <span className="text-sm">{subjectIcon}</span>
+                  {subjectLabel}
+                </span>
+                <span className="text-xs font-mono text-slate-500">•</span>
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+                  {probesCompleted === 0 ? 'First Exploration' : `Exploration ${probesCompleted + 1}`}
+                </span>
+                <div className="ml-auto w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: `rgb(${spotlightColor})` }} />
+              </div>
+
+              {/* Title — AI-generated or skill name */}
+              <h2 className="text-3xl font-light text-white mb-3 tracking-tight">
+                {title}
+              </h2>
+
+              {/* Hook — engaging opening sentence */}
+              {hookText && (
+                <p className="text-lg text-slate-200 font-light leading-relaxed mb-2">
+                  {hookText}
+                </p>
+              )}
+
+              {/* Why it matters */}
+              {whyText && (
+                <p className="text-sm text-slate-500 font-light leading-relaxed border-l-2 pl-3"
+                  style={{ borderColor: `rgba(${spotlightColor}, 0.4)` }}
+                >
+                  {whyText}
+                </p>
+              )}
+            </div>
           </div>
-          <span className="capitalize text-slate-400">{subjectLabel}</span>
-          <svg className="w-3 h-3 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-          </svg>
-          <span className="text-slate-300">{skillLabel}</span>
-          <svg className="w-3 h-3 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-          </svg>
-          <span className="font-medium" style={{ color: `rgb(${spotlightColor})` }}>{subskillLabel}</span>
-        </div>
 
-        {/* Description */}
-        <h3 className="text-2xl font-bold text-white mb-2">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">
-            {subskillLabel}
-          </span>
-        </h3>
-        <p className="text-slate-500 text-sm">
-          {hydratedItems.length} {hydratedItems.length === 1 ? 'activity' : 'activities'} · just do your best!
-        </p>
-      </div>
-
-      {/* Activity cards grid */}
-      <div className={`grid gap-4 ${
-        hydratedItems.length <= 2 ? 'grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto' :
-        'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-      }`}>
-        {hydratedItems.map((item, index) => {
-          const icon = getActivityIcon(item);
-          const typeLabel = getActivityTypeLabel(item);
-
-          return (
-            <SpotlightCard
-              key={item.manifestItem.instanceId}
-              color={spotlightColor}
-              className="bg-slate-900/40 backdrop-blur-sm"
+          {/* ── "What You'll Explore" section ── */}
+          <div className="mb-8">
+            <h4 className="text-[10px] uppercase tracking-widest font-mono mb-4 flex items-center gap-2"
+              style={{ color: `rgb(${spotlightColor})` }}
             >
-              <div
-                className="p-5 h-full flex flex-col"
-                style={{
-                  animationDelay: `${index * 150}ms`,
-                  animation: 'fade-in-up 0.6s ease-out backwards',
-                }}
-              >
-                {/* Icon + counter */}
-                <div className="flex items-start justify-between mb-3">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
-                    style={{
-                      backgroundColor: `rgba(${spotlightColor}, 0.15)`,
-                      border: `1px solid rgba(${spotlightColor}, 0.3)`,
-                    }}
-                  >
-                    <span className="text-xl">{icon}</span>
-                  </div>
-                  <div
-                    className="text-xs font-bold px-2 py-1 rounded-full"
-                    style={{
-                      backgroundColor: `rgba(${spotlightColor}, 0.2)`,
-                      color: `rgb(${spotlightColor})`,
-                    }}
-                  >
-                    {index + 1}/{hydratedItems.length}
-                  </div>
-                </div>
+              <span className="w-1 h-4 rounded-full" style={{ backgroundColor: `rgb(${spotlightColor})` }} />
+              What You&apos;ll Explore
+              <span className="text-slate-600 ml-1">
+                — {hydratedItems.length} {hydratedItems.length === 1 ? 'activity' : 'activities'}
+                {visualCount > 0 && standardCount > 0
+                  ? ` (${visualCount} interactive, ${standardCount} question${standardCount !== 1 ? 's' : ''})`
+                  : visualCount > 0 ? ' (all interactive)' : ''}
+              </span>
+            </h4>
 
-                {/* Type label */}
-                <div className="mb-2">
-                  <span
-                    className="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full"
+            {/* Activity cards */}
+            <div className={`grid gap-4 ${
+              hydratedItems.length <= 2 ? 'grid-cols-1 md:grid-cols-2' :
+              'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+            }`}>
+              {hydratedItems.map((item, index) => {
+                const icon = getActivityIcon(item);
+                const typeLabel = getActivityTypeLabel(item);
+
+                return (
+                  <div
+                    key={item.manifestItem.instanceId}
+                    className="glass-panel rounded-xl border border-white/10 p-5 relative overflow-hidden group hover:border-white/20 transition-all duration-300"
                     style={{
-                      backgroundColor: `rgba(${spotlightColor}, 0.15)`,
-                      color: `rgb(${spotlightColor})`,
-                      border: `1px solid rgba(${spotlightColor}, 0.3)`,
+                      animationDelay: `${index * 120}ms`,
+                      animation: 'fade-in-up 0.5s ease-out backwards',
                     }}
                   >
-                    {typeLabel}
-                  </span>
-                </div>
+                    {/* Subtle corner glow */}
+                    <div
+                      className="absolute top-0 right-0 w-24 h-24 rounded-full blur-[50px] opacity-15"
+                      style={{ backgroundColor: `rgb(${spotlightColor})` }}
+                    />
 
-                {/* Problem text */}
-                <p className="text-slate-200 text-sm leading-relaxed flex-1">
-                  {item.manifestItem.problemText}
+                    <div className="relative z-10 h-full flex flex-col">
+                      {/* Icon + counter */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{
+                            backgroundColor: `rgba(${spotlightColor}, 0.15)`,
+                            border: `1px solid rgba(${spotlightColor}, 0.3)`,
+                          }}
+                        >
+                          <span className="text-xl">{icon}</span>
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-1 rounded-full border"
+                          style={{
+                            color: `rgb(${spotlightColor})`,
+                            borderColor: `rgba(${spotlightColor}, 0.3)`,
+                            backgroundColor: `rgba(${spotlightColor}, 0.1)`,
+                          }}
+                        >
+                          {index + 1}/{hydratedItems.length}
+                        </span>
+                      </div>
+
+                      {/* Type label */}
+                      <span
+                        className="inline-block text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-3 self-start border"
+                        style={{
+                          backgroundColor: `rgba(${spotlightColor}, 0.1)`,
+                          color: `rgb(${spotlightColor})`,
+                          borderColor: `rgba(${spotlightColor}, 0.25)`,
+                        }}
+                      >
+                        {typeLabel}
+                      </span>
+
+                      {/* Problem text */}
+                      <p className="text-slate-200 text-sm leading-relaxed font-light flex-1">
+                        {item.manifestItem.problemText}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Encouragement footer (CuratorBrief mindset pattern) ── */}
+          <div className="glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden group hover:border-white/20 transition-colors shadow-xl mb-8">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r"
+              style={{
+                backgroundImage: `linear-gradient(to right, rgb(${spotlightColor}), rgba(${spotlightColor}, 0.3), transparent)`,
+              }}
+            />
+            <div className="flex items-start gap-4 relative z-10">
+              <span className="text-3xl">🧭</span>
+              <div className="flex-1">
+                <p className="text-white font-light leading-relaxed mb-1">
+                  There are no wrong answers — this helps us find your starting point!
+                </p>
+                <p className="text-slate-500 text-sm font-light">
+                  Just do your best and we&apos;ll build the perfect learning path for you.
                 </p>
               </div>
-            </SpotlightCard>
-          );
-        })}
-      </div>
+            </div>
+          </div>
 
-      {/* CTA */}
-      <div className="mt-8 text-center">
-        <Button
-          onClick={onStart}
-          className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white px-10 py-4 text-lg rounded-xl shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-400/30 hover:scale-[1.02]"
-        >
-          Let&apos;s Explore!
-        </Button>
-        <p className="text-xs text-slate-600 mt-3">
-          There are no wrong answers — this helps us find your starting point!
-        </p>
+          {/* ── CTA ── */}
+          <div className="text-center">
+            <button
+              onClick={onStart}
+              className="px-10 py-4 text-white font-medium rounded-xl transition-all duration-300 inline-flex items-center gap-3 shadow-xl hover:shadow-2xl hover:scale-105 border border-white/10"
+              style={{
+                background: `linear-gradient(135deg, rgba(${spotlightColor}, 0.8), rgba(${spotlightColor}, 0.5))`,
+              }}
+            >
+              Let&apos;s Explore!
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

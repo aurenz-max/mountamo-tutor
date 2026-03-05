@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type {
@@ -9,6 +9,7 @@ import type {
   StoredDiagnosticProfile,
 } from './types';
 import { DIAGNOSTIC_PROFILE_STORAGE_KEY } from './types';
+import { diagnosticApi } from './diagnosticApi';
 
 // ---------------------------------------------------------------------------
 // Shared subject display data (mirrors DiagnosticProfileCard)
@@ -104,17 +105,64 @@ export const KnowledgeMapPanel: React.FC<KnowledgeMapPanelProps> = ({
   const [stored, setStored] = useState<StoredDiagnosticProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const saveToLocalStorage = useCallback((profile: StoredDiagnosticProfile) => {
+    try {
+      localStorage.setItem(
+        DIAGNOSTIC_PROFILE_STORAGE_KEY,
+        JSON.stringify(profile),
+      );
+    } catch {
+      // quota exceeded — non-critical
+    }
+  }, []);
+
   useEffect(() => {
+    // Fast-path: show cached localStorage profile instantly
+    let hasCachedData = false;
     try {
       const raw = localStorage.getItem(DIAGNOSTIC_PROFILE_STORAGE_KEY);
       if (raw) {
         setStored(JSON.parse(raw) as StoredDiagnosticProfile);
+        hasCachedData = true;
       }
     } catch {
       // ignore
     }
-    setLoading(false);
-  }, []);
+
+    // If we have cached data, show it immediately (API will update silently)
+    if (hasCachedData) {
+      setLoading(false);
+    }
+
+    // Fetch from backend (source of truth) and update
+    let cancelled = false;
+    diagnosticApi
+      .getLatestProfile()
+      .then((profile) => {
+        if (cancelled) return;
+        const fresh: StoredDiagnosticProfile = {
+          sessionId: profile.session_id,
+          profile,
+          completedAt: new Date().toISOString(),
+        };
+        setStored(fresh);
+        saveToLocalStorage(fresh);
+        setLoading(false);
+      })
+      .catch(() => {
+        // 404 = no completed diagnostic — clear stale cache
+        if (cancelled) return;
+        setStored(null);
+        try {
+          localStorage.removeItem(DIAGNOSTIC_PROFILE_STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+        setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [saveToLocalStorage]);
 
   if (loading) {
     return (

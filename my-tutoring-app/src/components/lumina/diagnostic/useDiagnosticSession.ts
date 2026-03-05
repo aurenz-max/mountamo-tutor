@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { HydratedPracticeItem, PracticeItemResult } from '../types';
+import { HydratedPracticeItem, PracticeItemResult, SessionBrief } from '../types';
 import {
   generatePracticeManifestAndHydrateStreaming,
 } from '../service/geminiClient-api';
@@ -51,6 +51,8 @@ export interface UseDiagnosticSessionReturn {
   error: string | null;
   streamingMessage: string;
   hasResumableSession: boolean;
+  /** AI-generated student-facing brief for the current probe */
+  currentBrief: SessionBrief | null;
   /** Resolved skill/subskill descriptions keyed by subskill_id */
   skillLookup: Map<string, SkillMeta>;
 
@@ -133,6 +135,7 @@ export function useDiagnosticSession({
   const [itemResults, setItemResults] = useState<PracticeItemResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [streamingMessage, setStreamingMessage] = useState('');
+  const [currentBrief, setCurrentBrief] = useState<SessionBrief | null>(null);
 
   // Progress tracking
   const [probesCompleted, setProbesCompleted] = useState(0);
@@ -151,16 +154,49 @@ export function useDiagnosticSession({
 
   // Resume detection
   const [hasResumableSession, setHasResumableSession] = useState(false);
+  const resumableSessionIdRef = useRef<string | null>(null);
 
-  // Pre-generation cache: subskill_id → hydrated items
+  // Pre-generation cache: subskill_id → hydrated items + brief
   const pregenCache = useRef<Map<string, HydratedPracticeItem[]>>(new Map());
+  const pregenBriefCache = useRef<Map<string, SessionBrief>>(new Map());
   const pregenInFlight = useRef<Set<string>>(new Set());
 
   // Check for resumable session on mount
   useEffect(() => {
     const stored = loadFromStorage();
+
     if (stored?.sessionId) {
+      // localStorage has a session — verify it directly (reliable document lookup)
+      resumableSessionIdRef.current = stored.sessionId;
       setHasResumableSession(true);
+
+      diagnosticApi.getSession(stored.sessionId)
+        .then((session) => {
+          if (session.state === 'in_progress') {
+            // Confirmed in-progress — keep resume state
+            resumableSessionIdRef.current = session.session_id;
+          } else {
+            // Session is completed or abandoned — clear
+            resumableSessionIdRef.current = null;
+            setHasResumableSession(false);
+            clearStorage();
+          }
+        })
+        .catch(() => {
+          // Can't reach backend — keep localStorage state as fallback
+        });
+    } else {
+      // No localStorage — ask backend if there are any in-progress sessions
+      diagnosticApi.listSessions('in_progress')
+        .then((sessions) => {
+          if (sessions.length > 0) {
+            resumableSessionIdRef.current = sessions[0].session_id;
+            setHasResumableSession(true);
+          }
+        })
+        .catch(() => {
+          // Network error — nothing to show
+        });
     }
   }, []);
 
@@ -207,7 +243,11 @@ export function useDiagnosticSession({
         topic,
         gradeLevel,
         probe.items_needed || 3,
-        undefined,
+        {
+          onSessionBrief: (brief) => {
+            pregenBriefCache.current.set(key, brief);
+          },
+        },
         { enforceDiversity: true },
       )
         .then((items) => {
@@ -235,6 +275,12 @@ export function useDiagnosticSession({
       const cached = pregenCache.current.get(key);
       if (cached) {
         pregenCache.current.delete(key);
+        // Also restore the brief from cache
+        const cachedBrief = pregenBriefCache.current.get(key);
+        if (cachedBrief) {
+          setCurrentBrief(cachedBrief);
+          pregenBriefCache.current.delete(key);
+        }
         return cached;
       }
 
@@ -246,6 +292,11 @@ export function useDiagnosticSession({
           const result = pregenCache.current.get(key);
           if (result) {
             pregenCache.current.delete(key);
+            const cachedBrief = pregenBriefCache.current.get(key);
+            if (cachedBrief) {
+              setCurrentBrief(cachedBrief);
+              pregenBriefCache.current.delete(key);
+            }
             return result;
           }
         }
@@ -259,6 +310,7 @@ export function useDiagnosticSession({
         probe.items_needed || 3,
         {
           onProgress: (msg) => setStreamingMessage(msg),
+          onSessionBrief: (brief) => setCurrentBrief(brief),
         },
         { enforceDiversity: true },
       );
@@ -369,8 +421,8 @@ export function useDiagnosticSession({
   // -------------------------------------------------------------------------
 
   const resumeSession = useCallback(async () => {
-    const stored = loadFromStorage();
-    if (!stored) {
+    const sid = resumableSessionIdRef.current || loadFromStorage()?.sessionId;
+    if (!sid) {
       setHasResumableSession(false);
       return;
     }
@@ -380,33 +432,45 @@ export function useDiagnosticSession({
     setStreamingMessage('Resuming your session...');
 
     try {
-      // Verify session still exists and is in progress
-      const session = await diagnosticApi.getSession(stored.sessionId);
-      if ((session as { state?: string }).state === 'completed') {
+      // Fetch enriched session from backend (includes computed probes)
+      const session = await diagnosticApi.getSession(sid);
+
+      if (session.state === 'completed') {
+        // Session already completed — show profile if available
         clearStorage();
         setHasResumableSession(false);
-        setPhase('welcome');
-        setStreamingMessage('');
+        if (session.knowledge_profile) {
+          setKnowledgeProfile(session.knowledge_profile);
+          saveCompletedProfile(sid, session.knowledge_profile);
+          setPhase('profile');
+        } else {
+          setPhase('welcome');
+          setStreamingMessage('');
+        }
         return;
       }
 
-      setSessionId(stored.sessionId);
-      setProbesCompleted(stored.probesCompleted);
-      setCoveragePct(stored.coveragePct);
-      setTotalCount((session as { total_nodes?: number }).total_nodes || 0);
-      setClassifiedCount(
-        (session as { classified_count?: number }).classified_count || 0,
-      );
+      // Restore progress from backend (source of truth)
+      setSessionId(sid);
+      setProbesCompleted(session.probed_count);
+      setCoveragePct(session.coverage_pct);
+      setTotalCount(session.total_nodes);
+      setClassifiedCount(session.classified_count);
 
-      // Use stored probe queue or start fresh
-      const queue = stored.probeQueue;
+      // Fetch curriculum descriptions in parallel
+      if (session.subjects.length > 0) {
+        buildSkillLookup(session.subjects).catch(() => {});
+      }
+
+      // Use backend-computed probes (not stale localStorage queue)
+      const queue = session.probes;
       if (!queue || queue.length === 0) {
-        // No probes left — session might be complete
+        // No probes left — session should be completed
         setPhase('completing');
-        const completion = await diagnosticApi.completeSession(stored.sessionId);
+        const completion = await diagnosticApi.completeSession(sid);
         setCompletionResponse(completion);
         setKnowledgeProfile(completion.knowledge_profile);
-        saveCompletedProfile(stored.sessionId, completion.knowledge_profile);
+        saveCompletedProfile(sid, completion.knowledge_profile);
         clearStorage();
         setPhase('profile');
         return;
@@ -414,6 +478,16 @@ export function useDiagnosticSession({
 
       const [first, ...rest] = queue;
       setProbeQueue(rest);
+
+      // Sync localStorage with backend truth
+      saveToStorage({
+        sessionId: sid,
+        probeQueue: rest,
+        probesCompleted: session.probed_count,
+        coveragePct: session.coverage_pct,
+        startedAt: session.created_at || new Date().toISOString(),
+      });
+
       await beginProbe(first, rest);
     } catch (err) {
       console.error('[Diagnostic] Failed to resume session:', err);
@@ -425,7 +499,7 @@ export function useDiagnosticSession({
       setPhase('error');
       setStreamingMessage('');
     }
-  }, [beginProbe]);
+  }, [beginProbe, buildSkillLookup]);
 
   // -------------------------------------------------------------------------
   // Handle a single item completion
@@ -590,6 +664,7 @@ export function useDiagnosticSession({
     error,
     streamingMessage,
     hasResumableSession,
+    currentBrief,
     skillLookup: skillLookupRef.current,
 
     startSession,

@@ -46,6 +46,25 @@ const practiceManifestSchema: Schema = {
     topic: { type: Type.STRING },
     gradeLevel: { type: Type.STRING },
     problemCount: { type: Type.NUMBER },
+    sessionBrief: {
+      type: Type.OBJECT,
+      description: "A short, student-facing intro that frames the upcoming activities. Written for the student, not the teacher.",
+      properties: {
+        title: {
+          type: Type.STRING,
+          description: "A friendly, engaging title for this activity set (e.g., 'The Alphabet Adventure', 'Fraction Explorers'). NOT the raw curriculum name.",
+        },
+        hook: {
+          type: Type.STRING,
+          description: "One engaging sentence that makes the topic feel relevant or exciting to the student (e.g., 'Letters are the building blocks of every word you'll ever read!').",
+        },
+        whyItMatters: {
+          type: Type.STRING,
+          description: "One sentence connecting this skill to something the student cares about (e.g., 'Knowing your letter sounds helps you read your favorite stories!').",
+        },
+      },
+      required: ["title", "hook", "whyItMatters"],
+    },
     items: {
       type: Type.ARRAY,
       description: "Ordered list of practice items. Each is one problem.",
@@ -117,7 +136,7 @@ const practiceManifestSchema: Schema = {
       },
     },
   },
-  required: ["topic", "gradeLevel", "problemCount", "items"],
+  required: ["topic", "gradeLevel", "problemCount", "sessionBrief", "items"],
 };
 
 /**
@@ -147,6 +166,12 @@ ASSIGNMENT: Generate ${problemCount} practice problems for: "${topic}"
 TARGET AUDIENCE: ${gradeLevelContext}
 
 ${visualCatalog}
+
+## SESSION BRIEF (required)
+First, generate a "sessionBrief" — a short, student-facing intro for this activity set:
+- "title": A fun, engaging name (NOT the raw curriculum label). Examples: "Fraction Explorers", "Sound Safari", "Number Detectives".
+- "hook": One exciting sentence that pulls the student in. Speak directly to them.
+- "whyItMatters": One sentence connecting this skill to something they care about.
 
 ## YOUR TASK
 
@@ -181,6 +206,11 @@ This is a diagnostic assessment — each item must test a DIFFERENT facet of the
   "topic": "Fractions",
   "gradeLevel": "elementary",
   "problemCount": 3,
+  "sessionBrief": {
+    "title": "Fraction Explorers",
+    "hook": "Did you know that every time you share a pizza equally, you're already using fractions?",
+    "whyItMatters": "Understanding fractions helps you share fairly, measure ingredients, and solve real-world puzzles!"
+  },
   "items": [
     {
       "instanceId": "problem-1",

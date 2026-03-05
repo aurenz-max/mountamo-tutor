@@ -348,10 +348,14 @@ class LearningPathsService:
             logger.error(f"Error getting unlocked entities for student {student_id}: {e}")
             raise
 
-    async def _get_available_subjects(self) -> List[str]:
-        """Get list of subjects with published curriculum graphs."""
+    async def _get_available_subjects(
+        self, grade: Optional[str] = None,
+    ) -> List[str]:
+        """Get list of subjects with published curriculum, optionally scoped by grade."""
         try:
-            subjects_data = await self.firestore.get_all_published_subjects()
+            subjects_data = await self.firestore.get_all_published_subjects(
+                grade=grade,
+            )
             return list({s["subject_id"] for s in subjects_data})
         except Exception:
             # Fallback to common subjects
