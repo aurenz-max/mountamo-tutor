@@ -1,8 +1,8 @@
 # Lumina Pulse — Adaptive Learning Loop
 
-**Version:** 1.0
-**Date:** 2026-03-04
-**Status:** Design Complete, Implementation Pending
+**Version:** 1.4
+**Date:** 2026-03-05
+**Status:** Phase 2 Polish — In Progress
 
 ---
 
@@ -142,8 +142,11 @@ Action:
   For each ancestor skill between probed node and current frontier:
     1. mastery_lifecycle → Gate 2, completion_pct = 0.5,
        next_retest_eligible = now + 3d, lesson_eval_count = 3
-    2. ability → θ = 7.0, σ = 1.5, prior_source = "pulse_inference"
-    3. gate_history entry: { source: "pulse_leapfrog", gate: 2 }
+    2. ability → θ = 7.0, σ = 1.5, prior_source = "pulse_leapfrog"
+    3. gate_history entry: { source: "diagnostic", gate: 2 }
+       (uses "diagnostic" source because GateHistoryEntry.source is
+        Literal["lesson", "practice", "diagnostic"] — leapfrog inference
+        is semantically equivalent to diagnostic inference)
 
   Then: recalculate_unlocks(student_id, subject)
 ```
@@ -624,6 +627,66 @@ Backend: process_result() → θ update, gate update, leapfrog check
 Frontend: Update UI, advance to next item
 ```
 
+### 9.4 Session-Aware Hydration (Primitive Diversity + Difficulty Calibration)
+
+Each item is hydrated independently via Gemini, which creates a repetition risk — for similar math topics, Gemini defaults to the same "best" primitive (e.g., ten-frame). The session hook maintains a running history of completed primitives with scores and passes it as context to each subsequent hydration call.
+
+**Session history record (per completed item):**
+```typescript
+{ componentId: string; difficulty: 'easy' | 'medium' | 'hard'; score: number }
+```
+
+**How it flows:**
+```
+usePulseSession.sessionPrimitiveHistory (ref, accumulated per item)
+    ↓ passed as options.sessionHistory
+generatePracticeManifestAndHydrateStreaming()
+    ↓ POST body
+/api/lumina/practice-stream route
+    ↓ options.sessionHistory
+generatePracticeManifest() → injected into Gemini prompt
+```
+
+**What Gemini sees in the prompt:**
+> "Earlier in this session the student completed: ten-frame (easy, scored 92%), counting-board (medium, scored 64%). Use this to calibrate: if they scored high on an easy primitive, step up the difficulty or try a different angle. Vary primitives when possible, but repeating at a harder level is fine."
+
+**Design principles:**
+- **Soft guidance, not hard blocking.** Repeating a primitive at a different difficulty is pedagogically valid (easy ten-frame → multiple choice → hard ten-frame is a strong progression).
+- **Scores inform difficulty.** A student who scored 92% on easy mode should get medium or hard next — Gemini sees this and calibrates.
+- **No post-generation swap.** If Gemini decides the same primitive is genuinely the best fit at a harder level, that's correct behavior.
+
+### 9.5 Primitive Coverage as Mastery Signal
+
+**Problem:** For a given subskill, there may only be 4-5 applicable visual primitives. If a student demonstrates competence across all of them (high scores at increasing difficulty), that's strong evidence of mastery — potentially stronger than completing N lesson evals at ≥9.0.
+
+**Primitive coverage mastery** treats the set of applicable primitives for a subskill as a coverage checklist. When a student passes all available primitives at or above a difficulty threshold, this can accelerate gate transitions.
+
+**Coverage model:**
+```
+For subskill S with applicable primitives P = {ten-frame, counting-board, number-line, ...}:
+
+coverage_set = { p ∈ P : student scored ≥ 7.5/10 on p for subskill S }
+coverage_ratio = |coverage_set| / |P|
+
+If coverage_ratio ≥ 0.8 AND avg_score ≥ 8.0:
+  → Signal: "primitive_coverage_mastery"
+  → Effect: counts as equivalent to 2 lesson evals (accelerates Gate 0 → Gate 1)
+  → Rationale: demonstrating competence across diverse representations
+    is stronger evidence than repeating the same representation 3 times
+```
+
+**Where this lives:**
+- **Backend:** `PulseEngine.process_result()` — after IRT + gate updates, check primitive coverage for the subskill
+- **Data source:** `item_calibration` collection already tracks (primitive_type, eval_mode) per subskill; coverage can be computed from session history + historical evals
+- **Gate interaction:** Coverage mastery doesn't skip gates — it accelerates the lesson eval count toward Gate 1. A student who covers 4/5 primitives at ≥8.0 avg gets credit for 2 lesson evals, so they need only 1 more traditional eval to advance.
+
+**Why not full gate skip:** Primitive coverage tests breadth (can the student do it many ways?) but not depth (can they do it consistently over time?). The retest cycle (Gates 2-4) still verifies retention. Coverage mastery accelerates initial recognition (Gate 0 → 1), not final mastery.
+
+**Applicable primitive mapping:** Each subskill needs a set of applicable primitives. This can be:
+1. **Inferred from historical data** — which primitives has Gemini actually generated for this subskill? If ten-frame, counting-board, and number-line have all been generated before, those are the applicable set.
+2. **Curated in curriculum metadata** — a `primitive_affinity` list per subskill in the DAG node data.
+3. **Hybrid** — start with inference, allow curriculum authors to override.
+
 ---
 
 ## 10. Backend Service Architecture
@@ -812,45 +875,68 @@ When a frontier probe triggers leapfrog:
 
 ## 14. Implementation Phases
 
-### Phase 1 — MVP (Current Sprint)
+### Phase 1 — MVP ✅ Core Loop Complete (2026-03-04 → 2026-03-05)
 
-**Backend:**
-- `backend/app/models/pulse.py` — all Pydantic models
-- `backend/app/services/pulse_engine.py` — assemble_session + process_result + get_session_summary
-- `backend/app/api/endpoints/pulse.py` — REST endpoints
-- `backend/app/dependencies.py` — add PulseEngine singleton
-- `backend/app/main.py` — register router
+**Backend — ALL COMPLETE:**
+- ✅ `backend/app/models/pulse.py` — all Pydantic models
+- ✅ `backend/app/services/pulse_engine.py` — assemble_session + process_result + get_session_summary
+- ✅ `backend/app/api/endpoints/pulse.py` — REST endpoints (POST sessions, POST result, GET summary)
+- ✅ `backend/app/dependencies.py` — PulseEngine singleton + `get_pulse_engine()` getter
+- ✅ `backend/app/main.py` — router registered at `/api/pulse`
+- ✅ `backend/app/services/firestore_service.py` — added `save_pulse_session()`, `get_pulse_session()` methods
 
-**Frontend:**
-- `my-tutoring-app/src/components/lumina/pulse/types.ts` — TypeScript types
-- `my-tutoring-app/src/components/lumina/pulse/pulseApi.ts` — API client
-- `my-tutoring-app/src/components/lumina/pulse/usePulseSession.ts` — session hook
-- `my-tutoring-app/src/components/lumina/pulse/PulseSession.tsx` — main component
+**Frontend — ALL COMPLETE:**
+- ✅ `my-tutoring-app/src/components/lumina/pulse/types.ts` — TypeScript types
+- ✅ `my-tutoring-app/src/components/lumina/pulse/pulseApi.ts` — API client
+- ✅ `my-tutoring-app/src/components/lumina/pulse/usePulseSession.ts` — session hook with pre-gen cache
+- ✅ `my-tutoring-app/src/components/lumina/pulse/PulseSession.tsx` — main component with subject picker
 
-**Scope:** End-to-end loop working. Single subject. Cold start. 3 bands. Leapfrog. Reuses existing PracticeManifestRenderer and primitives.
+**Integration — COMPLETE:**
+- ✅ `App.tsx` updated: PulseSession replaces PracticeModeEnhanced as main practice entry
+- ✅ End-to-end loop working: session assembly → item hydration → result submission → θ/gate updates
+- ✅ Cold start mode tested and working (100% frontier probes, DAG inference)
+- ✅ Leapfrog triggers correctly and seeds inferred mastery + ability docs
+- ✅ TypeScript compiles clean (0 errors in Pulse files)
 
-### Phase 2 — Polish
+**Bugs Fixed:**
+- ✅ Leapfrog `GateHistoryEntry.source` — changed from `"pulse_leapfrog"` (invalid literal) to `"diagnostic"` (valid)
 
-- Leapfrog celebration animation
-- EL trajectory visualization in PulseSummary
-- Knowledge map delta (before/after frontier)
-- Session resume (localStorage + backend sync)
-- Pre-generation cache optimization
+**Known Limitations (Phase 1):**
+- Items hydrated one-at-a-time via existing `generatePracticeManifestAndHydrateStreaming` — no dedicated `/api/lumina/pulse-stream` SSE bulk route yet
+- Leapfrog celebration is a simple overlay (no animated knowledge map)
+- Summary screen shows basic stats only (no EL trajectory chart or knowledge map delta)
+
+### Phase 2 — Polish (In Progress, 2026-03-05)
+
+**Completed:**
+- [x] LessonGroupService integration — `_select_current_items` now calls `LessonGroupService.group_subskills_into_blocks()` with Bloom's-sorted grouping; falls back to skill-based grouping on failure
+- [x] Session resume — `usePulseSession` detects saved sessions on mount via localStorage (2-hour expiry), fetches state from backend via `GET /api/pulse/sessions/{id}`, resumes at first uncompleted item. Amber "Unfinished session" banner with Resume/Dismiss in `PulseSession.tsx`
+- [x] Populate `skills_advanced` and `theta_changes` in summary — `process_result` now persists `theta_update` and `gate_update` per item in session doc; `get_session_summary` aggregates them
+- [x] Adaptive band proportions — `_assemble_normal` gathers all candidates first, caps each band to available count, redistributes surplus (priority: current > frontier > review)
+
+**Remaining:**
+- [ ] Dedicated `/api/lumina/pulse-stream` SSE route for bulk item hydration
+- [x] Leapfrog celebration animation — framer-motion staggered skill chips (probed + inferred), animated score ring SVG, ambient glow, spring animations with 3s auto-dismiss
+- [x] EL trajectory visualization in PulseSummary — `ThetaGrowthSection`: horizontal bars (1-3 skills) with animated old→new theta, or recharts `LineChart` (4+ skills) with before/after lines; color-coded by mode tier
+- [x] Knowledge map delta — `FrontierDeltaSection`: gate advances + leapfrog skips breakdown, "+N skills unlocked" badge with motion animation, frontier expanded message
+- [x] Session-aware hydration — `usePulseSession` tracks `{ componentId, difficulty, score }` per completed item, passes as `sessionHistory` through practice-stream → manifest generator prompt. Soft guidance (no hard blocking): Gemini sees what was done + scores to calibrate variety and difficulty. See §9.4.
+- [ ] Pre-generation cache optimization (handle failures gracefully, retry logic)
 
 ### Phase 3 — Advanced Features
 
-- Difficulty slider (student agency, θ-2.0 to θ+4.0 range)
-- Cross-skill leapfrog (high θ on downstream skill → infer prerequisites)
-- Parent dashboard integration (Pulse session history in PlannerDashboard)
-- Adaptive band proportions (ML-driven, based on student trajectory)
-- Session length adaptation (shorter for young students, longer for engaged)
+- [ ] Primitive coverage mastery — when a student demonstrates competence (≥7.5/10) across ≥80% of applicable primitives for a subskill, count as 2 lesson evals to accelerate Gate 0→1. See §9.5.
+- [ ] Difficulty slider (student agency, θ-2.0 to θ+4.0 range)
+- [ ] Cross-skill leapfrog (high θ on downstream skill → infer prerequisites)
+- [ ] Parent dashboard integration (Pulse session history in PlannerDashboard)
+- [ ] Adaptive band proportions (ML-driven, based on student trajectory)
+- [ ] Session length adaptation (shorter for young students, longer for engaged)
 
 ### Phase 4 — System Consolidation
 
-- Deprecate PracticeModeEnhanced (replaced by Pulse)
-- Deprecate mandatory diagnostic onboarding (cold start handles it)
-- PlanningService reads Pulse session history for weekly/monthly projections
-- Unified telemetry: all learning data flows through Pulse sessions
+- [ ] Deprecate PracticeModeEnhanced (replaced by Pulse) — **already removed from App.tsx**
+- [ ] Deprecate mandatory diagnostic onboarding (cold start handles it)
+- [ ] PlanningService reads Pulse session history for weekly/monthly projections
+- [ ] Unified telemetry: all learning data flows through Pulse sessions
 
 ---
 
@@ -910,3 +996,15 @@ def group_subskills_into_blocks(cls, candidates: List[Dict[str, Any]]) -> List[L
 def get_prior_beta(primitive_type: str, eval_mode: str) -> float
 # Returns: prior β for the (primitive_type, eval_mode) pair
 ```
+
+---
+
+## Appendix B: Changelog
+
+| Date | Version | Changes |
+|------|---------|---------|
+| 2026-03-04 | 1.0 | Initial PRD — design complete |
+| 2026-03-05 | 1.1 | Phase 1 MVP implemented end-to-end. All backend + frontend files created. Wired into App.tsx. Fixed leapfrog GateHistoryEntry source literal bug. Updated §3.3 leapfrog gate_history source to "diagnostic". Added known limitations and Phase 2 checklist. |
+| 2026-03-05 | 1.2 | Phase 2 progress: LessonGroupService integrated into band assembly, adaptive band proportions, session resume flow (localStorage + backend fetch), summary now populates skills_advanced and theta_changes from per-item data. |
+| 2026-03-05 | 1.3 | Phase 2 UI polish: Enhanced leapfrog celebration with framer-motion staggered skill chips, animated SVG score ring, probed/inferred skill breakdown. Added ThetaGrowthSection (recharts line chart or animated bars based on skill count). Added FrontierDeltaSection with gate advance + leapfrog skip breakdown and frontier expansion message. |
+| 2026-03-05 | 1.4 | Added §9.4 Session-Aware Hydration: sessionHistory (componentId + difficulty + score) passed to Gemini for diversity + difficulty calibration. Soft guidance, no hard blocking. Added §9.5 Primitive Coverage as Mastery Signal: breadth across applicable primitives accelerates Gate 0→1 (Phase 3). |

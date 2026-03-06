@@ -48,12 +48,20 @@ export interface PulseItemSpec {
   primitive_affinity?: string;
 }
 
+export interface RecentPrimitive {
+  primitive_type: string;
+  eval_mode: string;
+  score: number;
+  subskill_id: string;
+}
+
 export interface PulseSessionResponse {
   session_id: string;
   student_id: number;
   subject: string;
   is_cold_start: boolean;
   items: PulseItemSpec[];
+  recent_primitives: RecentPrimitive[];
   session_meta: Record<string, unknown>;
 }
 

@@ -93,12 +93,13 @@ const SIZE_SCALE: Record<string, number> = { small: 0.6, medium: 1.0, large: 1.4
 /** Check whether a shape matches the rule for an identify challenge */
 function isTargetShape(s: ShapeSorterShape, ruleAttribute: string, targetValue?: string): boolean {
   if (!targetValue) return false;
+  const tv = targetValue.trim().toLowerCase();
   const props = SHAPE_PROPERTIES[s.shape];
   switch (ruleAttribute) {
-    case 'shape':  return s.shape === targetValue;
-    case 'color':  return s.color === targetValue;
-    case 'sides':  return String(props?.sides ?? -1) === targetValue;
-    case 'curved': return String(props?.curved ?? false) === targetValue;
+    case 'shape':  return s.shape === tv;
+    case 'color':  return s.color === tv;
+    case 'sides':  return String(props?.sides ?? -1) === tv;
+    case 'curved': return String(props?.curved ?? false) === tv;
     default:       return false;
   }
 }

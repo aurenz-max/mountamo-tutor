@@ -1155,3 +1155,461 @@ class FirestoreAnalyticsService:
         except Exception as e:
             logger.error(f"Error computing timeseries metrics: {e}")
             raise
+
+    # ========================================================================
+    # KNOWLEDGE GRAPH PROGRESS (Pulse-native)
+    # ========================================================================
+
+    async def get_knowledge_graph_progress(
+        self,
+        student_id: int,
+        subject: str,
+        include_nodes: bool = True,
+        depth_limit: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute knowledge graph progress for a student in a subject.
+
+        Combines:
+        - DAG structure from curriculum_graphs (via LearningPathsService)
+        - Mastery lifecycle gate state per subskill
+        - IRT ability (theta) per skill
+        - Leapfrog history from pulse_sessions
+
+        Returns a rich summary suitable for both parent-facing views
+        (coverage %, frontier description) and developer views
+        (per-node status, theta, gate detail).
+        """
+        ck = self._cache_key(
+            "knowledge_graph_progress",
+            student_id=student_id,
+            subject=subject,
+            include_nodes=include_nodes,
+            depth_limit=depth_limit,
+        )
+        cached = self._cache_get(ck)
+        if cached is not None:
+            return cached
+
+        try:
+            if not self.learning_paths:
+                raise ValueError("LearningPathsService not available")
+
+            # --- Parallel data loading ---
+            import asyncio
+
+            student_graph_task = self.learning_paths.get_student_graph(
+                student_id, subject
+            )
+            lifecycle_task = self.fs.get_all_mastery_lifecycles(
+                student_id, subject=subject
+            )
+            ability_task = self.fs.get_all_student_abilities(student_id)
+
+            student_graph, lifecycles_list, abilities_list = await asyncio.gather(
+                student_graph_task, lifecycle_task, ability_task
+            )
+
+            # Index mastery lifecycle by subskill_id
+            lifecycle_map: Dict[str, Dict] = {}
+            for lc in lifecycles_list:
+                sid = lc.get("subskill_id") or lc.get("id", "")
+                lifecycle_map[sid] = lc
+
+            # Index ability by skill_id
+            ability_map: Dict[str, Dict] = {}
+            for ab in abilities_list:
+                sid = ab.get("skill_id") or ab.get("id", "")
+                ability_map[sid] = ab
+
+            # --- Build topology depth map ---
+            nodes = student_graph.get("nodes", [])
+            edges = student_graph.get("edges", [])
+
+            # Build adjacency for topological depth
+            children: Dict[str, list] = defaultdict(list)
+            parents: Dict[str, list] = defaultdict(list)
+            for edge in edges:
+                src = edge.get("source", "")
+                tgt = edge.get("target", "")
+                children[src].append(tgt)
+                parents[tgt].append(src)
+
+            # Compute topological depth via BFS from roots
+            node_ids = {n["id"] for n in nodes}
+            roots = [nid for nid in node_ids if nid not in parents or not parents[nid]]
+            depth_map: Dict[str, int] = {}
+            queue = [(r, 0) for r in roots]
+            while queue:
+                nid, d = queue.pop(0)
+                if nid in depth_map:
+                    # Keep the max depth (longest path)
+                    if d > depth_map[nid]:
+                        depth_map[nid] = d
+                    else:
+                        continue
+                else:
+                    depth_map[nid] = d
+                for child in children.get(nid, []):
+                    queue.append((child, d + 1))
+
+            # For nodes not reached (disconnected), set depth 0
+            for n in nodes:
+                if n["id"] not in depth_map:
+                    depth_map[n["id"]] = 0
+
+            max_depth = max(depth_map.values()) if depth_map else 0
+
+            # --- Classify each node ---
+            counters = {
+                "mastered_direct": 0,
+                "mastered_inferred": 0,
+                "in_progress": 0,
+                "in_review": 0,
+                "not_started": 0,
+                "locked": 0,
+            }
+            frontier_nodes: List[str] = []
+            result_nodes: List[Dict[str, Any]] = []
+            leapfrog_inferred_ids: List[str] = []
+            leapfrog_retest_passed = 0
+            leapfrog_retest_total = 0
+
+            for node in nodes:
+                nid = node["id"]
+                node_depth = depth_map.get(nid, 0)
+
+                # Apply depth_limit filter
+                if depth_limit is not None and node_depth > depth_limit:
+                    continue
+
+                entity_type = node.get("type", node.get("entity_type", ""))
+                graph_status = node.get("status", "LOCKED")
+                skill_id = node.get("skill_id", nid)  # For subskills, parent skill_id
+                description = node.get("description", node.get("label", ""))
+
+                lc = lifecycle_map.get(nid, {})
+                current_gate = lc.get("current_gate", 0)
+                completion_pct = lc.get("completion_pct", 0.0)
+                prior_source = lc.get("prior_source", "")
+
+                ab = ability_map.get(skill_id, {})
+                theta = ab.get("theta")
+                earned_level = ab.get("earned_level")
+
+                # Determine Pulse-native status
+                is_inferred = prior_source == "pulse_leapfrog" or (
+                    current_gate == 2
+                    and lc.get("lesson_eval_count", 0) == 3
+                    and any(
+                        gh.get("source") == "diagnostic"
+                        for gh in lc.get("gate_history", [])
+                    )
+                )
+
+                if current_gate == 4:
+                    status = "mastered"
+                    counters["mastered_direct"] += 1
+                elif current_gate >= 2 and is_inferred:
+                    status = "inferred"
+                    counters["mastered_inferred"] += 1
+                    leapfrog_inferred_ids.append(nid)
+                    # Check if the inferred skill has been retested
+                    gate_history = lc.get("gate_history", [])
+                    retest_entries = [
+                        gh for gh in gate_history
+                        if gh.get("source") == "practice" and gh.get("gate", 0) >= 2
+                    ]
+                    if retest_entries:
+                        leapfrog_retest_total += 1
+                        if any(gh.get("passed", False) for gh in retest_entries):
+                            leapfrog_retest_passed += 1
+                elif current_gate in (1, 2, 3) and not is_inferred:
+                    status = "in_review"
+                    counters["in_review"] += 1
+                elif graph_status == "IN_PROGRESS" or (
+                    current_gate == 0 and lc.get("lesson_eval_count", 0) > 0
+                ):
+                    status = "in_progress"
+                    counters["in_progress"] += 1
+                elif graph_status == "UNLOCKED" and current_gate == 0:
+                    status = "frontier"
+                    counters["not_started"] += 1
+                    frontier_nodes.append(nid)
+                elif graph_status == "LOCKED":
+                    status = "locked"
+                    counters["locked"] += 1
+                else:
+                    status = "not_started"
+                    counters["not_started"] += 1
+
+                if include_nodes:
+                    node_detail: Dict[str, Any] = {
+                        "subskill_id": nid,
+                        "skill_id": skill_id if skill_id != nid else node.get("skill_id", ""),
+                        "description": description,
+                        "depth": node_depth,
+                        "status": status,
+                        "current_gate": current_gate,
+                        "prerequisite_ids": [
+                            e["source"] for e in edges if e.get("target") == nid
+                        ],
+                        "dependent_ids": [
+                            e["target"] for e in edges if e.get("source") == nid
+                        ],
+                    }
+                    if theta is not None:
+                        node_detail["theta"] = round(theta, 2)
+                    if earned_level is not None:
+                        node_detail["earned_level"] = round(earned_level, 1)
+                    if is_inferred:
+                        node_detail["inferred_from"] = "pulse_leapfrog"
+
+                    result_nodes.append(node_detail)
+
+            # --- Frontier metrics ---
+            frontier_depths = [depth_map.get(fid, 0) for fid in frontier_nodes]
+            avg_frontier_depth = (
+                sum(frontier_depths) / len(frontier_depths) if frontier_depths else 0
+            )
+
+            # --- Leapfrog summary from pulse_sessions ---
+            # Count leapfrog events from pulse sessions (if available)
+            total_leapfrogs = 0
+            total_skills_inferred = len(leapfrog_inferred_ids)
+            try:
+                pulse_sessions = await self.fs.db.collection("pulse_sessions").where(
+                    "student_id", "==", student_id
+                ).where(
+                    "subject", "==", subject
+                ).get()
+
+                for doc in pulse_sessions:
+                    session_data = doc.to_dict()
+                    leapfrogs = session_data.get("leapfrogs", [])
+                    total_leapfrogs += len(leapfrogs)
+            except Exception as e:
+                logger.warning(f"Could not load pulse_sessions for leapfrog stats: {e}")
+
+            leapfrog_retest_pass_rate = (
+                round(leapfrog_retest_passed / leapfrog_retest_total, 3)
+                if leapfrog_retest_total > 0
+                else None
+            )
+
+            # --- Build response ---
+            total_nodes = sum(counters.values())
+            result: Dict[str, Any] = {
+                "student_id": student_id,
+                "subject": subject,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "total_nodes": total_nodes,
+                **counters,
+                "frontier_node_ids": frontier_nodes,
+                "frontier_depth": round(avg_frontier_depth, 1),
+                "max_depth": max_depth,
+                "total_leapfrogs": total_leapfrogs,
+                "total_skills_inferred": total_skills_inferred,
+                "leapfrog_retest_pass_rate": leapfrog_retest_pass_rate,
+            }
+
+            if include_nodes:
+                result["nodes"] = result_nodes
+
+            self._cache_set(ck, result)
+            return result
+
+        except Exception as e:
+            logger.error(f"Error computing knowledge graph progress: {e}")
+            raise
+
+    # ------------------------------------------------------------------
+    # Pulse session history
+    # ------------------------------------------------------------------
+
+    async def get_pulse_session_history(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        limit: int = 50,
+        include_theta_trajectory: bool = True,
+    ) -> Dict[str, Any]:
+        """Return Pulse session history with band breakdowns and leapfrog events.
+
+        Queries ``pulse_sessions`` collection, computes per-session band
+        success rates, aggregates leapfrog events, and optionally builds a
+        theta trajectory from the ``ability`` subcollection's theta_history.
+        """
+        import asyncio
+
+        ck = f"pulse_history:{student_id}:{subject}:{limit}:{include_theta_trajectory}"
+        cached = self._cache_get(ck)
+        if cached is not None:
+            return cached
+
+        # --- Fetch data ---
+        sessions_raw = await self.fs.get_student_pulse_sessions(student_id)
+
+        # Filter by subject if provided
+        if subject:
+            sessions_raw = [s for s in sessions_raw if s.get("subject") == subject]
+
+        # Sort by created_at descending, take limit
+        sessions_raw.sort(
+            key=lambda s: s.get("created_at", ""), reverse=True
+        )
+        sessions_raw = sessions_raw[:limit]
+
+        # --- Build per-session summaries ---
+        session_items: list = []
+        agg_frontier_pass = 0
+        agg_frontier_total = 0
+        total_leapfrogs = 0
+        total_skills_inferred = 0
+        total_items_completed = 0
+        all_scores: list = []
+        completed_count = 0
+
+        for s in sessions_raw:
+            items = s.get("items", [])
+            leapfrogs = s.get("leapfrogs", [])
+
+            # Band breakdown
+            band_items: Dict[str, list] = {"frontier": [], "current": [], "review": []}
+            for item in items:
+                band = item.get("band", "current")
+                if band in band_items:
+                    band_items[band].append(item)
+
+            def _band_success(band_list: list) -> Optional[float]:
+                scored = [i for i in band_list if i.get("score") is not None]
+                if not scored:
+                    return None
+                passing = sum(1 for i in scored if i["score"] >= 7.0)
+                return round(passing / len(scored), 3)
+
+            frontier_sr = _band_success(band_items["frontier"])
+            current_sr = _band_success(band_items["current"])
+            review_sr = _band_success(band_items["review"])
+
+            # Aggregate frontier stats for overall rate
+            frontier_scored = [i for i in band_items["frontier"] if i.get("score") is not None]
+            agg_frontier_total += len(frontier_scored)
+            agg_frontier_pass += sum(1 for i in frontier_scored if i["score"] >= 7.0)
+
+            # Scores
+            completed_items = [i for i in items if i.get("score") is not None]
+            session_scores = [i["score"] for i in completed_items]
+            avg_score = round(sum(session_scores) / len(session_scores), 2) if session_scores else None
+            all_scores.extend(session_scores)
+
+            # Duration
+            durations = [i.get("duration_ms", 0) for i in completed_items if i.get("duration_ms")]
+            total_duration = sum(durations) if durations else None
+
+            # Leapfrog
+            session_inferred = sum(len(lf.get("inferred_skills", [])) for lf in leapfrogs)
+            total_leapfrogs += len(leapfrogs)
+            total_skills_inferred += session_inferred
+
+            items_completed = s.get("items_completed", len(completed_items))
+            items_total = s.get("items_total", len(items))
+            total_items_completed += items_completed
+
+            if s.get("status") == "completed":
+                completed_count += 1
+
+            leapfrog_summaries = [
+                {
+                    "lesson_group_id": lf.get("lesson_group_id", ""),
+                    "probed_skills": lf.get("probed_skills", []),
+                    "inferred_skills": lf.get("inferred_skills", []),
+                    "aggregate_score": lf.get("aggregate_score", 0),
+                }
+                for lf in leapfrogs
+            ]
+
+            session_items.append({
+                "session_id": s.get("session_id", ""),
+                "subject": s.get("subject", ""),
+                "status": s.get("status", "unknown"),
+                "is_cold_start": s.get("is_cold_start", False),
+                "items_completed": items_completed,
+                "items_total": items_total,
+                "band_breakdown": {
+                    "frontier_items": len(band_items["frontier"]),
+                    "current_items": len(band_items["current"]),
+                    "review_items": len(band_items["review"]),
+                    "frontier_success_rate": frontier_sr,
+                    "current_success_rate": current_sr,
+                    "review_success_rate": review_sr,
+                },
+                "leapfrogs": leapfrog_summaries,
+                "skills_inferred": session_inferred,
+                "avg_score": avg_score,
+                "duration_ms": total_duration,
+                "created_at": s.get("created_at", ""),
+                "completed_at": s.get("completed_at"),
+            })
+
+        # --- Overall frontier success rate ---
+        overall_frontier_sr = (
+            round(agg_frontier_pass / agg_frontier_total, 3)
+            if agg_frontier_total > 0
+            else None
+        )
+        avg_session_score = (
+            round(sum(all_scores) / len(all_scores), 2)
+            if all_scores
+            else None
+        )
+
+        # --- Theta trajectory (from ability theta_history) ---
+        theta_trajectory: list = []
+        if include_theta_trajectory and sessions_raw:
+            try:
+                abilities = await self.fs.get_all_student_abilities(student_id)
+                # Collect session IDs for quick lookup
+                session_ids = {s.get("session_id") for s in sessions_raw}
+
+                for ab in abilities:
+                    skill_id = ab.get("skill_id", "")
+                    # Filter by subject if we have ability subject info
+                    if subject and ab.get("subject") and ab["subject"] != subject:
+                        continue
+                    for th in ab.get("theta_history", []):
+                        # theta_history entries may have session_id linking them to pulse sessions
+                        entry_session = th.get("session_id", "")
+                        if entry_session and entry_session in session_ids:
+                            theta_trajectory.append({
+                                "session_id": entry_session,
+                                "skill_id": skill_id,
+                                "theta_before": round(th.get("old_theta", th.get("theta", 0)), 2),
+                                "theta_after": round(th.get("new_theta", th.get("theta", 0)), 2),
+                                "delta": round(
+                                    th.get("new_theta", 0) - th.get("old_theta", 0), 2
+                                ),
+                                "timestamp": th.get("timestamp", ""),
+                            })
+                # Sort by timestamp
+                theta_trajectory.sort(key=lambda t: t.get("timestamp", ""))
+            except Exception as e:
+                logger.warning(f"Could not build theta trajectory: {e}")
+
+        result: Dict[str, Any] = {
+            "student_id": student_id,
+            "subject": subject,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "total_sessions": len(session_items),
+            "completed_sessions": completed_count,
+            "total_items_completed": total_items_completed,
+            "total_leapfrogs": total_leapfrogs,
+            "total_skills_inferred": total_skills_inferred,
+            "overall_frontier_success_rate": overall_frontier_sr,
+            "avg_session_score": avg_session_score,
+            "sessions": session_items,
+            "theta_trajectory": theta_trajectory,
+        }
+
+        self._cache_set(ck, result)
+        return result

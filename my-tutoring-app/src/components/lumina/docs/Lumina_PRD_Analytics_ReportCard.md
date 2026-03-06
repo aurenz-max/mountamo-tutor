@@ -1,7 +1,8 @@
 # Lumina PRD: Report Card, Analytics & Solvency Engine
 
 **Covers: Student Analytics, Parent Report Card, Solvency Engine, Parent Portal**
-**Version 1.0 | March 2026**
+**Version 1.1 | March 2026**
+**Pulse Integration Update: v1.1 aligns all telemetry sources with Pulse (see companion Lumina_PRD_Pulse.md)**
 
 ---
 
@@ -14,18 +15,21 @@ This PRD defines how Lumina communicates student progress to parents and how the
 3. **Solvency Engine** — Continuous assessment of whether the student will meet curriculum goals (the insurance cash flow testing equivalent)
 4. **Parent Portal** — The interface that surfaces all of the above
 
-These systems consume telemetry produced by the Daily Learning system (see companion PRD). The dependency is one-directional:
+These systems consume telemetry produced by the Pulse adaptive learning loop (see companion Pulse PRD). The dependency is one-directional:
 
 ```
-Daily Learning PRD                    This PRD
-─────────────────                    ──────────
-Session Runner                       
-  → Telemetry ──────────────────────→ Analytics Engine
-                                       → Report Card
-                                       → Solvency Engine
-                                       → Parent Portal
-                                       → Interventions
+Pulse PRD                             This PRD
+─────────                             ──────────
+PulseEngine
+  → pulse_sessions telemetry ────────→ Analytics Engine
+  → mastery_lifecycle gate changes ──→   → Report Card
+  → ability theta trajectory ────────→   → Solvency Engine
+  → leapfrog inference events ───────→   → Parent Portal
+                                         → Interventions
+                                         → Knowledge Graph Progress
 ```
+
+**Pulse context:** With Pulse, every practice session simultaneously produces diagnostic, instructional, and assessment data through a three-band model (Frontier Probes, Current Work, Trailing Review). Telemetry is richer than the legacy Daily Learning pipeline — each item carries band classification, IRT theta/beta updates, mode level, and potential leapfrog events. All analytics in this PRD consume `pulse_sessions` as the primary data source.
 
 ---
 
@@ -83,17 +87,19 @@ Tapping a subject or viewing the weekly email shows a plain-language summary of 
 This week, [Child] worked on:
 
 📖 Language Arts
-  • Blending sounds to make words — practicing, getting stronger 📈
+  • Blending sounds to make words — strengthening, getting stronger 📈
   • Recognizing rhyming words — just started, looking good ✨
-  • Story sequencing — needs more practice, we'll keep at it
+  • Story sequencing — reviewing, nearly locked in! 🌟
 
-🔢 Mathematics  
+🔢 Mathematics
   • Identifying shapes — reviewed, nearly mastered! 🌟
   • Counting to 20 — new this week
+  • Multiplication basics — explored ahead and jumped 3 skills! 🚀
   • Sorting objects by category — needs more practice
 
 🎉 Celebrations
   • Mastered: Rhyme Recognition (100% on retest!)
+  • Jumped ahead 3 skills in Math — explored multiplication and aced it!
   • Perfect score on Dinosaur Fast Facts
   • 5-day learning streak!
 
@@ -104,6 +110,17 @@ This week, [Child] worked on:
 ```
 
 No gates. No completion factors. No velocity numbers. Just what happened, what was celebrated, and what's coming.
+
+**Band-aware parent language:** Pulse bands map to natural parent-friendly verbs:
+
+| Band | Parent Label | Example |
+|---|---|---|
+| Current | "strengthening" / "building" / "new this week" | "Blending sounds — strengthening" |
+| Frontier (passed) | "explored ahead" / "jumped N skills" | "Multiplication — explored ahead and jumped 3 skills!" |
+| Frontier (failed) | omitted from summary | No penalty; system learned the ceiling |
+| Review | "reviewing" / "locked in" | "Story sequencing — reviewing, nearly locked in!" |
+
+Leapfrog events are highlighted in the Celebrations section as they are naturally compelling parent moments.
 
 **Key requirement:** Every subskill needs a **parent-friendly description.** "Blend onset and rime (/c/ + /at/ → cat)" becomes "Blending sounds to make words." This is a content field that must be populated for every subskill in the curriculum.
 
@@ -224,9 +241,12 @@ achievement_event: {
   id: string,
   student_id: string,
   timestamp: timestamp,
-  type: "subskill_mastered" | "competency_mastered" | "perfect_score" | 
-        "streak_milestone" | "time_milestone" | "subject_milestone" | 
-        "first_in_domain" | "speed_record",
+  type: "subskill_mastered" | "competency_mastered" | "perfect_score" |
+        "streak_milestone" | "time_milestone" | "subject_milestone" |
+        "first_in_domain" | "speed_record" |
+        // Pulse-native achievement types:
+        "leapfrog" | "frontier_success" | "earned_level_milestone" |
+        "cold_start_complete" | "primitive_coverage_mastery",
   payload: {
     subskill_id?: string,
     competency_id?: string,
@@ -234,7 +254,13 @@ achievement_event: {
     streak_days?: number,
     total_minutes?: number,
     subject?: string,
-    detail: string              // human-readable description
+    detail: string,              // human-readable description
+    // Pulse-specific payload fields:
+    skills_inferred?: number,    // for leapfrog: how many skills were skipped
+    session_id?: string,         // Pulse session that triggered the event
+    earned_level?: number,       // for earned_level_milestone: new EL value
+    frontier_probed?: string[],  // for frontier_success: which skills were probed
+    primitives_covered?: string[] // for primitive_coverage_mastery: which primitives passed
   }
 }
 ```
@@ -261,12 +287,26 @@ weekly_summary: {
       sessions: number,
       subskills_advanced: number,
       subskills_closed: number,
+      subskills_inferred: number,         // Pulse: skills gained via leapfrog inference
       competencies_closed: number,
       new_introductions: number,
       reviews_completed: number,
       avg_score: number,
-      top_strength: string,       // highest-performing domain
-      needs_attention: string     // lowest-performing domain
+      top_strength: string,               // highest-performing domain
+      needs_attention: string,            // lowest-performing domain
+
+      // Pulse-native fields:
+      leapfrog_count: number,             // number of leapfrog events this week
+      frontier_probes_attempted: number,  // frontier items attempted
+      frontier_probes_passed: number,     // frontier items that triggered inference
+      frontier_probe_success_rate: number,// passed / attempted
+      avg_earned_level_delta: number,     // average theta change per session
+      band_time_split: {                  // % of session time per band
+        frontier_pct: number,
+        current_pct: number,
+        review_pct: number
+      },
+      cold_start_sessions: number         // sessions that were cold-start diagnostics
     }
   },
   achievements: achievement_event[],
@@ -275,7 +315,7 @@ weekly_summary: {
 }
 ```
 
-Updated nightly (or on session completion). The report card reads from this table, not raw telemetry.
+Updated nightly (or on Pulse session completion). The report card reads from this table, not raw `pulse_sessions` documents. The Pulse-native fields enable band-aware parent language (Section 3.2) and feed the solvency engine's leapfrog-adjusted run rate (Section 6.3).
 
 ---
 
@@ -284,8 +324,8 @@ Updated nightly (or on session completion). The report card reads from this tabl
 ### 5.1 Aggregation Pipeline
 
 ```
-Raw telemetry (per session)
-  → Session-level aggregates (computed on session completion)
+pulse_sessions (per session)
+  → Session-level aggregates (computed on Pulse session completion)
     → Daily summary (computed nightly)
       → Weekly summary (computed Sunday night or on-demand)
         → Monthly summary (computed end of month)
@@ -296,11 +336,11 @@ Each level computes progressively higher-level metrics:
 
 | Level | Key Metrics |
 |---|---|
-| Session | Duration, blocks completed, subskills advanced/closed, scores by phase |
-| Daily | Total learning time, subskills advanced, closures, streak status |
-| Weekly | Subject-level progress, solvency ratios, strengths/weaknesses, achievements |
-| Monthly | Trajectory update, A/E ratios, competency progress, solvency scenario re-run |
-| Quarterly | Full progress report, curriculum coverage, grade-level assessment |
+| Session | Duration, items by band (frontier/current/review), theta changes, gate transitions, leapfrog events, primitive diversity, scores by band |
+| Daily | Total learning time, subskills advanced (direct + inferred), closures, streak status, frontier probe success rate |
+| Weekly | Subject-level progress, solvency ratios (leapfrog-adjusted), strengths/weaknesses, achievements, band time distribution, avg earned level delta |
+| Monthly | Trajectory update, A/E ratios, competency progress, solvency scenario re-run, leapfrog acceleration factor |
+| Quarterly | Full progress report, curriculum coverage, grade-level assessment, knowledge graph coverage map |
 
 ### 5.2 Derived Metrics
 
@@ -310,11 +350,18 @@ A composite score that drives the Level 0 status indicator:
 
 ```
 subject_health = weighted_average(
-  solvency_ratio × 0.4,           // are we on pace?
-  recent_mastery_rate × 0.3,      // are recent sessions producing closures?
-  engagement_consistency × 0.2,   // is the student showing up regularly?
-  score_trend × 0.1               // are scores improving or declining?
+  solvency_ratio × 0.35,              // are we on pace? (leapfrog-adjusted, see §6.3.2)
+  recent_mastery_rate × 0.25,         // are recent sessions producing closures? (direct + inferred)
+  engagement_consistency × 0.20,      // is the student showing up regularly?
+  frontier_expansion_rate × 0.10,     // Pulse: how fast is the DAG frontier moving?
+  score_trend × 0.10                  // are theta trajectories improving or declining?
 )
+
+frontier_expansion_rate:
+  = new_frontier_nodes_unlocked_last_14d / total_remaining_not_started
+  Measures how quickly the student is opening up new territory in the knowledge graph.
+  High rate + low solvency → student is exploring broadly but not closing
+  Low rate + high solvency → student is consolidating depth (healthy)
 
 Mapping:
   health ≥ 0.8  → "On Track"
@@ -327,15 +374,22 @@ Mapping:
 
 ```
 For each curriculum domain (unit level):
-  domain_performance = avg(phase_scores) across last 14 days
-  domain_trajectory = slope of phase_scores over last 14 days
+  domain_theta = avg(theta) across skills in domain (from ability docs)
+  domain_trajectory = slope of theta over last 14 days
+  domain_gate_progress = avg(current_gate) across subskills in domain
 
-Strength: domain_performance > subject_avg AND trajectory ≥ 0
-Weakness: domain_performance < subject_avg AND trajectory ≤ 0
-Emerging: domain_performance < subject_avg BUT trajectory > 0
+  // Theta is a more calibrated signal than raw scores because IRT
+  // accounts for item difficulty — a 7/10 on a hard item (high beta)
+  // is stronger evidence than 9/10 on an easy item (low beta).
+
+Strength: domain_theta > subject_avg_theta AND trajectory ≥ 0
+Weakness: domain_theta < subject_avg_theta AND trajectory ≤ 0
+Emerging: domain_theta < subject_avg_theta BUT trajectory > 0
 ```
 
 Report card shows the top 2 strengths and top 2 weaknesses per subject.
+
+**Frontier awareness:** Domains where frontier probes have succeeded (leapfrog events) are boosted in strength detection — if the student jumped ahead in a domain, that's a strong signal even if theta data is sparse.
 
 #### Trajectory Statement
 
@@ -369,7 +423,8 @@ It answers one question: **Given what we know about this student's actual throug
 |---|---|---|
 | Curriculum targets | Curriculum service: total skills per subject, tier tags | Always available |
 | Current position | Mastery engine: closed, in-review, not-started by subject | Always available |
-| Demonstrated throughput | Session telemetry: actual items/day, mastery rates, time/item | Use assumed values |
+| Demonstrated throughput | `pulse_sessions`: items/day, mastery rates, time/item, leapfrog rate | Use assumed values |
+| Leapfrog acceleration | `pulse_sessions`: skills inferred per session, frontier probe success rate | Use 0 (conservative) |
 | Calendar | Config: remaining school days, planned breaks, days/week | Always available |
 | Student capacity | Config: daily time budget in minutes | Default 75 min |
 
@@ -386,16 +441,29 @@ For each subject:
 
 If using tiered curriculum, `target_skills` = Core skills only (or Core + Extended depending on pacing strategy).
 
-#### 6.3.2 Demonstrated Daily Run Rate
+#### 6.3.2 Demonstrated Daily Run Rate (Pulse-Adjusted)
 
 ```
-actual_closures_per_day = closures_last_N_days / N
+// Decompose closures into direct and inferred (leapfrog)
+direct_closures_per_day = direct_gate_transitions_last_N_days / N
+inferred_closures_per_day = leapfrog_inferred_skills_last_N_days / N
+
+// Inferred closures enter at Gate 2 — they still need retest verification.
+// Apply a conversion factor: what % of inferred skills survive retest?
+// Early default: 0.85 (conservative; most inferred mastery should hold).
+// Updated from experience data once available.
+inferred_conversion_rate = 0.85
+
+actual_closures_per_day = direct_closures_per_day
+                        + (inferred_closures_per_day × inferred_conversion_rate)
 
 Where N = rolling window:
   If < 14 days of data: use all available data
   If 14–28 days: use 14-day window
   If > 28 days: use 28-day window (more recent = more relevant)
 ```
+
+**Leapfrog timing caveat:** A student who leapfrogs 5 skills today will show a temporarily inflated run rate. But those 5 skills all come due for retest in 3 days, creating a review surge. The solvency engine should model this pipeline effect — leapfrog gains are real but create a delayed review cost. The pipeline adequacy test (Section 6.5) catches this.
 
 #### 6.3.3 Solvency Ratio
 
@@ -422,18 +490,20 @@ full_credibility_sessions = 30  (approximately 6 weeks of daily sessions)
 
 This mirrors small group renewal pricing credibility exactly. With 0 sessions, projections use 100% assumed rates. At 15 sessions, it's 50/50. At 30+ sessions, it's fully experience-rated.
 
-**Assumed rates (initial):**
+**Assumed rates (initial, Pulse-native):**
 
 | Parameter | Assumed Value | Basis |
 |---|---|---|
-| Items per day | 20 | Conservative for K student |
-| First-attempt mastery rate | 60% | Moderate difficulty |
+| Items per Pulse session | 15 | Default PulseEngine session size |
+| Sessions per day | 1.3 | ~1 full session + occasional second |
+| Frontier probe success rate | 30% | Conservative; most probes fail (finding the ceiling) |
+| Leapfrog yield (skills per success) | 3 | Average DAG inference chain length |
+| Inferred-to-closed conversion rate | 85% | % of inferred skills that survive retest |
+| First-attempt mastery rate (current band) | 60% | Moderate difficulty |
 | Days per week | 4 | Allows for off days |
-| Time per lesson group | 18 min | Based on primitive estimates |
-| Time per practice group | 10 min | Reduced scaffolding |
-| Time per retest | 5 min | Targeted assessment |
+| Time per Pulse session | 25 min | 15 items, ~100s per item average |
 
-These assumed values should be reviewed and adjusted based on curriculum design intent and early observations.
+These assumed values should be reviewed and adjusted based on curriculum design intent and early Pulse session observations.
 
 ### 6.4 Scenario Testing
 
@@ -487,17 +557,27 @@ required_pipeline = required_closures_per_week / closure_rate_per_review_cycle
 actual_pipeline = count(skills in review)
 pipeline_adequacy = actual_pipeline / required_pipeline
 
+// Pulse adjustment: leapfrog dumps batches of skills into Gate 2 simultaneously.
+// Track the "leapfrog surge" — inferred skills pending first retest.
+leapfrog_pending = count(skills where gate == 2 AND prior_source == "pulse_leapfrog"
+                         AND next_retest_eligible <= now + 7d)
+pipeline_with_surge = actual_pipeline + leapfrog_pending
+
 If pipeline_adequacy < 0.5:
-  → "Pipeline deficit: introduction rate needs to increase to build 
+  → "Pipeline deficit: introduction rate needs to increase to build
      sufficient review inventory"
 
-If pipeline_adequacy > 2.0:
-  → "Pipeline surplus: review burden may be crowding introductions. 
-     Consider accelerating closures or graduating stable reviews 
+If pipeline_adequacy > 2.0 AND leapfrog_pending > 0.5 × actual_pipeline:
+  → "Leapfrog review surge: recent breakthroughs created a review backlog.
+     Next 2-3 sessions will be review-heavy — this is expected and temporary."
+
+If pipeline_adequacy > 2.0 AND leapfrog_pending < 0.2 × actual_pipeline:
+  → "Pipeline surplus: review burden may be crowding introductions.
+     Consider accelerating closures or graduating stable reviews
      to longer intervals."
 ```
 
-This is the metric that directly addresses the introduction bottleneck identified in the velocity decomposition. A pipeline deficit means we need to introduce faster. A pipeline surplus means reviews are dominating.
+This is the metric that directly addresses the introduction bottleneck identified in the velocity decomposition. A pipeline deficit means we need to introduce faster. A pipeline surplus means reviews are dominating. With Pulse, leapfrog events create temporary but predictable review surges that should not be treated as chronic pipeline surplus.
 
 ### 6.6 Intervention Playbook
 
@@ -511,6 +591,10 @@ The solvency engine doesn't just report — it recommends specific actions:
 | Stuck skill | Skill in review > 21 days without closure | "Skill {X} may need a different approach: try a different primitive, revisit prerequisites, or defer and return later" |
 | Rushing | Session completing in < 50% of expected time with low scores | "Student may be rushing. Consider: reflection prompts, increase difficulty verification, or verify understanding before advancing" |
 | Consistent session non-completion | < 60% of planned blocks completed for 5+ sessions | "Daily plan may be too ambitious. Recommend reducing daily budget from {current} to {reduced} minutes" |
+| Frontier ceiling reached | 5+ consecutive frontier probe failures in a subject | "Student has reached their current ceiling in {subject}. Pulse will consolidate current skills before probing further ahead." |
+| Leapfrog review surge | Leapfrog created >10 pending retests in one session | "Recent breakthroughs created a review backlog. Next 2-3 sessions will be review-heavy — this is expected and temporary." |
+| Theta plateau | Theta flat (< 0.2 change) for 10+ items in a skill | "Student may need a different approach for {skill}. Pulse will vary primitive types and scaffolding modes." |
+| Inferred mastery retest failure | >30% of leapfrog-inferred skills fail first retest | "Frontier probes may be over-crediting mastery. Consider: tightening the probe pass threshold or reducing inference chain depth." |
 
 ### 6.7 IBNR Equivalent: Exhibit Shadow Credit
 
@@ -566,9 +650,9 @@ The portal consumes:
 The default screen when a parent opens the portal.
 
 **Components:**
-- **Session status card:** Not Started / In Progress (with live stats) / Complete (with summary)
-- **"Start Session" button:** Launches session runner. Prominent, primary action.
-- **Today's plan preview:** 3–5 lesson group names with subject icons and estimated time. Friendly names, not technical. Example: "Rhyming sounds (18 min) • Shape review (10 min) • Story sequencing (18 min)"
+- **Session status card:** Not Started / In Progress (with live stats) / Complete (with summary including band breakdown)
+- **"Start Pulse" button:** Launches Pulse session. Prominent, primary action. Subject selector if multiple subjects active.
+- **Knowledge map preview:** Mini DAG visualization showing current frontier position and recent expansion. Replaces the static "today's plan preview" — with Pulse, sessions are assembled dynamically so there is no pre-planned lesson list.
 - **Quick stats strip:** Streak count, total time this week, subskills advanced this week
 - **Alert banner:** If solvency engine has an active intervention recommendation, show a non-alarming banner: "Language Arts could use a boost — tap for suggestions"
 
@@ -628,20 +712,127 @@ Gateway to Exhibit mode with curriculum-aware suggestions:
 
 | Trigger | Content | Channel | Timing |
 |---|---|---|---|
-| Session not started | "Ready to learn today? Today's plan: rhyming + shapes (~45 min)" | Push | Configurable (default 10am) |
-| Session complete | "Great session! Completed 4 blocks in 52 minutes. 🌟" | Push | Immediately |
+| Session not started | "Ready to learn today? Tap to start a Pulse session (~25 min)" | Push | Configurable (default 10am) |
+| Session complete | "Great Pulse session! Completed 15 items in 24 minutes. 🌟" | Push | Immediately |
 | Skill mastered | "[Child] mastered rhyming words! 🏆" | Push | Immediately |
-| Weekly summary | Level 1 report card content | Email | Sunday evening |
+| Leapfrog event | "[Child] jumped ahead 4 skills in Math today! 🚀" | Push | Immediately |
+| Earned level milestone | "[Child] reached Level 7.0 in Addition — that's expert level! ⭐" | Push | On milestone |
+| Weekly summary | Level 1 report card content (with band-aware language) | Email | Sunday evening |
 | Streak milestone | "5-day streak! Consistency is the secret! 🔥" | Push | On milestone |
-| Solvency alert | "Language Arts is falling behind pace. Here are 3 suggestions..." | Email + in-app banner | Weekly (if triggered) |
+| Solvency alert | "Language Arts could use a boost — here are 3 suggestions..." | Email + in-app banner | Weekly (if triggered) |
 | Progress milestone | "50 subskills mastered! Halfway through core Language Arts!" | Push | On milestone |
 | Monthly report | Level 2 report card content | Email | 1st of month |
 
 ---
 
-## 8. Data Model Additions
+## 8. Knowledge Graph Progress (Pulse-Native)
 
-### 8.1 New Firestore Collections
+### 8.1 Purpose
+
+The knowledge graph progress endpoint is the anchor analytics view for Pulse. It surfaces the DAG structure that Pulse operates on — showing parents and developers where the student sits in the curriculum graph, how their frontier is expanding, and where leapfrog inference has accelerated progress.
+
+This powers:
+- The **knowledge map preview** on the parent portal home (Section 7.2.1)
+- The **knowledge map delta** in PulseSummary (Pulse PRD Section 9.1)
+- The **Level 3 advanced analytics** prerequisite chain visualization (Section 3.4)
+- The **competency rollup** by showing which competency clusters are mastered vs in-progress
+
+### 8.2 Data Model
+
+```
+knowledge_graph_progress: {
+  student_id: int,
+  subject: string,
+  generated_at: timestamp,
+
+  // DAG coverage summary
+  total_nodes: number,                  // total subskills in subject DAG
+  mastered_direct: number,              // Gate 4 via direct lesson/practice path
+  mastered_inferred: number,            // Gate 2+ via leapfrog inference (pending retest verification)
+  in_progress: number,                  // Gate 0-1, actively being worked on
+  in_review: number,                    // Gate 1-3, retests pending
+  not_started: number,                  // no mastery_lifecycle doc or Gate 0 unlocked but untouched
+  locked: number,                       // prerequisites not met
+
+  // Frontier
+  frontier_node_ids: string[],          // currently unlocked Gate 0 nodes
+  frontier_depth: number,               // average topological depth of frontier
+  max_depth: number,                    // deepest node in DAG
+  frontier_expansion_velocity: number,  // new frontier nodes per session (rolling 7d avg)
+
+  // Leapfrog history
+  total_leapfrogs: number,
+  total_skills_inferred: number,
+  leapfrog_retest_pass_rate: number,    // % of inferred skills that survived retest (A/E)
+
+  // Per-node detail (for graph visualization)
+  nodes: [
+    {
+      subskill_id: string,
+      skill_id: string,
+      description: string,
+      parent_description?: string,       // parent-friendly name if populated
+      depth: number,                      // topological depth in DAG
+      status: "mastered" | "inferred" | "in_review" | "in_progress" |
+              "frontier" | "not_started" | "locked",
+      current_gate: number,               // 0-4
+      theta?: number,                     // student ability for this skill
+      earned_level?: number,
+      inferred_from?: string,             // if status=inferred, which leapfrog probe triggered it
+      competency_id?: string,
+      prerequisite_ids: string[],         // parent node IDs in DAG
+      dependent_ids: string[]             // child node IDs in DAG
+    }
+  ],
+
+  // Competency rollup
+  competencies: [
+    {
+      competency_id: string,
+      name: string,
+      total_subskills: number,
+      mastered: number,                   // direct + inferred that survived retest
+      in_progress: number,
+      status: "mastered" | "in_progress" | "not_started"
+    }
+  ]
+}
+```
+
+### 8.3 API Endpoint
+
+```
+GET /api/analytics/student/{student_id}/knowledge-graph?subject={subject}
+
+Response: knowledge_graph_progress
+
+Query params:
+  subject (required): Subject to query DAG for
+  include_nodes (optional, default true): Include per-node detail array
+  depth_limit (optional): Only return nodes up to this topological depth
+```
+
+This endpoint reads from:
+- `curriculum_graphs/{subject}/published` — DAG structure (nodes + edges)
+- `students/{id}/mastery_lifecycle/{subskill_id}` — gate state per node
+- `students/{id}/ability/{skill_id}` — theta per skill
+- `pulse_sessions` — leapfrog history for inference tracking
+
+### 8.4 Parent vs Developer View
+
+| Field | Parent View (Level 0-2) | Developer View (Level 3) |
+|---|---|---|
+| Coverage summary | "65% of Math explored" | `mastered_direct: 40, mastered_inferred: 12, in_progress: 8, ...` |
+| Frontier | "Working on: Addition, Subtraction" | Full frontier node list with theta values |
+| Leapfrog | "Jumped ahead 3 times this month!" | `leapfrog_retest_pass_rate: 0.87, total_skills_inferred: 14` |
+| Graph visualization | Simplified cluster map (competency bubbles) | Full DAG with node-level status coloring |
+| Competency rollup | "4 of 30 math skills mastered" | Per-competency with subskill breakdown |
+
+---
+
+## 9. Data Model Additions
+
+### 9.1 New Firestore Collections
 
 ```
 /students/{student_id}/weekly_summaries/{week_start}
@@ -669,7 +860,7 @@ Gateway to Exhibit mode with curriculum-aware suggestions:
   → notification history and read status
 ```
 
-### 8.2 Subskill Field Additions
+### 9.2 Subskill Field Additions
 
 Every subskill document gains three new fields:
 
@@ -685,7 +876,7 @@ tier: "core" | "extended" | "enrichment"
 
 ---
 
-## 9. Requirements Summary
+## 10. Requirements Summary
 
 ### P0 — Phase 1 (Weeks 1–4)
 
@@ -700,6 +891,10 @@ These requirements establish the data foundation. Many depend on session telemet
 | RA-005 | Weekly summary aggregation | Nightly aggregation pipeline producing weekly_summary documents (Section 4.2.4) |
 | RA-006 | Achievement event system | Event bus for milestones, streaks, mastery events (Section 4.2.3) |
 | RA-007 | Skill tier tagging | Tag all 674 subskills as Core / Extended / Enrichment |
+| RA-027 | Knowledge graph progress endpoint | Per-subject DAG coverage, frontier position, leapfrog history, per-node status (Section 8) |
+| RA-028 | Pulse session aggregation | Weekly summary consumes `pulse_sessions` with band splits, theta deltas, leapfrog counts (Section 4.2.4) |
+| RA-029 | Leapfrog-adjusted solvency | Solvency run rate decomposes direct + inferred closures with conversion factor (Section 6.3.2) |
+| RA-030 | Pulse achievement events | Achievement system includes leapfrog, frontier_success, earned_level_milestone, cold_start_complete (Section 4.2.3) |
 
 ### P1 — Phase 2 (Weeks 5–10)
 
@@ -734,7 +929,7 @@ These requirements build the parent experience layer.
 
 ---
 
-## 10. Success Metrics
+## 11. Success Metrics
 
 | Metric | Current | Phase 1 Target | Phase 2 Target | Phase 3 Target |
 |---|---|---|---|---|
@@ -747,3 +942,7 @@ These requirements build the parent experience layer.
 | A/E ratio (items/day) | N/A | N/A | N/A | 0.8–1.2 |
 | Credibility weight (Z) | 0 | 0.1–0.3 | 0.5–0.8 | ≥ 0.8 |
 | Notification engagement rate | N/A | N/A | Track | ≥ 40% opened |
+| Leapfrog retest pass rate | N/A | Track | ≥ 80% | ≥ 85% |
+| Frontier probe success rate | N/A | Track | Track | 25-40% (calibrated) |
+| Knowledge graph coverage (any subject) | N/A | Endpoint live | Visualized in portal | Parent-friendly cluster map |
+| Avg earned level delta per week | N/A | Track | Positive trend | Positive trend |

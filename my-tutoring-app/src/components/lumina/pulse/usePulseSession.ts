@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
   HydratedPracticeItem,
   PracticeItemResult,
@@ -15,6 +15,7 @@ import type {
   PulseResultResponse,
   PulseSessionSummary,
   LeapfrogEvent,
+  RecentPrimitive,
 } from './types';
 
 import type { GradeLevel } from '../components/GradeLevelSelector';
@@ -58,8 +59,13 @@ export interface UsePulseSessionReturn {
     bandsSummary: Record<string, { total: number; completed: number; avg_score: number }>;
   };
 
+  // Resume
+  savedSession: PulseSessionStorage | null;
+
   // Actions
   startSession: (subject: string, itemCount?: number) => Promise<void>;
+  resumeSession: () => Promise<void>;
+  dismissSavedSession: () => void;
   handleItemComplete: (result: PracticeItemResult) => void;
   handleNextItem: () => Promise<void>;
   reset: () => void;
@@ -91,6 +97,23 @@ function clearStorage() {
   }
 }
 
+function loadFromStorage(): PulseSessionStorage | null {
+  try {
+    const raw = localStorage.getItem(PULSE_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as PulseSessionStorage;
+    // Expire after 2 hours
+    const age = Date.now() - new Date(data.startedAt).getTime();
+    if (age > 2 * 60 * 60 * 1000) {
+      clearStorage();
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -119,6 +142,14 @@ export function usePulseSession({
     bandsSummary: {},
   });
 
+  // Saved session detection (for resume)
+  const [savedSession, setSavedSession] = useState<PulseSessionStorage | null>(null);
+
+  useEffect(() => {
+    const stored = loadFromStorage();
+    if (stored) setSavedSession(stored);
+  }, []);
+
   // Pending item result (from PracticeManifestRenderer, before submitting to backend)
   const pendingResult = useRef<PracticeItemResult | null>(null);
 
@@ -126,6 +157,21 @@ export function usePulseSession({
   const hydratedCache = useRef<Map<string, HydratedPracticeItem>>(new Map());
   const briefCache = useRef<Map<string, SessionBrief>>(new Map());
   const pregenInFlight = useRef<Set<string>>(new Set());
+
+  // Session history: primitives completed with scores (for diversity + difficulty calibration)
+  const sessionPrimitiveHistory = useRef<Array<{
+    componentId: string;
+    difficulty: string;
+    score: number; // 0-100
+  }>>([]);
+
+  // Primitives that have been GENERATED (hydrated) but not yet scored.
+  // Updated immediately on hydration completion so pre-gen calls see what's
+  // already been generated and can avoid duplicates.
+  const generatedPrimitives = useRef<Set<string>>(new Set());
+
+  // Cross-session primitive history from backend (loaded at session start)
+  const recentPrimitives = useRef<RecentPrimitive[]>([]);
 
   // Current hydrated item for rendering
   const [hydratedItem, setHydratedItem] = useState<HydratedPracticeItem | null>(null);
@@ -167,7 +213,17 @@ export function usePulseSession({
         }
       }
 
-      // Generate fresh — single item
+      // Build combined session history: scored items + generated-but-not-yet-scored
+      const combinedHistory = [
+        ...sessionPrimitiveHistory.current,
+        ...Array.from(generatedPrimitives.current).map(cid => ({
+          componentId: cid,
+          difficulty: 'unknown' as string,
+          score: -1,  // sentinel: generated but not scored
+        })),
+      ];
+
+      // Generate fresh — single item with difficulty + diversity guidance
       const hydratedItems = await generatePracticeManifestAndHydrateStreaming(
         item.description,
         gradeLevel,
@@ -176,7 +232,17 @@ export function usePulseSession({
           onProgress: (msg) => setStreamingMessage(msg),
           onSessionBrief: (brief) => setCurrentBrief(brief),
         },
-        { enforceDiversity: false },
+        {
+          enforceDiversity: false,
+          sessionHistory: combinedHistory.length > 0
+            ? combinedHistory
+            : undefined,
+          targetMode: item.target_mode,
+          band: item.band,
+          recentPrimitives: recentPrimitives.current.length > 0
+            ? recentPrimitives.current
+            : undefined,
+        },
       );
 
       if (hydratedItems.length === 0) return null;
@@ -190,6 +256,10 @@ export function usePulseSession({
         source: 'curriculum',
       };
 
+      // Track that this primitive has been generated (for pre-gen diversity)
+      const genId = hydrated.manifestItem?.visualPrimitive?.componentId || hydrated.manifestItem?.standardProblem?.problemType || '';
+      if (genId) generatedPrimitives.current.add(genId);
+
       return hydrated;
     },
     [gradeLevel],
@@ -201,6 +271,16 @@ export function usePulseSession({
       if (hydratedCache.current.has(key) || pregenInFlight.current.has(key)) return;
       pregenInFlight.current.add(key);
 
+      // Snapshot combined history at pre-gen time
+      const combinedHistory = [
+        ...sessionPrimitiveHistory.current,
+        ...Array.from(generatedPrimitives.current).map(cid => ({
+          componentId: cid,
+          difficulty: 'unknown' as string,
+          score: -1,
+        })),
+      ];
+
       generatePracticeManifestAndHydrateStreaming(
         item.description,
         gradeLevel,
@@ -210,7 +290,17 @@ export function usePulseSession({
             briefCache.current.set(key, brief);
           },
         },
-        { enforceDiversity: false },
+        {
+          enforceDiversity: false,
+          sessionHistory: combinedHistory.length > 0
+            ? combinedHistory
+            : undefined,
+          targetMode: item.target_mode,
+          band: item.band,
+          recentPrimitives: recentPrimitives.current.length > 0
+            ? [...recentPrimitives.current]
+            : undefined,
+        },
       )
         .then((hydratedItems) => {
           if (hydratedItems.length > 0) {
@@ -221,6 +311,9 @@ export function usePulseSession({
               subskillId: item.subskill_id,
               source: 'curriculum',
             };
+            // Track generated primitive immediately for diversity
+            const genId = hydrated.manifestItem?.visualPrimitive?.componentId || hydrated.manifestItem?.standardProblem?.problemType || '';
+            if (genId) generatedPrimitives.current.add(genId);
             hydratedCache.current.set(key, hydrated);
           }
         })
@@ -295,12 +388,16 @@ export function usePulseSession({
           subject: sessionSubject,
           is_cold_start,
           items: sessionItems,
+          recent_primitives: backendPrimitives,
         } = response;
 
         setSessionId(session_id);
         setSubject(sessionSubject);
         setIsColdStart(is_cold_start);
         setItems(sessionItems);
+
+        // Store cross-session primitive history for diversity guidance
+        recentPrimitives.current = backendPrimitives ?? [];
         setCurrentItemIndex(0);
         setResults([]);
         setLeapfrogs([]);
@@ -376,6 +473,15 @@ export function usePulseSession({
         },
       );
 
+      // Record primitive usage for session history (diversity + difficulty guidance)
+      if (primitiveType !== 'unknown') {
+        sessionPrimitiveHistory.current.push({
+          componentId: String(primitiveType),
+          difficulty: currentItem.target_mode <= 2 ? 'easy' : currentItem.target_mode <= 4 ? 'medium' : 'hard',
+          score: result.score,
+        });
+      }
+
       // Track results
       setResults((prev) => [...prev, response]);
 
@@ -443,6 +549,80 @@ export function usePulseSession({
   }, [sessionId, items, currentItemIndex, loadItem]);
 
   // -------------------------------------------------------------------------
+  // Resume a saved session
+  // -------------------------------------------------------------------------
+
+  const resumeSession = useCallback(async () => {
+    const stored = savedSession ?? loadFromStorage();
+    if (!stored) return;
+
+    setPhase('loading');
+    setError(null);
+    setStreamingMessage('Resuming your session...');
+    setSavedSession(null);
+
+    try {
+      // Fetch session state from backend
+      const response = await pulseApi.getSession(stored.sessionId);
+      const sessionItems: PulseItemSpec[] = (response as unknown as { items: PulseItemSpec[] }).items ?? [];
+
+      // Find first uncompleted item
+      const rawItems = (response as unknown as { items: Array<PulseItemSpec & { score?: number | null }> }).items ?? [];
+      let resumeIndex = 0;
+      for (let i = 0; i < rawItems.length; i++) {
+        if (rawItems[i].score == null) {
+          resumeIndex = i;
+          break;
+        }
+      }
+
+      const completedCount = rawItems.filter(it => it.score != null).length;
+
+      setSessionId(stored.sessionId);
+      setSubject(stored.subject);
+      setIsColdStart((response as unknown as { is_cold_start?: boolean }).is_cold_start ?? false);
+      setItems(sessionItems);
+      setCurrentItemIndex(resumeIndex);
+      setResults([]);
+      setLeapfrogs([]);
+      setSummary(null);
+      setProgress({
+        completed: completedCount,
+        total: sessionItems.length,
+        bandsSummary: {},
+      });
+
+      if (resumeIndex >= sessionItems.length) {
+        // All items done — go straight to summary
+        try {
+          const summaryData = await pulseApi.getSummary(stored.sessionId);
+          setSummary(summaryData);
+        } catch {
+          // continue
+        }
+        clearStorage();
+        setPhase('summary');
+      } else {
+        await loadItem(sessionItems, resumeIndex);
+      }
+    } catch (err) {
+      console.error('[Pulse] Failed to resume session:', err);
+      clearStorage();
+      setSavedSession(null);
+      setError(
+        err instanceof Error ? err.message : 'Failed to resume session',
+      );
+      setPhase('error');
+      setStreamingMessage('');
+    }
+  }, [savedSession, loadItem]);
+
+  const dismissSavedSession = useCallback(() => {
+    clearStorage();
+    setSavedSession(null);
+  }, []);
+
+  // -------------------------------------------------------------------------
   // Reset everything
   // -------------------------------------------------------------------------
 
@@ -461,10 +641,15 @@ export function usePulseSession({
     setStreamingMessage('');
     setCurrentBrief(null);
     setProgress({ completed: 0, total: 0, bandsSummary: {} });
+    setSavedSession(null);
     pendingResult.current = null;
     hydratedCache.current.clear();
     briefCache.current.clear();
     pregenInFlight.current.clear();
+    sessionPrimitiveHistory.current = [];
+    generatedPrimitives.current.clear();
+    recentPrimitives.current = [];
+    clearStorage();
   }, []);
 
   // -------------------------------------------------------------------------
@@ -487,8 +672,11 @@ export function usePulseSession({
     streamingMessage,
     currentBrief,
     progress,
+    savedSession,
 
     startSession,
+    resumeSession,
+    dismissSavedSession,
     handleItemComplete,
     handleNextItem,
     reset,

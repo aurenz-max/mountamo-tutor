@@ -12,7 +12,6 @@ import type { TenFrameMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import CalculatorInput from '../../input-primitives/CalculatorInput';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
@@ -422,16 +421,17 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   const checkMakeTenAnswer = useCallback(() => {
     if (!currentChallenge) return;
     const currentCount = filledCells.size;
-    const complement = 10 - currentCount;
+    const frameTarget = totalCells; // 10 for single, 20 for double
+    const complement = frameTarget - currentCount;
     const answer = parseInt(makeTenInput, 10);
     const correct = answer === complement;
     incrementAttempts();
 
     if (correct) {
-      setFeedback(`Yes! ${currentCount} + ${complement} = 10!`);
+      setFeedback(`Yes! ${currentCount} + ${complement} = ${frameTarget}!`);
       setFeedbackType('success');
       sendText(
-        `[MAKE_TEN_CORRECT] Student correctly found ${complement} as the complement to make 10. `
+        `[MAKE_TEN_CORRECT] Student correctly found ${complement} as the complement to make ${frameTarget}. `
         + `Current count: ${currentCount}. Celebrate and connect to the empty spaces on the frame.`,
         { silent: true }
       );
@@ -439,14 +439,14 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       setFeedback(`Not quite. Look at the empty spaces on the frame.`);
       setFeedbackType('error');
       sendText(
-        `[MAKE_TEN_INCORRECT] Student answered ${answer} but ${currentCount} + ${complement} = 10. `
+        `[MAKE_TEN_INCORRECT] Student answered ${answer} but ${currentCount} + ${complement} = ${frameTarget}. `
         + `Hint: "Count the empty spaces on the frame."`,
         { silent: true }
       );
     }
 
     return correct;
-  }, [currentChallenge, filledCells.size, makeTenInput, sendText, incrementAttempts]);
+  }, [currentChallenge, filledCells.size, makeTenInput, sendText, incrementAttempts, totalCells]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -604,7 +604,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     if (currentPhase === 'makeTen' && currentChallenge?.type === 'make_ten') {
       const count = currentChallenge.targetCount;
       const positions: number[] = [];
-      for (let i = 0; i < count && i < 10; i++) positions.push(i);
+      for (let i = 0; i < count && i < totalCells; i++) positions.push(i);
       setFilledCells(new Set(positions));
       setCellColors(() => {
         const m = new Map<number, string>();
@@ -612,7 +612,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         return m;
       });
     }
-  }, [currentPhase, currentChallenge, initialCounters?.color]);
+  }, [currentPhase, currentChallenge, initialCounters?.color, totalCells]);
 
   // -------------------------------------------------------------------------
   // Subtract: pre-fill counters with startCount
@@ -849,30 +849,60 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
         {/* Subitize Input */}
         {currentPhase === 'subitize' && !showCounters && !isFlashing && !isCurrentChallengeComplete && (
-          <CalculatorInput
-            label="How many counters did you see?"
-            value={subitizeInput}
-            onChange={setSubitizeInput}
-            onSubmit={handleCheckAnswer}
-            showSubmitButton={true}
-            allowNegative={false}
-            allowDecimal={false}
-            maxLength={2}
-          />
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-slate-300 text-sm">How many counters did you see?</p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+                onClick={() => setSubitizeInput(String(Math.max((parseInt(subitizeInput, 10) || 0) - 1, 0)))}
+                disabled={(parseInt(subitizeInput, 10) || 0) <= 0}
+              >
+                &minus;
+              </Button>
+              <div className="w-20 h-14 flex items-center justify-center bg-slate-800/50 border border-white/20 rounded-xl">
+                <span className="text-3xl font-bold text-slate-100">
+                  {subitizeInput === '' ? '\u2013' : parseInt(subitizeInput, 10) || 0}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+                onClick={() => setSubitizeInput(String(Math.min((parseInt(subitizeInput, 10) || 0) + 1, totalCells)))}
+              >
+                +
+              </Button>
+            </div>
+          </div>
         )}
 
         {/* Make-ten Input */}
         {currentPhase === 'makeTen' && !isCurrentChallengeComplete && (
-          <CalculatorInput
-            label={`${counterCount} + ___ = 10`}
-            value={makeTenInput}
-            onChange={setMakeTenInput}
-            onSubmit={handleCheckAnswer}
-            showSubmitButton={true}
-            allowNegative={false}
-            allowDecimal={false}
-            maxLength={2}
-          />
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-slate-300 text-sm font-mono">{counterCount} + ___ = {totalCells}</p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+                onClick={() => setMakeTenInput(String(Math.max((parseInt(makeTenInput, 10) || 0) - 1, 0)))}
+                disabled={(parseInt(makeTenInput, 10) || 0) <= 0}
+              >
+                &minus;
+              </Button>
+              <div className="w-20 h-14 flex items-center justify-center bg-slate-800/50 border border-white/20 rounded-xl">
+                <span className="text-3xl font-bold text-slate-100">
+                  {makeTenInput === '' ? '\u2013' : parseInt(makeTenInput, 10) || 0}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+                onClick={() => setMakeTenInput(String(Math.min((parseInt(makeTenInput, 10) || 0) + 1, totalCells)))}
+              >
+                +
+              </Button>
+            </div>
+          </div>
         )}
 
         {/* Flash button for subitize */}

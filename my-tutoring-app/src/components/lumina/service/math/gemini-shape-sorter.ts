@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import type { ShapeSorterData } from "../../primitives/visual-primitives/math/ShapeSorter";
+import { SHAPE_PROPERTIES } from "../../primitives/visual-primitives/math/ShapeSorter";
 import { ai } from "../geminiClient";
 
 /**
@@ -20,7 +21,8 @@ const shapeSorterSchema: Schema = {
           id: { type: Type.STRING, description: "Unique ID (e.g., 'c1', 'c2')" },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'identify' (find matching shapes), 'count' (count sides/corners of one shape), 'sort' (group shapes by attribute)",
+            enum: ['identify', 'count', 'sort'],
+            description: "Challenge type: identify (find matching shapes), count (count sides/corners of one shape), sort (group shapes by attribute)",
           },
           instruction: {
             type: Type.STRING,
@@ -28,11 +30,12 @@ const shapeSorterSchema: Schema = {
           },
           ruleAttribute: {
             type: Type.STRING,
-            description: "Attribute being tested: 'shape' (name), 'color', 'sides' (number of sides), or 'curved' (curved vs straight)",
+            enum: ['shape', 'color', 'sides', 'curved'],
+            description: "Attribute being tested. Must be one of: shape, color, sides, curved",
           },
           targetValue: {
             type: Type.STRING,
-            description: "For 'identify': the value to match (e.g., 'triangle', 'red', '3', 'true'). For 'count': the shape to examine (e.g., 'hexagon'). Omit for 'sort'.",
+            description: "For 'identify': the value to match — must be EXACTLY one of: shape name (circle/oval/triangle/square/rectangle/diamond/rhombus/hexagon/pentagon), color name (red/blue/green/yellow/purple/orange/pink/cyan), side count as digit ('0','3','4','5','6'), or 'true'/'false' for curved. For 'count': the shape name to examine. Omit for 'sort'.",
           },
           shapes: {
             type: Type.ARRAY,
@@ -41,15 +44,18 @@ const shapeSorterSchema: Schema = {
               properties: {
                 shape: {
                   type: Type.STRING,
-                  description: "Shape name: circle, square, triangle, rectangle, diamond, rhombus, hexagon, pentagon, oval",
+                  enum: ['circle', 'oval', 'triangle', 'square', 'rectangle', 'diamond', 'rhombus', 'hexagon', 'pentagon'],
+                  description: "Shape name",
                 },
                 color: {
                   type: Type.STRING,
-                  description: "Color: red, blue, green, yellow, purple, orange, pink, cyan",
+                  enum: ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'],
+                  description: "Shape color",
                 },
                 size: {
                   type: Type.STRING,
-                  description: "'small', 'medium', or 'large'",
+                  enum: ['small', 'medium', 'large'],
+                  description: "Shape size",
                 },
                 rotation: {
                   type: Type.NUMBER,
@@ -65,7 +71,7 @@ const shapeSorterSchema: Schema = {
       },
       description: "Array of 4-5 progressive challenges",
     },
-    gradeBand: { type: Type.STRING, description: "Grade band: 'K' or '1'" },
+    gradeBand: { type: Type.STRING, enum: ['K', '1'], description: "Grade band" },
   },
   required: ["title", "description", "challenges", "gradeBand"],
 };
@@ -177,9 +183,66 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
       ch.shapes = [match || ch.shapes[0]];
     }
 
-    // For identify, ensure targetValue is valid for the rule
-    if (ch.type === 'identify' && !ch.targetValue) {
-      ch.targetValue = ch.ruleAttribute === 'color' ? ch.shapes[0].color : ch.shapes[0].shape;
+    // For identify, ensure targetValue is valid for the ruleAttribute.
+    // Enums handle shape/color/type/size, but targetValue is a free string
+    // whose valid domain depends on ruleAttribute — normalize it here.
+    if (ch.type === 'identify') {
+      const tv = (ch.targetValue ?? '').toString().trim().toLowerCase();
+
+      switch (ch.ruleAttribute) {
+        case 'shape':
+          ch.targetValue = VALID_SHAPES.includes(tv) ? tv : ch.shapes[0].shape;
+          break;
+        case 'color':
+          ch.targetValue = VALID_COLORS.includes(tv) ? tv : ch.shapes[0].color;
+          break;
+        case 'sides': {
+          // Accept "3", "three", "3 sides" → extract the digit
+          const digitMatch = tv.match(/\d+/);
+          const wordMap: Record<string, string> = {
+            zero: '0', three: '3', four: '4', five: '5', six: '6',
+          };
+          ch.targetValue = digitMatch?.[0]
+            ?? wordMap[tv]
+            ?? String(SHAPE_PROPERTIES[ch.shapes[0].shape]?.sides ?? 3);
+          break;
+        }
+        case 'curved':
+          ch.targetValue = String(['true', 'yes', 'curved'].includes(tv));
+          break;
+        default:
+          ch.targetValue = ch.shapes[0].shape;
+      }
+
+      // Guarantee at least one shape actually matches the resolved target
+      const hasMatch = ch.shapes.some((s: { shape: string; color: string }) => {
+        const props = SHAPE_PROPERTIES[s.shape];
+        switch (ch.ruleAttribute) {
+          case 'shape':  return s.shape === ch.targetValue;
+          case 'color':  return s.color === ch.targetValue;
+          case 'sides':  return String(props?.sides ?? -1) === ch.targetValue;
+          case 'curved': return String(props?.curved ?? false) === ch.targetValue;
+          default:       return false;
+        }
+      });
+      if (!hasMatch) {
+        // Derive targetValue from the first shape so instruction ↔ target stay coherent
+        const first = ch.shapes[0];
+        const firstProps = SHAPE_PROPERTIES[first.shape];
+        switch (ch.ruleAttribute) {
+          case 'shape':  ch.targetValue = first.shape; break;
+          case 'color':  ch.targetValue = first.color; break;
+          case 'sides':  ch.targetValue = String(firstProps?.sides ?? 3); break;
+          case 'curved': ch.targetValue = String(firstProps?.curved ?? false); break;
+        }
+        // Rewrite instruction to match the corrected target
+        const friendlyTarget = ch.ruleAttribute === 'sides'
+          ? `shapes with ${ch.targetValue} sides`
+          : ch.ruleAttribute === 'curved'
+            ? (ch.targetValue === 'true' ? 'curved shapes' : 'straight shapes')
+            : `${ch.targetValue} shapes`;
+        ch.instruction = `Can you find all the ${friendlyTarget}? Tap each one!`;
+      }
     }
   }
 

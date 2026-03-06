@@ -32,6 +32,7 @@ from ..models.pulse import (
     LEAPFROG_INFERRED_SIGMA,
     LEAPFROG_INFERRED_THETA,
     LEAPFROG_RETEST_DAYS,
+    PRIMITIVE_HISTORY_WINDOW,
     REVIEW_BAND_PCT,
     CreatePulseSessionRequest,
     GateUpdate,
@@ -43,6 +44,7 @@ from ..models.pulse import (
     PulseResultResponse,
     PulseSessionResponse,
     PulseSessionSummary,
+    RecentPrimitive,
     ThetaUpdate,
     mode_to_beta,
     theta_to_mode,
@@ -100,6 +102,21 @@ class PulseEngine:
             student_id, subject=subject
         )
         abilities = await self.firestore.get_all_student_abilities(student_id)
+
+        # Load primitive history for diversity tracking
+        prim_history_doc = await self.firestore.get_pulse_primitive_history(student_id)
+        recent_entries: List[Dict] = (
+            prim_history_doc.get("entries", []) if prim_history_doc else []
+        )
+        recent_primitives = [
+            RecentPrimitive(
+                primitive_type=e.get("primitive_type", ""),
+                eval_mode=e.get("eval_mode", ""),
+                score=e.get("score", 0.0),
+                subskill_id=e.get("subskill_id", ""),
+            )
+            for e in recent_entries[-PRIMITIVE_HISTORY_WINDOW:]
+        ]
 
         # Build lookup maps
         gate_map: Dict[str, int] = {}
@@ -179,6 +196,7 @@ class PulseEngine:
             subject=subject,
             is_cold_start=is_cold_start,
             items=items,
+            recent_primitives=recent_primitives,
             session_meta={
                 "band_counts": band_counts,
                 "total_items": len(items),
@@ -239,22 +257,17 @@ class PulseEngine:
         theta_map: Dict[str, float],
         now: datetime,
     ) -> List[PulseItemSpec]:
-        """Normal 3-band assembly."""
+        """Normal 3-band assembly with adaptive proportions."""
         now_iso = now.isoformat()
 
-        # Compute target counts per band
-        review_count = max(1, math.ceil(item_count * REVIEW_BAND_PCT))
-        frontier_count = max(1, math.ceil(item_count * FRONTIER_BAND_PCT))
-        current_count = item_count - review_count - frontier_count
+        # --- Gather all candidates first (before allocating counts) ---
 
-        # --- REVIEW band ---
-        review_items = self._select_review_items(
-            lifecycle_map, theta_map, node_map, subject,
-            review_count, now_iso,
+        # REVIEW candidates
+        review_candidates = self._gather_review_candidates(
+            lifecycle_map, theta_map, node_map, subject, now_iso,
         )
 
-        # --- CURRENT band ---
-        # Compute frontier: unlocked + gate 0 (or gate 1 with < 3 lesson evals)
+        # CURRENT candidates
         unlocked = await self.learning_paths.get_unlocked_entities(
             student_id, entity_type="subskill", subject=subject,
         )
@@ -270,24 +283,62 @@ class PulseEngine:
                 lc = lifecycle_map.get(sid, {})
                 if lc.get("lesson_eval_count", 0) < 3:
                     learning_skills.add(sid)
+        current_candidate_ids = frontier_skills | learning_skills
 
-        current_candidates = frontier_skills | learning_skills
+        # FRONTIER PROBE candidates (BFS 1-5 jumps ahead)
+        mastered_ids = {sid for sid, gate in gate_map.items() if gate >= 1}
+        probe_candidate_ids = self._gather_probe_candidates(
+            frontier_skills, mastered_ids, all_edges, node_map,
+        )
+
+        # --- Adaptive allocation (PRD §5.2) ---
+        review_avail = len(review_candidates)
+        current_avail = len(current_candidate_ids)
+        probe_avail = len(probe_candidate_ids)
+
+        review_target = max(1, math.ceil(item_count * REVIEW_BAND_PCT))
+        frontier_target = max(1, math.ceil(item_count * FRONTIER_BAND_PCT))
+        current_target = item_count - review_target - frontier_target
+
+        # Cap each band to available candidates
+        review_count = min(review_target, review_avail)
+        frontier_count = min(frontier_target, probe_avail)
+        current_count = min(current_target, current_avail)
+
+        # Redistribute surplus slots (from bands with too few candidates)
+        surplus = item_count - (review_count + frontier_count + current_count)
+        if surplus > 0:
+            # Priority: current > frontier > review
+            extra_current = min(surplus, current_avail - current_count)
+            current_count += extra_current
+            surplus -= extra_current
+
+            extra_frontier = min(surplus, probe_avail - frontier_count)
+            frontier_count += extra_frontier
+            surplus -= extra_frontier
+
+            extra_review = min(surplus, review_avail - review_count)
+            review_count += extra_review
+
+        logger.info(
+            f"[PULSE] Adaptive allocation: review={review_count}/{review_avail}, "
+            f"current={current_count}/{current_avail}, frontier={frontier_count}/{probe_avail}"
+        )
+
+        # --- Select items from candidates ---
+        review_items = self._select_review_items_from_candidates(
+            review_candidates[:review_count], node_map, subject, theta_map,
+        )
+
         current_items = self._select_current_items(
-            current_candidates, gate_map, theta_map, node_map,
+            current_candidate_ids, gate_map, theta_map, node_map,
             subject, current_count,
         )
 
-        # --- FRONTIER PROBE band ---
-        # BFS from frontier 1-5 jumps ahead
-        mastered_ids = {
-            sid for sid, gate in gate_map.items() if gate >= 1
-        }
-        probe_items = self._select_frontier_probes(
-            frontier_skills, mastered_ids, all_edges, node_map,
-            subject, frontier_count,
+        probe_items = self._select_frontier_probes_from_candidates(
+            probe_candidate_ids[:frontier_count], node_map, subject,
         )
 
-        # Adjust if bands have fewer candidates than target
         all_items = review_items + current_items + probe_items
         if not all_items:
             logger.warning("[PULSE] No items available for any band")
@@ -300,16 +351,15 @@ class PulseEngine:
     # Band selection helpers
     # ------------------------------------------------------------------
 
-    def _select_review_items(
+    def _gather_review_candidates(
         self,
         lifecycle_map: Dict[str, Dict],
         theta_map: Dict[str, float],
         node_map: Dict[str, Dict],
         subject: str,
-        count: int,
         now_iso: str,
-    ) -> List[PulseItemSpec]:
-        """Select retests due from mastery_lifecycle."""
+    ) -> List[Tuple[str, Dict, int, int]]:
+        """Gather and rank review candidates (subskill_id, lifecycle, gate, days_overdue)."""
         candidates = []
         for sid, lc in lifecycle_map.items():
             gate = lc.get("current_gate", 0)
@@ -329,9 +379,18 @@ class PulseEngine:
 
         # Sort: most overdue first, then lowest gate
         candidates.sort(key=lambda x: (-x[3], x[2]))
+        return candidates
 
+    def _select_review_items_from_candidates(
+        self,
+        candidates: List[Tuple[str, Dict, int, int]],
+        node_map: Dict[str, Dict],
+        subject: str,
+        theta_map: Dict[str, float],
+    ) -> List[PulseItemSpec]:
+        """Build PulseItemSpec list from ranked review candidates."""
         items: List[PulseItemSpec] = []
-        for sid, lc, gate, _ in candidates[:count]:
+        for sid, lc, gate, _ in candidates:
             node = node_map.get(sid, {})
             skill_id = node.get("skill_id", lc.get("skill_id", ""))
             theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
@@ -347,7 +406,6 @@ class PulseEngine:
                 target_beta=mode_to_beta(mode),
                 lesson_group_id=f"review-{skill_id}",
             ))
-
         return items
 
     def _select_current_items(
@@ -359,58 +417,105 @@ class PulseEngine:
         subject: str,
         count: int,
     ) -> List[PulseItemSpec]:
-        """Select frontier/learning items for current work."""
-        # Group by parent skill for lesson-group coherence
-        skill_groups: Dict[str, List[str]] = defaultdict(list)
+        """Select frontier/learning items grouped via LessonGroupService."""
+        # Build candidate dicts for LessonGroupService
+        grouper_candidates = []
         for sid in candidates:
             node = node_map.get(sid, {})
             skill_id = node.get("skill_id", "")
-            skill_groups[skill_id].append(sid)
+            gate = gate_map.get(sid, 0)
+            grouper_candidates.append({
+                "skill_id": sid,
+                "subject": subject,
+                "type": "new" if gate == 0 else "review",
+                "mastery_gate": gate,
+                "unit_title": node.get("unit_title", node.get("parent_label", "")),
+                "skill_description": node.get("skill_description", node.get("parent_label", "")),
+                "subskill_description": node.get("description", "") or node.get("label", ""),
+            })
+
+        if not grouper_candidates:
+            return []
+
+        # Group into lesson blocks (Bloom's sorted, 2-5 per block)
+        try:
+            blocks = LessonGroupService.group_subskills_into_blocks(grouper_candidates)
+        except Exception as e:
+            logger.warning(f"[PULSE] LessonGroupService failed, falling back: {e}")
+            blocks = []
 
         items: List[PulseItemSpec] = []
-        item_offset = 100  # offset to avoid ID collision with review items
+        item_offset = 100
 
-        for skill_id, subskills in skill_groups.items():
-            if len(items) >= count:
-                break
-            for sid in subskills:
+        if blocks:
+            for block in blocks:
                 if len(items) >= count:
                     break
+                block_id = f"current-{block.block_id}" if hasattr(block, 'block_id') else f"current-{len(items)}"
+                for ss in getattr(block, 'subskills', []):
+                    if len(items) >= count:
+                        break
+                    ss_id = ss.get("subskill_id", "") if isinstance(ss, dict) else getattr(ss, 'subskill_id', '')
+                    node = node_map.get(ss_id, {})
+                    skill_id = node.get("skill_id", "")
+                    theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
+                    mode = theta_to_mode(theta)
+                    items.append(PulseItemSpec(
+                        item_id=f"pulse-item-{item_offset + len(items):03d}",
+                        band=PulseBand.CURRENT,
+                        subskill_id=ss_id,
+                        skill_id=skill_id,
+                        subject=subject,
+                        description=node.get("description", "") or node.get("label", ""),
+                        target_mode=mode,
+                        target_beta=mode_to_beta(mode),
+                        lesson_group_id=block_id,
+                    ))
+        else:
+            # Fallback: group by parent skill
+            skill_groups: Dict[str, List[str]] = defaultdict(list)
+            for sid in candidates:
                 node = node_map.get(sid, {})
-                theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
-                mode = theta_to_mode(theta)
-                items.append(PulseItemSpec(
-                    item_id=f"pulse-item-{item_offset + len(items):03d}",
-                    band=PulseBand.CURRENT,
-                    subskill_id=sid,
-                    skill_id=skill_id,
-                    subject=subject,
-                    description=node.get("description", "") or node.get("label", ""),
-                    target_mode=mode,
-                    target_beta=mode_to_beta(mode),
-                    lesson_group_id=f"current-{skill_id}",
-                ))
+                skill_id = node.get("skill_id", "")
+                skill_groups[skill_id].append(sid)
+
+            for skill_id, subskills in skill_groups.items():
+                if len(items) >= count:
+                    break
+                for sid in subskills:
+                    if len(items) >= count:
+                        break
+                    node = node_map.get(sid, {})
+                    theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
+                    mode = theta_to_mode(theta)
+                    items.append(PulseItemSpec(
+                        item_id=f"pulse-item-{item_offset + len(items):03d}",
+                        band=PulseBand.CURRENT,
+                        subskill_id=sid,
+                        skill_id=skill_id,
+                        subject=subject,
+                        description=node.get("description", "") or node.get("label", ""),
+                        target_mode=mode,
+                        target_beta=mode_to_beta(mode),
+                        lesson_group_id=f"current-{skill_id}",
+                    ))
 
         return items
 
-    def _select_frontier_probes(
+    def _gather_probe_candidates(
         self,
         frontier_skills: Set[str],
         mastered_ids: Set[str],
         all_edges: List[Dict],
         node_map: Dict[str, Dict],
-        subject: str,
-        count: int,
-    ) -> List[PulseItemSpec]:
-        """BFS from frontier 1-5 edges forward to find probe candidates."""
-        # Build forward adjacency
+    ) -> List[Tuple[str, int]]:
+        """BFS from frontier 1-5 edges forward. Returns (node_id, depth) sorted by depth."""
         forward: Dict[str, List[str]] = defaultdict(list)
         for edge in all_edges:
             forward[edge["source"]].append(edge["target"])
 
-        # BFS from frontier nodes, up to FRONTIER_MAX_JUMP depth
         visited: Set[str] = set()
-        probe_candidates: List[Tuple[str, int]] = []  # (node_id, depth)
+        probe_candidates: List[Tuple[str, int]] = []
         queue: deque = deque()
 
         for fid in frontier_skills:
@@ -430,13 +535,20 @@ class PulseEngine:
                     if child not in visited:
                         queue.append((child, depth + 1))
 
-        # Sort by depth (prefer closer jumps)
         probe_candidates.sort(key=lambda x: x[1])
+        return probe_candidates
 
+    def _select_frontier_probes_from_candidates(
+        self,
+        candidates: List[Tuple[str, int]],
+        node_map: Dict[str, Dict],
+        subject: str,
+    ) -> List[PulseItemSpec]:
+        """Build PulseItemSpec list from ranked probe candidates."""
         items: List[PulseItemSpec] = []
-        item_offset = 200  # offset to avoid ID collision
+        item_offset = 200
 
-        for nid, depth in probe_candidates[:count]:
+        for nid, depth in candidates:
             node = node_map.get(nid, {})
             skill_id = node.get("skill_id", "")
             items.append(PulseItemSpec(
@@ -602,6 +714,9 @@ class PulseEngine:
         items[item_index]["eval_mode"] = result.eval_mode
         items[item_index]["duration_ms"] = result.duration_ms
         items[item_index]["completed_at"] = now.isoformat()
+        items[item_index]["theta_update"] = theta_update.model_dump()
+        if gate_update:
+            items[item_index]["gate_update"] = gate_update.model_dump()
 
         completed_count = sum(1 for it in items if it.get("score") is not None)
         total_count = len(items)
@@ -621,6 +736,15 @@ class PulseEngine:
             update_data["leapfrogs"] = leapfrogs
 
         await self.firestore.save_pulse_session(session_id, update_data)
+
+        # Record primitive usage in rolling history
+        await self._record_primitive_usage(
+            student_id=student_id,
+            primitive_type=result.primitive_type,
+            eval_mode=result.eval_mode,
+            score=result.score,
+            subskill_id=subskill_id,
+        )
 
         # Band summary
         bands_summary = {}
@@ -832,6 +956,17 @@ class PulseEngine:
         # Duration
         total_ms = sum(it.get("duration_ms", 0) for it in scored_items)
 
+        # Aggregate θ changes and gate updates from scored items
+        theta_changes: List[ThetaUpdate] = []
+        skills_advanced: List[GateUpdate] = []
+        for it in scored_items:
+            tu = it.get("theta_update")
+            if tu:
+                theta_changes.append(ThetaUpdate(**tu))
+            gu = it.get("gate_update")
+            if gu:
+                skills_advanced.append(GateUpdate(**gu))
+
         # Leapfrogs
         leapfrogs = [
             LeapfrogEvent(**lf)
@@ -859,6 +994,8 @@ class PulseEngine:
             items_total=len(items),
             duration_ms=total_ms,
             bands=bands,
+            skills_advanced=skills_advanced,
+            theta_changes=theta_changes,
             leapfrogs=leapfrogs,
             frontier_expanded=n_inferred > 0,
             celebration_message=msg,
@@ -867,6 +1004,38 @@ class PulseEngine:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    async def _record_primitive_usage(
+        self,
+        student_id: int,
+        primitive_type: str,
+        eval_mode: str,
+        score: float,
+        subskill_id: str,
+    ) -> None:
+        """Append a primitive usage entry to the student's rolling history."""
+        try:
+            doc = await self.firestore.get_pulse_primitive_history(student_id)
+            entries: List[Dict] = doc.get("entries", []) if doc else []
+
+            entries.append({
+                "primitive_type": primitive_type,
+                "eval_mode": eval_mode,
+                "score": score,
+                "subskill_id": subskill_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+
+            # Trim to rolling window
+            if len(entries) > PRIMITIVE_HISTORY_WINDOW:
+                entries = entries[-PRIMITIVE_HISTORY_WINDOW:]
+
+            await self.firestore.save_pulse_primitive_history(student_id, {
+                "entries": entries,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            })
+        except Exception as e:
+            logger.warning(f"[PULSE] Failed to record primitive usage: {e}")
 
     @staticmethod
     def _get_eval_source(band: str, gate: int) -> str:

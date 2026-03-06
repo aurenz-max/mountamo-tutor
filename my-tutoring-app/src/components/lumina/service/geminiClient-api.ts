@@ -385,12 +385,27 @@ export const generatePracticeManifestAndHydrateStreaming = async (
   gradeLevel: string,
   problemCount: number,
   callbacks?: PracticeStreamCallbacks,
-  options?: { enforceDiversity?: boolean },
+  options?: {
+    enforceDiversity?: boolean;
+    sessionHistory?: Array<{ componentId: string; difficulty: string; score?: number }>;
+    targetMode?: number;
+    band?: string;
+    recentPrimitives?: Array<{ primitive_type: string; eval_mode: string; score: number; subskill_id: string }>;
+  },
 ): Promise<HydratedPracticeItem[]> => {
   const response = await fetch('/api/lumina/practice-stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic, gradeLevel, problemCount, enforceDiversity: options?.enforceDiversity }),
+    body: JSON.stringify({
+      topic,
+      gradeLevel,
+      problemCount,
+      enforceDiversity: options?.enforceDiversity,
+      sessionHistory: options?.sessionHistory,
+      targetMode: options?.targetMode,
+      band: options?.band,
+      recentPrimitives: options?.recentPrimitives,
+    }),
   });
 
   if (!response.ok) {

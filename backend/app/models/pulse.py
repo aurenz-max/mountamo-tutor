@@ -24,12 +24,15 @@ CURRENT_BAND_PCT = 0.65
 REVIEW_BAND_PCT = 0.15
 
 # Default session size
-DEFAULT_PULSE_ITEM_COUNT = 15
+DEFAULT_PULSE_ITEM_COUNT = 6
 
 # Frontier probe settings (PRD §2.1)
 FRONTIER_PROBE_MODE = 3          # mid-range probe (pictorial, reduced prompts)
 FRONTIER_PASS_THRESHOLD = 7.5    # ≥75% on 0-10 scale
 FRONTIER_MAX_JUMP = 5            # max DAG edges ahead
+
+# Primitive history: rolling window size (number of recent entries to keep)
+PRIMITIVE_HISTORY_WINDOW = 30
 
 # Leapfrog seeding (PRD §3.3) — matches diagnostic inference
 LEAPFROG_INFERRED_GATE = 2
@@ -86,6 +89,14 @@ class CreatePulseSessionRequest(BaseModel):
     item_count: int = Field(default=DEFAULT_PULSE_ITEM_COUNT, ge=5, le=30)
 
 
+class RecentPrimitive(BaseModel):
+    """A recently-served primitive for diversity tracking."""
+    primitive_type: str
+    eval_mode: str
+    score: float
+    subskill_id: str
+
+
 class PulseSessionResponse(BaseModel):
     """Returned from POST /api/pulse/sessions."""
     session_id: str
@@ -93,6 +104,7 @@ class PulseSessionResponse(BaseModel):
     subject: str
     is_cold_start: bool = False
     items: List[PulseItemSpec]
+    recent_primitives: List[RecentPrimitive] = Field(default_factory=list)
     session_meta: Dict[str, Any] = Field(default_factory=dict)
 
 

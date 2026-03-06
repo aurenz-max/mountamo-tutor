@@ -1496,6 +1496,47 @@ class FirestoreService:
             return []
 
     # ============================================================================
+    # PULSE PRIMITIVE HISTORY (rolling window of recently-served primitives)
+    # ============================================================================
+
+    async def get_pulse_primitive_history(
+        self,
+        student_id: int,
+    ) -> Optional[Dict[str, Any]]:
+        """Get the primitive history doc for a student."""
+        try:
+            doc_ref = (
+                self.client.collection('students')
+                .document(str(student_id))
+                .collection('pulse_state')
+                .document('primitive_history')
+            )
+            doc = doc_ref.get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error getting pulse primitive history for student {student_id}: {e}")
+            return None
+
+    async def save_pulse_primitive_history(
+        self,
+        student_id: int,
+        data: Dict[str, Any],
+    ) -> None:
+        """Save/update the primitive history doc for a student."""
+        try:
+            doc_ref = (
+                self.client.collection('students')
+                .document(str(student_id))
+                .collection('pulse_state')
+                .document('primitive_history')
+            )
+            firestore_data = self._prepare_firestore_data(data)
+            doc_ref.set(firestore_data, merge=True)
+        except Exception as e:
+            logger.error(f"Error saving pulse primitive history for student {student_id}: {e}")
+            raise
+
+    # ============================================================================
     # MONITORING AND VALIDATION
     # ============================================================================
 

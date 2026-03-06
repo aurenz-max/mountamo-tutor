@@ -23,7 +23,7 @@ export const pulseApi = {
   ): Promise<PulseSessionResponse> =>
     authApi.post<PulseSessionResponse>(`${BASE}/sessions`, {
       subject,
-      item_count: itemCount ?? 15,
+      item_count: itemCount ?? 6,
     }),
 
   /** GET /api/pulse/sessions/{id} — Get session state (for resume) */

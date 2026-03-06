@@ -146,7 +146,131 @@ const practiceManifestSchema: Schema = {
 export interface PracticeManifestOptions {
   /** When true, forces every item to use a different visual primitive or problem type. Duplicate primitives are converted to standard problems. */
   enforceDiversity?: boolean;
+  /** Primitives already used in this session with scores. Guides the model toward variety and appropriate difficulty. */
+  sessionHistory?: Array<{ componentId: string; difficulty: string; score?: number }>;
+  /** Target scaffolding mode (1-6) from the backend IRT calibration system. Controls difficulty via scaffolding level, not item content. */
+  targetMode?: number;
+  /** Pulse band context: 'current' (learning), 'review' (retest), 'frontier' (probing ahead). */
+  band?: string;
+  /** Cross-session primitive history from the backend. Used to avoid serving the same primitives repeatedly. */
+  recentPrimitives?: Array<{ primitive_type: string; eval_mode: string; score: number; subskill_id: string }>;
 }
+
+/**
+ * Mode-based scaffolding descriptions for the Gemini prompt.
+ * Maps IRT target_mode (1-6) to concrete content generation instructions.
+ * This is the bridge between the backend calibration system and Gemini's output.
+ */
+const MODE_SCAFFOLDING: Record<number, { label: string; difficulty: string; instruction: string }> = {
+  1: {
+    label: 'Concrete manipulatives with full guidance',
+    difficulty: 'easy',
+    instruction: 'Use visual manipulatives (ten frames, counters, fraction circles, etc.) with full step-by-step guidance. Provide visual scaffolding for every step. Use small, simple numbers. The student should be able to see and interact with physical representations.',
+  },
+  2: {
+    label: 'Pictorial with prompts',
+    difficulty: 'easy',
+    instruction: 'Use pictorial representations (drawings, diagrams, number lines) with guiding prompts. One layer of abstraction above concrete manipulatives. Provide visual support but let the student figure out the approach. Keep numbers manageable.',
+  },
+  3: {
+    label: 'Pictorial, reduced prompts',
+    difficulty: 'medium',
+    instruction: 'Use pictorial representations but with minimal prompting. The student must self-organize their approach. Visual support is present but the student drives the reasoning. Moderate number ranges.',
+  },
+  4: {
+    label: 'Transitional: mixed symbolic/pictorial',
+    difficulty: 'medium',
+    instruction: 'Bridge between concrete and abstract. Mix some symbolic notation with pictorial support. Partial scaffolding — the student should be transitioning to working with numbers and symbols. Broader number ranges.',
+  },
+  5: {
+    label: 'Fully symbolic, single operation',
+    difficulty: 'hard',
+    instruction: 'Abstract, symbolic problems with no visual scaffolding. The student works with numbers, equations, and symbolic notation directly. Single-operation problems requiring direct abstract reasoning. Wider number ranges.',
+  },
+  6: {
+    label: 'Symbolic, multi-step or cross-concept',
+    difficulty: 'hard',
+    instruction: 'The most challenging level. Multi-step symbolic problems, cross-concept integration, or problems requiring the student to synthesize multiple skills. No scaffolding. Expect the student to work abstractly and independently. Complex number ranges and multi-step reasoning.',
+  },
+};
+
+/**
+ * Build the difficulty/scaffolding section of the prompt based on mode and band.
+ */
+const buildDifficultyContext = (options?: PracticeManifestOptions): string => {
+  const mode = options?.targetMode;
+  const band = options?.band;
+
+  if (!mode || !MODE_SCAFFOLDING[mode]) {
+    // Fallback: no mode from backend, use generic variety
+    return `## DIFFICULTY
+- Vary difficulty (some easy, some medium, some hard)`;
+  }
+
+  const scaffolding = MODE_SCAFFOLDING[mode];
+  let bandContext = '';
+  if (band === 'review') {
+    bandContext = '\nThis is a REVIEW item — the student has seen this skill before. Focus on recall and fluency, not teaching.';
+  } else if (band === 'frontier') {
+    bandContext = '\nThis is a FRONTIER PROBE — the student has NOT been formally taught this skill yet. Use a fair assessment approach: test whether they already know it, do not assume prior instruction.';
+  } else if (band === 'current') {
+    bandContext = '\nThis is a CURRENT LEARNING item — the student is actively learning this skill. Balance challenge with support.';
+  }
+
+  return `## DIFFICULTY & SCAFFOLDING (from adaptive calibration system)
+TARGET MODE: ${mode}/6 — "${scaffolding.label}"
+DIFFICULTY LEVEL: ${scaffolding.difficulty}
+
+${scaffolding.instruction}${bandContext}
+
+IMPORTANT: All items in this request MUST match the target mode ${mode} scaffolding level. Do NOT default to medium difficulty. The adaptive system has determined this student needs mode ${mode} content based on their demonstrated ability.
+- Set difficulty to "${scaffolding.difficulty}" for all items.`;
+};
+
+/**
+ * Build the primitive diversity section based on cross-session history.
+ */
+const buildDiversityContext = (options?: PracticeManifestOptions): string => {
+  const parts: string[] = [];
+
+  if (options?.recentPrimitives && options.recentPrimitives.length > 0) {
+    // Count frequency of each primitive type
+    const freq: Record<string, number> = {};
+    for (const rp of options.recentPrimitives) {
+      freq[rp.primitive_type] = (freq[rp.primitive_type] || 0) + 1;
+    }
+    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+    const overused = sorted.filter(([, count]) => count >= 3).map(([name]) => name);
+    const recent = sorted.slice(0, 5).map(([name, count]) => `${name} (${count}x)`);
+
+    parts.push(`\n## PRIMITIVE DIVERSITY (cross-session history)
+The student has recently completed these primitives across past sessions: ${recent.join(', ')}.`);
+
+    if (overused.length > 0) {
+      parts.push(`AVOID these overused primitives if alternatives exist: ${overused.join(', ')}.
+Choose different visual primitives from the catalog to keep the experience fresh.`);
+    } else {
+      parts.push('Vary the primitive selection to keep the experience engaging.');
+    }
+  }
+
+  if (options?.sessionHistory && options.sessionHistory.length > 0) {
+    const scored = options.sessionHistory.filter(h => (h.score ?? 0) >= 0);
+    const generated = options.sessionHistory.filter(h => (h.score ?? 0) < 0);
+
+    if (scored.length > 0) {
+      parts.push(`Earlier in this session the student completed: ${scored.map(h => `${h.componentId} (${h.difficulty}, scored ${h.score}%)`).join(', ')}.`);
+    }
+    if (generated.length > 0) {
+      parts.push(`These primitives are ALREADY QUEUED for this session and must NOT be repeated: ${generated.map(h => h.componentId).join(', ')}. Pick a DIFFERENT primitive from the catalog.`);
+    }
+    if (scored.length > 0) {
+      parts.push('Vary primitives when possible, but repeating at a harder level is fine.');
+    }
+  }
+
+  return parts.join('\n');
+};
 
 export const generatePracticeManifest = async (
   topic: string,
@@ -159,6 +283,9 @@ export const generatePracticeManifest = async (
   const visualCatalog = buildPracticeVisualCatalogContext();
 
   callbacks?.onProgress?.(`Designing ${problemCount} practice problems...`);
+
+  const difficultyContext = buildDifficultyContext(options);
+  const diversityContext = buildDiversityContext(options);
 
   const prompt = `You are an educational content designer creating an interactive practice session.
 
@@ -187,11 +314,12 @@ For each problem, decide:
 - successCriteria.description: tell the student what to DO
 - successCriteria.targetValue: the expected answer
 
+${difficultyContext}
+
 ## PROBLEM VARIETY
-- Vary difficulty (some easy, some medium, some hard)
 - Math topics: aim for 60-80% visual primitives
 - Non-math topics: use standard problems mostly (0-20% visual)
-- Mix different visual primitives when possible${options?.enforceDiversity ? `
+- Mix different visual primitives when possible${diversityContext}${options?.enforceDiversity ? `
 
 ## DIVERSITY REQUIREMENT (MANDATORY)
 This is a diagnostic assessment — each item must test a DIFFERENT facet of the skill.

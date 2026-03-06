@@ -199,7 +199,7 @@ GUIDELINES FOR GRADE LEVELS:
 CHALLENGE TYPES:
 - "build": Student places exactly N counters on the frame. targetCount = N.
 - "subitize": Counters flash briefly, student types how many. Set flashDuration (ms).
-- "make_ten": Frame shows some counters, student enters how many more to make 10. targetCount = current count shown.
+- "make_ten": Frame shows some counters, student enters how many more to fill the frame. For single frame: make 10. For double frame: make 20. targetCount = current count shown.
 - "add": Student shows addition result on frame (could span to second frame). targetCount = sum.
 - "subtract": Student removes counters from a pre-filled frame. MUST set startCount (how many counters appear initially) AND targetCount (how many remain after removal). Example: "Start with 7 counters. Take away 3. How many are left?" → startCount=7, targetCount=4. The frame will be pre-filled with startCount counters; the student clicks to remove some until targetCount remain.
 
@@ -224,7 +224,7 @@ CRITICAL — NUMERIC CONSISTENCY:
 The numbers in the instruction text MUST EXACTLY match the challenge's numeric fields. The UI displays counters based on the numeric fields, NOT the instruction text. If they disagree, students see a mismatch.
 - build: the number in instruction MUST equal targetCount (e.g., targetCount=5 → "Put 5 counters on the frame!")
 - subtract: instruction MUST mention startCount as the starting amount AND (startCount − targetCount) as the removal amount (e.g., startCount=8, targetCount=5 → "There are 8 counters. Take away 3.")
-- make_ten: instruction MUST mention targetCount as the number already on the frame (e.g., targetCount=6 → "There are 6 counters. How many more to make 10?")
+- make_ten: instruction MUST mention targetCount as the number already on the frame. For single frame: "make 10". For double frame: "make 20". (e.g., single: targetCount=6 → "There are 6 counters. How many more to make 10?"; double: targetCount=12 → "There are 12 counters. How many more to make 20?")
 - add: instruction numbers MUST sum to targetCount
 
 REQUIREMENTS:
@@ -233,7 +233,7 @@ REQUIREMENTS:
 3. Use warm, encouraging instruction text appropriate for young children
 4. Set initial counter count and positions to 0/empty for build challenges
 5. For subitize challenges, use flashDuration between 1000-2000ms
-6. For make_ten challenges, targetCount should be the number of counters ALREADY on the frame
+6. For make_ten challenges, targetCount should be the number of counters ALREADY on the frame (must be less than frame capacity: <10 for single, <20 for double)
 7. Include meaningful hints that guide without giving the answer
 8. Include narration text the AI tutor can use to introduce each challenge
 9. For Kindergarten: stick to single frame, numbers 1-10, build and subitize only
@@ -314,8 +314,13 @@ Return the complete ten frame configuration.
         ch.instruction = `The frame starts with ${ch.startCount} counters. Take away ${removeCount}. How many are left?`;
       }
     } else if (ch.type === 'make_ten') {
+      const makeTenTarget = data.mode === 'double' ? 20 : 10;
+      // Clamp targetCount within valid range for the frame
+      if (ch.targetCount < 0 || ch.targetCount >= makeTenTarget) {
+        ch.targetCount = Math.max(1, makeTenTarget - 3); // sensible default
+      }
       if (!wordNum(ch.instruction, ch.targetCount)) {
-        ch.instruction = `There are ${ch.targetCount} counters on the frame. How many more do you need to make 10?`;
+        ch.instruction = `There are ${ch.targetCount} counters on the frame. How many more do you need to make ${makeTenTarget}?`;
       }
     } else if (ch.type === 'build') {
       if (!wordNum(ch.instruction, ch.targetCount)) {

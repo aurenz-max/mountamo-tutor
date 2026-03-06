@@ -237,6 +237,111 @@ class ScoreTrendsResponse(BaseModel):
     generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 # ============================================================================
+# KNOWLEDGE GRAPH PROGRESS RESPONSE MODELS (Pulse-native)
+# ============================================================================
+
+class KnowledgeGraphNode(BaseModel):
+    subskill_id: str
+    skill_id: str = ""
+    description: str = ""
+    depth: int = 0
+    status: str  # mastered | inferred | in_review | in_progress | frontier | not_started | locked
+    current_gate: int = 0
+    theta: Optional[float] = None
+    earned_level: Optional[float] = None
+    inferred_from: Optional[str] = None
+    prerequisite_ids: List[str] = Field(default_factory=list)
+    dependent_ids: List[str] = Field(default_factory=list)
+
+class KnowledgeGraphProgressResponse(BaseModel):
+    student_id: int
+    subject: str
+    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+    # DAG coverage summary
+    total_nodes: int = 0
+    mastered_direct: int = 0
+    mastered_inferred: int = 0
+    in_progress: int = 0
+    in_review: int = 0
+    not_started: int = 0
+    locked: int = 0
+
+    # Frontier
+    frontier_node_ids: List[str] = Field(default_factory=list)
+    frontier_depth: float = 0.0
+    max_depth: int = 0
+
+    # Leapfrog history
+    total_leapfrogs: int = 0
+    total_skills_inferred: int = 0
+    leapfrog_retest_pass_rate: Optional[float] = None
+
+    # Per-node detail (optional)
+    nodes: Optional[List[KnowledgeGraphNode]] = None
+
+    cached: bool = False
+
+# ============================================================================
+# PULSE SESSION HISTORY RESPONSE MODELS
+# ============================================================================
+
+class PulseSessionBandBreakdown(BaseModel):
+    frontier_items: int = 0
+    current_items: int = 0
+    review_items: int = 0
+    frontier_success_rate: Optional[float] = None
+    current_success_rate: Optional[float] = None
+    review_success_rate: Optional[float] = None
+
+class PulseSessionLeapfrogSummary(BaseModel):
+    lesson_group_id: str
+    probed_skills: List[str] = Field(default_factory=list)
+    inferred_skills: List[str] = Field(default_factory=list)
+    aggregate_score: float
+
+class PulseSessionHistoryItem(BaseModel):
+    session_id: str
+    subject: str
+    status: str  # completed | abandoned | in_progress
+    is_cold_start: bool = False
+    items_completed: int = 0
+    items_total: int = 0
+    band_breakdown: PulseSessionBandBreakdown
+    leapfrogs: List[PulseSessionLeapfrogSummary] = Field(default_factory=list)
+    skills_inferred: int = 0
+    avg_score: Optional[float] = None
+    duration_ms: Optional[int] = None
+    created_at: str
+    completed_at: Optional[str] = None
+
+class PulseSessionThetaPoint(BaseModel):
+    session_id: str
+    skill_id: str
+    theta_before: float
+    theta_after: float
+    delta: float
+    timestamp: str
+
+class PulseSessionHistoryResponse(BaseModel):
+    student_id: int
+    subject: Optional[str] = None
+    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+    total_sessions: int = 0
+    completed_sessions: int = 0
+    total_items_completed: int = 0
+    total_leapfrogs: int = 0
+    total_skills_inferred: int = 0
+    overall_frontier_success_rate: Optional[float] = None
+    avg_session_score: Optional[float] = None
+
+    sessions: List[PulseSessionHistoryItem] = Field(default_factory=list)
+    theta_trajectory: List[PulseSessionThetaPoint] = Field(default_factory=list)
+
+    cached: bool = False
+
+# ============================================================================
 # ASSESSMENT ANALYTICS RESPONSE MODELS
 # ============================================================================
 
@@ -1221,6 +1326,166 @@ async def get_engagement_metrics(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail=f"Error retrieving engagement metrics: {str(e)}"
+        )
+
+# ============================================================================
+# KNOWLEDGE GRAPH PROGRESS ENDPOINT (Pulse-native)
+# ============================================================================
+
+@router.get("/student/{student_id}/knowledge-graph", response_model=KnowledgeGraphProgressResponse)
+async def get_knowledge_graph_progress(
+    student_id: int,
+    subject: str = Query(..., description="Subject to query DAG for (e.g., 'Mathematics')"),
+    include_nodes: bool = Query(True, description="Include per-node detail array"),
+    depth_limit: Optional[int] = Query(None, ge=0, description="Only return nodes up to this topological depth"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
+):
+    """Get knowledge graph progress for a student in a subject.
+
+    Returns DAG coverage summary (mastered, inferred, in-progress, frontier, locked),
+    frontier position, leapfrog history, and optionally per-node detail with theta,
+    gate state, and prerequisite/dependent edges.
+
+    This is the anchor analytics view for Pulse — it surfaces the DAG structure
+    that Pulse operates on, showing where the student sits in the curriculum graph.
+    """
+
+    user_id = user_context["user_id"]
+
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} knowledge graph"
+            )
+
+    # Check cache (2 minute TTL — matches FirestoreAnalyticsService internal cache)
+    cache_key = get_cache_key(
+        "knowledge_graph",
+        student_id=student_id,
+        subject=subject,
+        include_nodes=include_nodes,
+        depth_limit=depth_limit
+    )
+
+    cached_result = get_from_cache(cache_key, ttl_minutes=2)
+    if cached_result:
+        cached_result["cached"] = True
+        return KnowledgeGraphProgressResponse(**cached_result)
+
+    try:
+        logger.info(
+            f"User {user_context['email']} retrieving knowledge graph progress "
+            f"for student {student_id}, subject {subject}"
+        )
+
+        result_data = await analytics_service.get_knowledge_graph_progress(
+            student_id=student_id,
+            subject=subject,
+            include_nodes=include_nodes,
+            depth_limit=depth_limit,
+        )
+
+        result = KnowledgeGraphProgressResponse(**result_data, cached=False)
+
+        # Cache the result
+        set_cache(cache_key, result.dict())
+
+        logger.info(
+            f"Knowledge graph progress: {result.total_nodes} nodes, "
+            f"{result.mastered_direct} mastered, {result.mastered_inferred} inferred, "
+            f"{len(result.frontier_node_ids)} frontier for student {student_id}"
+        )
+        return result
+
+    except ValueError as e:
+        logger.warning(f"Knowledge graph not found: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Curriculum graph not found for subject '{subject}': {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Knowledge graph progress error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving knowledge graph progress: {str(e)}"
+        )
+
+# ============================================================================
+# PULSE SESSION HISTORY ENDPOINT
+# ============================================================================
+
+@router.get("/student/{student_id}/pulse-sessions", response_model=PulseSessionHistoryResponse)
+async def get_pulse_session_history(
+    student_id: int,
+    subject: Optional[str] = Query(None, description="Filter by subject"),
+    limit: int = Query(50, ge=1, le=200, description="Max sessions to return"),
+    include_theta: bool = Query(True, description="Include theta trajectory points"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
+):
+    """Get Pulse session history with band breakdowns, leapfrog events, and theta trajectory.
+
+    Returns a chronological list of Pulse sessions showing per-band success rates
+    (frontier/current/review), leapfrog events per session, and aggregate metrics.
+    Optionally includes theta trajectory across sessions for skill ability tracking.
+    """
+
+    user_id = user_context["user_id"]
+
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} pulse sessions"
+            )
+
+    # Check cache (2 minute TTL)
+    cache_key = get_cache_key(
+        "pulse_sessions",
+        student_id=student_id,
+        subject=subject,
+        limit=limit,
+        include_theta=include_theta
+    )
+
+    cached_result = get_from_cache(cache_key, ttl_minutes=2)
+    if cached_result:
+        cached_result["cached"] = True
+        return PulseSessionHistoryResponse(**cached_result)
+
+    try:
+        logger.info(
+            f"User {user_context['email']} retrieving pulse session history "
+            f"for student {student_id}, subject {subject}"
+        )
+
+        result_data = await analytics_service.get_pulse_session_history(
+            student_id=student_id,
+            subject=subject,
+            limit=limit,
+            include_theta_trajectory=include_theta,
+        )
+
+        result = PulseSessionHistoryResponse(**result_data, cached=False)
+
+        # Cache the result
+        set_cache(cache_key, result.dict())
+
+        logger.info(
+            f"Pulse session history: {result.total_sessions} sessions, "
+            f"{result.total_leapfrogs} leapfrogs for student {student_id}"
+        )
+        return result
+
+    except Exception as e:
+        logger.error(f"Pulse session history error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving pulse session history: {str(e)}"
         )
 
 # ============================================================================
