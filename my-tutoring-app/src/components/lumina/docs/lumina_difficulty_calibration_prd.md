@@ -181,6 +181,68 @@ Once the IRT model has been validated (Phase 3+, after sufficient calibration da
 
 This migration is explicitly **not in scope for Phase 1**. It will be designed as a separate PRD addendum once Phase 2 EL trajectory data demonstrates the model's predictive validity.
 
+### 6.5.4 Per-Primitive Gate Thresholds (θ-Based)
+
+When θ eventually feeds gate decisions (Option A), gates must be defined per-primitive based on the primitive's difficulty range. Each primitive has a beta range (minBeta to maxBeta) determined by its available evaluation modes. The gate thresholds define what θ values constitute emerging, developing, proficient, and mastered for that specific primitive.
+
+#### Gate Threshold Formula
+
+Gates are placed proportionally across a **spread** from `minBeta` (starting θ) to `minBeta + spread`:
+
+```
+MIN_GATE_SPREAD = 2.5  (minimum θ units from start to Gate 4)
+
+rawSpread = maxBeta + 1.0 - minBeta
+spread    = max(MIN_GATE_SPREAD, rawSpread)
+
+G1 = minBeta + spread × 0.20   (20% — emerging)
+G2 = minBeta + spread × 0.45   (45% — developing)
+G3 = minBeta + spread × 0.75   (75% — proficient)
+G4 = minBeta + spread × 1.00   (100% — mastered)
+```
+
+Starting θ = minBeta for each primitive, ensuring no gates are pre-passed.
+
+#### Design Rationale
+
+The `MIN_GATE_SPREAD` floor solves two problems discovered during calibration simulator tuning:
+
+1. **Non-monotonic gates.** Without a minimum, single-mode primitives (where minBeta = maxBeta) produce collapsed or inverted gate thresholds (e.g., G3 < G1).
+
+2. **Instant mastery on easy primitives.** The Bayesian EAP update starts with σ=2.0 (high uncertainty), producing large θ jumps on early observations. Without a spread floor, easy primitives with narrow beta ranges (Sorting Station: spread=1.0, Counting Board: spread=2.5) could be fully mastered in 2-3 correct answers — too few observations for statistical confidence.
+
+The value 2.5 was chosen so that Gate 4 for high-beta single-mode primitives (Area Model, β=5.0) lands at θ=7.5 rather than θ=8.0. At θ=7.5 with item β=5.0, the expected correct rate is ~92% (via 1PL: P = 1/(1+exp(-(7.5-5.0)))). This represents confident mastery without requiring near-perfection.
+
+#### Per-Primitive Gate Table
+
+| Primitive | β Range | Spread | G1 | G2 | G3 | G4 | Est. Correct to G4 |
+|-----------|---------|--------|----|----|----|----|--------------------|
+| Sorting Station | 1.5 | 2.5 (clamped) | 2.0 | 2.63 | 3.38 | 4.0 | ~6-8 |
+| Counting Board | 1.0–2.5 | 2.5 | 1.5 | 2.13 | 2.88 | 3.5 | ~5-7 |
+| True/False | 2.0 | 2.5 (clamped) | 2.5 | 3.13 | 3.88 | 4.5 | ~6-8 |
+| Number Line | 1.5–3.5 | 3.0 | 2.1 | 2.85 | 3.75 | 4.5 | ~7-9 |
+| Knowledge Check | 3.0 | 2.5 (clamped) | 3.5 | 4.13 | 4.88 | 5.5 | ~8-10 |
+| Pattern Builder | 2.5–4.0 | 2.5 | 3.0 | 3.63 | 4.38 | 5.0 | ~7-9 |
+| Function Machine | 2.5–4.5 | 3.0 | 3.1 | 3.85 | 4.75 | 5.5 | ~8-10 |
+| Math Fact Fluency | 4.0 | 2.5 (clamped) | 4.5 | 5.13 | 5.88 | 6.5 | ~10-12 |
+| Ten Frame | 1.5–5.0 | 4.5 | 2.4 | 3.53 | 4.88 | 6.0 | ~10-14 |
+| Area Model | 5.0 | 2.5 (clamped) | 5.5 | 6.13 | 6.88 | 7.5 | ~15-20 |
+| Strategy Picker | 5.0 | 2.5 (clamped) | 5.5 | 6.13 | 6.88 | 7.5 | ~15-20 |
+
+#### IRT Ceiling Effect
+
+The proportional gate formula works in concert with a natural IRT property: when θ is well above item β, correct answers provide minimal information (the outcome was expected). This creates a natural ceiling — grinding easy modes alone cannot reach high gates. For example, a student answering only Counting Board "count" mode (β=1.0) will see θ plateau around 2.5-3.0, well short of G4=3.5. They must succeed at harder modes (compare, count_on at β=2.5) to keep climbing.
+
+This ceiling effect is pedagogically correct: demonstrating mastery requires proving competence across the full difficulty range of a primitive, not just acing the easiest challenges repeatedly.
+
+#### Relationship to Pulse Session Assembly
+
+The per-primitive beta ranges that determine these gate thresholds are the *same* beta values the Pulse engine uses for session assembly (§3.1 θ→Mode Mapping in Lumina_PRD_Pulse.md). A student with low θ receives sessions biased toward easy primitives (Counting Board, Sorting Station) because those primitives' modes have low β. A student with high θ receives harder primitives (Ten Frame operate mode, Area Model). The gate thresholds don't change session assembly — they only define what θ level constitutes mastery *within* each primitive.
+
+#### Calibration Simulator
+
+The `CalibrationSimulator.tsx` component implements this formula and provides interactive visualization for tuning. It includes preset scenarios (full mastery, grinding stalls, struggle + recovery) and an SVG trajectory chart showing θ, σ, and gate thresholds per primitive.
+
 ---
 
 ## 7. Session Assembly Engine
@@ -496,7 +558,7 @@ students/{student_id}/
 | Phase | Milestone | Deliverables | Status |
 |-------|-----------|-------------|--------|
 | Phase 1 | Foundation | Problem-type registry (50+ primitives), calibration models, CalibrationEngine with inline 1PL IRT β/θ updates, Firestore schema, submission pipeline hook, frontend evalMode threading. EL stored but not displayed. | **COMPLETE** |
-| Phase 2 | Display & Diagnostic Integration | EL trajectory chart in student dashboard. Progress Display Service with contextual messaging (§6.4). Seed StudentAbility prior from diagnostic placement θ instead of default 3.0. Admin view of item calibration convergence. | **COMPLETE** |
+| Phase 2 | Display & Diagnostic Integration | EL trajectory chart in student dashboard. Progress Display Service with contextual messaging (§6.4). Seed StudentAbility prior from diagnostic placement θ instead of default 3.0. Admin view of item calibration convergence. Per-primitive gate threshold formula with proportional placement and MIN_GATE_SPREAD floor (§6.5.4). CalibrationSimulator.tsx for interactive tuning. | **COMPLETE** |
 | Phase 3 | Assembly & Leapfrog | Session Assembly Engine: compose sessions using calibrated β values with core/stretch/confidence bands (§7). Leapfrog detection: flag `leapfrog_eligible` when θ >> gate ceiling (§10.3). Parent-facing leapfrog recommendations. | Planned |
 | Phase 4 | Calibration Maturity | Cross-skill leapfrog via prerequisite inference using `dag_analysis.py` (§10.4). Monitoring dashboard for β convergence and leapfrog accuracy. Configurable full-credibility threshold per subject. | Planned |
 | Phase 5 | Flywheel & Migration | Option A migration: EL feeds gate decisions (§6.5.3). Cross-student item calibration (pooled batch aggregation). Difficulty slider (§8). A/B testing framework for assembly strategies. | Planned |

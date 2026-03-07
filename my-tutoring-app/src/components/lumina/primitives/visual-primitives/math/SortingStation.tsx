@@ -89,6 +89,14 @@ function objectMatchesRule(obj: SortingObject, rule: Record<string, string>): bo
   return Object.entries(rule).every(([key, value]) => obj.attributes[key] === value);
 }
 
+/** Partial credit: 1st try = 100%, 2nd = 75%, 3rd = 50%, 4th+ = 25%. */
+function attemptScore(attempts: number): number {
+  if (attempts <= 1) return 100;
+  if (attempts === 2) return 75;
+  if (attempts === 3) return 50;
+  return 25;
+}
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -358,7 +366,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       if (allCorrect) {
         setFeedback('Perfect sorting!');
         setFeedbackType('success');
-        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
         sendText(
           `[ANSWER_CORRECT] Student sorted all ${totalPlaced} objects correctly by ${currentChallenge.sortingAttribute || selectedAttribute}. Celebrate!`,
           { silent: true },
@@ -409,7 +417,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       if (correct) {
         setFeedback('Correct! Great comparing!');
         setFeedbackType('success');
-        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
         sendText(
           `[ANSWER_CORRECT] Student correctly picked "${comparisonAnswer}". Celebrate!`,
           { silent: true },
@@ -438,7 +446,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       if (allCorrect) {
         setFeedback('You found them all!');
         setFeedbackType('success');
-        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
         sendText(
           `[ANSWER_CORRECT] Student correctly identified all objects matching ${JSON.stringify(rule)}. Celebrate!`,
           { silent: true },
@@ -464,7 +472,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       if (correct) {
         setFeedback(`Yes! ${currentChallenge.oddOneOutReason || "It doesn't belong!"}`);
         setFeedbackType('success');
-        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
         sendText(
           `[ANSWER_CORRECT] Student correctly identified the odd one out. Reason: ${currentChallenge.oddOneOutReason}. Ask: "How did you know?"`,
           { silent: true },
@@ -494,7 +502,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       if (allCorrect) {
         setFeedback('Perfect tallies!');
         setFeedbackType('success');
-        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+        recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
         sendText(`[ANSWER_CORRECT] Student recorded all tallies correctly. Celebrate!`, { silent: true });
       } else {
         setFeedback('Some counts are off. Count each group carefully!');
@@ -530,8 +538,10 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       );
 
       if (!hasSubmittedEvaluation) {
-        const sortingCorrect = challengeResults.filter(r => r.correct).length;
-        const score = Math.round((sortingCorrect / challenges.length) * 100);
+        // Partial credit: average per-challenge scores (which factor in attempts)
+        const totalScore = challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0);
+        const score = Math.round(totalScore / challenges.length);
+        const allCorrect = challengeResults.every(r => r.correct);
 
         const metrics: SortingStationMetrics = {
           type: 'sorting-station',
@@ -541,7 +551,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         };
 
         submitEvaluation(
-          sortingCorrect === challenges.length,
+          allCorrect,
           score,
           metrics,
           { challengeResults },
@@ -585,9 +595,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   // ─── Local score ───────────────────────────────────────────────
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challenges.length === 0) return 0;
-    return Math.round(
-      (challengeResults.filter(r => r.correct).length / challenges.length) * 100,
-    );
+    const totalScore = challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0);
+    return Math.round(totalScore / challenges.length);
   }, [allChallengesComplete, challenges, challengeResults]);
 
   // ─── Is current challenge answered ─────────────────────────────
@@ -681,10 +690,9 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                 const color = BIN_COLORS[idx % BIN_COLORS.length];
                 const itemsInBin = objectsInBins.get(idx) || [];
                 return (
-                  <button
+                  <div
                     key={cat.label}
-                    onClick={() => handleBinClick(idx)}
-                    disabled={!selectedObjectId}
+                    onClick={() => selectedObjectId && handleBinClick(idx)}
                     className={`rounded-xl p-3 border-2 border-dashed transition-all duration-150 min-h-[100px] text-left ${color.bg} ${color.border} ${
                       selectedObjectId ? `${color.hover} cursor-pointer` : 'cursor-default'
                     }`}
@@ -709,7 +717,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                         </button>
                       ))}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>

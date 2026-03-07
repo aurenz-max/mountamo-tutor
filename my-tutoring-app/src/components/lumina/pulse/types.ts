@@ -97,11 +97,30 @@ export interface LeapfrogEvent {
   aggregate_score: number;
 }
 
+export interface GateThresholds {
+  g1: number;
+  g2: number;
+  g3: number;
+  g4: number;
+}
+
+export interface GateProgress {
+  primitive_type: string;
+  current_gate: number;   // 0-4
+  thresholds: GateThresholds;
+  theta: number;
+  next_gate: number | null;
+  next_gate_theta: number | null;
+  min_beta: number;
+  max_beta: number;
+}
+
 export interface PulseResultResponse {
   item_id: string;
   theta_update: ThetaUpdate;
   gate_update?: GateUpdate;
   leapfrog?: LeapfrogEvent;
+  gate_progress?: GateProgress;
   session_progress: {
     items_completed: number;
     items_total: number;

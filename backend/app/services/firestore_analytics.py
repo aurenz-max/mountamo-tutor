@@ -3,6 +3,7 @@
 # Real-time analytics service backed exclusively by Firestore.
 # Replaces BigQueryAnalyticsService for student-facing analytics endpoints.
 
+import asyncio
 import logging
 import math
 from collections import defaultdict
@@ -1378,11 +1379,13 @@ class FirestoreAnalyticsService:
             total_leapfrogs = 0
             total_skills_inferred = len(leapfrog_inferred_ids)
             try:
-                pulse_sessions = await self.fs.db.collection("pulse_sessions").where(
-                    "student_id", "==", student_id
-                ).where(
-                    "subject", "==", subject
-                ).get()
+                pulse_sessions = await asyncio.to_thread(
+                    self.fs.client.collection("pulse_sessions").where(
+                        "student_id", "==", student_id
+                    ).where(
+                        "subject", "==", subject
+                    ).get
+                )
 
                 for doc in pulse_sessions:
                     session_data = doc.to_dict()

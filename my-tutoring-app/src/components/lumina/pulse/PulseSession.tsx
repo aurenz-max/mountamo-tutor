@@ -19,7 +19,7 @@ import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 import { PracticeManifestRenderer } from '../components/PracticeManifestRenderer';
 import { usePulseSession } from './usePulseSession';
 import type { GradeLevel } from '../components/GradeLevelSelector';
-import type { PulseSessionSummary, LeapfrogEvent, ThetaUpdate, PulseBand } from './types';
+import type { PulseSessionSummary, LeapfrogEvent, ThetaUpdate, PulseBand, GateProgress } from './types';
 import { BAND_LABELS, BAND_COLORS, BAND_BG_COLORS } from './types';
 
 // ---------------------------------------------------------------------------
@@ -58,6 +58,7 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
     progress,
     summary,
     leapfrogs,
+    latestGateProgress,
     isColdStart,
     error,
     streamingMessage,
@@ -176,13 +177,18 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
             {/* ---- PRACTICING PHASE ---- */}
             {phase === 'practicing' && currentItem && hydratedItem && (
               <div className="animate-fade-in">
-                {/* Band indicator + challenge level */}
-                <div className="mb-4 flex items-center justify-center gap-3">
-                  <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono uppercase tracking-wider ${BAND_BG_COLORS[currentItem.band]} ${BAND_COLORS[currentItem.band]}`}>
-                    <BandIcon band={currentItem.band} />
-                    {BAND_LABELS[currentItem.band]}
-                  </span>
-                  <ChallengeDots mode={currentItem.target_mode} />
+                {/* Band indicator + challenge level + gate progress */}
+                <div className="mb-4 flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono uppercase tracking-wider ${BAND_BG_COLORS[currentItem.band]} ${BAND_COLORS[currentItem.band]}`}>
+                      <BandIcon band={currentItem.band} />
+                      {BAND_LABELS[currentItem.band]}
+                    </span>
+                    <ChallengeDots mode={currentItem.target_mode} />
+                  </div>
+                  {latestGateProgress && (
+                    <GateProgressIndicator gateProgress={latestGateProgress} />
+                  )}
                 </div>
 
                 {/* Activity renderer */}
@@ -326,6 +332,70 @@ function ChallengeDots({ mode }: { mode: number }) {
           }`}
         />
       ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Gate progress indicator (shows after first result)
+// ---------------------------------------------------------------------------
+
+const GATE_COLORS = [
+  'bg-slate-500',     // gate 0
+  'bg-emerald-400',   // gate 1
+  'bg-sky-400',       // gate 2
+  'bg-violet-400',    // gate 3
+  'bg-amber-400',     // gate 4
+];
+
+function GateProgressIndicator({ gateProgress }: { gateProgress: GateProgress }) {
+  const { current_gate, theta, next_gate_theta, thresholds } = gateProgress;
+  const g4 = thresholds.g4;
+
+  // Progress fraction towards next gate (or 100% if at gate 4)
+  let progressPct = 100;
+  if (current_gate < 4 && next_gate_theta != null) {
+    const gateValues = [0, thresholds.g1, thresholds.g2, thresholds.g3, thresholds.g4];
+    const floor = gateValues[current_gate];
+    const range = next_gate_theta - floor;
+    progressPct = range > 0 ? Math.min(100, Math.max(0, ((theta - floor) / range) * 100)) : 100;
+  }
+
+  return (
+    <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+      {/* Gate dots */}
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4].map((g) => (
+          <div
+            key={g}
+            className={`w-2 h-2 rounded-full transition-colors ${
+              g <= current_gate ? GATE_COLORS[g] : 'bg-white/10'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Label */}
+      <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+        Gate {current_gate}/4
+      </span>
+
+      {/* Mini progress bar towards next gate */}
+      {current_gate < 4 && (
+        <div className="w-12 h-1 rounded-full bg-white/10 overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full ${GATE_COLORS[current_gate + 1]}`}
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+          />
+        </div>
+      )}
+
+      {/* θ value */}
+      <span className="text-[10px] font-mono text-slate-500">
+        {theta.toFixed(1)}/{g4.toFixed(1)}
+      </span>
     </div>
   );
 }

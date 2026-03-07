@@ -29,12 +29,12 @@ import BiologyPrimitivesTester from './components/BiologyPrimitivesTester';
 import ChemistryPrimitivesTester from './components/ChemistryPrimitivesTester';
 import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
+import CalibrationSimulator from './components/CalibrationSimulator';
 import { PulseSession } from './pulse/PulseSession';
 import { ExhibitProvider } from './contexts/ExhibitContext';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { DiagnosticSession, KnowledgeMapPanel } from './diagnostic';
 import { EvaluationProvider, useEvaluationContext } from './evaluation';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
@@ -645,6 +645,13 @@ export default function App() {
           </div>
         )}
 
+        {/* CALIBRATION SIMULATOR STATE */}
+        {phase === GameState.IDLE && activePanel === 'calibration-simulator' && (
+          <div className="flex-1 animate-fade-in">
+            <CalibrationSimulator onBack={() => setActivePanel(null)} />
+          </div>
+        )}
+
         {/* LUMINA TUTOR TESTER STATE */}
         {phase === GameState.IDLE && activePanel === 'lumina-tutor-tester' && (
           <div className="flex-1 animate-fade-in">
@@ -679,26 +686,6 @@ export default function App() {
           </div>
         )}
 
-        {/* DIAGNOSTIC PLACEMENT STATE */}
-        {phase === GameState.IDLE && activePanel === 'diagnostic' && (
-          <div className="flex-1 animate-fade-in">
-            <DiagnosticSession
-              onBack={() => setActivePanel(null)}
-              gradeLevel={gradeLevel}
-              onComplete={() => setActivePanel(null)}
-            />
-          </div>
-        )}
-
-        {/* KNOWLEDGE MAP STATE */}
-        {phase === GameState.IDLE && activePanel === 'knowledge-map' && (
-          <div className="flex-1 animate-fade-in">
-            <KnowledgeMapPanel
-              onBack={() => setActivePanel(null)}
-              onNavigateDiagnostic={() => setActivePanel('diagnostic')}
-            />
-          </div>
-        )}
 
         {/* SESSION BREAK SCREEN — between blocks */}
         {phase === GameState.IDLE && sessionPhase === 'break' && sessionCurrentBlock && (

@@ -43,7 +43,7 @@ import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
 import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker';
 
-import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData } from '../types';
+import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData, MeasurementToolsData } from '../types';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -317,19 +317,49 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
-    case 'measurement-tools':
-      return (
-        <MeasurementTools
-          data={{
-            ...(data as Parameters<typeof MeasurementTools>[0]['data']),
-            instanceId: `measurement-tools-${Date.now()}`,
-            skillId: 'math-measurement',
-            subskillId: 'measurement-tools',
-            objectiveId: 'measure-estimate-convert',
-            onEvaluationSubmit,
-          }}
-        />
-      );
+    case 'measurement-tools': {
+      const measurementData: MeasurementToolsData = {
+        title: 'Measure the Shapes',
+        rulerLengthInches: 8,
+        unit: 'inches',
+        precision: 'half',
+        gradeBand: 'K-2',
+        shapes: [
+          {
+            id: 'shape-1',
+            type: 'rectangle',
+            widthInches: 4,
+            heightInches: 2,
+            color: '#60a5fa',
+            label: 'Blue Rectangle',
+            hint: 'Try lining up the ruler along the longer side.',
+          },
+          {
+            id: 'shape-2',
+            type: 'square',
+            widthInches: 3,
+            heightInches: 3,
+            color: '#f472b6',
+            label: 'Pink Square',
+            hint: 'All sides of a square are the same length!',
+          },
+          {
+            id: 'shape-3',
+            type: 'rectangle',
+            widthInches: 5.5,
+            heightInches: 1.5,
+            color: '#34d399',
+            label: 'Green Rectangle',
+            hint: 'Look carefully — this one is between two whole numbers.',
+          },
+        ],
+        instanceId: `measurement-tools-${Date.now()}`,
+        skillId: 'math-measurement',
+        subskillId: 'measurement-tools',
+        objectiveId: 'measure-estimate-convert',
+      };
+      return <MeasurementTools data={measurementData} />;
+    }
     case 'number-line':
       return (
         <NumberLine

@@ -971,36 +971,36 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'measurement-tools',
-    description: 'Read-only measurement tool visualizations (ruler, scale, measuring cup, thermometer) for teaching length, weight, capacity, and temperature measurement. Students see objects displayed on instruments and type their readings. Three phases: Estimate (guess before measuring), Measure (read the tool), Convert (unit conversion for grades 3-5). Grades 1-2 use whole-number precision; grades 3-5 add half/quarter precision and conversion. ESSENTIAL for grades 1-5 measurement and data standards.',
+    description: 'Drag-to-ruler measurement activity where students drag shapes (rectangles and squares) onto a visual ruler, read where the shape ends, and type the measurement. Teaches length measurement by having students physically place objects and interpret ruler markings. Grades 1-2 use whole-number precision; grades 3-5 add half/quarter precision. ESSENTIAL for grades 1-5 measurement and data standards.',
     constraints: 'Requires a tool type matching the measurement type (ruler→length, scale→weight, measuring_cup→capacity, thermometer→temperature). Best for grades 1-5. Grades 1-2 use whole-number precision and simple objects. Grades 3-5 add half/quarter precision and conversion challenges.',
     tutoring: {
-      taskDescription: 'Measurement activity using {{toolType}}. Challenge: "{{instruction}}". Object: {{objectName}}. Type: {{challengeType}}. Unit: {{unit}}. Attempt: {{currentAttempts}}.',
-      contextKeys: ['toolType', 'measurementType', 'unit', 'precision', 'gradeBand', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'objectName', 'currentAttempts'],
+      taskDescription: 'Measurement activity where the student drags shapes onto a ruler and reads the measurement. Current shape: {{currentShape}}. Shape width: {{shapeWidth}} {{unit}}. On ruler: {{isOnRuler}}. Precision: {{precision}}. Attempt: {{currentAttempts}}.',
+      contextKeys: ['unit', 'precision', 'currentShape', 'shapeWidth', 'isOnRuler', 'currentAttempts'],
       scaffoldingLevels: {
-        level1: '"Look carefully at the {{toolType}}. Where does the object end? What number is closest to that mark?"',
-        level2: '"Count the marks between the numbers. Each small mark is one {{precision}} unit. Now find where the object lines up."',
-        level3: '"The object ends right at the mark showing {{value}}. Read the number there — that is your measurement in {{unit}}."',
+        level1: '"Count the marks on the ruler starting from 0. Each mark is one unit. How many marks does the shape cover?"',
+        level2: '"Look where the right edge of the shape ends on the ruler. What number is it pointing to?"',
+        level3: '"Drag the shape so its left edge lines up with 0. Now look at the right edge — it lands on {{shapeWidth}}. That means the shape is {{shapeWidth}} {{unit}} long."',
       },
       commonStruggles: [
-        { pattern: 'Reading between marks incorrectly', response: '"Look at where the measurement falls between two marks. Is it closer to the lower mark or the higher one? Count the small marks to find the exact value."' },
-        { pattern: 'Estimation far from actual', response: '"Compare to something you know. A pencil is about 19 cm. Is this object longer or shorter than a pencil?"' },
-        { pattern: 'Confusing units in conversion', response: '"Use the conversion reference. If 1 inch = 2.54 cm, then multiply your inches by 2.54 to get centimeters."' },
-        { pattern: 'Misreading scale graduation', response: '"First check what each mark represents. If there are 4 small marks between 0 and 1, each mark is a quarter (0.25)."' },
+        { pattern: 'Counting from 1 instead of 0', response: '"Remember, the ruler starts at 0, not 1. Line up the left edge of the shape with the 0 mark, then count from there."' },
+        { pattern: 'Not aligning shape to the edge of the ruler', response: '"Make sure to drag the shape so its left side touches the 0 mark on the ruler. That gives you an accurate reading."' },
+        { pattern: 'Reading between marks incorrectly', response: '"Look at where the shape ends between two marks. Count the small lines between the numbers — each small line is one step. Is the edge closer to the lower mark or the higher one?"' },
       ],
       aiDirectives: [
         {
-          title: 'PHASE-AWARE MEASUREMENT COACHING',
+          title: 'DRAG-TO-RULER MEASUREMENT COACHING',
           instruction:
-            'In Estimate phase, ask students to compare to known objects before revealing the tool. '
-            + 'In Measure phase, teach reading marks: "Count the small lines between numbers — each one is one step." '
-            + 'In Convert phase, reference the conversion fact and guide step-by-step multiplication/division.',
+            'Guide students through the drag-to-ruler interaction step by step. '
+            + 'First, encourage them to drag the shape onto the ruler: "Grab the shape and slide it onto the ruler." '
+            + 'Then, teach alignment: "Line up the left edge with the 0 mark." '
+            + 'Finally, teach reading: "Now look where the right edge ends — that number is your measurement."',
         },
         {
-          title: 'ESTIMATION CELEBRATION',
+          title: 'RULER READING REINFORCEMENT',
           instruction:
-            'When a student estimates within 15% of the actual value, celebrate: "Amazing estimate! You were so close!" '
-            + 'When further off, encourage: "Good try! After measuring, you\'ll get even better at estimating next time." '
-            + 'Build estimation confidence — it is a critical real-world skill.',
+            'Reinforce that measurement means finding how many units fit along the object. '
+            + 'For whole numbers: "Count the spaces between 0 and where the shape ends." '
+            + 'For fractional precision: "Look at the small marks between the numbers. If there are 2 marks between each number, each mark is a half."',
         },
       ],
     },

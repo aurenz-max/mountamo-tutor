@@ -1,11 +1,12 @@
 """
-DAG Analysis Engine — Pure Algorithms for Diagnostic Placement
+DAG Analysis Engine — Pure Graph Algorithms for Curriculum DAGs
 
 Stateless, IO-free analysis of curriculum prerequisite graphs (DAGs).
 All methods are static/pure: given nodes + edges, produce topological
 metrics, probe selections, and inference propagations.
 
-Used by DiagnosticService but fully testable in isolation.
+Used by PulseEngine for cold-start probes, leapfrog ancestor walks,
+and frontier computation.
 
 Key algorithms:
   - Kahn's topological sort
@@ -18,17 +19,61 @@ Key algorithms:
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
 
-from ..models.diagnostic import (
-    DEFAULT_PROBE_ITEMS,
-    DiagnosticStatus,
-    InferenceMade,
-    NodeMetrics,
-    ProbeRequest,
-    SubskillClassification,
-)
+# Default number of items per probe
+DEFAULT_PROBE_ITEMS = 3
+
+
+class DiagnosticStatus(str, Enum):
+    """Classification status for a subskill during DAG inference."""
+    UNKNOWN = "unknown"
+    PROBED_MASTERED = "probed_mastered"
+    PROBED_NOT_MASTERED = "probed_not_mastered"
+    INFERRED_MASTERED = "inferred_mastered"
+    INFERRED_NOT_MASTERED = "inferred_not_mastered"
+
+
+@dataclass
+class NodeMetrics:
+    """Topological metrics for a single DAG node."""
+    node_id: str
+    depth: int = 0
+    height: int = 0
+    chain_length: int = 0
+
+
+@dataclass
+class ProbeRequest:
+    """A request to probe a specific subskill."""
+    subskill_id: str
+    subject: str = ""
+    skill_id: str = ""
+    skill_description: str = ""
+    description: str = ""
+    items_needed: int = DEFAULT_PROBE_ITEMS
+    depth: int = 0
+    chain_length: int = 0
+    reason: str = ""
+
+
+@dataclass
+class SubskillClassification:
+    """Classification state for a subskill during inference."""
+    subskill_id: str
+    status: DiagnosticStatus = DiagnosticStatus.UNKNOWN
+    inferred_from: Optional[str] = None
+
+
+@dataclass
+class InferenceMade:
+    """Record of a single inference propagation."""
+    source_probe: str
+    direction: str  # "upward" or "downward"
+    affected_node: str
+    new_status: DiagnosticStatus
 
 
 class DAGAnalysisEngine:

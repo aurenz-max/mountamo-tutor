@@ -649,11 +649,16 @@ class PulseEngine:
         skill_id = item_spec["skill_id"]
         subject = session["subject"]
 
-        # 2. Get old θ
+        # 2. Pre-fetch ability + lifecycle in one pass (saves 2 duplicate reads)
         old_ability = await self.firestore.get_student_ability(student_id, skill_id)
-        old_theta = old_ability.get("theta", DEFAULT_STUDENT_THETA) if old_ability else DEFAULT_STUDENT_THETA
+        old_lifecycle = await self.firestore.get_mastery_lifecycle(
+            student_id, subskill_id
+        )
 
-        # 3. Update IRT (θ and β)
+        old_theta = old_ability.get("theta", DEFAULT_STUDENT_THETA) if old_ability else DEFAULT_STUDENT_THETA
+        old_gate = old_lifecycle.get("current_gate", 0) if old_lifecycle else 0
+
+        # 3. Update IRT (θ and β) — pass pre-fetched ability to avoid re-read
         cal_result = await self.calibration.process_submission(
             student_id=student_id,
             skill_id=skill_id,
@@ -662,6 +667,7 @@ class PulseEngine:
             eval_mode=result.eval_mode,
             score=result.score,
             source="practice",
+            prefetched_ability=old_ability,
         )
 
         new_theta = cal_result.get("student_theta", old_theta)
@@ -674,13 +680,8 @@ class PulseEngine:
             earned_level=earned_level,
         )
 
-        # 4. Update mastery gate
+        # 4. Update mastery gate — pass pre-fetched lifecycle to avoid re-read
         gate_update = None
-        old_lifecycle = await self.firestore.get_mastery_lifecycle(
-            student_id, subskill_id
-        )
-        old_gate = old_lifecycle.get("current_gate", 0) if old_lifecycle else 0
-
         eval_source = self._get_eval_source(band, old_gate)
 
         mastery_result = await self.mastery.process_eval_result(
@@ -690,6 +691,7 @@ class PulseEngine:
             skill_id=skill_id,
             score=result.score,
             source=eval_source,
+            prefetched_lifecycle=old_lifecycle,
         )
 
         new_gate = mastery_result.get("current_gate", old_gate)
@@ -765,6 +767,7 @@ class PulseEngine:
             theta_update=theta_update,
             gate_update=gate_update,
             leapfrog=leapfrog,
+            gate_progress=cal_result.get("gate_progress"),
             session_progress={
                 "items_completed": completed_count,
                 "items_total": total_count,
@@ -831,20 +834,26 @@ class PulseEngine:
         all_nodes = graph_data["graph"].get("nodes", [])
         node_map = {n["id"]: n for n in all_nodes}
 
-        # Walk upstream: find all ancestors of probed skills
-        # that aren't already mastered
-        inferred_skills: List[str] = []
+        # Collect all candidate IDs (probed + ancestors), then batch-read
+        all_ancestor_ids: Set[str] = set()
         for probed_id in probed_skills:
-            ancestors = DAGAnalysisEngine.get_ancestors(probed_id, all_edges)
-            for ancestor_id in ancestors:
-                existing = await self.firestore.get_mastery_lifecycle(
-                    student_id, ancestor_id
-                )
-                current_gate = existing.get("current_gate", 0) if existing else 0
-                if current_gate < LEAPFROG_INFERRED_GATE:
-                    inferred_skills.append(ancestor_id)
+            all_ancestor_ids.update(DAGAnalysisEngine.get_ancestors(probed_id, all_edges))
 
-        # Deduplicate
+        # Combine probed skills + ancestors for a single batch read
+        candidate_ids = list(set(probed_skills) | all_ancestor_ids)
+        lifecycle_batch = await self.firestore.get_mastery_lifecycles_batch(
+            student_id, candidate_ids
+        )
+
+        # Filter to skills not yet at the inferred gate
+        inferred_skills: List[str] = []
+        for sid in candidate_ids:
+            existing = lifecycle_batch.get(sid)
+            current_gate = existing.get("current_gate", 0) if existing else 0
+            if current_gate < LEAPFROG_INFERRED_GATE:
+                inferred_skills.append(sid)
+
+        # Deduplicate (already unique from set, but defensive)
         inferred_skills = list(set(inferred_skills))
 
         if not inferred_skills:
@@ -887,20 +896,23 @@ class PulseEngine:
                 student_id, lifecycles_to_seed
             )
 
-        # Seed ability for inferred skills
+        # Seed ability for inferred skills (batch write)
+        abilities_to_seed: List[Dict] = []
         for sid in inferred_skills:
             node = node_map.get(sid, {})
             ability_skill_id = node.get("skill_id", sid)
-            ability = StudentAbility(
+            abilities_to_seed.append(StudentAbility(
                 student_id=student_id,
                 skill_id=ability_skill_id,
                 theta=LEAPFROG_INFERRED_THETA,
                 sigma=LEAPFROG_INFERRED_SIGMA,
                 earned_level=LEAPFROG_INFERRED_THETA,
                 prior_source="pulse_leapfrog",
-            )
-            await self.firestore.upsert_student_ability(
-                student_id, ability_skill_id, ability.model_dump()
+            ).model_dump())
+
+        if abilities_to_seed:
+            await self.firestore.batch_write_student_abilities(
+                student_id, abilities_to_seed
             )
 
         # Refresh frontier

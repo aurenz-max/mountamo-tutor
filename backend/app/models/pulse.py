@@ -150,6 +150,7 @@ class PulseResultResponse(BaseModel):
     theta_update: ThetaUpdate
     gate_update: Optional[GateUpdate] = None
     leapfrog: Optional[LeapfrogEvent] = None
+    gate_progress: Optional[Dict[str, Any]] = None
     session_progress: Dict[str, Any] = Field(default_factory=dict)
 
 

@@ -347,54 +347,6 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
               </div>
             </SpotlightCard>
 
-            {/* Skills Explorer (Diagnostic Placement) Button */}
-            <SpotlightCard
-              color="250, 204, 21"
-              onClick={() => onNavigate('diagnostic')}
-              className="bg-gradient-to-br from-amber-900/20 to-yellow-900/20"
-            >
-              <div className="p-6 flex items-start gap-4">
-                <div className="w-14 h-14 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                  <span className="text-2xl">🧭</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1 group-hover:text-amber-200 transition-colors">
-                    Skills Explorer
-                  </h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">
-                    Discover what you already know and build a personalized learning path
-                  </p>
-                </div>
-                <svg className="w-5 h-5 text-slate-600 group-hover:text-amber-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                </svg>
-              </div>
-            </SpotlightCard>
-
-            {/* Learning Map Button */}
-            <SpotlightCard
-              color="20, 184, 166"
-              onClick={() => onNavigate('knowledge-map')}
-              className="bg-gradient-to-br from-teal-900/20 to-emerald-900/20"
-            >
-              <div className="p-6 flex items-start gap-4">
-                <div className="w-14 h-14 bg-teal-500/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                  <span className="text-2xl">{'\u{1F5FA}\u{FE0F}'}</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1 group-hover:text-teal-200 transition-colors">
-                    Learning Map
-                  </h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">
-                    See what you already know and what&apos;s ready to learn next
-                  </p>
-                </div>
-                <svg className="w-5 h-5 text-slate-600 group-hover:text-teal-400 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                </svg>
-              </div>
-            </SpotlightCard>
-
             {/* Analytics Dashboard Button */}
             <SpotlightCard
               color="139, 92, 246"
@@ -441,6 +393,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
                 { panel: 'chemistry-primitives-tester', icon: '🧪', title: 'Chemistry Primitives Tester', desc: 'Test reaction labs, equation balancers, pH explorers, and other chemistry components', color: '16, 185, 129', cardClass: 'bg-gradient-to-br from-emerald-900/20 to-teal-900/20', iconClass: 'bg-emerald-500/20', hoverTitle: 'group-hover:text-emerald-200', hoverArrow: 'group-hover:text-emerald-400' },
                 { panel: 'language-arts-tester', icon: '📚', title: 'Language Arts Tester', desc: 'Test K-6 ELA primitives: paragraph architect, story map, sentence builder, listen & respond', color: '244, 114, 182', cardClass: 'bg-gradient-to-br from-pink-900/20 to-fuchsia-900/20', iconClass: 'bg-pink-500/20', hoverTitle: 'group-hover:text-pink-200', hoverArrow: 'group-hover:text-pink-400' },
                 { panel: 'lumina-tutor-tester', icon: '🤖', title: 'Lumina Tutor Tester', desc: 'Test AI tutoring scaffolding: inspect catalog metadata, verify WebSocket connection, test hints', color: '129, 140, 248', cardClass: 'bg-gradient-to-br from-indigo-900/20 to-violet-900/20', iconClass: 'bg-indigo-500/20', hoverTitle: 'group-hover:text-indigo-200', hoverArrow: 'group-hover:text-indigo-400' },
+                { panel: 'calibration-simulator', icon: '📈', title: 'IRT Calibration Simulator', desc: 'Simulate theta/EL trajectories: pick primitives, set scores, watch ability evolve across difficulty modes', color: '251, 146, 60', cardClass: 'bg-gradient-to-br from-orange-900/20 to-amber-900/20', iconClass: 'bg-orange-500/20', hoverTitle: 'group-hover:text-orange-200', hoverArrow: 'group-hover:text-orange-400' },
               ] as const).map(({ panel, icon, title, desc, color, cardClass, iconClass, hoverTitle, hoverArrow }) => (
                 <SpotlightCard
                   key={panel}

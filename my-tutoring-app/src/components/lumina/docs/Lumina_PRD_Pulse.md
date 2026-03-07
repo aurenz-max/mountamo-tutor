@@ -153,6 +153,28 @@ Action:
 
 The conservative bias matches diagnostic placement: inferred mastery skips to Gate 2 (practice/verification), not Gate 4 (fully mastered). The 3-day retest will verify the inference.
 
+### 3.4 Per-Primitive Gate Thresholds
+
+Each primitive has a different difficulty ceiling determined by its available evaluation modes (beta range). Gate thresholds are computed per-primitive using a proportional formula with a minimum spread floor. This ensures:
+
+1. Easy primitives (Sorting Station β=1.5, Counting Board β=1.0–2.5) require ~5-8 correct answers for mastery, not 2-3.
+2. Hard primitives (Ten Frame β=1.5–5.0, Area Model β=5.0) require proportionally more (~10-20 correct answers).
+3. Gates are always monotonically increasing, even for single-mode primitives.
+
+```
+MIN_GATE_SPREAD = 2.5
+
+spread = max(MIN_GATE_SPREAD, maxBeta + 1.0 - minBeta)
+G1 = minBeta + spread × 0.20
+G2 = minBeta + spread × 0.45
+G3 = minBeta + spread × 0.75
+G4 = minBeta + spread × 1.00
+```
+
+**This directly influences session assembly:** primitives with low beta ceilings (Counting Board G4=3.5) are naturally selected for students with low θ, while primitives with high ceilings (Ten Frame G4=6.0) are selected for students with higher θ. The gate threshold formula and the θ→mode mapping (§3.1) use the same underlying beta values, keeping difficulty selection and mastery assessment aligned.
+
+See `lumina_difficulty_calibration_prd.md` §6.5.4 for the full per-primitive gate table, IRT ceiling effect analysis, and calibration simulator details.
+
 ---
 
 ## 4. Cold Start — First Session as Mini-Diagnostic

@@ -26,7 +26,6 @@ from .api.endpoints import (
     velocity,
     mastery,
     skill_progress,
-    diagnostic,
     calibration,
     pulse)
 
@@ -228,14 +227,6 @@ app.include_router(
     mastery.router,
     prefix="/api/mastery",
     tags=["mastery-lifecycle"],
-    dependencies=[Depends(get_user_context)]
-)
-
-# Diagnostic Placement Router — adaptive diagnostic assessment engine
-app.include_router(
-    diagnostic.router,
-    prefix="/api/diagnostic",
-    tags=["diagnostic"],
     dependencies=[Depends(get_user_context)]
 )
 

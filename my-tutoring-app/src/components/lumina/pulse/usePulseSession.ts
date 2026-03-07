@@ -16,6 +16,7 @@ import type {
   PulseSessionSummary,
   LeapfrogEvent,
   RecentPrimitive,
+  GateProgress,
 } from './types';
 
 import type { GradeLevel } from '../components/GradeLevelSelector';
@@ -49,6 +50,7 @@ export interface UsePulseSessionReturn {
   hydratedItem: HydratedPracticeItem | null;
   results: PulseResultResponse[];
   leapfrogs: LeapfrogEvent[];
+  latestGateProgress: GateProgress | null;
   summary: PulseSessionSummary | null;
   error: string | null;
   streamingMessage: string;
@@ -130,6 +132,7 @@ export function usePulseSession({
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [results, setResults] = useState<PulseResultResponse[]>([]);
   const [leapfrogs, setLeapfrogs] = useState<LeapfrogEvent[]>([]);
+  const [latestGateProgress, setLatestGateProgress] = useState<GateProgress | null>(null);
   const [summary, setSummary] = useState<PulseSessionSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [streamingMessage, setStreamingMessage] = useState('');
@@ -485,6 +488,11 @@ export function usePulseSession({
       // Track results
       setResults((prev) => [...prev, response]);
 
+      // Track gate progress
+      if (response.gate_progress) {
+        setLatestGateProgress(response.gate_progress);
+      }
+
       // Track leapfrogs
       if (response.leapfrog) {
         setLeapfrogs((prev) => [...prev, response.leapfrog!]);
@@ -636,6 +644,7 @@ export function usePulseSession({
     setHydratedItem(null);
     setResults([]);
     setLeapfrogs([]);
+    setLatestGateProgress(null);
     setSummary(null);
     setError(null);
     setStreamingMessage('');
@@ -667,6 +676,7 @@ export function usePulseSession({
     hydratedItem,
     results,
     leapfrogs,
+    latestGateProgress,
     summary,
     error,
     streamingMessage,

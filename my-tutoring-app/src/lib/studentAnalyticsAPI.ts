@@ -231,6 +231,100 @@ export interface EngagementMetricsResponse {
   generated_at?: string;
 }
 
+// Knowledge Graph types (Pulse-native)
+export interface KnowledgeGraphNode {
+  subskill_id: string;
+  skill_id: string;
+  description: string;
+  depth: number;
+  status: 'mastered' | 'inferred' | 'in_review' | 'in_progress' | 'frontier' | 'not_started' | 'locked';
+  current_gate: number;
+  theta?: number;
+  earned_level?: number;
+  inferred_from?: string;
+  prerequisite_ids: string[];
+  dependent_ids: string[];
+}
+
+export interface KnowledgeGraphProgressResponse {
+  student_id: number;
+  subject: string;
+  generated_at: string;
+  total_nodes: number;
+  mastered_direct: number;
+  mastered_inferred: number;
+  in_progress: number;
+  in_review: number;
+  not_started: number;
+  locked: number;
+  frontier_node_ids: string[];
+  frontier_depth: number;
+  max_depth: number;
+  total_leapfrogs: number;
+  total_skills_inferred: number;
+  leapfrog_retest_pass_rate: number | null;
+  nodes?: KnowledgeGraphNode[];
+  cached?: boolean;
+}
+
+// Pulse Session History types
+export interface PulseSessionBandBreakdown {
+  frontier_items: number;
+  current_items: number;
+  review_items: number;
+  frontier_success_rate: number | null;
+  current_success_rate: number | null;
+  review_success_rate: number | null;
+}
+
+export interface PulseSessionLeapfrogSummary {
+  lesson_group_id: string;
+  probed_skills: string[];
+  inferred_skills: string[];
+  aggregate_score: number;
+}
+
+export interface PulseSessionHistoryItem {
+  session_id: string;
+  subject: string;
+  status: string;
+  is_cold_start: boolean;
+  items_completed: number;
+  items_total: number;
+  band_breakdown: PulseSessionBandBreakdown;
+  leapfrogs: PulseSessionLeapfrogSummary[];
+  skills_inferred: number;
+  avg_score: number | null;
+  duration_ms: number | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface PulseSessionThetaPoint {
+  session_id: string;
+  skill_id: string;
+  theta_before: number;
+  theta_after: number;
+  delta: number;
+  timestamp: string;
+}
+
+export interface PulseSessionHistoryResponse {
+  student_id: number;
+  subject: string | null;
+  generated_at: string;
+  total_sessions: number;
+  completed_sessions: number;
+  total_items_completed: number;
+  total_leapfrogs: number;
+  total_skills_inferred: number;
+  overall_frontier_success_rate: number | null;
+  avg_session_score: number | null;
+  sessions: PulseSessionHistoryItem[];
+  theta_trajectory: PulseSessionThetaPoint[];
+  cached?: boolean;
+}
+
 // UPDATED API OBJECT - Now uses authApiClient for authentication
 export const analyticsApi = {
   // Get hierarchical metrics for a student
@@ -378,6 +472,45 @@ export const analyticsApi = {
     return authApi.get<ScoreTrendsResponse>(endpoint);
   },
 
+  // Get knowledge graph progress for a student
+  async getKnowledgeGraphProgress(
+    studentId: number,
+    options: {
+      subject: string;
+      includeNodes?: boolean;
+    }
+  ): Promise<KnowledgeGraphProgressResponse> {
+    const { subject, includeNodes } = options;
+
+    const params = new URLSearchParams();
+    params.append('subject', subject);
+    if (includeNodes !== undefined) params.append('include_nodes', includeNodes.toString());
+
+    const endpoint = `/api/analytics/student/${studentId}/knowledge-graph?${params.toString()}`;
+    return authApi.get<KnowledgeGraphProgressResponse>(endpoint);
+  },
+
+  // Get pulse session history for a student
+  async getPulseSessionHistory(
+    studentId: number,
+    options: {
+      subject?: string;
+      limit?: number;
+      includeTheta?: boolean;
+    } = {}
+  ): Promise<PulseSessionHistoryResponse> {
+    const { subject, limit, includeTheta } = options;
+
+    const params = new URLSearchParams();
+    if (subject) params.append('subject', subject);
+    if (limit) params.append('limit', limit.toString());
+    if (includeTheta !== undefined) params.append('include_theta', includeTheta.toString());
+
+    const queryString = params.toString();
+    const endpoint = `/api/analytics/student/${studentId}/pulse-sessions${queryString ? `?${queryString}` : ''}`;
+    return authApi.get<PulseSessionHistoryResponse>(endpoint);
+  },
+
   // Get engagement metrics (streaks, active days, daily breakdown)
   async getEngagementMetrics(
     studentId: number,
@@ -405,3 +538,5 @@ export const getRecommendations = analyticsApi.getRecommendations;
 export const getVelocityMetrics = analyticsApi.getVelocityMetrics;
 export const getScoreTrends = analyticsApi.getScoreTrends;
 export const getEngagementMetrics = analyticsApi.getEngagementMetrics;
+export const getKnowledgeGraphProgress = analyticsApi.getKnowledgeGraphProgress;
+export const getPulseSessionHistory = analyticsApi.getPulseSessionHistory;

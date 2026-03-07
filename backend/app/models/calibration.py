@@ -41,6 +41,10 @@ THETA_GRID_STEP = 0.1
 # Maximum θ history entries per ability document
 MAX_THETA_HISTORY = 100
 
+# Per-primitive gate threshold parameters (PRD §6.5.4)
+MIN_GATE_SPREAD = 2.5
+GATE_PROPORTIONS = (0.20, 0.45, 0.75, 1.00)  # G1, G2, G3, G4
+
 
 # ---------------------------------------------------------------------------
 # Item Calibration Document
@@ -128,3 +132,56 @@ class StudentAbility(BaseModel):
     updated_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
     )
+
+
+# ---------------------------------------------------------------------------
+# Per-Primitive Gate Thresholds (PRD §6.5.4)
+# ---------------------------------------------------------------------------
+
+class GateThresholds(BaseModel):
+    """Gate thresholds for a specific primitive's beta range."""
+    g1: float
+    g2: float
+    g3: float
+    g4: float
+
+
+class PrimitiveGateProgress(BaseModel):
+    """Student's gate progress on a specific primitive."""
+    primitive_type: str
+    current_gate: int = Field(ge=0, le=4)
+    thresholds: GateThresholds
+    theta: float
+    next_gate: Optional[int] = None
+    next_gate_theta: Optional[float] = None
+    min_beta: float
+    max_beta: float
+
+
+def compute_gate_thresholds(min_beta: float, max_beta: float) -> GateThresholds:
+    """
+    Compute gate thresholds from a primitive's beta range.
+
+    Uses proportional placement with MIN_GATE_SPREAD floor to ensure
+    monotonically increasing gates and meaningful evidence requirements.
+    See PRD §6.5.4.
+    """
+    raw_spread = max_beta + 1.0 - min_beta
+    spread = max(MIN_GATE_SPREAD, raw_spread)
+    g1, g2, g3, g4 = (
+        round(min_beta + spread * p, 2) for p in GATE_PROPORTIONS
+    )
+    return GateThresholds(g1=g1, g2=g2, g3=g3, g4=g4)
+
+
+def compute_gate_from_theta(theta: float, thresholds: GateThresholds) -> int:
+    """Determine which gate a theta value has reached."""
+    if theta >= thresholds.g4:
+        return 4
+    if theta >= thresholds.g3:
+        return 3
+    if theta >= thresholds.g2:
+        return 2
+    if theta >= thresholds.g1:
+        return 1
+    return 0

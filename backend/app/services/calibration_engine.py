@@ -27,10 +27,17 @@ from ..models.calibration import (
     THETA_GRID_MIN,
     THETA_GRID_STEP,
     ItemCalibration,
+    PrimitiveGateProgress,
     StudentAbility,
     ThetaHistoryEntry,
+    compute_gate_from_theta,
+    compute_gate_thresholds,
 )
-from .calibration.problem_type_registry import get_item_key, get_prior_beta
+from .calibration.problem_type_registry import (
+    get_item_key,
+    get_primitive_beta_range,
+    get_prior_beta,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +69,8 @@ class CalibrationEngine:
         eval_mode: str,
         score: float,
         source: str = "practice",
+        *,
+        prefetched_ability: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """
         Process a single submission: update item β and student θ inline.
@@ -74,6 +83,7 @@ class CalibrationEngine:
             eval_mode:      Evaluation mode (e.g., "subitize").
             score:          Score on 0–10 scale.
             source:         "lesson" | "practice".
+            prefetched_ability: Pre-loaded ability doc to skip a Firestore read.
 
         Returns:
             Dict with updated calibrated_beta, credibility_z,
@@ -88,8 +98,11 @@ class CalibrationEngine:
             f"item={item_key}, score={score}, correct={is_correct}"
         )
 
-        # 1. Fetch or create student ability doc
-        ability = await self._get_or_create_ability(student_id, skill_id)
+        # 1. Fetch or create student ability doc (skip read if pre-fetched)
+        if prefetched_ability is not None:
+            ability = StudentAbility(**prefetched_ability)
+        else:
+            ability = await self._get_or_create_ability(student_id, skill_id)
 
         # 2. Fetch or create item calibration doc
         item_cal = await self._get_or_create_item_calibration(
@@ -113,11 +126,15 @@ class CalibrationEngine:
             student_id, skill_id, ability.model_dump()
         )
 
+        # 6. Compute per-primitive gate progress
+        gate_progress = self.get_gate_progress(primitive_type, ability.theta)
+
         logger.info(
             f"[CALIBRATION] Result: item_beta={item_cal.calibrated_beta:.2f} "
             f"(Z={item_cal.credibility_z:.3f}), "
             f"student_theta={ability.theta:.2f}, "
-            f"EL={ability.earned_level:.1f}"
+            f"EL={ability.earned_level:.1f}, "
+            f"gate={gate_progress.current_gate}/4"
         )
 
         return {
@@ -126,7 +143,39 @@ class CalibrationEngine:
             "credibility_z": item_cal.credibility_z,
             "student_theta": ability.theta,
             "earned_level": ability.earned_level,
+            "gate_progress": gate_progress.model_dump(),
         }
+
+    # ------------------------------------------------------------------
+    # Per-primitive gate progress (PRD §6.5.4)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def get_gate_progress(
+        primitive_type: str, theta: float
+    ) -> PrimitiveGateProgress:
+        """Compute gate progress for a student's theta on a given primitive."""
+        min_beta, max_beta = get_primitive_beta_range(primitive_type)
+        thresholds = compute_gate_thresholds(min_beta, max_beta)
+        current_gate = compute_gate_from_theta(theta, thresholds)
+
+        next_gate = None
+        next_gate_theta = None
+        gate_values = [thresholds.g1, thresholds.g2, thresholds.g3, thresholds.g4]
+        if current_gate < 4:
+            next_gate = current_gate + 1
+            next_gate_theta = gate_values[current_gate]
+
+        return PrimitiveGateProgress(
+            primitive_type=primitive_type,
+            current_gate=current_gate,
+            thresholds=thresholds,
+            theta=theta,
+            next_gate=next_gate,
+            next_gate_theta=next_gate_theta,
+            min_beta=min_beta,
+            max_beta=max_beta,
+        )
 
     # ------------------------------------------------------------------
     # Item calibration update (PRD §5.2)

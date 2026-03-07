@@ -29,7 +29,6 @@ from .services.calibration_engine import CalibrationEngine
 from .services.planning_service import PlanningService
 from .services.velocity_service import VelocityService
 from .services.firestore_analytics import FirestoreAnalyticsService
-from .services.diagnostic_service import DiagnosticService
 from .services.progress_display_service import ProgressDisplayService
 from .services.pulse_engine import PulseEngine
 
@@ -71,7 +70,6 @@ _calibration_engine: Optional[CalibrationEngine] = None
 _planning_service: Optional[PlanningService] = None
 _velocity_service: Optional[VelocityService] = None
 _firestore_analytics_service: Optional[FirestoreAnalyticsService] = None
-_diagnostic_service: Optional[DiagnosticService] = None
 _progress_display_service: Optional[ProgressDisplayService] = None
 _pulse_engine: Optional[PulseEngine] = None
 
@@ -483,26 +481,6 @@ def get_progress_display_service(
         )
         logger.info("✅ ProgressDisplayService initialized successfully")
     return _progress_display_service
-
-
-async def get_diagnostic_service(
-    firestore_service: FirestoreService = Depends(get_firestore_service),
-    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
-    mastery_lifecycle_engine: MasteryLifecycleEngine = Depends(get_mastery_lifecycle_engine),
-    calibration_engine: CalibrationEngine = Depends(get_calibration_engine),
-) -> DiagnosticService:
-    """Get or create DiagnosticService singleton."""
-    global _diagnostic_service
-    if _diagnostic_service is None:
-        logger.info("Initializing DiagnosticService")
-        _diagnostic_service = DiagnosticService(
-            firestore_service=firestore_service,
-            learning_paths_service=learning_paths_service,
-            mastery_lifecycle_engine=mastery_lifecycle_engine,
-            calibration_engine=calibration_engine,
-        )
-        logger.info("✅ DiagnosticService initialized successfully")
-    return _diagnostic_service
 
 
 async def get_pulse_engine(

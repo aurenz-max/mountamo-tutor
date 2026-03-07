@@ -14,7 +14,7 @@ Prior assignments follow the PRD §5.3 mode-to-difficulty mapping:
   Mode 6 (symbolic, multi-step/cross-concept)    → β ≈ 8.0
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 
 class PriorConfig:
@@ -138,6 +138,20 @@ def get_prior_beta(primitive_type: str, eval_mode: str) -> float:
     if config is None:
         return DEFAULT_PRIOR_BETA
     return config.prior_beta
+
+
+def get_primitive_beta_range(primitive_type: str) -> Tuple[float, float]:
+    """Get the (min_beta, max_beta) for a primitive type across all eval modes.
+
+    Returns the range of prior betas for all registered modes of this primitive.
+    For single-mode primitives, min == max.
+    Falls back to (DEFAULT_PRIOR_BETA, DEFAULT_PRIOR_BETA) for unregistered types.
+    """
+    modes = PROBLEM_TYPE_REGISTRY.get(primitive_type)
+    if not modes:
+        return (DEFAULT_PRIOR_BETA, DEFAULT_PRIOR_BETA)
+    betas = [config.prior_beta for config in modes.values()]
+    return (min(betas), max(betas))
 
 
 def get_item_key(primitive_type: str, eval_mode: str) -> str:

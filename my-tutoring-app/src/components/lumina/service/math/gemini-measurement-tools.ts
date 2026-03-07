@@ -1,153 +1,117 @@
 import { Type, Schema } from "@google/genai";
-import { MeasurementToolsData } from "../../primitives/visual-primitives/math/MeasurementTools";
+import { MeasurementToolsData, MeasurementShape } from "../../primitives/visual-primitives/math/MeasurementTools";
 import { ai } from "../geminiClient";
 
 /**
- * Simplified schema for Measurement Tools.
- * 2 types only (outer object + challenge array item) to stay within Gemini's
+ * Gemini schema for the new MeasurementTools shape-based interface.
+ * 2 types (outer object + shape array item) to stay within Gemini's
  * reliable JSON generation limits.
  */
 const measurementToolsSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    toolType: {
+    title: {
       type: Type.STRING,
-      description: "One of: 'ruler', 'scale', 'measuring_cup', 'thermometer'",
+      description: "Short activity title, e.g. 'Measure the Shapes'",
     },
-    measurementType: {
-      type: Type.STRING,
-      description: "One of: 'length', 'weight', 'capacity', 'temperature'",
+    rulerLengthInches: {
+      type: Type.NUMBER,
+      description: "Total ruler length in inches (must be >= largest shape width). Typically 12.",
     },
     unit: {
       type: Type.STRING,
-      description: "Primary unit shown on the tool: 'cm', 'm', 'in', 'ft', 'g', 'kg', 'lb', 'mL', 'L', 'cup', '°C', '°F'",
+      description: "One of: 'inches', 'centimeters'",
     },
     precision: {
       type: Type.STRING,
-      description: "Tick mark precision: 'whole', 'half', or 'quarter'",
+      description: "One of: 'whole', 'half'",
     },
     gradeBand: {
       type: Type.STRING,
-      description: "'1-2' or '3-5'",
+      description: "One of: 'K-2', '3-5'",
     },
-    conversionFact: {
-      type: Type.STRING,
-      description: "Conversion fact for convert challenges, e.g. '1 inch = 2.54 cm'. Empty string if no conversion challenges.",
-    },
-    challenges: {
+    shapes: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
-          id: { type: Type.STRING, description: "Unique ID, e.g. 'c1', 'c2'" },
-          type: { type: Type.STRING, description: "One of: 'estimate', 'read', 'convert'" },
-          objectName: { type: Type.STRING, description: "Object name, e.g. 'Pencil'" },
-          objectEmoji: { type: Type.STRING, description: "Single emoji for the object, e.g. '✏️'" },
-          value: { type: Type.NUMBER, description: "The actual measurement value displayed on the tool" },
-          targetAnswer: { type: Type.NUMBER, description: "Correct answer the student must enter" },
-          targetUnit: { type: Type.STRING, description: "Unit the student answers in" },
-          acceptableMin: { type: Type.NUMBER, description: "Min acceptable answer (for estimate challenges only)" },
-          acceptableMax: { type: Type.NUMBER, description: "Max acceptable answer (for estimate challenges only)" },
-          hint: { type: Type.STRING, description: "Hint shown after wrong attempts" },
-          instruction: { type: Type.STRING, description: "Student-facing instruction, warm and encouraging" },
+          id: { type: Type.STRING, description: "Unique ID, e.g. 's1', 's2'" },
+          type: { type: Type.STRING, description: "One of: 'rectangle', 'square'" },
+          widthInches: { type: Type.NUMBER, description: "Width of the shape in inches (the measurement the student must find)" },
+          heightInches: { type: Type.NUMBER, description: "Visual height in inches (1-2, just for display)" },
+          color: { type: Type.STRING, description: "Fill color in rgba format, e.g. 'rgba(99,102,241,0.35)'" },
+          label: { type: Type.STRING, description: "Descriptive label, e.g. 'Blue Rectangle', 'Red Square'" },
+          hint: { type: Type.STRING, description: "Helpful hint that guides without revealing the answer" },
         },
-        required: ["id", "type", "objectName", "objectEmoji", "value", "targetAnswer", "targetUnit", "hint", "instruction"],
+        required: ["id", "type", "widthInches", "heightInches", "color", "label", "hint"],
       },
-      description: "Array of 4-6 progressive measurement challenges",
+      description: "Array of 3-5 shapes to measure",
     },
   },
-  required: ["toolType", "measurementType", "unit", "precision", "gradeBand", "challenges"],
+  required: ["title", "rulerLengthInches", "unit", "precision", "gradeBand", "shapes"],
 };
 
 /**
- * Generate measurement tools data for interactive measurement activities.
+ * Generate measurement tools data for interactive ruler-based measurement.
  *
- * Three challenge types:
- * - estimate: Student sees object name/emoji (no tool) and guesses measurement
- * - read: Student sees a read-only tool visualization and reads the value
- * - convert: Student converts a given measurement to another unit
+ * Students drag colored shapes onto a ruler and read the width.
  */
 export const generateMeasurementTools = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    toolType?: string;
-    measurementType?: string;
-    unit?: string;
-    gradeBand?: '1-2' | '3-5';
+    unit?: 'inches' | 'centimeters';
+    precision?: 'whole' | 'half';
+    gradeBand?: 'K-2' | '3-5';
   },
 ): Promise<MeasurementToolsData> => {
   const prompt = `
-Create an educational measurement activity for teaching "${topic}" to ${gradeLevel} students.
+Create a measurement activity for teaching "${topic}" to ${gradeLevel} students.
 
 THE STUDENT EXPERIENCE:
-- Students see objects displayed on READ-ONLY measurement tools (ruler, scale, measuring cup, thermometer)
-- They must READ the value from the tool visualization and type their answer
-- They do NOT drag sliders — they visually read the instrument like in real life
+- Students see colored shapes (rectangles and squares) in a holding area.
+- They drag each shape onto a horizontal ruler that starts at 0.
+- The shape's LEFT edge aligns with 0 on the ruler.
+- They read where the RIGHT edge falls on the ruler to determine the width.
+- They type their answer (in the specified unit).
 
-THREE CHALLENGE TYPES:
-
-1. "estimate" — Student sees the object emoji and name but NO measurement tool.
-   They guess the measurement based on experience.
-   - targetAnswer = the actual measurement value
-   - acceptableMin = targetAnswer * 0.75 (allow 25% margin)
-   - acceptableMax = targetAnswer * 1.25
-   - targetUnit = the primary unit
-
-2. "read" — Student sees the object displayed ON the measurement tool.
-   For a ruler: a colored bar sits on the ruler from 0 to the value.
-   For a scale: a gauge shows the weight.
-   For a cup: liquid fills to the value.
-   For a thermometer: mercury rises to the value.
-   - targetAnswer = value (they must read the exact value from the tool)
-   - targetUnit = the primary unit
-   - Do NOT set acceptableMin/acceptableMax
-
-3. "convert" — Student is given the measurement in one unit and converts to another.
-   - value = the known measurement
-   - targetAnswer = the mathematically correct converted value
-   - targetUnit = the TARGET unit (different from the primary unit)
-   - Do NOT set acceptableMin/acceptableMax
-
-TOOL & UNIT MAPPING:
-- ruler → length → cm, m, in, ft
-- scale → weight → g, kg, lb
-- measuring_cup → capacity → mL, L, cup
-- thermometer → temperature → °C, °F
+SHAPE REQUIREMENTS:
+- Generate 3 to 5 shapes (mix of 'rectangle' and 'square' types).
+- Each shape needs a unique widthInches — this is the measurement the student must find.
+- heightInches should be small (1 to 2 inches) — it's only for visual display height.
+- For squares, widthInches and heightInches should be equal.
+- Each shape must have a DIFFERENT color using rgba format (e.g. 'rgba(99,102,241,0.35)').
+- Each shape needs a descriptive label like "Blue Rectangle" or "Red Square".
+- Each shape needs a hint that helps the student read the ruler without revealing the answer.
 
 GRADE GUIDELINES:
-- Grades 1-2 (gradeBand "1-2"):
-  - precision: "whole" only
-  - Simple objects kids know (pencils, books, apples, toys)
-  - 4-5 challenges: 1-2 estimate, 2-3 read, NO convert
-  - Values should be small whole numbers (1-30 for cm/in, 1-10 for kg)
-  - conversionFact: empty string
-
+${config?.gradeBand === '3-5' || (!config?.gradeBand && !gradeLevel.toLowerCase().includes('kinder') && !gradeLevel.includes('1') && !gradeLevel.includes('2')) ? `
 - Grades 3-5 (gradeBand "3-5"):
-  - precision: "half" or "quarter"
-  - More varied objects (kitchen items, sports gear, science materials)
-  - 4-6 challenges: 1-2 estimate, 2-3 read, 1 convert
-  - Values can include halves/quarters matching the precision
-  - conversionFact: provide the conversion fact (e.g., "1 inch = 2.54 cm")
+  - precision: "half" — widths can be multiples of 0.5 (e.g. 2.5, 3.0, 4.5, 7.0)
+  - Use widths from 2 to 10 inches
+  - More varied shape names
+` : `
+- Grades K-2 (gradeBand "K-2"):
+  - precision: "whole" — widths must be whole numbers only (e.g. 2, 3, 5, 8)
+  - Use widths from 1 to 8 inches
+  - Simple, friendly shape names
+`}
+
+RULER:
+- rulerLengthInches should be large enough to fit the widest shape. Use 12 for most cases.
 
 CRITICAL RULES:
-1. value MUST be a multiple of the precision step:
-   - whole: 1, 2, 3, 5, 8, 12 (integers only)
-   - half: 1.5, 3.0, 7.5 (multiples of 0.5)
-   - quarter: 2.25, 5.75, 8.5 (multiples of 0.25)
-2. For "read" challenges, targetAnswer MUST equal value exactly
-3. For "estimate" challenges, always set acceptableMin and acceptableMax
-4. For "convert" challenges, targetAnswer must be mathematically correct
-5. Each challenge should use a different object (different objectName and objectEmoji)
-6. Order: estimate challenges first, then read challenges, then convert
-7. Use warm, encouraging instruction text appropriate for the grade level
-8. Hints should guide without revealing the answer
+1. Each shape must have a DIFFERENT widthInches — no two shapes should be the same width.
+2. widthInches must match the precision: whole numbers only for "whole", multiples of 0.5 for "half".
+3. widthInches must be LESS THAN rulerLengthInches.
+4. Use 5 distinct rgba colors (vary hue: blue, red, green, purple, amber, teal, etc.).
+5. Hints should reference the ruler (e.g. "Count the tick marks carefully") without giving the number.
+6. Order shapes from smallest width to largest.
 
 ${config ? `
 CONFIGURATION:
-${config.toolType ? `- Tool type: ${config.toolType}` : ''}
-${config.measurementType ? `- Measurement type: ${config.measurementType}` : ''}
 ${config.unit ? `- Unit: ${config.unit}` : ''}
+${config.precision ? `- Precision: ${config.precision}` : ''}
 ${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
 ` : ''}
 
@@ -171,121 +135,100 @@ Return the complete measurement tools configuration.
 
   // ── Validation & sanitization ──────────────────────────────────
 
-  // Tool type
-  const validToolTypes = ['ruler', 'scale', 'measuring_cup', 'thermometer'];
-  if (!validToolTypes.includes(data.toolType)) {
-    data.toolType = 'ruler';
-  }
-
-  // Measurement type
-  const validMeasurementTypes = ['length', 'weight', 'capacity', 'temperature'];
-  if (!validMeasurementTypes.includes(data.measurementType)) {
-    data.measurementType = 'length';
-  }
-
-  // Tool ↔ measurement type consistency
-  const toolToType: Record<string, string> = {
-    ruler: 'length', scale: 'weight', measuring_cup: 'capacity', thermometer: 'temperature',
-  };
-  if (toolToType[data.toolType] !== data.measurementType) {
-    const typeToTool: Record<string, string> = {
-      length: 'ruler', weight: 'scale', capacity: 'measuring_cup', temperature: 'thermometer',
-    };
-    data.toolType = typeToTool[data.measurementType] || 'ruler';
-  }
-
   // Grade band
-  if (data.gradeBand !== '1-2' && data.gradeBand !== '3-5') {
+  if (data.gradeBand !== 'K-2' && data.gradeBand !== '3-5') {
     data.gradeBand = gradeLevel.toLowerCase().includes('kinder') || gradeLevel.includes('1') || gradeLevel.includes('2')
-      ? '1-2' : '3-5';
+      ? 'K-2' : '3-5';
   }
 
   // Precision
-  const validPrecisions = ['whole', 'half', 'quarter'];
-  if (!validPrecisions.includes(data.precision)) {
-    data.precision = data.gradeBand === '1-2' ? 'whole' : 'half';
+  if (data.precision !== 'whole' && data.precision !== 'half') {
+    data.precision = data.gradeBand === 'K-2' ? 'whole' : 'half';
   }
 
   // Unit
-  const validUnits = ['cm', 'm', 'in', 'ft', 'g', 'kg', 'lb', 'mL', 'L', 'cup', '°C', '°F'];
-  if (!validUnits.includes(data.unit)) {
-    const defaultUnits: Record<string, string> = {
-      length: 'cm', weight: 'g', capacity: 'mL', temperature: '°C',
-    };
-    data.unit = defaultUnits[data.measurementType] || 'cm';
+  if (data.unit !== 'inches' && data.unit !== 'centimeters') {
+    data.unit = 'inches';
   }
 
   // Precision step for value alignment
-  const precisionStep = data.precision === 'whole' ? 1 : data.precision === 'half' ? 0.5 : 0.25;
+  const precisionStep = data.precision === 'whole' ? 1 : 0.5;
 
-  // Challenge validation
-  const validChallengeTypes = ['estimate', 'read', 'convert'];
-  data.challenges = (data.challenges || []).filter(
-    (c: { type: string }) => validChallengeTypes.includes(c.type),
+  // Title fallback
+  if (!data.title || typeof data.title !== 'string') {
+    data.title = 'Measure the Shapes';
+  }
+
+  // Ensure shapes array exists and has valid entries
+  const validShapeTypes = ['rectangle', 'square'];
+  data.shapes = (data.shapes || []).filter(
+    (s: MeasurementShape) => validShapeTypes.includes(s.type),
   );
 
-  // Ensure at least 3 challenges
-  if (data.challenges.length < 3) {
-    data.challenges = [
+  // Fallback shapes if Gemini returned too few
+  if (data.shapes.length < 3) {
+    data.shapes = [
       {
-        id: 'c1', type: 'estimate', objectName: 'Pencil', objectEmoji: '✏️',
-        value: 15, targetAnswer: 15, targetUnit: data.unit,
-        acceptableMin: 11, acceptableMax: 19,
-        hint: 'Think about objects you know — how long is your hand?',
-        instruction: 'How long do you think this pencil is?',
+        id: 's1', type: 'rectangle' as const, widthInches: 3, heightInches: 1.5,
+        color: 'rgba(99,102,241,0.35)', label: 'Blue Rectangle',
+        hint: 'Look where the right edge of the shape lines up on the ruler.',
       },
       {
-        id: 'c2', type: 'read', objectName: 'Eraser', objectEmoji: '🧹',
-        value: 5, targetAnswer: 5, targetUnit: data.unit,
-        hint: 'Look carefully where the object ends on the ruler!',
-        instruction: 'Read the measurement tool to find the exact length of this eraser.',
+        id: 's2', type: 'square' as const, widthInches: 2, heightInches: 2,
+        color: 'rgba(239,68,68,0.35)', label: 'Red Square',
+        hint: 'Count the big tick marks from 0 to the edge.',
       },
       {
-        id: 'c3', type: 'read', objectName: 'Crayon', objectEmoji: '🖍️',
-        value: 9, targetAnswer: 9, targetUnit: data.unit,
-        hint: 'Find the number on the ruler where the crayon ends.',
-        instruction: 'Use the ruler to measure this crayon. What is its length?',
+        id: 's3', type: 'rectangle' as const, widthInches: 5, heightInches: 1,
+        color: 'rgba(16,185,129,0.35)', label: 'Green Rectangle',
+        hint: 'Find the number on the ruler where the shape ends.',
       },
-    ];
+    ] satisfies MeasurementShape[];
   }
 
-  // Sanitize each challenge
-  for (const ch of data.challenges) {
-    // Ensure value aligns with precision
-    ch.value = Math.round(ch.value / precisionStep) * precisionStep;
-    if (ch.value <= 0) ch.value = precisionStep;
-
-    // For read challenges, targetAnswer must match value
-    if (ch.type === 'read') {
-      ch.targetAnswer = ch.value;
+  // Sanitize each shape
+  for (const shape of data.shapes as MeasurementShape[]) {
+    // Ensure type is valid
+    if (!validShapeTypes.includes(shape.type)) {
+      shape.type = 'rectangle';
     }
 
-    // For estimate challenges, ensure acceptable range exists
-    if (ch.type === 'estimate') {
-      if (ch.acceptableMin == null) ch.acceptableMin = ch.targetAnswer * 0.75;
-      if (ch.acceptableMax == null) ch.acceptableMax = ch.targetAnswer * 1.25;
+    // Align widthInches to precision step
+    shape.widthInches = Math.round(shape.widthInches / precisionStep) * precisionStep;
+    if (shape.widthInches <= 0) shape.widthInches = precisionStep;
+
+    // Clamp heightInches to 1-2 range
+    if (typeof shape.heightInches !== 'number' || shape.heightInches <= 0) {
+      shape.heightInches = shape.type === 'square' ? shape.widthInches : 1.5;
+    }
+    if (shape.type === 'square') {
+      shape.heightInches = shape.widthInches;
+    } else {
+      shape.heightInches = Math.max(1, Math.min(2, shape.heightInches));
     }
 
-    // Ensure targetUnit exists
-    if (!ch.targetUnit) {
-      ch.targetUnit = data.unit;
+    // Ensure color is an rgba string
+    if (!shape.color || typeof shape.color !== 'string' || !shape.color.startsWith('rgba')) {
+      shape.color = 'rgba(99,102,241,0.35)';
     }
 
-    // Ensure emoji exists
-    if (!ch.objectEmoji) ch.objectEmoji = '📦';
+    // Ensure label and hint
+    if (!shape.label) shape.label = shape.type === 'square' ? 'Square' : 'Rectangle';
+    if (!shape.hint) shape.hint = 'Look carefully at the ruler markings.';
   }
 
-  // Ensure conversionFact is a string
-  if (typeof data.conversionFact !== 'string') {
-    data.conversionFact = '';
+  // Ensure rulerLengthInches is large enough
+  const maxWidth = Math.max(...(data.shapes as MeasurementShape[]).map((s: MeasurementShape) => s.widthInches));
+  if (typeof data.rulerLengthInches !== 'number' || data.rulerLengthInches <= maxWidth) {
+    data.rulerLengthInches = Math.max(12, Math.ceil(maxWidth + 2));
   }
 
   // Apply explicit config overrides
   if (config) {
-    if (config.toolType && validToolTypes.includes(config.toolType)) data.toolType = config.toolType;
-    if (config.measurementType && validMeasurementTypes.includes(config.measurementType)) data.measurementType = config.measurementType;
+    if (config.unit) data.unit = config.unit;
+    if (config.precision) data.precision = config.precision;
     if (config.gradeBand) data.gradeBand = config.gradeBand;
   }
 
-  return data;
+  return data as MeasurementToolsData;
 };

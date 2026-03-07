@@ -59,6 +59,8 @@ class MasteryLifecycleEngine:
         score: float,
         source: Literal["lesson", "practice"],
         timestamp: Optional[str] = None,
+        *,
+        prefetched_lifecycle: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """
         Process a single evaluation event and update the mastery lifecycle.
@@ -71,6 +73,7 @@ class MasteryLifecycleEngine:
             score: Raw score on 0-10 scale.
             source: "lesson" or "practice".
             timestamp: ISO-8601 timestamp (defaults to now).
+            prefetched_lifecycle: Pre-loaded lifecycle doc to skip a Firestore read.
 
         Returns:
             Updated mastery lifecycle dict.
@@ -84,8 +87,11 @@ class MasteryLifecycleEngine:
             f"subskill={subskill_id}, score={score}, source={source}, passed={passed}"
         )
 
-        # Fetch or initialise the lifecycle document
-        existing = await self.firestore.get_mastery_lifecycle(student_id, subskill_id)
+        # Fetch or initialise the lifecycle document (skip read if pre-fetched)
+        if prefetched_lifecycle is not None:
+            existing = prefetched_lifecycle
+        else:
+            existing = await self.firestore.get_mastery_lifecycle(student_id, subskill_id)
 
         if existing is None:
             lifecycle = MasteryLifecycle(
