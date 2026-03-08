@@ -35,77 +35,18 @@ import { ExhibitProvider } from './contexts/ExhibitContext';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { EvaluationProvider, useEvaluationContext } from './evaluation';
+import { EvaluationProvider } from './evaluation';
+import { EvaluationResultsIndicator } from './components/EvaluationResultsIndicator';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 import type { CurriculumContext } from './components/CurriculumBrowser';
 import { IdleScreen } from './components/IdleScreen';
 import { DailyLessonPlan } from './DailyLessonPlan';
+import { DailySessionView } from './components/PlannerDashboard/DailySessionView';
 import type { DailySessionPlan, LessonBlock } from '@/lib/sessionPlanAPI';
 import ExhibitCompleteFooter from './components/ExhibitCompleteFooter';
 import SessionBreakScreen from './components/SessionBreakScreen';
 
-// Simple evaluation results indicator
-const EvaluationResultsIndicator: React.FC = () => {
-  const context = useEvaluationContext();
-
-  // Log only when a new result is added
-  const prevCountRef = React.useRef(0);
-  React.useEffect(() => {
-    if (context && context.submittedResults.length > prevCountRef.current) {
-      const newResult = context.submittedResults[context.submittedResults.length - 1];
-      console.log('✅ New evaluation result:', {
-        primitive: newResult.primitiveType,
-        success: newResult.success,
-        score: Math.round(newResult.score),
-        duration: `${Math.round(newResult.durationMs / 1000)}s`
-      });
-      prevCountRef.current = context.submittedResults.length;
-    }
-  }, [context?.submittedResults.length]);
-
-  if (!context || context.submittedResults.length === 0) {
-    return null;
-  }
-
-  const { submittedResults } = context;
-  const lastResult = submittedResults[submittedResults.length - 1];
-
-  return (
-    <div className="fixed bottom-6 right-6 z-40 max-w-sm animate-fade-in">
-      <div className={`p-4 rounded-xl border backdrop-blur-sm shadow-xl ${
-        lastResult.success
-          ? 'bg-green-500/20 border-green-500/50'
-          : 'bg-red-500/20 border-red-500/50'
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-            lastResult.success ? 'bg-green-500/30' : 'bg-red-500/30'
-          }`}>
-            <span className="text-2xl">{lastResult.success ? '✓' : '✗'}</span>
-          </div>
-          <div className="flex-1">
-            <div className="font-semibold text-white capitalize">
-              {lastResult.primitiveType.replace(/-/g, ' ')}
-            </div>
-            <div className={`text-sm font-bold ${
-              lastResult.success ? 'text-green-400' : 'text-red-400'
-            }`}>
-              Score: {Math.round(lastResult.score)}%
-            </div>
-          </div>
-        </div>
-        {submittedResults.length > 1 && (
-          <div className="mt-2 pt-2 border-t border-white/10">
-            <div className="text-xs text-slate-400">
-              Total attempts: {submittedResults.length}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // Bootstraps the lesson-mode AI session when the exhibit mounts.
 // Must be rendered inside LuminaAIProvider + ExhibitProvider.
@@ -704,23 +645,24 @@ export default function App() {
         {/* DAILY SESSION DRIVER STATE */}
         {phase === GameState.IDLE && activePanel === 'daily-session' && !sessionPhase && (
           <div className="flex-1 animate-fade-in max-w-4xl mx-auto w-full pt-2">
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-white mb-1">Today's Session</h2>
-              <p className="text-slate-500 text-base">Complete your blocks in order. Each block takes 5–18 minutes.</p>
-            </div>
-            <DailyLessonPlan
+            <DailySessionView
               studentId="1"
-              completedBlockIds={sessionCompletedBlocks}
-              blockResults={sessionBlockResults}
-              initialPlan={sessionPlan}
-              onPlanLoaded={(plan: DailySessionPlan) => {
-                // Only initialize on first load — don't clobber progress on remount re-fetch
-                if (!sessionPlan) {
-                  setSessionStats({ total: plan.blocks.length, completed: 0 });
-                  setSessionPlan(plan);
-                }
-              }}
-              onBlockStart={handleBlockStart}
+              onStartPulse={() => setActivePanel('practice-mode')}
+              renderLessonPlan={() => (
+                <DailyLessonPlan
+                  studentId="1"
+                  completedBlockIds={sessionCompletedBlocks}
+                  blockResults={sessionBlockResults}
+                  initialPlan={sessionPlan}
+                  onPlanLoaded={(plan: DailySessionPlan) => {
+                    if (!sessionPlan) {
+                      setSessionStats({ total: plan.blocks.length, completed: 0 });
+                      setSessionPlan(plan);
+                    }
+                  }}
+                  onBlockStart={handleBlockStart}
+                />
+              )}
             />
           </div>
         )}

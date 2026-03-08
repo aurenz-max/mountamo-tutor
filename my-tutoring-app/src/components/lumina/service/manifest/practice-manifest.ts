@@ -484,3 +484,205 @@ Return ONLY valid JSON matching the schema.`;
 
   return manifest;
 };
+
+// ===========================================================================
+// Pulse batch manifest — multi-skill, one Gemini call
+// ===========================================================================
+
+/**
+ * A single item spec passed into the Pulse batch generator.
+ * Mirrors the relevant fields from PulseItemSpec.
+ */
+export interface PulseManifestItemInput {
+  item_id: string;
+  description: string;
+  band: string;       // 'frontier' | 'current' | 'review'
+  target_mode: number; // 1-6
+  target_beta: number;
+  skill_id: string;
+  subskill_id: string;
+  subject: string;
+}
+
+/**
+ * Generate a practice manifest for ALL Pulse items in one Gemini call.
+ *
+ * Unlike `generatePracticeManifest` (single topic, N items), this sends
+ * the full item queue so Gemini can diversify primitive selection across
+ * the entire session.
+ *
+ * Each manifest item's instanceId matches the Pulse item_id, preserving
+ * the identity chain from backend → manifest → renderer → result.
+ */
+export const generatePulseManifest = async (
+  items: PulseManifestItemInput[],
+  gradeLevel: string,
+  callbacks?: PracticeManifestProgressCallback,
+  options?: PracticeManifestOptions,
+): Promise<PracticeManifest> => {
+  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const visualCatalog = buildPracticeVisualCatalogContext();
+
+  callbacks?.onProgress?.(`Designing ${items.length} Pulse activities...`);
+
+  const diversityContext = buildDiversityContext(options);
+
+  // Build per-item specifications for the prompt
+  const itemSpecList = items.map((item, i) => {
+    const scaffolding = MODE_SCAFFOLDING[item.target_mode] || MODE_SCAFFOLDING[4];
+    const bandLabel = item.band === 'frontier' ? 'FRONTIER PROBE (student may not know this yet — fair assessment, no assumed instruction)'
+      : item.band === 'review' ? 'REVIEW (student has seen this — focus on recall and fluency)'
+      : 'CURRENT LEARNING (actively learning — balance challenge with support)';
+
+    return `### Item ${i + 1}: "${item.item_id}"
+- Skill: ${item.description}
+- Band: ${bandLabel}
+- Scaffolding: Mode ${item.target_mode}/6 — "${scaffolding.label}" (difficulty: ${scaffolding.difficulty})
+- ${scaffolding.instruction}`;
+  }).join('\n\n');
+
+  const prompt = `You are an educational content designer creating a Lumina Pulse session — an adaptive, multi-skill practice loop.
+
+ASSIGNMENT: Generate ${items.length} practice activities, one for each skill below. Each activity is for a DIFFERENT skill.
+TARGET AUDIENCE: ${gradeLevelContext}
+
+${visualCatalog}
+
+## SESSION BRIEF (required)
+Generate a "sessionBrief" — a short, student-facing intro for this Pulse session:
+- "title": A fun, engaging name. Examples: "Number Ninja Challenge", "Math Mix-Up", "Brain Boost".
+- "hook": One exciting sentence that pulls the student in.
+- "whyItMatters": One sentence connecting these skills to something they care about.
+
+## ITEM SPECIFICATIONS
+Each item below has its own skill, scaffolding level, and band context. Generate one manifest item per specification.
+CRITICAL: The "instanceId" for each item MUST match the item_id given below (e.g., "${items[0]?.item_id}").
+
+${itemSpecList}
+
+## YOUR TASK
+
+For each item, decide:
+1. Is there a visual primitive that would create a BETTER learning experience than multiple choice?
+   - If YES: set "visualPrimitive" with componentId, intent, and successCriteria. Set "standardProblem" to null.
+   - If NO: set "standardProblem" with problemType and generationIntent. Set "visualPrimitive" to null.
+2. EVERY item must have exactly one of: visualPrimitive OR standardProblem (never both, never neither)
+
+## VISUAL PRIMITIVE RULES
+- The "intent" field is natural language describing what the generator should build. Dedicated generators handle configuration.
+- successCriteria.description: tell the student what to DO
+- successCriteria.targetValue: the expected answer
+- Match the difficulty/scaffolding level specified per item. Item at mode 1 should use concrete manipulatives; item at mode 5 should use abstract symbolic.
+
+## DIVERSITY ACROSS THE SESSION (CRITICAL)
+You are generating ${items.length} activities that the student will see in sequence. Variety is essential:
+- Use DIFFERENT visual primitives for different items. Do NOT repeat the same componentId.
+- If two skills are similar (e.g., both counting skills), pick DIFFERENT primitives for each.
+  For example: one could use "ten-frame", the other "base-ten-blocks", another "counting-board", another "number-line".
+- Consult the full visual primitive catalog above — there are many options beyond the obvious choice.
+- Only fall back to standard problems when no visual primitive fits the skill.
+${diversityContext}
+
+## PROBLEM VARIETY
+- Math topics: aim for 80%+ visual primitives with maximum variety
+- Each item should feel distinct in how the student interacts with it
+
+Now generate the practice manifest.
+Return ONLY valid JSON matching the schema.`;
+
+  callbacks?.onProgress?.('AI is designing your session...');
+
+  const responseStream = await ai.models.generateContentStream({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+    config: {
+      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+      responseMimeType: "application/json",
+      responseSchema: practiceManifestSchema,
+    },
+  });
+
+  let accumulatedText = '';
+  let chunkCount = 0;
+  for await (const chunk of responseStream) {
+    if (chunk.text) {
+      accumulatedText += chunk.text;
+      chunkCount++;
+      if (chunkCount % 3 === 0) {
+        callbacks?.onProgress?.('Generating activity details...');
+      }
+    }
+  }
+
+  if (!accumulatedText) throw new Error("No Pulse manifest returned");
+
+  callbacks?.onProgress?.('Parsing manifest...');
+
+  let jsonStr = accumulatedText.trim();
+  const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (match) jsonStr = match[1].trim();
+
+  const firstOpen = jsonStr.indexOf('{');
+  const lastClose = jsonStr.lastIndexOf('}');
+  if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
+    jsonStr = jsonStr.substring(firstOpen, lastClose + 1);
+  }
+
+  const manifest = JSON.parse(jsonStr) as PracticeManifest;
+
+  // Fix instanceIds: Gemini might use "problem-1" instead of the pulse item_id.
+  // Re-stamp to ensure the identity chain is intact.
+  for (let i = 0; i < manifest.items.length && i < items.length; i++) {
+    manifest.items[i].instanceId = items[i].item_id;
+  }
+
+  // Post-manifest diversity enforcement: convert duplicate visual primitives
+  const seenVisuals = new Set<string>();
+  const fallbackTypes = ['multiple_choice', 'true_false', 'fill_in_blanks', 'matching_activity'];
+  let fallbackIdx = 0;
+  for (const item of manifest.items) {
+    if (item.visualPrimitive) {
+      const cid = item.visualPrimitive.componentId;
+      if (seenVisuals.has(cid)) {
+        const fallback = fallbackTypes[fallbackIdx % fallbackTypes.length];
+        fallbackIdx++;
+        console.log(`[Pulse] Diversity: duplicate visual "${cid}" → standard "${fallback}" for ${item.instanceId}`);
+        item.standardProblem = {
+          problemType: fallback as any,
+          generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
+        };
+        item.visualPrimitive = null;
+      } else {
+        seenVisuals.add(cid);
+      }
+    }
+  }
+
+  // Safety net: items with neither visual nor standard
+  const orphanFallbacks = ['multiple_choice', 'true_false', 'fill_in_blanks'];
+  let orphanIdx = 0;
+  for (const item of manifest.items) {
+    if (!item.visualPrimitive && !item.standardProblem) {
+      const fallback = orphanFallbacks[orphanIdx % orphanFallbacks.length];
+      orphanIdx++;
+      console.log(`[Pulse] Item ${item.instanceId} missing type — assigning ${fallback}`);
+      item.standardProblem = {
+        problemType: fallback as any,
+        generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
+      };
+    }
+  }
+
+  const visualCount = manifest.items.filter(i => i.visualPrimitive).length;
+  const standardCount = manifest.items.filter(i => i.standardProblem).length;
+  console.log(`[Pulse] Manifest generated: ${manifest.items.length} items`);
+  manifest.items.forEach((item, i) => {
+    const type = item.visualPrimitive ? `visual:${item.visualPrimitive.componentId}` : `standard:${item.standardProblem?.problemType}`;
+    console.log(`[Pulse]   ${i + 1}. ${item.instanceId} → ${type} (${item.difficulty})`);
+  });
+  console.log(`[Pulse]   Visual: ${visualCount}, Standard: ${standardCount}`);
+
+  callbacks?.onProgress?.(`Manifest ready: ${manifest.items.length} activities (${visualCount} interactive, ${standardCount} text)`);
+
+  return manifest;
+};

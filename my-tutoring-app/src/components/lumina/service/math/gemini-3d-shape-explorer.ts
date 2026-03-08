@@ -31,7 +31,7 @@ const threeDShapeExplorerSchema: Schema = {
           },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'identify-3d' (name the shape), '2d-vs-3d' (sort flat vs solid), 'match-to-real-world' (connect shapes to objects), 'faces-and-properties' (explore properties), 'compare' (compare two shapes)"
+            description: "Challenge type: 'identify-3d' (name the shape), '2d-vs-3d' (sort flat vs solid), 'match-to-real-world' (connect shapes to objects), 'faces-and-properties' (explore properties), 'shape-riddle' (guess mystery shape from clues)"
           },
           instruction: {
             type: Type.STRING,
@@ -115,24 +115,11 @@ const threeDShapeExplorerSchema: Schema = {
             },
             description: "For faces-and-properties: questions about the shape for students to answer. Use answerType to control UI: 'boolean' for yes/no questions, 'number' for counting questions, 'choice' for naming face shapes."
           },
-          // compare fields
-          shape1: {
-            type: Type.STRING,
-            description: "For compare: first shape to compare. One of: 'cube', 'sphere', 'cylinder', 'cone', 'rectangular-prism'"
-          },
-          shape2: {
-            type: Type.STRING,
-            description: "For compare: second shape to compare. One of: 'cube', 'sphere', 'cylinder', 'cone', 'rectangular-prism'"
-          },
-          similarities: {
+          // shape-riddle fields (also uses shape3d + options from identify-3d)
+          clues: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            description: "For compare: things these two shapes have in common (e.g., 'Both can stack')"
-          },
-          differences: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "For compare: differences between the shapes (e.g., 'A sphere can roll but a cube cannot')"
+            description: "For shape-riddle: 3-4 detective clues describing the mystery shape's properties (e.g., 'I have no flat faces.', 'I can roll in any direction.', 'I look like a ball!')"
           }
         },
         required: ["id", "type", "instruction"]
@@ -225,10 +212,14 @@ CHALLENGE TYPES:
      * cone: 1 flat face, 1 curved, faceShapes=["circle"], canRoll=true, canStack=false, canSlide=true
      * rectangular-prism: 6 flat faces, 0 curved, faceShapes=["rectangle"], canRoll=false, canStack=true, canSlide=true
 
-5. "compare": Compare two 3D shapes.
-   - Set shape1 and shape2
-   - Provide 2-3 similarities and 2-3 differences
-   - Use kid-friendly language for comparisons
+5. "shape-riddle": A mystery shape detective challenge! Give clues, student guesses the shape.
+   - Set shape3d to the correct answer shape
+   - Provide 3-4 options (shape names) including the correct answer
+   - Provide 3-4 clues describing the shape's properties without naming it
+   - Clues should reference properties like faces, rolling, stacking, real-world look-alikes
+   - Example clues for sphere: ["I have no flat faces.", "I can roll in any direction.", "I have one curved surface.", "I look like a ball!"]
+   - Example clues for cube: ["All my faces are the same shape.", "I have 6 flat faces.", "I cannot roll.", "I look like a dice!"]
+   - NEVER include the shape name in any clue!
 
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
@@ -238,7 +229,7 @@ GUIDELINES FOR GRADE LEVELS:
   * showUnfoldAnimation: false, show3dRotation: true
 
 - Grade 1 (gradeBand "1"):
-  * Include faces-and-properties and compare challenges
+  * Include faces-and-properties and shape-riddle challenges
   * Slightly more academic language but still warm
   * 4-5 challenges with variety of types
   * showUnfoldAnimation: true, show3dRotation: true
@@ -259,7 +250,7 @@ REQUIREMENTS:
 6. For faces-and-properties, properties MUST be factually accurate (use the reference above)
 7. For 2d-vs-3d, include a balanced mix of 2D and 3D shapes
 8. For match-to-real-world, use objects kids recognize from everyday life
-9. For compare, provide meaningful similarities and differences
+9. For shape-riddle, NEVER include the shape name in any clue — clues must describe properties only
 10. Every propertyQuestion MUST have answerType set to "boolean", "number", or "choice". correctAnswer must be a string. "choice" questions MUST include an options array with the correct answer included.
 
 Return the complete 3D shape explorer configuration.
@@ -295,7 +286,7 @@ Return the complete 3D shape explorer configuration.
 
   // Valid shape names
   const validShapes = ['cube', 'sphere', 'cylinder', 'cone', 'rectangular-prism'];
-  const validChallengeTypes = ['identify-3d', '2d-vs-3d', 'match-to-real-world', 'faces-and-properties', 'compare'];
+  const validChallengeTypes = ['identify-3d', '2d-vs-3d', 'match-to-real-world', 'faces-and-properties', 'shape-riddle'];
 
   // Filter out invalid challenge types
   data.challenges = (data.challenges || []).filter(
@@ -408,20 +399,32 @@ Return the complete 3D shape explorer configuration.
       }
     }
 
-    // Validate compare challenges
-    if (challenge.type === 'compare') {
-      if (challenge.shape1 && !validShapes.includes(challenge.shape1)) {
-        challenge.shape1 = 'cube';
+    // Validate shape-riddle challenges
+    if (challenge.type === 'shape-riddle') {
+      if (challenge.shape3d && !validShapes.includes(challenge.shape3d)) {
+        challenge.shape3d = 'sphere';
       }
-      if (challenge.shape2 && !validShapes.includes(challenge.shape2)) {
-        challenge.shape2 = 'sphere';
+      if (!challenge.options || challenge.options.length < 2) {
+        challenge.options = ['cube', 'sphere', 'cylinder', 'cone'];
       }
-      if (!challenge.similarities || challenge.similarities.length === 0) {
-        challenge.similarities = ['Both are 3D shapes'];
+      if (challenge.shape3d && !challenge.options.includes(challenge.shape3d)) {
+        challenge.options[0] = challenge.shape3d;
       }
-      if (!challenge.differences || challenge.differences.length === 0) {
-        challenge.differences = ['They have different numbers of faces'];
+      if (!challenge.clues || challenge.clues.length === 0) {
+        const fallbackClues: Record<string, string[]> = {
+          cube: ['I have 6 flat faces.', 'All my faces are squares.', 'I cannot roll.', 'I look like a dice!'],
+          sphere: ['I have no flat faces.', 'I can roll in any direction.', 'I have one curved surface.', 'I look like a ball!'],
+          cylinder: ['I have 2 flat faces.', 'My flat faces are circles.', 'I can roll and stack.', 'I look like a can!'],
+          cone: ['I have 1 flat face.', 'I have a point at the top.', 'My flat face is a circle.', 'I look like a party hat!'],
+          'rectangular-prism': ['I have 6 flat faces.', 'My faces are rectangles.', 'I cannot roll.', 'I look like a cereal box!'],
+        };
+        challenge.clues = fallbackClues[challenge.shape3d || 'sphere'] || fallbackClues.sphere;
       }
+      // Strip any clues that accidentally contain the shape name
+      const shapeName = (challenge.shape3d || '').replace('-', ' ');
+      challenge.clues = challenge.clues.map((clue: string) =>
+        clue.toLowerCase().includes(shapeName) ? clue.replace(new RegExp(shapeName, 'gi'), '???') : clue
+      );
     }
   }
 

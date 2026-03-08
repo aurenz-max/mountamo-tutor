@@ -15,7 +15,8 @@ import type {
 
 import { SubjectCard } from './SubjectCard';
 import { SessionRow, SectionDivider, WeekProgressBar } from './SessionRow';
-import { DailyLessonPlan } from '@/components/lumina/DailyLessonPlan';
+import { DailySessionView } from './DailySessionView';
+import { PulseSession } from '@/components/lumina/pulse/PulseSession';
 import { SubjectProjectionCard, MonthlyWarningRow } from './MonthlyComponents';
 import { VelocityGauge, TrendSparkline, SubjectVelocityCard, getVelocityColor } from './VelocityComponents';
 import { GATE_LABELS, GATE_COLORS, GateDistributionBar, SubjectMasteryCard, UnitForecastRow } from './MasteryComponents';
@@ -47,6 +48,8 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
 
   // Active practice session — when set, renders PracticeModeEnhanced instead of dashboard
   const [activeSession, setActiveSession] = useState<{ session: SessionItem; gate: number } | null>(null);
+  // Active Pulse session — when set, renders PulseSession full-screen
+  const [activePulse, setActivePulse] = useState(false);
 
   // Look up the mastery gate for a skill from loaded mastery data.
   // TODO: Replace with real-time per-skill gate lookup from backend API
@@ -231,6 +234,16 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
 
   // ---- Render ----
 
+  // When Pulse is active, render PulseSession full-screen
+  if (activePulse) {
+    return (
+      <PulseSession
+        onBack={() => setActivePulse(false)}
+        gradeLevel="elementary"
+      />
+    );
+  }
+
   // When a practice session is active, render PracticeModeEnhanced full-screen
   if (activeSession) {
     const { session: activeSessionItem, gate: activeGate } = activeSession;
@@ -397,7 +410,7 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
               : 'text-slate-500 hover:text-slate-300'
           }`}
         >
-          Today&apos;s Blocks
+          Today&apos;s Session
         </button>
         <button
           onClick={() => setActiveTab('daily')}
@@ -694,11 +707,14 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
       )}
 
       {/* ================================================================ */}
-      {/* SESSION TAB — Today's grouped lesson blocks                       */}
+      {/* SESSION TAB — Two-phase daily session (Lessons + Pulse)           */}
       {/* ================================================================ */}
       {activeTab === 'session' && (
         <div className="animate-fade-in">
-          <DailyLessonPlan studentId={studentId} />
+          <DailySessionView
+            studentId={studentId}
+            onStartPulse={() => setActivePulse(true)}
+          />
         </div>
       )}
 

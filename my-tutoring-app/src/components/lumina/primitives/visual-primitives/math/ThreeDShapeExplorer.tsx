@@ -20,7 +20,7 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 export interface ThreeDShapeExplorerChallenge {
   id: string;
-  type: 'identify-3d' | '2d-vs-3d' | 'match-to-real-world' | 'faces-and-properties' | 'compare';
+  type: 'identify-3d' | '2d-vs-3d' | 'match-to-real-world' | 'faces-and-properties' | 'shape-riddle';
   instruction: string;
   // identify-3d
   shape3d?: string;
@@ -45,11 +45,8 @@ export interface ThreeDShapeExplorerChallenge {
     correctAnswer: string | number | boolean;
     options?: string[];  // for 'choice' type
   }>;
-  // compare
-  shape1?: string;
-  shape2?: string;
-  similarities?: string[];
-  differences?: string[];
+  // shape-riddle (reuses shape3d + options from identify-3d)
+  clues?: string[];
 }
 
 export interface ThreeDShapeExplorerData {
@@ -78,7 +75,7 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   '2d-vs-3d':           { label: '2D vs 3D',          icon: '📐', accentColor: 'purple' },
   'match-to-real-world': { label: 'Real World Match', icon: '🌍', accentColor: 'emerald' },
   'faces-and-properties': { label: 'Properties',      icon: '🔍', accentColor: 'amber' },
-  'compare':            { label: 'Compare',            icon: '⚖️', accentColor: 'cyan' },
+  'shape-riddle':       { label: 'Shape Riddle',        icon: '🔎', accentColor: 'cyan' },
 };
 
 const SHAPE_LABELS: Record<string, string> = {
@@ -314,10 +311,21 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
   const [matchSelections, setMatchSelections] = useState<Map<string, string>>(new Map());
   const [selectedMatchObject, setSelectedMatchObject] = useState<string | null>(null);
   const [propertyAnswers, setPropertyAnswers] = useState<Map<number, string | number | boolean>>(new Map());
-  const [selectedSimilarities, setSelectedSimilarities] = useState<Set<string>>(new Set());
-  const [selectedDifferences, setSelectedDifferences] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
+
+  // Shuffle the right-side shapes so positional matching doesn't give away answers
+  const shuffledMatchShapes = useMemo(() => {
+    if (currentChallenge?.type !== 'match-to-real-world' || !currentChallenge.matchPairs) return [];
+    const unique = Array.from(new Set(currentChallenge.matchPairs.map(p => p.shape3d)));
+    // Fisher-Yates shuffle
+    const arr = [...unique];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }, [currentChallenge?.id]);
 
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `3d-shape-explorer-${Date.now()}`);
@@ -348,8 +356,6 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     shape3d: currentChallenge?.shape3d ?? currentChallenge?.displayShape ?? '',
     displayShape: currentChallenge?.displayShape ?? '',
     properties: currentChallenge?.properties ?? null,
-    shape1: currentChallenge?.shape1 ?? '',
-    shape2: currentChallenge?.shape2 ?? '',
     attemptNumber: currentAttempts + 1,
     instruction: currentChallenge?.instruction ?? '',
   }), [
@@ -384,8 +390,6 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     setMatchSelections(new Map());
     setSelectedMatchObject(null);
     setPropertyAnswers(new Map());
-    setSelectedSimilarities(new Set());
-    setSelectedDifferences(new Set());
     setFeedback('');
     setFeedbackType('');
   }, []);
@@ -549,45 +553,30 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     return allCorrect;
   }, [currentChallenge, propertyAnswers, currentAttempts, sendText, incrementAttempts]);
 
-  const checkCompare = useCallback(() => {
-    if (!currentChallenge?.similarities || !currentChallenge?.differences) return false;
+  const checkShapeRiddle = useCallback(() => {
+    if (!currentChallenge || !selectedOption) return false;
+    const correct = selectedOption.toLowerCase() === currentChallenge.shape3d?.toLowerCase();
     incrementAttempts();
 
-    const expectedSim = new Set(currentChallenge.similarities);
-    const expectedDiff = new Set(currentChallenge.differences);
-
-    const simCorrect = selectedSimilarities.size > 0 &&
-      Array.from(selectedSimilarities).every(s => expectedSim.has(s));
-    const diffCorrect = selectedDifferences.size > 0 &&
-      Array.from(selectedDifferences).every(d => expectedDiff.has(d));
-    const hasEnough = selectedSimilarities.size >= 1 && selectedDifferences.size >= 1;
-
-    const allCorrect = simCorrect && diffCorrect && hasEnough;
-
-    if (allCorrect) {
-      setFeedback(`Great comparison! You found the similarities and differences!`);
+    if (correct) {
+      setFeedback(`You solved the riddle! It's a ${SHAPE_LABELS[currentChallenge.shape3d || ''] || currentChallenge.shape3d}!`);
       setFeedbackType('success');
       sendText(
-        `[ANSWER_CORRECT] Student correctly compared "${currentChallenge.shape1}" and "${currentChallenge.shape2}". `
-        + `Celebrate their observation skills!`,
+        `[ANSWER_CORRECT] Student solved the shape riddle — correctly identified "${currentChallenge.shape3d}" from clues. `
+        + `Celebrate: "Amazing detective work! You used the clues to find the mystery shape!"`,
         { silent: true }
       );
     } else {
-      setFeedback(
-        !hasEnough
-          ? 'Select at least one similarity and one difference!'
-          : 'Some of your choices need adjusting. Look at both shapes carefully!'
-      );
+      setFeedback(`Not quite! Read the clues again carefully.`);
       setFeedbackType('error');
       sendText(
-        `[ANSWER_INCORRECT] Comparing "${currentChallenge.shape1}" and "${currentChallenge.shape2}". `
-        + `Selected sims: ${Array.from(selectedSimilarities).join(', ')}. Diffs: ${Array.from(selectedDifferences).join(', ')}. `
-        + `Give a hint about one observable property to compare.`,
+        `[ANSWER_INCORRECT] Shape riddle: student guessed "${selectedOption}" but answer is "${currentChallenge.shape3d}". `
+        + `Attempt ${currentAttempts + 1}. Re-read one clue and give a hint without revealing the answer.`,
         { silent: true }
       );
     }
-    return allCorrect;
-  }, [currentChallenge, selectedSimilarities, selectedDifferences, sendText, incrementAttempts]);
+    return correct;
+  }, [currentChallenge, selectedOption, currentAttempts, sendText, incrementAttempts]);
 
   // ── Main Check Handler ─────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
@@ -607,8 +596,8 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
       case 'faces-and-properties':
         correct = checkFacesAndProperties();
         break;
-      case 'compare':
-        correct = checkCompare();
+      case 'shape-riddle':
+        correct = checkShapeRiddle();
         break;
     }
 
@@ -621,7 +610,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, currentAttempts,
-    checkIdentify3D, check2DVs3D, checkMatchToRealWorld, checkFacesAndProperties, checkCompare,
+    checkIdentify3D, check2DVs3D, checkMatchToRealWorld, checkFacesAndProperties, checkShapeRiddle,
     recordResult,
   ]);
 
@@ -725,27 +714,6 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     });
   }, [hasSubmittedEvaluation, isCurrentChallengeComplete]);
 
-  // ── Toggle handler for compare ────────────────────────────────
-  const toggleSimilarity = useCallback((item: string) => {
-    if (hasSubmittedEvaluation || isCurrentChallengeComplete) return;
-    setSelectedSimilarities(prev => {
-      const next = new Set(prev);
-      if (next.has(item)) next.delete(item);
-      else next.add(item);
-      return next;
-    });
-  }, [hasSubmittedEvaluation, isCurrentChallengeComplete]);
-
-  const toggleDifference = useCallback((item: string) => {
-    if (hasSubmittedEvaluation || isCurrentChallengeComplete) return;
-    setSelectedDifferences(prev => {
-      const next = new Set(prev);
-      if (next.has(item)) next.delete(item);
-      else next.add(item);
-      return next;
-    });
-  }, [hasSubmittedEvaluation, isCurrentChallengeComplete]);
-
   // ── Can check? ─────────────────────────────────────────────────
   const canCheck = useMemo(() => {
     if (!currentChallenge || isCurrentChallengeComplete || hasSubmittedEvaluation) return false;
@@ -754,13 +722,12 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
       case '2d-vs-3d': return sortedShapes.size === (currentChallenge.mixedShapes?.length ?? 0);
       case 'match-to-real-world': return matchSelections.size === (currentChallenge.matchPairs?.length ?? 0);
       case 'faces-and-properties': return propertyAnswers.size === (currentChallenge.propertyQuestions?.length ?? 0);
-      case 'compare': return selectedSimilarities.size >= 1 && selectedDifferences.size >= 1;
+      case 'shape-riddle': return !!selectedOption;
       default: return false;
     }
   }, [
     currentChallenge, isCurrentChallengeComplete, hasSubmittedEvaluation,
     selectedOption, sortedShapes, matchSelections, propertyAnswers,
-    selectedSimilarities, selectedDifferences,
   ]);
 
   // ── Render ─────────────────────────────────────────────────────
@@ -929,7 +896,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
                   {/* Shapes column */}
                   <div className="space-y-2">
                     <p className="text-slate-400 text-xs font-medium text-center mb-1">3D Shapes</p>
-                    {Array.from(new Set(currentChallenge.matchPairs.map(p => p.shape3d))).map(shape => (
+                    {shuffledMatchShapes.map(shape => (
                       <Button
                         key={shape}
                         variant="ghost"
@@ -1020,84 +987,39 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
               </div>
             )}
 
-            {/* COMPARE */}
-            {currentChallenge.type === 'compare' && currentChallenge.shape1 && currentChallenge.shape2 && (
+            {/* SHAPE RIDDLE */}
+            {currentChallenge.type === 'shape-riddle' && currentChallenge.clues && (
               <div className="space-y-4">
-                <div className="flex justify-center gap-8">
-                  <div className="text-center">
-                    <Shape3DSVG shape={currentChallenge.shape1} size={120} />
-                    <p className="text-slate-300 text-sm mt-1">{SHAPE_LABELS[currentChallenge.shape1] || currentChallenge.shape1}</p>
-                  </div>
-                  <div className="flex items-center text-slate-500 text-2xl">vs</div>
-                  <div className="text-center">
-                    <Shape3DSVG shape={currentChallenge.shape2} size={120} />
-                    <p className="text-slate-300 text-sm mt-1">{SHAPE_LABELS[currentChallenge.shape2] || currentChallenge.shape2}</p>
+                <div className="flex justify-center">
+                  <div className="bg-slate-800/40 rounded-xl p-5 border border-cyan-500/20 max-w-sm w-full">
+                    <p className="text-cyan-300 text-xs font-medium mb-3 text-center">Clues</p>
+                    <ul className="space-y-2">
+                      {currentChallenge.clues.map((clue, i) => (
+                        <li key={i} className="flex items-start gap-2 text-slate-200 text-sm">
+                          <span className="text-cyan-400 mt-0.5 shrink-0">{i + 1}.</span>
+                          <span>{clue}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
-                  {/* Similarities */}
-                  <div>
-                    <p className="text-emerald-300 text-xs font-medium mb-2">Similarities (select all that apply)</p>
-                    <div className="space-y-1.5">
-                      {currentChallenge.similarities?.map(sim => (
-                        <Button key={sim} variant="ghost" size="sm"
-                          className={`w-full text-left border text-xs ${
-                            selectedSimilarities.has(sim)
-                              ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200'
-                              : 'bg-white/5 border-white/15 hover:bg-white/10 text-slate-400'
-                          }`}
-                          onClick={() => toggleSimilarity(sim)}
-                          disabled={isCurrentChallengeComplete}>
-                          {selectedSimilarities.has(sim) ? '✓ ' : ''}{sim}
-                        </Button>
-                      ))}
-                      {/* Distractors from differences to test */}
-                      {currentChallenge.differences?.slice(0, 1).map(diff => (
-                        <Button key={`sim-d-${diff}`} variant="ghost" size="sm"
-                          className={`w-full text-left border text-xs ${
-                            selectedSimilarities.has(diff)
-                              ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200'
-                              : 'bg-white/5 border-white/15 hover:bg-white/10 text-slate-400'
-                          }`}
-                          onClick={() => toggleSimilarity(diff)}
-                          disabled={isCurrentChallengeComplete}>
-                          {selectedSimilarities.has(diff) ? '✓ ' : ''}{diff}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Differences */}
-                  <div>
-                    <p className="text-amber-300 text-xs font-medium mb-2">Differences (select all that apply)</p>
-                    <div className="space-y-1.5">
-                      {currentChallenge.differences?.map(diff => (
-                        <Button key={diff} variant="ghost" size="sm"
-                          className={`w-full text-left border text-xs ${
-                            selectedDifferences.has(diff)
-                              ? 'bg-amber-500/20 border-amber-400/40 text-amber-200'
-                              : 'bg-white/5 border-white/15 hover:bg-white/10 text-slate-400'
-                          }`}
-                          onClick={() => toggleDifference(diff)}
-                          disabled={isCurrentChallengeComplete}>
-                          {selectedDifferences.has(diff) ? '✓ ' : ''}{diff}
-                        </Button>
-                      ))}
-                      {/* Distractor from similarities */}
-                      {currentChallenge.similarities?.slice(0, 1).map(sim => (
-                        <Button key={`diff-d-${sim}`} variant="ghost" size="sm"
-                          className={`w-full text-left border text-xs ${
-                            selectedDifferences.has(sim)
-                              ? 'bg-amber-500/20 border-amber-400/40 text-amber-200'
-                              : 'bg-white/5 border-white/15 hover:bg-white/10 text-slate-400'
-                          }`}
-                          onClick={() => toggleDifference(sim)}
-                          disabled={isCurrentChallengeComplete}>
-                          {selectedDifferences.has(sim) ? '✓ ' : ''}{sim}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
+                  {currentChallenge.options?.map(opt => (
+                    <Button
+                      key={opt}
+                      variant="ghost"
+                      className={`border flex flex-col items-center gap-1 py-3 ${
+                        selectedOption === opt
+                          ? 'bg-cyan-500/20 border-cyan-400/50 text-cyan-200'
+                          : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
+                      }`}
+                      onClick={() => setSelectedOption(opt)}
+                      disabled={isCurrentChallengeComplete}
+                    >
+                      <Shape3DSVG shape={opt} size={48} />
+                      <span className="text-xs">{SHAPE_LABELS[opt] || opt}</span>
+                    </Button>
+                  ))}
                 </div>
               </div>
             )}

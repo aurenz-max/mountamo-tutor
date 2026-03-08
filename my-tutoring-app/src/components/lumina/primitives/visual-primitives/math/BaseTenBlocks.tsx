@@ -10,6 +10,9 @@ import {
 } from '../../../evaluation';
 import type { BaseTenBlocksMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
 
 // ============================================================================
@@ -57,6 +60,14 @@ const PLACE_CONFIG: Record<PlaceValue, { label: string; value: number; color: st
   ones: { label: 'Ones', value: 1, color: 'text-emerald-300', borderColor: 'border-emerald-400', bgColor: 'bg-emerald-500' },
   tenths: { label: 'Tenths', value: 0.1, color: 'text-cyan-300', borderColor: 'border-cyan-400', bgColor: 'bg-cyan-500' },
   hundredths: { label: 'Hundredths', value: 0.01, color: 'text-pink-300', borderColor: 'border-pink-400', bgColor: 'bg-pink-500' },
+};
+
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  build_number:         { label: 'Build',    icon: '🧱', accentColor: 'purple' },
+  read_blocks:          { label: 'Read',     icon: '👁', accentColor: 'cyan' },
+  regroup:              { label: 'Regroup',  icon: '🔄', accentColor: 'amber' },
+  add_with_blocks:      { label: 'Add',      icon: '➕', accentColor: 'emerald' },
+  subtract_with_blocks: { label: 'Subtract', icon: '➖', accentColor: 'pink' },
 };
 
 function getActivePlaces(maxPlace: string, decimalMode: boolean): PlaceValue[] {
@@ -116,6 +127,12 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
   const activePlaces = useMemo(() => getActivePlaces(maxPlace, decimalMode), [maxPlace, decimalMode]);
 
+  // Stable challenges with IDs (BaseTenBlocksChallenge has no id field)
+  const challengesWithIds = useMemo(
+    () => challenges.map((ch, i) => ({ ...ch, id: `${ch.type}-${i}` })),
+    [challenges],
+  );
+
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
@@ -134,18 +151,35 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [typedAnswer, setTypedAnswer] = useState('');
-
-  // Challenge state
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [challengeResults, setChallengeResults] = useState<Array<{ correct: boolean; attempts: number; regroupsUsed: number }>>([]);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
   const [regroupCount, setRegroupCount] = useState(0);
+
+  // Challenge progress (replaces manual index/attempts/results state)
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges: challengesWithIds,
+    getChallengeId: (ch) => ch.id,
+  });
+
+  const phaseResults = usePhaseResults({
+    challenges: challengesWithIds,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
 
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `base-ten-blocks-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  const currentChallenge = challenges[currentChallengeIndex] || null;
+  const currentChallenge = challengesWithIds[currentChallengeIndex] || null;
   const currentTotal = useMemo(() => computeTotal(columns, activePlaces), [columns, activePlaces]);
 
   // Determine if blocks should be interactive (have +/- buttons)
@@ -160,6 +194,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<BaseTenBlocksMetrics>({
     primitiveType: 'base-ten-blocks',
     instanceId: resolvedInstanceId,
@@ -205,12 +241,12 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
       : 'adding and subtracting with blocks';
     sendText(
       `[ACTIVITY_START] Base-ten blocks activity for ${gradeBand}. Mode: ${mode}. `
-      + `Number: ${numberValue}. ${challenges.length} challenges. `
+      + `Number: ${numberValue}. ${challengesWithIds.length} challenges. `
       + `Introduce warmly: "Let's explore place value with our blocks!" `
       + `${currentChallenge ? `First challenge: "${currentChallenge.instruction}"` : ''}`,
       { silent: true }
     );
-  }, [isConnected, interactionMode, gradeBand, numberValue, challenges.length, currentChallenge, sendText]);
+  }, [isConnected, interactionMode, gradeBand, numberValue, challengesWithIds.length, currentChallenge, sendText]);
 
   // -------------------------------------------------------------------------
   // Interaction Handlers
@@ -305,12 +341,17 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     const parsed = parseFloat(typedAnswer);
     if (isNaN(parsed)) return;
     const correct = Math.abs(parsed - target) < 0.01;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setFeedback(`Correct! ${parsed} is right!`);
       setFeedbackType('success');
-      setChallengeResults(prev => [...prev, { correct: true, attempts: currentAttempts + 1, regroupsUsed: regroupCount }]);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts: currentAttempts + 1,
+        regroupsUsed: regroupCount,
+      });
       sendText(
         `[ANSWER_CORRECT] Student answered ${parsed} correctly! `
         + `${regroupCount > 0 ? `Used ${regroupCount} regroups. ` : ''}`
@@ -328,44 +369,56 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [currentChallenge, typedAnswer, currentAttempts, regroupCount, sendText]);
+  }, [currentChallenge, typedAnswer, currentAttempts, regroupCount, incrementAttempts, recordResult, sendText]);
+
+  // Auto-submit evaluation when all challenges complete
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation) return;
+
+    const phaseScoreStr = phaseResults
+      .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+      .join(', ');
+    const overallPct = challengesWithIds.length > 0
+      ? Math.round((challengeResults.filter(r => r.correct).length / challengesWithIds.length) * 100)
+      : 0;
+
+    sendText(
+      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+      + `Give encouraging phase-specific feedback.`,
+      { silent: true }
+    );
+
+    const correctCount = challengeResults.filter(r => r.correct).length;
+    const accuracy = Math.round((correctCount / challengesWithIds.length) * 100);
+    const totalRegroups = challengeResults.reduce((s, r) => s + ((r.regroupsUsed as number) || 0), 0);
+    const metrics: BaseTenBlocksMetrics = {
+      type: 'base-ten-blocks',
+      evalMode: 'default',
+      representationAccuracy: accuracy,
+      regroupingCorrect: totalRegroups > 0,
+      regroupCount: totalRegroups,
+      placeValuesUsed: activePlaces,
+      decimalModeUsed: decimalMode,
+      challengesCompleted: correctCount,
+      totalChallenges: challengesWithIds.length,
+      attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+    };
+    submitEvaluation(correctCount === challengesWithIds.length, accuracy, metrics, { challengeResults });
+  }, [allChallengesComplete, hasSubmittedEvaluation, phaseResults, challengeResults, challengesWithIds, activePlaces, decimalMode, submitEvaluation, sendText]);
 
   const advanceChallenge = useCallback(() => {
+    if (!advanceProgress()) return;
+
+    // advanceProgress() already incremented index and reset attempts.
+    // Reset domain-specific state:
     const nextIdx = currentChallengeIndex + 1;
-    if (nextIdx >= challenges.length) {
-      // All complete
-      sendText(
-        `[ALL_COMPLETE] Student finished all ${challenges.length} challenges! Celebrate.`,
-        { silent: true }
-      );
-      if (!hasSubmittedEvaluation) {
-        const correctCount = challengeResults.filter(r => r.correct).length;
-        const accuracy = Math.round((correctCount / challenges.length) * 100);
-        const totalRegroups = challengeResults.reduce((s, r) => s + r.regroupsUsed, 0);
-        const metrics: BaseTenBlocksMetrics = {
-          type: 'base-ten-blocks',
-          evalMode: 'default',
-          representationAccuracy: accuracy,
-          regroupingCorrect: totalRegroups > 0,
-          regroupCount: totalRegroups,
-          placeValuesUsed: activePlaces,
-          decimalModeUsed: decimalMode,
-          challengesCompleted: correctCount,
-          totalChallenges: challenges.length,
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-        submitEvaluation(correctCount === challenges.length, accuracy, metrics, { challengeResults });
-      }
-      return;
-    }
-    setCurrentChallengeIndex(nextIdx);
-    setCurrentAttempts(0);
+    const next = challengesWithIds[nextIdx];
     setRegroupCount(0);
     setFeedback('');
     setFeedbackType('');
     setTypedAnswer('');
+
     // Reset columns for next challenge
-    const next = challenges[nextIdx];
     if (next.type === 'read_blocks' || next.type === 'regroup') {
       setColumns(decomposeNumber(next.targetNumber, activePlaces));
     } else {
@@ -373,14 +426,22 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
       activePlaces.forEach(p => { empty[p] = 0; });
       setColumns(empty as Record<PlaceValue, number>);
     }
+
     sendText(
-      `[NEXT_ITEM] Challenge ${nextIdx + 1} of ${challenges.length}: "${next.instruction}". Introduce it.`,
+      `[NEXT_ITEM] Challenge ${nextIdx + 1} of ${challengesWithIds.length}: "${next.instruction}". Introduce it.`,
       { silent: true }
     );
-  }, [currentChallengeIndex, challenges, challengeResults, hasSubmittedEvaluation, activePlaces, decimalMode, submitEvaluation, sendText]);
+  }, [advanceProgress, currentChallengeIndex, challengesWithIds, activePlaces, sendText]);
 
-  const isCurrentComplete = challengeResults.length > currentChallengeIndex && challengeResults[currentChallengeIndex]?.correct;
-  const allComplete = challenges.length > 0 && challengeResults.filter(r => r.correct).length >= challenges.length;
+  const isCurrentComplete = currentChallenge
+    ? challengeResults.some(r => r.challengeId === currentChallenge.id)
+    : false;
+
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challengesWithIds.length === 0) return 0;
+    const correct = challengeResults.filter(r => r.correct).length;
+    return Math.round((correct / challengesWithIds.length) * 100);
+  }, [allChallengesComplete, challengesWithIds, challengeResults]);
 
   // -------------------------------------------------------------------------
   // Block Rendering Helpers
@@ -457,15 +518,15 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
       <CardContent className="space-y-4">
         {/* Challenge Progress */}
-        {challenges.length > 0 && (
+        {challengesWithIds.length > 0 && (
           <div className="flex items-center justify-between">
             <span className="text-slate-500 text-xs">
-              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
+              Challenge {Math.min(currentChallengeIndex + 1, challengesWithIds.length)} of {challengesWithIds.length}
             </span>
             <div className="flex gap-1">
-              {challenges.map((_, i) => (
+              {challengesWithIds.map((ch, i) => (
                 <div key={i} className={`w-2 h-2 rounded-full ${
-                  i < challengeResults.length && challengeResults[i]?.correct ? 'bg-emerald-400' :
+                  challengeResults.some(r => r.challengeId === ch.id) ? 'bg-emerald-400' :
                   i === currentChallengeIndex ? 'bg-blue-400 animate-pulse' :
                   'bg-slate-700'
                 }`} />
@@ -475,7 +536,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
         )}
 
         {/* Instruction */}
-        {currentChallenge && !allComplete && (
+        {currentChallenge && !allChallengesComplete && (
           <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
             <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
           </div>
@@ -566,7 +627,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
         </div>
 
         {/* Calculator Input for answer submission */}
-        {challenges.length > 0 && !allComplete && (
+        {challengesWithIds.length > 0 && !allChallengesComplete && (
           <CalculatorInput
             label="Your Answer"
             value={typedAnswer}
@@ -591,7 +652,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
         )}
 
         {/* Next Challenge Button */}
-        {isCurrentComplete && !allComplete && (
+        {isCurrentComplete && !allChallengesComplete && (
           <div className="flex justify-center">
             <Button
               variant="ghost"
@@ -615,13 +676,16 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
           </Button>
         </div>
 
-        {allComplete && (
-          <div className="text-center">
-            <p className="text-emerald-400 text-sm font-medium mb-1">All challenges complete!</p>
-            <p className="text-slate-400 text-xs">
-              {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-            </p>
-          </div>
+        {/* Phase Summary Panel (replaces manual "All challenges complete!" text) */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="Challenge Complete!"
+            celebrationMessage={`You completed all ${challengesWithIds.length} challenges!`}
+            className="mt-4"
+          />
         )}
 
         {/* Hint */}
@@ -632,7 +696,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
         )}
 
         {/* No-challenge mode: display info */}
-        {challenges.length === 0 && (
+        {challengesWithIds.length === 0 && (
           <p className="text-slate-500 text-xs text-center">
             Add and remove blocks to explore place value. Use regroup buttons to trade between places.
           </p>

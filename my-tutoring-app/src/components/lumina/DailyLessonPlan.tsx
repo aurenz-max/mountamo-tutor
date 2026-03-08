@@ -30,11 +30,13 @@ import {
   ChevronRight,
   Clock,
   Coffee,
+  Info,
   RefreshCw,
   Sparkles,
   Star,
   Zap,
 } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 import {
   fetchDailySessionPlan,
@@ -154,6 +156,55 @@ function BlockCard({
               ~{block.estimated_minutes} min
             </span>
           </div>
+
+          {/* Metadata popover */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors shrink-0">
+                <Info className="w-3.5 h-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 bg-slate-900 border-white/10 text-slate-300 p-0">
+              <div className="px-4 py-3 border-b border-white/5">
+                <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider">Block Metadata</h4>
+              </div>
+              <div className="px-4 py-3 space-y-2 text-xs">
+                <div className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1.5">
+                  <span className="text-slate-500">block_id</span>
+                  <span className="font-mono text-slate-400 truncate">{block.block_id}</span>
+                  <span className="text-slate-500">lesson_group</span>
+                  <span className="font-mono text-slate-400 truncate">{block.lesson_group_id}</span>
+                  <span className="text-slate-500">priority</span>
+                  <span className="text-slate-400">{block.priority_score.toFixed(2)}</span>
+                  <span className="text-slate-500">type</span>
+                  <span className="text-slate-400">{block.type}</span>
+                </div>
+              </div>
+              <div className="px-4 py-3 border-t border-white/5">
+                <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-2">Subskills ({block.subskills.length})</h4>
+                <div className="space-y-2">
+                  {block.subskills.map((ss, i) => (
+                    <div key={`${ss.subskill_id}-${i}`} className="rounded-lg bg-white/5 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-[11px] font-medium text-slate-200 leading-tight">{ss.subskill_name}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border shrink-0 ${
+                          ss.status === 'new' ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25' :
+                          ss.status === 'review' ? 'bg-amber-500/15 text-amber-400 border-amber-500/25' :
+                          ss.status === 'retest' ? 'bg-rose-500/15 text-rose-400 border-rose-500/25' :
+                          'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
+                        }`}>{ss.status}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                        <span className="font-mono">{ss.subskill_id}</span>
+                        <span>gate {ss.gate}</span>
+                        <span className="capitalize">{ss.bloom_phase}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Block title */}

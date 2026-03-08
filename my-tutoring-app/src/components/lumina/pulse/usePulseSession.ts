@@ -27,9 +27,6 @@ import type { GradeLevel } from '../components/GradeLevelSelector';
 
 const PULSE_STORAGE_KEY = 'lumina-pulse-session';
 
-// Items to pre-generate ahead of the current item
-const PREGEN_LOOKAHEAD = 2;
-
 // ---------------------------------------------------------------------------
 // Hook options & return type
 // ---------------------------------------------------------------------------
@@ -156,22 +153,12 @@ export function usePulseSession({
   // Pending item result (from PracticeManifestRenderer, before submitting to backend)
   const pendingResult = useRef<PracticeItemResult | null>(null);
 
-  // Pre-generation cache: item_id → hydrated items
-  const hydratedCache = useRef<Map<string, HydratedPracticeItem>>(new Map());
-  const briefCache = useRef<Map<string, SessionBrief>>(new Map());
-  const pregenInFlight = useRef<Set<string>>(new Set());
-
-  // Session history: primitives completed with scores (for diversity + difficulty calibration)
+  // Session history: primitives completed with scores (for diversity guidance)
   const sessionPrimitiveHistory = useRef<Array<{
     componentId: string;
     difficulty: string;
     score: number; // 0-100
   }>>([]);
-
-  // Primitives that have been GENERATED (hydrated) but not yet scored.
-  // Updated immediately on hydration completion so pre-gen calls see what's
-  // already been generated and can avoid duplicates.
-  const generatedPrimitives = useRef<Set<string>>(new Set());
 
   // Cross-session primitive history from backend (loaded at session start)
   const recentPrimitives = useRef<RecentPrimitive[]>([]);
@@ -180,53 +167,11 @@ export function usePulseSession({
   const [hydratedItem, setHydratedItem] = useState<HydratedPracticeItem | null>(null);
 
   // -------------------------------------------------------------------------
-  // Pre-generation: hydrate item content via Gemini streaming
+  // Hydrate a single item via Gemini streaming (no caching, no pre-gen)
   // -------------------------------------------------------------------------
 
   const hydrateItem = useCallback(
     async (item: PulseItemSpec): Promise<HydratedPracticeItem | null> => {
-      const key = item.item_id;
-
-      // Check cache
-      const cached = hydratedCache.current.get(key);
-      if (cached) {
-        hydratedCache.current.delete(key);
-        const cachedBrief = briefCache.current.get(key);
-        if (cachedBrief) {
-          setCurrentBrief(cachedBrief);
-          briefCache.current.delete(key);
-        }
-        return cached;
-      }
-
-      // Wait for in-flight pre-gen
-      if (pregenInFlight.current.has(key)) {
-        for (let i = 0; i < 60; i++) {
-          await new Promise((r) => setTimeout(r, 500));
-          const result = hydratedCache.current.get(key);
-          if (result) {
-            hydratedCache.current.delete(key);
-            const cachedBrief = briefCache.current.get(key);
-            if (cachedBrief) {
-              setCurrentBrief(cachedBrief);
-              briefCache.current.delete(key);
-            }
-            return result;
-          }
-        }
-      }
-
-      // Build combined session history: scored items + generated-but-not-yet-scored
-      const combinedHistory = [
-        ...sessionPrimitiveHistory.current,
-        ...Array.from(generatedPrimitives.current).map(cid => ({
-          componentId: cid,
-          difficulty: 'unknown' as string,
-          score: -1,  // sentinel: generated but not scored
-        })),
-      ];
-
-      // Generate fresh — single item with difficulty + diversity guidance
       const hydratedItems = await generatePracticeManifestAndHydrateStreaming(
         item.description,
         gradeLevel,
@@ -237,8 +182,8 @@ export function usePulseSession({
         },
         {
           enforceDiversity: false,
-          sessionHistory: combinedHistory.length > 0
-            ? combinedHistory
+          sessionHistory: sessionPrimitiveHistory.current.length > 0
+            ? sessionPrimitiveHistory.current
             : undefined,
           targetMode: item.target_mode,
           band: item.band,
@@ -259,73 +204,7 @@ export function usePulseSession({
         source: 'curriculum',
       };
 
-      // Track that this primitive has been generated (for pre-gen diversity)
-      const genId = hydrated.manifestItem?.visualPrimitive?.componentId || hydrated.manifestItem?.standardProblem?.problemType || '';
-      if (genId) generatedPrimitives.current.add(genId);
-
       return hydrated;
-    },
-    [gradeLevel],
-  );
-
-  const pregenerate = useCallback(
-    (item: PulseItemSpec) => {
-      const key = item.item_id;
-      if (hydratedCache.current.has(key) || pregenInFlight.current.has(key)) return;
-      pregenInFlight.current.add(key);
-
-      // Snapshot combined history at pre-gen time
-      const combinedHistory = [
-        ...sessionPrimitiveHistory.current,
-        ...Array.from(generatedPrimitives.current).map(cid => ({
-          componentId: cid,
-          difficulty: 'unknown' as string,
-          score: -1,
-        })),
-      ];
-
-      generatePracticeManifestAndHydrateStreaming(
-        item.description,
-        gradeLevel,
-        1,
-        {
-          onSessionBrief: (brief) => {
-            briefCache.current.set(key, brief);
-          },
-        },
-        {
-          enforceDiversity: false,
-          sessionHistory: combinedHistory.length > 0
-            ? combinedHistory
-            : undefined,
-          targetMode: item.target_mode,
-          band: item.band,
-          recentPrimitives: recentPrimitives.current.length > 0
-            ? [...recentPrimitives.current]
-            : undefined,
-        },
-      )
-        .then((hydratedItems) => {
-          if (hydratedItems.length > 0) {
-            const hydrated = hydratedItems[0];
-            hydrated.curriculumIds = {
-              subject: item.subject,
-              skillId: item.skill_id,
-              subskillId: item.subskill_id,
-              source: 'curriculum',
-            };
-            // Track generated primitive immediately for diversity
-            const genId = hydrated.manifestItem?.visualPrimitive?.componentId || hydrated.manifestItem?.standardProblem?.problemType || '';
-            if (genId) generatedPrimitives.current.add(genId);
-            hydratedCache.current.set(key, hydrated);
-          }
-        })
-        .catch((err) => {
-          console.warn('[Pulse] Pre-generation failed for', key, err);
-        })
-        .finally(() => {
-          pregenInFlight.current.delete(key);
-        });
     },
     [gradeLevel],
   );
@@ -339,6 +218,12 @@ export function usePulseSession({
       const item = itemList[index];
       if (!item) return;
 
+      // Clear stale gate progress when moving to a different subskill
+      const prevItem = index > 0 ? itemList[index - 1] : null;
+      if (prevItem && prevItem.subskill_id !== item.subskill_id) {
+        setLatestGateProgress(null);
+      }
+
       setPhase('loading');
       setStreamingMessage('Preparing your activity...');
 
@@ -349,14 +234,6 @@ export function usePulseSession({
         }
         setHydratedItem(hydrated);
         setPhase('practicing');
-
-        // Pre-generate upcoming items
-        for (let i = 1; i <= PREGEN_LOOKAHEAD; i++) {
-          const nextItem = itemList[index + i];
-          if (nextItem) {
-            pregenerate(nextItem);
-          }
-        }
       } catch (err) {
         console.error('[Pulse] Failed to hydrate item:', err);
         setError(
@@ -367,7 +244,7 @@ export function usePulseSession({
         setStreamingMessage('');
       }
     },
-    [hydrateItem, pregenerate],
+    [hydrateItem],
   );
 
   // -------------------------------------------------------------------------
@@ -460,7 +337,11 @@ export function usePulseSession({
     try {
       // Determine primitive_type and eval_mode from the result
       const primitiveType = result.visualComponentId || result.problemType || 'unknown';
-      const evalMode = result.mode === 'visual-primitive' ? 'visual' : 'standard';
+      // Use the actual eval mode from the primitive's metrics (e.g., 'build', 'subitize',
+      // 'make_ten') so per-mode calibration docs are created in Firestore.
+      // Falls back to generic 'visual'/'standard' for primitives that don't set evalMode.
+      const evalMode = result.evaluationResult?.metrics?.evalMode
+        || (result.mode === 'visual-primitive' ? 'visual' : 'standard');
 
       // Score conversion: PracticeItemResult score is 0-100, backend expects 0-10
       const scoreOn10 = result.score / 10;
@@ -476,7 +357,7 @@ export function usePulseSession({
         },
       );
 
-      // Record primitive usage for session history (diversity + difficulty guidance)
+      // Record primitive usage for session history (diversity guidance)
       if (primitiveType !== 'unknown') {
         sessionPrimitiveHistory.current.push({
           componentId: String(primitiveType),
@@ -652,11 +533,7 @@ export function usePulseSession({
     setProgress({ completed: 0, total: 0, bandsSummary: {} });
     setSavedSession(null);
     pendingResult.current = null;
-    hydratedCache.current.clear();
-    briefCache.current.clear();
-    pregenInFlight.current.clear();
     sessionPrimitiveHistory.current = [];
-    generatedPrimitives.current.clear();
     recentPrimitives.current = [];
     clearStorage();
   }, []);
