@@ -8,6 +8,152 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { BaseTenBlocksData, BaseTenBlocksChallenge } from '../../primitives/visual-primitives/math/BaseTenBlocks';
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+// Each entry provides:
+//   promptDoc     — injected into the Gemini prompt (only for allowed types)
+//   schemaDescription — concise label for the schema enum description
+//
+// When an eval mode is active, only the relevant entries are included.
+// When no eval mode, all entries are included for mixed-difficulty generation.
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  build_number: {
+    promptDoc:
+      `"build_number": Student builds a given number from scratch using blocks. `
+      + `Set targetNumber to the value they must construct. `
+      + `Use encouraging language ("Build the number 247 with blocks!"). `
+      + `K-1: numbers 1-20, maxPlace 'tens'. Grades 2-3: numbers 1-999, maxPlace 'hundreds'. `
+      + `Grades 4-5: numbers up to 9999, maxPlace 'thousands'. Full scaffolding — concrete manipulative.`,
+    schemaDescription: "'build_number' (construct number from blocks)",
+  },
+  read_blocks: {
+    promptDoc:
+      `"read_blocks": Blocks are pre-placed, student identifies the number they represent. `
+      + `Set targetNumber to the correct answer. `
+      + `Instruction asks "What number do these blocks show?" — do NOT reveal the answer. `
+      + `K-1: numbers 1-20. Grades 2-3: numbers 1-999. Vary digit patterns (e.g., 305 has 0 tens).`,
+    schemaDescription: "'read_blocks' (identify number from blocks)",
+  },
+  regroup: {
+    promptDoc:
+      `"regroup": Student regroups blocks by trading between place values. `
+      + `E.g., trade 10 ones for 1 ten, or 10 tens for 1 hundred. `
+      + `Set targetNumber to the number being regrouped. `
+      + `Instruction should name the trade: "Regroup 15 ones into tens and ones." `
+      + `Focus on the trading mechanic. Grades 2-3 primary. Include non-trivial trades (e.g., 24 ones).`,
+    schemaDescription: "'regroup' (trade between place values)",
+  },
+  add_with_blocks: {
+    promptDoc:
+      `"add_with_blocks": Student adds two numbers using blocks, regrouping as needed. `
+      + `Set targetNumber to the SUM. Set secondNumber to the second addend. `
+      + `Instruction names both addends: "Add 347 + 285 using blocks." `
+      + `Do NOT reveal the sum. Grades 2-3: sums up to 999. Grades 4-5: sums up to 9999.`,
+    schemaDescription: "'add_with_blocks' (addition with regrouping)",
+  },
+  subtract_with_blocks: {
+    promptDoc:
+      `"subtract_with_blocks": Student subtracts using blocks, borrowing as needed. `
+      + `Set targetNumber to the DIFFERENCE. Set secondNumber to the subtrahend. `
+      + `Instruction names the minuend and subtrahend: "Subtract 285 from 632 using blocks." `
+      + `Do NOT reveal the difference. Grades 2-3: numbers up to 999. Grades 4-5: up to 9999.`,
+    schemaDescription: "'subtract_with_blocks' (subtraction with borrowing)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
+
+const challengeSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    type: {
+      type: Type.STRING,
+      enum: ["build_number", "read_blocks", "regroup", "add_with_blocks", "subtract_with_blocks"],
+      description: "The type of challenge"
+    },
+    instruction: {
+      type: Type.STRING,
+      description: "Clear instruction telling the student what to do"
+    },
+    targetNumber: {
+      type: Type.NUMBER,
+      description: "The target number the student should build or identify"
+    },
+    secondNumber: {
+      type: Type.NUMBER,
+      description: "Second number for operations (add/subtract challenges). Optional.",
+      nullable: true
+    },
+    hint: {
+      type: Type.STRING,
+      description: "A helpful hint shown after multiple failed attempts"
+    }
+  },
+  required: ["type", "instruction", "targetNumber", "hint"]
+};
+
+const baseTenBlocksSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: {
+      type: Type.STRING,
+      description: "Title for the base-ten blocks visualization"
+    },
+    description: {
+      type: Type.STRING,
+      description: "Brief explanation of what the blocks demonstrate"
+    },
+    numberValue: {
+      type: Type.NUMBER,
+      description: "The primary number to represent using base-ten blocks"
+    },
+    interactionMode: {
+      type: Type.STRING,
+      enum: ["build", "decompose", "regroup", "operate"],
+      description: "How the student interacts with the blocks. 'build' = construct a number, 'decompose' = break apart, 'regroup' = trade between places, 'operate' = add/subtract"
+    },
+    decimalMode: {
+      type: Type.BOOLEAN,
+      description: "Whether to include decimal places (tenths, hundredths). Default: false"
+    },
+    maxPlace: {
+      type: Type.STRING,
+      enum: ["ones", "tens", "hundreds", "thousands"],
+      description: "The highest place value column to show. Default: 'hundreds'"
+    },
+    supplyTray: {
+      type: Type.BOOLEAN,
+      description: "Whether to show add/remove buttons for blocks. Default: true"
+    },
+    challenges: {
+      type: Type.ARRAY,
+      items: challengeSchema,
+      description: "Array of sequential challenges for the student to complete"
+    },
+    gradeBand: {
+      type: Type.STRING,
+      enum: ["K-1", "2-3", "4-5"],
+      description: "Target grade band for difficulty calibration"
+    }
+  },
+  required: ["title", "description", "numberValue", "challenges", "gradeBand", "interactionMode"]
+};
+
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
 
 /**
  * Generate Base-Ten Blocks content
@@ -26,83 +172,24 @@ export const generateBaseTenBlocks = async (
   gradeContext: string,
   config?: {
     intent?: string;
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode?: string;
   }
 ): Promise<BaseTenBlocksData> => {
-  const challengeSchema: Schema = {
-    type: Type.OBJECT,
-    properties: {
-      type: {
-        type: Type.STRING,
-        enum: ["build_number", "read_blocks", "regroup", "add_with_blocks", "subtract_with_blocks"],
-        description: "The type of challenge"
-      },
-      instruction: {
-        type: Type.STRING,
-        description: "Clear instruction telling the student what to do"
-      },
-      targetNumber: {
-        type: Type.NUMBER,
-        description: "The target number the student should build or identify"
-      },
-      secondNumber: {
-        type: Type.NUMBER,
-        description: "Second number for operations (add/subtract challenges). Optional.",
-        nullable: true
-      },
-      hint: {
-        type: Type.STRING,
-        description: "A helpful hint shown after multiple failed attempts"
-      }
-    },
-    required: ["type", "instruction", "targetNumber", "hint"]
-  };
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'base-ten-blocks',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
 
-  const schema: Schema = {
-    type: Type.OBJECT,
-    properties: {
-      title: {
-        type: Type.STRING,
-        description: "Title for the base-ten blocks visualization"
-      },
-      description: {
-        type: Type.STRING,
-        description: "Brief explanation of what the blocks demonstrate"
-      },
-      numberValue: {
-        type: Type.NUMBER,
-        description: "The primary number to represent using base-ten blocks"
-      },
-      interactionMode: {
-        type: Type.STRING,
-        enum: ["build", "decompose", "regroup", "operate"],
-        description: "How the student interacts with the blocks. 'build' = construct a number, 'decompose' = break apart, 'regroup' = trade between places, 'operate' = add/subtract"
-      },
-      decimalMode: {
-        type: Type.BOOLEAN,
-        description: "Whether to include decimal places (tenths, hundredths). Default: false"
-      },
-      maxPlace: {
-        type: Type.STRING,
-        enum: ["ones", "tens", "hundreds", "thousands"],
-        description: "The highest place value column to show. Default: 'hundreds'"
-      },
-      supplyTray: {
-        type: Type.BOOLEAN,
-        description: "Whether to show add/remove buttons for blocks. Default: true"
-      },
-      challenges: {
-        type: Type.ARRAY,
-        items: challengeSchema,
-        description: "Array of sequential challenges for the student to complete"
-      },
-      gradeBand: {
-        type: Type.STRING,
-        enum: ["K-1", "2-3", "4-5"],
-        description: "Target grade band for difficulty calibration"
-      }
-    },
-    required: ["title", "description", "numberValue", "challenges", "gradeBand", "interactionMode"]
-  };
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(baseTenBlocksSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : baseTenBlocksSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `You are generating a Base-Ten Blocks visualization for elementary math education.
 
@@ -113,6 +200,9 @@ CONTEXT:
 
 Generate base-ten blocks content that helps students understand place value (ones, tens, hundreds, thousands).
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 GRADE BAND GUIDELINES:
 
 K-1 (Kindergarten-Grade 1):
@@ -144,13 +234,7 @@ K-1 (Kindergarten-Grade 1):
 - 3-5 challenges
 - More complex operations and multi-step problems
 - Example challenge: { type: 'add_with_blocks', instruction: 'Add 347 + 285 using blocks', targetNumber: 632, secondNumber: 285, hint: 'Start by adding the ones. Do you need to regroup?' }
-
-CHALLENGE TYPES:
-- build_number: Student builds a given number from scratch using blocks
-- read_blocks: Student identifies the number shown by pre-placed blocks
-- regroup: Student regroups blocks (e.g., trade 10 ones for 1 ten)
-- add_with_blocks: Student adds two numbers using blocks, regrouping as needed
-- subtract_with_blocks: Student subtracts using blocks, borrowing as needed
+` : ''}
 
 REQUIREMENTS:
 1. Title should be engaging and age-appropriate
@@ -165,12 +249,14 @@ REQUIREMENTS:
 
 Return the complete base-ten blocks data structure.`;
 
+  logEvalModeResolution('BaseTenBlocks', config?.targetEvalMode, evalConstraint);
+
   const response = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: schema,
+      responseSchema: activeSchema,
     },
   });
 
@@ -199,6 +285,24 @@ Return the complete base-ten blocks data structure.`;
     secondNumber: c.secondNumber,
     hint: c.hint || 'Think about the place values',
   }));
+
+  // ── Fallback if empty ──
+  if (data.challenges.length === 0) {
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'build_number';
+    const fallbacks: Record<string, BaseTenBlocksChallenge> = {
+      build_number: { type: 'build_number', instruction: 'Build the number 45 with blocks!', targetNumber: 45, hint: '45 has 4 tens and 5 ones.' },
+      read_blocks: { type: 'read_blocks', instruction: 'What number do these blocks show?', targetNumber: 123, hint: 'Count each column: hundreds, tens, ones.' },
+      regroup: { type: 'regroup', instruction: 'Regroup 15 ones into tens and ones.', targetNumber: 15, hint: '10 ones = 1 ten. How many are left over?' },
+      add_with_blocks: { type: 'add_with_blocks', instruction: 'Add 234 + 158 using blocks.', targetNumber: 392, secondNumber: 158, hint: 'Start with the ones column. Do you need to regroup?' },
+      subtract_with_blocks: { type: 'subtract_with_blocks', instruction: 'Subtract 127 from 350 using blocks.', targetNumber: 223, secondNumber: 127, hint: 'Start with the ones. Can you borrow from the tens?' },
+    };
+    console.log(`[BaseTenBlocks] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [fallbacks[fallbackType] ?? fallbacks.build_number];
+  }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
+  console.log(`[BaseTenBlocks] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   console.log('🧱 Base-Ten Blocks Generated from dedicated service:', {
     topic,

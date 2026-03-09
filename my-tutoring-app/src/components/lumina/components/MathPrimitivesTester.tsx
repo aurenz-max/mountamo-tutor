@@ -43,7 +43,7 @@ import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
 import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker';
 
-import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData, MeasurementToolsData } from '../types';
+import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData, MeasurementToolsData, EvalModeDefinition } from '../types';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -51,6 +51,7 @@ import {
 } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
+import { MATH_CATALOG } from '../service/manifest/catalog/math';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
@@ -627,12 +628,17 @@ const EvaluationResultsPanel: React.FC = () => {
 const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack }) => {
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('fraction-bar');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
+  const [selectedEvalMode, setSelectedEvalMode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
 
   const selectedOption = PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)!;
+
+  // Look up eval modes from the catalog for the selected primitive
+  const catalogEntry = MATH_CATALOG.find(c => c.id === selectedPrimitive);
+  const evalModes: EvalModeDefinition[] = catalogEntry?.evalModes ?? [];
 
   // Topic from the selected primitive — used by EvaluationProvider for curriculum mapping
   const topic = selectedOption.topic;
@@ -657,7 +663,9 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
             componentId: selectedPrimitive,
             topic: selectedOption.topic,
             gradeLevel,
-            config: {},
+            config: {
+              ...(selectedEvalMode ? { targetEvalMode: selectedEvalMode } : {}),
+            },
           },
         }),
       });
@@ -720,6 +728,7 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
                   key={option.value}
                   onClick={() => {
                     setSelectedPrimitive(option.value);
+                    setSelectedEvalMode(null);
                     setGeneratedData(null);
                   }}
                   className={`p-3 rounded-lg border transition-all text-left ${
@@ -751,6 +760,58 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
             </select>
           </div>
 
+          {/* Eval Mode Selector — shown when the primitive has IRT eval modes */}
+          {evalModes.length > 0 && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Difficulty Mode
+                <span className="text-slate-500 font-normal ml-1">(IRT Calibration)</span>
+              </label>
+              <div className="space-y-2">
+                {/* "Auto" option — no mode constraint */}
+                <button
+                  onClick={() => setSelectedEvalMode(null)}
+                  className={`w-full p-3 rounded-lg border transition-all text-left ${
+                    selectedEvalMode === null
+                      ? 'border-purple-500 bg-purple-500/20 text-purple-300'
+                      : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Auto (mixed difficulty)</span>
+                    <span className="text-xs text-slate-500">Default</span>
+                  </div>
+                </button>
+                {/* One button per eval mode */}
+                {evalModes.map((mode) => (
+                  <button
+                    key={mode.evalMode}
+                    onClick={() => setSelectedEvalMode(mode.evalMode)}
+                    className={`w-full p-3 rounded-lg border transition-all text-left ${
+                      selectedEvalMode === mode.evalMode
+                        ? 'border-purple-500 bg-purple-500/20 text-purple-300'
+                        : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{mode.label}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        mode.scaffoldingMode <= 2
+                          ? 'bg-green-500/20 text-green-400'
+                          : mode.scaffoldingMode <= 4
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        Mode {mode.scaffoldingMode} / {'\u03B2'} {mode.beta}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">{mode.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Error Display */}
           {error && (
             <div className="mb-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
@@ -780,6 +841,14 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
           {/* Info */}
           <p className="mt-4 text-xs text-slate-500 text-center">
             Gemini will generate a {selectedOption.label.toLowerCase()} appropriate for {gradeLevel} level
+            {selectedEvalMode && evalModes.length > 0 && (() => {
+              const mode = evalModes.find(m => m.evalMode === selectedEvalMode);
+              return mode ? (
+                <span className="block mt-1 text-purple-400">
+                  Mode: {mode.label} ({'\u03B2'} = {mode.beta})
+                </span>
+              ) : null;
+            })()}
           </p>
         </div>
 

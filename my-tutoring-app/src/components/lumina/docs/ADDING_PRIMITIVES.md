@@ -1120,13 +1120,16 @@ Use this checklist when adding a new primitive:
 - [ ] **Pedagogical speech triggers** (if interactive): Added `sendText('[TAG] ...', { silent: true })` calls at key interaction points (correct/incorrect, phase transitions, item progression, completion)
 - [ ] **Multi-phase hooks** (if multi-phase): Used `useChallengeProgress` + `usePhaseResults` for challenge tracking and phase grouping (see [Multi-Phase Challenge Tracking](#multi-phase-challenge-tracking-shared-hooks))
 - [ ] **Phase summary** (if multi-phase): Rendered `PhaseSummaryPanel` with `phaseResults` from `usePhaseResults` when `allChallengesComplete` is true
-- [ ] **Testing**: Verified primitive works standalone and within exhibits; tested AI scaffolding with Lumina Tutor Tester
+- [ ] **Eval modes** (if 2+ challenge types): Added `evalModes` array to catalog entry, `CHALLENGE_TYPE_DOCS` to generator, and used `resolveEvalModeConstraint()` + `constrainChallengeTypeEnum()` for schema-level constraint (see [ADDING_EVAL_MODES.md](ADDING_EVAL_MODES.md))
+- [ ] **Testing**: Verified primitive works standalone and within exhibits; tested AI scaffolding with Lumina Tutor Tester; if eval modes, tested each mode in Primitives Tester
 
 ## Additional Resources
 
+- **[ADDING_EVAL_MODES.md](ADDING_EVAL_MODES.md)** - Adding IRT eval modes for schema-constrained difficulty targeting
 - **[MIGRATING_TO_PHASE_SUMMARY.md](MIGRATING_TO_PHASE_SUMMARY.md)** - Step-by-step recipe for adding PhaseSummaryPanel to existing multi-phase primitives
 - **[ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md)** - Full guide for adding AI tutoring scaffolding and speech triggers to primitives
 - **[MIGRATING_TO_SHADCN.md](MIGRATING_TO_SHADCN.md)** - Guide for converting existing primitives to use shadcn/ui
+- **[lumina_difficulty_calibration_prd.md](lumina_difficulty_calibration_prd.md)** - IRT calibration PRD with §5.3 prior difficulty table
 - **[INTEGRATION_GUIDE.md](../evaluation/INTEGRATION_GUIDE.md)** - Comprehensive guide to the evaluation system
 - **[TowerStacker.tsx](../primitives/visual-primitives/engineering/TowerStacker.tsx)** - ⭐ Reference implementation with evaluation (recommended starting point)
 - **[BridgeBuilder.tsx](../primitives/visual-primitives/engineering/BridgeBuilder.tsx)** - Another evaluation example with complex metrics

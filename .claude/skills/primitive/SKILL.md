@@ -20,6 +20,7 @@ Ask the user for:
 - **Purpose** (what it teaches)
 - **Interactive or display-only?** (interactive = evaluation + tutoring)
 - **Grade range** (K-2, 3-5, 6-8, 9-12, etc.)
+- **Challenge types** (if interactive with 2+ types: what are the distinct difficulty modes? e.g., build/subitize/make_ten/add/subtract)
 
 ## Phase 2: Design & Write the Component (Main Agent)
 
@@ -164,6 +165,7 @@ After writing the component, note:
 - Whether it's **interactive** (needs evaluation + tutoring)
 - The **pedagogical moments** you wired (for catalog tutoring field)
 - The **key data fields** the AI tutor needs to see (for contextKeys)
+- Whether it has **2+ challenge types** that warrant eval modes (for IRT difficulty targeting)
 
 ---
 
@@ -227,9 +229,14 @@ Tasks:
 2. Create `my-tutoring-app/src/components/lumina/service/<domain>/gemini-<id>.ts`:
    - Import `{ Type, Schema } from "@google/genai"` and `{ ai } from "../geminiClient"`
    - Import `{ <Name>Data } from '../../primitives/visual-primitives/<domain>/<Name>'` (NEVER redefine the interface)
+   - If the primitive has 2+ challenge types, also import eval mode utilities:
+     `import { resolveEvalModeConstraint, constrainChallengeTypeEnum, buildChallengeTypePromptSection, type ChallengeTypeDoc } from '../evalMode';`
+   - If using eval modes, define a `CHALLENGE_TYPE_DOCS` record at the top with `promptDoc` + `schemaDescription` per challenge type (see `gemini-ten-frame.ts` for the pattern)
    - Define a Gemini JSON schema matching the data interface
    - Export `generate<Name>` function with signature: `(topic: string, gradeLevel: string, config?: Partial<...>) => Promise<<Name>Data>`
+   - Config type should include `targetEvalMode?: string` if eval modes are used
    - Use model `"gemini-flash-lite-latest"` with `responseMimeType: "application/json"`
+   - If eval modes: call `resolveEvalModeConstraint()`, `constrainChallengeTypeEnum()`, and `buildChallengeTypePromptSection()` before the Gemini call. Pass `activeSchema` (not base schema) to Gemini.
    - Add validation/defaults after parsing
 
 3. Read `my-tutoring-app/src/components/lumina/service/registry/generators/<domain>Generators.ts`
@@ -256,6 +263,8 @@ Grade range: <grade range>
 Interactive: <yes/no>
 Pedagogical moments: <list from Phase 2c>
 Key data fields for AI tutor: <list from Phase 2c>
+Has eval modes: <yes/no — yes if 2+ challenge types>
+Eval modes (if yes): <list of { evalMode, label, beta, scaffoldingMode, challengeTypes, description }>
 
 Tasks:
 1. Read `my-tutoring-app/src/components/lumina/service/manifest/catalog/<domain>.ts` to see the existing pattern
@@ -266,6 +275,18 @@ Tasks:
      id: '<id>',
      description: '<Clear description>. Perfect for <use case>. ESSENTIAL for <grade> <subject>.',
      constraints: '<Any limitations>',
+     <if eval modes, add evalModes field:>
+     evalModes: [
+       {
+         evalMode: '<mode_key>',
+         label: '<Mode Label (Tier)>',
+         beta: <IRT prior β — must match backend problem_type_registry.py>,
+         scaffoldingMode: <1-6>,
+         challengeTypes: ['<type1>'],
+         description: '<What this mode tests>',
+       },
+       // ... more modes, ordered lowest β → highest β
+     ],
      <if interactive, add tutoring field:>
      tutoring: {
        taskDescription: '<What the student is doing. Use {{key}} for runtime values.>',
@@ -340,6 +361,8 @@ Report to the user:
 - Pedagogical moments wired (if interactive)
 - sendText tags defined
 - Tutoring scaffold added (or why skipped for display-only)
+- Eval modes added (if 2+ challenge types — list each mode with β value)
+- If eval modes added, remind user to also add entries to `backend/app/services/calibration/problem_type_registry.py` if not already present
 
 ---
 
@@ -374,3 +397,5 @@ When adding a **new domain** (not new primitive in existing domain), also update
 
 Primitive specs and requirements are documented in:
 - `lumina/docs/space-primitives-prd.md` — Astronomy/space primitives
+- `lumina/docs/lumina_difficulty_calibration_prd.md` — IRT calibration PRD (§5.3 prior difficulty table for β values)
+- `lumina/docs/ADDING_EVAL_MODES.md` — Full eval modes implementation guide

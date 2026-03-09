@@ -200,6 +200,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   const [showCounters, setShowCounters] = useState(true);
   const [subitizeInput, setSubitizeInput] = useState('');
   const [subitizeStartTime, setSubitizeStartTime] = useState(0);
+  const [subitizeReflashes, setSubitizeReflashes] = useState(0);
 
   // Make-ten state
   const [makeTenInput, setMakeTenInput] = useState('');
@@ -212,8 +213,13 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `ten-frame-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentChallenge = challenges[currentChallengeIndex] || null;
+
+  const isCurrentChallengeComplete = challengeResults.some(
+    r => r.challengeId === currentChallenge?.id && r.correct
+  );
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -364,6 +370,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     if (!currentChallenge) return;
     const target = currentChallenge.targetCount;
 
+    // Cancel any in-flight flash timeout to prevent stale callbacks
+    if (flashTimeoutRef.current) {
+      clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
+    }
+
     // Place counters for the flash
     const positions: number[] = [];
     for (let i = 0; i < target && i < totalCells; i++) {
@@ -382,9 +394,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     setSubitizeStartTime(Date.now());
 
     const duration = currentChallenge.flashDuration || 1500;
-    setTimeout(() => {
+    flashTimeoutRef.current = setTimeout(() => {
       setShowCounters(false);
       setIsFlashing(false);
+      flashTimeoutRef.current = null;
     }, duration);
   }, [currentChallenge, totalCells, initialCounters?.color]);
 
@@ -482,9 +495,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         correct: true,
         timeMs,
         attempts: currentAttempts + 1,
+        reflashes: currentChallenge.type === 'subitize' ? subitizeReflashes : 0,
       });
     }
-  }, [currentChallenge, currentAttempts, checkBuildChallenge, checkSubitizeAnswer, checkMakeTenAnswer, recordResult]);
+  }, [currentChallenge, currentAttempts, subitizeReflashes, checkBuildChallenge, checkSubitizeAnswer, checkMakeTenAnswer, recordResult]);
 
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
@@ -519,9 +533,17 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
           ? subitizeResults.reduce((sum, r) => sum + ((r.timeMs as number) || 0), 0) / subitizeResults.length
           : 0;
 
+        // Score with reflash penalty: each reflash reduces that challenge's credit
+        const REFLASH_PENALTY = 0.15; // 15% credit reduction per reflash
+        const REFLASH_MIN_CREDIT = 0.5; // floor at 50% credit even with many reflashes
+        const weightedCorrect = challengeResults.reduce((sum, r) => {
+          if (!r.correct) return sum;
+          const reflashes = (r.reflashes as number) || 0;
+          return sum + Math.max(REFLASH_MIN_CREDIT, 1 - REFLASH_PENALTY * reflashes);
+        }, 0);
         const totalCorrect = challengeResults.filter(r => r.correct).length;
         const score = challenges.length > 0
-          ? Math.round((totalCorrect / challenges.length) * 100)
+          ? Math.round((weightedCorrect / challenges.length) * 100)
           : 0;
 
         const metrics: TenFrameMetrics = {
@@ -556,6 +578,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     setSubitizeInput('');
     setMakeTenInput('');
     setShowCounters(true);
+    setSubitizeReflashes(0);
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
 
@@ -590,12 +613,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   // Subitize auto-start
   // -------------------------------------------------------------------------
   useEffect(() => {
-    if (currentPhase === 'subitize' && currentChallenge?.type === 'subitize' && showCounters && !isFlashing) {
+    if (currentPhase === 'subitize' && currentChallenge?.type === 'subitize' && showCounters && !isFlashing && !isCurrentChallengeComplete) {
       // Ready to flash — give a brief delay for the student to prepare
       const timer = setTimeout(() => startSubitizeFlash(), 800);
       return () => clearTimeout(timer);
     }
-  }, [currentPhase, currentChallenge, showCounters, isFlashing, startSubitizeFlash]);
+  }, [currentPhase, currentChallenge, showCounters, isFlashing, startSubitizeFlash, isCurrentChallengeComplete]);
 
   // -------------------------------------------------------------------------
   // Make-ten: pre-fill counters
@@ -729,10 +752,6 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   const frameCount = mode === 'double' ? 2 : 1;
   const svgWidth = frameCount * (FRAME_COLS * (CELL_SIZE + CELL_GAP) - CELL_GAP + FRAME_PADDING * 2) + (frameCount - 1) * 24;
   const svgHeight = FRAME_ROWS * (CELL_SIZE + CELL_GAP) - CELL_GAP + FRAME_PADDING * 2;
-
-  const isCurrentChallengeComplete = challengeResults.some(
-    r => r.challengeId === currentChallenge?.id && r.correct
-  );
 
   // -------------------------------------------------------------------------
   // Auto-submit evaluation when all challenges complete
@@ -873,6 +892,16 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
                 +
               </Button>
             </div>
+            <Button
+              variant="ghost"
+              className="text-xs bg-slate-800/30 border border-white/10 hover:bg-slate-700/30 text-slate-400"
+              onClick={() => {
+                setSubitizeReflashes(r => r + 1);
+                startSubitizeFlash();
+              }}
+            >
+              Flash Again
+            </Button>
           </div>
         )}
 

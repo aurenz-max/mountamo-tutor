@@ -137,47 +137,77 @@ function generateScatteredPositions(count: number, seed: number = 42): Array<{ x
 }
 
 function generateLinePositions(count: number): Array<{ x: number; y: number }> {
-  const spacing = Math.min(
-    (WORKSPACE_WIDTH - 2 * OBJECT_PADDING) / Math.max(count - 1, 1),
-    OBJECT_SIZE + 12
-  );
-  const totalWidth = spacing * (count - 1);
-  const startX = (WORKSPACE_WIDTH - totalWidth) / 2;
-  const y = WORKSPACE_HEIGHT / 2;
+  const idealSpacing = OBJECT_SIZE + 12;
+  const usableWidth = WORKSPACE_WIDTH - 2 * OBJECT_PADDING;
+  const maxPerRow = Math.max(1, Math.floor(usableWidth / idealSpacing));
 
-  return Array.from({ length: count }, (_, i) => ({
-    x: startX + i * spacing,
-    y,
-  }));
+  // Single row if everything fits
+  if (count <= maxPerRow) {
+    const spacing = Math.min(usableWidth / Math.max(count - 1, 1), idealSpacing);
+    const totalWidth = spacing * (count - 1);
+    const startX = (WORKSPACE_WIDTH - totalWidth) / 2;
+    const y = WORKSPACE_HEIGHT / 2;
+    return Array.from({ length: count }, (_, i) => ({ x: startX + i * spacing, y }));
+  }
+
+  // Grid fallback for larger counts
+  const cols = maxPerRow;
+  const rows = Math.ceil(count / cols);
+  const colSpacing = usableWidth / Math.max(cols - 1, 1);
+  const rowSpacing = Math.min(OBJECT_SIZE + 14, (WORKSPACE_HEIGHT - 2 * OBJECT_PADDING) / Math.max(rows - 1, 1));
+  const totalHeight = rowSpacing * (rows - 1);
+  const startY = (WORKSPACE_HEIGHT - totalHeight) / 2;
+
+  return Array.from({ length: count }, (_, i) => {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const itemsInRow = Math.min(cols, count - row * cols);
+    const rowWidth = colSpacing * (itemsInRow - 1);
+    const rowStartX = (WORKSPACE_WIDTH - rowWidth) / 2;
+    return { x: rowStartX + col * colSpacing, y: startY + row * rowSpacing };
+  });
 }
 
 function generateGroupPositions(count: number, groupSize: number): Array<{ x: number; y: number }> {
   const numGroups = Math.ceil(count / groupSize);
-  // Spread groups evenly across the full workspace width
-  const usableWidth = WORKSPACE_WIDTH - 2 * OBJECT_PADDING - OBJECT_SIZE;
-  const groupSpacing = numGroups > 1
-    ? usableWidth / (numGroups - 1)
-    : 0;
-  const startX = numGroups > 1
-    ? OBJECT_PADDING + OBJECT_SIZE / 2
-    : WORKSPACE_WIDTH / 2;
+  const itemSpacing = OBJECT_SIZE + 6;
+  const subCols = Math.min(3, groupSize);
+  const groupWidth = (subCols - 1) * itemSpacing + OBJECT_SIZE;
+  const groupGap = 20;
+
+  const usableWidth = WORKSPACE_WIDTH - 2 * OBJECT_PADDING;
+  const maxGroupsPerRow = Math.max(1, Math.floor((usableWidth + groupGap) / (groupWidth + groupGap)));
+  const groupRows = Math.ceil(numGroups / maxGroupsPerRow);
+
+  // Height of one group (tallest possible)
+  const subRows = Math.ceil(groupSize / subCols);
+  const groupHeight = (subRows - 1) * itemSpacing + OBJECT_SIZE;
+  const groupRowGap = 16;
+  const totalGroupHeight = groupRows * groupHeight + (groupRows - 1) * groupRowGap;
+  const startY = (WORKSPACE_HEIGHT - totalGroupHeight) / 2 + OBJECT_SIZE / 2;
+
   const positions: Array<{ x: number; y: number }> = [];
 
-  const itemSpacing = OBJECT_SIZE + 6;
-
   for (let g = 0; g < numGroups; g++) {
-    const groupCenterX = startX + g * groupSpacing;
-    const itemsInGroup = Math.min(groupSize, count - g * groupSize);
+    const gRow = Math.floor(g / maxGroupsPerRow);
+    const gCol = g % maxGroupsPerRow;
+    const groupsInThisRow = Math.min(maxGroupsPerRow, numGroups - gRow * maxGroupsPerRow);
+    const rowTotalWidth = groupsInThisRow * groupWidth + (groupsInThisRow - 1) * groupGap;
+    const rowStartX = (WORKSPACE_WIDTH - rowTotalWidth) / 2 + groupWidth / 2;
 
+    const groupCenterX = rowStartX + gCol * (groupWidth + groupGap);
+    const groupTopY = startY + gRow * (groupHeight + groupRowGap);
+
+    const itemsInGroup = Math.min(groupSize, count - g * groupSize);
     for (let i = 0; i < itemsInGroup; i++) {
-      const row = Math.floor(i / 3);
-      const col = i % 3;
-      const itemsInRow = Math.min(3, itemsInGroup - row * 3);
-      const rowStartX = groupCenterX - ((itemsInRow - 1) * itemSpacing) / 2;
+      const row = Math.floor(i / subCols);
+      const col = i % subCols;
+      const itemsInRow = Math.min(subCols, itemsInGroup - row * subCols);
+      const rowStartXLocal = groupCenterX - ((itemsInRow - 1) * itemSpacing) / 2;
 
       positions.push({
-        x: rowStartX + col * itemSpacing,
-        y: WORKSPACE_HEIGHT / 2 - 20 + row * itemSpacing,
+        x: rowStartXLocal + col * itemSpacing,
+        y: groupTopY + row * itemSpacing,
       });
     }
   }
@@ -298,6 +328,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   // Domain-specific tracking (not covered by shared hooks)
   const [usedGrouping, setUsedGrouping] = useState(false);
   const [usedCountOn, setUsedCountOn] = useState(false);
+  const [currentRetries, setCurrentRetries] = useState(0);
+  const RETRY_PENALTY = 0.15; // 15% per retry
 
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `counting-board-${Date.now()}`);
@@ -512,6 +544,41 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   }, [currentChallenge, countOnInput, preCountedCount, sendText, incrementAttempts]);
 
   // -------------------------------------------------------------------------
+  // Retry Handler
+  // -------------------------------------------------------------------------
+  const handleRetry = useCallback(() => {
+    if (!currentChallenge) return;
+    setCurrentRetries(prev => prev + 1);
+    setCountedObjects(new Set());
+    setCountOrder(new Map());
+    setDoubleCounted(false);
+    setSubitizeInput('');
+    setCountOnInput('');
+    setFeedback('');
+    setFeedbackType('');
+
+    // Re-setup count-on pre-counted objects
+    if (currentChallenge.type === 'count_on') {
+      const startFrom = currentChallenge.startFrom || Math.floor(currentChallenge.targetAnswer / 2);
+      setPreCountedCount(startFrom);
+      const preCounted = new Set<number>();
+      const preOrder = new Map<number, number>();
+      for (let i = 0; i < startFrom && i < currentChallenge.count; i++) {
+        preCounted.add(i);
+        preOrder.set(i, i + 1);
+      }
+      setCountedObjects(preCounted);
+      setCountOrder(preOrder);
+    }
+
+    sendText(
+      `[RETRY] Student is retrying challenge ${currentChallengeIndex + 1} (retry #${currentRetries + 1}). `
+      + `Encourage them: "Let's try again! Take your time."`,
+      { silent: true }
+    );
+  }, [currentChallenge, currentChallengeIndex, currentRetries, sendText]);
+
+  // -------------------------------------------------------------------------
   // Challenge Navigation
   // -------------------------------------------------------------------------
   const handleCheckAnswer = useCallback(() => {
@@ -549,9 +616,10 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         timeMs,
         attempts: currentAttempts + 1,
         oneToOne,
+        retries: currentRetries,
       });
     }
-  }, [currentChallenge, currentAttempts, checkCountChallenge, checkSubitizeAnswer, checkCountOnAnswer, recordResult]);
+  }, [currentChallenge, currentAttempts, currentRetries, checkCountChallenge, checkSubitizeAnswer, checkCountOnAnswer, recordResult]);
 
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
@@ -575,8 +643,10 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         });
 
         const countingCorrect = challengeResults.filter(r => r.correct).length;
+        const totalRetries = challengeResults.reduce((s, r) => s + ((r.retries as number) || 0), 0);
+        const retryPenalty = totalRetries * RETRY_PENALTY;
         const countingAccuracy = challenges.length > 0
-          ? Math.round((countingCorrect / challenges.length) * 100) : 0;
+          ? Math.round(Math.max(0, (countingCorrect / challenges.length) * 100 * (1 - retryPenalty))) : 0;
         const subitizeAccuracy = subitizeResults.length > 0
           ? Math.round((subitizeResults.filter(r => r.correct).length / subitizeResults.length) * 100) : 0;
         const subitizeSpeed = subitizeResults.length > 0
@@ -617,6 +687,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     setCountedObjects(new Set());
     setCountOrder(new Map());
     setDoubleCounted(false);
+    setCurrentRetries(0);
     const nextChallenge = challenges[currentChallengeIndex + 1];
 
     // Set phase
@@ -768,26 +839,43 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               (() => {
                 const gs = challengeGroupSize;
                 const numGroups = Math.ceil(challengeCount / gs);
-                const usable = WORKSPACE_WIDTH - 2 * OBJECT_PADDING - OBJECT_SIZE;
-                const groupSpacing = numGroups > 1 ? usable / (numGroups - 1) : 0;
-                const startX = numGroups > 1
-                  ? OBJECT_PADDING + OBJECT_SIZE / 2
-                  : WORKSPACE_WIDTH / 2;
                 const itemSpacing = OBJECT_SIZE + 6;
+                const subCols = Math.min(3, gs);
+                const gw = (subCols - 1) * itemSpacing + OBJECT_SIZE;
+                const gGap = 20;
+
+                const usable = WORKSPACE_WIDTH - 2 * OBJECT_PADDING;
+                const maxGPR = Math.max(1, Math.floor((usable + gGap) / (gw + gGap)));
+                const gRows = Math.ceil(numGroups / maxGPR);
+
+                const subRowsMax = Math.ceil(gs / subCols);
+                const gh = (subRowsMax - 1) * itemSpacing + OBJECT_SIZE;
+                const gRowGap = 16;
+                const totalGH = gRows * gh + (gRows - 1) * gRowGap;
+                const gStartY = (WORKSPACE_HEIGHT - totalGH) / 2 + OBJECT_SIZE / 2;
 
                 return Array.from({ length: numGroups }, (_, g) => {
+                  const gRow = Math.floor(g / maxGPR);
+                  const gCol = g % maxGPR;
+                  const groupsInRow = Math.min(maxGPR, numGroups - gRow * maxGPR);
+                  const rowTotalW = groupsInRow * gw + (groupsInRow - 1) * gGap;
+                  const rowStartX = (WORKSPACE_WIDTH - rowTotalW) / 2 + gw / 2;
+
+                  const cx = rowStartX + gCol * (gw + gGap);
+                  const topY = gStartY + gRow * (gh + gRowGap);
+
                   const itemsInGroup = Math.min(gs, challengeCount - g * gs);
-                  const rows = Math.ceil(itemsInGroup / 3);
-                  const groupCenterY = WORKSPACE_HEIGHT / 2 - 20 + ((rows - 1) * itemSpacing) / 2;
-                  const cols = Math.min(3, itemsInGroup);
+                  const rows = Math.ceil(itemsInGroup / subCols);
+                  const cols = Math.min(subCols, itemsInGroup);
+                  const cy = topY + ((rows - 1) * itemSpacing) / 2;
                   const rx = Math.max(((cols - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
                   const ry = Math.max(((rows - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
 
                   return (
                     <ellipse
                       key={`group-${g}`}
-                      cx={startX + g * groupSpacing}
-                      cy={groupCenterY}
+                      cx={cx}
+                      cy={cy}
                       rx={rx}
                       ry={ry}
                       fill="rgba(234,179,8,0.05)"
@@ -965,17 +1053,29 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                onClick={handleCheckAnswer}
-                disabled={
-                  (currentPhase === 'count' && countedObjects.size === 0) ||
-                  hasSubmittedEvaluation
-                }
-              >
-                Check Answer
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                  onClick={handleCheckAnswer}
+                  disabled={
+                    (currentPhase === 'count' && countedObjects.size === 0) ||
+                    hasSubmittedEvaluation
+                  }
+                >
+                  Check Answer
+                </Button>
+                {feedbackType === 'error' && (
+                  <Button
+                    variant="ghost"
+                    className="bg-amber-500/10 border border-amber-400/30 hover:bg-amber-500/20 text-amber-300"
+                    onClick={handleRetry}
+                    disabled={hasSubmittedEvaluation}
+                  >
+                    Retry{currentRetries > 0 ? ` (−${Math.round(currentRetries * RETRY_PENALTY * 100)}%)` : ' (−15%)'}
+                  </Button>
+                )}
+              </>
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
               <Button

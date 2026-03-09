@@ -192,7 +192,9 @@ registerGenerator('ten-frame', async (item, topic, gradeContext) => ({
 registerGenerator('counting-board', async (item, topic, gradeContext) => ({
   type: 'counting-board',
   instanceId: item.instanceId,
-  data: await generateCountingBoard(topic, gradeContext, item.config),
+  data: await generateCountingBoard(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Pattern Builder (K-3 algebraic thinking)
@@ -341,7 +343,8 @@ registerGenerator('base-ten-blocks', async (item, topic, gradeContext) => ({
   type: 'base-ten-blocks',
   instanceId: item.instanceId,
   data: await generateBaseTenBlocks(topic, gradeContext, {
-    intent: item.intent || item.title
+    ...item.config,
+    intent: item.intent || item.title,
   }),
 }));
 

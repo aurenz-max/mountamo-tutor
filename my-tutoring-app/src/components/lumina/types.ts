@@ -1275,6 +1275,26 @@ export interface TutoringScaffold {
   }>;
 }
 
+/**
+ * Defines a single eval mode within a primitive, mapping it to an IRT difficulty
+ * prior (β) from the calibration PRD §5.3. Used by the practice-visual-catalog
+ * and session assembly engine to select the right mode for a target difficulty.
+ */
+export interface EvalModeDefinition {
+  /** Eval mode key sent to the backend (e.g., 'build', 'subitize', 'make_ten') */
+  evalMode: string;
+  /** Human-readable label for UI display */
+  label: string;
+  /** IRT prior β from the problem-type registry (1.0–10.0 scale) */
+  beta: number;
+  /** Scaffolding mode (1-6) this eval mode maps to in the PRD mode taxonomy */
+  scaffoldingMode: number;
+  /** Which challenge types the generator should produce for this eval mode */
+  challengeTypes: string[];
+  /** Brief description of what this mode tests */
+  description: string;
+}
+
 export interface ComponentDefinition {
   id: ComponentId;
   description: string;
@@ -1283,6 +1303,8 @@ export interface ComponentDefinition {
   tutoring?: TutoringScaffold;
   /** Whether this primitive supports evaluation tracking (used by practice-visual-catalog). */
   supportsEvaluation?: boolean;
+  /** IRT eval modes with β priors. When present, enables mode-specific generation. */
+  evalModes?: EvalModeDefinition[];
 }
 
 /**

@@ -68,7 +68,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # Single-mode math primitives (default β)
     # -----------------------------------------------------------------
     "balance-scale":              {"default": PriorConfig(3.0, "Balance equation exploration")},
-    "base-ten-blocks":            {"default": PriorConfig(2.0, "Place value with blocks")},
+    "base-ten-blocks": {
+        "build_number":  PriorConfig(1.5, "Concrete: build number from blocks"),
+        "read_blocks":   PriorConfig(2.5, "Pictorial: identify number from blocks"),
+        "regroup":       PriorConfig(3.5, "Strategy: trade between place values"),
+        "operate":       PriorConfig(5.0, "Operations: add/subtract with blocks"),
+    },
     "fraction-circles":           {"default": PriorConfig(3.5, "Fraction visualization")},
     "fraction-bar":               {"default": PriorConfig(4.0, "Fraction bar model")},
     "area-model":                 {"default": PriorConfig(5.0, "Area model multiplication")},

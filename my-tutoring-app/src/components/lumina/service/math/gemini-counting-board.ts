@@ -1,17 +1,69 @@
 import { Type, Schema } from "@google/genai";
 import { CountingBoardData } from "../../primitives/visual-primitives/math/CountingBoard";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Counting Board Data
- *
- * This schema defines the structure for counting board activities,
- * including object arrangements, counting challenges, subitizing,
- * and count-on strategies for K-1 number sense.
- *
- * Each challenge has its own count and arrangement so the board
- * changes between challenges for progressive difficulty.
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+// Each entry provides:
+//   promptDoc     — injected into the Gemini prompt (only for allowed types)
+//   schemaDescription — concise label for the schema enum description
+//
+// When an eval mode is active, only the relevant entries are included.
+// When no eval mode, all entries are included for mixed-difficulty generation.
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  count_all: {
+    promptDoc:
+      `"count_all": Tap each object one by one. targetAnswer = count. `
+      + `Use warm language ("Can you count all the bears? Touch each one!"). `
+      + `K: counts 1-20, Grade 1: counts 1-30. Full scaffolding — concrete 1:1 correspondence.`,
+    schemaDescription: "'count_all' (tap each to count)",
+  },
+  subitize: {
+    promptDoc:
+      `"subitize": Objects are always visible. Student looks and quickly recognizes how many `
+      + `without counting one by one, then types their answer. `
+      + `Best for small counts (1-5 for K, up to 10 for Grade 1). `
+      + `Use encouraging language like "How many do you see right away?"`,
+    schemaDescription: "'subitize' (quick visual recognition)",
+  },
+  count_on: {
+    promptDoc:
+      `"count_on": Some objects are pre-counted. Student counts the rest and gives total. `
+      + `Set startFrom (the known starting count). `
+      + `Example: startFrom=5, count=8 means student counts on 3 more from 5. `
+      + `targetAnswer = count. Grade 1 only.`,
+    schemaDescription: "'count_on' (start from known group)",
+  },
+  group_count: {
+    promptDoc:
+      `"group_count": Objects in groups. Use arrangement 'groups' with groupSize of 2, 3, 4, or 5. `
+      + `Use only 2-3 groups total (so count = groupSize × numGroups, e.g. 3 groups of 4 = 12). `
+      + `targetAnswer = count. Grade 1 only.`,
+    schemaDescription: "'group_count' (count by groups)",
+  },
+  compare: {
+    promptDoc:
+      `"compare": Two groups visible side by side. "Which has more?" `
+      + `MUST use arrangement='groups'. groupSize = the larger group's count. `
+      + `count = total of both groups. targetAnswer = the larger group's count. `
+      + `The two groups should differ by at least 2 so the difference is visible. Grade 1 only.`,
+    schemaDescription: "'compare' (which has more)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
+
 const countingBoardSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -44,7 +96,7 @@ const countingBoardSchema: Schema = {
           },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'count_all' (tap each to count), 'subitize' (look and quickly recognize how many without counting one by one), 'count_on' (start from a known group), 'group_count' (count by groups), 'compare' (which has more)"
+            description: "Challenge type: 'count_all' (tap each to count), 'subitize' (quick visual recognition), 'count_on' (start from known group), 'group_count' (count by groups), 'compare' (which has more)"
           },
           instruction: {
             type: Type.STRING,
@@ -113,6 +165,10 @@ const countingBoardSchema: Schema = {
   required: ["title", "description", "objects", "challenges", "showOptions", "gradeBand"]
 };
 
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 /**
  * Generate counting board data for interactive counting activities
  *
@@ -123,11 +179,6 @@ const countingBoardSchema: Schema = {
  * - Grade 1: count on, group count by 2s/5s/10s, counts to 30
  *
  * Each challenge has its own count and arrangement for progressive difficulty.
- *
- * @param topic - The math topic or concept
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns CountingBoardData with complete configuration
  */
 export const generateCountingBoard = async (
   topic: string,
@@ -139,8 +190,28 @@ export const generateCountingBoard = async (
     groupSize?: number;
     gradeBand?: 'K' | '1';
     challengeTypes?: string[];
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode?: string;
   }
 ): Promise<CountingBoardData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'counting-board',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // For config.challengeTypes without an eval mode, use them as a hint
+  const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(countingBoardSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : countingBoardSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   // Randomize starting parameters so Gemini doesn't always pick the same counts
   const startCounts = [3, 4, 5, 6, 7, 8];
   const randomStartCount = startCounts[Math.floor(Math.random() * startCounts.length)];
@@ -162,6 +233,9 @@ CONTEXT:
 - Key skills: counting, subitizing, cardinality, counting on, grouping
 - Each challenge gets its OWN count and arrangement, so the board changes between challenges
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
   * Early K: count 1-5 objects, line arrangement, count_all only
@@ -176,53 +250,53 @@ GUIDELINES FOR GRADE LEVELS:
   * Counts up to 30
   * Subitize larger groups (up to 10)
   * Connect counting to addition concepts
-
-CHALLENGE TYPES:
-- "count_all": Tap each object one by one. targetAnswer = count.
-- "subitize": Objects are always visible. Student looks and quickly recognizes how many without counting one by one, then types their answer. Best for small counts (1-5 for K, up to 10 for Grade 1).
-- "count_on": Some objects are pre-counted. Student counts the rest and gives total. Set startFrom. For this session use startFrom=${countOnStart} and count=${countOnTotal} (so the student counts on ${countOnExtra} more).
-- "group_count": Objects in groups. Use arrangement 'groups' with groupSize of 2, 3, 4, or 5. Use only 2-3 groups total (so count = groupSize × numGroups, e.g. 3 groups of 4 = 12).
-- "compare": Two groups visible. "Which has more?" targetAnswer = count.
-
-${config ? `
-CONFIGURATION HINTS:
-${config.objectType ? `- Object type: ${config.objectType}` : ''}
-${config.count ? `- Suggested starting count: ${config.count}` : ''}
-${config.arrangement ? `- Suggested starting arrangement: ${config.arrangement}` : ''}
-${config.groupSize ? `- Group size: ${config.groupSize}` : ''}
-${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.challengeTypes ? `- Challenge types: ${config.challengeTypes.join(', ')}` : ''}
 ` : ''}
+
+COUNT-ON PARAMETERS (if generating count_on challenges):
+- For this session use startFrom=${countOnStart} and count=${countOnTotal} (so the student counts on ${countOnExtra} more).
+
+GROUP-COUNT GUIDELINES (if generating group_count challenges):
+- Set arrangement to 'groups' and provide groupSize (2, 3, 4, or 5)
+- Use only 2-3 groups total (so count = groupSize × numGroups, e.g. 3 groups of 4 = 12)
+
+${(() => {
+  const hints: string[] = [];
+  if (config?.objectType) hints.push(`- Object type: ${config.objectType}`);
+  if (config?.count) hints.push(`- Suggested starting count: ${config.count}`);
+  if (config?.arrangement) hints.push(`- Suggested starting arrangement: ${config.arrangement}`);
+  if (config?.groupSize) hints.push(`- Group size: ${config.groupSize}`);
+  if (config?.gradeBand) hints.push(`- Grade band: ${config.gradeBand}`);
+  if (effectiveChallengeTypes) hints.push(`- Challenge types to include: ${effectiveChallengeTypes.join(', ')}`);
+  return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
+})()}
 
 REQUIREMENTS:
 1. Generate 3-5 challenges that progress in difficulty
 2. IMPORTANT: Each challenge has its own count and arrangement — vary them!
 3. Start the FIRST challenge with exactly ${randomStartCount} ${randomObject} in a ${randomArrangement} arrangement, then progress upward from there
 4. Use warm, encouraging instruction text for young children
-5. For Kindergarten: count_all and subitize only, counts 1-20 per challenge
-6. For Grade 1: include count_on and group_count, counts up to 30 per challenge
-7. For subitize challenges, use small counts (1-5 for K, up to 10 for Grade 1) and encouraging language like "How many do you see right away?"
-8. For group_count challenges, set arrangement to 'groups' and provide groupSize
-9. For each challenge, targetAnswer MUST equal that challenge's count
-10. Include meaningful hints that guide without giving the answer
-11. Include narration text the AI tutor can use
-12. Set showOptions:
+5. For each challenge, targetAnswer MUST equal that challenge's count
+6. Include meaningful hints that guide without giving the answer
+7. Include narration text the AI tutor can use
+8. Set showOptions:
    - showRunningCount: true for count_all, false for subitize
    - showGroupCircles: true for group_count
    - highlightOnTap: always true
    - showLastNumber: true (emphasizes cardinality)
-13. Choose kid-friendly objects that match the topic context
-14. objects.type defines the emoji theme for ALL challenges (e.g., 'stars')
+9. Choose kid-friendly objects that match the topic context
+10. objects.type defines the emoji theme for ALL challenges (e.g., 'stars')
 
 Return the complete counting board configuration.
 `;
+
+  logEvalModeResolution('CountingBoard', config?.targetEvalMode, evalConstraint);
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: countingBoardSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -231,6 +305,8 @@ Return the complete counting board configuration.
   if (!data) {
     throw new Error('No valid counting board data returned from Gemini API');
   }
+
+  // ── Structural validation ──
 
   // Validation: ensure gradeBand is valid
   if (data.gradeBand !== 'K' && data.gradeBand !== '1') {
@@ -243,7 +319,7 @@ Return the complete counting board configuration.
     data.objects = { type: 'stars' };
   }
 
-  // Ensure challenges have valid types
+  // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
   const validChallengeTypes = ['count_all', 'subitize', 'count_on', 'group_count', 'compare'];
   const validArrangements = ['scattered', 'line', 'groups', 'circle'];
 
@@ -251,7 +327,8 @@ Return the complete counting board configuration.
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
 
-  // Per-challenge validation
+  // ── Per-challenge validation ──
+
   for (const challenge of data.challenges) {
     // Validate arrangement
     if (!validArrangements.includes(challenge.arrangement)) {
@@ -270,6 +347,18 @@ Return the complete counting board configuration.
       challenge.count = gs * numGroups;
     }
 
+    // compare: force 2 groups with different sizes so one is visibly "more"
+    if (challenge.type === 'compare') {
+      challenge.arrangement = 'groups';
+      // Pick two distinct group sizes (larger 4-8, smaller 2-5, at least 2 apart)
+      const larger = 4 + Math.floor(Math.random() * 5);            // 4-8
+      const smaller = Math.max(1, larger - 2 - Math.floor(Math.random() * 3)); // at least 2 less
+      // groupSize = larger so first group is the big one
+      challenge.groupSize = larger;
+      challenge.count = larger + smaller;
+      challenge.targetAnswer = larger;
+    }
+
     // Validate count
     if (!challenge.count || challenge.count < 1) {
       challenge.count = 5;
@@ -281,7 +370,7 @@ Return the complete counting board configuration.
       challenge.count = 30;
     }
 
-    // Force targetAnswer = count
+    // Force targetAnswer = count (except compare, where targetAnswer = larger group)
     if (['count_all', 'group_count', 'count_on', 'subitize'].includes(challenge.type)) {
       challenge.targetAnswer = challenge.count;
     }
@@ -292,19 +381,31 @@ Return the complete counting board configuration.
     }
   }
 
-  // Ensure at least one challenge
+  // ── Fallback if empty ──
   if (data.challenges.length === 0) {
-    data.challenges = [{
-      id: 'c1',
-      type: 'count_all',
-      count: 5,
-      arrangement: 'scattered',
-      instruction: `Can you count all the ${data.objects?.type || 'stars'}?`,
-      targetAnswer: 5,
-      hint: 'Touch each one as you count!',
-      narration: "Let's count together! Touch each one as you count.",
-    }];
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'count_all';
+    const fallbacks: Record<string, { type: string; count: number; arrangement: string; instruction: string; targetAnswer: number; hint: string; narration: string; groupSize?: number; startFrom?: number }> = {
+      count_all: { type: 'count_all', count: 5, arrangement: 'scattered', instruction: `Can you count all the ${data.objects?.type || 'stars'}?`, targetAnswer: 5, hint: 'Touch each one as you count!', narration: "Let's count together! Touch each one as you count." },
+      subitize: { type: 'subitize', count: 4, arrangement: 'scattered', instruction: 'How many do you see right away?', targetAnswer: 4, hint: 'Look at the whole group — how many?', narration: "Look carefully — how many do you see without counting?" },
+      count_on: { type: 'count_on', count: 8, arrangement: 'scattered', instruction: 'There are 5 already. Count on to find the total!', targetAnswer: 8, hint: 'Start from 5 and keep counting: 6, 7, 8...', narration: "Some are already counted. Count on from there!", startFrom: 5 },
+      group_count: { type: 'group_count', count: 8, arrangement: 'groups', instruction: 'Count the groups! How many altogether?', targetAnswer: 8, hint: 'Count each group, then add them up!', narration: "Let's count by groups!", groupSize: 4 },
+      compare: { type: 'compare', count: 11, arrangement: 'groups', instruction: 'Which group has more?', targetAnswer: 7, hint: 'Count each group and compare!', narration: "Which side has more? Let's find out!", groupSize: 7 },
+    };
+    console.log(`[CountingBoard] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.count_all }];
   }
+
+  // Enable group circles if any challenge uses groups (compare or group_count)
+  const hasGroupChallenges = data.challenges.some(
+    (c: { type: string }) => c.type === 'compare' || c.type === 'group_count'
+  );
+  if (hasGroupChallenges && data.showOptions) {
+    data.showOptions.showGroupCircles = true;
+  }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
+  console.log(`[CountingBoard] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   // Apply explicit config overrides
   if (config) {
