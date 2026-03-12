@@ -1,10 +1,54 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from '../../primitives/visual-primitives/math/BalanceScale';
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Balance Scale Object
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  equality: {
+    promptDoc:
+      `"equality": K-2 missing addend problems. Use □ or "mystery number" — no variable notation. `
+      + `Simple addition equations: □ + 3 = 7 or 5 + □ = 8. `
+      + `Use only positive integers under 20. `
+      + `leftSide: [{value: 1, isVariable: true}, {value: 3}], rightSide: [{value: 7}], variableValue: 4. `
+      + `allowOperations: ['add', 'subtract']. gradeBand: 'K-2'. Focus on "what number makes this true?"`,
+    schemaDescription: "'equality' (balance = equal)",
+  },
+  one_step: {
+    promptDoc:
+      `"one_step": Grades 3-4 one-step equations with x notation. `
+      + `Examples: x + 5 = 12, x - 3 = 7. Use positive integers under 50. `
+      + `One operation needed to solve. `
+      + `leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 5}], rightSide: [{value: 12}], variableValue: 7. `
+      + `allowOperations: ['add', 'subtract']. gradeBand: '3-4'. `
+      + `Include step history: ["Start with x + 5 = 12", "Subtract 5 from both sides", "x = 7"].`,
+    schemaDescription: "'one_step' (single-operation equation)",
+  },
+  two_step: {
+    promptDoc:
+      `"two_step": Grade 5+ two-step equations with coefficients. `
+      + `Examples: 2x + 3 = 11, 3x - 4 = 14. Use integers (including negatives for advanced). `
+      + `Two operations needed. Represent coefficients with multiple variable objects. `
+      + `leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}, {value: 3}], rightSide: [{value: 11}], variableValue: 4. `
+      + `allowOperations: ['add', 'subtract', 'multiply', 'divide']. gradeBand: '5'. `
+      + `Detailed step history showing each operation.`,
+    schemaDescription: "'two_step' (multi-step equation)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Schema definitions
+// ---------------------------------------------------------------------------
+
 const balanceScaleObjectSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -25,9 +69,6 @@ const balanceScaleObjectSchema: Schema = {
   required: ["value"]
 };
 
-/**
- * Schema definition for Balance Scale Challenge
- */
 const balanceScaleChallengeSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -62,12 +103,6 @@ const balanceScaleChallengeSchema: Schema = {
   required: ["type", "instruction", "leftSide", "rightSide", "variableValue", "hint"]
 };
 
-/**
- * Schema definition for Balance Scale Data
- *
- * This schema defines the structure for balance scale visualization,
- * making equation solving intuitive through visual equilibrium.
- */
 const balanceScaleSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -126,22 +161,10 @@ const balanceScaleSchema: Schema = {
   required: ["title", "description", "leftSide", "rightSide", "variableValue"]
 };
 
-/**
- * Generate balance scale data for visualization
- *
- * This function creates balance scale data including:
- * - Appropriate equation structure based on topic and grade level
- * - Objects representing constants and variables on each pan
- * - Step-by-step solution guidance
- * - Configuration for allowed operations
- * - Educational context and descriptions
- * - Optional sequential challenges with progressive difficulty
- *
- * @param topic - The math topic or concept to teach
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns BalanceScaleData with complete configuration
- */
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 export const generateBalanceScale = async (
   topic: string,
   gradeLevel: string,
@@ -152,8 +175,25 @@ export const generateBalanceScale = async (
     showTilt?: boolean;
     allowOperations?: ('add' | 'subtract' | 'multiply' | 'divide')[];
     stepHistory?: string[];
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode?: string;
   }
 ): Promise<BalanceScaleData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'balance-scale',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(balanceScaleSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : balanceScaleSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   // Generate random equations for variety
   const numEquations = 6 + Math.floor(Math.random() * 5); // 6-10 examples
   const randomEquations: string[] = [];
@@ -180,12 +220,9 @@ CONTEXT:
 - The scale tilts when sides are unequal, balances when equal
 - Goal is to isolate the variable to find its value
 
-PEDAGOGICAL APPROACH:
-- Visual representation makes abstract algebra concrete
-- Physical metaphor (balance) aids understanding of equality
-- Step-by-step manipulation builds procedural fluency
-- Immediate visual feedback reinforces correct operations
+${challengeTypeSection}
 
+${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 
 Grades 1-2: Equality Concepts & Missing Addends
@@ -204,26 +241,19 @@ Grades 3-5: One-Step Equations
 - Introduce x notation
 - Use positive integers under 50
 - One operation needed to solve
-- Example: x + 5 = 12
-  - leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 5}]
-  - rightSide: [{value: 12}]
-  - variableValue: 7
 - allowOperations: ['add', 'subtract']
 - gradeBand: '3-4'
-- Include step history: ["Start with x + 5 = 12", "Subtract 5 from both sides", "x = 7"]
+- Include step history
 
 Grades 5+: Two-Step Equations & Coefficients
 - Two-step equations: 2x + 3 = 11, 3x - 4 = 14
 - Introduce coefficients (multiple x blocks)
 - Use integers (including negatives for advanced)
 - Two operations needed
-- Example: 2x + 3 = 11
-  - leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}, {value: 3}]
-  - rightSide: [{value: 11}]
-  - variableValue: 4
 - allowOperations: ['add', 'subtract', 'multiply', 'divide']
 - gradeBand: '5'
 - Detailed step history showing each operation
+` : ''}
 
 EQUATION STRUCTURE:
 
@@ -252,52 +282,6 @@ STEP HISTORY GUIDELINES:
 - Describe each operation performed on both sides
 - End with the solution (x = value)
 - Use student-friendly language
-- For younger grades, use simpler language
-
-EXAMPLES:
-
-Elementary (x + 3 = 7):
-{
-  title: "Finding the Missing Number: x + 3 = 7",
-  description: "Use the balance scale to find what number plus 3 equals 7. Remove 3 from both sides to keep the scale balanced.",
-  leftSide: [
-    {value: 1, label: "x", isVariable: true},
-    {value: 3, label: "3"}
-  ],
-  rightSide: [{value: 7, label: "7"}],
-  variableValue: 4,
-  showTilt: true,
-  allowOperations: ["subtract"],
-  stepHistory: [
-    "Start with x + 3 = 7",
-    "Subtract 3 from both sides to isolate x",
-    "x = 4"
-  ],
-  gradeBand: "3-4",
-  challenges: []
-}
-
-Middle School (2x + 5 = 13):
-{
-  title: "Solving Two-Step Equation: 2x + 5 = 13",
-  description: "First remove the constant by subtracting 5 from both sides, then divide both sides by 2 to find x.",
-  leftSide: [
-    {value: 1, label: "x", isVariable: true},
-    {value: 1, label: "x", isVariable: true},
-    {value: 5, label: "5"}
-  ],
-  rightSide: [{value: 13, label: "13"}],
-  variableValue: 4,
-  showTilt: true,
-  allowOperations: ["add", "subtract", "divide"],
-  stepHistory: [
-    "Start with 2x + 5 = 13",
-    "Subtract 5 from both sides: 2x = 8",
-    "Divide both sides by 2: x = 4"
-  ],
-  gradeBand: "5",
-  challenges: []
-}
 
 ${config ? `
 CONFIGURATION HINTS:
@@ -328,12 +312,14 @@ VALIDATION:
 Return the complete balance scale configuration.
 `;
 
+  logEvalModeResolution('BalanceScale', config?.targetEvalMode, evalConstraint);
+
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: balanceScaleSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -345,8 +331,29 @@ Return the complete balance scale configuration.
 
   // Validation: ensure arrays are not empty
   if (!data.leftSide || data.leftSide.length === 0) {
-    console.warn('Invalid balance scale: leftSide is empty. Setting default.');
-    data.leftSide = [{ value: 1, label: 'x', isVariable: true }, { value: 3 }];
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'one_step';
+    const fallbacks: Record<string, { leftSide: BalanceScaleObject[]; rightSide: BalanceScaleObject[]; variableValue: number }> = {
+      equality: {
+        leftSide: [{ value: 1, isVariable: true }, { value: 3 }],
+        rightSide: [{ value: 7 }],
+        variableValue: 4,
+      },
+      one_step: {
+        leftSide: [{ value: 1, label: 'x', isVariable: true }, { value: 5 }],
+        rightSide: [{ value: 12 }],
+        variableValue: 7,
+      },
+      two_step: {
+        leftSide: [{ value: 1, label: 'x', isVariable: true }, { value: 1, label: 'x', isVariable: true }, { value: 3 }],
+        rightSide: [{ value: 11 }],
+        variableValue: 4,
+      },
+    };
+    const fb = fallbacks[fallbackType] ?? fallbacks.one_step;
+    console.warn(`[BalanceScale] Invalid leftSide — using ${fallbackType} fallback`);
+    data.leftSide = fb.leftSide;
+    data.rightSide = fb.rightSide;
+    data.variableValue = fb.variableValue;
   }
 
   if (!data.rightSide || data.rightSide.length === 0) {
@@ -408,6 +415,10 @@ Return the complete balance scale configuration.
   }
   data.gradeBand = data.gradeBand || '3-4';
   data.challenges = data.challenges || [];
+
+  // Final summary log
+  const challengeTypes = (data.challenges as BalanceScaleChallenge[]).map((c) => c.type).join(', ');
+  console.log(`[BalanceScale] Final: ${data.challenges.length} challenge(s) → [${challengeTypes}]`);
 
   return data;
 };

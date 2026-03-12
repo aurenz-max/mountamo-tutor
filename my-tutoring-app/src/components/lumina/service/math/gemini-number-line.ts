@@ -5,6 +5,63 @@ import {
   NumberLineOperation,
   NumberLineChallenge,
 } from "../../primitives/visual-primitives/math/NumberLine";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+// Each entry provides:
+//   promptDoc     — injected into the Gemini prompt (only for allowed types)
+//   schemaDescription — concise label for the schema enum description
+//
+// When an eval mode is active, only the relevant entries are included.
+// When no eval mode, all entries are included for mixed-difficulty generation.
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  plot_point: {
+    promptDoc:
+      `"plot_point": Student places a point at the correct value on the number line. `
+      + `targetValues contains the exact value(s) to plot. `
+      + `K-2: integers 0-20, warm language ("Can you find where 7 lives?"). `
+      + `3-5: fractions, decimals, negatives. Concrete manipulative with full guidance.`,
+    schemaDescription: "'plot_point' (place value on line)",
+  },
+  show_jump: {
+    promptDoc:
+      `"show_jump": Student shows an operation as movement on the number line. `
+      + `EACH challenge MUST include its own "startValue" and "operations" array. `
+      + `operations: [{type, startValue, changeValue, showJumpArc: false}]. `
+      + `targetValues contains the FINAL landing value after all operations. `
+      + `K-2: simple +1/+2/+3 jumps within 0-20. 3-5: larger jumps, fractions, negatives.`,
+    schemaDescription: "'show_jump' (operation as movement)",
+  },
+  order_values: {
+    promptDoc:
+      `"order_values": Student arranges 3-5 values in order on the number line. `
+      + `targetValues contains the values to be ordered (3-5 numbers). `
+      + `3-5: fractions, decimals, mixed numbers, negatives. `
+      + `K-2: integers only, typically 3 values within 0-20.`,
+    schemaDescription: "'order_values' (sequence values)",
+  },
+  find_between: {
+    promptDoc:
+      `"find_between": Student estimates or finds a value between two given marks. `
+      + `targetValues contains exactly 2 boundary values; student must identify a value between them. `
+      + `Use for fraction/decimal estimation, number sense reasoning. `
+      + `Primarily 3-5: fractions between benchmarks, decimals on a zoomed line.`,
+    schemaDescription: "'find_between' (estimate between marks)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
 
 /**
  * Schema definition for interactive Number Line data
@@ -182,14 +239,33 @@ const numberLineSchema: Schema = {
  *
  * @param topic - The math topic or concept
  * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration including intent
+ * @param config - Optional configuration including intent and targetEvalMode
  * @returns NumberLineData with full interactive configuration
  */
 export const generateNumberLine = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ intent: string }>
+  config?: Partial<{
+    intent: string;
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode: string;
+  }>
 ): Promise<NumberLineData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'number-line',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(numberLineSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : numberLineSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `You are generating an interactive Number Line activity for elementary math education.
 
 CONTEXT:
@@ -197,6 +273,9 @@ CONTEXT:
 - Target Audience: ${gradeLevel}
 - Intent: ${config?.intent || topic}
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 GRADE-LEVEL GUIDELINES:
 - K-2 (gradeBand "K-2"):
   * Use ONLY integers, numberType "integer"
@@ -214,6 +293,7 @@ GRADE-LEVEL GUIDELINES:
   * More formal language but still encouraging
   * Fractions: use halves, thirds, fourths, eighths; range typically 0-2 or 0-3
   * Decimals: range typically 0-5 or 0-10
+` : ''}
 
 INTERACTION MODE → CHALLENGE TYPE MAPPING:
 - "plot" mode → challenges should be "plot_point" (student places a point at the correct value)
@@ -240,12 +320,14 @@ REQUIREMENTS:
 
 Return the complete number line data structure.`;
 
+  logEvalModeResolution('NumberLine', config?.targetEvalMode, evalConstraint);
+
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: numberLineSchema,
+      responseSchema: activeSchema,
     },
   });
 
@@ -310,18 +392,51 @@ Return the complete number line data structure.`;
       hint: c.hint || "Look carefully at the numbers on the line.",
     }));
 
-  // Ensure at least one challenge
+  // Ensure at least one challenge (use eval constraint fallback type)
   if (data.challenges.length === 0) {
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'plot_point';
     const mid = Math.round((data.range.min + data.range.max) / 2);
-    data.challenges = [
-      {
+
+    const fallbacks: Record<string, NumberLineChallenge> = {
+      plot_point: {
         id: "c1",
         type: "plot_point" as const,
         instruction: `Can you find ${mid} on the number line?`,
         targetValues: [mid],
         hint: "Count the tick marks from the start.",
       },
-    ];
+      show_jump: {
+        id: "c1",
+        type: "show_jump" as const,
+        instruction: `Start at ${data.range.min} and jump forward 3. Where do you land?`,
+        targetValues: [data.range.min + 3],
+        hint: "Count 3 hops to the right from the start.",
+        startValue: data.range.min,
+        operations: [{
+          type: "add" as const,
+          startValue: data.range.min,
+          changeValue: 3,
+          showJumpArc: false,
+        }],
+      },
+      order_values: {
+        id: "c1",
+        type: "order_values" as const,
+        instruction: "Put these numbers in order from smallest to largest.",
+        targetValues: [data.range.min + 1, mid, data.range.max - 1],
+        hint: "Find each number on the line. Which is furthest left?",
+      },
+      find_between: {
+        id: "c1",
+        type: "find_between" as const,
+        instruction: `Find a number between ${data.range.min + 1} and ${mid}.`,
+        targetValues: [data.range.min + 1, mid],
+        hint: "Look at the tick marks between the two values.",
+      },
+    };
+
+    console.log(`[NumberLine] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [fallbacks[fallbackType] ?? fallbacks.plot_point];
   }
 
   // ---------------------------------------------------------------------------
@@ -403,6 +518,10 @@ Return the complete number line data structure.`;
   if (!Array.isArray(data.highlights)) {
     data.highlights = [];
   }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as NumberLineChallenge[]).map((c) => c.type).join(', ');
+  console.log(`[NumberLine] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   console.log("Number Line Generated:", {
     topic,

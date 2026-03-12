@@ -1,6 +1,52 @@
 import { Type, Schema } from "@google/genai";
 import { OrdinalLineData, OrdinalLineChallenge } from "../../primitives/visual-primitives/math/OrdinalLine";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+// OrdinalLine uses parallel per-type generators (not a single schema with a
+// type enum), so we don't use constrainChallengeTypeEnum or
+// buildChallengeTypePromptSection. CHALLENGE_TYPE_DOCS is still required by
+// resolveEvalModeConstraint to build the constraint object.
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  identify: {
+    promptDoc:
+      `"identify": Student sees the character lineup and taps the character at a specific ordinal position. `
+      + `Concrete manipulative — "Tap the third animal!"`,
+    schemaDescription: "'identify' (name ordinal position)",
+  },
+  match: {
+    promptDoc:
+      `"match": Student matches ordinal words to their symbols (e.g., "first" → "1st"). `
+      + `3-5 pairs for K, 5-8 pairs for Grade 1.`,
+    schemaDescription: "'match' (connect ordinal word to symbol)",
+  },
+  'relative-position': {
+    promptDoc:
+      `"relative-position": Student answers "Who is BEFORE/AFTER the Nth character?" `
+      + `Multiple-choice with 3-4 character name options. Requires positional reasoning.`,
+    schemaDescription: "'relative-position' (before/after reasoning)",
+  },
+  'sequence-story': {
+    promptDoc:
+      `"sequence-story": Student reads a story that describes ALL characters in ordinal positions, `
+      + `then drags each character emoji to the correct slot. Story must mention every character.`,
+    schemaDescription: "'sequence-story' (story-based ordering)",
+  },
+  'build-sequence': {
+    promptDoc:
+      `"build-sequence": Student receives 3-6 clues telling them where to place characters. `
+      + `Each clue names a character and target position. Student constructs the ordering from scratch.`,
+    schemaDescription: "'build-sequence' (construct ordering from clues)",
+  },
+};
 
 // ============================================================================
 // Shared Setup Schema (lightweight first call)
@@ -211,7 +257,11 @@ const buildSequenceSchema: Schema = {
 async function generateSetup(
   topic: string,
   gradeLevel: string,
-  config?: Partial<OrdinalLineData>,
+  config?: {
+    context?: string;
+    gradeBand?: string;
+    maxPosition?: number;
+  },
 ): Promise<SetupResult> {
   const prompt = `
 Create a fun theme for an ordinal positions activity teaching "${topic}" to ${gradeLevel} students.
@@ -568,79 +618,107 @@ function fallbackBuild(setup: SetupResult) {
 }
 
 // ============================================================================
-// Main Generator (public API — signature unchanged)
+// Main Generator (public API)
 // ============================================================================
 
-/**
- * Generate ordinal line data using parallel LLM calls.
- *
- * Architecture:
- *   1. Lightweight "setup" call → title, characters, context, config
- *   2. Five parallel calls (one per challenge type) with focused schemas
- *   3. Recombine into OrdinalLineData
- *
- * @param topic - The math topic or concept
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns OrdinalLineData with complete configuration
- */
 export const generateOrdinalLine = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<OrdinalLineData>
+  config?: {
+    maxPosition?: number;
+    context?: 'race' | 'parade' | 'lunch-line' | 'train' | 'bookshelf';
+    showOrdinalLabels?: boolean;
+    labelFormat?: 'word' | 'symbol' | 'both';
+    gradeBand?: 'K' | '1';
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode?: string;
+  }
 ): Promise<OrdinalLineData> => {
-  // Step 1: Setup call (lightweight)
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'ordinal-line',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  logEvalModeResolution('OrdinalLine', config?.targetEvalMode, evalConstraint);
+
+  const allTypes = ['identify', 'match', 'relative-position', 'sequence-story', 'build-sequence'];
+  const allowedTypes = new Set(evalConstraint?.allowedTypes ?? allTypes);
+
+  // Step 1: Setup call (always needed)
   const setup = await generateSetup(topic, gradeLevel, config);
 
-  // Step 2: Five parallel challenge calls
+  // Step 2: Parallel calls — only for allowed types (skip others to save LLM calls)
   const [identify, match, relative, story, build] = await Promise.all([
-    generateIdentify(setup, topic, gradeLevel),
-    generateMatch(setup, topic, gradeLevel),
-    generateRelative(setup, topic, gradeLevel),
-    generateStory(setup, topic, gradeLevel),
-    generateBuild(setup, topic, gradeLevel),
+    allowedTypes.has('identify') ? generateIdentify(setup, topic, gradeLevel) : null,
+    allowedTypes.has('match') ? generateMatch(setup, topic, gradeLevel) : null,
+    allowedTypes.has('relative-position') ? generateRelative(setup, topic, gradeLevel) : null,
+    allowedTypes.has('sequence-story') ? generateStory(setup, topic, gradeLevel) : null,
+    allowedTypes.has('build-sequence') ? generateBuild(setup, topic, gradeLevel) : null,
   ]);
 
-  // Step 3: Recombine
+  // Step 3: Recombine — only include generated (non-null) challenges
+  const challenges: OrdinalLineChallenge[] = [];
+  let idx = 1;
+
+  if (identify) {
+    challenges.push({
+      id: `c${idx++}`,
+      type: 'identify',
+      characters: setup.characters,
+      correctAnswer: identify.correctAnswer ?? String(identify.targetPosition),
+      ...identify,
+    } as OrdinalLineChallenge);
+  }
+
+  if (match) {
+    challenges.push({
+      id: `c${idx++}`,
+      type: 'match',
+      characters: setup.characters,
+      correctAnswer: 'all_matched',
+      ...match,
+    } as OrdinalLineChallenge);
+  }
+
+  if (relative) {
+    challenges.push({
+      id: `c${idx++}`,
+      type: 'relative-position',
+      characters: setup.characters,
+      ...relative,
+    } as OrdinalLineChallenge);
+  }
+
+  if (story) {
+    challenges.push({
+      id: `c${idx++}`,
+      type: 'sequence-story',
+      characters: setup.characters,
+      correctAnswer: 'sequence_complete',
+      ...story,
+    } as OrdinalLineChallenge);
+  }
+
+  if (build) {
+    challenges.push({
+      id: `c${idx++}`,
+      type: 'build-sequence',
+      characters: setup.characters,
+      correctAnswer: 'sequence_complete',
+      ...build,
+    } as OrdinalLineChallenge);
+  }
+
+  // Final summary log
+  const typeBreakdown = challenges.map(c => c.type).join(', ');
+  console.log(`[OrdinalLine] Final: ${challenges.length} challenge(s) → [${typeBreakdown}]`);
+
   const data: OrdinalLineData = {
     title: setup.title,
     description: setup.description,
-    challenges: [
-      {
-        id: 'c1',
-        type: 'identify',
-        characters: setup.characters,
-        correctAnswer: identify.correctAnswer ?? String(identify.targetPosition),
-        ...identify,
-      },
-      {
-        id: 'c2',
-        type: 'match',
-        characters: setup.characters,
-        correctAnswer: 'all_matched',
-        ...match,
-      },
-      {
-        id: 'c3',
-        type: 'relative-position',
-        characters: setup.characters,
-        ...relative,
-      },
-      {
-        id: 'c4',
-        type: 'sequence-story',
-        characters: setup.characters,
-        correctAnswer: 'sequence_complete',
-        ...story,
-      },
-      {
-        id: 'c5',
-        type: 'build-sequence',
-        characters: setup.characters,
-        correctAnswer: 'sequence_complete',
-        ...build,
-      },
-    ] as OrdinalLineChallenge[],
+    challenges,
     maxPosition: setup.maxPosition,
     context: setup.context,
     showOrdinalLabels: setup.showOrdinalLabels,

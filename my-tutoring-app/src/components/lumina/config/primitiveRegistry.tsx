@@ -49,6 +49,7 @@ import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTo
 import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
 import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
+import NumberTracer from '../primitives/visual-primitives/math/NumberTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
 import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker';
 import FastFact from '../primitives/visual-primitives/core/FastFact';
@@ -713,6 +714,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'shape-tracer': {
     component: ShapeTracer,
     sectionTitle: 'Shape Tracer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'number-tracer': {
+    component: NumberTracer,
+    sectionTitle: 'Number Tracer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

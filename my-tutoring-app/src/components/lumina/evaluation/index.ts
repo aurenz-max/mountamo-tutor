@@ -109,6 +109,7 @@ export type {
   ShapeSorterMetrics,
   ThreeDShapeExplorerMetrics,
   ShapeTracerMetrics,
+  NumberTracerMetrics,
   MathFactFluencyMetrics,
   FastFactMetrics,
   StrategyPickerMetrics,

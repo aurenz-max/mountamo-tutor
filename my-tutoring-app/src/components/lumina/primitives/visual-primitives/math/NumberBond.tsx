@@ -1101,21 +1101,34 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
 
         {/* === Missing Part Input === */}
         {currentChallenge?.type === 'missing-part' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-col items-center gap-3">
             <span className="text-slate-300 text-sm">What is the missing part?</span>
-            <input
-              type="number"
-              min={0}
-              max={maxNumber}
-              value={missingAnswer}
-              onChange={e => setMissingAnswer(e.target.value)}
-              className="w-16 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-purple-400/50"
-              autoFocus
-              onKeyDown={e => e.key === 'Enter' && handleCheckMissingPart()}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold"
+                onClick={() => setMissingAnswer(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1)))}
+                disabled={!missingAnswer || parseInt(missingAnswer, 10) <= 0}
+              >
+                −
+              </Button>
+              <div className="w-14 h-10 flex items-center justify-center rounded-xl bg-slate-800/60 border border-white/15 text-slate-100 text-xl font-bold tabular-nums select-none">
+                {missingAnswer || '?'}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold"
+                onClick={() => setMissingAnswer(prev => String(Math.min(maxNumber, (parseInt(prev, 10) || 0) + 1)))}
+                disabled={parseInt(missingAnswer, 10) >= maxNumber}
+              >
+                +
+              </Button>
+            </div>
             <Button
               variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 px-6"
               onClick={handleCheckMissingPart}
               disabled={!missingAnswer}
             >

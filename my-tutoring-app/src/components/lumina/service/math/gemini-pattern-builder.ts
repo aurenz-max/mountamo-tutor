@@ -1,6 +1,66 @@
 import { Type, Schema } from "@google/genai";
 import { PatternBuilderData } from "../../primitives/visual-primitives/math/PatternBuilder";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  extend: {
+    promptDoc:
+      `"extend": Student places tokens to continue the pattern. Answer = the hidden tokens. `
+      + `K-1: AB, AAB, ABB repeating with colors/shapes. 2-3: ABC, growing/number patterns. `
+      + `Give 6-8 given tokens showing 2-3 full repetitions, 2-4 hidden tokens. `
+      + `Concrete manipulative with full guidance. `
+      + `availableTokens MUST include ALL hidden values plus 1-2 distractors.`,
+    schemaDescription: "'extend' (continue the pattern)",
+  },
+  identify_core: {
+    promptDoc:
+      `"identify_core": Student selects the smallest repeating unit. Answer = the core tokens. `
+      + `Show a long sequence (8-12 tokens) with 3+ repetitions. `
+      + `K-1: simple AB, AAB cores. 2-3: ABC, AABB cores. `
+      + `Pictorial representation with prompts.`,
+    schemaDescription: "'identify_core' (find repeating unit)",
+  },
+  translate: {
+    promptDoc:
+      `"translate": Student recreates the pattern with different token types. `
+      + `Answer = translated sequence. Include translationTarget with mapping. `
+      + `E.g., color→shape: red-blue-red-blue becomes circle-square-circle-square. `
+      + `Primarily grades 2-3.`,
+    schemaDescription: "'translate' (transform representation)",
+  },
+  create: {
+    promptDoc:
+      `"create": Student builds their own pattern from available tokens. `
+      + `No specific answer required — open-ended. Provide 4-6 token options. `
+      + `Primarily grades 2-3. Transitional symbolic/pictorial.`,
+    schemaDescription: "'create' (build original pattern)",
+  },
+  find_rule: {
+    promptDoc:
+      `"find_rule": Student continues a number/growing pattern by filling in the next values. `
+      + `Answer = the hidden tokens (the next numbers in the sequence). `
+      + `The instruction should ask the student to figure out the rule and continue the pattern. `
+      + `Best for growing/number patterns in grades 2-3. Fully symbolic. `
+      + `IMPORTANT: sequence.hidden MUST contain the correct next values. sequence.rule should describe the rule in words. `
+      + `availableTokens MUST include ALL hidden values plus 3-5 plausible wrong numbers.`,
+    schemaDescription: "'find_rule' (discover underlying rule)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
 
 /**
  * Schema definition for Pattern Builder Data
@@ -74,7 +134,7 @@ const patternBuilderSchema: Schema = {
           },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'extend' (continue the pattern), 'identify_core' (find repeating unit), 'create' (build your own), 'translate' (same structure, different tokens), 'find_rule' (describe the rule)"
+            description: "Challenge type: 'extend' (continue the pattern), 'identify_core' (find repeating unit), 'create' (build your own), 'translate' (same structure, different tokens), 'find_rule' (figure out the rule and continue the pattern)"
           },
           instruction: {
             type: Type.STRING,
@@ -92,9 +152,48 @@ const patternBuilderSchema: Schema = {
           narration: {
             type: Type.STRING,
             description: "AI narration for this challenge (used by the tutor to introduce it)"
+          },
+          sequence: {
+            type: Type.OBJECT,
+            properties: {
+              given: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "Tokens shown to the student for this specific challenge"
+              },
+              hidden: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "Tokens the student must fill in for this challenge (must match 'answer')"
+              },
+              core: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "The minimal repeating unit for this challenge's pattern"
+              }
+            },
+            required: ["given", "hidden", "core"],
+            description: "Per-challenge sequence for single-type eval modes. Omit in multi-type mode."
+          },
+          translationMapping: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                source: { type: Type.STRING, description: "Source token (e.g. 'red')" },
+                target: { type: Type.STRING, description: "Target token (e.g. 'circle')" },
+              },
+              required: ["source", "target"],
+            },
+            description: "Per-challenge token mapping pairs for translate challenges in single-type mode (e.g. [{source:'red',target:'circle'}])."
+          },
+          availableTokens: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Selectable tokens for THIS challenge. MUST include ALL values from this challenge's sequence.hidden (the correct answers) PLUS 3-5 distractor values that are plausible but wrong. For number patterns: include the correct next numbers and nearby wrong numbers. Example: if hidden is ['18'], availableTokens could be ['15','16','17','18','19','20','22']."
           }
         },
-        required: ["id", "type", "instruction", "answer", "hint", "narration"]
+        required: ["id", "type", "instruction", "answer", "hint", "narration", "availableTokens"]
       },
       description: "Array of 3-5 progressive challenges"
     },
@@ -158,6 +257,10 @@ const patternBuilderSchema: Schema = {
   required: ["title", "description", "patternType", "sequence", "tokens", "challenges", "showOptions", "gradeBand"]
 };
 
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 /**
  * Generate pattern builder data for interactive pattern activities
  *
@@ -185,8 +288,59 @@ export const generatePatternBuilder = async (
     gradeBand?: 'K-1' | '2-3';
     challengeTypes?: string[];
     tokenType?: string;
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode?: string;
   }
 ): Promise<PatternBuilderData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'pattern-builder',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // For config.challengeTypes without an eval mode, use them as a hint
+  const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(patternBuilderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : patternBuilderSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
+  // Mode-aware requirements: single-type eval modes get focused instructions
+  const requirementsSection = evalConstraint && evalConstraint.allowedTypes.length === 1
+    ? `REQUIREMENTS (${evalConstraint.allowedTypes[0].toUpperCase()}-ONLY MODE):
+1. Generate 2-3 challenges, ALL of type '${evalConstraint.allowedTypes[0]}'
+2. Each challenge MUST include its own 'sequence' field with DIFFERENT given/hidden/core arrays
+3. Progress in difficulty across challenges (each challenge has a DIFFERENT pattern):
+   - For 'extend': Challenge 1: simple AB core (e.g. R,B,R,B → R,B hidden), Challenge 2: AAB or ABB, Challenge 3: ABC
+   - For 'translate': Challenge 1: simple AB color→shape mapping, Challenge 2: AAB pattern, Challenge 3: ABC or color→letter
+   - For 'identify_core': Challenge 1: obvious AB sequence, Challenge 2: AAB, Challenge 3: AABB or ABC
+   - For 'find_rule': Challenge 1: simple +N rule, Challenge 2: larger step or subtraction, Challenge 3: harder rule
+4. For 'extend' AND 'find_rule' challenges: the challenge's 'answer' MUST match that challenge's sequence.hidden token-for-token
+5. For 'translate' challenges: include 'translationMapping' as [{source:'red',target:'circle'}, ...] pairs for that challenge's tokens; 'answer' = the translated version of that challenge's sequence.given
+6. The top-level 'sequence' field should equal the first challenge's sequence
+7. CRITICAL — each challenge's 'availableTokens' MUST include ALL values from that challenge's sequence.hidden PLUS 3-5 plausible distractors. For number patterns, include nearby wrong numbers.
+8. Each challenge's sequence.given must show the pattern with at least 2 full repetitions of its core
+9. Hints must guide thinking WITHOUT revealing the answer — do NOT state the answer tokens
+10. Use warm, encouraging language appropriate for young children
+11. Include narration text for the AI tutor`
+    : `REQUIREMENTS:
+1. Generate 3-5 challenges that progress in difficulty
+2. Start with extend challenges, then move to identify_core, then create/translate
+3. The 'given' sequence must clearly show the pattern (at least 2 full repetitions)
+4. The 'hidden' sequence must be the natural continuation
+5. The 'core' array must be the minimal repeating unit
+6. For growing patterns, include a clear 'rule' string
+7. CRITICAL — each challenge's 'availableTokens' MUST include ALL values from that challenge's sequence.hidden (or the top-level sequence.hidden if no per-challenge sequence) PLUS 3-5 plausible distractors
+8. Use warm, encouraging instruction text appropriate for young children
+9. Include meaningful hints that guide without giving away the answer
+10. Include narration text the AI tutor can use
+11. For translate challenges, include a translationTarget with mapping`;
+
   const prompt = `
 Create an educational pattern building activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -197,6 +351,9 @@ CONTEXT:
 - Growing patterns increase by a rule (e.g., +2, +3, ×2)
 - Number patterns connect to skip counting and multiplication
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten to Grade 1 (gradeBand "K-1"):
   * Use 2-element repeating patterns: AB, AAB, ABB
@@ -219,13 +376,7 @@ GUIDELINES FOR GRADE LEVELS:
   * showStepNumbers: true for growing patterns
   * showRule: true (reveal after completion)
   * Can include translation challenges (color→shape or shape→number)
-
-CHALLENGE TYPES:
-- "extend": Student places tokens to continue the pattern. Answer = the hidden tokens.
-- "identify_core": Student selects the smallest repeating unit. Answer = the core tokens.
-- "create": Student builds their own pattern from available tokens. No specific answer required.
-- "translate": Student recreates the pattern with different token types. Answer = translated sequence.
-- "find_rule": Student describes the pattern rule in words. Answer = the rule string.
+` : ''}
 
 TOKEN TYPES:
 - Colors: red, blue, green, yellow, purple, orange, pink
@@ -233,37 +384,28 @@ TOKEN TYPES:
 - Numbers: use actual number strings like "1", "2", "3"
 - The 'available' array should include all tokens the student needs PLUS 1-2 distractors
 
-${config ? `
-CONFIGURATION HINTS:
-${config.patternType ? `- Pattern type: ${config.patternType}` : ''}
-${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.challengeTypes ? `- Challenge types to include: ${config.challengeTypes.join(', ')}` : ''}
-${config.tokenType ? `- Token type: ${config.tokenType}` : ''}
-` : ''}
+${(() => {
+  const hints: string[] = [];
+  if (config?.patternType) hints.push(`- Pattern type: ${config.patternType}`);
+  if (config?.gradeBand) hints.push(`- Grade band: ${config.gradeBand}`);
+  if (effectiveChallengeTypes) hints.push(`- Challenge types to include: ${effectiveChallengeTypes.join(', ')}`);
+  if (config?.tokenType) hints.push(`- Token type: ${config.tokenType}`);
+  return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
+})()}
 
-REQUIREMENTS:
-1. Generate 3-5 challenges that progress in difficulty
-2. Start with extend challenges, then move to identify_core, then create/translate
-3. The 'given' sequence must clearly show the pattern (at least 2 full repetitions)
-4. The 'hidden' sequence must be the natural continuation
-5. The 'core' array must be the minimal repeating unit
-6. For growing patterns, include a clear 'rule' string
-7. Available tokens must include all tokens used in the pattern
-8. Include 1-2 distractor tokens in available (tokens NOT in the pattern)
-9. Use warm, encouraging instruction text appropriate for young children
-10. Include meaningful hints that guide without giving away the answer
-11. Include narration text the AI tutor can use
-12. For translate challenges, include a translationTarget with mapping
+${requirementsSection}
 
 Return the complete pattern builder configuration.
 `;
+
+  logEvalModeResolution('PatternBuilder', config?.targetEvalMode, evalConstraint);
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: patternBuilderSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -305,22 +447,84 @@ Return the complete pattern builder configuration.
     data.tokens.available = Array.from(new Set([...data.sequence.given, ...data.sequence.hidden]));
   }
 
-  // Ensure challenges have valid types
+  // Ensure challenges have valid types (safety net — schema enum handles eval mode case)
   const validChallengeTypes = ['extend', 'identify_core', 'create', 'translate', 'find_rule'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
 
-  // Ensure at least one challenge
+  // Normalize challenge answers and ensure per-challenge availableTokens include correct answers.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data.challenges = data.challenges.map((c: any) => {
+    const hidden = Array.isArray(c.sequence?.hidden) && c.sequence.hidden.length > 0
+      ? c.sequence.hidden
+      : data.sequence.hidden;
+
+    // For extend/find_rule: answer must match hidden tokens
+    if (c.type === 'extend' || c.type === 'find_rule') {
+      if (Array.isArray(hidden) && hidden.length > 0) {
+        c = { ...c, answer: [...hidden] };
+      }
+    }
+
+    // Safety net: ensure availableTokens includes all hidden values for this challenge
+    const tokens: string[] = Array.isArray(c.availableTokens) ? [...c.availableTokens] : [...data.tokens.available];
+    if (Array.isArray(hidden)) {
+      hidden.forEach((h: string) => {
+        if (!tokens.includes(h)) tokens.push(h);
+      });
+    }
+    return { ...c, availableTokens: tokens };
+  });
+
+  // Ensure at least one challenge (use eval constraint fallback type)
   if (data.challenges.length === 0) {
-    data.challenges = [{
-      id: 'c1',
-      type: 'extend',
-      instruction: 'What comes next in this pattern?',
-      answer: data.sequence.hidden,
-      hint: 'Look at the colors. What repeats?',
-      narration: "Let's figure out what comes next in this pattern!",
-    }];
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'extend';
+    const fallbackTokens = Array.from(new Set([...data.tokens.available, ...data.sequence.hidden]));
+    const fallbacks: Record<string, { type: string; instruction: string; answer: string[]; hint: string; narration: string; availableTokens: string[] }> = {
+      extend: {
+        type: 'extend',
+        instruction: 'What comes next in this pattern?',
+        answer: data.sequence.hidden,
+        hint: 'Look at the colors. What repeats?',
+        narration: "Let's figure out what comes next in this pattern!",
+        availableTokens: fallbackTokens,
+      },
+      identify_core: {
+        type: 'identify_core',
+        instruction: 'Can you find the part that keeps repeating?',
+        answer: data.sequence.core,
+        hint: 'Look for the smallest group that starts over.',
+        narration: "Every pattern has a core — the part that repeats. Can you find it?",
+        availableTokens: fallbackTokens,
+      },
+      translate: {
+        type: 'translate',
+        instruction: 'Can you make the same pattern using shapes instead?',
+        answer: data.sequence.given.slice(0, 4),
+        hint: 'The structure stays the same — just swap each token.',
+        narration: "Let's transform this pattern into a new form!",
+        availableTokens: fallbackTokens,
+      },
+      create: {
+        type: 'create',
+        instruction: 'Create your own pattern using the tokens below!',
+        answer: [],
+        hint: 'Pick 2-3 tokens and repeat them in a pattern.',
+        narration: "Now it's your turn to be the pattern maker!",
+        availableTokens: fallbackTokens,
+      },
+      find_rule: {
+        type: 'find_rule',
+        instruction: 'Figure out the rule and continue the pattern!',
+        answer: data.sequence.hidden,
+        hint: 'How does each number change to get the next one?',
+        narration: "Can you figure out the secret rule and fill in the next numbers?",
+        availableTokens: fallbackTokens,
+      },
+    };
+    console.log(`[PatternBuilder] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [{ id: 'c1', ...(fallbacks[fallbackType] ?? fallbacks.extend) }];
   }
 
   // Ensure showOptions
@@ -344,11 +548,30 @@ Return the complete pattern builder configuration.
     data.translationTarget.mapping = mappingObj;
   }
 
+  // Convert per-challenge translationMapping from array [{source,target}] to Record<string,string>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data.challenges = data.challenges.map((c: any) => {
+    if (c.type === 'translate' && Array.isArray(c.translationMapping)) {
+      const mappingObj: Record<string, string> = {};
+      for (const entry of c.translationMapping) {
+        if (entry.source && entry.target) {
+          mappingObj[entry.source] = entry.target;
+        }
+      }
+      return { ...c, translationMapping: mappingObj };
+    }
+    return c;
+  });
+
   // Apply explicit config overrides
   if (config) {
     if (config.patternType !== undefined) data.patternType = config.patternType;
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
   }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c) => c.type).join(', ');
+  console.log(`[PatternBuilder] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   return data;
 };

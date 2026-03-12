@@ -1101,6 +1101,7 @@ export type ComponentId =
   | 'shape-builder'           // Interactive shape construction and property exploration
   | 'shape-sorter'            // Interactive shape sorting for categorizing shapes by attributes
   | 'shape-tracer'            // Interactive shape tracing
+  | 'number-tracer'           // Interactive number tracing for digit formation and numeral recognition
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, shape-builder
@@ -1584,6 +1585,7 @@ export type { OrdinalLineData } from './primitives/visual-primitives/math/Ordina
 export type { SortingStationData, SortingObject, SortingCategory, SortingStationChallenge } from './primitives/visual-primitives/math/SortingStation';
 export type { ShapeSorterData } from './primitives/visual-primitives/math/ShapeSorter';
 export type { ShapeTracerData } from './primitives/visual-primitives/math/ShapeTracer';
+export type { NumberTracerData } from './primitives/visual-primitives/math/NumberTracer';
 export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/math/ThreeDShapeExplorer';
 export type { MathFactFluencyData } from './primitives/visual-primitives/math/MathFactFluency';
 export type { StrategyPickerData } from './primitives/visual-primitives/math/StrategyPicker';

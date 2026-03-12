@@ -1,14 +1,71 @@
 import { Type, Schema } from "@google/genai";
 import { MultiplicationExplorerData } from "../../primitives/visual-primitives/math/MultiplicationExplorer";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Multiplication Explorer Data
- *
- * Generates multiplication facts with multi-representation configurations,
- * progressive challenges (build, connect, commutative, distributive, missing_factor, fluency),
- * and grade-band awareness.
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  build: {
+    promptDoc:
+      `"build": Student builds equal groups or an array for the given fact, then counts the total. `
+      + `hiddenValue = "product". Concrete manipulative with full guidance. `
+      + `Use kid-friendly contexts (packs of stickers, wheels on cars). `
+      + `Grade 2: only ×2, ×5, ×10.`,
+    schemaDescription: "'build' (construct groups/arrays)",
+  },
+  connect: {
+    promptDoc:
+      `"connect": Same fact shown in all 5 representations simultaneously (groups, array, `
+      + `repeated addition, number line, area model). Student identifies the connection between them. `
+      + `hiddenValue = null. Pictorial with prompts — linking visual models.`,
+    schemaDescription: "'connect' (link representations)",
+  },
+  commutative: {
+    promptDoc:
+      `"commutative": Flip the factors — is the product the same? Student explores `
+      + `a×b vs b×a. hiddenValue = null or "product". `
+      + `Pictorial with reduced prompts — apply commutative property. `
+      + `Show the array rotated to demonstrate rows↔columns swap.`,
+    schemaDescription: "'commutative' (apply commutative property)",
+  },
+  distributive: {
+    promptDoc:
+      `"distributive": Break a harder fact into easier parts (e.g., 7×6 = 5×6 + 2×6). `
+      + `hiddenValue = "product". Transitional: mixed symbolic/pictorial. `
+      + `Show the area model split into two rectangles. Grade 3+ only.`,
+    schemaDescription: "'distributive' (break apart with distribution)",
+  },
+  missing_factor: {
+    promptDoc:
+      `"missing_factor": Given product and one factor, find the other factor. `
+      + `hiddenValue = "factor1" or "factor2". Symbolic, single operation. `
+      + `E.g., "? × 4 = 20, what is the missing number?" `
+      + `Encourage skip-counting or think-backwards strategy.`,
+    schemaDescription: "'missing_factor' (solve for unknown factor)",
+  },
+  fluency: {
+    promptDoc:
+      `"fluency": Quick-fire fact recall with optional time limit. `
+      + `hiddenValue = "product". timeLimit: 5-8 seconds. `
+      + `Symbolic, multi-step / cross-concept — rapid recall without visual aids. `
+      + `No representations needed, just bare fact.`,
+    schemaDescription: "'fluency' (rapid fact recall)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
+
 const multiplicationExplorerSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -52,7 +109,7 @@ const multiplicationExplorerSchema: Schema = {
           id: { type: Type.STRING },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'build', 'connect', 'commutative', 'distributive', 'missing_factor', 'fluency'"
+            description: "Challenge type: 'build' (construct groups/arrays), 'connect' (link representations), 'commutative' (apply commutative property), 'distributive' (break apart with distribution), 'missing_factor' (solve for unknown factor), 'fluency' (rapid fact recall)"
           },
           instruction: { type: Type.STRING, description: "Student-facing instruction" },
           targetFact: { type: Type.STRING, description: "e.g., '3 × 4 = 12'" },
@@ -96,14 +153,10 @@ const multiplicationExplorerSchema: Schema = {
   required: ["title", "description", "fact", "representations", "activeRepresentation", "challenges", "showOptions", "gradeBand"]
 };
 
-/**
- * Generate multiplication explorer data
- *
- * Grade-aware content:
- * - Grade 2: ×2, ×5, ×10 only; equal groups and arrays; no distributive property
- * - Grade 3: All facts through 10×10; commutative property; introduce distributive
- * - Grade 4: Multi-digit × single-digit; area model emphasis; division as inverse
- */
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 export const generateMultiplicationExplorer = async (
   topic: string,
   gradeLevel: string,
@@ -113,8 +166,30 @@ export const generateMultiplicationExplorer = async (
     gradeBand?: '2-3' | '3-4';
     challengeTypes?: string[];
     representations?: string[];
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode?: string;
+    /** Intent or title from the manifest item. */
+    intent?: string;
   }
 ): Promise<MultiplicationExplorerData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'multiplication-explorer',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // For config.challengeTypes without an eval mode, use them as a hint
+  const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(multiplicationExplorerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : multiplicationExplorerSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create an educational multiplication explorer activity for "${topic}" at ${gradeLevel} level.
 
@@ -126,12 +201,9 @@ The multiplication explorer connects 5 representations of the same fact:
 4. Number Line (jumps of 4, 3 times)
 5. Area Model (3 × 4 rectangle)
 
-Students progress through 4 phases:
-- Phase 1 (Groups): Build equal groups, count total
-- Phase 2 (Array): Build the array, see rows × columns = total
-- Phase 3 (Connect): See the same fact in ALL 5 representations simultaneously
-- Phase 4 (Strategy): Use distributive property to derive unknown facts
+${challengeTypeSection}
 
+${!evalConstraint ? `
 GRADE-LEVEL GUIDELINES:
 Grade 2 (gradeBand "2-3"):
   * Only ×2, ×5, ×10 facts
@@ -156,29 +228,23 @@ Grade 4 (gradeBand "3-4"):
   * Division as inverse (fact family)
   * showFactFamily: true
   * All challenge types
-
-CHALLENGE TYPES:
-- "build": Build equal groups or an array for the given fact, then count
-- "connect": Same fact shown in all representations; student identifies the connection
-- "commutative": Flip the factors; is the product the same?
-- "distributive": Break a hard fact into easier parts (e.g., 7×6 = 5×6 + 2×6)
-- "missing_factor": Given product and one factor, find the other
-- "fluency": Quick-fire fact recall with optional time limit
-
-${config ? `
-CONFIGURATION HINTS:
-${config.factor1 !== undefined ? `- Factor 1: ${config.factor1}` : ''}
-${config.factor2 !== undefined ? `- Factor 2: ${config.factor2}` : ''}
-${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.challengeTypes ? `- Challenge types: ${config.challengeTypes.join(', ')}` : ''}
-${config.representations ? `- Representations: ${config.representations.join(', ')}` : ''}
 ` : ''}
+
+${(() => {
+  const hints: string[] = [];
+  if (config?.factor1 !== undefined) hints.push(`- Factor 1: ${config.factor1}`);
+  if (config?.factor2 !== undefined) hints.push(`- Factor 2: ${config.factor2}`);
+  if (config?.gradeBand) hints.push(`- Grade band: ${config.gradeBand}`);
+  if (effectiveChallengeTypes) hints.push(`- Challenge types to include: ${effectiveChallengeTypes.join(', ')}`);
+  if (config?.representations) hints.push(`- Representations: ${config.representations.join(', ')}`);
+  return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
+})()}
 
 REQUIREMENTS:
 1. Choose a concrete, kid-friendly context (packs of stickers, rows of desks, eggs in cartons, wheels on cars)
 2. product MUST equal factor1 × factor2 exactly
 3. Generate 3-6 challenges that progress in difficulty
-4. Start with 'build' challenges and progress to harder types
+4. Start with easier challenges and progress to harder types
 5. For grade 2, keep factors ≤ 10 and use only ×2, ×5, ×10
 6. For grade 3-4, any facts through 12×12 are fine
 7. hiddenValue should be null for build/connect, 'product' for fluency, 'factor1' or 'factor2' for missing_factor
@@ -189,12 +255,14 @@ REQUIREMENTS:
 Return the complete multiplication explorer configuration.
 `;
 
+  logEvalModeResolution('MultiplicationExplorer', config?.targetEvalMode, evalConstraint);
+
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: multiplicationExplorerSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -220,25 +288,30 @@ Return the complete multiplication explorer configuration.
     data.activeRepresentation = 'groups';
   }
 
-  // Validation: challenge types
+  // Validation: challenge types (safety net — schema enum handles the eval mode case)
   const validChallengeTypes = ['build', 'connect', 'commutative', 'distributive', 'missing_factor', 'fluency'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
 
-  // Ensure at least one challenge
+  // ── Fallback if empty ──
   if (data.challenges.length === 0) {
-    data.challenges = [{
-      id: 'c1',
-      type: 'build',
-      instruction: `How many is ${data.fact.factor1} groups of ${data.fact.factor2}?`,
-      targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`,
-      hiddenValue: 'product',
-      timeLimit: null,
-      hint: `Count the groups: ${Array.from({ length: data.fact.factor1 }).map((_, i) => data.fact.factor2 * (i + 1)).join(', ')}`,
-      narration: `Let's find out what ${data.fact.factor1} times ${data.fact.factor2} equals!`,
-    }];
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'build';
+    const fallbacks: Record<string, { type: string; instruction: string; targetFact: string; hiddenValue: string | null; timeLimit: number | null; hint: string; narration: string }> = {
+      build: { type: 'build', instruction: `How many is ${data.fact.factor1} groups of ${data.fact.factor2}?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: 'product', timeLimit: null, hint: `Count the groups: ${Array.from({ length: data.fact.factor1 }).map((_, i) => data.fact.factor2 * (i + 1)).join(', ')}`, narration: `Let's find out what ${data.fact.factor1} times ${data.fact.factor2} equals!` },
+      connect: { type: 'connect', instruction: `Look at all 5 pictures. They all show ${data.fact.factor1} × ${data.fact.factor2}!`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: null, timeLimit: null, hint: 'Each picture shows the same fact in a different way.', narration: `Can you see how groups, arrays, and addition all show the same number?` },
+      commutative: { type: 'commutative', instruction: `Is ${data.fact.factor1} × ${data.fact.factor2} the same as ${data.fact.factor2} × ${data.fact.factor1}?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: null, timeLimit: null, hint: 'Flip the array sideways — do you get the same total?', narration: `Let's see what happens when we swap the numbers!` },
+      distributive: { type: 'distributive', instruction: `Can you break ${data.fact.factor1} × ${data.fact.factor2} into easier parts?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: 'product', timeLimit: null, hint: `Try splitting: 5 × ${data.fact.factor2} + ${Math.max(0, data.fact.factor1 - 5)} × ${data.fact.factor2}`, narration: `Let's use a trick to make this easier!` },
+      missing_factor: { type: 'missing_factor', instruction: `? × ${data.fact.factor2} = ${data.fact.product}. What is the missing number?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: 'factor1', timeLimit: null, hint: `Count by ${data.fact.factor2}s until you reach ${data.fact.product}.`, narration: `One factor is hidden. Can you figure it out?` },
+      fluency: { type: 'fluency', instruction: `Quick! What is ${data.fact.factor1} × ${data.fact.factor2}?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: 'product', timeLimit: 6, hint: `Think of ${data.fact.factor1} groups of ${data.fact.factor2}.`, narration: `Let's see how fast you know this fact!` },
+    };
+    console.log(`[MultiplicationExplorer] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
   }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
+  console.log(`[MultiplicationExplorer] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   // Ensure representations object has all fields
   data.representations = {

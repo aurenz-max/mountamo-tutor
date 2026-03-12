@@ -208,6 +208,18 @@ export async function POST(request: NextRequest) {
         );
         return NextResponse.json(blueprintEvaluation);
 
+      case 'evaluateDigitDrawing': {
+        const { evaluateDigitDrawing } = await import(
+          '@/components/lumina/service/math/gemini-digit-evaluation'
+        );
+        const digitEvaluation = await evaluateDigitDrawing(
+          params.canvasBase64,
+          params.targetDigit,
+          params.challengeType,
+        );
+        return NextResponse.json(digitEvaluation);
+      }
+
       // ============================================
       // BIOLOGY PRIMITIVES
       // ============================================

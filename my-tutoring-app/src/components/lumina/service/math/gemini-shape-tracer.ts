@@ -1,6 +1,72 @@
 import { Type, Schema } from "@google/genai";
 import { ShapeTracerData, ShapeTracerChallenge } from "../../primitives/visual-primitives/math/ShapeTracer";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type EvalModeConstraint,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ============================================================================
+// Eval Mode Docs — one entry per challenge type
+// ============================================================================
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'trace': {
+    promptDoc:
+      `"trace": Student follows a dotted outline by tapping vertices in order. Provide vertices forming the target shape within canvas bounds. K: tolerance 30-40px; Grade 1: 20-25px.`,
+    schemaDescription: "'trace' (follow dotted outline)",
+  },
+  'connect-dots': {
+    promptDoc:
+      `"connect-dots": Numbered dots on canvas; student connects them in order to reveal the shape. Provide labeled dots and the correctOrder index array.`,
+    schemaDescription: "'connect-dots' (guided vertex construction)",
+  },
+  'complete': {
+    promptDoc:
+      `"complete": Some sides are pre-drawn; student draws the remaining sides to finish the shape. Provide pre-drawn segments and remainingVertices to connect.`,
+    schemaDescription: "'complete' (finish partial shape)",
+  },
+  'draw-from-description': {
+    promptDoc:
+      `"draw-from-description": Student reads a text description (sides, corners, properties) and draws the shape freehand on a grid. Provide description, sides, corners, allSidesEqual, hasCurvedSides.`,
+    schemaDescription: "'draw-from-description' (construct from verbal cues)",
+  },
+};
+
+// ============================================================================
+// Local helper: constrain challengePlan type enum in setup schema
+// ============================================================================
+
+function constrainSetupPlanEnum(
+  base: Schema,
+  allowedTypes: string[],
+  docs: Record<string, ChallengeTypeDoc>,
+): Schema {
+  const schema: Schema = JSON.parse(JSON.stringify(base));
+  const props = (schema as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+  const cp = props?.challengePlan as Record<string, unknown> | undefined;
+  const items = cp?.items as Record<string, unknown> | undefined;
+  const itemProps = items?.properties as Record<string, unknown> | undefined;
+  const typeField = itemProps?.type as Record<string, unknown> | undefined;
+  if (typeField) {
+    typeField.enum = allowedTypes;
+    const desc = allowedTypes.map(t => docs[t]?.schemaDescription ?? t).join(', ');
+    typeField.description = `Challenge type: ${desc}`;
+  }
+  return schema;
+}
+
+// ============================================================================
+// Config interface
+// ============================================================================
+
+interface ShapeTracerConfig extends Partial<ShapeTracerData> {
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode?: string;
+}
 
 // ============================================================================
 // Shared Setup Schema (lightweight first call)
@@ -199,28 +265,38 @@ const connectDotsSchema: Schema = {
 async function generateSetup(
   topic: string,
   gradeLevel: string,
-  config?: Partial<ShapeTracerData>,
+  config?: ShapeTracerConfig,
+  evalConstraint?: EvalModeConstraint | null,
 ): Promise<SetupResult> {
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint ?? null,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  const activeSchema = evalConstraint
+    ? constrainSetupPlanEnum(setupSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : setupSchema;
+
   const prompt = `
 Create a plan for a shape tracing activity teaching "${topic}" to ${gradeLevel} students.
 
-GUIDELINES:
-- Kindergarten (gradeBand "K"): shapes = circle, square, triangle, rectangle. Types: mostly trace and connect-dots. gridSize: 25. showPropertyReminder: false.
-- Grade 1 (gradeBand "1"): shapes = triangle, square, rectangle, hexagon, pentagon, rhombus. All 4 types allowed. gridSize: 20. showPropertyReminder: true.
+${challengeTypeSection}
 
-Challenge types: "trace", "complete", "draw-from-description", "connect-dots"
+GUIDELINES:
+- Kindergarten (gradeBand "K"): shapes = circle, square, triangle, rectangle. gridSize: 25. showPropertyReminder: false.
+- Grade 1 (gradeBand "1"): shapes = triangle, square, rectangle, hexagon, pentagon, rhombus. gridSize: 20. showPropertyReminder: true.
 
 ${config?.gridSize ? `- Grid size: ${config.gridSize}` : ''}
 ${config?.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
 
-Create 4-6 challenges progressing in difficulty. Use at least 2 different types. Start with easier shapes (triangle, square) and progress to harder ones.
+${!evalConstraint ? 'Create 4-6 challenges progressing in difficulty. Use at least 2 different types. Start with easier shapes (triangle, square) and progress to harder ones.' : `Create 4-6 challenges all using the allowed challenge type(s) above. Start with easier shapes (triangle, square) and progress to harder ones.`}
 Title should be fun and engaging for young children.
 `;
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: setupSchema },
+    config: { responseMimeType: "application/json", responseSchema: activeSchema },
   });
 
   const data = result.text ? JSON.parse(result.text) : null;
@@ -237,22 +313,24 @@ Title should be fun and engaging for young children.
     data.showPropertyReminder = data.gradeBand === '1';
   }
 
-  const validTypes = ['trace', 'complete', 'draw-from-description', 'connect-dots'];
+  const validTypes = evalConstraint?.allowedTypes ?? ['trace', 'complete', 'draw-from-description', 'connect-dots'];
   if (!Array.isArray(data.challengePlan) || data.challengePlan.length === 0) {
+    const fallbackType = validTypes[0] ?? 'trace';
     data.challengePlan = [
-      { type: 'trace', targetShape: 'triangle' },
-      { type: 'trace', targetShape: 'square' },
-      { type: 'connect-dots', targetShape: 'rectangle' },
-      { type: 'complete', targetShape: 'triangle' },
+      { type: fallbackType, targetShape: 'triangle' },
+      { type: fallbackType, targetShape: 'square' },
+      { type: validTypes[1] ?? fallbackType, targetShape: 'rectangle' },
+      { type: fallbackType, targetShape: 'triangle' },
     ];
   }
   data.challengePlan = data.challengePlan
     .filter((c: { type: string }) => validTypes.includes(c.type))
     .slice(0, 6);
-  if (data.challengePlan.length < 2) {
+  if (data.challengePlan.length < 1) {
+    const fallbackType = validTypes[0] ?? 'trace';
     data.challengePlan = [
-      { type: 'trace', targetShape: 'triangle' },
-      { type: 'connect-dots', targetShape: 'square' },
+      { type: fallbackType, targetShape: 'triangle' },
+      { type: fallbackType, targetShape: 'square' },
     ];
   }
 
@@ -581,10 +659,18 @@ async function generateChallengeByType(
 export const generateShapeTracer = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<ShapeTracerData>
+  config?: ShapeTracerConfig
 ): Promise<ShapeTracerData> => {
-  // Step 1: Setup call (lightweight)
-  const setup = await generateSetup(topic, gradeLevel, config);
+  // Resolve eval mode constraint (null = mixed difficulty)
+  const evalConstraint = resolveEvalModeConstraint(
+    'shape-tracer',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('ShapeTracer', config?.targetEvalMode, evalConstraint);
+
+  // Step 1: Setup call (lightweight, with eval mode constraint)
+  const setup = await generateSetup(topic, gradeLevel, config, evalConstraint);
 
   // Step 2: Parallel challenge calls (one per plan entry, focused schemas)
   const challengePromises = setup.challengePlan.map(plan =>

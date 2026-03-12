@@ -11,6 +11,52 @@ import type {
   FractionCirclesData,
   FractionCirclesChallenge,
 } from "../../primitives/visual-primitives/math/FractionCircles";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  identify: {
+    promptDoc:
+      `"identify": A fraction circle is shown with some slices shaded. Student names the fraction (e.g., 3/4). `
+      + `K-2: denominators 2-4, warm language. 3-5: denominators 2-12. Concrete manipulative with full guidance.`,
+    schemaDescription: "'identify' (name the fraction shown)",
+  },
+  build: {
+    promptDoc:
+      `"build": Student is given a fraction and must shade the correct number of slices on the circle. `
+      + `K-2: simple fractions (halves, thirds, fourths). 3-5: larger denominators up to 12. `
+      + `Pictorial representation with prompts.`,
+    schemaDescription: "'build' (shade slices to match fraction)",
+  },
+  compare: {
+    promptDoc:
+      `"compare": Two fraction circles are shown. Student decides which fraction is larger or smaller. `
+      + `CRITICAL: MUST include the "compareFraction" field with "numerator" and "denominator" properties. `
+      + `The compareFraction MUST use a DIFFERENT denominator from the main fraction so the circles look different. `
+      + `The two fractions should NOT be equivalent — pick fractions with genuinely different values.`,
+    schemaDescription: "'compare' (compare two fractions)",
+  },
+  equivalent: {
+    promptDoc:
+      `"equivalent": A fraction is shown. Student builds an equivalent fraction with a different denominator. `
+      + `MUST include equivalentDenominator (a valid denominator 2-12 where the equivalent fraction has a whole-number numerator). `
+      + `Example: 2/4 equivalent with denominator 6 => 3/6, so equivalentDenominator=6.`,
+    schemaDescription: "'equivalent' (find equivalent fraction)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
 
 /**
  * Schema definition for Fraction Circles Data
@@ -114,6 +160,10 @@ const fractionCirclesSchema: Schema = {
   required: ["title", "challenges"],
 };
 
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 /**
  * Generate Fraction Circles content
  *
@@ -126,14 +176,33 @@ const fractionCirclesSchema: Schema = {
  *
  * @param topic - The math topic or concept
  * @param gradeContext - Grade level for age-appropriate content
- * @param config - Optional configuration including intent
+ * @param config - Optional configuration including intent and targetEvalMode
  * @returns FractionCirclesData with complete challenge set
  */
 export const generateFractionCircles = async (
   topic: string,
   gradeContext: string,
-  config?: Partial<{ intent?: string }>
+  config?: Partial<{
+    intent: string;
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode: string;
+  }>
 ): Promise<FractionCirclesData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'fraction-circles',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(fractionCirclesSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : fractionCirclesSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create an educational fraction circles activity for teaching "${topic}" to ${gradeContext} students.
 
@@ -142,16 +211,9 @@ CONTEXT:
 - Students interact with the circle to learn about fractions visually
 - Intent: ${config?.intent || topic}
 
-CHALLENGE TYPES (mix all four):
-1. "identify" — A fraction circle is shown with some slices shaded. Student names the fraction (e.g., 3/4).
-2. "build" — Student is given a fraction and must shade the correct number of slices on the circle.
-3. "compare" — Two fraction circles are shown. Student decides which fraction is larger or smaller.
-   CRITICAL: MUST include the "compareFraction" field with "numerator" and "denominator" properties.
-   The compareFraction MUST use a DIFFERENT denominator from the main fraction so the circles look different.
-   The two fractions should NOT be equivalent — pick fractions with genuinely different values (e.g., 1/2 vs 2/3, not 1/2 vs 2/4).
-4. "equivalent" — A fraction is shown. Student builds an equivalent fraction with a different denominator.
-   MUST include equivalentDenominator (a valid denominator 2-12 where the equivalent fraction has a whole-number numerator).
+${challengeTypeSection}
 
+${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - K-2 (gradeBand "K-2"):
   * Use denominators 2, 3, 4 only
@@ -167,6 +229,7 @@ GUIDELINES FOR GRADE LEVELS:
   * Use proper fraction vocabulary ("What fraction is represented?")
   * Equivalent challenges: ensure equivalentDenominator creates a valid equivalent
     (e.g., 2/4 equivalent with denominator 6 => 3/6, so equivalentDenominator=6)
+` : ''}
 
 REQUIREMENTS:
 1. Generate 4-6 challenges that progress in difficulty
@@ -186,12 +249,14 @@ REQUIREMENTS:
 Return the complete fraction circles configuration.
 `;
 
+  logEvalModeResolution('FractionCircles', config?.targetEvalMode, evalConstraint);
+
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: fractionCirclesSchema,
+      responseSchema: activeSchema,
     },
   });
 
@@ -212,7 +277,7 @@ Return the complete fraction circles configuration.
         : "3-5";
   }
 
-  // Validate challenge types
+  // Validate challenge types (safety net — schema enum handles the eval mode case)
   const validTypes = ["identify", "build", "compare", "equivalent"];
 
   data.challenges = (data.challenges || []).filter(
@@ -347,8 +412,57 @@ Return the complete fraction circles configuration.
     }
   }
 
-  // Ensure at least 4 challenges exist
-  if (data.challenges.length < 4) {
+  // Ensure at least one challenge (use eval constraint fallback type)
+  if (data.challenges.length === 0) {
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'identify';
+
+    const fallbacks: Record<string, FractionCirclesChallenge> = {
+      identify: {
+        id: "fc1",
+        type: "identify",
+        instruction: "What fraction of the circle is shaded?",
+        denominator: 4,
+        numerator: 1,
+        hint: "Count the total slices, then count the shaded ones.",
+        narration: "Look at this circle. Some slices are shaded. Can you name the fraction?",
+      },
+      build: {
+        id: "fc1",
+        type: "build",
+        instruction: "Shade 2 out of 3 slices to show 2/3.",
+        denominator: 3,
+        numerator: 2,
+        hint: "You need to shade 2 slices out of 3 equal parts.",
+        narration: "Now it's your turn to build a fraction! Shade the right number of slices.",
+      },
+      compare: {
+        id: "fc1",
+        type: "compare",
+        instruction: "Which fraction is larger: 1/2 or 1/3?",
+        denominator: 2,
+        numerator: 1,
+        compareFraction: { numerator: 1, denominator: 3 },
+        hint: "Look at the size of the shaded area in each circle.",
+        narration: "Let's compare two fractions. Which one takes up more of the circle?",
+      },
+      equivalent: {
+        id: "fc1",
+        type: "equivalent",
+        instruction: "Build a fraction equivalent to 1/2 using 4 slices.",
+        denominator: 2,
+        numerator: 1,
+        equivalentDenominator: 4,
+        hint: "If the circle has 4 slices, how many do you shade to equal 1/2?",
+        narration: "Can you find a fraction that looks different but has the same value?",
+      },
+    };
+
+    console.log(`[FractionCircles] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [fallbacks[fallbackType] ?? fallbacks.identify];
+  }
+
+  // If still fewer than 4 and no eval constraint, pad with defaults
+  if (!evalConstraint && data.challenges.length < 4) {
     const defaults: FractionCirclesChallenge[] = [
       {
         id: "fc_d1",
@@ -405,6 +519,10 @@ Return the complete fraction circles configuration.
   if (!data.title) {
     data.title = "Fraction Circles";
   }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as FractionCirclesChallenge[]).map((c) => c.type).join(', ');
+  console.log(`[FractionCircles] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   console.log("Fraction Circles Generated:", {
     topic,

@@ -1,18 +1,54 @@
 import { Type, Schema } from "@google/genai";
 import { AdditionSubtractionSceneData } from "../../primitives/visual-primitives/math/AdditionSubtractionScene";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Addition/Subtraction Scene Data
- *
- * This schema defines the structure for animated story-based addition and
- * subtraction activities. Children interact with concrete objects joining,
- * leaving, or being compared — bridging from manipulatives to equations.
- *
- * Each challenge presents a mini-story in a themed scene (pond, farm, etc.)
- * with one of four interaction modes: act-out, build-equation, solve-story,
- * or create-story.
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'act-out': {
+    promptDoc:
+      `"act-out": Student drags objects into the scene to act out the story. `
+      + `Best for beginners — concrete manipulative interaction. `
+      + `Story should clearly describe objects joining or leaving. `
+      + `Use warm language ("Drag the ducks into the pond!").`,
+    schemaDescription: "'act-out' (drag objects to act out story)",
+  },
+  'build-equation': {
+    promptDoc:
+      `"build-equation": Student constructs the matching equation from number/symbol tiles after seeing the story. `
+      + `Requires understanding the relationship between story action and mathematical notation. `
+      + `Story shows the action, student builds e.g. "3 + 2 = 5" from tiles.`,
+    schemaDescription: "'build-equation' (construct equation from tiles)",
+  },
+  'solve-story': {
+    promptDoc:
+      `"solve-story": Student reads/hears the story and provides the missing number. `
+      + `The unknownPosition field controls which part is hidden (result, change, or start). `
+      + `For K: mostly unknownPosition='result'. For Grade 1: vary all three positions.`,
+    schemaDescription: "'solve-story' (read story, find missing number)",
+  },
+  'create-story': {
+    promptDoc:
+      `"create-story": Given an equation, student matches or creates a story that fits. `
+      + `Advanced challenge — requires reverse reasoning from symbols to context. `
+      + `Provide the equation; the student must produce a matching story scenario.`,
+    schemaDescription: "'create-story' (write story for given equation)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
+
 const additionSubtractionSceneSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -92,7 +128,7 @@ const additionSubtractionSceneSchema: Schema = {
           "operation", "storyType", "startCount", "changeCount", "resultCount", "equation"
         ]
       },
-      description: "Array of 4-8 progressive challenges mixing different types and story situations"
+      description: "Array of 4-8 progressive challenges"
     },
     maxNumber: {
       type: Type.INTEGER,
@@ -115,32 +151,40 @@ const additionSubtractionSceneSchema: Schema = {
   required: ["title", "challenges", "maxNumber", "showTenFrame", "showEquationBar", "gradeBand"]
 };
 
-/**
- * Generate addition/subtraction scene data for story-based math activities
- *
- * Grade-aware content:
- * - Kindergarten: numbers within 5, act-out and solve-story focus,
- *   join/separate story types, ten-frame scaffolding
- * - Grade 1: numbers within 10, all four challenge types,
- *   all story types including compare and part-whole,
- *   unknownPosition varies (result, change, start)
- *
- * @param topic - The math topic or concept
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints
- * @returns AdditionSubtractionSceneData with complete configuration
- */
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 export const generateAdditionSubtractionScene = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{
-    maxNumber: number;
-    gradeBand: string;
-    challengeTypes: string[];
-    operations: string[];
-    storyTypes: string[];
-  }>
+  config?: {
+    maxNumber?: number;
+    gradeBand?: string;
+    challengeTypes?: string[];
+    operations?: string[];
+    storyTypes?: string[];
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode?: string;
+  }
 ): Promise<AdditionSubtractionSceneData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'addition-subtraction-scene',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(additionSubtractionSceneSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : additionSubtractionSceneSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create an educational addition and subtraction story activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -150,6 +194,9 @@ CONTEXT:
 - The bridge from manipulatives to equations — stories make math meaningful
 - Each challenge has a themed scene (pond, farm, playground, space, kitchen, garden)
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
   * Numbers within 5 (maxNumber = 5)
@@ -166,12 +213,7 @@ GUIDELINES FOR GRADE LEVELS:
   * Vary unknownPosition: result, change, and occasionally start
   * More complex stories with multiple steps
   * Equation bar for building number sentences
-
-CHALLENGE TYPES:
-- "act-out": Student drags objects into the scene to act out the story. Best for beginners.
-- "build-equation": Student constructs the equation from number/symbol tiles after seeing the story.
-- "solve-story": Student reads/hears the story and provides the missing number.
-- "create-story": Given an equation, student matches or creates a story. Advanced.
+` : ''}
 
 STORY TYPES:
 - "join": Objects are added together (e.g., "3 ducks are swimming. 2 more join them.")
@@ -179,17 +221,18 @@ STORY TYPES:
 - "compare": Two groups compared (e.g., "4 red flowers and 2 blue flowers. How many more red?")
 - "part-whole": Parts make a whole (e.g., "There are 3 cats inside and 2 outside. How many total?")
 
-${config ? `
-CONFIGURATION HINTS:
-${config.maxNumber ? `- Max number: ${config.maxNumber}` : ''}
-${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.challengeTypes ? `- Challenge types to include: ${config.challengeTypes.join(', ')}` : ''}
-${config.operations ? `- Operations to include: ${config.operations.join(', ')}` : ''}
-${config.storyTypes ? `- Story types to include: ${config.storyTypes.join(', ')}` : ''}
-` : ''}
+${(() => {
+  const hints: string[] = [];
+  if (config?.maxNumber) hints.push(`- Max number: ${config.maxNumber}`);
+  if (config?.gradeBand) hints.push(`- Grade band: ${config.gradeBand}`);
+  if (effectiveChallengeTypes) hints.push(`- Challenge types to include: ${effectiveChallengeTypes.join(', ')}`);
+  if (config?.operations) hints.push(`- Operations to include: ${config.operations.join(', ')}`);
+  if (config?.storyTypes) hints.push(`- Story types to include: ${config.storyTypes.join(', ')}`);
+  return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
+})()}
 
 REQUIREMENTS:
-1. Generate 4-8 challenges mixing the 4 types (act-out, build-equation, solve-story, create-story)
+1. Generate 4-8 challenges that progress in difficulty
 2. Use appropriate story contexts (join, separate, compare, part-whole)
 3. Keep all numbers within maxNumber (5 for K, 10 for Grade 1)
 4. Create engaging, relatable story texts that match the scene theme
@@ -197,23 +240,23 @@ REQUIREMENTS:
 6. CRITICAL: resultCount must equal startCount + changeCount for addition, startCount - changeCount for subtraction
 7. Generate unique IDs for each challenge (e.g., 'ch1', 'ch2', etc.)
 8. Match objectType to the scene (ducks for pond, apples for farm, rockets for space, etc.)
-9. Progress from easier to harder: start with act-out/join, progress to build-equation/compare
+9. Progress from easier to harder
 10. Use warm, child-friendly instruction text
-11. For Kindergarten: favor act-out and solve-story types, mostly join and separate
-12. For Grade 1: include all types and all story types, vary unknownPosition
-13. Mix addition and subtraction operations across challenges
-14. Set showTenFrame to true for K, false for Grade 1 unless numbers > 5
-15. Set showEquationBar to true when build-equation challenges are included
+11. Mix addition and subtraction operations across challenges
+12. Set showTenFrame to true for K, false for Grade 1 unless numbers > 5
+13. Set showEquationBar to true when build-equation challenges are included
 
 Return the complete addition/subtraction scene configuration.
 `;
+
+  logEvalModeResolution('AdditionSubtractionScene', config?.targetEvalMode, evalConstraint);
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: additionSubtractionSceneSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -223,17 +266,16 @@ Return the complete addition/subtraction scene configuration.
     throw new Error('No valid addition/subtraction scene data returned from Gemini API');
   }
 
-  // Validation: ensure gradeBand is valid
+  // ── Structural validation ──
+
   if (data.gradeBand !== 'K' && data.gradeBand !== '1') {
     data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
   }
 
-  // Validation: ensure maxNumber is appropriate
   if (!data.maxNumber || data.maxNumber < 1) {
     data.maxNumber = data.gradeBand === 'K' ? 5 : 10;
   }
 
-  // Defaults for display options
   if (typeof data.showTenFrame !== 'boolean') {
     data.showTenFrame = data.gradeBand === 'K';
   }
@@ -248,29 +290,25 @@ Return the complete addition/subtraction scene configuration.
   const validStoryTypes = ['join', 'separate', 'compare', 'part-whole'];
   const validUnknownPositions = ['result', 'change', 'start'];
 
-  // Filter invalid challenges
+  // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
 
   // Per-challenge validation
   for (const challenge of data.challenges) {
-    // Validate scene
     if (!validScenes.includes(challenge.scene)) {
       challenge.scene = 'farm';
     }
 
-    // Validate operation
     if (!validOperations.includes(challenge.operation)) {
       challenge.operation = 'addition';
     }
 
-    // Validate storyType
     if (!validStoryTypes.includes(challenge.storyType)) {
       challenge.storyType = challenge.operation === 'addition' ? 'join' : 'separate';
     }
 
-    // Validate unknownPosition
     if (challenge.unknownPosition && !validUnknownPositions.includes(challenge.unknownPosition)) {
       challenge.unknownPosition = 'result';
     }
@@ -289,7 +327,6 @@ Return the complete addition/subtraction scene configuration.
     if (challenge.operation === 'addition') {
       challenge.resultCount = challenge.startCount + challenge.changeCount;
     } else {
-      // For subtraction, ensure startCount >= changeCount
       if (challenge.startCount < challenge.changeCount) {
         const tmp = challenge.startCount;
         challenge.startCount = challenge.changeCount;
@@ -311,23 +348,75 @@ Return the complete addition/subtraction scene configuration.
     }
   }
 
-  // Ensure at least one challenge as a fallback
+  // ── Fallback if empty ──
   if (data.challenges.length === 0) {
-    data.challenges = [{
-      id: 'ch1',
-      type: 'act-out',
-      instruction: 'Watch the story and drag the ducks into the pond!',
-      storyText: '2 ducks are swimming in the pond. 1 more duck joins them. How many ducks are there now?',
-      scene: 'pond',
-      objectType: 'ducks',
-      operation: 'addition',
-      storyType: 'join',
-      startCount: 2,
-      changeCount: 1,
-      resultCount: 3,
-      equation: '2 + 1 = 3',
-    }];
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'act-out';
+    const fallbacks: Record<string, object> = {
+      'act-out': {
+        id: 'ch1',
+        type: 'act-out',
+        instruction: 'Watch the story and drag the ducks into the pond!',
+        storyText: '2 ducks are swimming in the pond. 1 more duck joins them. How many ducks are there now?',
+        scene: 'pond',
+        objectType: 'ducks',
+        operation: 'addition',
+        storyType: 'join',
+        startCount: 2,
+        changeCount: 1,
+        resultCount: 3,
+        equation: '2 + 1 = 3',
+      },
+      'build-equation': {
+        id: 'ch1',
+        type: 'build-equation',
+        instruction: 'Build the equation that matches the story!',
+        storyText: '4 apples are on the table. 2 more apples are placed on the table.',
+        scene: 'kitchen',
+        objectType: 'apples',
+        operation: 'addition',
+        storyType: 'join',
+        startCount: 4,
+        changeCount: 2,
+        resultCount: 6,
+        equation: '4 + 2 = 6',
+      },
+      'solve-story': {
+        id: 'ch1',
+        type: 'solve-story',
+        instruction: 'Read the story and find the missing number!',
+        storyText: '5 flowers are in the garden. 2 flowers are picked. How many flowers are left?',
+        scene: 'garden',
+        objectType: 'flowers',
+        operation: 'subtraction',
+        storyType: 'separate',
+        startCount: 5,
+        changeCount: 2,
+        resultCount: 3,
+        equation: '5 - 2 = 3',
+        unknownPosition: 'result',
+      },
+      'create-story': {
+        id: 'ch1',
+        type: 'create-story',
+        instruction: 'Can you make up a story that matches this equation?',
+        storyText: '',
+        scene: 'farm',
+        objectType: 'chickens',
+        operation: 'addition',
+        storyType: 'join',
+        startCount: 3,
+        changeCount: 2,
+        resultCount: 5,
+        equation: '3 + 2 = 5',
+      },
+    };
+    console.log(`[AdditionSubtractionScene] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [fallbacks[fallbackType] ?? fallbacks['act-out']];
   }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
+  console.log(`[AdditionSubtractionScene] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   // Apply explicit config overrides
   if (config) {

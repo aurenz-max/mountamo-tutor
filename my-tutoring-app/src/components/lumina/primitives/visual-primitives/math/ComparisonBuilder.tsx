@@ -359,18 +359,19 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     incrementAttempts();
 
     if (correct) {
+      const answerWord = currentChallenge.correctAnswer === 'equal' ? 'the same as' : `${currentChallenge.correctAnswer === 'more' ? 'more' : 'fewer'} than`;
       setFeedback(
-        `That's right! The left group (${leftCount}) has ${currentChallenge.correctAnswer} than the right (${rightCount})!`,
+        `That's right! The left group (${leftCount}) has ${answerWord} the right group (${rightCount})!`,
       );
       setFeedbackType('success');
       setShowLines(true);
       sendText(
-        `[ANSWER_CORRECT] Student correctly identified that ${leftCount} is ${currentChallenge.correctAnswer} ${rightCount}. `
+        `[ANSWER_CORRECT] Student correctly identified that left (${leftCount}) has ${answerWord} right (${rightCount}). `
         + `Congratulate briefly! ${showCorrespondenceLines ? 'Point out the matching lines.' : ''}`,
         { silent: true },
       );
     } else {
-      setFeedback('Not quite. Count each group and try again!');
+      setFeedback('Not quite — count each group carefully and try again!');
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". `
@@ -820,21 +821,26 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
         {/* Answer buttons */}
         {!isCurrentChallengeComplete && (
-          <div className="flex justify-center gap-3">
-            {(['more', 'less', 'equal'] as const).map((answer) => (
-              <Button
-                key={answer}
-                variant="ghost"
-                className={`px-6 py-3 text-base capitalize ${
-                  selectedAnswer === answer
-                    ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 border'
-                    : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
-                }`}
-                onClick={() => setSelectedAnswer(answer)}
-              >
-                {answer === 'equal' ? '= Equal' : answer === 'more' ? 'More' : 'Less'}
-              </Button>
-            ))}
+          <div className="space-y-2">
+            <p className="text-center text-sm text-slate-400">
+              The <span className="text-orange-300 font-semibold">left</span> group has…
+            </p>
+            <div className="flex justify-center gap-3">
+              {(['more', 'less', 'equal'] as const).map((answer) => (
+                <Button
+                  key={answer}
+                  variant="ghost"
+                  className={`px-6 py-3 text-base ${
+                    selectedAnswer === answer
+                      ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 border'
+                      : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
+                  }`}
+                  onClick={() => setSelectedAnswer(answer)}
+                >
+                  {answer === 'equal' ? 'The Same' : answer === 'more' ? 'More' : 'Fewer'}
+                </Button>
+              ))}
+            </div>
           </div>
         )}
 

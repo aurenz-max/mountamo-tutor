@@ -1,14 +1,64 @@
 import { Type, Schema } from "@google/genai";
 import { MathFactFluencyData, MathFactFluencyChallenge } from '../../primitives/visual-primitives/math/MathFactFluency';
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Math Fact Fluency Data
- *
- * Kept intentionally flat to avoid deeply nested structures that
- * cause Gemini to produce malformed JSON. Optional sub-object fields
- * (visualOptions, equationOptions) use simple types only.
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'visual-fact': {
+    promptDoc:
+      `"visual-fact": Show a visual (dot-array, ten-frame, fingers, objects) alongside the equation. `
+      + `Student sees the fact visually and answers. Set visualType and visualCount. `
+      + `unknownPosition = "result". Provide options (multiple choice). timeLimit: 8 seconds. `
+      + `Use 2-3 challenges for warm-up. Full scaffolding — concrete visual aids.`,
+    schemaDescription: "'visual-fact' (picture-based fact recognition)",
+  },
+  'match': {
+    promptDoc:
+      `"match": Connect a visual representation to its equation or vice versa. `
+      + `Set matchDirection to "visual-to-equation" or "equation-to-visual". `
+      + `For visual-to-equation: provide equationOptions (4 equation strings, one correct). `
+      + `CRITICAL: all distractor equations must have DIFFERENT results from the correct equation. `
+      + `Set visualType and visualCount. timeLimit: 6 seconds.`,
+    schemaDescription: "'match' (connect fact pairs)",
+  },
+  'equation-solve': {
+    promptDoc:
+      `"equation-solve": Show bare equations with multiple choice options. No visual aids. `
+      + `unknownPosition = "result". Provide 4 options (one correct, three close distractors ±1-2). `
+      + `timeLimit: 5 seconds. Reduced scaffolding — pictorial support removed.`,
+    schemaDescription: "'equation-solve' (solve given equation)",
+  },
+  'missing-number': {
+    promptDoc:
+      `"missing-number": Show an equation with a blank. `
+      + `unknownPosition = "operand1" or "operand2" (NOT result). `
+      + `No options — student types the answer. timeLimit: 5 seconds. `
+      + `Transitional: requires inverse thinking.`,
+    schemaDescription: "'missing-number' (find unknown in equation)",
+  },
+  'speed-round': {
+    promptDoc:
+      `"speed-round": Bare equations, student types answer as fast as possible. `
+      + `unknownPosition = "result". No options, no visual aids. `
+      + `Short timeLimit: 3 seconds. Tests automaticity — fully symbolic rapid recall.`,
+    schemaDescription: "'speed-round' (timed fluency assessment)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
+
 const mathFactFluencySchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -55,7 +105,7 @@ const mathFactFluencySchema: Schema = {
           },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'visual-fact', 'equation-solve', 'missing-number', 'match', 'speed-round'"
+            description: "Challenge type: 'visual-fact' (picture-based fact recognition), 'equation-solve' (solve given equation), 'missing-number' (find unknown in equation), 'match' (connect fact pairs), 'speed-round' (timed fluency assessment)"
           },
           instruction: {
             type: Type.STRING,
@@ -131,44 +181,56 @@ const mathFactFluencySchema: Schema = {
   ]
 };
 
-/**
- * Generate math fact fluency data for rapid recall practice
- *
- * Produces a progressive sequence of challenges that remove visual scaffolding:
- * 1. visual-fact — dot arrays, ten-frames, fingers (see the fact)
- * 2. equation-solve — bare equations with multiple choice
- * 3. missing-number — blanks in equations
- * 4. match — visual-to-equation or equation-to-visual pairing
- * 5. speed-round — bare equations, type-in answer, short time limit
- *
- * @param topic - Math topic or concept
- * @param gradeLevel - Grade level string
- * @param config - Optional partial config overrides
- * @returns MathFactFluencyData with complete configuration
- */
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 export const generateMathFactFluency = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<MathFactFluencyData>
+  config?: {
+    maxNumber?: number;
+    includeSubtraction?: boolean;
+    showVisualAids?: boolean;
+    targetResponseTime?: number;
+    adaptiveDifficulty?: boolean;
+    gradeBand?: 'K' | '1';
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode?: string;
+    /** Intent or title from the manifest item. */
+    intent?: string;
+  }
 ): Promise<MathFactFluencyData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'math-fact-fluency',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(mathFactFluencySchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : mathFactFluencySchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create a math fact fluency activity for teaching "${topic}" to ${gradeLevel} students.
 
 CONTEXT:
 - This primitive builds RAPID RECALL of basic addition and subtraction facts.
-- Students progress through 5 challenge types that gradually remove visual scaffolding.
+- Students progress through challenge types that gradually remove visual scaffolding.
 - The goal is automaticity — answering within 3 seconds without counting.
 
-CHALLENGE TYPE PROGRESSION (generate challenges in this order):
-1. "visual-fact" (2-3 challenges): Show a visual (dot-array, ten-frame, fingers) alongside the equation. The student sees the fact visually and answers. Set visualType and visualCount. unknownPosition should be "result". Provide options (multiple choice). timeLimit: 8 seconds.
+${challengeTypeSection}
 
-2. "equation-solve" (2 challenges): Show bare equations with multiple choice options. No visual. unknownPosition = "result". Provide 4 options (one correct, three distractors). timeLimit: 5 seconds.
-
-3. "missing-number" (1-2 challenges): Show an equation with a blank. unknownPosition = "operand1" or "operand2". No options — student types the answer. timeLimit: 5 seconds.
-
-4. "match" (1 challenge): Connect visual to equation or vice versa. Set matchDirection to "visual-to-equation". For visual-to-equation, provide equationOptions (4 equation strings, one correct matching the equation field). Set visualType and visualCount. timeLimit: 6 seconds.
-
-5. "speed-round" (1-2 challenges): Bare equations, student types answer. unknownPosition = "result". No options. Short timeLimit: 3 seconds.
+${!evalConstraint ? `
+GRADE GUIDELINES:
+- Kindergarten (gradeBand "K"): maxNumber 3-5, mostly addition, simple warm language
+- Grade 1 (gradeBand "1"): maxNumber 5-10, include subtraction, slightly more advanced
+` : ''}
 
 MATH RULES:
 - For addition: result = operand1 + operand2
@@ -180,10 +242,6 @@ MATH RULES:
 - equation field must show the full solved equation: "3 + 2 = 5"
 - All numbers must be within maxNumber (e.g., maxNumber=5 means all operands and results <= 5)
 
-GRADE GUIDELINES:
-- Kindergarten (gradeBand "K"): maxNumber 3-5, mostly addition, simple warm language
-- Grade 1 (gradeBand "1"): maxNumber 5-10, include subtraction, slightly more advanced
-
 ${config ? `
 CONFIGURATION HINTS:
 ${config.maxNumber !== undefined ? `- maxNumber: ${config.maxNumber}` : ''}
@@ -193,7 +251,7 @@ ${config.targetResponseTime !== undefined ? `- targetResponseTime: ${config.targ
 ` : ''}
 
 REQUIREMENTS:
-1. Generate 6-10 challenges in the progression order above
+1. Generate 6-10 challenges
 2. Each challenge MUST have a unique id (c1, c2, c3, ...)
 3. Use warm, encouraging instruction text for young children
 4. Multiple choice options should include the correct answer plus reasonable distractors
@@ -206,12 +264,14 @@ REQUIREMENTS:
 Return the complete math fact fluency configuration.
 `;
 
+  logEvalModeResolution('MathFactFluency', config?.targetEvalMode, evalConstraint);
+
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: mathFactFluencySchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -257,7 +317,7 @@ Return the complete math fact fluency configuration.
   const validUnknownPositions = ['result', 'operand1', 'operand2'];
   const validVisualTypes = ['dot-array', 'fingers', 'ten-frame', 'objects'];
 
-  // Filter to valid challenges
+  // Filter to valid challenges (safety net — schema enum handles the eval mode case)
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
@@ -385,25 +445,91 @@ Return the complete math fact fluency configuration.
     }
   }
 
-  // Ensure at least one challenge exists
+  // ── Fallback if empty ──
   if (data.challenges.length === 0) {
-    data.challenges = [{
-      id: 'c1',
-      type: 'visual-fact' as const,
-      instruction: 'How many dots do you see? What is 2 + 1?',
-      equation: '2 + 1 = 3',
-      operation: 'addition' as const,
-      operand1: 2,
-      operand2: 1,
-      result: 3,
-      unknownPosition: 'result' as const,
-      correctAnswer: 3,
-      visualType: 'dot-array' as const,
-      visualCount: 3,
-      options: [1, 2, 3, 4],
-      timeLimit: 8,
-    }];
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'visual-fact';
+    const fallbacks: Record<string, MathFactFluencyChallenge> = {
+      'visual-fact': {
+        id: 'c1',
+        type: 'visual-fact' as const,
+        instruction: 'How many dots do you see? What is 2 + 1?',
+        equation: '2 + 1 = 3',
+        operation: 'addition' as const,
+        operand1: 2,
+        operand2: 1,
+        result: 3,
+        unknownPosition: 'result' as const,
+        correctAnswer: 3,
+        visualType: 'dot-array' as const,
+        visualCount: 3,
+        options: [1, 2, 3, 4],
+        timeLimit: 8,
+      },
+      'match': {
+        id: 'c1',
+        type: 'match' as const,
+        instruction: 'Which equation matches the picture?',
+        equation: '2 + 1 = 3',
+        operation: 'addition' as const,
+        operand1: 2,
+        operand2: 1,
+        result: 3,
+        unknownPosition: 'result' as const,
+        correctAnswer: 3,
+        visualType: 'dot-array' as const,
+        visualCount: 3,
+        matchDirection: 'visual-to-equation' as const,
+        equationOptions: ['2 + 1 = 3', '1 + 1 = 2', '3 + 1 = 4', '2 + 3 = 5'],
+        timeLimit: 6,
+      },
+      'equation-solve': {
+        id: 'c1',
+        type: 'equation-solve' as const,
+        instruction: 'Solve this equation!',
+        equation: '3 + 2 = 5',
+        operation: 'addition' as const,
+        operand1: 3,
+        operand2: 2,
+        result: 5,
+        unknownPosition: 'result' as const,
+        correctAnswer: 5,
+        options: [3, 4, 5, 6],
+        timeLimit: 5,
+      },
+      'missing-number': {
+        id: 'c1',
+        type: 'missing-number' as const,
+        instruction: 'What number is missing?',
+        equation: '3 + 2 = 5',
+        operation: 'addition' as const,
+        operand1: 3,
+        operand2: 2,
+        result: 5,
+        unknownPosition: 'operand2' as const,
+        correctAnswer: 2,
+        timeLimit: 5,
+      },
+      'speed-round': {
+        id: 'c1',
+        type: 'speed-round' as const,
+        instruction: 'Quick! What is 2 + 1?',
+        equation: '2 + 1 = 3',
+        operation: 'addition' as const,
+        operand1: 2,
+        operand2: 1,
+        result: 3,
+        unknownPosition: 'result' as const,
+        correctAnswer: 3,
+        timeLimit: 3,
+      },
+    };
+    console.log(`[MathFactFluency] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [fallbacks[fallbackType] ?? fallbacks['visual-fact']];
   }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
+  console.log(`[MathFactFluency] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   // Apply explicit config overrides
   if (config) {

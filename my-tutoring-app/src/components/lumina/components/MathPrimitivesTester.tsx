@@ -40,10 +40,11 @@ import SortingStation from '../primitives/visual-primitives/math/SortingStation'
 import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
 import ThreeDShapeExplorer from '../primitives/visual-primitives/math/ThreeDShapeExplorer';
 import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
+import NumberTracer from '../primitives/visual-primitives/math/NumberTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
 import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker';
 
-import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData, MeasurementToolsData, EvalModeDefinition } from '../types';
+import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData, MeasurementToolsData, EvalModeDefinition, NumberTracerData } from '../types';
 import {
   EvaluationProvider,
   useEvaluationContext,
@@ -57,7 +58,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'math-fact-fluency' | 'strategy-picker';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -99,6 +100,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'shape-sorter', label: 'Shape Sorter', icon: '📐', topic: 'Shapes and Geometry' },
   { value: '3d-shape-explorer', label: '3D Shape Explorer', icon: '🔷', topic: '3D shapes for kids' },
   { value: 'shape-tracer', label: 'Shape Tracer', icon: '✏️', topic: 'basic shapes' },
+  { value: 'number-tracer', label: 'Number Tracer', icon: '✏️', topic: 'writing numbers 0 to 10' },
   { value: 'math-fact-fluency', label: 'Math Fact Fluency', icon: '⚡', topic: 'Addition facts within 5' },
   { value: 'strategy-picker', label: 'Strategy Picker', icon: '🎯', topic: 'Addition strategies within 10' },
 ];
@@ -475,6 +477,8 @@ const PrimitiveRenderer: React.FC<{
           className="w-full"
         />
       );
+    case 'number-tracer':
+      return <NumberTracer data={data as NumberTracerData} />;
     case 'math-fact-fluency':
       // MathFactFluency handles its own evaluation via usePrimitiveEvaluation hook
       return (

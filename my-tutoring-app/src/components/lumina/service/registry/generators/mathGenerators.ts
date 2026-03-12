@@ -46,6 +46,7 @@ import { generateThreeDShapeExplorer } from '../../math/gemini-3d-shape-explorer
 import { generateShapeTracer } from '../../math/gemini-shape-tracer';
 import { generateMathFactFluency } from '../../math/gemini-math-fact-fluency';
 import { generateStrategyPicker } from '../../math/gemini-strategy-picker';
+import { generateNumberTracer } from '../../math/gemini-number-tracer';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -208,7 +209,10 @@ registerGenerator('pattern-builder', async (item, topic, gradeContext) => ({
 registerGenerator('skip-counting-runner', async (item, topic, gradeContext) => ({
   type: 'skip-counting-runner',
   instanceId: item.instanceId,
-  data: await generateSkipCountingRunner(topic, gradeContext, item.config),
+  data: await generateSkipCountingRunner(topic, gradeContext, {
+    ...item.config,
+    intent: item.intent || item.title,
+  }),
 }));
 
 // Regrouping Workbench (1-4 addition/subtraction with carry/borrow)
@@ -222,7 +226,10 @@ registerGenerator('regrouping-workbench', async (item, topic, gradeContext) => (
 registerGenerator('multiplication-explorer', async (item, topic, gradeContext) => ({
   type: 'multiplication-explorer',
   instanceId: item.instanceId,
-  data: await generateMultiplicationExplorer(topic, gradeContext, item.config),
+  data: await generateMultiplicationExplorer(topic, gradeContext, {
+    ...item.config,
+    intent: item.intent || item.title,
+  }),
 }));
 
 // Measurement Tools (1-5 measurement with real-world tools)
@@ -236,7 +243,10 @@ registerGenerator('measurement-tools', async (item, topic, gradeContext) => ({
 registerGenerator('shape-builder', async (item, topic, gradeContext) => ({
   type: 'shape-builder',
   instanceId: item.instanceId,
-  data: await generateShapeBuilder(topic, gradeContext, item.config),
+  data: await generateShapeBuilder(topic, gradeContext, {
+    ...item.config,
+    intent: item.intent || item.title,
+  }),
 }));
 
 // Comparison Builder (K-1 quantity comparison & inequality symbols)
@@ -250,7 +260,10 @@ registerGenerator('comparison-builder', async (item, topic, gradeContext) => ({
 registerGenerator('number-sequencer', async (item, topic, gradeContext) => ({
   type: 'number-sequencer',
   instanceId: item.instanceId,
-  data: await generateNumberSequencer(topic, gradeContext, item.config),
+  data: await generateNumberSequencer(topic, gradeContext, {
+    ...item.config,
+    intent: item.intent || item.title,
+  }),
 }));
 
 // Number Bond (K-1 part-part-whole relationships)
@@ -278,7 +291,9 @@ registerGenerator('ordinal-line', async (item, topic, gradeContext) => ({
 registerGenerator('sorting-station', async (item, topic, gradeContext) => ({
   type: 'sorting-station',
   instanceId: item.instanceId,
-  data: await generateSortingStation(topic, gradeContext, item.config),
+  data: await generateSortingStation(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Shape Sorter (K-1 shape identification, naming, matching & classification)
@@ -299,14 +314,19 @@ registerGenerator('3d-shape-explorer', async (item, topic, gradeContext) => ({
 registerGenerator('shape-tracer', async (item, topic, gradeContext) => ({
   type: 'shape-tracer',
   instanceId: item.instanceId,
-  data: await generateShapeTracer(topic, gradeContext, item.config),
+  data: await generateShapeTracer(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Math Fact Fluency (K-1 rapid recall of addition & subtraction facts)
 registerGenerator('math-fact-fluency', async (item, topic, gradeContext) => ({
   type: 'math-fact-fluency',
   instanceId: item.instanceId,
-  data: await generateMathFactFluency(topic, gradeContext, item.config),
+  data: await generateMathFactFluency(topic, gradeContext, {
+    ...item.config,
+    intent: item.intent || item.title,
+  }),
 }));
 
 // Strategy Picker (K-1 multi-strategy problem solving & computational flexibility)
@@ -314,6 +334,13 @@ registerGenerator('strategy-picker', async (item, topic, gradeContext) => ({
   type: 'strategy-picker',
   instanceId: item.instanceId,
   data: await generateStrategyPicker(topic, gradeContext, item.config),
+}));
+
+// Number Tracer (K-2 canvas-based numeral writing practice)
+registerGenerator('number-tracer', async (item, topic, gradeContext) => ({
+  type: 'number-tracer',
+  instanceId: item.instanceId,
+  data: await generateNumberTracer(topic, gradeContext, item.config),
 }));
 
 // ============================================================================
@@ -334,7 +361,8 @@ registerGenerator('number-line', async (item, topic, gradeContext) => ({
   type: 'number-line',
   instanceId: item.instanceId,
   data: await generateNumberLine(topic, gradeContext, {
-    intent: item.intent || item.title
+    ...item.config,
+    intent: item.intent || item.title,
   }),
 }));
 
@@ -353,7 +381,8 @@ registerGenerator('fraction-circles', async (item, topic, gradeContext) => ({
   type: 'fraction-circles',
   instanceId: item.instanceId,
   data: await generateFractionCircles(topic, gradeContext, {
-    intent: item.intent || item.title
+    ...item.config,
+    intent: item.intent || item.title,
   }),
 }));
 

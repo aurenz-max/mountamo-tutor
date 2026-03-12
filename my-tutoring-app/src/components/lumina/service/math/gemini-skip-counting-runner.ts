@@ -1,14 +1,65 @@
 import { Type, Schema } from "@google/genai";
 import { SkipCountingRunnerData } from "../../primitives/visual-primitives/math/SkipCountingRunner";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Skip Counting Runner Data
- *
- * This schema defines the structure for skip counting challenges
- * with animated number line jumps, prediction, and multiplication connections
- * for grades 1-3 multiplication foundations.
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  count_along: {
+    promptDoc:
+      `"count_along": Character jumps automatically, student watches and counts along. `
+      + `startPosition = startFrom (e.g. 0). Use autoPlay: true. `
+      + `Concrete — full guidance, rhythmic counting with visual support. `
+      + `Narration should count rhythmically: "5... 10... 15..."`,
+    schemaDescription: "'count_along' (follow skip-count sequence)",
+  },
+  predict: {
+    promptDoc:
+      `"predict": Student guesses the NEXT landing after startPosition. `
+      + `Set startPosition to a position partway along the sequence. `
+      + `Example: skip by 4, startPosition=16 → student must answer 20. `
+      + `Instruction MUST match startPosition: "The rabbit is at 16. Where is the next landing?" `
+      + `Pictorial with prompts — anticipate next value.`,
+    schemaDescription: "'predict' (anticipate next value)",
+  },
+  fill_missing: {
+    promptDoc:
+      `"fill_missing": Some positions are hidden, student types the missing numbers. `
+      + `startPosition = startFrom. Set hiddenPositions array with the positions to hide. `
+      + `Pictorial with reduced prompts — complete missing terms in the sequence.`,
+    schemaDescription: "'fill_missing' (complete missing terms)",
+  },
+  find_skip_value: {
+    promptDoc:
+      `"find_skip_value": Student identifies the skip amount from a displayed sequence. `
+      + `startPosition = startFrom. Show several jumps and ask "How much is each jump?" `
+      + `Transitional — discover the skip interval from the pattern.`,
+    schemaDescription: "'find_skip_value' (discover the skip interval)",
+  },
+  connect_multiplication: {
+    promptDoc:
+      `"connect_multiplication": Student states the multiplication fact for the full journey up to startPosition. `
+      + `Example: skip by 4, startPosition=28 → show 7 jumps → student answers "7 × 4 = 28". `
+      + `Set targetFact to the multiplication fact string. `
+      + `Instruction MUST reference startPosition. `
+      + `Symbolic — link skip counting to multiplication facts.`,
+    schemaDescription: "'connect_multiplication' (link to multiplication facts)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
+
 const skipCountingRunnerSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -61,7 +112,7 @@ const skipCountingRunnerSchema: Schema = {
           },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'count_along' (watch and count), 'predict' (guess next landing), 'fill_missing' (find missing numbers in sequence), 'find_skip_value' (identify the skip amount), 'connect_multiplication' (state the multiplication fact)"
+            description: "Challenge type: 'count_along' (follow skip-count sequence), 'predict' (anticipate next value), 'fill_missing' (complete missing terms), 'find_skip_value' (discover the skip interval), 'connect_multiplication' (link to multiplication facts)"
           },
           instruction: {
             type: Type.STRING,
@@ -145,18 +196,10 @@ const skipCountingRunnerSchema: Schema = {
   required: ["title", "description", "skipValue", "startFrom", "endAt", "direction", "character", "challenges", "showOptions", "gradeBand"]
 };
 
-/**
- * Generate skip counting runner data for interactive counting activities
- *
- * Grade-aware content:
- * - Grades 1-2: Skip count by 2s, 5s, 10s. Watch and count along. Simple prediction.
- * - Grades 2-3: Skip count by 3s, 4s. Prediction + multiplication connection. Backward counting.
- *
- * @param topic - The math topic or concept
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns SkipCountingRunnerData with complete configuration
- */
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 export const generateSkipCountingRunner = async (
   topic: string,
   gradeLevel: string,
@@ -166,8 +209,30 @@ export const generateSkipCountingRunner = async (
     direction?: 'forward' | 'backward';
     challengeTypes?: string[];
     characterType?: string;
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode?: string;
+    /** Intent or title from the manifest item. */
+    intent?: string;
   }
 ): Promise<SkipCountingRunnerData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'skip-counting-runner',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // For config.challengeTypes without an eval mode, use them as a hint
+  const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(skipCountingRunnerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : skipCountingRunnerSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create an educational skip counting activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -177,6 +242,9 @@ CONTEXT:
 - The number line with animated jumps makes the equal-sized leaps visible
 - Arrays built alongside connect to multiplication models
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Grades 1-2 (gradeBand "1-2"):
   * Skip count by 2s, 5s, and 10s ONLY
@@ -199,18 +267,16 @@ GUIDELINES FOR GRADE LEVELS:
   * showArray: true (connect to multiplication arrays)
   * showEquation: true
   * showDigitPattern: true for 5s and 10s
+` : ''}
 
-CHALLENGE TYPES AND startPosition:
+STARTPOSITION RULES:
 Each challenge has a "startPosition" — the number-line position the character occupies when the challenge begins.
 The component builds landing spots from startFrom up to startPosition automatically.
+- count_along / fill_missing / find_skip_value: startPosition = startFrom (e.g. 0)
+- predict: startPosition = a position partway along the sequence (e.g. 16 for skip-by-4). Instruction MUST reference startPosition.
+- connect_multiplication: startPosition = the target product (e.g. 28 for 7×4). Instruction MUST reference startPosition. Include targetFact.
 
-- "count_along": Character jumps automatically, student watches and counts. startPosition = startFrom (e.g. 0).
-- "predict": Student guesses the NEXT landing after startPosition. Set startPosition to a position partway along the sequence. Example: skip by 4, startPosition=16 → student must answer 20. The instruction MUST match: "The rabbit is at 16. Where is the next landing?"
-- "fill_missing": Some positions are hidden, student types the missing numbers. startPosition = startFrom.
-- "find_skip_value": Student identifies the skip amount. startPosition = startFrom.
-- "connect_multiplication": Student states the multiplication fact for the full journey up to startPosition. Example: skip by 4, startPosition=28 → show 7 jumps → student answers "7 × 4 = 28". The instruction MUST reference the same number as startPosition.
-
-CRITICAL: The position mentioned in the instruction text MUST exactly match startPosition. If instruction says "at 16", startPosition MUST be 16.
+CRITICAL: The position mentioned in the instruction text MUST exactly match startPosition.
 
 CHARACTER TYPES: frog, kangaroo, rabbit, rocket
 - Frog: "leaping" by 2s or 3s
@@ -218,39 +284,39 @@ CHARACTER TYPES: frog, kangaroo, rabbit, rocket
 - Rabbit: "bouncing" by 2s
 - Rocket: "blasting" by 10s
 
-${config ? `
-CONFIGURATION HINTS:
-${config.skipValue ? `- Skip value: ${config.skipValue}` : ''}
-${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.direction ? `- Direction: ${config.direction}` : ''}
-${config.challengeTypes ? `- Challenge types: ${config.challengeTypes.join(', ')}` : ''}
-${config.characterType ? `- Character: ${config.characterType}` : ''}
-` : ''}
+${(() => {
+  const hints: string[] = [];
+  if (config?.skipValue) hints.push(`- Skip value: ${config.skipValue}`);
+  if (config?.gradeBand) hints.push(`- Grade band: ${config.gradeBand}`);
+  if (config?.direction) hints.push(`- Direction: ${config.direction}`);
+  if (effectiveChallengeTypes) hints.push(`- Challenge types: ${effectiveChallengeTypes.join(', ')}`);
+  if (config?.characterType) hints.push(`- Character: ${config.characterType}`);
+  return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
+})()}
 
 REQUIREMENTS:
 1. Generate 3-5 challenges that progress in difficulty
-2. Start with count_along (watch), then predict, then advanced challenges
-3. The endAt should be a multiple of skipValue (from startFrom)
-4. Use rhythmic, encouraging narration that counts along: "5... 10... 15..."
-5. For predict challenges, set hiddenPositions to numbers the student must guess
-6. For connect_multiplication, include the targetFact string
-7. Include meaningful hints
-8. Choose a character that fits the story context
-9. For grade 1-2: keep it simple (2s, 5s, 10s), no backward counting
-10. For grade 2-3: can add complexity (3s, 4s), multiplication connections
-11. EVERY challenge MUST have a startPosition that is a valid multiple of skipValue from startFrom
-12. For predict: startPosition should be a few jumps in (not 0), and instruction must reference that position
-13. For connect_multiplication: startPosition should be far enough along for a meaningful multiplication fact
+2. The endAt should be a multiple of skipValue (from startFrom)
+3. Use rhythmic, encouraging narration that counts along: "5... 10... 15..."
+4. For predict challenges, set hiddenPositions to numbers the student must guess
+5. For connect_multiplication, include the targetFact string
+6. Include meaningful hints
+7. Choose a character that fits the story context
+8. EVERY challenge MUST have a startPosition that is a valid multiple of skipValue from startFrom
+9. For predict: startPosition should be a few jumps in (not 0), and instruction must reference that position
+10. For connect_multiplication: startPosition should be far enough along for a meaningful multiplication fact
 
 Return the complete skip counting runner configuration.
 `;
+
+  logEvalModeResolution('SkipCountingRunner', config?.targetEvalMode, evalConstraint);
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: skipCountingRunnerSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -306,22 +372,31 @@ Return the complete skip counting runner configuration.
     data.character.type = 'frog';
   }
 
-  // Ensure challenges have valid types
+  // Ensure challenges have valid types (safety net — schema enum handles the eval mode case)
   const validChallengeTypes = ['count_along', 'predict', 'fill_missing', 'find_skip_value', 'connect_multiplication'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
 
-  // Ensure at least one challenge
+  // ── Fallback if empty ──
   if (data.challenges.length === 0) {
-    data.challenges = [{
-      id: 'c1',
-      type: 'count_along',
-      instruction: `Watch the ${data.character.type} jump by ${data.skipValue}s! Count along!`,
-      hint: `Count by ${data.skipValue}s: ${data.startFrom}, ${data.startFrom + data.skipValue}, ${data.startFrom + data.skipValue * 2}...`,
-      narration: `Let's watch our ${data.character.type} friend jump by ${data.skipValue}s! Ready? ${data.startFrom}... ${data.startFrom + data.skipValue}... ${data.startFrom + data.skipValue * 2}...`,
-    }];
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'count_along';
+    const sv = data.skipValue;
+    const sf = data.startFrom;
+    const fallbacks: Record<string, { type: string; instruction: string; hint: string; narration: string; startPosition?: number; hiddenPositions?: number[]; targetFact?: string }> = {
+      count_along: { type: 'count_along', instruction: `Watch the ${data.character.type} jump by ${sv}s! Count along!`, hint: `Count by ${sv}s: ${sf}, ${sf + sv}, ${sf + sv * 2}...`, narration: `Let's watch our ${data.character.type} friend jump by ${sv}s! Ready? ${sf}... ${sf + sv}... ${sf + sv * 2}...`, startPosition: sf },
+      predict: { type: 'predict', instruction: `The ${data.character.type} is at ${sf + sv * 3}. Where does it land next?`, hint: `Add ${sv} to ${sf + sv * 3}.`, narration: `Can you predict the next landing spot?`, startPosition: sf + sv * 3 },
+      fill_missing: { type: 'fill_missing', instruction: `Some numbers are missing! Fill in the blanks.`, hint: `Count by ${sv}s from ${sf}.`, narration: `Oh no, some numbers disappeared! Can you find them?`, startPosition: sf, hiddenPositions: [sf + sv * 2, sf + sv * 4] },
+      find_skip_value: { type: 'find_skip_value', instruction: `Look at the jumps. How much is each jump?`, hint: `Find the difference between two neighbors.`, narration: `Can you figure out how far each jump goes?`, startPosition: sf },
+      connect_multiplication: { type: 'connect_multiplication', instruction: `The ${data.character.type} made jumps to reach ${sf + sv * 5}. What multiplication fact is that?`, hint: `Count the jumps, then multiply: jumps × ${sv}.`, narration: `Skip counting IS multiplication!`, startPosition: sf + sv * 5, targetFact: `5 × ${sv} = ${sf + sv * 5}` },
+    };
+    console.log(`[SkipCountingRunner] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.count_along }];
   }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
+  console.log(`[SkipCountingRunner] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   // Ensure showOptions
   if (!data.showOptions) {

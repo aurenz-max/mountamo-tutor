@@ -1,6 +1,50 @@
 import { Type, Schema } from "@google/genai";
 import { SortingStationData } from "../../primitives/visual-primitives/math/SortingStation";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ============================================================================
+// Eval Mode Docs — one entry per challenge type
+// ============================================================================
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'sort-by-one': {
+    promptDoc:
+      `"sort-by-one": Sort objects by ONE visible attribute (color, shape, or size). Provide sortingAttribute and categories with matching rules. Example: Sort fruits by color into "Red" and "Yellow" bins.`,
+    schemaDescription: "'sort-by-one' (single-attribute sort)",
+  },
+  'sort-by-attribute': {
+    promptDoc:
+      `"sort-by-attribute": Objects have multiple attributes; student picks how to sort. Provide sortingAttribute and categories. Objects should have multiple interesting attributes. Example: Sort animals — by size OR number of legs.`,
+    schemaDescription: "'sort-by-attribute' (named-property sort)",
+  },
+  'count-and-compare': {
+    promptDoc:
+      `"count-and-compare": Objects are pre-sorted into groups. Student counts each group and answers a comparison question. Provide categories, comparisonQuestion, and correctComparison ('more', 'fewer', or 'equal'). Example: "Are there more red apples or green apples?"`,
+    schemaDescription: "'count-and-compare' (quantify and compare groups)",
+  },
+  'odd-one-out': {
+    promptDoc:
+      `"odd-one-out": A group where one doesn't belong. Student identifies it. Provide oddOneOut (ID of the odd object) and oddOneOutReason. Example: 🍎🍊🍋🚗 — the car doesn't belong because it's not a fruit.`,
+    schemaDescription: "'odd-one-out' (identify the exception)",
+  },
+  'two-attributes': {
+    promptDoc:
+      `"two-attributes": Find objects matching TWO attributes simultaneously. Provide categories with rules having EXACTLY two attribute keys. Use visually distinct emojis (prefer color + type). Do NOT use "size" as an attribute. Example: Find RED FRUITS → rule: { color: 'red', type: 'fruit' }.`,
+    schemaDescription: "'two-attributes' (multi-criterion classification)",
+  },
+  'tally-record': {
+    promptDoc:
+      `"tally-record": Sort objects and record the count of each group using tallies. Provide categories. The showTallyChart flag should be true. Example: Sort the shapes and tally how many of each.`,
+    schemaDescription: "'tally-record' (sort and tally counts)",
+  },
+};
 
 /**
  * Schema definition for Sorting Station Data
@@ -179,15 +223,33 @@ const sortingStationSchema: Schema = {
  * @param config - Optional configuration hints from the manifest
  * @returns SortingStationData with complete configuration
  */
+interface SortingStationConfig {
+  difficulty?: number;
+  challengeTypes?: string[];
+  maxCategories?: number;
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode?: string;
+}
+
 export const generateSortingStation = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{
-    difficulty: number;
-    challengeTypes: string[];
-    maxCategories: number;
-  }>
+  config?: SortingStationConfig
 ): Promise<SortingStationData> => {
+  // Resolve eval mode constraint (null = mixed difficulty)
+  const evalConstraint = resolveEvalModeConstraint(
+    'sorting-station',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('SortingStation', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(sortingStationSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : sortingStationSchema;
+
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create an educational sorting and categorization activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -204,68 +266,40 @@ GUIDELINES FOR GRADE LEVELS:
   * 4-8 objects per challenge (keep it manageable)
   * Use very familiar, concrete objects kids know (animals, fruits, toys)
   * Simple, warm language ("Can you put the red ones together?")
-  * Focus on sort-by-one, simple odd-one-out
 
 - Grade 1 (gradeBand "1"):
   * Sort by one or two attributes
   * Use 2-4 categories
   * 5-10 objects per challenge
-  * Include count-and-compare and tally-record challenges
   * Introduce reasoning ("Why doesn't this one belong?")
   * Connect sorting to data collection and graphing concepts
 
-CHALLENGE TYPES (use a mix appropriate for the grade):
-1. "sort-by-one": Sort objects by one visible attribute (color, shape, or size).
-   - Provide sortingAttribute (e.g., "color") and categories with matching rules.
-   - Example: Sort fruits by color into "Red" and "Yellow" bins.
+${challengeTypeSection}
 
-2. "sort-by-attribute": Objects have multiple attributes; student picks how to sort.
-   - Provide sortingAttribute and categories. Objects should have multiple interesting attributes.
-   - Example: Sort animals — you could sort by size OR by number of legs.
-
-3. "count-and-compare": Objects are pre-sorted into groups. Student counts each group and answers a comparison question.
-   - Provide categories (pre-filled), comparisonQuestion, and correctComparison ('more', 'fewer', or 'equal').
-   - Example: "Are there more red apples or green apples?"
-
-4. "two-attributes": Find objects matching TWO attributes simultaneously.
-   - Provide categories with rules that have EXACTLY two attribute keys.
-   - IMPORTANT: Both attributes must be VISUALLY DISTINGUISHABLE through different emojis.
-     Prefer color + type (e.g., "red fruit") or shape + type (e.g., "round animal").
-     Do NOT use "size" as one of the two attributes — emojis cannot show size differences.
-   - Use distinct emojis so each combination is visually unique (e.g., 🍎 for red fruit, 🐦 for blue animal).
-   - Example: Find all the RED FRUITS → rule: { color: 'red', type: 'fruit' } with objects like 🍎🍒 matching and 🔵🐕 not matching.
-
-5. "odd-one-out": A group where one doesn't belong. Student identifies it.
-   - Provide oddOneOut (ID of the odd object) and oddOneOutReason.
-   - Example: 🍎🍊🍋🚗 — the car doesn't belong because it's not a fruit.
-
-6. "tally-record": Sort objects and record the count of each group using tallies.
-   - Provide categories. The showTallyChart flag should be true.
-   - Example: Sort the shapes and tally how many of each.
+ADDITIONAL RULES FOR CHALLENGE TYPES:
+- "two-attributes": Both attributes must be VISUALLY DISTINGUISHABLE through different emojis. Prefer color + type. Do NOT use "size". Use distinct emojis per combination.
+- "count-and-compare": correctComparison must be 'more', 'fewer', or 'equal'.
+- "odd-one-out": oddOneOut must be an object ID that appears in the objects array.
+- "tally-record": set showTallyChart to true.
 
 ${config ? `
 CONFIGURATION HINTS:
 ${config.difficulty !== undefined ? `- Difficulty level (1-3): ${config.difficulty}` : ''}
-${config.challengeTypes ? `- Preferred challenge types: ${config.challengeTypes.join(', ')}` : ''}
 ${config.maxCategories !== undefined ? `- Max categories: ${config.maxCategories}` : ''}
 ` : ''}
 
 REQUIREMENTS:
-1. Generate 3-5 challenges that progress in difficulty
+1. Generate 3-5 challenges${!evalConstraint ? ' that progress in difficulty' : ' all using the allowed challenge type(s) above'}
 2. Use FUN, kid-friendly emojis for every object (single emoji per object)
 3. Give each object a clear label and meaningful attributes
 4. Object IDs should be unique across all challenges (e.g., 'obj1', 'obj2', ...)
 5. Use warm, encouraging instruction text for young children
-6. For Kindergarten: focus on sort-by-one and odd-one-out; use 2-3 categories; 4-8 objects
-7. For Grade 1: include count-and-compare, two-attributes, and tally-record; up to 4 categories; 5-10 objects
-8. Every category rule must use attribute keys that exist on the objects
-9. For odd-one-out: the oddOneOut value must be an object ID that appears in the objects array
-10. For count-and-compare: correctComparison must be 'more', 'fewer', or 'equal'
-11. Make sure each challenge's objects have the attributes needed for sorting
-12. Use age-appropriate vocabulary and themes kids love (animals, food, toys, nature)
-13. Set maxCategories to the highest number of categories used across all challenges
-14. Set showCounts to true so students see how many objects are in each bin
-15. Set showTallyChart to true if any tally-record challenges are included
+6. Every category rule must use attribute keys that exist on the objects
+7. Make sure each challenge's objects have the attributes needed for sorting
+8. Use age-appropriate vocabulary and themes kids love (animals, food, toys, nature)
+9. Set maxCategories to the highest number of categories used across all challenges
+10. Set showCounts to true so students see how many objects are in each bin
+11. Set showTallyChart to true if any tally-record challenges are included
 
 Return the complete sorting station configuration.
 `;
@@ -275,7 +309,7 @@ Return the complete sorting station configuration.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: sortingStationSchema
+      responseSchema: activeSchema
     },
   });
 
@@ -309,7 +343,7 @@ Return the complete sorting station configuration.
   }
 
   // Validate challenge types
-  const validChallengeTypes = [
+  const validChallengeTypes = evalConstraint?.allowedTypes ?? [
     'sort-by-one', 'sort-by-attribute', 'count-and-compare',
     'two-attributes', 'odd-one-out', 'tally-record'
   ];
@@ -459,9 +493,10 @@ Return the complete sorting station configuration.
 
   // Ensure at least one challenge
   if (data.challenges.length === 0) {
+    const fallbackType = (evalConstraint?.allowedTypes[0] ?? 'sort-by-one') as 'sort-by-one';
     data.challenges = [{
       id: 'c1',
-      type: 'sort-by-one' as const,
+      type: fallbackType,
       instruction: 'Can you sort these by color?',
       sortingAttribute: 'color',
       objects: [

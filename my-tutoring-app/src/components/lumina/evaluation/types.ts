@@ -2630,6 +2630,14 @@ export interface ShapeTracerMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface NumberTracerMetrics extends BasePrimitiveMetrics {
+  type: 'number-tracer';
+  tracingAccuracy: number;  // 0-100 overall score
+  digitsCompleted: number;
+  totalDigits: number;
+  attemptsCount: number;
+}
+
 export interface MathFactFluencyMetrics extends BasePrimitiveMetrics {
   type: 'math-fact-fluency';
   accuracy: number;
@@ -2954,6 +2962,7 @@ export type PrimitiveMetrics =
   | ShapeSorterMetrics
   | ThreeDShapeExplorerMetrics
   | ShapeTracerMetrics
+  | NumberTracerMetrics
   | MathFactFluencyMetrics
   | FastFactMetrics
   | StrategyPickerMetrics

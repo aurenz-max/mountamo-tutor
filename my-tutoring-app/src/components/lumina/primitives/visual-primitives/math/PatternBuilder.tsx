@@ -25,6 +25,16 @@ export interface PatternBuilderChallenge {
   answer: string[] | string;
   hint: string;
   narration: string;
+  /** Per-challenge sequence for single-type eval modes where each challenge has a distinct pattern. */
+  sequence?: {
+    given: string[];
+    hidden: string[];
+    core: string[];
+  };
+  /** Per-challenge translation mapping for translate challenges in single-type eval modes. */
+  translationMapping?: Record<string, string>;
+  /** Per-challenge selectable tokens (correct answers + distractors). Falls back to top-level tokens.available. */
+  availableTokens?: string[];
 }
 
 export interface PatternBuilderData {
@@ -214,9 +224,6 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   // Translation mode: user-built translated pattern
   const [translatedPattern, setTranslatedPattern] = useState<string[]>([]);
 
-  // Rule input
-  const [ruleInput, setRuleInput] = useState('');
-
   // Feedback
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
@@ -233,6 +240,32 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   const currentChallenge = challenges[currentChallengeIndex] || null;
+
+  // Per-challenge sequence override (single-type eval modes give each challenge its own pattern).
+  // Falls back to the top-level sequence for multi-type mode where all challenges share one pattern.
+  const activeSequence = useMemo(
+    () => currentChallenge?.sequence ?? sequence,
+    [currentChallenge, sequence],
+  );
+
+  // Per-challenge translation mapping override (translate-only mode).
+  const activeMapping = useMemo(
+    () => currentChallenge?.translationMapping ?? translationTarget?.mapping,
+    [currentChallenge, translationTarget],
+  );
+
+  // Compute which phases are actually represented so tabs don't show phantom phases
+  const presentPhases = useMemo((): Set<Phase> => {
+    const phases = new Set<Phase>();
+    challenges.forEach(c => {
+      if (c.type === 'extend' || c.type === 'find_rule') phases.add('copy');
+      else if (c.type === 'identify_core') phases.add('identify');
+      else if (c.type === 'create') phases.add('create');
+      else if (c.type === 'translate') phases.add('translate');
+    });
+    if (phases.size === 0) phases.add('copy');
+    return phases;
+  }, [challenges]);
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -258,9 +291,9 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   const aiPrimitiveData = useMemo(() => ({
     patternType,
     gradeBand,
-    givenSequence: sequence.given.join(', '),
-    hiddenSequence: sequence.hidden.join(', '),
-    coreUnit: sequence.core.join(', '),
+    givenSequence: activeSequence.given.join(', '),
+    hiddenSequence: activeSequence.hidden.join(', '),
+    coreUnit: activeSequence.core.join(', '),
     rule: sequence.rule || 'none',
     totalChallenges: challenges.length,
     currentChallengeIndex,
@@ -273,7 +306,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   }), [
     patternType, gradeBand, sequence, challenges.length,
     currentChallengeIndex, currentChallenge, currentAttempts,
-    currentPhase, extensionAnswers, createdPattern,
+    currentPhase, extensionAnswers, createdPattern, activeSequence,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -291,15 +324,15 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
 
     sendText(
       `[ACTIVITY_START] This is a pattern builder activity for ${gradeBand === 'K-1' ? 'Kindergarten to Grade 1' : 'Grades 2-3'}. `
-      + `Pattern type: ${patternType}. The sequence shown is: ${sequence.given.join(', ')}. `
-      + `The core/repeating unit is: ${sequence.core.join(', ')}. `
+      + `Pattern type: ${patternType}. The sequence shown is: ${activeSequence.given.join(', ')}. `
+      + `The core/repeating unit is: ${activeSequence.core.join(', ')}. `
       + `There are ${challenges.length} challenges. `
       + `First challenge: "${currentChallenge?.instruction}". `
       + `Introduce the activity warmly: mention we're going to explore patterns and discover what comes next. `
       + `Then read the first instruction to the student.`,
       { silent: true }
     );
-  }, [isConnected, challenges.length, patternType, sequence, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, patternType, activeSequence, gradeBand, currentChallenge, sendText]);
 
   // -------------------------------------------------------------------------
   // Interaction Handlers
@@ -309,12 +342,12 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   const handleAddExtensionToken = useCallback((token: string) => {
     if (hasSubmittedEvaluation) return;
     setExtensionAnswers(prev => {
-      if (prev.length >= sequence.hidden.length) return prev;
+      if (prev.length >= activeSequence.hidden.length) return prev;
       return [...prev, token];
     });
     setFeedback('');
     setFeedbackType('');
-  }, [hasSubmittedEvaluation, sequence.hidden.length]);
+  }, [hasSubmittedEvaluation, activeSequence.hidden.length]);
 
   // Remove last extension token
   const handleRemoveLastExtension = useCallback(() => {
@@ -377,9 +410,8 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const checkExtendChallenge = useCallback(() => {
     if (!currentChallenge) return false;
-    const expected = Array.isArray(currentChallenge.answer)
-      ? currentChallenge.answer
-      : [currentChallenge.answer];
+    // Use activeSequence.hidden as source of truth (per-challenge sequence or top-level fallback).
+    const expected = activeSequence.hidden;
     const correct = extensionAnswers.length === expected.length
       && extensionAnswers.every((a, i) => a.toLowerCase() === expected[i].toLowerCase());
     incrementAttempts();
@@ -399,26 +431,26 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[EXTEND_INCORRECT] Student placed: ${extensionAnswers.join(', ')} but expected: ${expected.join(', ')}. `
-        + `The given pattern is: ${sequence.given.join(', ')}. Core: ${sequence.core.join(', ')}. `
+        + `The given pattern is: ${activeSequence.given.join(', ')}. Core: ${activeSequence.core.join(', ')}. `
         + `Attempt ${currentAttempts + 1}. `
         + `Guide pattern finding: "Look at the pattern: ${sequence.given.join(', ')}... what part keeps repeating?"`,
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, extensionAnswers, currentAttempts, sendText, sequence, incrementAttempts]);
+  }, [currentChallenge, extensionAnswers, currentAttempts, sendText, activeSequence, incrementAttempts]);
 
   const checkIdentifyCoreChallenge = useCallback(() => {
     if (!currentChallenge) return false;
     // Build the selected tokens from the indices
-    const fullSequence = [...sequence.given, ...sequence.hidden];
+    const fullSeq = [...activeSequence.given, ...activeSequence.hidden];
     const selectedTokens = Array.from(selectedCoreIndices)
       .sort((a, b) => a - b)
-      .map(i => fullSequence[i]);
+      .map(i => fullSeq[i]);
 
     // Check if selected tokens match the core (must be contiguous and match)
-    const correct = selectedTokens.length === sequence.core.length
-      && selectedTokens.every((t, i) => t.toLowerCase() === sequence.core[i].toLowerCase());
+    const correct = selectedTokens.length === activeSequence.core.length
+      && selectedTokens.every((t, i) => t.toLowerCase() === activeSequence.core[i].toLowerCase());
     incrementAttempts();
 
     if (correct) {
@@ -426,7 +458,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       setFeedback('You found the repeating core!');
       setFeedbackType('success');
       sendText(
-        `[CORE_CORRECT] Student correctly identified the repeating core: ${sequence.core.join(', ')}. `
+        `[CORE_CORRECT] Student correctly identified the repeating core: ${activeSequence.core.join(', ')}. `
         + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} `
         + `Celebrate: "You found it! The part that keeps repeating is ${sequence.core.join(', ')}!"`,
         { silent: true }
@@ -435,14 +467,14 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       setFeedback('That\'s not quite the repeating unit. Try selecting the smallest group that repeats.');
       setFeedbackType('error');
       sendText(
-        `[CORE_INCORRECT] Student selected: ${selectedTokens.join(', ')} but the core is: ${sequence.core.join(', ')}. `
+        `[CORE_INCORRECT] Student selected: ${selectedTokens.join(', ')} but the core is: ${activeSequence.core.join(', ')}. `
         + `Attempt ${currentAttempts + 1}. `
         + `Hint: "The core is the smallest part that keeps repeating. Look for where the pattern starts over."`,
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, selectedCoreIndices, sequence, currentAttempts, sendText, incrementAttempts]);
+  }, [currentChallenge, selectedCoreIndices, activeSequence, currentAttempts, sendText, incrementAttempts]);
 
   const checkCreateChallenge = useCallback(() => {
     if (!currentChallenge) return false;
@@ -501,11 +533,11 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   }, [currentChallenge, createdPattern, currentAttempts, sendText, incrementAttempts]);
 
   const checkTranslateChallenge = useCallback(() => {
-    if (!currentChallenge || !translationTarget?.mapping) return false;
-    const mapping = translationTarget.mapping;
+    if (!currentChallenge || !activeMapping) return false;
+    const mapping = activeMapping;
 
-    // Build expected translation from the given sequence
-    const expected = sequence.given.map(t => mapping[t.toLowerCase()] || mapping[t] || t);
+    // Build expected translation from the active (per-challenge) given sequence
+    const expected = activeSequence.given.map(t => mapping[t.toLowerCase()] || mapping[t] || t);
     const correct = translatedPattern.length === expected.length
       && translatedPattern.every((t, i) => t.toLowerCase() === expected[i].toLowerCase());
     incrementAttempts();
@@ -516,7 +548,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       setFeedbackType('success');
       sendText(
         `[TRANSLATE_CORRECT] Student correctly translated the pattern. `
-        + `Original: ${sequence.given.join(', ')}. Translated: ${translatedPattern.join(', ')}. `
+        + `Original: ${activeSequence.given.join(', ')}. Translated: ${translatedPattern.join(', ')}. `
         + `Celebrate: "Amazing! The pattern is the same even though it looks different!"`,
         { silent: true }
       );
@@ -526,34 +558,30 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       sendText(
         `[TRANSLATE_INCORRECT] Student translated: ${translatedPattern.join(', ')} but expected: ${expected.join(', ')}. `
         + `Mapping: ${Object.entries(mapping).map(([k, v]) => `${k}\u2192${v}`).join(', ')}. `
-        + `Hint: "Look at the mapping: each ${translationTarget.sourceType} becomes a ${translationTarget.targetType}."`,
+        + `Hint: "Look at the mapping: each source token becomes a new token."`,
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, translationTarget, sequence.given, translatedPattern, currentAttempts, sendText, incrementAttempts]);
+  }, [currentChallenge, activeMapping, activeSequence, translatedPattern, currentAttempts, sendText, incrementAttempts]);
 
   const checkFindRuleChallenge = useCallback(() => {
-    if (!currentChallenge || !sequence.rule) return false;
-    // Simple check: does the student's rule contain key words from the actual rule
-    const ruleWords = sequence.rule.toLowerCase().split(/\s+/);
-    const inputWords = ruleInput.toLowerCase().split(/\s+/);
-    // Check for keyword overlap (number mentions, operation words)
-    const keyNumbers = ruleWords.filter(w => /\d+/.test(w));
-    const hasNumberMatch = keyNumbers.some(n => inputWords.some(w => w.includes(n)));
-    const operationWords = ['add', 'plus', 'subtract', 'minus', 'multiply', 'times', 'double', 'skip', 'count'];
-    const hasOperationMatch = operationWords.some(op =>
-      ruleWords.some(rw => rw.includes(op)) && inputWords.some(iw => iw.includes(op))
-    );
-    const correct = ruleInput.trim().length > 3 && (hasNumberMatch || hasOperationMatch);
+    if (!currentChallenge) return false;
+    const expected = activeSequence.hidden;
+    const correct = extensionAnswers.length === expected.length
+      && extensionAnswers.every((a, i) => a.toLowerCase() === expected[i].toLowerCase());
     incrementAttempts();
 
     if (correct) {
       setRuleArticulated(true);
-      setFeedback(`Great thinking! The rule is: "${sequence.rule}"`);
+      setFeedback(sequence.rule
+        ? `Great thinking! The rule is: "${sequence.rule}"`
+        : 'You figured out the pattern!');
       setFeedbackType('success');
       sendText(
-        `[RULE_CORRECT] Student described the rule: "${ruleInput}". Actual rule: "${sequence.rule}". `
+        `[RULE_CORRECT] Student correctly continued the pattern with: ${extensionAnswers.join(', ')}. `
+        + `Expected: ${expected.join(', ')}. Rule: "${sequence.rule || 'unknown'}". `
+        + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} `
         + `Celebrate their rule discovery and connect to math: "You figured out the pattern rule!"`,
         { silent: true }
       );
@@ -561,13 +589,15 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       setFeedback('Think about what happens to each number to get the next one.');
       setFeedbackType('error');
       sendText(
-        `[RULE_INCORRECT] Student wrote: "${ruleInput}" but the rule is: "${sequence.rule}". `
-        + `Hint: "Look at the numbers: ${sequence.given.join(', ')}. What do you do to each number to get the next?"`,
+        `[RULE_INCORRECT] Student placed: ${extensionAnswers.join(', ')} but expected: ${expected.join(', ')}. `
+        + `The given pattern is: ${activeSequence.given.join(', ')}. Rule: "${sequence.rule || 'unknown'}". `
+        + `Attempt ${currentAttempts + 1}. `
+        + `Hint: "Look at the numbers: ${activeSequence.given.join(', ')}. What do you do to each number to get the next?"`,
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, sequence.rule, sequence.given, ruleInput, currentAttempts, sendText, incrementAttempts]);
+  }, [currentChallenge, activeSequence, extensionAnswers, sequence.rule, currentAttempts, sendText, incrementAttempts]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -671,7 +701,6 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     setSelectedCoreIndices(new Set());
     setCreatedPattern([]);
     setTranslatedPattern([]);
-    setRuleInput('');
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
 
@@ -697,7 +726,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Computed Values
   // -------------------------------------------------------------------------
-  const fullSequence = [...sequence.given, ...sequence.hidden];
+  const fullSequence = [...activeSequence.given, ...activeSequence.hidden];
 
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct
@@ -731,11 +760,15 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
 
   // Determine available tokens for the current challenge
   const availableTokens = useMemo(() => {
-    if (currentPhase === 'translate' && translationTarget?.mapping) {
-      return Object.values(translationTarget.mapping);
+    if (currentPhase === 'translate' && activeMapping) {
+      return Object.values(activeMapping);
+    }
+    // Prefer per-challenge tokens (Gemini generates correct answers + distractors per challenge)
+    if (currentChallenge?.availableTokens && currentChallenge.availableTokens.length > 0) {
+      return currentChallenge.availableTokens;
     }
     return tokens.available;
-  }, [currentPhase, translationTarget, tokens.available]);
+  }, [currentPhase, activeMapping, currentChallenge, tokens.available]);
 
   // -------------------------------------------------------------------------
   // Render Helpers
@@ -814,7 +847,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
         {/* Phase Progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(PHASE_CONFIG).map(([phase, config]) => (
+            {Object.entries(PHASE_CONFIG).filter(([phase]) => presentPhases.has(phase as Phase)).map(([phase, config]) => (
               <Badge
                 key={phase}
                 className={`text-xs ${
@@ -860,8 +893,8 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                 </div>
               )}
               <div className="flex items-center gap-1.5 flex-wrap justify-center">
-                {sequence.given.map((token, i) => {
-                  const isCorePos = showCore && i < sequence.core.length;
+                {activeSequence.given.map((token, i) => {
+                  const isCorePos = showCore && i < activeSequence.core.length;
                   const isIdentifyMode = currentPhase === 'identify';
                   return renderToken(token, i, {
                     onClick: isIdentifyMode && !isCurrentChallengeComplete
@@ -873,15 +906,15 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                 })}
 
                 {/* Separator */}
-                {currentPhase === 'copy' && sequence.hidden.length > 0 && (
+                {currentPhase === 'copy' && activeSequence.hidden.length > 0 && (
                   <div className="text-slate-600 text-xl mx-1">{'\u2192'}</div>
                 )}
 
                 {/* Hidden slots / extension answers */}
-                {currentPhase === 'copy' && sequence.hidden.map((token, i) => {
+                {currentPhase === 'copy' && activeSequence.hidden.map((token, i) => {
                   const answered = extensionAnswers[i];
                   if (answered) {
-                    return renderToken(answered, sequence.given.length + i, {
+                    return renderToken(answered, activeSequence.given.length + i, {
                       onClick: !isCurrentChallengeComplete
                         ? () => {
                           if (i === extensionAnswers.length - 1) handleRemoveLastExtension();
@@ -889,7 +922,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                         : undefined,
                     });
                   }
-                  return renderToken(token, sequence.given.length + i, { isHidden: true });
+                  return renderToken(token, activeSequence.given.length + i, { isHidden: true });
                 })}
               </div>
             </div>
@@ -898,7 +931,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
             {showCore && currentPhase !== 'identify' && (
               <div className="text-center">
                 <span className="text-emerald-400/60 text-xs">
-                  Core: {sequence.core.join(' ')}
+                  Core: {activeSequence.core.join(' ')}
                 </span>
               </div>
             )}
@@ -933,16 +966,16 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                 Original ({translationTarget?.sourceType || 'source'}):
               </p>
               <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                {sequence.given.map((token, i) =>
+                {activeSequence.given.map((token, i) =>
                   renderToken(token, i)
                 )}
               </div>
             </div>
 
             {/* Translation mapping hint */}
-            {translationTarget?.mapping && (
+            {activeMapping && (
               <div className="flex items-center justify-center gap-3 text-xs">
-                {Object.entries(translationTarget.mapping).map(([from, to]) => {
+                {Object.entries(activeMapping).map(([from, to]) => {
                   const fromDisplay = getTokenDisplay(from);
                   const toDisplay = getTokenDisplay(to);
                   return (
@@ -984,28 +1017,6 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Rule Input (for find_rule challenges) */}
-        {currentChallenge?.type === 'find_rule' && !isCurrentChallengeComplete && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-center gap-1.5 flex-wrap">
-              {sequence.given.map((token, i) =>
-                renderToken(token, i)
-              )}
-            </div>
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-slate-300 text-sm">The rule is:</span>
-              <input
-                type="text"
-                value={ruleInput}
-                onChange={e => setRuleInput(e.target.value)}
-                placeholder='e.g., "add 3 each time"'
-                className="w-64 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-orange-400/50"
-                onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Rule Display */}
         {showRule && sequence.rule && isCurrentChallengeComplete && (
           <div className="text-center">
@@ -1016,7 +1027,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
         )}
 
         {/* Token Palette */}
-        {!allChallengesComplete && !isCurrentChallengeComplete && currentChallenge?.type !== 'find_rule' && (
+        {!allChallengesComplete && !isCurrentChallengeComplete && (
           <div className="space-y-2">
             <p className="text-slate-500 text-xs text-center">Available tokens:</p>
             <div className="flex items-center justify-center gap-2 flex-wrap">

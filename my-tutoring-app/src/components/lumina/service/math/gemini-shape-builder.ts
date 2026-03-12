@@ -1,14 +1,70 @@
 import { Type, Schema } from "@google/genai";
 import { ShapeBuilderData } from "../../primitives/visual-primitives/math/ShapeBuilder";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Shape Builder Data
- *
- * This schema defines the structure for geometric construction activities,
- * including building shapes from vertices/edges, discovering properties,
- * classifying, composing/decomposing, and finding symmetry for K-5 geometry.
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  build: {
+    promptDoc:
+      `"build": Construct a shape matching given properties. Set targetProperties. `
+      + `For K-2: "Build a shape with 4 sides!" Use dot grid, simple language ("sides", "corners"). `
+      + `For 3-5: specify right angles, parallel sides, equal sides. `
+      + `Concrete — full guidance, manipulative construction.`,
+    schemaDescription: "'build' (construct given shape)",
+  },
+  measure: {
+    promptDoc:
+      `"measure": Use ruler/protractor/parallel tools to discover properties of a preloaded shape. `
+      + `Include a preloaded shape. Enable ruler: true. For 3-5: enable protractor for angles. `
+      + `Pictorial with prompts — guided measurement of side lengths and angles.`,
+    schemaDescription: "'measure' (find side lengths / angles)",
+  },
+  classify: {
+    promptDoc:
+      `"classify": Sort multiple preloaded shapes into categories (e.g., triangles, quadrilaterals). `
+      + `Set classificationCategories (e.g. ['Triangles', 'Quadrilaterals', 'Pentagons']). `
+      + `Include 4-6 preloaded shapes spread across the grid. `
+      + `Pictorial with reduced prompts — identify shape properties to sort.`,
+    schemaDescription: "'classify' (identify shape properties)",
+  },
+  compose: {
+    promptDoc:
+      `"compose": Combine pattern blocks (tangram-style pieces) to form a target shape. `
+      + `Enable patternBlocks with appropriate shapes (e.g., ['triangle', 'square', 'rhombus']). `
+      + `Transitional — spatial reasoning to combine shapes.`,
+    schemaDescription: "'compose' (combine shapes)",
+  },
+  find_symmetry: {
+    promptDoc:
+      `"find_symmetry": Draw lines of symmetry on a preloaded shape. `
+      + `Include a preloaded shape. Set targetProperties.linesOfSymmetry. Enable symmetryLine tool. `
+      + `Symbolic — analyze and identify symmetry lines.`,
+    schemaDescription: "'find_symmetry' (analyze symmetry lines)",
+  },
+  coordinate_shape: {
+    promptDoc:
+      `"coordinate_shape": Build a shape by plotting vertices on a coordinate grid. `
+      + `Set grid.type to "coordinate" and grid.showCoordinates to true. `
+      + `Grade 3-5 only. Instructions should give explicit coordinate points. `
+      + `Symbolic, multi-step — build shapes on coordinate plane.`,
+    schemaDescription: "'coordinate_shape' (build shapes on coordinate plane)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
+
 const shapeBuilderSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -247,25 +303,35 @@ const shapeBuilderSchema: Schema = {
   required: ["title", "description", "mode", "grid", "challenges", "tools", "gradeBand"]
 };
 
-/**
- * Generate shape builder data for interactive geometry activities
- *
- * Grade-aware content:
- * - K-2: Build basic shapes (triangles, rectangles, squares), count sides/corners,
- *   simple classification, introduce symmetry with familiar shapes
- * - 3-5: Properties-based construction (right angles, parallel sides), shape hierarchy,
- *   compose/decompose, coordinate shapes, multi-line symmetry, formal classification
- *
- * @param topic - The geometry topic or concept
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns ShapeBuilderData with complete configuration
- */
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 export const generateShapeBuilder = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<ShapeBuilderData>
+  config?: Partial<ShapeBuilderData> & {
+    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    targetEvalMode?: string;
+    /** Intent or title from the manifest item. */
+    intent?: string;
+  }
 ): Promise<ShapeBuilderData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'shape-builder',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(shapeBuilderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : shapeBuilderSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create an educational geometry activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -275,6 +341,9 @@ CONTEXT:
 - Key skills: shape construction, property discovery, classification, composition/decomposition, symmetry
 - The AI tutor names properties as students discover them
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - K-2 (gradeBand "K-2"):
   * Build basic shapes: triangles, squares, rectangles, circles concept
@@ -297,23 +366,16 @@ GUIDELINES FOR GRADE LEVELS:
   * Challenge types: all types including measure, compose, coordinate_shape
   * All tools enabled for discover/measure activities
   * Formal classification categories: Triangles, Quadrilaterals, Pentagons, Hexagons
-
-CHALLENGE TYPES:
-- "build": Construct a shape matching given properties. Set targetProperties.
-- "measure": Use ruler/protractor/parallel tools to discover properties of a preloaded shape.
-- "classify": Sort multiple preloaded shapes into categories.
-- "compose": Combine pattern blocks to form a target shape.
-- "find_symmetry": Draw lines of symmetry on a preloaded shape. Set targetProperties.linesOfSymmetry.
-- "coordinate_shape": Build a shape by plotting vertices on a coordinate grid.
+` : ''}
 
 ${config ? `
 CONFIGURATION HINTS:
 ${config.mode ? `- Mode: ${config.mode}` : ''}
 ${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.grid?.type ? `- Grid type: ${config.grid.type}` : ''}
-${config.targetShape?.name ? `- Target shape: ${config.targetShape.name}` : ''}
-${config.classificationCategories ? `- Categories: ${config.classificationCategories.join(', ')}` : ''}
-${config.patternBlocks?.enabled ? `- Pattern blocks enabled` : ''}
+${(config.grid as { type?: string } | undefined)?.type ? `- Grid type: ${(config.grid as { type?: string }).type}` : ''}
+${(config.targetShape as { name?: string } | null | undefined)?.name ? `- Target shape: ${(config.targetShape as { name?: string }).name}` : ''}
+${config.classificationCategories ? `- Categories: ${(config.classificationCategories as string[]).join(', ')}` : ''}
+${(config.patternBlocks as { enabled?: boolean } | undefined)?.enabled ? `- Pattern blocks enabled` : ''}
 ` : ''}
 
 REQUIREMENTS:
@@ -339,12 +401,14 @@ REQUIREMENTS:
 Return the complete shape builder configuration.
 `;
 
+  logEvalModeResolution('ShapeBuilder', config?.targetEvalMode, evalConstraint);
+
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: shapeBuilderSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -398,27 +462,62 @@ Return the complete shape builder configuration.
     if (data.tools.parallelMarker === undefined) data.tools.parallelMarker = false;
   }
 
-  // Ensure challenges have valid types
+  // Ensure challenges have valid types (safety net — schema enum handles the eval mode case)
   const validChallengeTypes = ['build', 'measure', 'classify', 'compose', 'find_symmetry', 'coordinate_shape'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
 
-  // Ensure at least one challenge
+  // ── Fallback if empty ──
   if (data.challenges.length === 0) {
-    data.challenges = [{
-      id: 'c1',
-      type: 'build',
-      instruction: data.gradeBand === 'K-2'
-        ? 'Can you build a shape with 4 sides? Click the dots to place corners!'
-        : 'Construct a quadrilateral by clicking grid points to place vertices.',
-      targetProperties: { sides: 4 },
-      hint: data.gradeBand === 'K-2'
-        ? 'Count the dots you click — you need 4 corners!'
-        : 'A quadrilateral has exactly 4 sides and 4 vertices.',
-      narration: "Let's build a shape together! Click on the grid dots to place your corners.",
-    }];
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'build';
+    const isK2 = data.gradeBand === 'K-2';
+    const fallbacks: Record<string, { type: string; instruction: string; targetProperties?: { sides: number }; hint: string; narration: string }> = {
+      build: {
+        type: 'build',
+        instruction: isK2 ? 'Can you build a shape with 4 sides? Click the dots to place corners!' : 'Construct a quadrilateral by clicking grid points to place vertices.',
+        targetProperties: { sides: 4 },
+        hint: isK2 ? 'Count the dots you click — you need 4 corners!' : 'A quadrilateral has exactly 4 sides and 4 vertices.',
+        narration: "Let's build a shape together! Click on the grid dots to place your corners.",
+      },
+      measure: {
+        type: 'measure',
+        instruction: 'Use the ruler to measure the sides of this shape. What do you notice?',
+        hint: 'Click each side with the ruler tool to see its length.',
+        narration: "Let's explore the properties of this shape!",
+      },
+      classify: {
+        type: 'classify',
+        instruction: 'Sort these shapes into groups: triangles and quadrilaterals.',
+        hint: 'Count the sides — 3 sides = triangle, 4 sides = quadrilateral.',
+        narration: "Let's sort these shapes by counting their sides!",
+      },
+      compose: {
+        type: 'compose',
+        instruction: 'Can you put two triangles together to make a rectangle?',
+        hint: 'Line up the longest sides of the triangles.',
+        narration: "Let's combine shapes to make a new shape!",
+      },
+      find_symmetry: {
+        type: 'find_symmetry',
+        instruction: 'Draw a line of symmetry on this shape.',
+        hint: 'Imagine folding the shape in half — where would both sides match perfectly?',
+        narration: "Let's find where this shape is perfectly balanced!",
+      },
+      coordinate_shape: {
+        type: 'coordinate_shape',
+        instruction: 'Plot vertices at (1,1), (4,1), (4,4), (1,4) to build a square.',
+        hint: 'Find each coordinate on the grid: go right for x, then up for y.',
+        narration: "Let's build a shape using coordinates!",
+      },
+    };
+    console.log(`[ShapeBuilder] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
   }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
+  console.log(`[ShapeBuilder] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   // Ensure preloadedShapes is an array
   if (!Array.isArray(data.preloadedShapes)) {

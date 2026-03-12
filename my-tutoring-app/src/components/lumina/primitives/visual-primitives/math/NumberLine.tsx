@@ -125,33 +125,27 @@ function toFractionString(value: number): string {
   return abs.toFixed(2);
 }
 
-function getSnapPrecision(numberType: string, zoomLevel: number): number {
+// Precision is fixed per number type — independent of zoom.
+// Zoom only controls what's visible, not how precisely the student can place.
+function getSnapPrecision(numberType: string): number {
   if (numberType === 'integer') return 1;
-  if (numberType === 'decimal') return zoomLevel >= 3 ? 0.01 : 0.1;
-  if (numberType === 'fraction') {
-    if (zoomLevel >= 3) return 1 / 8;
-    if (zoomLevel >= 2) return 1 / 4;
-    return 1 / 2;
-  }
-  // mixed
-  if (zoomLevel >= 3) return 1 / 8;
-  if (zoomLevel >= 2) return 1 / 4;
-  return 1 / 2;
+  if (numberType === 'decimal') return 0.01;
+  return 1 / 8; // fraction, mixed
 }
 
-function snapToValue(raw: number, numberType: string, zoomLevel: number, min: number, max: number): number {
-  const precision = getSnapPrecision(numberType, zoomLevel);
+function snapToValue(raw: number, numberType: string, min: number, max: number): number {
+  const precision = getSnapPrecision(numberType);
   const snapped = Math.round(raw / precision) * precision;
   return Math.max(min, Math.min(max, Math.round(snapped * 1000) / 1000));
 }
 
-function getDefaultTickInterval(numberType: string, zoomLevel: number, range: number): number {
+function getDefaultTickInterval(numberType: string, range: number): number {
   if (numberType === 'integer') {
     if (range <= 30) return 1;
     if (range <= 100) return 5;
     return 10;
   }
-  const precision = getSnapPrecision(numberType, zoomLevel);
+  const precision = getSnapPrecision(numberType);
   let interval = precision;
   const maxTicks = 25;
   while (range / interval > maxTicks) interval *= 2;
@@ -302,7 +296,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const ticks = useMemo(() => {
     const range = visibleMax - visibleMin;
-    const interval = customTickInterval || getDefaultTickInterval(activeNumberType, zoomLevel, range);
+    const interval = customTickInterval || getDefaultTickInterval(activeNumberType, range);
     const labelIv = getLabelInterval(activeNumberType, interval, range);
     const result: { value: number; isMajor: boolean }[] = [];
     const start = Math.ceil(visibleMin / interval) * interval;
@@ -388,7 +382,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     if (draggingIndex !== null) return;
 
     const rawValue = xToValue(e.clientX);
-    const snappedValue = snapToValue(rawValue, activeNumberType, zoomLevel, visibleMin, visibleMax);
+    const snappedValue = snapToValue(rawValue, activeNumberType, visibleMin, visibleMax);
 
     // Order mode: place the selected value
     if (currentChallenge?.type === 'order_values' && selectedOrderValue !== null) {
@@ -416,8 +410,9 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     }
 
     // Plot / find_between: add a point
+    // find_between: student places 1 point anywhere between the two bounds (targetValues are the bounds, not the answer)
     if (currentChallenge?.type === 'plot_point' || currentChallenge?.type === 'find_between') {
-      const maxPoints = currentChallenge.targetValues.length;
+      const maxPoints = currentChallenge.type === 'find_between' ? 1 : currentChallenge.targetValues.length;
       setPlacedPoints(prev => {
         if (prev.length >= maxPoints) {
           // Replace the last point
@@ -441,7 +436,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (draggingIndex === null) return;
     const rawValue = xToValue(e.clientX);
-    const snappedValue = snapToValue(rawValue, activeNumberType, zoomLevel, visibleMin, visibleMax);
+    const snappedValue = snapToValue(rawValue, activeNumberType, visibleMin, visibleMax);
     setPlacedPoints(prev => {
       const next = [...prev];
       next[draggingIndex] = snappedValue;
@@ -453,24 +448,42 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     setDraggingIndex(null);
   }, []);
 
-  // Zoom
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (isK2 && activeNumberType === 'integer') return;
-    e.preventDefault();
-    setZoomLevel(prev => {
-      const next = e.deltaY < 0 ? Math.min(prev + 0.5, 5) : Math.max(prev - 0.5, 1);
-      return next;
-    });
-  }, [isK2, activeNumberType]);
+  // Auto-zoom + auto-center when a challenge starts.
+  // Zoom is purely about visibility — it fits all relevant values (targets, highlights,
+  // operation endpoints) into the viewport with comfortable padding.
+  // Snap precision is now independent of zoom (always 0.01 for decimal, 1/8 for fractions).
+  useEffect(() => {
+    if (!currentChallenge) return;
 
-  // Pan
-  const handlePan = useCallback((direction: 'left' | 'right') => {
-    const step = visibleRange * 0.25;
-    setViewCenter(prev => {
-      const next = direction === 'left' ? prev - step : prev + step;
-      return Math.max(rangeMin + visibleRange / 2, Math.min(rangeMax - visibleRange / 2, next));
+    const targets = currentChallenge.targetValues;
+    const ops = currentChallenge.operations?.length ? currentChallenge.operations : operations;
+    const opValues = ops.flatMap(op => {
+      const end = op.type === 'add' ? op.startValue + op.changeValue : op.startValue - op.changeValue;
+      return [op.startValue, end];
     });
-  }, [visibleRange, rangeMin, rangeMax]);
+    const highlightValues = highlights.map(h => h.value);
+
+    const allValues = [...targets, ...opValues, ...highlightValues]
+      .filter(v => v >= rangeMin && v <= rangeMax);
+
+    if (allValues.length === 0) return;
+
+    const totalRange = rangeMax - rangeMin;
+    const minVal = Math.min(...allValues);
+    const maxVal = Math.max(...allValues);
+    // Add ~60% padding on each side of the content span
+    const contentSpan = Math.max(maxVal - minVal, totalRange * 0.04);
+    const windowSpan = contentSpan * 3.2;
+    const autoZoom = Math.max(1, Math.min(5, totalRange / windowSpan));
+
+    const center = (minVal + maxVal) / 2;
+    setZoomLevel(autoZoom);
+    setViewCenter(Math.max(
+      rangeMin + totalRange / autoZoom / 2,
+      Math.min(rangeMax - totalRange / autoZoom / 2, center)
+    ));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id, activeNumberType]);
 
   // -------------------------------------------------------------------------
   // Challenge Checking
@@ -485,7 +498,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
     switch (currentChallenge.type) {
       case 'plot_point': {
-        const tolerance = getSnapPrecision(activeNumberType, zoomLevel);
+        const tolerance = getSnapPrecision(activeNumberType);
         const matched = targets.every(target =>
           placedPoints.some(p => Math.abs(p - target) <= tolerance + 0.001)
         );
@@ -504,7 +517,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
       }
       case 'show_jump': {
         if (activeOperations.length > 0 && jumpEndPoints.length === activeOperations.length) {
-          const tolerance = getSnapPrecision(activeNumberType, zoomLevel);
+          const tolerance = getSnapPrecision(activeNumberType);
           let totalError = 0;
           let allCorrect = true;
           for (let i = 0; i < activeOperations.length; i++) {
@@ -675,8 +688,6 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     if (currentChallenge.type === 'order_values') return orderedPlacements.size >= currentChallenge.targetValues.length;
     return false;
   })();
-
-  const showZoomControls = !isK2 && activeNumberType !== 'integer';
 
   // -------------------------------------------------------------------------
   // Jump Arc Rendering
@@ -897,7 +908,6 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
             onClick={handleLineClick}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
-            onWheel={handleWheel}
           >
             {/* Border */}
             <rect x={1} y={1} width={SVG_WIDTH - 2} height={SVG_HEIGHT - 2}
@@ -1071,70 +1081,29 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
               );
             })}
 
-            {/* Zoom hint */}
-            {showZoomControls && (
-              <text x={SVG_WIDTH - SVG_PADDING} y={SVG_HEIGHT - 12}
-                textAnchor="end" fill="rgba(255,255,255,0.2)" fontSize={10}>
-                Scroll to zoom
-              </text>
-            )}
           </svg>
         </div>
 
-        {/* Controls Row: Zoom + Number Type */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          {/* Number Type Toggle (3-5 mode only) */}
-          {!isK2 && (
-            <div className="flex items-center gap-1">
-              {(['integer', 'fraction', 'decimal', 'mixed'] as const).map(nt => (
-                <Button
-                  key={nt}
-                  variant="ghost"
-                  size="sm"
-                  className={`text-xs px-2 py-0.5 h-7 ${
-                    activeNumberType === nt
-                      ? 'bg-blue-500/20 border-blue-400/40 text-blue-300'
-                      : 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400'
-                  }`}
-                  onClick={() => setActiveNumberType(nt)}
-                >
-                  {nt}
-                </Button>
-              ))}
-            </div>
-          )}
-
-          {/* Zoom + Pan Controls */}
-          {showZoomControls && (
-            <div className="flex items-center gap-2">
-              {zoomLevel > 1 && (
-                <Button variant="ghost" size="sm"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 w-7 h-7 p-0 text-xs"
-                  onClick={() => handlePan('left')}>
-                  &larr;
-                </Button>
-              )}
-              <Button variant="ghost" size="sm"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 w-7 h-7 p-0 text-xs"
-                onClick={() => setZoomLevel(z => Math.max(1, z - 0.5))}>
-                &minus;
+        {/* Number Type Toggle (3-5 mode only) */}
+        {!isK2 && (
+          <div className="flex items-center gap-1">
+            {(['integer', 'fraction', 'decimal', 'mixed'] as const).map(nt => (
+              <Button
+                key={nt}
+                variant="ghost"
+                size="sm"
+                className={`text-xs px-2 py-0.5 h-7 ${
+                  activeNumberType === nt
+                    ? 'bg-blue-500/20 border-blue-400/40 text-blue-300'
+                    : 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400'
+                }`}
+                onClick={() => setActiveNumberType(nt)}
+              >
+                {nt}
               </Button>
-              <span className="text-slate-500 text-xs w-14 text-center">{zoomLevel.toFixed(1)}x</span>
-              <Button variant="ghost" size="sm"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 w-7 h-7 p-0 text-xs"
-                onClick={() => setZoomLevel(z => Math.min(5, z + 0.5))}>
-                +
-              </Button>
-              {zoomLevel > 1 && (
-                <Button variant="ghost" size="sm"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 w-7 h-7 p-0 text-xs"
-                  onClick={() => handlePan('right')}>
-                  &rarr;
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Feedback */}
         {feedback && (
