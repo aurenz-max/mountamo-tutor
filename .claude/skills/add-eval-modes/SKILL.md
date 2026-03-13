@@ -24,8 +24,26 @@ Use this skill when:
 The primitive must already have:
 - A working generator in `service/[domain]/gemini-[primitive].ts`
 - A catalog entry in `catalog/[domain].ts` with `supportsEvaluation: true`
-- A schema with a `challenges` array where each item has a `type` field
+- A schema with a challenge-type field (see **Schema Field Variants** below)
 - 2+ distinct challenge types representing different difficulty levels
+
+### Schema Field Variants
+
+Math primitives use `challenges.items.properties.type`. Literacy primitives use varied field names and locations. The `constrainChallengeTypeEnum()` utility accepts an optional `SchemaConstraintConfig` to handle all patterns:
+
+| Pattern | Config | Examples |
+|---------|--------|----------|
+| `challenges[].type` (default) | *(none needed)* | TenFrame, CountingBoard, most math |
+| `challenges[].mode` | `{ fieldName: 'mode' }` | LetterSpotter, RhymeStudio, WordWorkout |
+| `challenges[].operation` | `{ fieldName: 'operation' }` | SoundSwap |
+| `challenges[].clueType` | `{ fieldName: 'clueType' }` | ContextCluesDetective |
+| `instances[].type` | `{ arrayName: 'instances' }` | FigurativeLanguageFinder |
+| `questions[].type` | `{ arrayName: 'questions' }` | ListenAndRespond |
+| Root `patternType` | `{ fieldName: 'patternType', rootLevel: true }` | PhonicsBlender, SpellingPatternExplorer |
+| Root `sentenceType` | `{ fieldName: 'sentenceType', rootLevel: true }` | SentenceBuilder |
+| Root `structureType` | `{ fieldName: 'structureType', rootLevel: true }` | StoryMap, TextStructureAnalyzer |
+
+**In Phase 1, identify which pattern the generator uses** and note the config needed for Phase 3.
 
 ## Step-by-Step Workflow
 
@@ -38,7 +56,7 @@ The primitive must already have:
 2. **Read the generator file**
    - `my-tutoring-app/src/components/lumina/service/[domain]/gemini-[primitive].ts`
    - Identify all challenge types in the schema and prompt
-   - Note the schema structure — confirm it has `challenges.items.properties.type`
+   - Note the schema structure — identify the challenge type field path (see **Schema Field Variants** in Prerequisites)
 
 3. **Read the catalog entry**
    - `my-tutoring-app/src/components/lumina/service/manifest/catalog/[domain].ts`
@@ -113,6 +131,7 @@ The primitive must already have:
      constrainChallengeTypeEnum,
      buildChallengeTypePromptSection,
      type ChallengeTypeDoc,
+     type SchemaConstraintConfig,  // Only needed for non-standard field paths
    } from '../evalMode';
    ```
 
@@ -149,9 +168,35 @@ The primitive must already have:
 
 11. **Constrain the schema** before the Gemini call
 
+    For **math primitives** (default `challenges[].type` path):
     ```typescript
     const activeSchema = evalConstraint
       ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+      : baseSchema;
+    ```
+
+    For **literacy primitives** with non-standard field paths, pass a `SchemaConstraintConfig`:
+    ```typescript
+    // Example: challenges[].mode (LetterSpotter, RhymeStudio, WordWorkout)
+    const activeSchema = evalConstraint
+      ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+          fieldName: 'mode',
+        })
+      : baseSchema;
+
+    // Example: root-level patternType (PhonicsBlender, SpellingPatternExplorer)
+    const activeSchema = evalConstraint
+      ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+          fieldName: 'patternType',
+          rootLevel: true,
+        })
+      : baseSchema;
+
+    // Example: instances[].type (FigurativeLanguageFinder)
+    const activeSchema = evalConstraint
+      ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+          arrayName: 'instances',
+        })
       : baseSchema;
     ```
 

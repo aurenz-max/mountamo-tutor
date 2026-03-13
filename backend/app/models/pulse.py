@@ -129,11 +129,20 @@ class ThetaUpdate(BaseModel):
     earned_level: float
 
 
+class SkillDetail(BaseModel):
+    """Minimal metadata for a subskill reference in summaries."""
+    subskill_id: str
+    skill_id: str = ""
+    skill_description: str = ""
+
+
 class GateUpdate(BaseModel):
     """Gate change for a single subskill after one item."""
     subskill_id: str
     old_gate: int
     new_gate: int
+    skill_id: str = ""
+    skill_description: str = ""
 
 
 class LeapfrogEvent(BaseModel):
@@ -142,6 +151,16 @@ class LeapfrogEvent(BaseModel):
     probed_skills: List[str]
     inferred_skills: List[str]
     aggregate_score: float
+    probed_details: List[SkillDetail] = Field(default_factory=list)
+    inferred_details: List[SkillDetail] = Field(default_factory=list)
+
+
+class SkillUnlockProgress(BaseModel):
+    """Per-skill subskill unlock progress for the knowledge map."""
+    skill_id: str
+    skill_description: str
+    total_subskills: int = 0
+    unlocked_subskills: int = 0
 
 
 class PulseResultResponse(BaseModel):
@@ -180,6 +199,7 @@ class PulseSessionSummary(BaseModel):
     leapfrogs: List[LeapfrogEvent] = Field(default_factory=list)
     frontier_expanded: bool = False
     celebration_message: str = "Great work!"
+    skill_progress: List[SkillUnlockProgress] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

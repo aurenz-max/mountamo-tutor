@@ -1,6 +1,41 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { LetterSpotterData } from "../../primitives/visual-primitives/literacy/LetterSpotter";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'name-it': {
+    promptDoc:
+      `"name-it": Student sees a letter displayed visually (uppercase, lowercase, or both) and picks its name from 4 options. `
+      + `2-3 challenges per session. Distractors are visually or phonetically similar letters from the cumulative group. `
+      + `Do NOT include letterGrid or targetCount for this mode.`,
+    schemaDescription: "'name-it' (identify letter by name)",
+  },
+  'find-it': {
+    promptDoc:
+      `"find-it": Student hears a letter name and finds all instances in a 4x4 grid of 16 uppercase letters. `
+      + `2-3 challenges per session. Grid contains 2-3 instances of the target mixed with distractors. `
+      + `targetCase must be "uppercase". Do NOT include options for this mode.`,
+    schemaDescription: "'find-it' (locate letter in grid)",
+  },
+  'match-it': {
+    promptDoc:
+      `"match-it": Student sees an uppercase letter and matches it to the correct lowercase form from 4 options. `
+      + `2-3 challenges per session. Distractors are visually similar lowercase letters (e.g., b/d, p/q, m/n). `
+      + `targetCase must be "uppercase". Do NOT include letterGrid or targetCount for this mode.`,
+    schemaDescription: "'match-it' (match uppercase to lowercase)",
+  },
+};
 
 /**
  * Schema definition for Letter Spotter Data
@@ -111,21 +146,52 @@ const NEW_LETTERS: Record<number, string[]> = {
  *
  * @param topic - Theme or context for the activity
  * @param gradeLevel - Grade level ('K', '1', or '2')
- * @param config - Optional config with letterGroup override
+ * @param config - Optional config with letterGroup override and targetEvalMode
  * @returns LetterSpotterData with challenges across all three modes
  */
 export const generateLetterSpotter = async (
   topic: string,
   gradeLevel: string = 'K',
-  config?: Partial<{ letterGroup: number }>,
+  config?: Partial<{
+    letterGroup: number;
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode: string;
+  }>,
 ): Promise<LetterSpotterData> => {
 
+  // -------------------------------------------------------------------------
+  // Eval mode resolution
+  // -------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    'letter-spotter',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('LetterSpotter', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(letterSpotterSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'mode',
+      })
+    : letterSpotterSchema;
+
+  // -------------------------------------------------------------------------
+  // Letter group setup
+  // -------------------------------------------------------------------------
   const letterGroup = (config?.letterGroup && config.letterGroup >= 1 && config.letterGroup <= 4)
     ? config.letterGroup
     : 1;
 
   const cumulativeLetters = LETTER_GROUPS[letterGroup];
   const newLetters = NEW_LETTERS[letterGroup];
+
+  // -------------------------------------------------------------------------
+  // Build prompt with eval-mode-scoped challenge type docs
+  // -------------------------------------------------------------------------
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
 
   const generationPrompt = `Create an interactive letter recognition activity for the topic: "${topic}".
 
@@ -134,28 +200,14 @@ LETTER GROUP: ${letterGroup}
 CUMULATIVE LETTERS (all available): ${cumulativeLetters.join(', ')}
 NEW LETTERS (just introduced): ${newLetters.join(', ')}
 
-Generate 6-8 challenges mixing all three modes. Prioritize new letters but include some review letters too.
+Generate 6-8 challenges. Prioritize new letters but include some review letters too.
 
-CHALLENGE MODES:
+${challengeTypeSection}
 
-1. **name-it** (2-3 challenges):
-   - targetLetter: a letter from the cumulative set (lowercase)
-   - targetCase: "uppercase", "lowercase", or "both"
-   - options: exactly 4 lowercase letters (including the correct targetLetter). Pick distractors from the same cumulative group that look or sound similar.
-   - Do NOT include letterGrid or targetCount.
-
-2. **find-it** (2-3 challenges):
-   - targetLetter: a letter from the cumulative set (lowercase)
-   - targetCase: "uppercase" (the grid uses uppercase letters)
-   - letterGrid: exactly 16 uppercase letters forming a 4x4 grid. Include 2-3 instances of the target letter (uppercase) randomly placed, with the rest being distractor letters from the cumulative group (uppercase). Use varied distractors.
-   - targetCount: 2 or 3 (must match how many target letters are in the grid)
-   - Do NOT include options.
-
-3. **match-it** (2-3 challenges):
-   - targetLetter: a letter from the cumulative set (lowercase)
-   - targetCase: "uppercase" (student sees uppercase, picks lowercase match)
-   - options: exactly 4 lowercase letters (including the correct targetLetter). Choose visually similar distractors (e.g., b/d, p/q, m/n).
-   - Do NOT include letterGrid or targetCount.
+MODE-SPECIFIC FIELD RULES:
+- name-it: set options (4 letters), do NOT set letterGrid or targetCount
+- find-it: set letterGrid (16 uppercase letters) and targetCount (2-3), do NOT set options
+- match-it: set options (4 lowercase letters), do NOT set letterGrid or targetCount
 
 RULES:
 - Use IDs: ch1, ch2, ch3, etc.
@@ -164,7 +216,7 @@ RULES:
 - For find-it grids: exactly 16 cells, each cell is a single UPPERCASE letter.
 - For name-it and match-it: exactly 4 options, each a single lowercase letter.
 - Vary targetCase across name-it challenges (some uppercase, some lowercase, some both).
-- Order challenges so modes alternate (don't cluster all the same mode together).
+${!evalConstraint ? '- Order challenges so modes alternate (don\'t cluster all the same mode together).' : ''}
 
 LETTER GROUP DATA:
 - letterGroup: ${letterGroup}
@@ -177,7 +229,7 @@ LETTER GROUP DATA:
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: letterSpotterSchema,
+        responseSchema: activeSchema,
         systemInstruction: `You are an expert K-2 literacy specialist designing letter recognition activities. You create engaging, developmentally appropriate challenges that help young students learn to identify letters by name, find them visually, and match uppercase to lowercase forms. You understand common letter confusions (b/d, p/q, m/n, u/n) and use them as strategic distractors to strengthen discrimination skills. You always use letters only from the specified cumulative group.`,
       },
     });
@@ -273,6 +325,23 @@ LETTER GROUP DATA:
 
         return ch;
       });
+
+      // Fallback: ensure at least one challenge exists
+      if (result.challenges.length === 0) {
+        const fallbackMode = evalConstraint?.allowedTypes[0] ?? 'name-it';
+        const targetLetter = newLetters[0];
+        const distractors = cumulativeLetters
+          .filter(l => l !== targetLetter)
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 3);
+        result.challenges = [{
+          id: 'ch1',
+          mode: fallbackMode as 'name-it' | 'find-it' | 'match-it',
+          targetLetter,
+          targetCase: 'uppercase' as const,
+          options: [targetLetter, ...distractors].sort(() => Math.random() - 0.5),
+        }];
+      }
     }
 
     console.log('Letter Spotter Generated:', {

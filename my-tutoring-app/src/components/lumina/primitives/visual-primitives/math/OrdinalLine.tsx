@@ -69,8 +69,8 @@ const ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', '
 
 const CONTEXT_THEME: Record<string, { bgEmoji: string; startLabel: string; endLabel: string }> = {
   'race':        { bgEmoji: '\uD83C\uDFC1', startLabel: 'START', endLabel: 'FINISH' },
-  'parade':      { bgEmoji: '\uD83C\uDF89', startLabel: 'Front', endLabel: '' },
-  'lunch-line':  { bgEmoji: '\uD83C\uDF7D\uFE0F', startLabel: 'Front', endLabel: '' },
+  'parade':      { bgEmoji: '\uD83C\uDF89', startLabel: 'Beginning', endLabel: 'End' },
+  'lunch-line':  { bgEmoji: '\uD83C\uDF7D\uFE0F', startLabel: 'Beginning', endLabel: 'End' },
   'train':       { bgEmoji: '\uD83D\uDE82', startLabel: 'Engine', endLabel: 'Caboose' },
   'bookshelf':   { bgEmoji: '\uD83D\uDCDA', startLabel: 'Left', endLabel: 'Right' },
 };
@@ -109,7 +109,6 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
     challenges = [],
     maxPosition = 5,
     context = 'race',
-    showOrdinalLabels = true,
     labelFormat = 'symbol',
     gradeBand = 'K',
     instanceId,
@@ -563,16 +562,6 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
               }
             }}
           >
-            {showOrdinalLabels && (
-              <span className={`text-[10px] sm:text-xs font-mono mb-1 ${
-                isSelected ? 'text-orange-300 font-bold' :
-                isHighlighted ? 'text-blue-300 font-bold' :
-                'text-slate-500'
-              }`}>
-                {getOrdinalLabel(pos, labelFormat)}
-              </span>
-            )}
-
             <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl transition-all duration-200 ${
               isSelected
                 ? 'bg-orange-500/20 border-2 border-orange-400/60 shadow-lg shadow-orange-500/20'

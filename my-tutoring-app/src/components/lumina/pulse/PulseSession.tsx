@@ -27,6 +27,8 @@ import type {
   PulseBand,
   PulseItemSpec,
   RecentPrimitive,
+  SkillDetail,
+  SkillUnlockProgress,
 } from './types';
 import { BAND_LABELS, BAND_COLORS } from './types';
 
@@ -524,6 +526,8 @@ function PulseSummaryCard({ summary, leapfrogs, isColdStart, onDone, onPlayAgain
   summary: PulseSessionSummary | null; leapfrogs: LeapfrogEvent[]; isColdStart: boolean;
   onDone: () => void; onPlayAgain: () => void;
 }) {
+  const [expandedLeapfrog, setExpandedLeapfrog] = useState<number | null>(null);
+
   return (
     <div className="animate-fade-in max-w-lg mx-auto space-y-6">
       <SpotlightCard color="139, 92, 246" className="bg-gradient-to-br from-violet-900/20 to-blue-900/20">
@@ -571,27 +575,50 @@ function PulseSummaryCard({ summary, leapfrogs, isColdStart, onDone, onPlayAgain
             </div>
           )}
 
+          {/* Leapfrogs — expandable */}
           {leapfrogs.length > 0 && (
             <div className="space-y-2 mt-4">
               <h4 className="text-[10px] uppercase tracking-widest font-mono text-violet-400">Leapfrogs</h4>
-              {leapfrogs.map((lf, i) => (
-                <div key={i} className="glass-panel rounded-lg border border-violet-500/20 px-4 py-2 text-left">
-                  <div className="text-sm text-violet-300">
-                    &#128640; Skipped {lf.inferred_skills.length} {lf.inferred_skills.length === 1 ? 'skill' : 'skills'}
+              {leapfrogs.map((lf, i) => {
+                const isExpanded = expandedLeapfrog === i;
+                return (
+                  <div key={i}>
+                    <button
+                      onClick={() => setExpandedLeapfrog(isExpanded ? null : i)}
+                      className="w-full glass-panel rounded-lg border border-violet-500/20 px-4 py-2 text-left hover:border-violet-500/40 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-violet-300">
+                          &#128640; Skipped {lf.inferred_skills.length} {lf.inferred_skills.length === 1 ? 'skill' : 'skills'}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500">Score: {Math.round(lf.aggregate_score * 10)}%</span>
+                          <svg className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <LeapfrogDetail leapfrog={lf} />
+                      </motion.div>
+                    )}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">Score: {Math.round(lf.aggregate_score * 10)}%</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
+          {/* Skills Advanced — show which skills leveled up */}
           {summary && summary.skills_advanced.length > 0 && (
-            <div className="space-y-2 mt-4">
-              <h4 className="text-[10px] uppercase tracking-widest font-mono text-emerald-400">Skills Advanced</h4>
-              <p className="text-slate-400 text-sm">
-                {summary.skills_advanced.length} {summary.skills_advanced.length === 1 ? 'skill' : 'skills'} leveled up this session
-              </p>
-            </div>
+            <SkillsAdvancedSection skillsAdvanced={summary.skills_advanced} />
           )}
 
           {summary && summary.theta_changes.length > 0 && (
@@ -723,15 +750,129 @@ function ThetaLineChart({ changes }: { changes: ThetaUpdate[] }) {
 }
 
 // ---------------------------------------------------------------------------
-// Frontier Delta Section
+// Leapfrog Detail (expanded view)
+// ---------------------------------------------------------------------------
+
+function LeapfrogDetail({ leapfrog }: { leapfrog: LeapfrogEvent }) {
+  const probed = leapfrog.probed_details ?? [];
+  const inferred = leapfrog.inferred_details ?? [];
+
+  // Group inferred skills by parent skill
+  const groupedInferred = new Map<string, { skill_description: string; count: number }>();
+  for (const d of inferred) {
+    const key = d.skill_id || 'unknown';
+    const existing = groupedInferred.get(key);
+    if (existing) {
+      existing.count++;
+    } else {
+      groupedInferred.set(key, { skill_description: d.skill_description || key, count: 1 });
+    }
+  }
+
+  return (
+    <div className="glass-panel rounded-lg border border-violet-500/10 mx-1 mt-1 px-4 py-3 text-left space-y-3">
+      {probed.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-widest font-mono text-slate-500 mb-1">You demonstrated mastery of</div>
+          <div className="flex flex-wrap gap-1.5">
+            {probed.map((p) => (
+              <span key={p.subskill_id} className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+                {p.skill_description || formatSkillId(p.subskill_id)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {groupedInferred.size > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-widest font-mono text-slate-500 mb-1">Which let you skip ahead on</div>
+          <div className="space-y-1">
+            {Array.from(groupedInferred.entries()).map(([skillId, { skill_description, count }]) => (
+              <div key={skillId} className="flex items-center justify-between px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/15">
+                <span className="text-xs text-violet-300">{skill_description}</span>
+                <span className="text-[10px] text-slate-500">{count} {count === 1 ? 'subskill' : 'subskills'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Skills Advanced Section
+// ---------------------------------------------------------------------------
+
+const GATE_LABELS: Record<number, string> = {
+  0: 'Not started',
+  1: 'Initial mastery',
+  2: 'Retest 1',
+  3: 'Retest 2',
+  4: 'Mastered',
+};
+
+function SkillsAdvancedSection({ skillsAdvanced }: { skillsAdvanced: PulseSessionSummary['skills_advanced'] }) {
+  // Group by parent skill
+  const grouped = new Map<string, { skill_description: string; advances: typeof skillsAdvanced }>();
+  for (const gu of skillsAdvanced) {
+    const key = gu.skill_id || 'unknown';
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.advances.push(gu);
+    } else {
+      grouped.set(key, { skill_description: gu.skill_description || formatSkillId(gu.subskill_id), advances: [gu] });
+    }
+  }
+
+  return (
+    <div className="space-y-2 mt-4">
+      <h4 className="text-[10px] uppercase tracking-widest font-mono text-emerald-400 flex items-center gap-2">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
+        Skills Advanced
+      </h4>
+      {Array.from(grouped.entries()).map(([skillId, { skill_description, advances }]) => (
+        <div key={skillId} className="glass-panel rounded-lg border border-emerald-500/15 px-4 py-2 text-left">
+          <div className="text-sm text-emerald-300 font-medium">{skill_description}</div>
+          {advances.map((gu) => (
+            <div key={gu.subskill_id} className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-slate-500 font-mono">{formatSkillId(gu.subskill_id)}</span>
+              <span className="text-[10px] text-slate-600">
+                {GATE_LABELS[gu.old_gate] ?? `Gate ${gu.old_gate}`}
+              </span>
+              <svg className="w-3 h-3 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+              <span className="text-[10px] text-emerald-400 font-medium">
+                {GATE_LABELS[gu.new_gate] ?? `Gate ${gu.new_gate}`}
+              </span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Frontier Delta Section (Knowledge Map with skill progress)
 // ---------------------------------------------------------------------------
 
 function FrontierDeltaSection({ summary, leapfrogs }: { summary: PulseSessionSummary; leapfrogs: LeapfrogEvent[] }) {
   const gateAdvances = summary.skills_advanced.length;
   const leapfrogSkills = leapfrogs.reduce((sum, lf) => sum + lf.inferred_skills.length, 0);
   const totalUnlocked = gateAdvances + leapfrogSkills;
+  const skillProgress = summary.skill_progress ?? [];
 
-  if (totalUnlocked === 0 && !summary.frontier_expanded) return null;
+  if (totalUnlocked === 0 && !summary.frontier_expanded && skillProgress.length === 0) return null;
+
+  // Unique parent skill names from progress
+  const skillNames = skillProgress.map((sp) => sp.skill_description).filter(Boolean);
+  const progressLabel = skillNames.length > 0
+    ? `You've unlocked new subskills in ${skillNames.join(' and ')}`
+    : 'Your frontier expanded — new skills are now reachable!';
 
   return (
     <div className="space-y-3 mt-4">
@@ -748,10 +889,37 @@ function FrontierDeltaSection({ summary, leapfrogs }: { summary: PulseSessionSum
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} className="flex items-center justify-center">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/20 to-blue-500/20 border border-violet-500/30">
                 <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-blue-300">+{totalUnlocked}</span>
-                <span className="text-sm text-slate-300">{totalUnlocked === 1 ? 'skill' : 'skills'} unlocked</span>
+                <span className="text-sm text-slate-300">{totalUnlocked === 1 ? 'subskill' : 'subskills'} unlocked</span>
               </span>
             </motion.div>
           )}
+
+          {/* Per-skill progress bars */}
+          {skillProgress.length > 0 && (
+            <div className="space-y-3">
+              {skillProgress.map((sp) => {
+                const pct = sp.total_subskills > 0 ? (sp.unlocked_subskills / sp.total_subskills) * 100 : 0;
+                return (
+                  <div key={sp.skill_id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-300">{sp.skill_description}</span>
+                      <span className="text-xs text-slate-500 font-mono">{sp.unlocked_subskills}/{sp.total_subskills}</span>
+                    </div>
+                    <div className="relative h-2 rounded-full bg-white/5 overflow-hidden">
+                      <motion.div
+                        className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-violet-500 to-blue-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Stat boxes */}
           <div className="grid grid-cols-2 gap-3">
             {gateAdvances > 0 && (
               <div className="text-center p-3 rounded-lg bg-white/5 border border-white/5">
@@ -766,9 +934,10 @@ function FrontierDeltaSection({ summary, leapfrogs }: { summary: PulseSessionSum
               </div>
             )}
           </div>
+
           {summary.frontier_expanded && (
             <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-center text-sm text-violet-300 font-light">
-              Your frontier expanded — new skills are now reachable!
+              {progressLabel}
             </motion.p>
           )}
         </div>

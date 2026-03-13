@@ -197,6 +197,16 @@ Build a mode-constrained schema that narrows the `challenge.type` enum:
     : baseSchema;
 ```
 
+> **Literacy generators** use non-standard field paths. Pass a `SchemaConstraintConfig` as the 4th arg:
+> ```typescript
+> // challenges[].mode — e.g., LetterSpotter, RhymeStudio, WordWorkout
+> constrainChallengeTypeEnum(schema, types, docs, { fieldName: 'mode' })
+> // Root-level patternType — e.g., PhonicsBlender, SpellingPatternExplorer
+> constrainChallengeTypeEnum(schema, types, docs, { fieldName: 'patternType', rootLevel: true })
+> // instances[].type — e.g., FigurativeLanguageFinder
+> constrainChallengeTypeEnum(schema, types, docs, { arrayName: 'instances' })
+> ```
+
 ### 2d: Build the prompt with only relevant docs
 
 Use `buildChallengeTypePromptSection()` to generate the challenge types section:
@@ -382,7 +392,7 @@ All utilities live in `service/evalMode/index.ts`:
 | Function | Purpose | When to Call |
 |----------|---------|-------------|
 | `resolveEvalModeConstraint()` | Reads the catalog's `EvalModeDefinition`, builds allowed types + prompt docs | Once at the top of your generator |
-| `constrainChallengeTypeEnum()` | Deep-clones the schema, narrows `challenge.type` to an enum of allowed values | Before calling `ai.models.generateContent()` |
+| `constrainChallengeTypeEnum()` | Deep-clones the schema, narrows challenge-type enum to allowed values. Accepts optional `SchemaConstraintConfig` for non-standard field paths (literacy generators). | Before calling `ai.models.generateContent()` |
 | `buildChallengeTypePromptSection()` | Builds the challenge types prompt section with only relevant docs | When constructing the prompt string |
 | `logEvalModeResolution()` | Logs the resolved eval mode for observability | After `resolveEvalModeConstraint()` |
 

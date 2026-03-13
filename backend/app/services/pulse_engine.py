@@ -45,6 +45,8 @@ from ..models.pulse import (
     PulseSessionResponse,
     PulseSessionSummary,
     RecentPrimitive,
+    SkillDetail,
+    SkillUnlockProgress,
     ThetaUpdate,
     mode_to_beta,
     theta_to_mode,
@@ -949,6 +951,8 @@ class PulseEngine:
 
         items = session.get("items", [])
         scored_items = [it for it in items if it.get("score") is not None]
+        subject = session.get("subject", "")
+        student_id = session.get("student_id")
 
         # Band summaries
         bands: Dict[str, PulseBandSummary] = {}
@@ -968,6 +972,25 @@ class PulseEngine:
         # Duration
         total_ms = sum(it.get("duration_ms", 0) for it in scored_items)
 
+        # Load DAG for skill descriptions
+        node_map: Dict[str, Dict] = {}
+        try:
+            graph_data = await self.learning_paths._get_graph(subject)
+            if graph_data and "graph" in graph_data:
+                all_nodes = graph_data["graph"].get("nodes", [])
+                node_map = {n["id"]: n for n in all_nodes
+                            if n.get("type", n.get("entity_type", "")) == "subskill"}
+        except Exception as e:
+            logger.warning(f"[PULSE] Could not load DAG for summary enrichment: {e}")
+
+        def _skill_detail(subskill_id: str) -> SkillDetail:
+            node = node_map.get(subskill_id, {})
+            return SkillDetail(
+                subskill_id=subskill_id,
+                skill_id=node.get("skill_id", ""),
+                skill_description=node.get("skill_description", node.get("parent_label", "")),
+            )
+
         # Aggregate θ changes and gate updates from scored items
         theta_changes: List[ThetaUpdate] = []
         skills_advanced: List[GateUpdate] = []
@@ -977,16 +1000,85 @@ class PulseEngine:
                 theta_changes.append(ThetaUpdate(**tu))
             gu = it.get("gate_update")
             if gu:
-                skills_advanced.append(GateUpdate(**gu))
+                node = node_map.get(gu.get("subskill_id", ""), {})
+                skills_advanced.append(GateUpdate(
+                    subskill_id=gu["subskill_id"],
+                    old_gate=gu["old_gate"],
+                    new_gate=gu["new_gate"],
+                    skill_id=node.get("skill_id", ""),
+                    skill_description=node.get("skill_description", node.get("parent_label", "")),
+                ))
 
-        # Leapfrogs
-        leapfrogs = [
-            LeapfrogEvent(**lf)
-            for lf in session.get("leapfrogs", [])
-        ]
-        all_inferred = set()
-        for lf in leapfrogs:
-            all_inferred.update(lf.inferred_skills)
+        # Leapfrogs — enrich with skill details
+        leapfrogs: List[LeapfrogEvent] = []
+        all_inferred: Set[str] = set()
+        for lf_raw in session.get("leapfrogs", []):
+            probed = lf_raw.get("probed_skills", [])
+            inferred = lf_raw.get("inferred_skills", [])
+            all_inferred.update(inferred)
+            leapfrogs.append(LeapfrogEvent(
+                lesson_group_id=lf_raw.get("lesson_group_id", ""),
+                probed_skills=probed,
+                inferred_skills=inferred,
+                aggregate_score=lf_raw.get("aggregate_score", 0.0),
+                probed_details=[_skill_detail(sid) for sid in probed],
+                inferred_details=[_skill_detail(sid) for sid in inferred],
+            ))
+
+        # Skill progress — group unlocked subskills by parent skill
+        skill_progress: List[SkillUnlockProgress] = []
+        touched_skill_ids: Set[str] = set()
+        for gu in skills_advanced:
+            if gu.skill_id:
+                touched_skill_ids.add(gu.skill_id)
+        for sid in all_inferred:
+            node = node_map.get(sid, {})
+            sk = node.get("skill_id", "")
+            if sk:
+                touched_skill_ids.add(sk)
+
+        if touched_skill_ids and node_map and student_id:
+            # Count total subskills per touched skill from DAG
+            skill_totals: Dict[str, int] = defaultdict(int)
+            skill_names: Dict[str, str] = {}
+            for node in node_map.values():
+                sk = node.get("skill_id", "")
+                if sk in touched_skill_ids:
+                    skill_totals[sk] += 1
+                    if sk not in skill_names:
+                        skill_names[sk] = node.get(
+                            "skill_description",
+                            node.get("parent_label", sk),
+                        )
+
+            # Count unlocked subskills (gate >= 1) per touched skill
+            try:
+                all_subskill_ids = [
+                    n_id for n_id, n in node_map.items()
+                    if n.get("skill_id", "") in touched_skill_ids
+                ]
+                lifecycle_batch = await self.firestore.get_mastery_lifecycles_batch(
+                    student_id, all_subskill_ids
+                )
+                skill_unlocked: Dict[str, int] = defaultdict(int)
+                for ss_id, lc in lifecycle_batch.items():
+                    if lc and lc.get("current_gate", 0) >= 1:
+                        node = node_map.get(ss_id, {})
+                        sk = node.get("skill_id", "")
+                        if sk in touched_skill_ids:
+                            skill_unlocked[sk] += 1
+
+                for sk in touched_skill_ids:
+                    if skill_totals.get(sk, 0) > 0:
+                        skill_progress.append(SkillUnlockProgress(
+                            skill_id=sk,
+                            skill_description=skill_names.get(sk, sk),
+                            total_subskills=skill_totals[sk],
+                            unlocked_subskills=skill_unlocked.get(sk, 0),
+                        ))
+                skill_progress.sort(key=lambda sp: sp.skill_id)
+            except Exception as e:
+                logger.warning(f"[PULSE] Could not compute skill progress: {e}")
 
         # Celebration message
         n_leapfrogs = len(leapfrogs)
@@ -1000,7 +1092,7 @@ class PulseEngine:
 
         return PulseSessionSummary(
             session_id=session_id,
-            subject=session.get("subject", ""),
+            subject=subject,
             is_cold_start=session.get("is_cold_start", False),
             items_completed=len(scored_items),
             items_total=len(items),
@@ -1011,6 +1103,7 @@ class PulseEngine:
             leapfrogs=leapfrogs,
             frontier_expanded=n_inferred > 0,
             celebration_message=msg,
+            skill_progress=skill_progress,
         )
 
     # ------------------------------------------------------------------

@@ -84,10 +84,18 @@ export interface ThetaUpdate {
   earned_level: number;
 }
 
+export interface SkillDetail {
+  subskill_id: string;
+  skill_id: string;
+  skill_description: string;
+}
+
 export interface GateUpdate {
   subskill_id: string;
   old_gate: number;
   new_gate: number;
+  skill_id?: string;
+  skill_description?: string;
 }
 
 export interface LeapfrogEvent {
@@ -95,6 +103,15 @@ export interface LeapfrogEvent {
   probed_skills: string[];
   inferred_skills: string[];
   aggregate_score: number;
+  probed_details?: SkillDetail[];
+  inferred_details?: SkillDetail[];
+}
+
+export interface SkillUnlockProgress {
+  skill_id: string;
+  skill_description: string;
+  total_subskills: number;
+  unlocked_subskills: number;
 }
 
 export interface GateThresholds {
@@ -153,4 +170,5 @@ export interface PulseSessionSummary {
   leapfrogs: LeapfrogEvent[];
   frontier_expanded: boolean;
   celebration_message: string;
+  skill_progress?: SkillUnlockProgress[];
 }

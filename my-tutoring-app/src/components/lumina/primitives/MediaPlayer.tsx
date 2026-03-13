@@ -1,9 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, BookOpen, CheckCircle, ChevronLeft, ChevronRight, Play, RotateCcw, XCircle } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle, ChevronLeft, ChevronRight, Play, RotateCcw, Sparkles, XCircle } from 'lucide-react';
 import { MediaPlayerData } from '../types';
 import { usePrimitiveEvaluation, type MediaPlayerMetrics, type PrimitiveEvaluationResult } from '../evaluation';
 import { useLuminaAI } from '../hooks/useLuminaAI';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 
 interface MediaPlayerProps {
   data: MediaPlayerData;
@@ -157,7 +169,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
   };
 
   const handleShowKnowledgeCheck = () => {
-    // Transition to answering phase
     setSegmentPhases(prev => {
       const updated = [...prev];
       updated[currentIndex] = 'answering';
@@ -167,7 +178,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       setSegmentStartTimes(prev => ({ ...prev, [currentIndex]: Date.now() }));
     }
 
-    // AI: Read the knowledge check question
     if (!hasTriggeredKnowledgeCheckRef.current.has(currentIndex)) {
       hasTriggeredKnowledgeCheckRef.current.add(currentIndex);
       const kc = currentSegment.knowledgeCheck!;
@@ -196,7 +206,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       setCurrentIndex(nextIndex);
       setSegmentStartTimes(prev => ({ ...prev, [nextIndex]: Date.now() }));
 
-      // AI: Introduce the next segment
       if (!hasTriggeredNextSegmentRef.current.has(nextIndex)) {
         hasTriggeredNextSegmentRef.current.add(nextIndex);
         const nextSegment = data.segments[nextIndex];
@@ -243,7 +252,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
         { silent: true }
       );
 
-      // Auto-advance after celebration
       setTimeout(() => {
         advanceToNextSegment(segmentIndex);
       }, 2000);
@@ -290,7 +298,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
   const advanceToNextSegment = (currentSegmentIndex: number) => {
     if (currentSegmentIndex === data.segments.length - 1) {
-      // Last segment — complete the lesson
       if (!hasTriggeredLessonCompleteRef.current) {
         hasTriggeredLessonCompleteRef.current = true;
         const correctCount = Object.values(segmentCorrect).filter(Boolean).length;
@@ -410,31 +417,8 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     resetAttempt();
   };
 
-  // ── Segment progress dots ─────────────────────────────────────────────────
-  const segmentDots = data.segments.map((seg, i) => {
-    const phase = segmentPhases[i];
-    const isCurrent = i === currentIndex;
-    const isAnswered = segmentAnswered[i];
-    const isCorrect = segmentCorrect[i];
-    const hasCheck = !!seg.knowledgeCheck;
-
-    let dotColor = 'bg-slate-700';
-    if (isAnswered && isCorrect) dotColor = 'bg-emerald-500';
-    else if (isAnswered && !isCorrect) dotColor = 'bg-amber-500';
-    else if (phase === 'completed') dotColor = 'bg-emerald-500';
-    else if (isCurrent) dotColor = 'bg-indigo-500';
-    else if (!hasCheck && i < currentIndex) dotColor = 'bg-slate-500';
-
-    return (
-      <div key={i} className="flex flex-col items-center gap-1">
-        <div
-          className={`h-2.5 w-2.5 rounded-full transition-all ${dotColor} ${
-            isCurrent ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900 scale-125' : ''
-          }`}
-        />
-      </div>
-    );
-  });
+  // ── Progress percentage ────────────────────────────────────────────────────
+  const progressPercent = ((currentIndex + 1) / data.segments.length) * 100;
 
   // ── Render: Lesson Complete Summary ────────────────────────────────────────
   if (lessonComplete && hasSubmittedEvaluation) {
@@ -461,13 +445,14 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
           />
 
           <div className="flex justify-center">
-            <button
+            <Button
+              variant="ghost"
               onClick={handleReset}
-              className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-medium border border-white/10 hover:border-white/20 transition-all"
+              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 rounded-xl gap-2"
             >
               <RotateCcw className="h-4 w-4" />
               Try Again
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -476,308 +461,397 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
   // ── Render: Main Lesson UI ─────────────────────────────────────────────────
   return (
-    <div className={`min-h-[600px] w-full bg-slate-950 flex items-center justify-center p-4 md:p-6 lg:p-8 font-sans relative overflow-hidden rounded-3xl ${className}`}>
+    <TooltipProvider>
+      <div className={`min-h-[600px] w-full bg-slate-950 flex items-center justify-center p-4 md:p-6 lg:p-8 font-sans relative overflow-hidden rounded-3xl ${className}`}>
 
-      {/* Ambient Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+        {/* Ambient Background Elements */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
 
-      {/* Intro Overlay */}
-      {!hasStarted && (
-        <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center rounded-3xl">
-          <div className="w-full max-w-2xl mx-auto px-6">
-            <div className="glass-panel rounded-3xl overflow-hidden border border-indigo-500/20 relative animate-fade-in-up">
-              {/* Terminal-style Header */}
-              <div className="bg-slate-900/80 p-4 flex items-center justify-between border-b border-white/5">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                    <span className="w-2 h-2 rounded-full bg-slate-600"></span>
-                    <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+        {/* Intro Overlay */}
+        {!hasStarted && (
+          <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center rounded-3xl">
+            <div className="w-full max-w-2xl mx-auto px-6">
+              <Card className="backdrop-blur-xl bg-slate-900/40 border-indigo-500/20 rounded-3xl overflow-hidden animate-fade-in-up">
+                {/* Terminal-style Header */}
+                <CardHeader className="bg-slate-900/80 border-b border-white/5 flex-row items-center justify-between space-y-0 p-4">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                      <span className="w-2 h-2 rounded-full bg-slate-600" />
+                      <span className="w-2 h-2 rounded-full bg-slate-600" />
+                    </div>
+                    <Badge variant="outline" className="bg-indigo-500/10 border-indigo-500/30 text-indigo-400 text-xs font-mono uppercase tracking-widest">
+                      Interactive Lesson
+                    </Badge>
                   </div>
-                  <span className="text-xs font-mono uppercase tracking-widest text-indigo-400">
-                    Interactive Lesson
-                  </span>
-                </div>
-                <div className="text-xs text-slate-500 font-mono">
-                  {data.segments.length} SEGMENTS
+                  <Badge variant="secondary" className="bg-slate-800/60 text-slate-400 text-xs font-mono">
+                    {data.segments.length} Segments
+                  </Badge>
+                </CardHeader>
+
+                {/* Content */}
+                <CardContent className="p-8 md:p-12 text-center space-y-6">
+                  <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 mb-2">
+                    <BookOpen className="h-10 w-10 text-indigo-400" />
+                  </div>
+
+                  <CardTitle className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                    {data.title || 'Interactive Lesson'}
+                  </CardTitle>
+
+                  <p className="text-slate-300 text-lg leading-relaxed max-w-md mx-auto">
+                    {data.description || `A ${data.segments.length}-segment lesson with AI narration, visual illustrations, and knowledge checks`}
+                  </p>
+
+                  {/* Features Grid */}
+                  <div className="grid grid-cols-3 gap-4 max-w-md mx-auto pt-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-indigo-400">{data.segments.length}</div>
+                      <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Segments</div>
+                    </div>
+                    <div className="text-center border-l border-r border-slate-700">
+                      <div className="text-2xl font-bold text-indigo-400">
+                        {data.segments.filter(s => s.knowledgeCheck).length}
+                      </div>
+                      <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Checks</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Sparkles className="h-5 w-5 text-indigo-400" />
+                      </div>
+                      <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">AI Narrated</div>
+                    </div>
+                  </div>
+
+                  {/* CTA Button */}
+                  <div className="pt-4">
+                    <Button
+                      size="lg"
+                      onClick={handleBeginLesson}
+                      className="group px-8 py-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-lg shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <Play className="h-5 w-5 fill-current relative z-10" />
+                      <span className="relative z-10">Begin Lesson</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Main Card Container */}
+        <Card className="w-full max-w-6xl h-[700px] backdrop-blur-xl bg-slate-900/80 border-white/10 rounded-3xl shadow-2xl flex flex-col lg:flex-row overflow-hidden relative z-10 transition-all">
+
+          {/* LEFT: Visual Stage */}
+          <div className="relative w-full lg:w-2/3 h-[45%] lg:h-full bg-slate-900 flex items-center justify-center p-6 group">
+            {/* Subtle Grid Pattern Background */}
+            <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
+            <div className="absolute inset-0 bg-radial-at-c from-transparent to-slate-900/50 pointer-events-none" />
+
+            {currentSegment.imageUrl ? (
+              <img
+                key={currentIndex}
+                src={currentSegment.imageUrl}
+                alt={currentSegment.imagePrompt}
+                className="relative z-10 max-h-full max-w-full object-contain animate-fade-in shadow-2xl drop-shadow-2xl rounded-lg"
+              />
+            ) : (
+              <div className="relative z-10 w-full max-w-md space-y-4">
+                <Skeleton className="w-full aspect-[16/10] rounded-xl bg-slate-800/60" />
+                <div className="flex items-center justify-center gap-2 text-slate-500">
+                  <Sparkles className="h-4 w-4 animate-pulse" />
+                  <span className="text-sm font-medium tracking-wide">Generating visualization...</span>
                 </div>
               </div>
+            )}
 
-              {/* Content */}
-              <div className="p-8 md:p-12 text-center space-y-6">
-                <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 mb-2">
-                  <BookOpen className="h-10 w-10 text-indigo-400" />
+            {/* Persistent badge */}
+            <Badge
+              variant="outline"
+              className="absolute top-4 right-4 z-20 bg-slate-800/80 backdrop-blur-md border-white/10 text-white/70 shadow-lg"
+            >
+              <Sparkles className="h-3 w-3 mr-1" />
+              AI Generated
+            </Badge>
+          </div>
+
+          {/* RIGHT: Control Hub */}
+          <div className="w-full lg:w-1/3 h-[55%] lg:h-full bg-slate-950/50 border-t lg:border-t-0 lg:border-l border-white/5 flex flex-col">
+
+            {/* Progress Header */}
+            <div className="p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-indigo-500/20 border-indigo-500/30 text-indigo-400 font-bold">
+                    {currentIndex + 1}
+                  </Badge>
+                  <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+                    Step {currentIndex + 1} of {data.segments.length}
+                  </span>
                 </div>
+                {data.title && (
+                  <span className="text-xs text-slate-500 hidden md:block truncate max-w-[120px]">
+                    {data.title}
+                  </span>
+                )}
+              </div>
 
-                <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight">
-                  {data.title || 'Interactive Lesson'}
+              {/* Progress bar */}
+              <Progress
+                value={progressPercent}
+                className="h-2 bg-slate-800"
+                aria-label={`Lesson progress: step ${currentIndex + 1} of ${data.segments.length}`}
+              />
+
+              {/* Segment status dots (compact, below bar) */}
+              <div className="flex items-center gap-1.5 justify-center" role="group" aria-label="Segment status">
+                {data.segments.map((seg, i) => {
+                  const phase = segmentPhases[i];
+                  const isCurrent = i === currentIndex;
+                  const isAnswered = segmentAnswered[i];
+                  const isCorrectSeg = segmentCorrect[i];
+                  const hasCheck = !!seg.knowledgeCheck;
+
+                  let dotColor = 'bg-slate-700';
+                  let label = `Segment ${i + 1}: not started`;
+                  if (isAnswered && isCorrectSeg) { dotColor = 'bg-emerald-500'; label = `Segment ${i + 1}: correct`; }
+                  else if (isAnswered && !isCorrectSeg) { dotColor = 'bg-amber-500'; label = `Segment ${i + 1}: incorrect`; }
+                  else if (phase === 'completed') { dotColor = 'bg-emerald-500'; label = `Segment ${i + 1}: completed`; }
+                  else if (isCurrent) { dotColor = 'bg-indigo-500'; label = `Segment ${i + 1}: current`; }
+                  else if (!hasCheck && i < currentIndex) { dotColor = 'bg-slate-500'; label = `Segment ${i + 1}: viewed`; }
+
+                  return (
+                    <Tooltip key={i}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={`h-2 w-2 rounded-full transition-all ${dotColor} ${
+                            isCurrent ? 'ring-2 ring-indigo-400 ring-offset-1 ring-offset-slate-950 scale-125' : ''
+                          }`}
+                          aria-label={label}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-800 border-white/10 text-slate-200">
+                        <p className="text-xs">{seg.title}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Separator className="bg-white/5" />
+
+            {/* Scrollable Content Area */}
+            <ScrollArea className="flex-1">
+              <div className="p-6 lg:p-8">
+                <h2 className="text-2xl lg:text-3xl font-bold text-slate-100 mb-4 leading-tight">
+                  {currentSegment.title}
                 </h2>
 
-                <p className="text-slate-300 text-lg leading-relaxed max-w-md mx-auto">
-                  A multi-segment lesson with AI narration, visual illustrations, and knowledge checks
-                </p>
-
-                {/* Features Grid */}
-                <div className="grid grid-cols-3 gap-4 max-w-md mx-auto pt-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-indigo-400">{data.segments.length}</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Segments</div>
-                  </div>
-                  <div className="text-center border-l border-r border-slate-700">
-                    <div className="text-2xl font-bold text-indigo-400">
-                      {data.segments.filter(s => s.knowledgeCheck).length}
-                    </div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Checks</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-indigo-400">
-                      <BookOpen className="h-6 w-6 inline-block" />
-                    </div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">AI Narrated</div>
-                  </div>
-                </div>
-
-                {/* CTA Button */}
-                <div className="pt-4">
-                  <button
-                    onClick={handleBeginLesson}
-                    className="group inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-lg shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                    <Play className="h-5 w-5 fill-current relative z-10" />
-                    <span className="relative z-10">Begin Lesson</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Card Container */}
-      <div className="w-full max-w-6xl h-[700px] bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 flex flex-col lg:flex-row overflow-hidden relative z-10 transition-all">
-
-        {/* LEFT: Visual Stage */}
-        <div className="relative w-full lg:w-2/3 h-[45%] lg:h-full bg-slate-900 flex items-center justify-center p-6 group">
-          {/* Subtle Grid Pattern Background */}
-          <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
-          <div className="absolute inset-0 bg-radial-at-c from-transparent to-slate-900/50 pointer-events-none" />
-
-          {currentSegment.imageUrl ? (
-            <img
-              key={currentIndex}
-              src={currentSegment.imageUrl}
-              alt={currentSegment.imagePrompt}
-              className="relative z-10 max-h-full max-w-full object-contain animate-fade-in shadow-2xl drop-shadow-2xl rounded-lg"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center text-slate-500 z-10">
-              <BookOpen className="mb-4 h-10 w-10 opacity-50" />
-              <p className="font-medium tracking-wide">Visual Loading...</p>
-            </div>
-          )}
-
-          {/* Overlay badge */}
-          <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="bg-slate-800/80 backdrop-blur-md rounded-full px-3 py-1 text-xs font-medium text-white/70 border border-white/10 shadow-lg">
-              Gemini Visualization
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT: Control Hub */}
-        <div className="w-full lg:w-1/3 h-[55%] lg:h-full bg-slate-950/50 border-t lg:border-t-0 lg:border-l border-white/5 flex flex-col">
-
-          {/* Progress Header */}
-          <div className="p-6 border-b border-white/5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-bold text-indigo-400">
-                  {currentIndex + 1}
-                </span>
-                <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">
-                  Step {currentIndex + 1} of {data.segments.length}
-                </span>
-              </div>
-              {data.title && (
-                <div className="text-xs text-slate-500 hidden md:block">
-                  {data.title}
-                </div>
-              )}
-            </div>
-            {/* Segment progress dots */}
-            <div className="flex items-center gap-2 justify-center">
-              {segmentDots}
-            </div>
-          </div>
-
-          {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar">
-            <h2 className="text-2xl lg:text-3xl font-bold text-white mb-4 leading-tight">
-              {currentSegment.title}
-            </h2>
-
-            <div className="prose prose-invert prose-lg">
-              <p className="text-slate-300 leading-relaxed">
-                {currentSegment.script}
-              </p>
-            </div>
-
-            {/* "Continue to Knowledge Check" Button — shown during reading phase when segment has a check */}
-            {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'reading' && (
-              <div className="mt-6">
-                <button
-                  onClick={handleShowKnowledgeCheck}
-                  className="group w-full py-3 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 transition-all transform hover:scale-[1.02] active:scale-95 relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <CheckCircle className="h-5 w-5" />
-                    I&apos;m Ready — Show Knowledge Check
-                  </span>
-                </button>
-              </div>
-            )}
-
-            {/* Knowledge Check UI — answering phase */}
-            {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'answering' && (
-              <div className="mt-6 p-6 bg-slate-800/50 rounded-xl border border-blue-500/30">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                    <span className="text-blue-400 font-bold">{currentIndex + 1}</span>
-                  </div>
-                  <h4 className="text-lg font-semibold text-white">Knowledge Check</h4>
-                </div>
-
-                <p className="text-slate-200 mb-4">{currentSegment.knowledgeCheck.question}</p>
-
-                <div className="space-y-2">
-                  {currentSegment.knowledgeCheck.options.map((option, optionIndex) => (
-                    <button
-                      key={optionIndex}
-                      onClick={() => setSelectedAnswers(prev => ({ ...prev, [currentIndex]: optionIndex }))}
-                      className={`w-full text-left p-4 rounded-lg transition-all ${
-                        selectedAnswers[currentIndex] === optionIndex
-                          ? 'bg-blue-600 text-white ring-2 ring-blue-400'
-                          : 'bg-slate-700/50 text-slate-200 hover:bg-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="flex-shrink-0 h-6 w-6 rounded-full border-2 border-current flex items-center justify-center text-xs font-bold">
-                          {String.fromCharCode(65 + optionIndex)}
-                        </span>
-                        <span>{option}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => handleAnswerSubmit(currentIndex)}
-                  disabled={selectedAnswers[currentIndex] === undefined}
-                  className="group mt-4 w-full py-3 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-95 disabled:hover:scale-100 relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <span className="relative z-10">Submit Answer</span>
-                </button>
-
-                {/* Error Feedback */}
-                {feedback[currentIndex] && (
-                  <div className="mt-4 p-4 bg-red-900/20 border border-red-500/30 rounded-xl">
-                    <div className="flex items-center gap-2">
-                      <XCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
-                      <p className="text-red-400 text-sm">{feedback[currentIndex]}</p>
-                    </div>
-                    <p className="text-slate-400 text-xs mt-2">
-                      Attempt {segmentAttempts[currentIndex] || 0} of {MAX_ATTEMPTS_PER_SEGMENT}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Success Feedback — completed phase */}
-            {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'completed' && (
-              <div className="mt-6 p-6 bg-emerald-900/20 border border-emerald-500/30 rounded-xl">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-5 w-5 text-emerald-400" />
-                  <h4 className="font-semibold text-emerald-400">Correct!</h4>
-                </div>
-                {currentSegment.knowledgeCheck.explanation && (
-                  <p className="text-slate-300 text-sm">{currentSegment.knowledgeCheck.explanation}</p>
-                )}
-              </div>
-            )}
-
-            {/* Max Attempts Reached — show correct answer */}
-            {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'max-attempts-reached' && (
-              <div className="mt-6 p-6 bg-amber-900/20 border border-amber-500/30 rounded-xl">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertCircle className="h-5 w-5 text-amber-400" />
-                  <h4 className="font-semibold text-amber-400">Maximum Attempts Reached</h4>
-                </div>
-                <p className="text-slate-300 text-sm mb-3">
-                  The correct answer is:{' '}
-                  <strong className="text-white">
-                    {currentSegment.knowledgeCheck.options[currentSegment.knowledgeCheck.correctOptionIndex]}
-                  </strong>
-                </p>
-                {currentSegment.knowledgeCheck.explanation && (
-                  <p className="text-slate-400 text-sm mb-4 italic">
-                    {currentSegment.knowledgeCheck.explanation}
+                <div className="prose prose-invert prose-lg">
+                  <p className="text-slate-300 leading-relaxed">
+                    {currentSegment.script}
                   </p>
+                </div>
+
+                {/* "Continue to Knowledge Check" Button */}
+                {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'reading' && (
+                  <div className="mt-6">
+                    <Button
+                      size="lg"
+                      onClick={handleShowKnowledgeCheck}
+                      className="group w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 transition-all transform hover:scale-[1.02] active:scale-95 relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <CheckCircle className="h-5 w-5 relative z-10" />
+                      <span className="relative z-10">I&apos;m Ready — Show Knowledge Check</span>
+                    </Button>
+                  </div>
                 )}
-                <button
-                  onClick={() => handleSkipAfterMaxAttempts(currentIndex)}
-                  className="group w-full py-3 px-6 rounded-xl bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white font-semibold shadow-lg shadow-slate-700/30 border border-slate-500/30 transition-all transform hover:scale-[1.02] active:scale-95 relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <span className="relative z-10">
-                    {currentIndex < data.segments.length - 1 ? 'Continue to Next Segment' : 'Complete Lesson'}
-                  </span>
-                </button>
+
+                {/* Knowledge Check UI — answering phase */}
+                {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'answering' && (
+                  <Card className="mt-6 backdrop-blur-xl bg-slate-800/50 border-blue-500/30">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                          <span className="text-blue-400 font-bold text-sm">{currentIndex + 1}</span>
+                        </div>
+                        <CardTitle className="text-lg text-white">Knowledge Check</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-slate-200">{currentSegment.knowledgeCheck.question}</p>
+
+                      <RadioGroup
+                        value={selectedAnswers[currentIndex]?.toString()}
+                        onValueChange={(val) => setSelectedAnswers(prev => ({ ...prev, [currentIndex]: parseInt(val) }))}
+                        className="space-y-2"
+                      >
+                        {currentSegment.knowledgeCheck.options.map((option, optionIndex) => (
+                          <Label
+                            key={optionIndex}
+                            htmlFor={`option-${currentIndex}-${optionIndex}`}
+                            className={`flex items-center gap-3 w-full p-4 rounded-xl cursor-pointer transition-all backdrop-blur-sm border ${
+                              selectedAnswers[currentIndex] === optionIndex
+                                ? 'bg-blue-500/20 border-blue-400/40 text-white'
+                                : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            <RadioGroupItem
+                              value={optionIndex.toString()}
+                              id={`option-${currentIndex}-${optionIndex}`}
+                              className="border-slate-500 text-blue-400"
+                            />
+                            <span className="flex-shrink-0 h-6 w-6 rounded-full border border-current/30 bg-white/5 flex items-center justify-center text-xs font-bold">
+                              {String.fromCharCode(65 + optionIndex)}
+                            </span>
+                            <span className="text-sm">{option}</span>
+                          </Label>
+                        ))}
+                      </RadioGroup>
+
+                      <Button
+                        size="lg"
+                        onClick={() => handleAnswerSubmit(currentIndex)}
+                        disabled={selectedAnswers[currentIndex] === undefined}
+                        className="group w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 transition-all transform hover:scale-[1.02] active:scale-95 disabled:hover:scale-100 relative overflow-hidden"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                        <span className="relative z-10">Submit Answer</span>
+                      </Button>
+
+                      {/* Error Feedback */}
+                      {feedback[currentIndex] && (
+                        <Alert className="bg-red-900/20 border-red-500/30 text-red-400">
+                          <XCircle className="h-4 w-4" />
+                          <AlertTitle className="text-red-400">Incorrect</AlertTitle>
+                          <AlertDescription>
+                            <p className="text-red-400/90 text-sm">{feedback[currentIndex]}</p>
+                            <Badge variant="outline" className="mt-2 border-red-500/30 text-red-400/80 text-xs">
+                              Attempt {segmentAttempts[currentIndex] || 0} of {MAX_ATTEMPTS_PER_SEGMENT}
+                            </Badge>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Success Feedback — completed phase */}
+                {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'completed' && (
+                  <Alert className="mt-6 bg-emerald-900/20 border-emerald-500/30">
+                    <CheckCircle className="h-4 w-4 text-emerald-400" />
+                    <AlertTitle className="text-emerald-400">Correct!</AlertTitle>
+                    {currentSegment.knowledgeCheck.explanation && (
+                      <AlertDescription className="text-slate-300 text-sm">
+                        {currentSegment.knowledgeCheck.explanation}
+                      </AlertDescription>
+                    )}
+                  </Alert>
+                )}
+
+                {/* Max Attempts Reached — show correct answer */}
+                {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'max-attempts-reached' && (
+                  <Alert className="mt-6 bg-amber-900/20 border-amber-500/30">
+                    <AlertCircle className="h-4 w-4 text-amber-400" />
+                    <AlertTitle className="text-amber-400">Maximum Attempts Reached</AlertTitle>
+                    <AlertDescription className="space-y-3">
+                      <p className="text-slate-300 text-sm">
+                        The correct answer is:{' '}
+                        <strong className="text-white">
+                          {currentSegment.knowledgeCheck.options[currentSegment.knowledgeCheck.correctOptionIndex]}
+                        </strong>
+                      </p>
+                      {currentSegment.knowledgeCheck.explanation && (
+                        <p className="text-slate-400 text-sm italic">
+                          {currentSegment.knowledgeCheck.explanation}
+                        </p>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        onClick={() => handleSkipAfterMaxAttempts(currentIndex)}
+                        className="group w-full py-3 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 text-white font-semibold transition-all transform hover:scale-[1.02] active:scale-95 relative overflow-hidden"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                        <span className="relative z-10">
+                          {currentIndex < data.segments.length - 1 ? 'Continue to Next Segment' : 'Complete Lesson'}
+                        </span>
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
-            )}
-          </div>
+            </ScrollArea>
 
-          {/* Bottom Navigation */}
-          <div className="p-6 lg:p-8 bg-slate-900/50 border-t border-white/5">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={handlePrev}
-                disabled={currentIndex === 0}
-                className="h-12 w-12 flex items-center justify-center rounded-xl hover:bg-slate-800 text-slate-500 disabled:opacity-30 hover:text-white transition-all disabled:cursor-not-allowed"
-                title="Previous"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </button>
+            {/* Bottom Navigation */}
+            <Separator className="bg-white/5" />
+            <div className="p-5 bg-slate-900/50">
+              <div className="flex items-center justify-between">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handlePrev}
+                        disabled={currentIndex === 0}
+                        className="h-12 w-12 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-slate-400 hover:text-white disabled:opacity-30"
+                        aria-label="Previous segment"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-slate-800 border-white/10 text-slate-200">
+                    {currentIndex === 0 ? 'First segment' : 'Previous segment'}
+                  </TooltipContent>
+                </Tooltip>
 
-              <button
-                onClick={handleNext}
-                disabled={
-                  currentIndex >= data.segments.length - 1 ||
-                  (!!currentSegment.knowledgeCheck && !segmentAnswered[currentIndex])
-                }
-                className={`h-12 px-6 flex items-center gap-2 rounded-xl font-semibold transition-all transform active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${
-                  segmentAnswered[currentIndex] || !currentSegment.knowledgeCheck
-                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900'
-                    : 'bg-white/10 hover:bg-white/20 text-white'
-                }`}
-                title={
-                  currentSegment.knowledgeCheck && !segmentAnswered[currentIndex]
-                    ? 'Complete knowledge check to continue'
-                    : 'Next'
-                }
-              >
-                Next <ChevronRight className="h-4 w-4" />
-              </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        size="lg"
+                        onClick={handleNext}
+                        disabled={
+                          currentIndex >= data.segments.length - 1 ||
+                          (!!currentSegment.knowledgeCheck && !segmentAnswered[currentIndex])
+                        }
+                        className={`h-12 px-6 rounded-xl font-semibold transition-all transform active:scale-95 ${
+                          segmentAnswered[currentIndex] || !currentSegment.knowledgeCheck
+                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900'
+                            : 'bg-white/5 border border-white/20 hover:bg-white/10 text-white'
+                        }`}
+                        aria-label={
+                          currentSegment.knowledgeCheck && !segmentAnswered[currentIndex]
+                            ? 'Complete knowledge check to continue'
+                            : 'Next segment'
+                        }
+                      >
+                        Next <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-slate-800 border-white/10 text-slate-200">
+                    {currentSegment.knowledgeCheck && !segmentAnswered[currentIndex]
+                      ? 'Complete knowledge check to continue'
+                      : currentIndex >= data.segments.length - 1
+                        ? 'Last segment'
+                        : 'Next segment'}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
-          </div>
 
-        </div>
+          </div>
+        </Card>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 

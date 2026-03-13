@@ -366,6 +366,32 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    evalModes: [
+      {
+        evalMode: 'name_it',
+        label: 'Name It (Recognition)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['name-it'],
+        description: 'See a letter displayed visually, pick its name from options.',
+      },
+      {
+        evalMode: 'find_it',
+        label: 'Find It (Visual Search)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['find-it'],
+        description: 'Hear a letter name, find all instances in a 4x4 grid.',
+      },
+      {
+        evalMode: 'match_it',
+        label: 'Match It (Case Matching)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['match-it'],
+        description: 'See an uppercase letter, match it to the correct lowercase form.',
+      },
+    ],
     supportsEvaluation: true,
   },
   {

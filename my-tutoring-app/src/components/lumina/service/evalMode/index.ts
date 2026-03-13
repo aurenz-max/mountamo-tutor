@@ -92,30 +92,61 @@ export function resolveEvalModeConstraint(
 // ---------------------------------------------------------------------------
 
 /**
- * Deep-clone a schema and narrow the `challenge.type` enum to only allowed values.
+ * Optional config for generators whose challenge-type field doesn't live at
+ * the default path `schema.properties.challenges.items.properties.type`.
  *
- * Walks: schema.properties.challenges.items.properties.type
+ * Literacy generators use varied field names (`mode`, `operation`, `clueType`,
+ * `patternType`) and array names (`challenges`, `words`, `instances`, `questions`),
+ * or place the type field at the schema root instead of inside an array.
+ */
+export interface SchemaConstraintConfig {
+  /** Array name containing challenge items (default: `'challenges'`). Ignored when `rootLevel` is true. */
+  arrayName?: string;
+  /** Field name for the challenge type within each item, or at root level (default: `'type'`). */
+  fieldName?: string;
+  /** If true, the type field is at the schema root, not inside an array of items. */
+  rootLevel?: boolean;
+}
+
+/**
+ * Deep-clone a schema and narrow a challenge-type enum to only allowed values.
+ *
+ * Default path: `schema.properties.challenges.items.properties.type`
+ * With config: navigates to the field specified by `SchemaConstraintConfig`.
+ *
  * Sets `enum` to `allowedTypes` and updates the description to list only those types.
  *
  * @param baseSchema - The full generator schema (not mutated)
  * @param allowedTypes - Challenge types to allow (e.g. ['build'])
  * @param challengeTypeDocs - For building a constrained description string
+ * @param config - Optional path config for non-standard field locations
  * @returns A new schema with the type field enum-constrained
  */
 export function constrainChallengeTypeEnum(
   baseSchema: Schema,
   allowedTypes: string[],
   challengeTypeDocs: Record<string, ChallengeTypeDoc>,
+  config?: SchemaConstraintConfig,
 ): Schema {
   // Deep clone to avoid mutating the module-level schema
   const schema: Schema = JSON.parse(JSON.stringify(baseSchema));
 
-  // Navigate to challenges.items.properties.type
-  const challengeItems = (schema as Record<string, unknown>).properties as Record<string, unknown>;
-  const challenges = challengeItems?.challenges as Record<string, unknown> | undefined;
-  const items = challenges?.items as Record<string, unknown> | undefined;
-  const itemProps = items?.properties as Record<string, unknown> | undefined;
-  const typeField = itemProps?.type as Record<string, unknown> | undefined;
+  const props = (schema as Record<string, unknown>).properties as Record<string, unknown>;
+  const fieldName = config?.fieldName ?? 'type';
+
+  let typeField: Record<string, unknown> | undefined;
+
+  if (config?.rootLevel) {
+    // Field is at schema root (e.g., patternType, sentenceType)
+    typeField = props?.[fieldName] as Record<string, unknown> | undefined;
+  } else {
+    // Field is inside an array of items
+    const arrayName = config?.arrayName ?? 'challenges';
+    const array = props?.[arrayName] as Record<string, unknown> | undefined;
+    const items = array?.items as Record<string, unknown> | undefined;
+    const itemProps = items?.properties as Record<string, unknown> | undefined;
+    typeField = itemProps?.[fieldName] as Record<string, unknown> | undefined;
+  }
 
   if (typeField) {
     typeField.enum = allowedTypes;

@@ -188,6 +188,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "read-aloud-studio":          {"default": PriorConfig(3.0, "Read aloud fluency")},
     "spelling-pattern-explorer":  {"default": PriorConfig(3.5, "Spelling patterns")},
     "syllable-clapper":           {"default": PriorConfig(2.0, "Count syllables")},
+    "letter-spotter": {
+        "name_it":   PriorConfig(1.5, "Recognition: name the letter shown"),
+        "find_it":   PriorConfig(2.5, "Guided: find target letter in grid"),
+        "match_it":  PriorConfig(3.5, "Application: match uppercase to lowercase"),
+    },
     # -----------------------------------------------------------------
     # Engineering primitives
     # -----------------------------------------------------------------

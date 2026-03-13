@@ -564,7 +564,9 @@ registerGenerator('sound-swap', async (item, topic, gradeContext) => ({
 registerGenerator('letter-spotter', async (item, topic, gradeContext) => ({
   type: 'letter-spotter',
   instanceId: item.instanceId,
-  data: await generateLetterSpotter(topic, gradeContext, item.config),
+  data: await generateLetterSpotter(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // ============================================================================

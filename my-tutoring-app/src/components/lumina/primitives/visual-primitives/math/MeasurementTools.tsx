@@ -56,11 +56,11 @@ interface MeasurementToolsProps {
 // =============================================================================
 
 const RULER_HEIGHT = 64;
-const RULER_Y = 260;
 const SHAPE_AREA_Y = 40;
-const CANVAS_WIDTH = 600;
-const CANVAS_HEIGHT = 380;
+const CANVAS_WIDTH = 660;
 const RULER_LEFT_PAD = 40;
+const SHAPE_RULER_GAP = 12;
+const BOTTOM_PAD = 20;
 
 const PHASE_CONFIG: Record<string, PhaseConfig> = {
   measure: { label: 'Measure', icon: '\uD83D\uDCCF', accentColor: 'blue' },
@@ -76,9 +76,10 @@ interface RulerProps {
   precision: 'whole' | 'half';
   pixelsPerUnit: number;
   leftPad: number;
+  rulerY: number;
 }
 
-const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerUnit, leftPad }) => {
+const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerUnit, leftPad, rulerY }) => {
   const totalWidth = lengthInches * pixelsPerUnit;
   const step = precision === 'half' ? 0.5 : 1;
   const tickCount = Math.round(lengthInches / step);
@@ -88,7 +89,7 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
       {/* Ruler body */}
       <rect
         x={leftPad}
-        y={RULER_Y}
+        y={rulerY}
         width={totalWidth}
         height={RULER_HEIGHT}
         rx={4}
@@ -108,16 +109,16 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
           <g key={i}>
             <line
               x1={x}
-              y1={RULER_Y}
+              y1={rulerY}
               x2={x}
-              y2={RULER_Y + (isWhole ? 28 : 16)}
+              y2={rulerY + (isWhole ? 28 : 16)}
               stroke="rgba(255,255,255,0.6)"
               strokeWidth={isWhole ? 1.5 : 0.8}
             />
             {isWhole && (
               <text
                 x={x}
-                y={RULER_Y + 44}
+                y={rulerY + 44}
                 textAnchor="middle"
                 fill="rgba(255,255,255,0.7)"
                 fontSize={13}
@@ -134,7 +135,7 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
       {/* Unit label */}
       <text
         x={leftPad + totalWidth + 8}
-        y={RULER_Y + 38}
+        y={rulerY + 38}
         fill="rgba(255,255,255,0.4)"
         fontSize={11}
         className="select-none"
@@ -262,14 +263,15 @@ const DraggableShape: React.FC<DraggableShapeProps> = ({
 // Snap Zone Indicator
 // =============================================================================
 
-const SnapZone: React.FC<{ leftPad: number; totalWidth: number; active: boolean }> = ({
+const SnapZone: React.FC<{ leftPad: number; totalWidth: number; active: boolean; rulerY: number }> = ({
   leftPad,
   totalWidth,
   active,
+  rulerY,
 }) => (
   <rect
     x={leftPad}
-    y={RULER_Y - 50}
+    y={rulerY - 50}
     width={totalWidth}
     height={48}
     rx={6}
@@ -307,6 +309,15 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     60,
   );
   const rulerTotalWidth = rulerLengthInches * pixelsPerUnit;
+
+  // Compute tallest shape height to size the canvas dynamically
+  const maxShapeH = useMemo(() => {
+    return Math.max(...shapes.map((s) => Math.max(s.heightInches * pixelsPerUnit, 36)), 60);
+  }, [shapes, pixelsPerUnit]);
+
+  // Dynamic layout: shape area → gap → ruler → bottom padding
+  const rulerY = SHAPE_AREA_Y + maxShapeH + SHAPE_RULER_GAP + 50; // 50 for snap zone
+  const canvasHeight = rulerY + RULER_HEIGHT + BOTTOM_PAD;
 
   // -- Shared hooks ---------------------------------------------------------
   const {
@@ -362,14 +373,14 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
   const currentShape = shapes[currentIndex] ?? null;
 
-  // Initialize shape positions (stacked in holding area)
+  // Initialize only the current shape position (centered in holding area)
   useEffect(() => {
     const positions: Record<string, { x: number; y: number }> = {};
-    shapes.forEach((shape, i) => {
+    shapes.forEach((shape) => {
       const w = shape.widthInches * pixelsPerUnit;
       positions[shape.id] = {
         x: CANVAS_WIDTH / 2 - w / 2,
-        y: SHAPE_AREA_Y + i * 8,
+        y: SHAPE_AREA_Y,
       };
     });
     setShapePositions(positions);
@@ -457,12 +468,12 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
     const shapeH = Math.max(currentShape.heightInches * pixelsPerUnit, 36);
     const shapeBottom = pos.y + shapeH;
-    const snapZoneTop = RULER_Y - 50;
+    const snapZoneTop = rulerY - 50;
 
     // Check if shape is in the snap zone (above the ruler)
-    if (shapeBottom >= snapZoneTop && pos.y < RULER_Y) {
+    if (shapeBottom >= snapZoneTop && pos.y < rulerY) {
       // Snap: align left edge to ruler 0, bottom edge sits just above ruler
-      const snappedY = RULER_Y - shapeH - 2;
+      const snappedY = rulerY - shapeH - 2;
       setShapePositions((prev) => ({
         ...prev,
         [currentShape.id]: { x: RULER_LEFT_PAD, y: snappedY },
@@ -476,7 +487,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
           { silent: true },
         );
       }
-    } else if (pos.y >= RULER_Y + RULER_HEIGHT) {
+    } else if (pos.y >= rulerY + RULER_HEIGHT) {
       // Dragged below ruler — bounce back to holding area
       const w = currentShape.widthInches * pixelsPerUnit;
       setShapePositions((prev) => ({
@@ -485,7 +496,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       }));
       setOnRuler((prev) => ({ ...prev, [currentShape.id]: false }));
     }
-  }, [isDragging, currentShape, shapePositions, pixelsPerUnit, onRuler, sendText, unit]);
+  }, [isDragging, currentShape, shapePositions, pixelsPerUnit, rulerY, onRuler, sendText, unit]);
 
   // -- Answer checking ------------------------------------------------------
   const checkAnswer = useCallback(() => {
@@ -599,11 +610,11 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     setShowHint(false);
     hasIntroducedRef.current = false;
     const positions: Record<string, { x: number; y: number }> = {};
-    shapes.forEach((shape, i) => {
+    shapes.forEach((shape) => {
       const w = shape.widthInches * pixelsPerUnit;
       positions[shape.id] = {
         x: CANVAS_WIDTH / 2 - w / 2,
-        y: SHAPE_AREA_Y + i * 8,
+        y: SHAPE_AREA_Y,
       };
     });
     setShapePositions(positions);
@@ -697,8 +708,8 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
               <svg
                 ref={svgRef}
                 width={CANVAS_WIDTH}
-                height={CANVAS_HEIGHT}
-                viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`}
+                height={canvasHeight}
+                viewBox={`0 0 ${CANVAS_WIDTH} ${canvasHeight}`}
                 className="max-w-full h-auto rounded-xl touch-none"
                 style={{ background: 'rgba(255,255,255,0.02)' }}
                 onPointerMove={handleDragMove}
@@ -710,30 +721,19 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   x={1}
                   y={1}
                   width={CANVAS_WIDTH - 2}
-                  height={CANVAS_HEIGHT - 2}
+                  height={canvasHeight - 2}
                   rx={12}
                   fill="none"
                   stroke="rgba(255,255,255,0.08)"
                   strokeWidth={1.5}
                 />
 
-                {/* Holding area label */}
-                <text
-                  x={CANVAS_WIDTH / 2}
-                  y={28}
-                  textAnchor="middle"
-                  fill="rgba(255,255,255,0.2)"
-                  fontSize={12}
-                  className="select-none"
-                >
-                  Shapes
-                </text>
-
                 {/* Snap zone above ruler */}
                 <SnapZone
                   leftPad={RULER_LEFT_PAD}
                   totalWidth={rulerTotalWidth}
                   active={isDragging}
+                  rulerY={rulerY}
                 />
 
                 {/* Ruler */}
@@ -743,29 +743,10 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   precision={precision}
                   pixelsPerUnit={pixelsPerUnit}
                   leftPad={RULER_LEFT_PAD}
+                  rulerY={rulerY}
                 />
 
-                {/* Render completed shapes (behind current) */}
-                {shapes.map((shape, i) => {
-                  if (i === currentIndex) return null;
-                  const pos = shapePositions[shape.id];
-                  if (!pos) return null;
-                  return (
-                    <DraggableShape
-                      key={shape.id}
-                      shape={shape}
-                      pixelsPerUnit={pixelsPerUnit}
-                      isOnRuler={!!onRuler[shape.id]}
-                      position={pos}
-                      onDragStart={() => {}}
-                      isDragging={false}
-                      isActive={false}
-                      isCompleted={completedIds.has(shape.id)}
-                    />
-                  );
-                })}
-
-                {/* Current shape (on top) */}
+                {/* Only render the current active shape — hide future shapes */}
                 {shapePositions[currentShape.id] && (
                   <DraggableShape
                     shape={currentShape}
