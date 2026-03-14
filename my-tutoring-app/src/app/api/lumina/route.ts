@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(itemDetail);
 
       case 'generateConceptImage':
-        const image = await generateConceptImage(params.prompt);
+        const image = await generateConceptImage(params.prompt, params.aspectRatio);
         return NextResponse.json({ image });
 
       // Universal component content generator - routes to all primitives via registry

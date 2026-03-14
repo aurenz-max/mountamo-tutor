@@ -591,7 +591,9 @@ registerGenerator('letter-spotter', async (item, topic, gradeContext) => ({
 registerGenerator('letter-sound-link', async (item, topic, gradeContext) => ({
   type: 'letter-sound-link',
   instanceId: item.instanceId,
-  data: await generateLetterSoundLink(topic, gradeContext, item.config),
+  data: await generateLetterSoundLink(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // ============================================================================

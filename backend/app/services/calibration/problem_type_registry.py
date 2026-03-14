@@ -193,6 +193,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "find_it":   PriorConfig(2.5, "Guided: find target letter in grid"),
         "match_it":  PriorConfig(3.5, "Application: match uppercase to lowercase"),
     },
+    "letter-sound-link": {
+        "see_hear":       PriorConfig(1.5, "Recognition: see letter, pick its sound"),
+        "hear_see":       PriorConfig(2.5, "Guided: hear sound, identify the letter"),
+        "keyword_match":  PriorConfig(3.5, "Application: match letter to keyword"),
+    },
     # -----------------------------------------------------------------
     # Engineering primitives
     # -----------------------------------------------------------------

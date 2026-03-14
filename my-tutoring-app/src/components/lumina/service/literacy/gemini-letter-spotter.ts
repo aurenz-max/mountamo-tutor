@@ -16,10 +16,16 @@ import {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'name-it': {
     promptDoc:
-      `"name-it": Student sees a letter displayed visually (uppercase, lowercase, or both) and picks its name from 4 options. `
-      + `2-3 challenges per session. Distractors are visually or phonetically similar letters from the cumulative group. `
-      + `Do NOT include letterGrid or targetCount for this mode.`,
-    schemaDescription: "'name-it' (identify letter by name)",
+      `"name-it" (Sentence Spotter): Student sees a short sentence where one letter in a key word is replaced by an emoji. `
+      + `The AI reads the full sentence aloud. Student must figure out which letter the emoji replaced. `
+      + `REQUIRED fields for name-it: sentence, emoji, targetWord, options. `
+      + `Example: targetLetter "s", targetWord "sun", emoji "⭐", sentence "The ⭐un is bright.", options ["s","t","n","p"]. `
+      + `The emoji MUST replace exactly ONE occurrence of the targetLetter in the targetWord within the sentence. `
+      + `Use fun, varied emojis (⭐🌟🔮💎🎯🎪🦋🌈🎨🌺). Each challenge should use a different emoji. `
+      + `Sentences should be simple, 4-7 words, age-appropriate for K-2. `
+      + `The targetLetter should appear at the START of the targetWord for clarity (e.g., "⭐un" not "bu⭐"). `
+      + `2-3 challenges per session. Do NOT include letterGrid or targetCount for this mode.`,
+    schemaDescription: "'name-it' (sentence spotter — find missing letter)",
   },
   'find-it': {
     promptDoc:
@@ -102,6 +108,18 @@ const letterSpotterSchema: Schema = {
           targetCount: {
             type: Type.NUMBER,
             description: "For find-it: how many instances of the target letter are in the grid (2 or 3)",
+          },
+          sentence: {
+            type: Type.STRING,
+            description: "For name-it: a short sentence with the emoji replacing one letter (e.g., 'The ⭐un is bright.')",
+          },
+          emoji: {
+            type: Type.STRING,
+            description: "For name-it: the emoji used as placeholder (e.g., '⭐', '🌟', '🔮')",
+          },
+          targetWord: {
+            type: Type.STRING,
+            description: "For name-it: the full word containing the target letter (e.g., 'sun')",
           },
         },
         required: ["id", "mode", "targetLetter", "targetCase"],
@@ -205,9 +223,14 @@ Generate 6-8 challenges. Prioritize new letters but include some review letters 
 ${challengeTypeSection}
 
 MODE-SPECIFIC FIELD RULES:
-- name-it: set options (4 letters), do NOT set letterGrid or targetCount
-- find-it: set letterGrid (16 uppercase letters) and targetCount (2-3), do NOT set options
-- match-it: set options (4 lowercase letters), do NOT set letterGrid or targetCount
+- name-it (SENTENCE SPOTTER): set sentence, emoji, targetWord, and options (4 letters). Do NOT set letterGrid or targetCount.
+  * sentence: a short (4-7 word) sentence where the emoji replaces the targetLetter at the START of targetWord
+  * emoji: a fun emoji (⭐🌟🔮💎🎯🎪🦋🌈🎨🌺) — use a DIFFERENT emoji per challenge
+  * targetWord: the full word (e.g., "sun") — must contain the targetLetter
+  * options: 4 lowercase letters including the correct one
+  * Example: targetLetter "s", targetWord "sun", emoji "⭐", sentence "The ⭐un is bright."
+- find-it: set letterGrid (16 uppercase letters) and targetCount (2-3), do NOT set options, sentence, emoji, or targetWord
+- match-it: set options (4 lowercase letters), do NOT set letterGrid, targetCount, sentence, emoji, or targetWord
 
 RULES:
 - Use IDs: ch1, ch2, ch3, etc.
@@ -266,6 +289,41 @@ LETTER GROUP DATA:
           ch.targetLetter = newLetters[i % newLetters.length];
         }
 
+        // Validate name-it sentence fields
+        if (ch.mode === 'name-it') {
+          const FALLBACK_EMOJIS = ['⭐', '🌟', '🔮', '💎', '🎯', '🎪', '🦋', '🌈', '🎨', '🌺'];
+
+          // Ensure emoji exists and varies per challenge
+          if (!ch.emoji) {
+            ch.emoji = FALLBACK_EMOJIS[i % FALLBACK_EMOJIS.length];
+          }
+
+          // Ensure targetWord exists
+          if (!ch.targetWord) {
+            // Simple fallback words for common letters
+            const fallbackWords: Record<string, string> = {
+              s: 'sun', a: 'ant', t: 'top', i: 'ink', p: 'pan', n: 'net',
+              c: 'cat', k: 'kit', e: 'egg', h: 'hat', r: 'run', m: 'map', d: 'dog',
+              g: 'gum', o: 'owl', u: 'up', l: 'log', f: 'fan', b: 'bat',
+              j: 'jam', z: 'zip', w: 'wet', v: 'van', y: 'yam', x: 'fox', q: 'quiz',
+            };
+            ch.targetWord = fallbackWords[ch.targetLetter] || ch.targetLetter + 'at';
+          }
+
+          // Ensure sentence exists with emoji placeholder
+          if (!ch.sentence || !ch.sentence.includes(ch.emoji)) {
+            const word = ch.targetWord;
+            const emojiWord = ch.emoji + word.slice(1);
+            ch.sentence = `I see a ${emojiWord}.`;
+          }
+
+          // Clean up fields that shouldn't exist for name-it
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (ch as any).letterGrid;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (ch as any).targetCount;
+        }
+
         // Validate mode-specific fields
         if (ch.mode === 'find-it') {
           // Ensure grid has exactly 16 cells
@@ -299,6 +357,12 @@ LETTER GROUP DATA:
           // Clean up fields that shouldn't exist for find-it
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           delete (ch as any).options;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (ch as any).sentence;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (ch as any).emoji;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (ch as any).targetWord;
         } else {
           // name-it or match-it: ensure 4 options including correct answer
           if (!ch.options || ch.options.length < 4) {
@@ -316,11 +380,17 @@ LETTER GROUP DATA:
             }
           }
 
-          // Clean up fields that shouldn't exist for name-it/match-it
+          // Clean up fields that shouldn't exist for match-it
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           delete (ch as any).letterGrid;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           delete (ch as any).targetCount;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (ch as any).sentence;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (ch as any).emoji;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (ch as any).targetWord;
         }
 
         return ch;

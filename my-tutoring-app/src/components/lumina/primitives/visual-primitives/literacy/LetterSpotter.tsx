@@ -29,6 +29,12 @@ export interface LetterSpotterChallenge {
   letterGrid?: string[];
   /** Number of target letter instances in the grid */
   targetCount?: number;
+  /** For name-it: sentence with emoji replacing the target letter (e.g., "The ⭐un is bright") */
+  sentence?: string;
+  /** For name-it: the emoji used as the placeholder */
+  emoji?: string;
+  /** For name-it: the full word containing the target letter (e.g., "sun") */
+  targetWord?: string;
 }
 
 export interface LetterSpotterData {
@@ -52,7 +58,7 @@ export interface LetterSpotterData {
 // ============================================================================
 
 const MODE_CONFIG: Record<string, { label: string; description: string }> = {
-  'name-it': { label: 'Name It', description: 'Name the letter you see' },
+  'name-it': { label: 'Name It', description: 'Spot the missing letter in the sentence' },
   'find-it': { label: 'Find It', description: 'Find all matching letters' },
   'match-it': { label: 'Match It', description: 'Match uppercase to lowercase' },
 };
@@ -167,6 +173,8 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     challengeMode: currentChallenge?.mode ?? '',
     targetLetter: currentChallenge?.targetLetter ?? '',
     targetCase: currentChallenge?.targetCase ?? '',
+    targetWord: currentChallenge?.targetWord ?? '',
+    sentence: currentChallenge?.sentence ?? '',
     currentChallenge: currentChallengeIndex + 1,
     totalChallenges: challenges.length,
     attempts: currentAttempts,
@@ -191,16 +199,27 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     const isNew = newLetters.includes(currentChallenge.targetLetter.toLowerCase());
     const modeLabel = MODE_CONFIG[currentChallenge.mode]?.description ?? currentChallenge.mode;
 
+    // For name-it: reconstruct the full sentence (emoji → letter) so the AI reads it naturally
+    const nameItFullSentence = currentChallenge.mode === 'name-it' && currentChallenge.sentence && currentChallenge.targetWord
+      ? currentChallenge.sentence.replace(currentChallenge.emoji || '⭐', currentChallenge.targetLetter)
+      : '';
+
+    const introExtra = currentChallenge.mode === 'name-it' && nameItFullSentence
+      ? `This is a sentence spotter challenge! Say this sentence aloud naturally: "${nameItFullSentence}". `
+        + `The student sees the sentence on screen but the word "${currentChallenge.targetWord}" is replaced by a ${currentChallenge.emoji || '⭐'} emoji. `
+        + `IMPORTANT: Do NOT say the letter name or give away the answer. Just read the sentence naturally and ask "What letter is the ${currentChallenge.emoji || '⭐'} hiding?" `
+      : currentChallenge.mode === 'find-it'
+        ? `Say "Find the letter ${currentChallenge.targetLetter.toUpperCase()}!" with enthusiasm. `
+        : '';
+
     sendText(
       `[ACTIVITY_START] Letter spotting activity for Group ${letterGroup} `
       + `(letters: ${cumulativeLetters.join(', ')}). `
       + `New letters in this group: ${newLetters.length > 0 ? newLetters.join(', ') : 'none — review only'}. `
       + `There are ${challenges.length} challenges. `
       + `Introduce the activity warmly — we're learning to recognize letters! `
-      + `First challenge: ${modeLabel} for the letter "${currentChallenge.targetLetter.toUpperCase()}". `
-      + (currentChallenge.mode === 'find-it'
-        ? `Say "Find the letter ${currentChallenge.targetLetter.toUpperCase()}!" with enthusiasm. `
-        : '')
+      + (currentChallenge.mode !== 'name-it' ? `First challenge: ${modeLabel} for the letter "${currentChallenge.targetLetter.toUpperCase()}". ` : '')
+      + introExtra
       + (isNew ? `This is a NEW letter — introduce it warmly with a brief description of its shape. ` : '')
       + `Keep it brief and enthusiastic — 2-3 sentences max.`,
       { silent: true },
@@ -210,13 +229,6 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
-
-  /** Display letter(s) based on target case. */
-  const getDisplayLetter = useCallback((letter: string, targetCase: string) => {
-    if (targetCase === 'uppercase') return letter.toUpperCase();
-    if (targetCase === 'lowercase') return letter.toLowerCase();
-    return `${letter.toUpperCase()}  ${letter.toLowerCase()}`; // 'both'
-  }, []);
 
   /** Record a confused pair (sorted alphabetically so "b-d" and "d-b" are the same). */
   const trackConfusion = useCallback((target: string, chosen: string) => {
@@ -250,10 +262,13 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
         isNewLetter: newLetters.includes(currentChallenge.targetLetter.toLowerCase()),
       });
 
+      const correctExtra = currentChallenge.mode === 'name-it' && currentChallenge.targetWord
+        ? ` The word was "${currentChallenge.targetWord}". Read the full sentence aloud as celebration!`
+        : '';
       sendText(
         `[ANSWER_CORRECT] The student correctly identified the letter "${currentChallenge.targetLetter.toUpperCase()}"` +
         `${currentAttempts === 0 ? ' on the first try!' : ` after ${currentAttempts + 1} attempts.`} ` +
-        `[SAY_LETTER_NAME] Say the letter name clearly and congratulate briefly.`,
+        `[SAY_LETTER_NAME] Say the letter name clearly and congratulate briefly.${correctExtra}`,
         { silent: true },
       );
     } else {
@@ -261,9 +276,15 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       setFeedbackType('error');
       trackConfusion(currentChallenge.targetLetter, option);
 
+      const nameItSentence = currentChallenge.mode === 'name-it' && currentChallenge.sentence && currentChallenge.targetWord
+        ? currentChallenge.sentence.replace(currentChallenge.emoji || '⭐', currentChallenge.targetLetter)
+        : '';
+      const hintExtra = nameItSentence
+        ? ` Re-read the sentence "${nameItSentence}" aloud slowly and emphasize the word "${currentChallenge.targetWord}". Do NOT say the letter name directly.`
+        : '';
       sendText(
         `[ANSWER_INCORRECT] The student chose "${option.toUpperCase()}" but the correct letter is "${currentChallenge.targetLetter.toUpperCase()}". ` +
-        `This is attempt ${currentAttempts + 1}. Give a brief shape hint without giving the answer.`,
+        `This is attempt ${currentAttempts + 1}. Give a brief hint without giving the answer.${hintExtra}`,
         { silent: true },
       );
 
@@ -493,7 +514,22 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     const isNew = newLetters.includes(nextChallenge.targetLetter.toLowerCase());
     const modeLabel = MODE_CONFIG[nextChallenge.mode]?.description ?? nextChallenge.mode;
 
-    if (nextChallenge.mode === 'find-it') {
+    if (nextChallenge.mode === 'name-it' && nextChallenge.sentence) {
+      // Sentence spotter: AI reads the full sentence aloud (naturally, without revealing the letter)
+      const fullSentence = nextChallenge.sentence.replace(
+        nextChallenge.emoji || '⭐',
+        nextChallenge.targetLetter,
+      );
+      sendText(
+        `[SENTENCE_SPOTTER] Challenge ${currentChallengeIndex + 2} of ${challenges.length}. ` +
+        `Say this sentence aloud naturally: "${fullSentence}". ` +
+        `The student sees the sentence on screen but the word "${nextChallenge.targetWord}" is replaced by a ${nextChallenge.emoji || '⭐'} emoji. ` +
+        `IMPORTANT: Do NOT say the letter name or give away which letter is missing. ` +
+        `Just read the sentence naturally, then ask "What letter is the ${nextChallenge.emoji || '⭐'} hiding?"` +
+        (isNew ? ` This is a NEW letter — give an extra hint about its shape without saying the letter name.` : ''),
+        { silent: true },
+      );
+    } else if (nextChallenge.mode === 'find-it') {
       sendText(
         `[FIND_LETTER] Find the letter ${nextChallenge.targetLetter.toUpperCase()}! ` +
         `Challenge ${currentChallengeIndex + 2} of ${challenges.length}. ` +
@@ -517,29 +553,74 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
   }, [advanceProgress, submitFinalEvaluation, challenges, currentChallengeIndex, newLetters, sendText]);
 
   // ============================================================================
-  // Render: Name-It Mode
+  // Render: Name-It Mode (Sentence Spotter)
   // ============================================================================
   const renderNameIt = () => {
     if (!currentChallenge) return null;
-    const displayLetter = getDisplayLetter(currentChallenge.targetLetter, currentChallenge.targetCase);
     const options = currentChallenge.options || [];
+    const sentence = currentChallenge.sentence || '';
+    const emoji = currentChallenge.emoji || '⭐';
+    const targetWord = currentChallenge.targetWord || '';
+
+    // Reconstruct the full sentence (replace emoji back with the target letter),
+    // then replace the entire targetWord with the emoji so students see
+    // "The ⭐ is bright" instead of "The ⭐un is bright".
+    const fullSentence = sentence.replace(emoji, currentChallenge.targetLetter);
+    let displaySentence = sentence; // fallback: use original sentence as-is
+    if (targetWord) {
+      // Try word-boundary match first, then case-insensitive plain match as fallback
+      const wordBoundaryMatch = fullSentence.replace(new RegExp(`\\b${targetWord}\\b`, 'i'), emoji);
+      if (wordBoundaryMatch !== fullSentence) {
+        displaySentence = wordBoundaryMatch;
+      } else {
+        // Fallback: plain case-insensitive replace (handles punctuation-attached words)
+        const plainMatch = fullSentence.replace(new RegExp(targetWord, 'i'), emoji);
+        if (plainMatch !== fullSentence) {
+          displaySentence = plainMatch;
+        }
+      }
+    }
+
+    // Split the display sentence around the emoji to render it with emphasis
+    const parts = displaySentence.split(emoji);
+    const hasEmoji = parts.length > 1;
 
     return (
       <div className="space-y-6">
-        {/* Large letter display */}
+        {/* Sentence display with emoji replacing the full target word */}
         <div className="flex justify-center">
-          <div className={`
-            ${fontClass} text-8xl font-bold text-slate-100
-            bg-white/5 border-2 border-white/15 rounded-2xl
-            px-12 py-8 tracking-wider select-none
-          `}>
-            {displayLetter}
+          <div className="bg-white/5 border-2 border-white/15 rounded-2xl px-8 py-6 max-w-lg">
+            <p className={`${fontClass} text-3xl font-bold text-slate-100 text-center leading-relaxed`}>
+              {hasEmoji ? (
+                <>
+                  {parts.map((part, i) => (
+                    <React.Fragment key={i}>
+                      {part}
+                      {i < parts.length - 1 && (
+                        <span className="inline-flex items-center justify-center mx-1">
+                          <span className="relative inline-block">
+                            <span className="absolute inset-0 -m-1.5 rounded-full border-2 border-dashed border-amber-400/70 animate-pulse" />
+                            <span className="text-4xl" role="img" aria-label="mystery letter">
+                              {emoji}
+                            </span>
+                          </span>
+                        </span>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </>
+              ) : (
+                displaySentence
+              )}
+            </p>
           </div>
         </div>
 
-        <p className="text-center text-slate-400 text-sm">What letter is this?</p>
+        <p className="text-center text-slate-400 text-sm">
+          Listen to the sentence. What letter does the {emoji} replace?
+        </p>
 
-        {/* Options grid */}
+        {/* Letter options grid */}
         <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
           {options.map((option) => {
             const isSelected = selectedOption === option;
@@ -585,14 +666,10 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-4">
-        {/* Instruction */}
+        {/* Instruction — letter is spoken by AI, not shown visually */}
         <div className="text-center">
           <p className="text-slate-400 text-sm">
-            Find all the{' '}
-            <span className="text-blue-300 font-bold text-lg">
-              {currentChallenge.targetLetter.toUpperCase()}
-            </span>
-            &apos;s in the grid!
+            Listen carefully — find all the matching letters in the grid!
           </p>
         </div>
 

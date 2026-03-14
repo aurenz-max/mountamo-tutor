@@ -95,7 +95,8 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
       if (diagramImageUrl || imageLoading || !diagram.imagePrompt) return;
       setImageLoading(true);
       const url = await generateConceptImage(
-        `Educational diagram, clean schematic style: ${diagram.imagePrompt}. Clear labels, dark background, professional educational illustration. No photorealism.`
+        `Educational diagram, clean schematic style: ${diagram.imagePrompt}. Clear labels, dark background, professional educational illustration. No photorealism.`,
+        '16:9'
       );
       if (mounted && url) {
         setDiagramImageUrl(url);

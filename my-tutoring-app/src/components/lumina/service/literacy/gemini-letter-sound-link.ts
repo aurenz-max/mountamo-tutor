@@ -4,6 +4,41 @@ import {
   LetterSoundLinkData,
   LetterSoundLinkChallenge,
 } from "../../primitives/visual-primitives/literacy/LetterSoundLink";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'see-hear': {
+    promptDoc:
+      `"see-hear": Student sees a letter displayed, picks the correct SOUND from 4 options. `
+      + `2-3 challenges per session. Options are {sound: "/phoneme/", isCorrect: boolean}. Exactly ONE correct. `
+      + `Pick distractor sounds from other letters in the cumulative group.`,
+    schemaDescription: "'see-hear' (see letter, pick sound)",
+  },
+  'hear-see': {
+    promptDoc:
+      `"hear-see": Student hears a sound, picks the correct LETTER from 4 options. `
+      + `2-3 challenges per session. Options are {letter: "x", isCorrect: boolean}. Exactly ONE correct. `
+      + `If target sound /k/ can be made by both c and k, set sharedSoundLetters to ["c", "k"].`,
+    schemaDescription: "'hear-see' (hear sound, find letter)",
+  },
+  'keyword-match': {
+    promptDoc:
+      `"keyword-match": Student sees a letter and picks the correct KEYWORD WORD from 4 options. `
+      + `2-3 challenges per session. Options are {sound: "keyword_word", isCorrect: boolean}. Exactly ONE correct. `
+      + `Distractor keywords come from other letters in the cumulative group.`,
+    schemaDescription: "'keyword-match' (match letter to keyword)",
+  },
+};
 
 /**
  * Schema definition for Letter Sound Link Data
@@ -133,15 +168,38 @@ const SHARED_SOUND_MAP: Record<string, string[]> = {
  *
  * @param topic - Theme or context for the activity
  * @param gradeLevel - Grade level ('K', '1', or '2')
- * @param config - Optional config with letterGroup override
+ * @param config - Optional config with letterGroup override and targetEvalMode
  * @returns LetterSoundLinkData with challenges across all three modes
  */
 export const generateLetterSoundLink = async (
   topic: string,
   gradeLevel: string = 'K',
-  config?: Partial<{ letterGroup: number }>,
+  config?: Partial<{
+    letterGroup: number;
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode: string;
+  }>,
 ): Promise<LetterSoundLinkData> => {
 
+  // -------------------------------------------------------------------------
+  // Eval mode resolution
+  // -------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    'letter-sound-link',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('LetterSoundLink', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(letterSoundLinkSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'mode',
+      })
+    : letterSoundLinkSchema;
+
+  // -------------------------------------------------------------------------
+  // Letter group setup
+  // -------------------------------------------------------------------------
   const letterGroup = (config?.letterGroup && config.letterGroup >= 1 && config.letterGroup <= 4)
     ? config.letterGroup
     : 1;
@@ -153,6 +211,14 @@ export const generateLetterSoundLink = async (
     .map(l => `${l} = ${LETTER_SOUNDS[l]} (keyword: ${KEYWORD_MAP[l]})`)
     .join(', ');
 
+  // -------------------------------------------------------------------------
+  // Build prompt with eval-mode-scoped challenge type docs
+  // -------------------------------------------------------------------------
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
   const generationPrompt = `Create an interactive letter-sound correspondence activity for the topic: "${topic}".
 
 TARGET GRADE LEVEL: ${gradeLevel}
@@ -162,36 +228,22 @@ CUMULATIVE LETTERS (all available): ${cumulativeLetters.join(', ')}
 LETTER-SOUND-KEYWORD REFERENCE:
 ${letterSoundRef}
 
-Generate 6-8 challenges mixing all three modes. Each challenge links a letter to its sound and keyword.
+Generate 6-8 challenges. Each challenge links a letter to its sound and keyword.
 
-CHALLENGE MODES:
+${challengeTypeSection}
 
-1. **see-hear** (2-3 challenges):
-   - Student sees a letter, picks the correct SOUND from 4 options.
-   - targetLetter: a letter from the cumulative set (lowercase)
-   - targetSound: the phoneme in slash notation (e.g., "/s/", "/k/")
-   - keywordWord: the keyword for this letter (e.g., "sun" for s)
-   - keywordImage: same as keywordWord
-   - options: exactly 4 objects with {sound: "/phoneme/", isCorrect: boolean}. Exactly ONE must be correct.
-   - Pick distractor sounds from other letters in the cumulative group.
-
-2. **hear-see** (2-3 challenges):
-   - Student hears a sound, picks the correct LETTER from 4 options.
-   - options: exactly 4 objects with {letter: "x", isCorrect: boolean}. Exactly ONE must be correct.
-   - If the target sound /k/ can be made by both c and k, set sharedSoundLetters to ["c", "k"].
-
-3. **keyword-match** (2-3 challenges):
-   - Student sees a letter and picks the correct KEYWORD WORD from 4 options.
-   - options: exactly 4 objects with {sound: "keyword_word", isCorrect: boolean}. Exactly ONE must be correct.
-   - Distractor keywords come from other letters in the cumulative group.
+MODE-SPECIFIC OPTION FORMATS:
+- see-hear: options are {sound: "/phoneme/", isCorrect: boolean}
+- hear-see: options are {letter: "x", isCorrect: boolean}
+- keyword-match: options are {sound: "keyword_word", isCorrect: boolean}
 
 RULES:
 - Use IDs: ch1, ch2, ch3, etc.
 - Use ONLY letters from the cumulative group: [${cumulativeLetters.join(', ')}]
 - Use clean slash notation for sounds: /s/, /t/, /k/, etc. Short vowels use the plain letter.
 - keywordImage is always identical to keywordWord.
-- Order challenges so modes alternate (don't cluster the same mode together).
 - For c and k challenges, always include sharedSoundLetters: ["c", "k"].
+${!evalConstraint ? '- Order challenges so modes alternate (don\'t cluster the same mode together).' : ''}
 
 LETTER GROUP DATA:
 - letterGroup: ${letterGroup}
@@ -203,7 +255,7 @@ LETTER GROUP DATA:
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: letterSoundLinkSchema,
+        responseSchema: activeSchema,
         systemInstruction: `You are an expert K-2 literacy specialist designing letter-sound correspondence activities. You understand phonics instruction and the alphabetic principle. You create engaging, developmentally appropriate challenges that help young students learn the sounds letters make, using keyword associations (s=sun, a=apple, etc.) to anchor learning. You always use letters and sounds only from the specified cumulative group. You use clean phoneme notation with slashes (e.g., /s/, /k/).`,
       },
     });
@@ -254,6 +306,27 @@ LETTER GROUP DATA:
 
         return ch;
       });
+
+      // Fallback: ensure at least one challenge exists
+      if (result.challenges.length === 0) {
+        const fallbackMode = evalConstraint?.allowedTypes[0] ?? 'see-hear';
+        const targetLetter = cumulativeLetters[0];
+        result.challenges = [{
+          id: 'ch1',
+          mode: fallbackMode as 'see-hear' | 'hear-see' | 'keyword-match',
+          targetLetter,
+          targetSound: LETTER_SOUNDS[targetLetter],
+          keywordWord: KEYWORD_MAP[targetLetter],
+          keywordImage: KEYWORD_MAP[targetLetter],
+          options: [
+            { sound: LETTER_SOUNDS[targetLetter], isCorrect: true },
+            ...cumulativeLetters
+              .filter(l => LETTER_SOUNDS[l] !== LETTER_SOUNDS[targetLetter])
+              .slice(0, 3)
+              .map(l => ({ sound: LETTER_SOUNDS[l], isCorrect: false })),
+          ],
+        }];
+      }
     }
 
     console.log('Letter Sound Link Generated:', {

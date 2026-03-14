@@ -44,7 +44,8 @@ import {
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { getComponentById } from '../service/manifest/catalog';
-import type { ComponentId } from '../types';
+import { LITERACY_CATALOG } from '../service/manifest/catalog/literacy';
+import type { ComponentId, EvalModeDefinition } from '../types';
 import { Bot, Send, Mic, MicOff, Loader2, CheckCircle, XCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface LanguageArtsPrimitivesTesterProps {
@@ -631,6 +632,7 @@ const AITutorPanel: React.FC<{
 const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTesterProps> = ({ onBack }) => {
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('phonics-blender');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('K');
+  const [selectedEvalMode, setSelectedEvalMode] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
@@ -638,6 +640,10 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
   const [tutorPanelOpen, setTutorPanelOpen] = useState(true);
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
+
+  // Look up eval modes from the catalog for the selected primitive
+  const catalogEntry = LITERACY_CATALOG.find(c => c.id === selectedPrimitive);
+  const evalModes: EvalModeDefinition[] = catalogEntry?.evalModes ?? [];
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -655,7 +661,9 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
             componentId: selectedPrimitive,
             topic: currentTopic,
             gradeLevel: selectedGrade,
-            config: {},
+            config: {
+              ...(selectedEvalMode ? { targetEvalMode: selectedEvalMode } : {}),
+            },
           },
         }),
       });
@@ -739,6 +747,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
                               key={option.value}
                               onClick={() => {
                                 setSelectedPrimitive(option.value);
+                                setSelectedEvalMode(null);
                                 setGeneratedData(null);
                                 setError(null);
                               }}
@@ -800,6 +809,57 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
                 className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
+
+            {/* Eval Mode Selector — shown when the primitive has IRT eval modes */}
+            {evalModes.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                  Difficulty Mode
+                  <span className="text-slate-600 font-normal ml-1">(IRT)</span>
+                </label>
+                <div className="space-y-1">
+                  {/* Auto option */}
+                  <button
+                    onClick={() => setSelectedEvalMode(null)}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm ${
+                      selectedEvalMode === null
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                        : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Auto (mixed)</span>
+                      <span className="text-xs opacity-60">Default</span>
+                    </div>
+                  </button>
+                  {evalModes.map((mode) => (
+                    <button
+                      key={mode.evalMode}
+                      onClick={() => setSelectedEvalMode(mode.evalMode)}
+                      className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm ${
+                        selectedEvalMode === mode.evalMode
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                          : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{mode.label}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                          mode.scaffoldingMode <= 2
+                            ? 'bg-green-500/20 text-green-400'
+                            : mode.scaffoldingMode <= 4
+                              ? 'bg-yellow-500/20 text-yellow-400'
+                              : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {'\u03B2'} {mode.beta}
+                        </span>
+                      </div>
+                      <p className="text-xs opacity-60 mt-0.5">{mode.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Generate Button */}
             <button

@@ -57,8 +57,8 @@ export const generateItemDetail = async (
   return callAPI('generateItemDetail', { contextTopic, item });
 };
 
-export const generateConceptImage = async (prompt: string): Promise<string | null> => {
-  const result = await callAPI('generateConceptImage', { prompt });
+export const generateConceptImage = async (prompt: string, aspectRatio?: string): Promise<string | null> => {
+  const result = await callAPI('generateConceptImage', { prompt, aspectRatio });
   return result.image;
 };
 

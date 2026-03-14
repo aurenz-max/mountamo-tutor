@@ -329,8 +329,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'letter-spotter',
     description:
-      'Interactive letter recognition with three modes: Name It (identify a displayed letter), Find It (locate letters in a grid), '
-      + 'and Match It (pair uppercase with lowercase). Supports cumulative letter group progression (Groups 1-4). '
+      'Interactive letter recognition with three modes: Name It (sentence spotter — hear a sentence, spot the missing letter hidden by an emoji), '
+      + 'Find It (locate letters in a grid), and Match It (pair uppercase with lowercase). '
+      + 'Supports cumulative letter group progression (Groups 1-4). '
       + 'Perfect for kindergarten letter naming assessments. ESSENTIAL for K-2 literacy foundations.',
     constraints:
       'Requires letterGroup (1-4). Group 1: s,a,t,i,p,n. Group 2: adds c,k,e,h,r,m,d. '
@@ -339,15 +340,17 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       taskDescription:
         'Letter recognition activity. Group {{letterGroup}} (letters: {{cumulativeLetters}}). '
         + 'Mode: {{challengeMode}}. Target letter: {{targetLetter}} ({{targetCase}}). '
+        + 'Sentence: {{sentence}}. Target word: {{targetWord}}. '
         + 'Challenge {{currentChallenge}}/{{totalChallenges}}. Attempts: {{attempts}}.',
       contextKeys: [
         'letterGroup', 'cumulativeLetters', 'newLetters', 'challengeMode',
-        'targetLetter', 'targetCase', 'currentChallenge', 'totalChallenges', 'attempts',
+        'targetLetter', 'targetCase', 'targetWord', 'sentence',
+        'currentChallenge', 'totalChallenges', 'attempts',
       ],
       scaffoldingLevels: {
-        level1: '"Look at this letter carefully. What is its name?"',
-        level2: '"This letter looks like [shape hint]. Does it remind you of any letter you know?"',
-        level3: '"This is the letter {{targetLetter}}. Say it with me: {{targetLetter}}!"',
+        level1: '"Listen to the sentence again carefully. What sound does the word start with?"',
+        level2: '"The word is {{targetWord}}. Say it slowly — what letter do you hear first?"',
+        level3: '"This is the letter {{targetLetter}}. The word {{targetWord}} starts with {{targetLetter}}!"',
       },
       commonStruggles: [
         { pattern: 'Confusing b and d', response: 'Make a "bed" with your fists — left thumb up is b, right thumb up is d.' },
@@ -356,6 +359,15 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         { pattern: 'Cannot name new letters', response: 'This is a new letter! Let me introduce you: this is [name]. Can you say [name]?' },
       ],
       aiDirectives: [
+        {
+          title: 'SENTENCE SPOTTER (name-it mode)',
+          instruction:
+            'For [SENTENCE_SPOTTER] challenges, READ THE FULL SENTENCE ALOUD clearly and naturally. '
+            + 'The student sees the sentence with an emoji hiding one letter. Your job is to speak the sentence '
+            + 'so they can hear the missing letter in context. Emphasize the target word slightly. '
+            + 'Ask "What letter is hiding behind the [emoji]?" after reading. '
+            + 'On incorrect answers, re-read the sentence slowly and emphasize the target word.',
+        },
         {
           title: 'LETTER NAMING',
           instruction:
@@ -369,11 +381,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'name_it',
-        label: 'Name It (Recognition)',
+        label: 'Name It (Sentence Spotter)',
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['name-it'],
-        description: 'See a letter displayed visually, pick its name from options.',
+        description: 'Hear a sentence spoken aloud, spot which letter an emoji is hiding in a key word.',
       },
       {
         evalMode: 'find_it',
@@ -442,6 +454,32 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    evalModes: [
+      {
+        evalMode: 'see_hear',
+        label: 'See-Hear (Letter → Sound)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['see-hear'],
+        description: 'See a letter displayed, pick its sound from options.',
+      },
+      {
+        evalMode: 'hear_see',
+        label: 'Hear-See (Sound → Letter)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['hear-see'],
+        description: 'Hear a phoneme, identify which letter makes that sound.',
+      },
+      {
+        evalMode: 'keyword_match',
+        label: 'Keyword Match (Letter → Word)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['keyword-match'],
+        description: 'Match a letter to its keyword association (e.g., s → sun).',
+      },
+    ],
     supportsEvaluation: true,
   },
   {

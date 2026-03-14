@@ -557,7 +557,7 @@ These primitives need new challenge type enums added before eval modes.
 |---|-----------|--------|--------|-------|------|-----------|
 | — | **Schema Utility** | infra | PENDING | — | 0 | |
 | 1 | LetterSpotter | RF | DONE | 3 | 1 | Yes |
-| 2 | LetterSoundLink | RF | NEEDS FIELD RENAME | 3 | 1 | |
+| 2 | LetterSoundLink | RF | DONE | 3 | 1 | Yes |
 | 3 | RhymeStudio | RF | NEEDS FIELD RENAME | 3 | 1 | |
 | 4 | SoundSwap | RF | NEEDS FIELD RENAME | 3 | 1 | |
 | 5 | PhonicsBlender | RF | NEEDS FIELD RENAME | 4 | 1 | |
